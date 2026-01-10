@@ -1,0 +1,1929 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diccionario de Datos - Sistema de Gestión para Pedidos</title>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            padding: 50px;
+            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+        }
+
+        h1 {
+            color: #2c3e50;
+            border-bottom: 4px solid #3498db;
+            padding-bottom: 15px;
+            margin-bottom: 40px;
+            font-size: 2.8em;
+            text-align: center;
+        }
+
+        h2 {
+            color: #34495e;
+            margin-top: 50px;
+            margin-bottom: 25px;
+            border-left: 5px solid #3498db;
+            padding-left: 20px;
+            font-size: 2.2em;
+        }
+
+        h3 {
+            color: #2c3e50;
+            margin-top: 35px;
+            margin-bottom: 20px;
+            font-size: 1.7em;
+            border-bottom: 2px solid #ecf0f1;
+            padding-bottom: 10px;
+        }
+
+        h4 {
+            color: #34495e;
+            margin-top: 25px;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+
+        p {
+            margin-bottom: 18px;
+            line-height: 1.8;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 25px 0;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        th,
+        td {
+            border: 1px solid #ddd;
+            padding: 15px;
+            text-align: left;
+        }
+
+        th {
+            background: #3498db;
+            color: white;
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 0.9em;
+        }
+
+        tr:nth-child(even) {
+            background: #f9f9f9;
+        }
+
+        tr:hover {
+            background: #ecf0f1;
+        }
+
+        hr {
+            border: none;
+            border-top: 3px solid #ecf0f1;
+            margin: 50px 0;
+        }
+
+        ul {
+            margin-left: 35px;
+            margin-bottom: 20px;
+        }
+
+        li {
+            margin-bottom: 10px;
+            line-height: 1.6;
+        }
+
+        strong {
+            color: #2980b9;
+        }
+
+        code {
+            background: #f4f4f4;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-family: 'Courier New', Consolas, monospace;
+            color: #e74c3c;
+            font-size: 0.92em;
+            border: 1px solid #e0e0e0;
+        }
+
+        .print-button {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            border: none;
+            padding: 18px 35px;
+            border-radius: 50px;
+            cursor: pointer;
+            font-size: 18px;
+            font-weight: bold;
+            box-shadow: 0 6px 20px rgba(52, 152, 219, 0.4);
+            transition: all 0.3s;
+            z-index: 1000;
+        }
+
+        .print-button:hover {
+            background: linear-gradient(135deg, #2980b9, #21618c);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(52, 152, 219, 0.5);
+        }
+
+        @media print {
+            .print-button {
+                display: none;
+            }
+
+            .container {
+                box-shadow: none;
+                padding: 20px;
+            }
+
+            body {
+                background: white;
+                padding: 0;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+
+            h1 {
+                font-size: 2em;
+            }
+
+            h2 {
+                font-size: 1.6em;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>📚 DICCIONARIO DE DATOS</h1>
+
+        <p style="text-align: center; font-size: 1.1em; color: #7f8c8d;">
+            <strong>Sistema de Gestión para Pedidos - Manufacturas R.J. Atlántico C.A</strong><br>
+            <strong>Base de Datos: atlantico_db</strong>
+        </p>
+
+        <hr>
+
+        <h2>1. TABLAS MAESTRAS</h2>
+
+        <h3>1.1. Tabla: banco</h3>
+        <p>Almacena el catálogo de bancos para métodos de pago electrónicos.</p>
+        <table>
+            <thead>
+                <tr>
+                    <th>Campo</th>
+                    <th>Tipo de Dato</th>
+                    <th>Longitud</th>
+                    <th>Restricciones</th>
+                    <th>Descripción</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>id</td>
+                    <td>BIGINT</td>
+                    <td>-</td>
+                    <td>PK, AI, Unsigned</td>
+                    <td>Identificador único del banco.</td>
+                </tr>
+                <tr>
+                    <td>nombre</td>
+                    <td>VARCHAR</td>
+                    <td>191</td>
+                    <td>Not Null, Unique</td>
+                    <td>Nombre del banco.</td>
+                </tr>
+                <tr>
+                    <td>created_at</td>
+                    <td>TIMESTAMP</td>
+                    <td>-</td>
+                    <td>Nullable</td>
+                    <td>Fecha y hora de creación del registro.</td>
+                </tr>
+                <tr>
+                    <td>updated_at</td>
+                    <td>TIMESTAMP</td>
+                    <td>-</td>
+                    <td>Nullable</td>
+                    <td>Fecha y hora de última actualización.</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>1.2. Tabla: proveedor</h3>
+        <p>Almacena la información de los proveedores de insumos.</p>
+        <table>
+            <thead>
+                <tr>
+                    <th>Campo</th>
+                    <th>Tipo de Dato</th>
+                    <th>Longitud</th>
+                    <th>Restricciones</th>
+                    <th>Descripción</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>id</td>
+                    <td>BIGINT</td>
+                    <td>-</td>
+                    <td>PK, AI, Unsigned</td>
+                    <td>Identificador único del proveedor.</td>
+                </tr>
+                <tr>
+                    <td>razon_social</td>
+                    <td>VARCHAR</td>
+                    <td>100</td>
+                    <td>Not Null</td>
+                    <td>Razón social del proveedor.</td>
+                </tr>
+                <tr>
+                    <td>rif</td>
+                    <td>VARCHAR</td>
+                    <td>15</td>
+                    <td>Not Null, Unique</td>
+                    <td>RIF del proveedor.</td>
+                </tr>
+                <tr>
+                    <td>estado</td>
+                    <td>TINYINT</td>
+                    <td>1</td>
+                    <td>Not Null, Default: 1</td>
+                    <td>Estado del proveedor (1: Activo, 0: Inactivo).</td>
+                </tr>
+                <tr>
+                    <td>created_at</td>
+                    <td>TIMESTAMP</td>
+                    <td>-</td>
+                    <td>Nullable</td>
+                    <td>Fecha y hora de creación del registro.</td>
+                </tr>
+                <tr>
+                    <td>updated_at</td>
+                    <td>TIMESTAMP</td>
+                    <td>-</td>
+                    <td>Nullable</td>
+                    <td>Fecha y hora de última actualización.</td>
+                </tr>
+                <tr>
+                    <td>deleted_at</td>
+                    <td>TIMESTAMP</td>
+                    <td>-</td>
+                    <td>Nullable</td>
+                    <td>Fecha y hora de eliminación lógica (soft delete).</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>1.3. Tabla: persona</h3>
+        <p>Tabla que almacena los datos generales de todas las personas (clientes, usuarios).</p>
+        <table>
+            <thead>
+                <tr>
+                    <th>Campo</th>
+                    <th>Tipo de Dato</th>
+                    <th>Longitud</th>
+                    <th>Restricciones</th>
+                    <th>Descripción</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>id</td>
+                    <td>BIGINT</td>
+                    <td>-</td>
+                    <td>PK, AI, Unsigned</td>
+                    <td>Identificador único de la persona.</td>
+                </tr>
+                <tr>
+                    <td>nombre</td>
+                    <td>VARCHAR</td>
+                    <td>191</td>
+                    <td>Not Null</td>
+                    <td>Nombre de la persona.</td>
+                </tr>
+                <tr>
+                    <td>apellido</td>
+                    <td>VARCHAR</td>
+                    <td>191</td>
+                    <td>Not Null</td>
+                    <td>Apellido de la persona.</td>
+                </tr>
+                <tr>
+                    <td>documento_identidad</td>
+                    <td>VARCHAR</td>
+                    <td>191</td>
+                    <td>Not Null, Unique</td>
+                    <td>Número de documento de identidad.</td>
+                </tr>
+                <tr>
+                    <td>email</td>
+                    <td>VARCHAR</td>
+                    <td>191</td>
+                    <td>Not Null, Unique</td>
+                    <td>Correo electrónico de la persona.</td>
+                </tr>
+                <tr>
+                    <td>direccion</td>
+                    <td>TEXT</td>
+                    <td>-</td>
+                    <td>Nullable</td>
+                    <td>Dirección física de la persona.</td>
+                </tr>
+                <tr>
+                    <td>ciudad</td>
+                    <td>VARCHAR</td>
+                    <td>191</td>
+                    <td>Nullable</td>
+                    <td>Ciudad de residencia.</td>
+                </tr>
+                <tr>
+                    <td>sexo</td>
+                    <td>VARCHAR</td>
+                    <td>191</td>
+                    <td>Nullable</td>
+                    <td>Sexo de la persona.</td>
+                </tr>
+                <tr>
+                    <td>proveedores_id</td>
+                    <td>BIGINT</td>
+                    <td>-</td>
+                    <td>Not Null, Unsigned, FK</td>
+                    <td>ID del proveedor asociado.</td>
+                </tr>
+                <tr>
+                    <td>created_at</td>
+                    <td>TIMESTAMP</td>
+                    <td>-</td>
+                    <td>Nullable</td>
+                    <td>Fecha y hora de creación del registro.</td>
+                </tr>
+                <tr>
+                    <td>updated_at</td>
+                    <td>TIMESTAMP</td>
+                    <td>-</td>
+                    <td>Nullable</td>
+                    <td>Fecha y hora de última actualización.</td>
+                </tr>
+                <tr>
+                    <td>deleted_at</td>
+                    <td>TIMESTAMP</td>
+                    <td>-</td>
+                    <td>Nullable</td>
+                    <td>Fecha y hora de eliminación lógica (soft delete).</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>1.4. Tabla: cliente</h3>
+        <p>Almacena información específica de clientes, vinculada a una persona.</p>
+        <table>
+            <thead>
+                <tr>
+                    <th>Campo</th>
+                    <th>Tipo de Dato</th>
+                    <th>Longitud</th>
+                    <th>Restricciones</th>
+                    <th>Descripción</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>id</td>
+                    <td>BIGINT</td>
+                    <td>-</td>
+                    <td>PK, AI, Unsigned</td>
+                    <td>Identificador único del cliente.</td>
+                </tr>
+                <tr>
+                    <td>persona_id</td>
+                    <td>BIGINT</td>
+                    <td>-</td>
+                    <td>Nullable, Unsigned, FK</td>
+                    <td>ID de la persona asociada.</td>
+                </tr>
+                <tr>
+                    <td>tipo_cliente</td>
+                    <td>ENUM</td>
+                    <td>-</td>
+                    <td>Not Null</td>
+                    <td>Tipo de cliente (natural, juridico).</td>
+                </tr>
+                <tr>
+                    <td>estado</td>
+                    <td>TINYINT</td>
+                    <td>-</td>
+                    <td>Not Null, Default: 1</td>
+                    <td>Estado del cliente (1: Activo, 0: Inactivo).</td>
+                </tr>
+                <tr>
+                    <td>created_at</td>
+                    <td>TIMESTAMP</td>
+                    <td>-</td>
+                    <td>Nullable</td>
+                    <td>Fecha y hora de creación del registro.</td>
+                </tr>
+                <tr>
+                    <td>updated_at</td>
+                    <td>TIMESTAMP</td>
+                    <td>-</td>
+                    <td>Nullable</td>
+                    <td>Fecha y hora de última actualización.</td>
+                </tr>
+                <tr>
+                    <td>deleted_at</td>
+                    <td>TIMESTAMP</td>
+                    <td>-</td>
+                    <td>Nullable</td>
+                    <td>Fecha y hora de eliminación lógica (soft delete).</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>1.5. Tabla: telefono</h3>
+        <p>Almacena los números de teléfono de las personas.</p>
+        <table>
+            <thead>
+                <tr>
+                    <th>Campo</th>
+                    <th>Tipo de Dato</th>
+                    <th>Longitud</th>
+                    <th>Restricciones</th>
+                    <th>Descripción</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>id</td>
+                    <td>BIGINT</td>
+                    <td>-</td>
+                    <td>PK, AI, Unsigned</td>
+                    <td>Identificador único del teléfono.</td>
+                </tr>
+                <tr>
+                    <td>persona_id</td>
+                    <td>BIGINT</td>
+                    <td>-</td>
+                    <td>Not Null, Unsigned, FK</td>
+                    <td>ID de la persona propietaria.</td>
+                </tr>
+                <tr>
+                    <td>numero</td>
+                    <td>VARCHAR</td>
+                    <td>20</td>
+                    <td>Not Null</td>
+                    <td>Número de teléfono.</td>
+                </tr>
+                <tr>
+                    <td>tipo</td>
+                    <td>ENUM</td>
+                    <td>-</td>
+                    <td>Not Null, Default: 'movil'</td>
+                    <td>Tipo de teléfono (movil, trabajo, casa, otro).</td>
+                </tr>
+                <tr>
+                    <td>created_at</td>
+                    <td>TIMESTAMP</td>
+                    <td>-</td>
+                    <td>Nullable</td>
+                    <td>Fecha y hora de creación del registro.</td>
+                </tr>
+                <tr>
+                    <td>updated_at</td>
+                    <td>TIMESTAMP</td>
+                    <td>-</td>
+                    <td>Nullable</td>
+                    <td>Fecha y hora de última actualización.</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>1.6. Tabla: user</h3>
+        <p>Almacena las credenciales de acceso al sistema vinculadas a personas.</p>
+        <table>
+            <thead>
+                <tr>
+                    <th>Campo</th>
+                    <th>Tipo de Dato</th>
+                    <th>Longitud</th>
+                    <th>Restricciones</th>
+                    <th>Descripción</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>id</td>
+                    <td>BIGINT</td>
+                    <td>-</td>
+                    <td>PK, AI, Unsigned</td>
+                    <td>Identificador único del usuario.</td>
+                </tr>
+                <tr>
+                    <td>persona_id</td>
+                    <td>BIGINT</td>
+                    <td>-</td>
+                    <td>Nullable, Unsigned, FK</td>
+                    <td>ID de la persona asociada.</td>
+                </tr>
+                <tr>
+                    <td>role</td>
+                    <td>ENUM</td>
+                    <td>-</td>
+                    <td>Not Null</td>
+                    <td>Rol del usuario (Administrador, Supervisor, Operario, Almacenero).</td>
+                </tr>
+                <tr>
+                    <td>email_verified_at</td>
+                    <td>TIMESTAMP</td>
+                    <td>-</td>
+                    <td>Nullable</td>
+                    <td>Fecha y hora de verificación del email.</td>
+                </tr>
+                <tr>
+                    <td>password</td>
+                    <td>VARCHAR</td>
+                    <td>255</td>
+                    <td>Not Null</td>
+                    <td>Contraseña encriptada del usuario.</td>
+                </tr>
+                <tr>
+                    <td>avatar</td>
+                    <td>TEXT</td>
+                    <td>-</td>
+                    <td>Nullable</td>
+                    <td>Ruta de la imagen de perfil del usuario.</td>
+                </tr>
+                <tr>
+                    <td>estado</td>
+                    <td>TINYINT</td>
+                    <td>1</td>
+                    <td>Not Null, Default: 1</td>
+                    <td>Estado del usuario (1: Activo, 0: Inactivo).</td>
+                </tr>
+                <tr>
+                    <td>remember_token</td>
+                    <td>VARCHAR</td>
+                    <td>100</td>
+                    <td>Nullable</td>
+                    <td>Token para función "Recordarme".</td>
+                </tr>
+                <tr>
+                    <td>created_at</td>
+                    <td>TIMESTAMP</td>
+                    <td>-</td>
+                    <td>Nullable</td>
+                    <td>Fecha y hora de creación del registro.</td>
+                </tr>
+                <tr>
+                    <td>updated_at</td>
+                    <td>TIMESTAMP</td>
+                    <td>-</td>
+                    <td>Nullable</td>
+                    <td>Fecha y hora de última actualización.</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>1.7. Tabla: producto</h3>
+        <p>Almacena el catálogo de productos textiles que ofrece la empresa.</p>
+        <table>
+            <thead>
+                <tr>
+                    <th>Campo</th>
+                    <th>Tipo de Dato</th>
+                    <th>Longitud</th>
+                    <th>Restricciones</th>
+                    <th>Descripción</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>id</td>
+                    <td>BIGINT</td>
+                    <td>-</td>
+                    <td>PK, AI, Unsigned</td>
+                    <td>Identificador único del producto.</td>
+                </tr>
+                <tr>
+                    <td>nombre</td>
+                    <td>VARCHAR</td>
+                    <td>100</td>
+                    <td>Not Null</td>
+                    <td>Nombre del producto.</td>
+                </tr>
+                <tr>
+                    <td>descripcion</td>
+                    <td>TEXT</td>
+                    <td>-</td>
+                    <td>Nullable</td>
+                    <td>Descripción detallada del producto.</td>
+                </tr>
+                <tr>
+                    <td>modelo</td>
+                    <td>VARCHAR</td>
+                    <td>50</td>
+                    <td>Not Null</td>
+                    <td>Modelo del producto.</td>
+                </tr>
+                <tr>
+                    <td>precio_base</td>
+                    <td>DECIMAL</td>
+                    <td>10,2</td>
+                    <td>Not Null</td>
+                    <td>Precio base del producto.</td>
+                </tr>
+                <tr>
+                    <td>imagen</td>
+                    <td>VARCHAR</td>
+                    <td>255</td>
+                    <td>Nullable</td>
+                    <td>Ruta de la imagen del producto.</td>
+                </tr>
+                <tr>
+                    <td>estado</td>
+                    <td>TINYINT</td>
+                    <td>1</td>
+                    <td>Not Null, Default: 1</td>
+                    <td>Estado del producto (1: Activo, 0: Inactivo).</td>
+                </tr>
+                <tr>
+                    <td>created_at</td>
+                    <td>TIMESTAMP</td>
+                    <td>-</td>
+                    <td>Nullable</td>
+                    <td>Fecha y hora de creación del registro.</td>
+                </tr>
+                <tr>
+                    <td>updated_at</td>
+                    <td>TIMESTAMP</td>
+                    <td>-</td>
+                    <td>Nullable</td>
+                    <td>Fecha y hora de última actualización.</td>
+                </tr>
+                <tr>
+                    <td>deleted_at</td>
+                    <td>TIMESTAMP</td>
+                    <td>-</td>
+                    <td>Nullable</td>
+                    <td>Fecha y hora de eliminación lógica (soft delete).</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>1.8. Tabla: insumo</h3>
+        <p>Almacena el inventario de insumos necesarios para la producción.</p>
+        <table>
+            <thead>
+                <tr>
+                    <th>Campo</th>
+                    <th>Tipo de Dato</th>
+                    <th>Longitud</th>
+                    <th>Restricciones</th>
+                    <th>Descripción</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>id</td>
+                    <td>BIGINT</td>
+                    <td>-</td>
+                    <td>PK, AI, Unsigned</td>
+                    <td>Identificador único del insumo.</td>
+                </tr>
+                <tr>
+                    <td>nombre</td>
+                    <td>VARCHAR</td>
+                    <td>100</td>
+                    <td>Not Null</td>
+                    <td>Nombre del insumo.</td>
+                </tr>
+                <tr>
+                    <td>tipo</td>
+                    <td>ENUM</td>
+                    <td>-</td>
+                    <td>Not Null</td>
+                    <td>Tipo de insumo (Tela, Hilo, Botón, Cierre, Etiqueta, Otro).</td>
+                </tr>
+                <tr>
+                    <td>unidad_medida</td>
+                    <td>VARCHAR</td>
+                    <td>20</td>
+                    <td>Not Null</td>
+                    <td>Unidad de medida (metros, kilos, unidades).</td>
+                </tr>
+                <tr>
+                    <td>costo_unitario</td>
+                    <td>DECIMAL</td>
+                    <td>10,2</td>
+                    <td>Not Null</td>
+                    <td>Costo por unidad del insumo.</td>
+                </tr>
+                <tr>
+                    <td>stock_actual</td>
+                    <td>DECIMAL</td>
+                    <td>10,2</td>
+                    <td>Not Null</td>
+                    <td>Cantidad disponible en inventario.</td>
+                </tr>
+                <tr>
+                    <td>stock_minimo</td>
+                    <td>DECIMAL</td>
+                    <td>10,2</td>
+                    <td>Not Null</td>
+                    <td>Cantidad mínima antes de generar alerta.</td>
+                </tr>
+                <tr>
+                    <td>proveedor_id</td>
+                    <td>BIGINT</td>
+                    <td>-</td>
+                    <td>Nullable, Unsigned, FK</td>
+                    <td>ID del proveedor principal del insumo.</td>
+                </tr>
+                <tr>
+                    <td>estado</td>
+                    <td>TINYINT</td>
+                    <td>1</td>
+                    <td>Not Null, Default: 1</td>
+                    <td>Estado del insumo (1: Activo, 0: Inactivo).</td>
+                </tr>
+                <tr>
+                    <td>created_at</td>
+                    <td>TIMESTAMP</td>
+                    <td>-</td>
+                    <td>Nullable</td>
+                    <td>Fecha y hora de creación del registro.</td>
+                </tr>
+                <tr>
+                    <td>updated_at</td>
+                    <td>TIMESTAMP</td>
+                    <td>-</td>
+                    <td>Nullable</td>
+                    <td>Fecha y hora de última actualización.</td>
+                </tr>
+                <tr>
+                    <td>deleted_at</td>
+                    <td>TIMESTAMP</td>
+                    <td>-</td>
+                    <td>Nullable</td>
+                    <td>Fecha y hora de eliminación lógica (soft delete).</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <hr>
+
+        <h2>2. TABLAS DE COTIZACIONES</h2>
+
+        <h3>2.1. Tabla: cotizacion</h3>
+        <p>Almacena las cotizaciones generadas para clientes.</p>
+        <table>
+            <thead>
+                <tr>
+                    <th>Campo</th>
+                    <th>Tipo de Dato</th>
+                    <th>Longitud</th>
+                    <th>Restricciones</th>
+                    <th>Descripción</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>id</td>
+                    <td>BIGINT</td>
+                    <td>-</td>
+                    <td>PK, AI, Unsigned</td>
+                    <td>Identificador único de la cotización.</td>
+                </tr>
+                <tr>
+                    <td>cliente_id</td>
+                    <td>BIGINT</td>
+                    <td>-</td>
+                    <td>Not Null, Unsigned, FK</td>
+                    <td>ID del cliente asociado.</td>
+                </tr>
+                <tr>
+                    <td>cliente_nombre</td>
+                    <td>VARCHAR</td>
+                    <td>191</td>
+                    <td>Not Null</td>
+                    <td>Nombre del cliente (desnormalizado).</td>
+                </tr>
+                <tr>
+                    <td>cliente_email</td>
+                    <td>VARCHAR</td>
+                    <td>191</td>
+                    <td>Nullable</td>
+                    <td>Email del cliente (desnormalizado).</td>
+                </tr>
+                <tr>
+                    <td>cliente_telefono</td>
+                    <td>VARCHAR</td>
+                    <td>191</td>
+                    <td>Nullable</td>
+                    <td>Teléfono del cliente (desnormalizado).</td>
+                </tr>
+                <tr>
+                    <td>ci_rif</td>
+                    <td>VARCHAR</td>
+                    <td>191</td>
+                    <td>Nullable</td>
+                    <td>CI o RIF del cliente.</td>
+                </tr>
+                <tr>
+                    <td>fecha_cotizacion</td>
+                    <td>DATE</td>
+                    <td>-</td>
+                    <td>Not Null</td>
+                    <td>Fecha de emisión de la cotización.</td>
+                </tr>
+                <tr>
+                    <td>fecha_validez</td>
+                    <td>DATE</td>
+                    <td>-</td>
+                    <td>Nullable</td>
+                    <td>Fecha de validez de la cotización.</td>
+                </tr>
+                <tr>
+                    <td>estado</td>
+                    <td>VARCHAR</td>
+                    <td>191</td>
+                    <td>Not Null, Default: 'Pendiente'</td>
+                    <td>Estado (Pendiente, Aprobada, Rechazada).</td>
+                </tr>
+                <tr>
+                    <td>total</td>
+                    <td>DECIMAL</td>
+                    <td>10,2</td>
+                    <td>Not Null, Default: 0.00</td>
+                    <td>Monto total de la cotización.</td>
+                </tr>
+                <tr>
+                    <td>created_at</td>
+                    <td>TIMESTAMP</td>
+                    <td>-</td>
+                    <td>Nullable</td>
+                    <td>Fecha y hora de creación del registro.</td>
+                </tr>
+                <tr>
+                    <td>updated_at</td>
+                    <td>TIMESTAMP</td>
+                    <td>-</td>
+                    <td>Nullable</td>
+                    <td>Fecha y hora de última actualización.</td>
+                </tr>
+                <tr>
+                    <td>deleted_at</td>
+                    <td>TIMESTAMP</td>
+                    <td>-</td>
+                    <td>Nullable</td>
+                    <td>Fecha y hora de eliminación lógica (soft delete).</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>2.2. Tabla: detalle_cotizacion</h3>
+        <p>Almacena los productos incluidos en cada cotización.</p>
+        <table>
+            <thead>
+                <tr>
+                    <th>Campo</th>
+                    <th>Tipo de Dato</th>
+                    <th>Longitud</th>
+                    <th>Restricciones</th>
+                    <th>Descripción</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>id</td>
+                    <td>BIGINT</td>
+                    <td>-</td>
+                    <td>PK, AI, Unsigned</td>
+                    <td>Identificador único del detalle.</td>
+                </tr>
+                <tr>
+                    <td>cotizacion_id</td>
+                    <td>BIGINT</td>
+                    <td>-</td>
+                    <td>Not Null, Unsigned, FK</td>
+                    <td>ID de la cotización padre.</td>
+                </tr>
+                <tr>
+                    <td>producto_id</td>
+                    <td>BIGINT</td>
+                    <td>-</td>
+                    <td>Not Null, Unsigned, FK</td>
+                    <td>ID del producto cotizado.</td>
+                </tr>
+                <tr>
+                    <td>cantidad</td>
+                    <td>INT</td>
+                    <td>-</td>
+                    <td>Not Null</td>
+                    <td>Cantidad de unidades del producto.</td>
+                </tr>
+                <tr>
+                    <td>descripcion</td>
+                    <td>TEXT</td>
+                    <td>-</td>
+                    <td>Nullable</td>
+                    <td>Descripción o especificaciones.</td>
+                </tr>
+                <tr>
+                    <td>lleva_bordado</td>
+                    <td>TINYINT</td>
+                    <td>1</td>
+                    <td>Not Null, Default: 0</td>
+                    <td>Indica si lleva bordado (1: Sí, 0: No).</td>
+                </tr>
+                <tr>
+                    <td>nombre_logo</td>
+                    <td>VARCHAR</td>
+                    <td>191</td>
+                    <td>Nullable</td>
+                    <td>Nombre o texto del logo a bordar.</td>
+                </tr>
+                <tr>
+                    <td>ubicacion_logo</td>
+                    <td>VARCHAR</td>
+                    <td>255</td>
+                    <td>Nullable</td>
+                    <td>Ubicación del logo en la prenda.</td>
+                </tr>
+                <tr>
+                    <td>cantidad_logo</td>
+                    <td>INT</td>
+                    <td>-</td>
+                    <td>Nullable</td>
+                    <td>Cantidad de logos a bordar.</td>
+                </tr>
+                <tr>
+                    <td>talla</td>
+                    <td>VARCHAR</td>
+                    <td>191</td>
+                    <td>Nullable</td>
+                    <td>Talla específica solicitada.</td>
+                </tr>
+                <tr>
+                    <td>precio_unitario</td>
+                    <td>DECIMAL</td>
+                    <td>10,2</td>
+                    <td>Not Null, Default: 0.00</td>
+                    <td>Precio unitario del producto.</td>
+                </tr>
+                <tr>
+                    <td>created_at</td>
+                    <td>TIMESTAMP</td>
+                    <td>-</td>
+                    <td>Nullable</td>
+                    <td>Fecha y hora de creación del registro.</td>
+                </tr>
+                <tr>
+                    <td>updated_at</td>
+                    <td>TIMESTAMP</td>
+                    <td>-</td>
+                    <td>Nullable</td>
+                    <td>Fecha y hora de última actualización.</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <hr>
+
+        <h2>3. TABLAS DE PEDIDOS</h2>
+
+        <h3>3.1. Tabla: pedido</h3>
+        <p>Almacena los pedidos confirmados de los clientes.</p>
+        <table>
+            <thead>
+                <tr>
+                    <th>Campo</th>
+                    <th>Tipo de Dato</th>
+                    <th>Longitud</th>
+                    <th>Restricciones</th>
+                    <th>Descripción</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>id</td>
+                    <td>BIGINT</td>
+                    <td>-</td>
+                    <td>PK, AI, Unsigned</td>
+                    <td>Identificador único del pedido.</td>
+                </tr>
+                <tr>
+                    <td>cliente_id</td>
+                    <td>BIGINT</td>
+                    <td>-</td>
+                    <td>Not Null, Unsigned, FK</td>
+                    <td>ID del cliente que realiza el pedido.</td>
+                </tr>
+                <tr>
+                    <td>cliente_nombre</td>
+                    <td>VARCHAR</td>
+                    <td>255</td>
+                    <td>Not Null</td>
+                    <td>Nombre del cliente (desnormalizado).</td>
+                </tr>
+                <tr>
+                    <td>cliente_email</td>
+                    <td>VARCHAR</td>
+                    <td>255</td>
+                    <td>Nullable</td>
+                    <td>Email del cliente (desnormalizado).</td>
+                </tr>
+                <tr>
+                    <td>cliente_telefono</td>
+                    <td>VARCHAR</td>
+                    <td>255</td>
+                    <td>Nullable</td>
+                    <td>Teléfono del cliente (desnormalizado).</td>
+                </tr>
+                <tr>
+                    <td>ci_rif</td>
+                    <td>VARCHAR</td>
+                    <td>255</td>
+                    <td>Nullable</td>
+                    <td>CI o RIF del cliente.</td>
+                </tr>
+                <tr>
+                    <td>fecha_pedido</td>
+                    <td>DATE</td>
+                    <td>-</td>
+                    <td>Not Null</td>
+                    <td>Fecha de creación del pedido.</td>
+                </tr>
+                <tr>
+                    <td>fecha_entrega_estimada</td>
+                    <td>DATE</td>
+                    <td>-</td>
+                    <td>Nullable</td>
+                    <td>Fecha estimada de entrega.</td>
+                </tr>
+                <tr>
+                    <td>estado</td>
+                    <td>VARCHAR</td>
+                    <td>255</td>
+                    <td>Not Null, Default: 'Pendiente'</td>
+                    <td>Estado (Pendiente, Procesando, Completado, Cancelado).</td>
+                </tr>
+                <tr>
+                    <td>prioridad</td>
+                    <td>VARCHAR</td>
+                    <td>191</td>
+                    <td>Not Null, Default: 'Normal'</td>
+                    <td>Prioridad (Normal, Alta, Urgente).</td>
+                </tr>
+                <tr>
+                    <td>total</td>
+                    <td>DECIMAL</td>
+                    <td>10,2</td>
+                    <td>Not Null, Default: 0.00</td>
+                    <td>Monto total del pedido.</td>
+                </tr>
+                <tr>
+                    <td>abono</td>
+                    <td>DECIMAL</td>
+                    <td>10,2</td>
+                    <td>Not Null, Default: 0.00</td>
+                    <td>Monto abonado por el cliente.</td>
+                </tr>
+                <tr>
+                    <td>efectivo_pagado</td>
+                    <td>TINYINT</td>
+                    <td>1</td>
+                    <td>Not Null, Default: 0</td>
+                    <td>Indica si se pagó con efectivo (1: Sí, 0: No).</td>
+                </tr>
+                <tr>
+                    <td>transferencia_pagado</td>
+                    <td>TINYINT</td>
+                    <td>1</td>
+                    <td>Not Null, Default: 0</td>
+                    <td>Indica si se pagó con transferencia (1: Sí, 0: No).</td>
+                </tr>
+                <tr>
+                    <td>pago_movil_pagado</td>
+                    <td>TINYINT</td>
+                    <td>1</td>
+                    <td>Not Null, Default: 0</td>
+                    <td>Indica si se pagó con pago móvil (1: Sí, 0: No).</td>
+                </tr>
+                <tr>
+                    <td>referencia_transferencia</td>
+                    <td>VARCHAR</td>
+                    <td>191</td>
+                    <td>Nullable</td>
+                    <td>Número de referencia de transferencia.</td>
+                </tr>
+                <tr>
+                    <td>referencia_pago_movil</td>
+                    <td>VARCHAR</td>
+                    <td>191</td>
+                    <td>Nullable</td>
+                    <td>Número de referencia de pago móvil.</td>
+                </tr>
+                <tr>
+                    <td>banco_id</td>
+                    <td>BIGINT</td>
+                    <td>-</td>
+                    <td>Nullable, Unsigned, FK</td>
+                    <td>ID del banco usado para pago electrónico.</td>
+                </tr>
+                <tr>
+                    <td>user_id</td>
+                    <td>BIGINT</td>
+                    <td>-</td>
+                    <td>Not Null, Unsigned, FK</td>
+                    <td>ID del usuario que creó el pedido.</td>
+                </tr>
+                <tr>
+                    <td>created_at</td>
+                    <td>TIMESTAMP</td>
+                    <td>-</td>
+                    <td>Nullable</td>
+                    <td>Fecha y hora de creación del registro.</td>
+                </tr>
+                <tr>
+                    <td>updated_at</td>
+                    <td>TIMESTAMP</td>
+                    <td>-</td>
+                    <td>Nullable</td>
+                    <td>Fecha y hora de última actualización.</td>
+                </tr>
+                <tr>
+                    <td>deleted_at</td>
+                    <td>TIMESTAMP</td>
+                    <td>-</td>
+                    <td>Nullable</td>
+                    <td>Fecha y hora de eliminación lógica (soft delete).</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>3.2. Tabla: detalle_pedido</h3>
+        <p>Almacena los productos incluidos en cada pedido con sus especificaciones.</p>
+        <table>
+            <thead>
+                <tr>
+                    <th>Campo</th>
+                    <th>Tipo de Dato</th>
+                    <th>Longitud</th>
+                    <th>Restricciones</th>
+                    <th>Descripción</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>id</td>
+                    <td>BIGINT</td>
+                    <td>-</td>
+                    <td>PK, AI, Unsigned</td>
+                    <td>Identificador único del detalle.</td>
+                </tr>
+                <tr>
+                    <td>pedido_id</td>
+                    <td>BIGINT</td>
+                    <td>-</td>
+                    <td>Not Null, Unsigned, FK</td>
+                    <td>ID del pedido padre.</td>
+                </tr>
+                <tr>
+                    <td>producto_id</td>
+                    <td>BIGINT</td>
+                    <td>-</td>
+                    <td>Not Null, Unsigned, FK</td>
+                    <td>ID del producto solicitado.</td>
+                </tr>
+                <tr>
+                    <td>cantidad</td>
+                    <td>INT</td>
+                    <td>-</td>
+                    <td>Not Null</td>
+                    <td>Cantidad de unidades del producto.</td>
+                </tr>
+                <tr>
+                    <td>descripcion</td>
+                    <td>TEXT</td>
+                    <td>-</td>
+                    <td>Nullable</td>
+                    <td>Descripción o especificaciones adicionales.</td>
+                </tr>
+                <tr>
+                    <td>lleva_bordado</td>
+                    <td>TINYINT</td>
+                    <td>1</td>
+                    <td>Not Null, Default: 0</td>
+                    <td>Indica si lleva bordado (1: Sí, 0: No).</td>
+                </tr>
+                <tr>
+                    <td>nombre_logo</td>
+                    <td>VARCHAR</td>
+                    <td>255</td>
+                    <td>Nullable</td>
+                    <td>Nombre o texto del logo a bordar.</td>
+                </tr>
+                <tr>
+                    <td>ubicacion_logo</td>
+                    <td>VARCHAR</td>
+                    <td>255</td>
+                    <td>Nullable</td>
+                    <td>Ubicación del logo en la prenda.</td>
+                </tr>
+                <tr>
+                    <td>cantidad_logo</td>
+                    <td>INT</td>
+                    <td>-</td>
+                    <td>Nullable</td>
+                    <td>Cantidad de logos a bordar.</td>
+                </tr>
+                <tr>
+                    <td>color</td>
+                    <td>VARCHAR</td>
+                    <td>50</td>
+                    <td>Nullable</td>
+                    <td>Color específico solicitado.</td>
+                </tr>
+                <tr>
+                    <td>talla</td>
+                    <td>VARCHAR</td>
+                    <td>50</td>
+                    <td>Nullable</td>
+                    <td>Talla específica solicitada.</td>
+                </tr>
+                <tr>
+                    <td>precio_unitario</td>
+                    <td>DECIMAL</td>
+                    <td>10,2</td>
+                    <td>Not Null</td>
+                    <td>Precio unitario del producto.</td>
+                </tr>
+                <tr>
+                    <td>created_at</td>
+                    <td>TIMESTAMP</td>
+                    <td>-</td>
+                    <td>Nullable</td>
+                    <td>Fecha y hora de creación del registro.</td>
+                </tr>
+                <tr>
+                    <td>updated_at</td>
+                    <td>TIMESTAMP</td>
+                    <td>-</td>
+                    <td>Nullable</td>
+                    <td>Fecha y hora de última actualización.</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>3.3. Tabla: detalle_pedido_insumo</h3>
+        <p>Tabla intermedia que almacena los insumos estimados por cada detalle de pedido.</p>
+        <table>
+            <thead>
+                <tr>
+                    <th>Campo</th>
+                    <th>Tipo de Dato</th>
+                    <th>Longitud</th>
+                    <th>Restricciones</th>
+                    <th>Descripción</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>id</td>
+                    <td>BIGINT</td>
+                    <td>-</td>
+                    <td>PK, AI, Unsigned</td>
+                    <td>Identificador único del registro.</td>
+                </tr>
+                <tr>
+                    <td>detalle_pedido_id</td>
+                    <td>BIGINT</td>
+                    <td>-</td>
+                    <td>Not Null, Unsigned, FK</td>
+                    <td>ID del detalle de pedido.</td>
+                </tr>
+                <tr>
+                    <td>insumo_id</td>
+                    <td>BIGINT</td>
+                    <td>-</td>
+                    <td>Not Null, Unsigned, FK</td>
+                    <td>ID del insumo.</td>
+                </tr>
+                <tr>
+                    <td>cantidad_estimada</td>
+                    <td>DECIMAL</td>
+                    <td>8,2</td>
+                    <td>Not Null</td>
+                    <td>Cantidad estimada del insumo.</td>
+                </tr>
+                <tr>
+                    <td>created_at</td>
+                    <td>TIMESTAMP</td>
+                    <td>-</td>
+                    <td>Nullable</td>
+                    <td>Fecha y hora de creación del registro.</td>
+                </tr>
+                <tr>
+                    <td>updated_at</td>
+                    <td>TIMESTAMP</td>
+                    <td>-</td>
+                    <td>Nullable</td>
+                    <td>Fecha y hora de última actualización.</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <hr>
+
+        <h2>4. TABLAS DE PRODUCCIÓN</h2>
+
+        <h3>4.1. Tabla: orden_produccion</h3>
+        <p>Almacena las órdenes de producción para fabricar productos.</p>
+        <table>
+            <thead>
+                <tr>
+                    <th>Campo</th>
+                    <th>Tipo de Dato</th>
+                    <th>Longitud</th>
+                    <th>Restricciones</th>
+                    <th>Descripción</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>id</td>
+                    <td>BIGINT</td>
+                    <td>-</td>
+                    <td>PK, AI, Unsigned</td>
+                    <td>Identificador único de la orden de producción.</td>
+                </tr>
+                <tr>
+                    <td>pedido_id</td>
+                    <td>BIGINT</td>
+                    <td>-</td>
+                    <td>Nullable, Unsigned, FK</td>
+                    <td>ID del pedido origen.</td>
+                </tr>
+                <tr>
+                    <td>producto_id</td>
+                    <td>BIGINT</td>
+                    <td>-</td>
+                    <td>Not Null, Unsigned, FK</td>
+                    <td>ID del producto a fabricar.</td>
+                </tr>
+                <tr>
+                    <td>cantidad_solicitada</td>
+                    <td>INT</td>
+                    <td>-</td>
+                    <td>Not Null</td>
+                    <td>Cantidad total a producir.</td>
+                </tr>
+                <tr>
+                    <td>cantidad_producida</td>
+                    <td>INT</td>
+                    <td>-</td>
+                    <td>Not Null, Default: 0</td>
+                    <td>Cantidad ya producida.</td>
+                </tr>
+                <tr>
+                    <td>fecha_inicio</td>
+                    <td>DATE</td>
+                    <td>-</td>
+                    <td>Not Null</td>
+                    <td>Fecha de inicio de producción.</td>
+                </tr>
+                <tr>
+                    <td>fecha_fin_estimada</td>
+                    <td>DATE</td>
+                    <td>-</td>
+                    <td>Not Null</td>
+                    <td>Fecha estimada de finalización.</td>
+                </tr>
+                <tr>
+                    <td>estado</td>
+                    <td>ENUM</td>
+                    <td>-</td>
+                    <td>Not Null, Default: 'Pendiente'</td>
+                    <td>Estado (Pendiente, En Proceso, Finalizado, Cancelado).</td>
+                </tr>
+                <tr>
+                    <td>costo_estimado</td>
+                    <td>DECIMAL</td>
+                    <td>12,2</td>
+                    <td>Not Null, Default: 0.00</td>
+                    <td>Costo estimado de producción.</td>
+                </tr>
+                <tr>
+                    <td>logo</td>
+                    <td>TEXT</td>
+                    <td>-</td>
+                    <td>Nullable</td>
+                    <td>Ruta del archivo de imagen del logo.</td>
+                </tr>
+                <tr>
+                    <td>notas</td>
+                    <td>TEXT</td>
+                    <td>-</td>
+                    <td>Nullable</td>
+                    <td>Notas u observaciones de producción.</td>
+                </tr>
+                <tr>
+                    <td>created_by</td>
+                    <td>BIGINT</td>
+                    <td>-</td>
+                    <td>Not Null, Unsigned, FK</td>
+                    <td>ID del usuario que creó la orden.</td>
+                </tr>
+                <tr>
+                    <td>created_at</td>
+                    <td>TIMESTAMP</td>
+                    <td>-</td>
+                    <td>Nullable</td>
+                    <td>Fecha y hora de creación del registro.</td>
+                </tr>
+                <tr>
+                    <td>updated_at</td>
+                    <td>TIMESTAMP</td>
+                    <td>-</td>
+                    <td>Nullable</td>
+                    <td>Fecha y hora de última actualización.</td>
+                </tr>
+                <tr>
+                    <td>deleted_at</td>
+                    <td>TIMESTAMP</td>
+                    <td>-</td>
+                    <td>Nullable</td>
+                    <td>Fecha y hora de eliminación lógica (soft delete).</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>4.2. Tabla: detalle_orden_insumo</h3>
+        <p>Almacena los insumos asignados a cada orden de producción.</p>
+        <table>
+            <thead>
+                <tr>
+                    <th>Campo</th>
+                    <th>Tipo de Dato</th>
+                    <th>Longitud</th>
+                    <th>Restricciones</th>
+                    <th>Descripción</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>id</td>
+                    <td>BIGINT</td>
+                    <td>-</td>
+                    <td>PK, AI, Unsigned</td>
+                    <td>Identificador único del detalle.</td>
+                </tr>
+                <tr>
+                    <td>orden_produccion_id</td>
+                    <td>BIGINT</td>
+                    <td>-</td>
+                    <td>Not Null, Unsigned, FK</td>
+                    <td>ID de la orden de producción.</td>
+                </tr>
+                <tr>
+                    <td>insumo_id</td>
+                    <td>BIGINT</td>
+                    <td>-</td>
+                    <td>Not Null, Unsigned, FK</td>
+                    <td>ID del insumo asignado.</td>
+                </tr>
+                <tr>
+                    <td>cantidad_estimada</td>
+                    <td>DECIMAL</td>
+                    <td>10,2</td>
+                    <td>Not Null</td>
+                    <td>Cantidad estimada a utilizar.</td>
+                </tr>
+                <tr>
+                    <td>cantidad_utilizada</td>
+                    <td>DECIMAL</td>
+                    <td>10,2</td>
+                    <td>Not Null, Default: 0.00</td>
+                    <td>Cantidad realmente utilizada.</td>
+                </tr>
+                <tr>
+                    <td>created_at</td>
+                    <td>TIMESTAMP</td>
+                    <td>-</td>
+                    <td>Nullable</td>
+                    <td>Fecha y hora de creación del registro.</td>
+                </tr>
+                <tr>
+                    <td>updated_at</td>
+                    <td>TIMESTAMP</td>
+                    <td>-</td>
+                    <td>Nullable</td>
+                    <td>Fecha y hora de última actualización.</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>4.3. Tabla: produccion_diaria</h3>
+        <p>Almacena los registros diarios de producción por operario.</p>
+        <table>
+            <thead>
+                <tr>
+                    <th>Campo</th>
+                    <th>Tipo de Dato</th>
+                    <th>Longitud</th>
+                    <th>Restricciones</th>
+                    <th>Descripción</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>id</td>
+                    <td>BIGINT</td>
+                    <td>-</td>
+                    <td>PK, AI, Unsigned</td>
+                    <td>Identificador único del registro de producción.</td>
+                </tr>
+                <tr>
+                    <td>orden_id</td>
+                    <td>BIGINT</td>
+                    <td>-</td>
+                    <td>Not Null, Unsigned, FK</td>
+                    <td>ID de la orden de producción.</td>
+                </tr>
+                <tr>
+                    <td>operario_id</td>
+                    <td>BIGINT</td>
+                    <td>-</td>
+                    <td>Not Null, Unsigned, FK</td>
+                    <td>ID del operario (usuario).</td>
+                </tr>
+                <tr>
+                    <td>cantidad_producida</td>
+                    <td>INT</td>
+                    <td>-</td>
+                    <td>Not Null</td>
+                    <td>Cantidad de unidades producidas.</td>
+                </tr>
+                <tr>
+                    <td>cantidad_defectuosa</td>
+                    <td>INT</td>
+                    <td>-</td>
+                    <td>Not Null, Default: 0</td>
+                    <td>Cantidad de unidades defectuosas.</td>
+                </tr>
+                <tr>
+                    <td>observaciones</td>
+                    <td>TEXT</td>
+                    <td>-</td>
+                    <td>Nullable</td>
+                    <td>Observaciones o incidencias del día.</td>
+                </tr>
+                <tr>
+                    <td>created_at</td>
+                    <td>TIMESTAMP</td>
+                    <td>-</td>
+                    <td>Nullable</td>
+                    <td>Fecha y hora de creación del registro.</td>
+                </tr>
+                <tr>
+                    <td>updated_at</td>
+                    <td>TIMESTAMP</td>
+                    <td>-</td>
+                    <td>Nullable</td>
+                    <td>Fecha y hora de última actualización.</td>
+                </tr>
+                <tr>
+                    <td>deleted_at</td>
+                    <td>TIMESTAMP</td>
+                    <td>-</td>
+                    <td>Nullable</td>
+                    <td>Fecha y hora de eliminación lógica (soft delete).</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <hr>
+
+        <h2>5. TABLAS DE INVENTARIO</h2>
+
+        <h3>5.1. Tabla: movimiento_insumo</h3>
+        <p>Almacena el historial de movimientos de inventario de insumos.</p>
+        <table>
+            <thead>
+                <tr>
+                    <th>Campo</th>
+                    <th>Tipo de Dato</th>
+                    <th>Longitud</th>
+                    <th>Restricciones</th>
+                    <th>Descripción</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>id</td>
+                    <td>BIGINT</td>
+                    <td>-</td>
+                    <td>PK, Unsigned</td>
+                    <td>Identificador único del movimiento.</td>
+                </tr>
+                <tr>
+                    <td>insumo_id</td>
+                    <td>BIGINT</td>
+                    <td>-</td>
+                    <td>Not Null, Unsigned, FK</td>
+                    <td>ID del insumo afectado.</td>
+                </tr>
+                <tr>
+                    <td>tipo_movimiento</td>
+                    <td>ENUM</td>
+                    <td>-</td>
+                    <td>Not Null</td>
+                    <td>Tipo de movimiento (Entrada, Salida).</td>
+                </tr>
+                <tr>
+                    <td>cantidad</td>
+                    <td>DECIMAL</td>
+                    <td>10,2</td>
+                    <td>Not Null</td>
+                    <td>Cantidad del movimiento.</td>
+                </tr>
+                <tr>
+                    <td>stock_anterior</td>
+                    <td>DECIMAL</td>
+                    <td>10,2</td>
+                    <td>Not Null</td>
+                    <td>Stock antes del movimiento.</td>
+                </tr>
+                <tr>
+                    <td>stock_nuevo</td>
+                    <td>DECIMAL</td>
+                    <td>10,2</td>
+                    <td>Not Null</td>
+                    <td>Stock después del movimiento.</td>
+                </tr>
+                <tr>
+                    <td>motivo</td>
+                    <td>TEXT</td>
+                    <td>-</td>
+                    <td>Nullable</td>
+                    <td>Motivo o descripción del movimiento.</td>
+                </tr>
+                <tr>
+                    <td>created_by</td>
+                    <td>BIGINT</td>
+                    <td>-</td>
+                    <td>Not Null, Unsigned, FK</td>
+                    <td>ID del usuario que registró el movimiento.</td>
+                </tr>
+                <tr>
+                    <td>created_at</td>
+                    <td>TIMESTAMP</td>
+                    <td>-</td>
+                    <td>Nullable</td>
+                    <td>Fecha y hora de creación del registro.</td>
+                </tr>
+                <tr>
+                    <td>updated_at</td>
+                    <td>TIMESTAMP</td>
+                    <td>-</td>
+                    <td>Nullable</td>
+                    <td>Fecha y hora de última actualización.</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <hr>
+
+        <h2>RESUMEN DE TABLAS</h2>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Tabla</th>
+                    <th>Categoría</th>
+                    <th>Total de Campos</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>1</td>
+                    <td>banco</td>
+                    <td>Maestros</td>
+                    <td>4</td>
+                </tr>
+                <tr>
+                    <td>2</td>
+                    <td>proveedor</td>
+                    <td>Maestros</td>
+                    <td>7</td>
+                </tr>
+                <tr>
+                    <td>3</td>
+                    <td>persona</td>
+                    <td>Maestros</td>
+                    <td>12</td>
+                </tr>
+                <tr>
+                    <td>4</td>
+                    <td>cliente</td>
+                    <td>Maestros</td>
+                    <td>7</td>
+                </tr>
+                <tr>
+                    <td>5</td>
+                    <td>telefono</td>
+                    <td>Maestros</td>
+                    <td>6</td>
+                </tr>
+                <tr>
+                    <td>6</td>
+                    <td>user</td>
+                    <td>Autenticación</td>
+                    <td>10</td>
+                </tr>
+                <tr>
+                    <td>7</td>
+                    <td>producto</td>
+                    <td>Productos</td>
+                    <td>10</td>
+                </tr>
+                <tr>
+                    <td>8</td>
+                    <td>insumo</td>
+                    <td>Insumos</td>
+                    <td>12</td>
+                </tr>
+                <tr>
+                    <td>9</td>
+                    <td>cotizacion</td>
+                    <td>Cotizaciones</td>
+                    <td>13</td>
+                </tr>
+                <tr>
+                    <td>10</td>
+                    <td>detalle_cotizacion</td>
+                    <td>Cotizaciones</td>
+                    <td>13</td>
+                </tr>
+                <tr>
+                    <td>11</td>
+                    <td>pedido</td>
+                    <td>Pedidos</td>
+                    <td>21</td>
+                </tr>
+                <tr>
+                    <td>12</td>
+                    <td>detalle_pedido</td>
+                    <td>Pedidos</td>
+                    <td>14</td>
+                </tr>
+                <tr>
+                    <td>13</td>
+                    <td>detalle_pedido_insumo</td>
+                    <td>Pedidos</td>
+                    <td>6</td>
+                </tr>
+                <tr>
+                    <td>14</td>
+                    <td>orden_produccion</td>
+                    <td>Producción</td>
+                    <td>15</td>
+                </tr>
+                <tr>
+                    <td>15</td>
+                    <td>detalle_orden_insumo</td>
+                    <td>Producción</td>
+                    <td>7</td>
+                </tr>
+                <tr>
+                    <td>16</td>
+                    <td>produccion_diaria</td>
+                    <td>Producción</td>
+                    <td>9</td>
+                </tr>
+                <tr>
+                    <td>17</td>
+                    <td>movimiento_insumo</td>
+                    <td>Inventario</td>
+                    <td>10</td>
+                </tr>
+                <tr style="background: #3498db; color: white; font-weight: bold;">
+                    <td><strong>TOTAL</strong></td>
+                    <td colspan="2"><strong>17 TABLAS</strong></td>
+                    <td><strong>176 CAMPOS</strong></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <hr>
+
+        <h2>RELACIONES PRINCIPALES (FOREIGN KEYS)</h2>
+
+        <h4>Maestros:</h4>
+        <ul>
+            <li><code>persona.proveedores_id</code> → <code>proveedor.id</code> (ON DELETE NO ACTION)</li>
+            <li><code>cliente.persona_id</code> → <code>persona.id</code> (ON DELETE CASCADE)</li>
+            <li><code>telefono.persona_id</code> → <code>persona.id</code> (ON DELETE CASCADE)</li>
+            <li><code>user.persona_id</code> → <code>persona.id</code> (ON DELETE CASCADE)</li>
+            <li><code>insumo.proveedor_id</code> → <code>proveedor.id</code> (ON DELETE SET NULL)</li>
+        </ul>
+
+        <h4>Cotizaciones:</h4>
+        <ul>
+            <li><code>cotizacion.cliente_id</code> → <code>cliente.id</code> (ON DELETE NO ACTION)</li>
+            <li><code>detalle_cotizacion.cotizacion_id</code> → <code>cotizacion.id</code> (ON DELETE CASCADE)</li>
+            <li><code>detalle_cotizacion.producto_id</code> → <code>producto.id</code> (ON DELETE CASCADE)</li>
+        </ul>
+
+        <h4>Pedidos:</h4>
+        <ul>
+            <li><code>pedido.cliente_id</code> → <code>cliente.id</code> (ON DELETE NO ACTION)</li>
+            <li><code>pedido.user_id</code> → <code>user.id</code> (ON DELETE CASCADE)</li>
+            <li><code>pedido.banco_id</code> → <code>banco.id</code> (ON DELETE SET NULL)</li>
+            <li><code>detalle_pedido.pedido_id</code> → <code>pedido.id</code> (ON DELETE CASCADE)</li>
+            <li><code>detalle_pedido.producto_id</code> → <code>producto.id</code> (ON DELETE CASCADE)</li>
+            <li><code>detalle_pedido_insumo.detalle_pedido_id</code> → <code>detalle_pedido.id</code> (ON DELETE
+                CASCADE)</li>
+            <li><code>detalle_pedido_insumo.insumo_id</code> → <code>insumo.id</code> (ON DELETE CASCADE)</li>
+        </ul>
+
+        <h4>Producción:</h4>
+        <ul>
+            <li><code>orden_produccion.pedido_id</code> → <code>pedido.id</code> (ON DELETE SET NULL)</li>
+            <li><code>orden_produccion.producto_id</code> → <code>producto.id</code> (ON DELETE CASCADE)</li>
+            <li><code>orden_produccion.created_by</code> → <code>user.id</code></li>
+            <li><code>detalle_orden_insumo.orden_produccion_id</code> → <code>orden_produccion.id</code> (ON DELETE
+                CASCADE)</li>
+            <li><code>detalle_orden_insumo.insumo_id</code> → <code>insumo.id</code> (ON DELETE CASCADE)</li>
+            <li><code>produccion_diaria.orden_id</code> → <code>orden_produccion.id</code> (ON DELETE CASCADE)</li>
+            <li><code>produccion_diaria.operario_id</code> → <code>user.id</code> (ON DELETE CASCADE)</li>
+        </ul>
+
+        <h4>Inventario:</h4>
+        <ul>
+            <li><code>movimiento_insumo.insumo_id</code> → <code>insumo.id</code> (ON DELETE CASCADE)</li>
+            <li><code>movimiento_insumo.created_by</code> → <code>user.id</code></li>
+        </ul>
+
+        <hr>
+
+        <h2>ÍNDICES ÚNICOS</h2>
+
+        <ul>
+            <li><code>banco.nombre</code> → UNIQUE</li>
+            <li><code>proveedor.rif</code> → UNIQUE</li>
+            <li><code>persona.documento_identidad</code> → UNIQUE</li>
+            <li><code>persona.email</code> → UNIQUE</li>
+            <li><code>detalle_pedido_insumo(detalle_pedido_id, insumo_id)</code> → UNIQUE (composite)</li>
+        </ul>
+
+        <hr>
+
+        <p style="text-align: center; margin-top: 50px; font-size: 1.1em; color: #7f8c8d;">
+            <strong>Documento generado para:</strong><br>
+            Sistema de Gestión para Pedidos - Manufacturas R.J. Atlántico C.A<br>
+            Grupo Textil - Sección 536<br>
+            PNF Informática - UPTP "JJ Montilla"<br>
+            <strong>Fecha:</strong> Diciembre 2025
+        </p>
+
+    </div>
+
+    <button class="print-button" onclick="window.print()">🖨️ Imprimir / Guardar PDF</button>
+
+</body>
+
+</html>

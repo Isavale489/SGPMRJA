@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+        <meta name="description" content="" />
+        <meta name="author" content="" />
+        <title>Manufacturas R.J. Atlantico</title>
+        <!-- Favicon-->
+        <link rel="icon" type="image/x-icon" href="assets/favicon.ico" />
+        <!-- FontAwesome-->
+        <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+        <!-- Bootstrap icons-->
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.5.0/font/bootstrap-icons.css" rel="stylesheet" />
+        <!-- Core theme CSS (includes Bootstrap)-->
+        <link href="css/styles.css" rel="stylesheet" />
+    </head>
+    <body class="d-flex flex-column h-100">
+        <main class="flex-shrink-0">
+            <!-- Navigation-->
+            <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+                <div class="container px-5">
+                    <a class="navbar-brand" href="index.html"><img src="img/atlantico-logo.png" alt="Logo de la empresa" style="height: 70px;"></a>
+                    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation"><span class="navbar-toggler-icon"></span></button>
+                    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                        <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
+                            <li class="nav-item"><a class="nav-link" href="index.html">Inicio</a></li>
+                            <li class="nav-item"><a class="nav-link" href="about.html">Sobre Nosotros</a></li>
+                            <li class="nav-item"><a class="nav-link" href="contact.html">Contactanos</a></li>
+                            <li class="nav-item"><a class="nav-link" href="faq.html">Preg. Freq.</a></li>
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" id="navbarDropdownPortfolio" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">Catalogo</a>
+                                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdownPortfolio">
+                                    <li><a class="dropdown-item" href="portfolio-overview.html">Catalogo General</a></li>
+                                </ul>
+                            </li>
+                        </ul>
+                     <!-- Botones Iniciar Sesión y Registrarse -->
+                    <div class="d-flex">
+                        <a href="login.html" class="btn btn-outline-light me-2 custom-btn">Iniciar Sesión</a>
+                        <a href="register.html" class="btn btn-primary custom-btn">Registrarse</a>
+                    </div>
+                    </div>
+                </div>
+            </nav>
+            <!-- Header-->
+            <header>
+                <div id="heroCarousel" class="carousel slide" data-bs-ride="carousel">
+                    <div class="carousel-indicators">
+                        <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="0" class="active" aria-current="true" aria-label="Slide 1"></button>
+                        <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="1" aria-label="Slide 2"></button>
+                        <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="2" aria-label="Slide 3"></button>
+                    </div>
+                    <div class="carousel-inner">
+                        <div class="carousel-item active" data-bs-interval="7000">
+                            <img src="img/mujer-trabajando-en-una-maquina-de-coser-con-tela-azul.jpg" class="d-block w-100" alt="Gestión Integral de Pedidos">
+                            <div class="carousel-caption">
+                                <div class="container">
+                                    <div class="text-center text-xl-start p-3 rounded" style="background-color: rgba(0, 0, 0, 0.5);">
+                                        <h1 class="display-5 fw-bolder text-white mb-2">Gestión Integral de Pedidos:</h1>
+                                        <p class="lead fw-normal text-blue-50 mb-4 text-justify-custom">El sistema cubrirá el ciclo completo de gestión de pedidos, desde su registro inicial hasta su entrega final.</p> <!-- Cambiado de text-blue-50 a text-white-50 para mejor contraste -->
+                                        <div class="d-grid gap-3 d-sm-flex justify-content-sm-center justify-content-xl-start">
+                                            <a class="btn btn-primary btn-lg px-4 me-sm-3" href="#features">Empecemos</a>
+                                            <a class="btn btn-outline-light btn-lg px-4" href="#blog">Leer más</a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="carousel-item" data-bs-interval="7000">
+                            <img src="img/maquina-textil-industrial-980.jpg" class="d-block w-100" alt="Servicio de Bordado de Calidad">
+                            <div class="carousel-caption">
+                                <div class="container">
+                                    <div class="text-center text-xl-start p-3 rounded" style="background-color: rgba(0, 0, 0, 0.5);">
+                                        <h2 class="fw-bolder text-white mb-2 text-center">Servicio de Bordado Profesional</h2>
+                                        <p class="lead text-blue-50 mb-4 text-center">Calidad y precisión en cada puntada para realzar tu marca.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="carousel-item" data-bs-interval="7000">
+                            <img src="img/grupo-pai.jpg" class="d-block w-100" alt="Variedad de Productos Textiles">
+                            <div class="carousel-caption">
+                                <div class="container ">
+                                     <div class="text-center text-xl-start p-3 rounded" style="background-color: rgba(0, 0, 0, 0.5);">
+                                        <h2 class="fw-bolder text-white mb-2">Explora nuestro Catálogo General de Productos</h2>
+                                        <p class="lead text-blue-50 mb-4 text-justify-custom">Descubre nuestras soluciones textiles para empresas e instituciones.</p>
+                                        <div class="d-grid gap-3 d-sm-flex justify-content-sm-center justify-content-xl-start">
+                                            <a class="btn btn-primary btn-lg px-4 me-sm-3" href="portfolio-overview.html">Ver Catálogo</a>
+                                            <a class="btn btn-outline-light btn-lg px-4" href="contact.html">Contáctanos</a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <button class="carousel-control-prev" type="button" data-bs-target="#heroCarousel" data-bs-slide="prev">
+                        <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                        <span class="visually-hidden">Previous</span>
+                    </button>
+                    <button class="carousel-control-next" type="button" data-bs-target="#heroCarousel" data-bs-slide="next">
+                        <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                        <span class="visually-hidden">Next</span>
+                    </button>
+                </div>
+            </header>
+            <!-- Features section-->
+            <section class="py-5" id="features">
+                <div class="container px-5 my-5">
+                    <div class="row gx-5">
+                        <div class="col-lg-4 mb-5 mb-lg-0"><h2 class="fw-bolder mb-0">Servicios Destacados:</h2><br><img class="img-fluid rounded mb-5 mb-lg-0" src="img/servicio-bordadora.jpg" alt="..." /></div>
+                        <div class="col-lg-8">
+                            <div class="row gx-5 row-cols-1 row-cols-md-2">
+                                <div class="col mb-5 h-100">
+                                    <div class="feature bg-primary bg-gradient text-white rounded-3 mb-3"><i class="bi bi-scissors"></i></div>
+                                    <h2 class="h5">Confección de Camisas, chemises y franelas</h2>
+                                    <p class="mb-0 text-justify-custom">Fabricamos Chemises, camisas y franelas, adaptadas a tus necesidades, colores y tallas. Perfectas para equipos de trabajo, empresas y eventos.</p>
+                                </div>
+                                <div class="col mb-5 h-100">
+                                    <div class="feature bg-primary bg-gradient text-white rounded-3 mb-3"><i class="bi bi-building"></i></div>
+                                    <h2 class="h5">Uniformes Escolares</h2>
+                                    <p class="mb-0 text-justify-custom">Confeccionamos uniformes escolares completos con el logo bordado de cada institución, colegio, liceo, universidad, adaptados a las tallas y colores requeridos por el cliente.</p>
+                                </div>
+                                <div class="col mb-5 mb-md-0 h-100">
+                                    <div class="feature bg-primary bg-gradient text-white rounded-3 mb-3"><i class="bi bi-patch-check"></i></div>
+                                    <h2 class="h5">Servicio de bordados personalizados</h2>
+                                    <p class="mb-0 text-justify-custom">Ofrecemos bordados de alta calidad para logos empresariales, nombres, diseños personalizados y mucho más, ideal para uniformes y prendas promocionales.</p>
+                                </div>
+                                <div class="col h-100">
+                                    <div class="feature bg-primary bg-gradient text-white rounded-3 mb-3"><i class="bi bi-cart-check"></i></div>
+                                    <h2 class="h5">Venta de prendas y equipo de seguridad</h2>
+                                    <p class="mb-0 text-justify-custom">Además de nuestras confecciones, contamos con pantalones, gorras y botas de seguridad para ofrecerte soluciones completas en uniformes laborales.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            <!-- Testimonial section-->
+            <div class="py-5 bg-light">
+                <div class="container px-5 my-5">
+                    <div class="row gx-5 justify-content-center">
+                        <div class="col-lg-10 col-xl-7">
+                            <div class="text-center">
+                                <div class="fs-4 mb-4 fst-italic">"Vestimos tu propósito con excelencia. En Atlántico confeccionamos identidad y compromiso para empresas e instituciones que dejan huella."</div>
+                                <div class="d-flex align-items-center justify-content-center">
+                                    <img class="rounded-circle me-3" src="img/letter-g.png" alt="..." />
+                                    <div class="fw-bold">
+                                        Gregorio Rodriguez
+                                        <span class="fw-bold text-primary mx-1">/</span>
+                                        Gerente
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Blog preview section-->
+            <section class="py-5" id="blog">
+                <div class="container px-5 my-5">
+                    <div class="row gx-5 justify-content-center">
+                        <div class="col-lg-8 col-xl-6">
+                            <div class="text-center">
+                                <h2 class="fw-bolder">Conoce mas de Atlantico</h2>
+                                <p class="lead fw-normal text-muted mb-5 text-justify-custom">En Manufacturas R.J. Atlántico combinamos experiencia, tecnología y compromiso para ofrecer soluciones textiles de calidad. Nos especializamos en la confección y bordado de camisas, chemises y franelas para empresas, colegios e instituciones en todo el estado Portuguesa. Nuestra meta es representar tu marca con excelencia en cada prenda.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row gx-5">
+                        <div class="col-lg-4 mb-5">
+                            <div class="card h-100 shadow border-0">
+                                <img class="card-img-top" src="img/ubicacion-paleta.jpg" alt="..." />
+                                <div class="card-body p-4">
+                                    <div class="badge bg-primary bg-gradient rounded-pill mb-2">Nuestra Ubicacion</div>
+                                    <a class="text-decoration-none link-dark stretched-link"><h5 class="card-title mb-3">Visitanos en Acarigua Estado Portuguesa</h5></a>
+                                    <p class="card-text mb-0 text-justify-custom">Estamos ubicados en la Av Libertador, Entre Calles 34 y 35. Edificio Fadda</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-4 mb-5">
+                            <div class="card h-100 shadow border-0">
+                                <img class="card-img-top" src="img/bordado-roca.jpg" alt="..." />
+                                <div class="card-body p-4">
+                                    <div class="badge bg-primary bg-gradient rounded-pill mb-2">Servicio de Bordado</div>
+                                    <a class="text-decoration-none link-dark stretched-link" ><h5 class="card-title mb-3">Calidad en cada puntada</h5></a>
+                                    <p class="card-text mb-0 text-justify-custom">Ofrecemos bordados personalizados para uniformes empresariales y escolares, asegurando calidad, uniformidad y una presentación impecable que fortalece la identidad de tu organización.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-4 mb-5">
+                            <div class="card h-100 shadow border-0">
+                                <img class="card-img-top" src="img/nuestros-productos.jpg" alt="..." />
+                                <div class="card-body p-4">
+                                    <div class="badge bg-primary bg-gradient rounded-pill mb-2">Nuestros Productos</div>
+                                    <a class="text-decoration-none link-dark stretched-link" href="portfolio-overview.html"><h5 class="card-title mb-3">Visita nuestro catalogo para conocer mas sobre nuestros productos</h5></a>
+                                    <p class="card-text mb-0 text-justify-custom">Conoce nuestro distintos modelos de camisas y chemises adaptables a tu negocio o empresa! tambien conoce variedades de productos que tenemos para ofrecerte.</p>
+                                </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+        <!-- Footer-->
+        <footer class="bg-dark text-center text-muted py-4">
+            <div class="container">
+                <!-- Logo -->
+                <div class="mb-3">
+                    <img src="img/atlantico-logo.png" alt="Logo de la empresa" style="height: 50px;">
+                </div>
+
+                <!-- Iconos de redes sociales -->
+                <div class="mb-3">
+                    <a href="https://facebook.com/tu-negocio" class="social-icon facebook" target="_blank"><i class="fab fa-facebook-f fa-lg"></i></a>
+                    <a href="https://www.instagram.com/uniformes_rjatlantico/" class="social-icon instagram" target="_blank"><i class="fab fa-instagram fa-lg"></i></a>
+                    <a href="https://wa.me/584245387609" class="social-icon whatsapp" target="_blank"><i class="fab fa-whatsapp fa-lg"></i></a>
+                    <a href="https://twitter.com/tu-negocio" class="social-icon twitter" target="_blank"><i class="fab fa-twitter fa-lg"></i></a>
+                </div>
+
+
+                <!-- Texto descriptivo -->
+                <p>Descubre qué está sucediendo en tu <a href="#" class="text-primary">tienda favorita</a></p>
+
+                <!-- Enlaces -->
+                <div class="small mb-3">
+                    <a href="contact.html" class="text-primary mx-2">Contáctanos</a> |
+                    <a href="faq.html" class="text-primary mx-2">Terminos y condiciones</a> |
+                    Puedes contactarnos a
+                    <a href="mailto:rjatlantico@gmail.com" class="text-primary">rjatlantico@gmail.com</a>
+                </div>
+
+                <!-- Derechos -->
+                <div class="small">© Manufacturas R.J. Atlántico, 2025</div>
+            </div>
+        </footer>
+
+        <!-- Bootstrap core JS-->
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+        <!-- Core theme JS-->
+        <script src="js/scripts.js"></script>
+    </body>
+</html>

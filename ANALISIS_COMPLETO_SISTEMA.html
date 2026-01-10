@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Análisis Completo del Sistema de Gestión para Pedidos</title>
+
+    <!-- Mermaid JS -->
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'dark',
+            themeVariables: {
+                primaryColor: '#3498db',
+                primaryTextColor: '#fff',
+                primaryBorderColor: '#2980b9',
+                lineColor: '#ecf0f1',
+                secondaryColor: '#2c3e50',
+                tertiaryColor: '#34495e'
+            },
+            flowchart: {
+                htmlLabels: true,
+                curve: 'basis'
+            }
+        });
+    </script>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            padding: 50px;
+            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+        }
+
+        h1 {
+            color: #2c3e50;
+            border-bottom: 4px solid #3498db;
+            padding-bottom: 15px;
+            margin-bottom: 40px;
+            font-size: 2.8em;
+            text-align: center;
+        }
+
+        h2 {
+            color: #34495e;
+            margin-top: 50px;
+            margin-bottom: 25px;
+            border-left: 5px solid #3498db;
+            padding-left: 20px;
+            font-size: 2.2em;
+        }
+
+        h3 {
+            color: #2c3e50;
+            margin-top: 35px;
+            margin-bottom: 20px;
+            font-size: 1.7em;
+            border-bottom: 2px solid #ecf0f1;
+            padding-bottom: 10px;
+        }
+
+        h4 {
+            color: #34495e;
+            margin-top: 25px;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+
+        p {
+            margin-bottom: 18px;
+            text-align: justify;
+            font-size: 1.05em;
+            line-height: 1.8;
+        }
+
+        ul,
+        ol {
+            margin-left: 35px;
+            margin-bottom: 20px;
+        }
+
+        li {
+            margin-bottom: 10px;
+            line-height: 1.6;
+        }
+
+        code {
+            background: #f4f4f4;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-family: 'Courier New', Consolas, monospace;
+            color: #e74c3c;
+            font-size: 0.92em;
+            border: 1px solid #e0e0e0;
+        }
+
+        pre {
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 25px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 25px 0;
+            border-left: 5px solid #3498db;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        pre code {
+            background: none;
+            color: #ecf0f1;
+            padding: 0;
+            border: none;
+        }
+
+        .mermaid {
+            background: #2c3e50;
+            padding: 30px;
+            margin: 40px 0;
+            border-radius: 10px;
+            border: 3px solid #34495e;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            min-height: 300px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 25px 0;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        th,
+        td {
+            border: 1px solid #ddd;
+            padding: 15px;
+            text-align: left;
+        }
+
+        th {
+            background: #3498db;
+            color: white;
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 0.9em;
+        }
+
+        tr:nth-child(even) {
+            background: #f9f9f9;
+        }
+
+        tr:hover {
+            background: #ecf0f1;
+        }
+
+        hr {
+            border: none;
+            border-top: 3px solid #ecf0f1;
+            margin: 50px 0;
+        }
+
+        .print-button {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            border: none;
+            padding: 18px 35px;
+            border-radius: 50px;
+            cursor: pointer;
+            font-size: 18px;
+            font-weight: bold;
+            box-shadow: 0 6px 20px rgba(52, 152, 219, 0.4);
+            transition: all 0.3s;
+            z-index: 1000;
+        }
+
+        .print-button:hover {
+            background: linear-gradient(135deg, #2980b9, #21618c);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(52, 152, 219, 0.5);
+        }
+
+        @media print {
+            .print-button {
+                display: none;
+            }
+
+            .container {
+                box-shadow: none;
+                padding: 20px;
+            }
+
+            body {
+                background: white;
+                padding: 0;
+            }
+
+            .mermaid {
+                page-break-inside: avoid;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+
+            h1 {
+                font-size: 2em;
+            }
+
+            h2 {
+                font-size: 1.6em;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>🧵 Análisis Completo del Sistema de Gestión para Pedidos<br>Manufacturas R.J. Atlántico C.A</h1>
+
+        <h2>📋 Resumen Ejecutivo</h2>
+        <p>Este es un <strong>Sistema de Gestión para Pedidos</strong> desarrollado con <strong>Laravel 10</strong> para
+            automatizar y optimizar los procesos de la empresa textil Manufacturas R.J. Atlántico C.A. El sistema
+            implementa
+            una arquitectura <strong>MVC (Modelo-Vista-Controlador)</strong> y utiliza MySQL como base de datos.</p>
+
+        <hr>
+
+        <h2>🏗️ Arquitectura del Sistema</h2>
+
+        <h3>Stack Tecnológico</h3>
+
+        <h4>Backend</h4>
+        <ul>
+            <li><strong>Framework</strong>: Laravel 10 (PHP 8.1+)</li>
+            <li><strong>Base de Datos</strong>: MySQL</li>
+            <li><strong>Autenticación</strong>: Laravel Breeze + Sanctum</li>
+            <li><strong>Generación de PDFs</strong>: DomPDF</li>
+            <li><strong>DataTables</strong>: Yajra Laravel DataTables</li>
+        </ul>
+
+        <h4>Frontend</h4>
+        <ul>
+            <li><strong>Template</strong>: Velzon Admin Template v4.3.0 (Themesbrand)</li>
+            <li><strong>Motor de Plantillas</strong>: Blade</li>
+            <li><strong>CSS Framework</strong>: Tailwind CSS</li>
+            <li><strong>Build Tool</strong>: Vite</li>
+            <li><strong>JavaScript</strong>: Vanilla JS + librerías integradas (ApexCharts, Chart.js)</li>
+        </ul>
+
+        <h4>Desarrollo</h4>
+        <ul>
+            <li><strong>Testing</strong>: PHPUnit</li>
+            <li><strong>Gestor de Dependencias</strong>: Composer (PHP), npm (JS)</li>
+        </ul>
+
+        <hr>
+
+        <h2>📊 Estructura de la Base de Datos</h2>
+
+        <h3>Modelos Principales</h3>
+        <p>El sistema cuenta con <strong>14 modelos</strong> que representan las entidades del negocio:</p>
+
+        <ol>
+            <li><strong>User</strong> - Usuarios del sistema</li>
+            <li><strong>Cliente</strong> - Clientes de la empresa</li>
+            <li><strong>Producto</strong> - Productos textiles que se fabrican</li>
+            <li><strong>Insumo</strong> - Materias primas y suministros</li>
+            <li><strong>Proveedor</strong> - Proveedores de insumos</li>
+            <li><strong>Pedido</strong> - Pedidos de clientes</li>
+            <li><strong>DetallePedido</strong> - Detalles de productos en cada pedido</li>
+            <li><strong>Cotizacion</strong> - Cotizaciones para clientes</li>
+            <li><strong>DetalleCotizacion</strong> - Detalles de cada cotización</li>
+            <li><strong>OrdenProduccion</strong> - Órdenes de producción</li>
+            <li><strong>DetalleOrdenInsumo</strong> - Insumos asignados a órdenes de producción</li>
+            <li><strong>ProduccionDiaria</strong> - Registro diario de producción</li>
+            <li><strong>MovimientoInsumo</strong> - Movimientos de inventario (entradas/salidas)</li>
+            <li><strong>Banco</strong> - Bancos para pagos</li>
+        </ol>
+
+        <h3>Relaciones Clave</h3>
+        <pre class="mermaid">
+erDiagram
+    CLIENTE ||--o{ PEDIDO : realiza
+    PEDIDO ||--o{ DETALLE_PEDIDO : contiene
+    PEDIDO ||--o{ ORDEN_PRODUCCION : genera
+    ORDEN_PRODUCCION ||--o{ DETALLE_ORDEN_INSUMO : requiere
+    ORDEN_PRODUCCION ||--o{ PRODUCCION_DIARIA : registra
+    INSUMO ||--o{ DETALLE_ORDEN_INSUMO : utilizado_en
+    INSUMO ||--o{ MOVIMIENTO_INSUMO : tiene
+    PROVEEDOR ||--o{ INSUMO : suministra
+    PRODUCTO ||--o{ ORDEN_PRODUCCION : se_produce
+    USER ||--o{ ORDEN_PRODUCCION : crea
+    USER ||--o{ PRODUCCION_DIARIA : registra
+    USER ||--o{ MOVIMIENTO_INSUMO : registra
+        </pre>
+
+        <hr>
+
+        <h2>👥 Sistema de Roles y Permisos</h2>
+        <p>El sistema implementa <strong>4 roles principales</strong>:</p>
+
+        <h3>1. Administrador</h3>
+        <ul>
+            <li>Acceso completo al sistema</li>
+            <li>Gestión de usuarios</li>
+            <li>Configuración del sistema</li>
+            <li>Visualización de todos los reportes</li>
+        </ul>
+
+        <h3>2. Supervisor</h3>
+        <ul>
+            <li>Supervisión de producción</li>
+            <li>Creación y gestión de órdenes de producción</li>
+            <li>Acceso a reportes de eficiencia</li>
+            <li>Gestión de pedidos</li>
+        </ul>
+
+        <h3>3. Operario</h3>
+        <ul>
+            <li>Registro de producción diaria</li>
+            <li>Consulta de órdenes asignadas</li>
+            <li>Registro de avances de producción</li>
+        </ul>
+
+        <h3>4. Almacenero</h3>
+        <ul>
+            <li>Gestión de inventario de insumos</li>
+            <li>Registro de entradas y salidas</li>
+            <li>Control de existencias</li>
+            <li>Alertas de stock mínimo</li>
+        </ul>
+
+        <hr>
+
+        <h2>⚙️ Módulos Funcionales</h2>
+
+        <h3>1️⃣ Gestión de Clientes</h3>
+        <p><strong>Controlador</strong>: <code>ClienteController.php</code></p>
+        <p><strong>Funcionalidades</strong>:</p>
+        <ul>
+            <li>✅ CRUD completo de clientes</li>
+            <li>✅ Búsqueda AJAX de clientes</li>
+            <li>✅ Exportación de reporte PDF de clientes</li>
+            <li>✅ DataTables para visualización</li>
+        </ul>
+
+        <h3>2️⃣ Gestión de Productos</h3>
+        <p><strong>Controlador</strong>: <code>ProductoController.php</code></p>
+        <ul>
+            <li>✅ Catálogo de productos textiles</li>
+            <li>✅ Control de precios</li>
+            <li>✅ Generación de reportes PDF</li>
+            <li>✅ Gestión de características (tallas, colores)</li>
+        </ul>
+
+        <h3>3️⃣ Gestión de Proveedores</h3>
+        <p><strong>Controlador</strong>: <code>ProveedorController.php</code></p>
+        <ul>
+            <li>✅ Registro de proveedores</li>
+            <li>✅ Información de contacto</li>
+            <li>✅ Historial de suministros</li>
+            <li>✅ DataTables integrado</li>
+        </ul>
+
+        <h3>4️⃣ Gestión de Pedidos ⭐</h3>
+        <p><strong>Controlador</strong>: <code>PedidoController.php</code> (18,414 bytes - módulo más extenso)</p>
+        <p><strong>Funcionalidades principales</strong>:</p>
+        <ul>
+            <li>✅ Creación de pedidos con múltiples productos</li>
+            <li>✅ Gestión de detalles (cantidad, talla, color, descripción, logo)</li>
+            <li>✅ Control de estados: Pendiente, En Proceso, Completado, Cancelado</li>
+            <li>✅ Gestión de pagos: Efectivo, Transferencia bancaria, Pago móvil</li>
+            <li>✅ Control de abonos y referencias</li>
+            <li>✅ Generación de PDF individual por pedido</li>
+            <li>✅ Reporte general de pedidos en PDF</li>
+            <li>✅ Fechas de entrega estimada</li>
+            <li>✅ Priorización de pedidos</li>
+        </ul>
+
+        <h3>5️⃣ Gestión de Cotizaciones</h3>
+        <p><strong>Controlador</strong>: <code>CotizacionController.php</code> (10,918 bytes)</p>
+        <ul>
+            <li>✅ Creación de cotizaciones para clientes</li>
+            <li>✅ Conversión de cotizaciones a pedidos</li>
+            <li>✅ Detalles de productos y precios</li>
+            <li>✅ Generación de PDF de cotización</li>
+            <li>✅ Estados: Pendiente, Aprobada, Rechazada</li>
+        </ul>
+
+        <h3>6️⃣ Gestión de Insumos e Inventario 📦</h3>
+        <p><strong>Controladores</strong>: <code>InsumoController.php</code>,
+            <code>MovimientoInsumoController.php</code>
+        </p>
+
+        <h4>Módulo de Insumos</h4>
+        <ul>
+            <li>✅ Catálogo de insumos (telas, hilos, botones, etc.)</li>
+            <li>✅ Tipos de insumos y unidades de medida</li>
+            <li>✅ Costo unitario</li>
+            <li>✅ Stock actual y stock mínimo</li>
+            <li>✅ Asociación con proveedores</li>
+        </ul>
+
+        <h4>Módulo de Movimientos de Inventario</h4>
+        <ul>
+            <li>✅ Registro de entradas de insumos</li>
+            <li>✅ Registro de salidas de insumos</li>
+            <li>✅ Historial completo de movimientos</li>
+            <li>✅ Reporte de existencias</li>
+            <li>✅ <strong>Alertas de stock bajo</strong> (cuando stock_actual ≤ stock_minimo)</li>
+            <li>✅ Trazabilidad completa</li>
+        </ul>
+
+        <h3>7️⃣ Órdenes de Producción 🏭</h3>
+        <p><strong>Controlador</strong>: <code>OrdenProduccionController.php</code> (7,233 bytes)</p>
+        <ul>
+            <li>✅ Creación de órdenes desde pedidos</li>
+            <li>✅ Asignación de productos a fabricar</li>
+            <li>✅ Cantidad solicitada vs cantidad producida</li>
+            <li>✅ Estados: Pendiente, En Proceso, Finalizado, Cancelado</li>
+            <li>✅ Fechas de inicio y fin estimadas</li>
+            <li>✅ Costo estimado y gestión de logos</li>
+            <li>✅ Trazabilidad (created_by)</li>
+        </ul>
+
+        <h3>8️⃣ Control de Insumos por Orden</h3>
+        <p><strong>Controlador</strong>: <code>DetalleOrdenInsumoController.php</code></p>
+        <ul>
+            <li>✅ Asignación de insumos a órdenes de producción</li>
+            <li>✅ Cantidad estimada vs. cantidad utilizada real</li>
+            <li>✅ Comparación y control de consumo</li>
+        </ul>
+
+        <h3>9️⃣ Producción Diaria 📈</h3>
+        <p><strong>Controlador</strong>: <code>ProduccionDiariaController.php</code> (6,323 bytes)</p>
+        <ul>
+            <li>✅ Registro diario de producción por operario</li>
+            <li>✅ Vinculación con órdenes de producción</li>
+            <li>✅ Cantidad producida por día</li>
+            <li>✅ Control de calidad textil</li>
+            <li>✅ Observaciones y seguimiento de eficiencia</li>
+        </ul>
+
+        <h3>🔟 Sistema de Reportes 📊</h3>
+        <p><strong>Controlador</strong>: <code>ReportesController.php</code></p>
+        <p><strong>Reportes disponibles</strong>:</p>
+        <ol>
+            <li><strong>Reporte de Producción</strong>: Total producido, por producto, tendencias</li>
+            <li><strong>Reporte de Eficiencia</strong>: Por operario, cumplimiento, tiempos</li>
+            <li><strong>Reporte de Insumos</strong>: Consumo, inventario, proyecciones</li>
+            <li><strong>Reporte de Operarios</strong>: Rendimiento, producción, comparativas</li>
+        </ol>
+
+        <hr>
+
+        <h2>🎛️ Dashboard Principal</h2>
+        <p><strong>Controlador</strong>: <code>HomeController.php</code></p>
+
+        <h3>Indicadores Clave (KPIs)</h3>
+        <ol>
+            <li><strong>Total de Insumos</strong> - Cantidad de insumos registrados</li>
+            <li><strong>Órdenes en Proceso</strong> - Órdenes con estado "En Proceso"</li>
+            <li><strong>Producción Total</strong> - Suma de toda la producción registrada</li>
+            <li><strong>Alertas de Stock</strong> - Insumos con stock_actual ≤ stock_minimo</li>
+        </ol>
+
+        <h3>Gráficos Interactivos</h3>
+        <ul>
+            <li><strong>Inventario de Insumos</strong>: Stock actual con indicadores visuales</li>
+            <li><strong>Órdenes por Estado</strong>: Pendientes, En Proceso, Finalizadas, Canceladas</li>
+            <li><strong>Últimos Movimientos</strong>: 5 movimientos más recientes</li>
+        </ul>
+
+        <hr>
+
+        <h2>🔐 Autenticación y Seguridad</h2>
+
+        <h3>Sistema de Autenticación</h3>
+        <ul>
+            <li><strong>Laravel Breeze</strong>: Sistema de autenticación completo</li>
+            <li><strong>Middleware</strong>: Protección de rutas con <code>auth</code> middleware</li>
+            <li><strong>Sesiones</strong>: Gestión segura de sesiones de usuario</li>
+        </ul>
+
+        <h3>Permisos basados en roles</h3>
+        <pre><code>// Métodos del modelo User
+- isAdmin()
+- isSupervisor()
+- isOperario()
+- isAlmacenero()
+- hasRole($roles) // Verificar múltiples roles</code></pre>
+
+        <hr>
+
+        <h2>🎯 Flujo de Trabajo del Sistema</h2>
+
+        <h3>Proceso Completo de Pedido a Producción</h3>
+        <pre class="mermaid">
+graph TD
+    A[Cliente solicita cotización] --> B[Se crea Cotización]
+    B --> C{¿Aprobada?}
+    C -->|Sí| D[Se convierte en Pedido]
+    C -->|No| E[Cotización Rechazada]
+    D --> F[Se registra pago/abono]
+    F --> G[Se crea Orden de Producción]
+    G --> H[Se asignan Insumos necesarios]
+    H --> I[Insumos se descuentan del inventario]
+    I --> J[Operarios registran Producción Diaria]
+    J --> K{¿Cantidad completa?}
+    K -->|No| J
+    K -->|Sí| L[Orden Finalizada]
+    L --> M[Pedido Completado]
+    
+    N[Sistema de Alertas] -.->|Stock bajo| O[Reabastecimiento]
+    O --> P[Registro de Movimiento - Entrada]
+    P --> I
+        </pre>
+
+        <h3>Gestión de Inventario</h3>
+        <pre class="mermaid">
+graph LR
+    A[Compra de Insumos] --> B[Movimiento: Entrada]
+    B --> C[Stock Actual +]
+    D[Uso en Producción] --> E[Movimiento: Salida]
+    E --> F[Stock Actual -]
+    F --> G{Stock ≤ Mínimo?}
+    G -->|Sí| H[🚨 Alerta Dashboard]
+    G -->|No| I[✅ Stock OK]
+        </pre>
+
+        <hr>
+
+        <h2>📊 Características Destacadas</h2>
+
+        <h3>✨ Funcionalidades Avanzadas</h3>
+        <ol>
+            <li><strong>DataTables Dinámicas</strong>: Paginación servidor, búsqueda real-time, ordenamiento</li>
+            <li><strong>Generación de PDFs</strong>: Reportes, pedidos, cotizaciones</li>
+            <li><strong>Soft Deletes</strong>: Eliminación lógica y recuperación</li>
+            <li><strong>Sistema de Alertas</strong>: Notificaciones de stock bajo</li>
+            <li><strong>Búsqueda AJAX</strong>: Sin recargar página</li>
+            <li><strong>Trazabilidad Completa</strong>: Registro de cambios</li>
+            <li><strong>Multi-idioma</strong>: Soporte i18n</li>
+        </ol>
+
+        <hr>
+
+        <h2>👥 Equipo de Desarrollo</h2>
+
+        <p><strong>Grupo Textil - Sección 536</strong><br>
+            <strong>PNF Informática - UPTP "JJ Montilla"</strong>
+        </p>
+
+        <h3>Desarrolladores</h3>
+        <ul>
+            <li>Emmanuel Arroyo - 30.922.671</li>
+            <li>Santiago Mendoza - 30.822.318</li>
+            <li>Johiner Orellana - 31.492.161</li>
+            <li>Luis Rodriguez - 31.491.727</li>
+            <li>Vanessa Lopez - 30.966.655</li>
+            <li>Isabella Colmenarez - 31.914.579</li>
+            <li>Alejandro Adam - 31.056.872</li>
+        </ul>
+
+        <h3>Asesor Académico</h3>
+        <p>Juan Esteller</p>
+
+        <h3>Comunidad Beneficiada</h3>
+        <p>Manufacturas R.J. Atlántico C.A</p>
+
+        <hr>
+
+        <h2>📝 Licencia</h2>
+        <p><strong>Creative Commons Atribución – No Comercial – Compartir Igual 4.0 Internacional</strong></p>
+        <p>Este proyecto se alinea con el <strong>Motor N.º 13: Telecomunicaciones e Informática</strong> del Plan de
+            Desarrollo Económico de la Nación.</p>
+
+        <hr>
+
+        <h2>📈 Conclusión</h2>
+        <p>El Sistema de Gestión para Pedidos de Manufacturas R.J. Atlántico C.A es una solución empresarial completa y
+            robusta
+            que cubre:</p>
+        <ul>
+            <li>✅ <strong>Gestión Comercial</strong>: Clientes, cotizaciones, pedidos</li>
+            <li>✅ <strong>Gestión de Producción</strong>: Órdenes, producción diaria, control de calidad</li>
+            <li>✅ <strong>Gestión de Inventario</strong>: Insumos, movimientos, alertas</li>
+            <li>✅ <strong>Reportes y Analytics</strong>: Eficiencia, producción, consumo</li>
+            <li>✅ <strong>Multi-usuario</strong>: Sistema de roles y permisos</li>
+            <li>✅ <strong>Trazabilidad</strong>: Registro completo de operaciones</li>
+        </ul>
+        <p>El sistema está diseñado para escalar y adaptarse a las necesidades cambiantes de la industria textil,
+            proporcionando una base sólida para la transformación digital de la empresa.</p>
+
+    </div>
+
+    <button class="print-button" onclick="window.print()">🖨️ Imprimir / Guardar PDF</button>
+
+</body>
+
+</html>

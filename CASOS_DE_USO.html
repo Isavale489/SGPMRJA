@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Casos de Uso del Sistema de Gestión para Pedidos</title>
+
+    <!-- Mermaid JS -->
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'default',
+            themeVariables: {
+                primaryColor: '#3498db',
+                primaryTextColor: '#fff',
+                primaryBorderColor: '#2980b9',
+                lineColor: '#2c3e50',
+                secondaryColor: '#ecf0f1',
+                tertiaryColor: '#95a5a6'
+            },
+            flowchart: {
+                htmlLabels: true,
+                curve: 'basis'
+            }
+        });
+    </script>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            padding: 50px;
+            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+        }
+
+        h1 {
+            color: #2c3e50;
+            border-bottom: 4px solid #3498db;
+            padding-bottom: 15px;
+            margin-bottom: 40px;
+            font-size: 2.8em;
+            text-align: center;
+        }
+
+        h2 {
+            color: #34495e;
+            margin-top: 50px;
+            margin-bottom: 25px;
+            border-left: 5px solid #3498db;
+            padding-left: 20px;
+            font-size: 2.2em;
+        }
+
+        h3 {
+            color: #2c3e50;
+            margin-top: 35px;
+            margin-bottom: 20px;
+            font-size: 1.7em;
+            border-bottom: 2px solid #ecf0f1;
+            padding-bottom: 10px;
+        }
+
+        h4 {
+            color: #34495e;
+            margin-top: 25px;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+
+        p {
+            margin-bottom: 18px;
+            text-align: justify;
+            font-size: 1.05em;
+            line-height: 1.8;
+        }
+
+        ul,
+        ol {
+            margin-left: 35px;
+            margin-bottom: 20px;
+        }
+
+        li {
+            margin-bottom: 10px;
+            line-height: 1.6;
+        }
+
+        code {
+            background: #f4f4f4;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-family: 'Courier New', Consolas, monospace;
+            color: #e74c3c;
+            font-size: 0.92em;
+            border: 1px solid #e0e0e0;
+        }
+
+        .caso-uso {
+            background: #f8f9fa;
+            border-left: 4px solid #3498db;
+            padding: 25px;
+            margin: 30px 0;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .caso-uso h3 {
+            color: #3498db;
+            border: none;
+            margin-top: 0;
+        }
+
+        .actor {
+            background: #e3f2fd;
+            padding: 8px 15px;
+            border-radius: 20px;
+            display: inline-block;
+            font-weight: bold;
+            color: #1976d2;
+            margin: 5px 0;
+        }
+
+        .mermaid {
+            background: #fff;
+            padding: 30px;
+            margin: 40px 0;
+            border-radius: 10px;
+            border: 2px solid #ecf0f1;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            min-height: 400px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 25px 0;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        th,
+        td {
+            border: 1px solid #ddd;
+            padding: 15px;
+            text-align: left;
+        }
+
+        th {
+            background: #3498db;
+            color: white;
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 0.9em;
+        }
+
+        tr:nth-child(even) {
+            background: #f9f9f9;
+        }
+
+        tr:hover {
+            background: #ecf0f1;
+        }
+
+        hr {
+            border: none;
+            border-top: 3px solid #ecf0f1;
+            margin: 50px 0;
+        }
+
+        .print-button {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            border: none;
+            padding: 18px 35px;
+            border-radius: 50px;
+            cursor: pointer;
+            font-size: 18px;
+            font-weight: bold;
+            box-shadow: 0 6px 20px rgba(52, 152, 219, 0.4);
+            transition: all 0.3s;
+            z-index: 1000;
+        }
+
+        .print-button:hover {
+            background: linear-gradient(135deg, #2980b9, #21618c);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(52, 152, 219, 0.5);
+        }
+
+        .section-number {
+            display: inline-block;
+            background: #3498db;
+            color: white;
+            width: 35px;
+            height: 35px;
+            text-align: center;
+            line-height: 35px;
+            border-radius: 50%;
+            margin-right: 10px;
+            font-weight: bold;
+        }
+
+        @media print {
+            .print-button {
+                display: none;
+            }
+
+            .container {
+                box-shadow: none;
+                padding: 20px;
+            }
+
+            body {
+                background: white;
+                padding: 0;
+            }
+
+            .mermaid {
+                page-break-inside: avoid;
+            }
+
+            .caso-uso {
+                page-break-inside: avoid;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+
+            h1 {
+                font-size: 2em;
+            }
+
+            h2 {
+                font-size: 1.6em;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>📋 Casos de Uso del Sistema de Gestión para Pedidos<br>Manufacturas R.J. Atlántico C.A</h1>
+
+        <p style="text-align: center; font-size: 1.1em; color: #7f8c8d;">
+            <strong>Grupo Textil - Sección 536</strong><br>
+            <strong>PNF Informática - UPTP "JJ Montilla"</strong>
+        </p>
+
+        <hr>
+
+        <h2>👥 Actores del Sistema</h2>
+
+        <h3>Actor Principal</h3>
+        <p><strong>Cliente Externo</strong>: Persona o empresa que solicita productos textiles (no tiene acceso directo
+            al sistema)</p>
+
+        <h3>Actores Internos (Usuarios del Sistema)</h3>
+
+        <div style="margin: 20px 0;">
+            <h4>1. 👤 Administrador</h4>
+            <ul>
+                <li>Control total del sistema</li>
+                <li>Gestión de usuarios y configuraciones</li>
+                <li>Acceso a todos los módulos y reportes</li>
+            </ul>
+
+            <h4>2. 👨‍💼 Supervisor</h4>
+            <ul>
+                <li>Gestión de producción</li>
+                <li>Creación de órdenes de producción</li>
+                <li>Supervisión de operarios</li>
+                <li>Gestión de pedidos y cotizaciones</li>
+            </ul>
+
+            <h4>3. 👷 Operario</h4>
+            <ul>
+                <li>Registro de producción diaria</li>
+                <li>Consulta de órdenes asignadas</li>
+                <li>Actualización de avances</li>
+            </ul>
+
+            <h4>4. 📦 Almacenero</h4>
+            <ul>
+                <li>Gestión de inventario de insumos</li>
+                <li>Control de entradas y salidas</li>
+                <li>Generación de alertas de stock</li>
+            </ul>
+        </div>
+
+        <hr>
+
+        <h2>📊 Diagrama de Casos de Uso General</h2>
+
+        <pre class="mermaid">
+graph TB
+    subgraph Actores
+        Admin[👤 Administrador]
+        Supervisor[👨‍💼 Supervisor]
+        Operario[👷 Operario]
+        Almacenero[📦 Almacenero]
+        Cliente[Cliente Externo]
+    end
+    
+    subgraph Sistema["Sistema de Gestión para Pedidos"]
+        CU1[Gestionar Usuarios]
+        CU2[Gestionar Clientes]
+        CU3[Gestionar Productos]
+        CU4[Gestionar Proveedores]
+        CU5[Gestionar Insumos]
+        CU6[Crear Cotización]
+        CU7[Crear Pedido]
+        CU8[Crear Orden Producción]
+        CU9[Registrar Producción Diaria]
+        CU10[Gestionar Inventario]
+        CU11[Generar Reportes]
+    end
+    
+    Cliente -.solicita.-> CU6
+    Supervisor --> CU6
+    Supervisor --> CU7
+    Supervisor --> CU8
+    Operario --> CU9
+    Almacenero --> CU5
+    Almacenero --> CU10
+    Admin --> CU1
+    Admin --> CU2
+    Admin --> CU3
+    Admin --> CU4
+    Admin --> CU11
+        </pre>
+
+        <hr>
+
+        <h2>🎯 CASOS DE USO DETALLADOS</h2>
+
+        <hr>
+
+        <h2><span class="section-number">1</span> MÓDULO DE USUARIOS</h2>
+
+        <div class="caso-uso">
+            <h3>CU-001: Registrar Usuario</h3>
+            <p><span class="actor">👤 Administrador</span></p>
+
+            <h4>Precondiciones:</h4>
+            <ul>
+                <li>El administrador ha iniciado sesión</li>
+                <li>Tiene permisos de administrador</li>
+            </ul>
+
+            <h4>Flujo Principal:</h4>
+            <ol>
+                <li>El administrador accede al módulo de usuarios</li>
+                <li>Selecciona la opción "Crear Nuevo Usuario"</li>
+                <li>El sistema muestra el formulario de registro</li>
+                <li>El administrador ingresa: Nombre completo, Correo electrónico, Contraseña, Rol, Foto/Avatar
+                    (opcional), Estado</li>
+                <li>El sistema valida que el correo no esté registrado</li>
+                <li>El sistema encripta la contraseña</li>
+                <li>El sistema guarda el usuario</li>
+                <li>El sistema muestra mensaje de confirmación</li>
+            </ol>
+
+            <h4>Flujos Alternativos:</h4>
+            <ul>
+                <li><strong>3a. Correo ya existe:</strong> El sistema muestra error y solicita otro correo</li>
+                <li><strong>3b. Contraseña débil:</strong> El sistema solicita contraseña más segura (mínimo 8
+                    caracteres)</li>
+            </ul>
+
+            <h4>Postcondiciones:</h4>
+            <ul>
+                <li>Usuario creado en la base de datos</li>
+                <li>Usuario puede iniciar sesión</li>
+            </ul>
+        </div>
+
+        <div class="caso-uso">
+            <h3>CU-002: Modificar Usuario</h3>
+            <p><span class="actor">👤 Administrador</span></p>
+
+            <h4>Precondiciones:</h4>
+            <ul>
+                <li>El administrador ha iniciado sesión</li>
+                <li>Existe al menos un usuario en el sistema</li>
+            </ul>
+
+            <h4>Flujo Principal:</h4>
+            <ol>
+                <li>El administrador accede al listado de usuarios</li>
+                <li>Busca y selecciona el usuario a modificar</li>
+                <li>Hace clic en "Editar"</li>
+                <li>El sistema muestra el formulario pre-llenado</li>
+                <li>El administrador modifica los datos necesarios</li>
+                <li>El sistema valida los cambios</li>
+                <li>El sistema actualiza la información</li>
+                <li>El sistema muestra mensaje de confirmación</li>
+            </ol>
+
+            <h4>Flujos Alternativos:</h4>
+            <ul>
+                <li><strong>5a. Intenta eliminar el único administrador:</strong> El sistema muestra error</li>
+                <li><strong>5b. Cambio de correo a uno existente:</strong> El sistema muestra error</li>
+            </ul>
+
+            <h4>Postcondiciones:</h4>
+            <ul>
+                <li>Información del usuario actualizada</li>
+            </ul>
+        </div>
+
+        <div class="caso-uso">
+            <h3>CU-003: Eliminar Usuario</h3>
+            <p><span class="actor">👤 Administrador</span></p>
+
+            <h4>Precondiciones:</h4>
+            <ul>
+                <li>El administrador ha iniciado sesión</li>
+                <li>Existe el usuario a eliminar</li>
+                <li>No es el único administrador del sistema</li>
+            </ul>
+
+            <h4>Flujo Principal:</h4>
+            <ol>
+                <li>El administrador accede al listado de usuarios</li>
+                <li>Selecciona el usuario a eliminar</li>
+                <li>Hace clic en "Eliminar"</li>
+                <li>El sistema solicita confirmación</li>
+                <li>El administrador confirma</li>
+                <li>El sistema realiza eliminación lógica (soft delete)</li>
+                <li>El sistema muestra mensaje de confirmación</li>
+            </ol>
+
+            <h4>Postcondiciones:</h4>
+            <ul>
+                <li>Usuario marcado como eliminado</li>
+                <li>Usuario no puede iniciar sesión</li>
+                <li>Registro permanece en BD para auditoría</li>
+            </ul>
+        </div>
+
+        <hr>
+
+        <h2><span class="section-number">2</span> MÓDULO DE CLIENTES</h2>
+
+        <div class="caso-uso">
+            <h3>CU-004: Registrar Cliente</h3>
+            <p><span class="actor">👤 Administrador</span> <span class="actor">👨‍💼 Supervisor</span></p>
+
+            <h4>Flujo Principal:</h4>
+            <ol>
+                <li>Usuario accede al módulo de clientes</li>
+                <li>Selecciona "Crear Nuevo Cliente"</li>
+                <li>El sistema muestra formulario de registro</li>
+                <li>Usuario ingresa: Nombre completo, CI/RIF, Teléfono, Correo electrónico, Dirección</li>
+                <li>El sistema valida que CI/RIF no esté duplicado</li>
+                <li>El sistema valida formato de correo y teléfono</li>
+                <li>El sistema guarda el cliente</li>
+                <li>El sistema muestra mensaje de confirmación</li>
+            </ol>
+
+            <h4>Postcondiciones:</h4>
+            <ul>
+                <li>Cliente registrado en el sistema</li>
+                <li>Cliente disponible para pedidos y cotizaciones</li>
+            </ul>
+        </div>
+
+        <div class="caso-uso">
+            <h3>CU-005: Buscar Cliente (AJAX)</h3>
+            <p><span class="actor">👤 Administrador</span> <span class="actor">👨‍💼 Supervisor</span></p>
+
+            <h4>Flujo Principal:</h4>
+            <ol>
+                <li>Usuario comienza a escribir nombre o CI/RIF del cliente</li>
+                <li>El sistema busca en tiempo real sin recargar página</li>
+                <li>El sistema muestra resultados mientras se escribe</li>
+                <li>Usuario selecciona cliente de la lista</li>
+                <li>El sistema auto-completa los datos del cliente en el formulario</li>
+            </ol>
+        </div>
+
+        <hr>
+
+        <h2><span class="section-number">3</span> MÓDULO DE PEDIDOS</h2>
+
+        <div class="caso-uso">
+            <h3>CU-012: Crear Pedido</h3>
+            <p><span class="actor">👨‍💼 Supervisor</span></p>
+
+            <h4>Precondiciones:</h4>
+            <ul>
+                <li>Existen clientes y productos registrados</li>
+            </ul>
+
+            <h4>Flujo Principal:</h4>
+            <ol>
+                <li>Supervisor accede a "Pedidos"</li>
+                <li>Selecciona "Crear Nuevo Pedido"</li>
+                <li>El sistema muestra formulario</li>
+                <li>Supervisor selecciona cliente (búsqueda AJAX)</li>
+                <li>Supervisor agrega productos con detalles: Producto, Cantidad, Talla, Color, Descripción, Logo</li>
+                <li>El sistema calcula total</li>
+                <li>Supervisor ingresa: Fecha de entrega, Prioridad, Estado inicial</li>
+                <li>Supervisor registra pago/abono: Método, Monto, Referencias, Banco</li>
+                <li>El sistema guarda el pedido</li>
+                <li>El sistema genera PDF del pedido</li>
+            </ol>
+
+            <h4>Postcondiciones:</h4>
+            <ul>
+                <li>Pedido registrado</li>
+                <li>PDF generado</li>
+                <li>Disponible para crear orden de producción</li>
+            </ul>
+        </div>
+
+        <hr>
+
+        <h2><span class="section-number">4</span> MÓDULO DE PRODUCCIÓN</h2>
+
+        <div class="caso-uso">
+            <h3>CU-015: Crear Orden de Producción</h3>
+            <p><span class="actor">👨‍💼 Supervisor</span></p>
+
+            <h4>Flujo Principal:</h4>
+            <ol>
+                <li>Supervisor accede a "Órdenes de Producción"</li>
+                <li>Selecciona "Crear Nueva Orden"</li>
+                <li>Supervisor selecciona: Pedido asociado, Producto a fabricar, Cantidad solicitada</li>
+                <li>Supervisor ingresa: Fecha de inicio, Fecha de fin estimada, Costo estimado, Logo, Notas</li>
+                <li>El sistema crea la orden con estado "Pendiente"</li>
+                <li>El sistema registra quién la creó (created_by)</li>
+                <li>El sistema muestra confirmación</li>
+            </ol>
+
+            <h4>Postcondiciones:</h4>
+            <ul>
+                <li>Orden de producción creada</li>
+                <li>Disponible para asignar insumos</li>
+                <li>Disponible para asignar a operarios</li>
+            </ul>
+        </div>
+
+        <div class="caso-uso">
+            <h3>CU-018: Registrar Producción Diaria</h3>
+            <p><span class="actor">👷 Operario</span></p>
+
+            <h4>Flujo Principal:</h4>
+            <ol>
+                <li>Operario accede a "Producción Diaria"</li>
+                <li>Selecciona "Registrar Producción"</li>
+                <li>El sistema muestra órdenes asignadas</li>
+                <li>Operario selecciona la orden en la que trabajó</li>
+                <li>Operario ingresa: Fecha de producción, Cantidad producida, Observaciones</li>
+                <li>El sistema suma cantidad a total producido de la orden</li>
+                <li>El sistema guarda el registro</li>
+                <li>El sistema verifica si se completó la cantidad solicitada</li>
+            </ol>
+
+            <h4>Postcondiciones:</h4>
+            <ul>
+                <li>Producción registrada</li>
+                <li>Progreso de la orden actualizado</li>
+                <li>Registro con fecha y operario guardado</li>
+            </ul>
+        </div>
+
+        <hr>
+
+        <h2><span class="section-number">5</span> MÓDULO DE INVENTARIO</h2>
+
+        <div class="caso-uso">
+            <h3>CU-009: Registrar Movimiento de Inventario</h3>
+            <p><span class="actor">📦 Almacenero</span></p>
+
+            <h4>Flujo Principal:</h4>
+            <ol>
+                <li>Almacenero accede a "Movimientos de Inventario"</li>
+                <li>Selecciona "Registrar Movimiento"</li>
+                <li>Almacenero ingresa: Insumo afectado, Tipo de movimiento (Entrada/Salida/Ajuste), Cantidad, Motivo
+                </li>
+                <li>El sistema calcula nuevo stock actual</li>
+                <li>Si es Entrada: stock_actual = stock_actual + cantidad</li>
+                <li>Si es Salida: stock_actual = stock_actual - cantidad</li>
+                <li>El sistema actualiza el insumo</li>
+                <li>El sistema registra el movimiento con fecha y usuario</li>
+                <li>Si stock_actual ≤ stock_minimo: Sistema genera alerta</li>
+            </ol>
+
+            <h4>Postcondiciones:</h4>
+            <ul>
+                <li>Stock actualizado</li>
+                <li>Movimiento registrado con trazabilidad</li>
+                <li>Alerta generada si corresponde</li>
+            </ul>
+        </div>
+
+        <hr>
+
+        <h2>📊 RESUMEN DE CASOS DE USO POR MÓDULO</h2>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Módulo</th>
+                    <th>Cantidad de CU</th>
+                    <th>Actores Principales</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>Usuarios</strong></td>
+                    <td>3</td>
+                    <td>Administrador</td>
+                </tr>
+                <tr>
+                    <td><strong>Clientes</strong></td>
+                    <td>3</td>
+                    <td>Administrador, Supervisor</td>
+                </tr>
+                <tr>
+                    <td><strong>Productos</strong></td>
+                    <td>1</td>
+                    <td>Administrador</td>
+                </tr>
+                <tr>
+                    <td><strong>Proveedores</strong></td>
+                    <td>1</td>
+                    <td>Administrador</td>
+                </tr>
+                <tr>
+                    <td><strong>Insumos</strong></td>
+                    <td>2</td>
+                    <td>Administrador, Almacenero</td>
+                </tr>
+                <tr>
+                    <td><strong>Cotizaciones</strong></td>
+                    <td>2</td>
+                    <td>Supervisor</td>
+                </tr>
+                <tr>
+                    <td><strong>Pedidos</strong></td>
+                    <td>3</td>
+                    <td>Supervisor</td>
+                </tr>
+                <tr>
+                    <td><strong>Órdenes Producción</strong></td>
+                    <td>3</td>
+                    <td>Supervisor</td>
+                </tr>
+                <tr>
+                    <td><strong>Producción Diaria</strong></td>
+                    <td>2</td>
+                    <td>Operario, Supervisor</td>
+                </tr>
+                <tr>
+                    <td><strong>Reportes</strong></td>
+                    <td>3</td>
+                    <td>Administrador, Supervisor, Almacenero</td>
+                </tr>
+                <tr>
+                    <td><strong>Dashboard</strong></td>
+                    <td>2</td>
+                    <td>Todos</td>
+                </tr>
+                <tr style="background: #3498db; color: white;">
+                    <td><strong>TOTAL</strong></td>
+                    <td><strong>25</strong></td>
+                    <td><strong>4 tipos de actores</strong></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <hr>
+
+        <h2>🎯 MATRIZ DE ACTORES vs CASOS DE USO</h2>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Caso de Uso</th>
+                    <th>Admin</th>
+                    <th>Supervisor</th>
+                    <th>Operario</th>
+                    <th>Almacenero</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>CU-001 a CU-003: Gestión Usuarios</td>
+                    <td style="text-align: center;">✅</td>
+                    <td style="text-align: center;">❌</td>
+                    <td style="text-align: center;">❌</td>
+                    <td style="text-align: center;">❌</td>
+                </tr>
+                <tr>
+                    <td>CU-004 a CU-006: Gestión Clientes</td>
+                    <td style="text-align: center;">✅</td>
+                    <td style="text-align: center;">✅</td>
+                    <td style="text-align: center;">❌</td>
+                    <td style="text-align: center;">❌</td>
+                </tr>
+                <tr>
+                    <td>CU-007: Gestión Productos</td>
+                    <td style="text-align: center;">✅</td>
+                    <td style="text-align: center;">❌</td>
+                    <td style="text-align: center;">❌</td>
+                    <td style="text-align: center;">❌</td>
+                </tr>
+                <tr>
+                    <td>CU-008 a CU-009: Gestión Insumos</td>
+                    <td style="text-align: center;">✅</td>
+                    <td style="text-align: center;">❌</td>
+                    <td style="text-align: center;">❌</td>
+                    <td style="text-align: center;">✅</td>
+                </tr>
+                <tr>
+                    <td>CU-010 a CU-011: Cotizaciones</td>
+                    <td style="text-align: center;">✅</td>
+                    <td style="text-align: center;">✅</td>
+                    <td style="text-align: center;">❌</td>
+                    <td style="text-align: center;">❌</td>
+                </tr>
+                <tr>
+                    <td>CU-012 a CU-014: Pedidos</td>
+                    <td style="text-align: center;">✅</td>
+                    <td style="text-align: center;">✅</td>
+                    <td style="text-align: center;">❌</td>
+                    <td style="text-align: center;">❌</td>
+                </tr>
+                <tr>
+                    <td>CU-015 a CU-017: Órdenes Producción</td>
+                    <td style="text-align: center;">✅</td>
+                    <td style="text-align: center;">✅</td>
+                    <td style="text-align: center;">❌</td>
+                    <td style="text-align: center;">❌</td>
+                </tr>
+                <tr>
+                    <td>CU-018 a CU-019: Producción Diaria</td>
+                    <td style="text-align: center;">✅</td>
+                    <td style="text-align: center;">✅</td>
+                    <td style="text-align: center;">✅</td>
+                    <td style="text-align: center;">❌</td>
+                </tr>
+                <tr>
+                    <td>CU-020 a CU-022: Reportes</td>
+                    <td style="text-align: center;">✅</td>
+                    <td style="text-align: center;">✅</td>
+                    <td style="text-align: center;">❌</td>
+                    <td style="text-align: center;">✅</td>
+                </tr>
+                <tr>
+                    <td>CU-023 a CU-024: Dashboard</td>
+                    <td style="text-align: center;">✅</td>
+                    <td style="text-align: center;">✅</td>
+                    <td style="text-align: center;">✅</td>
+                    <td style="text-align: center;">✅</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <hr>
+
+        <p style="text-align: center; margin-top: 50px; font-size: 1.1em; color: #7f8c8d;">
+            <strong>Documento generado para:</strong><br>
+            Sistema de Gestión para Pedidos - Manufacturas R.J. Atlántico C.A<br>
+            Grupo Textil - Sección 536<br>
+            PNF Informática - UPTP "JJ Montilla"<br>
+            <strong>Fecha:</strong> Noviembre 2025
+        </p>
+
+    </div>
+
+    <button class="print-button" onclick="window.print()">🖨️ Imprimir / Guardar PDF</button>
+
+</body>
+
+</html>

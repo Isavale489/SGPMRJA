@@ -1,0 +1,182 @@
+/* Estilos personalizados para el sitio */
+
+/* Estilos para el texto justificado */
+.text-justify-custom {
+    text-align: justify;
+}
+
+/* Estilos para los botones personalizados */
+.custom-btn {
+    padding: 0.8rem 2rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-radius: 50px;
+    transition: all 0.3s ease;
+}
+
+.custom-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+}
+
+/* Estilos para los iconos de redes sociales */
+.social-icon {
+    color: #fff;
+    margin: 0 10px;
+    font-size: 1.5rem;
+    transition: all 0.3s ease;
+}
+
+.social-icon:hover {
+    transform: translateY(-3px);
+}
+
+.facebook:hover { color: #3b5998; }
+.instagram:hover { color: #e1306c; }
+.whatsapp:hover { color: #25d366; }
+.twitter:hover { color: #1da1f2; }
+
+/* Estilos para el carrusel */
+.carousel-header {
+    position: relative;
+}
+
+.carousel-item {
+    height: 100vh;
+    min-height: 600px;
+}
+
+.carousel-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: brightness(0.5);
+}
+
+.carousel-content {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+
+.carousel-caption {
+    background: transparent;
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 2rem;
+}
+
+.carousel-caption h1,
+.carousel-caption h2 {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+}
+
+.carousel-caption p {
+    font-size: 1.25rem;
+    margin-bottom: 2rem;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+}
+
+.button-group {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+}
+
+.carousel-caption .btn {
+    padding: 0.8rem 2rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-radius: 50px;
+    transition: all 0.3s ease;
+}
+
+.carousel-caption .btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+}
+
+.carousel-indicators {
+    margin-bottom: 3rem;
+}
+
+.carousel-control-prev,
+.carousel-control-next {
+    width: 5%;
+}
+
+/* Estilos para las características */
+.feature {
+    width: 4rem;
+    height: 4rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+}
+
+/* Estilos para las tarjetas */
+.card {
+    transition: transform 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+}
+
+.card-img-top {
+    height: 200px;
+    object-fit: cover;
+}
+
+/* Estilos para el footer */
+footer .social-icon {
+    font-size: 1.2rem;
+    margin: 0 15px;
+}
+
+.footer-links a {
+    color: #6c757d;
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+.footer-links a:hover {
+    color: #0d6efd;
+}
+
+/* Estilos responsivos */
+@media (max-width: 768px) {
+    .carousel-item {
+        height: 70vh;
+        min-height: 400px;
+    }
+
+    .carousel-caption h1,
+    .carousel-caption h2 {
+        font-size: 2rem;
+    }
+
+    .carousel-caption p {
+        font-size: 1rem;
+    }
+
+    .button-group {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .carousel-caption .btn {
+        padding: 0.6rem 1.5rem;
+    }
+} 
