@@ -13,7 +13,7 @@ El sistema permite la administración eficiente de todo el ciclo de vida de la p
 ### 🌟 Características Principales
 
 #### 📦 Gestión Comercial
-*   **Clientes**: Registro completo, historial y gestión de cartera.
+*   **Clientes**: Registro, edición y consulta de clientes con historial de pedidos.
 *   **Pedidos**: Flujo completo desde la solicitud hasta la entrega. Control de estados (Pendiente, En Proceso, Completado).
 *   **Cotizaciones**: Generación de presupuestos profesionales exportables a PDF.
 
