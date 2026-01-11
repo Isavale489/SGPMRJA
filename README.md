@@ -2,7 +2,7 @@
 
 > **Sistema web integral para la gestión textil, desarrollado con Laravel 10.**
 
-Este proyecto es una solución tecnológica desarrollada por el **Grupo Textil de la Sección 536 del PNF en Informática de la UPTP "JJ Montilla"**, como parte del Proyecto Socio-Tecnológico II. Su objetivo es automatizar y optimizar los procesos operativos, administrativos y de producción de la empresa **Manufacturas R.J. Atlántico C.A.**
+Este proyecto es una solución tecnológica desarrollada por el **Grupo Textil de la Sección 536 del PNF en Informática de la UPTP "JJ Montilla"**, como parte del Proyecto Socio-Tecnológico III. Su objetivo es automatizar y optimizar los procesos operativos, administrativos y de producción de la empresa **Manufacturas R.J. Atlántico C.A.**
 
 ---
 
