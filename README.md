@@ -150,6 +150,3 @@ Este proyecto se alinea con el Plan de Desarrollo Económico de la Nación (Moto
 
 Licenciado bajo **Creative Commons Atribución – No Comercial – Compartir Igual 4.0 Internacional**.
 Consulta los términos en: [creativecommons.org](https://creativecommons.org/licenses/by-nc-sa/4.0/deed.es)
-
-
-MODIFICACION
