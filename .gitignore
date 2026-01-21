@@ -9,5 +9,4 @@
 .phpunit.result.cache
 /storage/logs/*.log
 *.log
-*.sql
 .DS_Store
