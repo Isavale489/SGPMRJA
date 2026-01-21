@@ -29,9 +29,13 @@ class ProveedorController extends Controller
             'email' => 'nullable|email|max:100',
             'contacto' => 'nullable|string|max:100',
             'telefono_contacto' => 'nullable|string|max:20',
+            'estado' => 'nullable|boolean',
         ]);
 
-        $proveedor = Proveedor::create($request->all());
+        $proveedor = Proveedor::create($request->only([
+            'razon_social', 'rif', 'direccion', 'telefono',
+            'email', 'contacto', 'telefono_contacto', 'estado'
+        ]));
 
         return response()->json(['success' => 'Proveedor creado exitosamente.']);
     }
@@ -64,10 +68,14 @@ class ProveedorController extends Controller
             'email' => 'nullable|email|max:100',
             'contacto' => 'nullable|string|max:100',
             'telefono_contacto' => 'nullable|string|max:20',
+            'estado' => 'nullable|boolean',
         ]);
 
         $proveedor = Proveedor::findOrFail($id);
-        $proveedor->update($request->all());
+        $proveedor->update($request->only([
+            'razon_social', 'rif', 'direccion', 'telefono',
+            'email', 'contacto', 'telefono_contacto', 'estado'
+        ]));
 
         return response()->json(['success' => 'Proveedor actualizado exitosamente.']);
     }

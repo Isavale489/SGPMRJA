@@ -20,7 +20,6 @@ class User extends Authenticatable
      * @var array<int, string>
      */
     protected $fillable = [
-        'persona_id',
         'name',
         'avatar',
         'role',
@@ -29,11 +28,8 @@ class User extends Authenticatable
         'estado',
     ];
 
-    // Rel ación con Persona
-    public function persona()
-    {
-        return $this->belongsTo(Persona::class);
-    }
+    // Nota: Si necesitas relacionar usuarios con personas, debes crear
+    // una migración que agregue la columna persona_id a la tabla user
 
     public function ordenesCreadas()
     {

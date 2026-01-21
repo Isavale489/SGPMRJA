@@ -114,32 +114,53 @@
                     <div class="modal-body">
                         <input type="hidden" id="id-field" />
                         <div class="mb-3">
-                            <label for="razon-social-field" class="form-label required">Razón Social</label><input
-                                type="text" id="razon-social-field" name="razon_social" class="form-control" required />
+                            <label for="rif-field" class="form-label required">RIF</label>
+                            <div class="input-group">
+                                <select class="form-select" id="rif-prefix-field" style="max-width: 80px;">
+                                    <option value="J-">J-</option>
+                                    <option value="V-">V-</option>
+                                    <option value="G-">G-</option>
+                                    <option value="E-">E-</option>
+                                </select>
+                                <input type="text" id="rif-number-field" class="form-control"
+                                    placeholder="Ej: 123456789" maxlength="10" required />
+                            </div>
+                            <input type="hidden" id="rif-field" name="rif" />
+                            <small class="text-muted">Máximo 10 dígitos</small>
+                            <div id="rif-error" class="invalid-feedback"></div>
                         </div>
                         <div class="mb-3">
-                            <label for="rif-field" class="form-label required">RIF</label><input type="text" id="rif-field"
-                                name="rif" class="form-control" maxlength="15" required />
+                            <label for="razon-social-field" class="form-label required">Razón Social</label>
+                            <input type="text" id="razon-social-field" name="razon_social" class="form-control" 
+                                maxlength="200" placeholder="Nombre de la empresa" required />
+                            <div id="razon-social-error" class="invalid-feedback"></div>
                         </div>
                         <div class="mb-3">
                             <label for="direccion-field" class="form-label">Dirección</label>
-                            <input type="text" id="direccion-field" name="direccion" class="form-control" />
+                            <input type="text" id="direccion-field" name="direccion" class="form-control" 
+                                maxlength="500" placeholder="Dirección de la empresa" />
                         </div>
                         <div class="mb-3">
-                            <label for="telefono-field" class="form-label required">Teléfono</label><input type="text"
-                                id="telefono-field" name="telefono" class="form-control" required />
+                            <label for="telefono-field" class="form-label required">Teléfono</label>
+                            <input type="text" id="telefono-field" name="telefono" class="form-control" 
+                                placeholder="0424-1234567" maxlength="12" required />
+                            <div id="telefono-error" class="invalid-feedback"></div>
                         </div>
                         <div class="mb-3">
                             <label for="email-field" class="form-label">Email</label>
-                            <input type="email" id="email-field" name="email" class="form-control" />
+                            <input type="email" id="email-field" name="email" class="form-control" 
+                                placeholder="correo@empresa.com" />
+                            <div id="email-error" class="invalid-feedback"></div>
                         </div>
                         <div class="mb-3">
                             <label for="contacto-field" class="form-label">Persona de Contacto</label>
-                            <input type="text" id="contacto-field" name="contacto" class="form-control" />
+                            <input type="text" id="contacto-field" name="contacto" class="form-control" 
+                                maxlength="100" placeholder="Nombre del contacto" />
                         </div>
                         <div class="mb-3">
                             <label for="telefono-contacto-field" class="form-label">Teléfono de Contacto</label>
-                            <input type="text" id="telefono-contacto-field" name="telefono_contacto" class="form-control" />
+                            <input type="text" id="telefono-contacto-field" name="telefono_contacto" class="form-control" 
+                                placeholder="0424-1234567" maxlength="12" />
                         </div>
                         <div class="mb-3">
                             <label for="estado-field" class="form-label">Estado</label>
@@ -315,7 +336,18 @@
                     $("#modalTitle").text("Editar Proveedor");
                     $("#id-field").val(data.id);
                     $("#razon-social-field").val(data.razon_social);
-                    $("#rif-field").val(data.rif);
+                    
+                    // Separar prefijo y número del RIF
+                    var rif = data.rif || '';
+                    var rifMatch = rif.match(/^(V-|J-|E-|G-)(.+)$/);
+                    if (rifMatch) {
+                        $("#rif-prefix-field").val(rifMatch[1]);
+                        $("#rif-number-field").val(rifMatch[2]);
+                    } else {
+                        $("#rif-prefix-field").val('J-');
+                        $("#rif-number-field").val(rif);
+                    }
+                    
                     $("#direccion-field").val(data.direccion);
                     $("#telefono-field").val(data.telefono);
                     $("#email-field").val(data.email);
@@ -337,6 +369,12 @@
                 var method = id ? "PUT" : "POST";
 
                 var formData = new FormData(this);
+                
+                // Combinar prefijo y número del RIF
+                var rifPrefix = $('#rif-prefix-field').val();
+                var rifNumber = $('#rif-number-field').val();
+                formData.set('rif', rifPrefix + rifNumber);
+                
                 if (method === "PUT") {
                     formData.append('_method', 'PUT');
                 }

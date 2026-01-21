@@ -46,16 +46,64 @@ class ClienteController extends Controller
 
     public function store(Request $request)
     {
+        // Extraer prefijo y número del documento para validar unicidad
+        $documento = $request->documento;
+        $tipoDocumento = 'V-';
+        $numeroDocumento = $documento;
+
+        if (preg_match('/^(V-|J-|E-|G-)(.+)$/', $documento, $matches)) {
+            $tipoDocumento = $matches[1];
+            $numeroDocumento = $matches[2];
+        }
+
         $request->validate([
-            'nombre' => 'required|string|max:255',
-            'apellido' => 'nullable|string|max:255',
+            'nombre' => 'required|string|min:2|max:100|regex:/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/',
+            'apellido' => 'nullable|string|max:100|regex:/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]*$/',
             'tipo_cliente' => 'required|in:natural,juridico',
-            'email' => 'nullable|string|email|max:255|unique:persona,email',
-            'telefono' => 'required|string|max:30',
-            'documento' => 'required|string|max:50',
-            'direccion' => 'nullable|string|max:255',
+            'email' => 'nullable|string|email:rfc,dns|max:255|unique:persona,email',
+            'telefono' => 'required|string|regex:/^[0-9]{4}-[0-9]{7}$/',
+            'documento' => [
+                'required',
+                'string',
+                'max:50',
+                function ($attribute, $value, $fail) use ($numeroDocumento) {
+                    // Validar que el número de documento solo contenga números
+                    if (!preg_match('/^[0-9]+$/', $numeroDocumento)) {
+                        $fail('El número de documento solo puede contener números.');
+                    }
+                    // Validar longitud mínima
+                    if (strlen($numeroDocumento) < 6) {
+                        $fail('El documento debe tener al menos 6 dígitos.');
+                    }
+                    // Verificar unicidad en la tabla persona
+                    $exists = \App\Models\Persona::where('documento_identidad', $numeroDocumento)->exists();
+                    if ($exists) {
+                        $fail('Este documento ya está registrado en el sistema.');
+                    }
+                },
+            ],
+            'direccion' => 'nullable|string|max:500',
             'ciudad' => 'nullable|string|max:100',
             'estado' => 'required|in:0,1',
+        ], [
+            // Mensajes personalizados
+            'nombre.required' => 'El nombre es obligatorio.',
+            'nombre.min' => 'El nombre debe tener al menos 2 caracteres.',
+            'nombre.max' => 'El nombre no puede exceder los 100 caracteres.',
+            'nombre.regex' => 'El nombre solo puede contener letras y espacios.',
+            'apellido.max' => 'El apellido no puede exceder los 100 caracteres.',
+            'apellido.regex' => 'El apellido solo puede contener letras y espacios.',
+            'tipo_cliente.required' => 'Debe seleccionar el tipo de cliente.',
+            'tipo_cliente.in' => 'El tipo de cliente debe ser Natural o Jurídico.',
+            'email.email' => 'El email debe ser una dirección de correo válida.',
+            'email.unique' => 'Este email ya está registrado en el sistema.',
+            'telefono.required' => 'El teléfono es obligatorio.',
+            'telefono.regex' => 'El teléfono debe tener el formato 0424-1234567.',
+            'documento.required' => 'El documento de identidad es obligatorio.',
+            'direccion.max' => 'La dirección no puede exceder los 500 caracteres.',
+            'ciudad.max' => 'La ciudad no puede exceder los 100 caracteres.',
+            'estado.required' => 'Debe seleccionar el estado del cliente.',
+            'estado.in' => 'El estado debe ser Activo o Inactivo.',
         ]);
 
         $clienteId = null;
@@ -119,7 +167,7 @@ class ClienteController extends Controller
 
     public function edit($id)
     {
-        $cliente = Cliente::with(['persona.telefonos', 'persona.direcciones'])->find($id);
+        $cliente = Cliente::with(['persona.telefonos', 'persona.direcciones'])->findOrFail($id);
 
         // Obtener teléfono y dirección principal
         $telefonoPrincipal = $cliente->telefono;
@@ -148,16 +196,66 @@ class ClienteController extends Controller
     {
         $cliente = Cliente::with(['persona.telefonos', 'persona.direcciones'])->findOrFail($id);
 
+        // Extraer prefijo y número del documento para validar unicidad
+        $documento = $request->documento;
+        $tipoDocumento = 'V-';
+        $numeroDocumento = $documento;
+
+        if (preg_match('/^(V-|J-|E-|G-)(.+)$/', $documento, $matches)) {
+            $tipoDocumento = $matches[1];
+            $numeroDocumento = $matches[2];
+        }
+
         $request->validate([
-            'nombre' => 'required|string|max:255',
-            'apellido' => 'nullable|string|max:255',
+            'nombre' => 'required|string|min:2|max:100|regex:/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/',
+            'apellido' => 'nullable|string|max:100|regex:/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]*$/',
             'tipo_cliente' => 'required|in:natural,juridico',
-            'email' => 'nullable|string|email|max:255|unique:persona,email,' . ($cliente->persona_id ?? 'NULL'),
-            'telefono' => 'required|string|max:30',
-            'documento' => 'required|string|max:50',
-            'direccion' => 'nullable|string|max:255',
+            'email' => 'nullable|string|email:rfc,dns|max:255|unique:persona,email,' . ($cliente->persona_id ?? 'NULL'),
+            'telefono' => 'required|string|regex:/^[0-9]{4}-[0-9]{7}$/',
+            'documento' => [
+                'required',
+                'string',
+                'max:50',
+                function ($attribute, $value, $fail) use ($numeroDocumento, $cliente) {
+                    // Validar que el número de documento solo contenga números
+                    if (!preg_match('/^[0-9]+$/', $numeroDocumento)) {
+                        $fail('El número de documento solo puede contener números.');
+                    }
+                    // Validar longitud mínima
+                    if (strlen($numeroDocumento) < 6) {
+                        $fail('El documento debe tener al menos 6 dígitos.');
+                    }
+                    // Verificar unicidad en la tabla persona (excluyendo el registro actual)
+                    $exists = \App\Models\Persona::where('documento_identidad', $numeroDocumento)
+                        ->where('id', '!=', $cliente->persona_id)
+                        ->exists();
+                    if ($exists) {
+                        $fail('Este documento ya está registrado en el sistema.');
+                    }
+                },
+            ],
+            'direccion' => 'nullable|string|max:500',
             'ciudad' => 'nullable|string|max:100',
             'estado' => 'required|in:0,1',
+        ], [
+            // Mensajes personalizados
+            'nombre.required' => 'El nombre es obligatorio.',
+            'nombre.min' => 'El nombre debe tener al menos 2 caracteres.',
+            'nombre.max' => 'El nombre no puede exceder los 100 caracteres.',
+            'nombre.regex' => 'El nombre solo puede contener letras y espacios.',
+            'apellido.max' => 'El apellido no puede exceder los 100 caracteres.',
+            'apellido.regex' => 'El apellido solo puede contener letras y espacios.',
+            'tipo_cliente.required' => 'Debe seleccionar el tipo de cliente.',
+            'tipo_cliente.in' => 'El tipo de cliente debe ser Natural o Jurídico.',
+            'email.email' => 'El email debe ser una dirección de correo válida.',
+            'email.unique' => 'Este email ya está registrado en el sistema.',
+            'telefono.required' => 'El teléfono es obligatorio.',
+            'telefono.regex' => 'El teléfono debe tener el formato 0424-1234567.',
+            'documento.required' => 'El documento de identidad es obligatorio.',
+            'direccion.max' => 'La dirección no puede exceder los 500 caracteres.',
+            'ciudad.max' => 'La ciudad no puede exceder los 100 caracteres.',
+            'estado.required' => 'Debe seleccionar el estado del cliente.',
+            'estado.in' => 'El estado debe ser Activo o Inactivo.',
         ]);
 
         DB::transaction(function () use ($request, $cliente) {

@@ -133,42 +133,207 @@
     <!-- Script global para validación de campos -->
     <script>
         $(document).ready(function() {
-            // Lista de selectores de campos que solo deben aceptar números
-            const camposNumericos = [
-                '#documento-number-field',       // Documento cliente
-                '#documento-identidad-field',    // Documento empleado
-                '#rif-field',                    // RIF proveedor
-                '#ci-rif-number-field',          // CI/RIF cotización/pedido
-                '#documento-number-field-cliente', // Documento en modal cliente
-                'input[name="stock_actual"]',
-                'input[name="stock_minimo"]',
-                'input[name="cantidad"]'
+            // ============================================
+            // VALIDACIONES EN TIEMPO REAL (MIENTRAS ESCRIBE)
+            // ============================================
+            
+            // Campos de NOMBRE/APELLIDO - Solo letras y espacios
+            const camposNombre = [
+                '#nombre-field',
+                '#apellido-field',
+                '#razon-social-field',
+                '#nombre-contacto-field',
+                'input[name="nombre"]',
+                'input[name="apellido"]',
+                'input[name="razon_social"]',
+                'input[name="nombre_contacto"]'
             ];
             
-            // Aplicar restricción a campos numéricos
-            camposNumericos.forEach(function(selector) {
+            camposNombre.forEach(function(selector) {
                 $(document).on('input', selector, function() {
-                    // Permitir solo números
-                    this.value = this.value.replace(/[^0-9]/g, '');
+                    this.value = this.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]/g, '');
                 });
             });
             
-            // Campos de teléfono - formato especial (números y guión)
+            // Campos de DOCUMENTO - Solo números (máximo 10 dígitos)
+            const camposDocumento = [
+                '#documento-number-field',
+                '#documento-identidad-field',
+                '#rif-number-field',
+                '#ci-rif-number-field',
+                'input[name="documento_identidad"]',
+                'input[name="rif_numero"]'
+            ];
+            
+            camposDocumento.forEach(function(selector) {
+                $(document).on('input', selector, function() {
+                    this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);
+                });
+            });
+            
+            // Campos de TELÉFONO - Formato 0424-1234567
             const camposTelefono = [
                 '#telefono-field',
                 '#telefono-contacto-field',
-                '#cliente-telefono-field',       // Teléfono en cotización/pedido
-                '#telefono-field-cliente',       // Teléfono en modal cliente
                 'input[name="telefono"]',
-                'input[name="telefono_contacto"]',
-                'input[name="cliente_telefono"]'
+                'input[name="telefono_contacto"]'
             ];
             
             camposTelefono.forEach(function(selector) {
                 $(document).on('input', selector, function() {
-                    // Permitir solo números y guión
-                    this.value = this.value.replace(/[^0-9\-]/g, '');
+                    let value = this.value.replace(/[^0-9]/g, '');
+                    if (value.length > 4) {
+                        value = value.slice(0, 4) + '-' + value.slice(4, 11);
+                    }
+                    this.value = value.slice(0, 12);
                 });
+            });
+            
+            // Campos de PRECIO/MONTO - Solo números y punto decimal
+            const camposPrecio = [
+                '#precio-field',
+                '#precio_base-field',
+                '#abono-field',
+                '#total-field',
+                'input[name="precio"]',
+                'input[name="precio_base"]',
+                'input[name="abono"]',
+                'input[name="total"]'
+            ];
+            
+            camposPrecio.forEach(function(selector) {
+                $(document).on('input', selector, function() {
+                    this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1');
+                });
+            });
+            
+            // Campos de CANTIDAD/STOCK - Solo números enteros
+            const camposCantidad = [
+                '#cantidad-field',
+                '#stock_actual-field',
+                '#stock_minimo-field',
+                'input[name="cantidad"]',
+                'input[name="stock_actual"]',
+                'input[name="stock_minimo"]'
+            ];
+            
+            camposCantidad.forEach(function(selector) {
+                $(document).on('input', selector, function() {
+                    this.value = this.value.replace(/[^0-9]/g, '');
+                });
+            });
+            
+            // ============================================
+            // VALIDACIONES ONBLUR (AL SALIR DEL CAMPO)
+            // ============================================
+            
+            // Validación de nombres (mínimo 2 caracteres)
+            $(document).on('blur', '#nombre-field, input[name="nombre"]', function() {
+                validarCampoTexto($(this), 2, 'El nombre debe tener al menos 2 caracteres.');
+            });
+            
+            // Validación de apellidos (mínimo 2 caracteres si no está vacío)
+            $(document).on('blur', '#apellido-field, input[name="apellido"]', function() {
+                let value = $(this).val().trim();
+                if (value.length > 0 && value.length < 2) {
+                    marcarInvalido($(this), 'El apellido debe tener al menos 2 caracteres.');
+                } else {
+                    marcarValido($(this));
+                }
+            });
+            
+            // Validación de documento (mínimo 6 dígitos)
+            $(document).on('blur', '#documento-number-field, #documento-identidad-field, input[name="documento_identidad"]', function() {
+                let value = $(this).val().trim();
+                if (value.length < 6) {
+                    marcarInvalido($(this), 'El documento debe tener al menos 6 dígitos.');
+                } else {
+                    marcarValido($(this));
+                }
+            });
+            
+            // Validación de teléfono (formato 0424-1234567)
+            $(document).on('blur', '#telefono-field, input[name="telefono"]', function() {
+                let value = $(this).val().trim();
+                if (value.length > 0) {
+                    let regex = /^[0-9]{4}-[0-9]{7}$/;
+                    if (!regex.test(value)) {
+                        marcarInvalido($(this), 'El teléfono debe tener el formato 0424-1234567.');
+                    } else {
+                        marcarValido($(this));
+                    }
+                } else {
+                    limpiarValidacion($(this));
+                }
+            });
+            
+            // Validación de email
+            $(document).on('blur', '#email-field, input[type="email"], input[name="email"]', function() {
+                let value = $(this).val().trim();
+                if (value.length > 0) {
+                    let regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                    if (!regex.test(value)) {
+                        marcarInvalido($(this), 'Ingrese un email válido.');
+                    } else {
+                        marcarValido($(this));
+                    }
+                } else {
+                    limpiarValidacion($(this));
+                }
+            });
+            
+            // Validación de RIF (mínimo 9 dígitos)
+            $(document).on('blur', '#rif-number-field, input[name="rif_numero"]', function() {
+                let value = $(this).val().trim();
+                if (value.length < 9) {
+                    marcarInvalido($(this), 'El RIF debe tener al menos 9 dígitos.');
+                } else {
+                    marcarValido($(this));
+                }
+            });
+            
+            // ============================================
+            // FUNCIONES AUXILIARES DE VALIDACIÓN
+            // ============================================
+            
+            function validarCampoTexto($campo, minLength, mensaje) {
+                let value = $campo.val().trim();
+                if (value.length < minLength) {
+                    marcarInvalido($campo, mensaje);
+                } else {
+                    marcarValido($campo);
+                }
+            }
+            
+            function marcarInvalido($campo, mensaje) {
+                $campo.addClass('is-invalid').removeClass('is-valid');
+                let $feedback = $campo.siblings('.invalid-feedback');
+                if ($feedback.length === 0) {
+                    $feedback = $campo.parent().find('.invalid-feedback');
+                }
+                if ($feedback.length === 0) {
+                    $campo.after('<div class="invalid-feedback">' + mensaje + '</div>');
+                } else {
+                    $feedback.text(mensaje).show();
+                }
+            }
+            
+            function marcarValido($campo) {
+                $campo.removeClass('is-invalid').addClass('is-valid');
+                $campo.siblings('.invalid-feedback').hide();
+                $campo.parent().find('.invalid-feedback').hide();
+            }
+            
+            function limpiarValidacion($campo) {
+                $campo.removeClass('is-invalid is-valid');
+                $campo.siblings('.invalid-feedback').hide();
+                $campo.parent().find('.invalid-feedback').hide();
+            }
+            
+            // Limpiar validaciones al abrir cualquier modal
+            $(document).on('show.bs.modal', '.modal', function() {
+                $(this).find('.is-invalid, .is-valid').removeClass('is-invalid is-valid');
+                $(this).find('.invalid-feedback').hide();
             });
         });
     </script>

@@ -89,12 +89,12 @@
                     <table id="clientes-table" class="table table-bordered table-striped table-sm align-middle">
                         <thead>
                             <tr>
+                                <th>Documento</th>
                                 <th>Nombre</th>
                                 <th>Apellido</th>
                                 <th>Tipo</th>
                                 <th>Email</th>
                                 <th>Teléfono</th>
-                                <th>Documento</th>
                                 <th>Dirección</th>
                                 <th>Ciudad</th>
                                 <th>Estado</th>
@@ -328,13 +328,32 @@
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="mb-3">
-                                    <label for="nombre-field" class="form-label required">Nombre</label><input type="text"
-                                        id="nombre-field" name="nombre" class="form-control" placeholder="Nombre"
-                                        required />
+                                    <label for="documento-field" class="form-label required">Documento (Cédula o RIF)</label>
+                                    <div class="input-group">
+                                        <select class="form-select" id="documento-prefix-field" style="max-width: 80px;">
+                                            <option value="V-">V-</option>
+                                            <option value="J-">J-</option>
+                                            <option value="E-">E-</option>
+                                            <option value="G-">G-</option>
+                                        </select>
+                                        <input type="text" id="documento-number-field" class="form-control"
+                                            placeholder="Número de documento" maxlength="10" required />
+                                    </div>
+                                    <input type="hidden" id="documento-field" name="documento" />
+                                    <small class="text-muted">Máximo 10 dígitos</small>
+                                    <div id="documento-error" class="invalid-feedback"></div>
                                 </div>
                                 <div class="mb-3">
-                                    <label for="apellido-field" class="form-label">Apellido</label><input type="text"
-                                        id="apellido-field" name="apellido" class="form-control" placeholder="Apellido" />
+                                    <label for="nombre-field" class="form-label required">Nombre</label>
+                                    <input type="text" id="nombre-field" name="nombre" class="form-control" 
+                                        placeholder="Nombre" maxlength="100" required />
+                                    <div id="nombre-error" class="invalid-feedback"></div>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="apellido-field" class="form-label">Apellido</label>
+                                    <input type="text" id="apellido-field" name="apellido" class="form-control" 
+                                        placeholder="Apellido" maxlength="100" />
+                                    <div id="apellido-error" class="invalid-feedback"></div>
                                 </div>
                                 <div class="mb-3">
                                     <label for="tipo_cliente-field" class="form-label required">Tipo de
@@ -349,37 +368,25 @@
                                     <label for="email-field" class="form-label">Email</label>
                                     <input type="email" id="email-field" name="email" class="form-control"
                                         placeholder="Email" />
+                                    <div id="email-error" class="invalid-feedback"></div>
                                 </div>
                                 <div class="mb-3">
-                                    <label for="telefono-field" class="form-label required">Teléfono</label><input
-                                        type="text" id="telefono-field" name="telefono" class="form-control"
-                                        placeholder="Teléfono" required />
-                                </div>
-                                <div class="mb-3">
-                                    <label for="documento-field" class="form-label">Documento (Cédula o RIF)</label>
-                                    <div class="input-group">
-                                        <select class="form-select" id="documento-prefix-field" style="max-width: 80px;">
-                                            <option value="V-">V-</option>
-                                            <option value="J-">J-</option>
-                                            <option value="E-">E-</option>
-                                            <option value="G-">G-</option>
-                                        </select>
-                                        <input type="text" id="documento-number-field" class="form-control"
-                                            placeholder="Número de documento" required />
-                                    </div>
-                                    <input type="hidden" id="documento-field" name="documento" />
+                                    <label for="telefono-field" class="form-label required">Teléfono</label>
+                                    <input type="text" id="telefono-field" name="telefono" class="form-control"
+                                        placeholder="0424-1234567" maxlength="12" required />
+                                    <div id="telefono-error" class="invalid-feedback"></div>
                                 </div>
                             </div>
                             <div class="col-md-6">
                                 <div class="mb-3">
                                     <label for="direccion-field" class="form-label">Dirección</label>
                                     <input type="text" id="direccion-field" name="direccion" class="form-control"
-                                        placeholder="Dirección" />
+                                        placeholder="Dirección" maxlength="500" />
                                 </div>
                                 <div class="mb-3">
                                     <label for="ciudad-field" class="form-label">Ciudad</label>
                                     <input type="text" id="ciudad-field" name="ciudad" class="form-control"
-                                        placeholder="Ciudad" />
+                                        placeholder="Ciudad" maxlength="100" />
                                 </div>
                                 <div class="mb-3">
                                     <label for="estado-field" class="form-label">Estado</label>
@@ -424,7 +431,90 @@
             if (value.length > 4) {
                 value = value.slice(0, 4) + '-' + value.slice(4, 11);
             }
-            this.value = value.slice(0, 12); // Máximo 12 caracteres (incluyendo el guion)
+            this.value = value.slice(0, 12);
+        });
+
+        // Validación en tiempo real para nombre (solo letras y espacios)
+        $(document).on('input', '#nombre-field', function () {
+            this.value = this.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '');
+        });
+
+        // Validación en tiempo real para apellido (solo letras y espacios)
+        $(document).on('input', '#apellido-field', function () {
+            this.value = this.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '');
+        });
+
+        // Validación en tiempo real para documento (solo números)
+        $(document).on('input', '#documento-number-field', function () {
+            this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);
+        });
+
+        // Validación onblur para nombre
+        $(document).on('blur', '#nombre-field', function () {
+            let value = $(this).val().trim();
+            if (value.length < 2) {
+                $(this).addClass('is-invalid');
+                $('#nombre-error').text('El nombre debe tener al menos 2 caracteres.').show();
+            } else {
+                $(this).removeClass('is-invalid').addClass('is-valid');
+                $('#nombre-error').hide();
+            }
+        });
+
+        // Validación onblur para apellido
+        $(document).on('blur', '#apellido-field', function () {
+            let value = $(this).val().trim();
+            if (value.length > 0 && value.length < 2) {
+                $(this).addClass('is-invalid');
+                $('#apellido-error').text('El apellido debe tener al menos 2 caracteres.').show();
+            } else {
+                $(this).removeClass('is-invalid').addClass('is-valid');
+                $('#apellido-error').hide();
+            }
+        });
+
+        // Validación onblur para documento
+        $(document).on('blur', '#documento-number-field', function () {
+            let value = $(this).val().trim();
+            if (value.length < 6) {
+                $(this).addClass('is-invalid');
+                $('#documento-error').text('El documento debe tener al menos 6 dígitos.').show();
+            } else {
+                $(this).removeClass('is-invalid').addClass('is-valid');
+                $('#documento-error').hide();
+            }
+        });
+
+        // Validación onblur para teléfono
+        $(document).on('blur', '#telefono-field', function () {
+            let value = $(this).val().trim();
+            let regex = /^[0-9]{4}-[0-9]{7}$/;
+            if (!regex.test(value)) {
+                $(this).addClass('is-invalid');
+                $('#telefono-error').text('El teléfono debe tener el formato 0424-1234567.').show();
+            } else {
+                $(this).removeClass('is-invalid').addClass('is-valid');
+                $('#telefono-error').hide();
+            }
+        });
+
+        // Validación onblur para email
+        $(document).on('blur', '#email-field', function () {
+            let value = $(this).val().trim();
+            let regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (value.length > 0 && !regex.test(value)) {
+                $(this).addClass('is-invalid');
+                $('#email-error').text('Ingrese un email válido.').show();
+            } else {
+                $(this).removeClass('is-invalid').addClass('is-valid');
+                $('#email-error').hide();
+            }
+        });
+
+        // Limpiar validaciones al abrir modal
+        $('#showModal').on('show.bs.modal', function () {
+            $('.is-invalid, .is-valid').removeClass('is-invalid is-valid');
+            $('.invalid-feedback').hide();
         });
     </script>
     <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
@@ -470,12 +560,12 @@
             var table = $('#clientes-table').DataTable({
                 ajax: { url: "{{ route('clientes.data') }}", dataSrc: 'data' },
                 columns: [
+                    { data: 'documento' },
                     { data: 'nombre' },
                     { data: 'apellido' },
                     { data: 'tipo_cliente', render: function (data) { return data === 'natural' ? 'Natural' : 'Jurídico'; } },
                     { data: 'email' },
                     { data: 'telefono' },
-                    { data: 'documento' },
                     { data: 'direccion' },
                     { data: 'ciudad' },
                     { data: 'estado', render: function (data) { return data == 1 ? '<span class="badge bg-success">Activo</span>' : '<span class="badge bg-danger">Inactivo</span>'; } },
@@ -488,7 +578,7 @@
                     },
                     { data: null, render: function (data, type, row) { return generateButtons(row.id); } }
                 ],
-                order: [[9, 'desc']], // Columna "Creado" es ahora índice 9
+                order: [[0, 'asc']], // Ordenar por documento (primera columna)
                 dom: 'frtip',
                 buttons: [
                     {

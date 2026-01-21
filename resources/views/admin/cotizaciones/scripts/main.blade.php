@@ -7,6 +7,25 @@
         --atlantico-light-cyan: #38ef7d;
     }
 
+    /* Estilos para dropdowns de estado - Paleta Atlántico sobria */
+    .estado-pendiente {
+        background-color: rgba(30, 60, 114, 0.15) !important;
+        border-color: #1e3c72 !important;
+        color: #1e3c72 !important;
+    }
+
+    .estado-aprobada {
+        background-color: rgba(0, 217, 165, 0.15) !important;
+        border-color: #00d9a5 !important;
+        color: #006b52 !important;
+    }
+
+    .estado-rechazada {
+        background-color: rgba(139, 58, 58, 0.15) !important;
+        border-color: #8b3a3a !important;
+        color: #8b3a3a !important;
+    }
+
     /* Soft background colors for icons - Paleta Atlántico */
     .bg-soft-primary {
         background-color: rgba(30, 60, 114, 0.1) !important;
@@ -71,17 +90,17 @@
                     render: function (data, type, row) {
                         // Si ya fue convertida o está vencida, solo mostrar badge
                         if (data === 'Convertida') {
-                            return '<span class="badge bg-primary"><i class="ri-check-double-line me-1"></i>Convertida</span>';
+                            return '<span class="badge" style="background-color: #1e3c72;"><i class="ri-check-double-line me-1"></i>Convertida</span>';
                         }
                         if (data === 'Vencida') {
-                            return '<span class="badge bg-dark"><i class="ri-time-line me-1"></i>Vencida</span>';
+                            return '<span class="badge" style="background-color: #495057;"><i class="ri-time-line me-1"></i>Vencida</span>';
                         }
-                        // Dropdown para cambiar estado
+                        // Dropdown para cambiar estado - Paleta Atlántico sobria
                         var options = ['Pendiente', 'Aprobada', 'Rechazada'];
                         var badgeClass = {
-                            'Pendiente': 'bg-warning text-dark',
-                            'Aprobada': 'bg-success',
-                            'Rechazada': 'bg-danger'
+                            'Pendiente': 'estado-pendiente',
+                            'Aprobada': 'estado-aprobada',
+                            'Rechazada': 'estado-rechazada'
                         };
                         return `
                             <select class="form-select form-select-sm estado-dropdown ${badgeClass[data] || ''}" 

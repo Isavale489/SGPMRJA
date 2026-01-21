@@ -40,6 +40,7 @@ class UserController extends Controller
             'password' => 'required|string|min:8|confirmed',
             'avatar' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             'role' => 'required|in:Administrador,Supervisor',
+            'estado' => 'nullable|boolean',
         ]);
 
         $user = new User();
@@ -67,7 +68,7 @@ class UserController extends Controller
 
     public function edit($id)
     {
-        $user = User::find($id);
+        $user = User::findOrFail($id);
         return response()->json($user);
     }
 
@@ -78,9 +79,10 @@ class UserController extends Controller
             'email' => 'required|string|email|max:255|unique:user,email,' . $id,
             'avatar' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             'role' => 'required|in:Administrador,Supervisor',
+            'estado' => 'nullable|boolean',
         ]);
 
-        $user = User::find($id);
+        $user = User::findOrFail($id);
         $user->name = $request->name;
         $user->email = $request->email;
         $user->role = $request->role;
@@ -104,8 +106,8 @@ class UserController extends Controller
 
     public function destroy($id)
     {
-        $user = User::find($id);
-        if ($user->avatar) {
+        $user = User::findOrFail($id);
+        if ($user->avatar && file_exists(public_path($user->avatar))) {
             unlink(public_path($user->avatar));
         }
         $user->delete();

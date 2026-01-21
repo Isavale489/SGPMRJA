@@ -1286,7 +1286,28 @@
                         { data: 'cliente_documento_display', name: 'cliente_documento_display', defaultContent: 'N/A' },
                         { data: 'fecha_pedido', name: 'fecha_pedido' },
                         { data: 'fecha_entrega_estimada', name: 'fecha_entrega_estimada' },
-                        { data: 'estado', name: 'estado' },
+                        {
+                            data: 'estado',
+                            name: 'estado',
+                            render: function (data, type, row) {
+                                // Estilos de estado con paleta Atlántico
+                                var estadoStyles = {
+                                    'Pendiente': 'background-color: rgba(30, 60, 114, 0.15); border: 1px solid #1e3c72; color: #1e3c72;',
+                                    'Procesando': 'background-color: rgba(0, 217, 165, 0.15); border: 1px solid #00d9a5; color: #006b52;',
+                                    'Completado': 'background-color: rgba(46, 204, 113, 0.15); border: 1px solid #2ecc71; color: #1e8449;',
+                                    'Cancelado': 'background-color: rgba(139, 58, 58, 0.15); border: 1px solid #8b3a3a; color: #8b3a3a;'
+                                };
+                                var estadoIcons = {
+                                    'Pendiente': 'ri-time-line',
+                                    'Procesando': 'ri-loader-4-line',
+                                    'Completado': 'ri-check-double-line',
+                                    'Cancelado': 'ri-close-circle-line'
+                                };
+                                var style = estadoStyles[data] || 'background-color: #f8f9fa; color: #495057;';
+                                var icon = estadoIcons[data] || 'ri-question-line';
+                                return '<span class="badge" style="' + style + ' padding: 5px 10px; border-radius: 4px; font-weight: 500;"><i class="' + icon + ' me-1"></i>' + data + '</span>';
+                            }
+                        },
                         { data: 'total', name: 'total' },
                         { data: 'user.name', name: 'user.name', defaultContent: '' },
                         {

@@ -44,3 +44,262 @@ html.swal2-shown, body.swal2-shown {
     pointer-events: none !important;
     user-select: none !important;
 }
+
+/* ============================================
+   SIDEBAR PERSONALIZADO - Tema Oscuro
+   Combina con el logo (azul/verde sobre oscuro)
+   ============================================ */
+
+/* Fondo del sidebar */
+.app-menu.navbar-menu {
+    background: linear-gradient(180deg, #1a1d21 0%, #2d3436 100%) !important;
+}
+
+/* Logo box */
+.navbar-brand-box {
+    background: #1a1d21 !important;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+/* Título del menú */
+.navbar-nav .menu-title {
+    color: #00d9a5 !important;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 11px;
+    letter-spacing: 1px;
+}
+
+/* Links del menú */
+.app-menu .navbar-nav .nav-link {
+    color: #a3b0c0 !important;
+    transition: all 0.3s ease;
+}
+
+.app-menu .navbar-nav .nav-link:hover {
+    color: #ffffff !important;
+    background: rgba(0, 217, 165, 0.1) !important;
+}
+
+.app-menu .navbar-nav .nav-link i {
+    color: #00d9a5 !important;
+}
+
+/* Item activo */
+.app-menu .navbar-nav .nav-link.active {
+    background: linear-gradient(90deg, rgba(0, 217, 165, 0.2) 0%, rgba(0, 102, 255, 0.1) 100%) !important;
+    color: #00d9a5 !important;
+    border-left: 3px solid #00d9a5 !important;
+    font-weight: 600;
+}
+
+.app-menu .navbar-nav .nav-link.active i {
+    color: #00d9a5 !important;
+}
+
+/* Submenús */
+.app-menu .menu-dropdown {
+    background: rgba(0, 0, 0, 0.2) !important;
+}
+
+.app-menu .menu-dropdown .nav-link {
+    color: #8a98ab !important;
+    padding-left: 52px !important;
+}
+
+.app-menu .menu-dropdown .nav-link:hover {
+    color: #00d9a5 !important;
+}
+
+.app-menu .menu-dropdown .nav-link.active {
+    color: #00d9a5 !important;
+    background: rgba(0, 217, 165, 0.15) !important;
+}
+
+/* Scrollbar personalizado */
+.app-menu #scrollbar::-webkit-scrollbar {
+    width: 6px;
+}
+
+.app-menu #scrollbar::-webkit-scrollbar-track {
+    background: #1a1d21;
+}
+
+.app-menu #scrollbar::-webkit-scrollbar-thumb {
+    background: #00d9a5;
+    border-radius: 3px;
+}
+
+/* ============================================
+   COLORES DE ESTADO GLOBALES
+   ============================================ */
+
+/* Badge de Estado Activo */
+.badge-estado-activo,
+.badge.bg-success-subtle.text-success,
+.badge[data-estado="activo"],
+.badge[data-estado="1"] {
+    background-color: rgba(16, 185, 129, 0.18) !important;
+    color: #10b981 !important;
+    font-weight: 500;
+}
+
+/* Badge de Estado Inactivo */
+.badge-estado-inactivo,
+.badge.bg-danger-subtle.text-danger,
+.badge[data-estado="inactivo"],
+.badge[data-estado="0"] {
+    background-color: rgba(239, 68, 68, 0.18) !important;
+    color: #ef4444 !important;
+    font-weight: 500;
+}
+
+/* Badge Pendiente */
+.badge-estado-pendiente,
+.badge[data-estado="pendiente"] {
+    background-color: rgba(245, 158, 11, 0.18) !important;
+    color: #f59e0b !important;
+    font-weight: 500;
+}
+
+/* Badge Procesando / En Proceso */
+.badge-estado-procesando,
+.badge[data-estado="procesando"],
+.badge[data-estado="en_proceso"] {
+    background-color: rgba(59, 130, 246, 0.18) !important;
+    color: #3b82f6 !important;
+    font-weight: 500;
+}
+
+/* Badge Completado / Aprobado */
+.badge-estado-completado,
+.badge-estado-aprobado,
+.badge[data-estado="completado"],
+.badge[data-estado="aprobada"] {
+    background-color: rgba(16, 185, 129, 0.18) !important;
+    color: #10b981 !important;
+    font-weight: 500;
+}
+
+/* Badge Cancelado / Rechazado */
+.badge-estado-cancelado,
+.badge-estado-rechazado,
+.badge[data-estado="cancelado"],
+.badge[data-estado="rechazada"] {
+    background-color: rgba(239, 68, 68, 0.18) !important;
+    color: #ef4444 !important;
+    font-weight: 500;
+}
+
+/* Badge Convertida */
+.badge-estado-convertida,
+.badge[data-estado="convertida"] {
+    background-color: rgba(139, 92, 246, 0.18) !important;
+    color: #8b5cf6 !important;
+    font-weight: 500;
+}
+
+/* Badge Vencida */
+.badge-estado-vencida,
+.badge[data-estado="vencida"] {
+    background-color: rgba(107, 114, 128, 0.18) !important;
+    color: #6b7280 !important;
+    font-weight: 500;
+}
+
+/* Prioridades */
+.badge-prioridad-normal {
+    background-color: rgba(59, 130, 246, 0.18) !important;
+    color: #3b82f6 !important;
+}
+
+.badge-prioridad-alta {
+    background-color: rgba(245, 158, 11, 0.18) !important;
+    color: #f59e0b !important;
+}
+
+.badge-prioridad-urgente {
+    background-color: rgba(239, 68, 68, 0.18) !important;
+    color: #ef4444 !important;
+    animation: pulse-urgente 2s infinite;
+}
+
+@keyframes pulse-urgente {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+/* ============================================
+   ESTILOS DE VALIDACIÓN GLOBALES
+   ============================================ */
+
+/* Campo válido */
+.form-control.is-valid,
+.form-select.is-valid {
+    border-color: #10b981 !important;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3e%3cpath fill='%2310b981' d='M2.3 6.73L.6 4.53c-.4-1.04.46-1.4 1.1-.8l1.1 1.4 3.4-3.8c.6-.63 1.6-.27 1.2.7l-4 4.6c-.43.5-.8.4-1.1.1z'/%3e%3c/svg%3e") !important;
+}
+
+/* Campo inválido */
+.form-control.is-invalid,
+.form-select.is-invalid {
+    border-color: #ef4444 !important;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' width='12' height='12' fill='none' stroke='%23ef4444'%3e%3ccircle cx='6' cy='6' r='4.5'/%3e%3cpath stroke-linejoin='round' d='M5.8 3.6h.4L6 6.5z'/%3e%3ccircle cx='6' cy='8.2' r='.6' fill='%23ef4444' stroke='none'/%3e%3c/svg%3e") !important;
+}
+
+/* Mensaje de error */
+.invalid-feedback {
+    color: #ef4444;
+    font-size: 12px;
+    margin-top: 4px;
+}
+
+/* Mensaje de éxito */
+.valid-feedback {
+    color: #10b981;
+    font-size: 12px;
+    margin-top: 4px;
+}
+
+/* Input group con validación */
+.input-group .form-control.is-invalid,
+.input-group .form-control.is-valid {
+    z-index: 3;
+}
+
+/* ============================================
+   MEJORAS VISUALES GENERALES
+   ============================================ */
+
+/* Tablas - filas alternas */
+.table-striped > tbody > tr:nth-of-type(odd) > * {
+    background-color: rgba(0, 217, 165, 0.03);
+}
+
+/* Hover en filas de tabla */
+.table-hover > tbody > tr:hover > * {
+    background-color: rgba(0, 217, 165, 0.08);
+}
+
+/* Cards con sombra suave */
+.card {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    border: none;
+}
+
+/* Botones primarios con gradiente */
+.btn-primary {
+    background: linear-gradient(135deg, #0066ff 0%, #00d9a5 100%);
+    border: none;
+}
+
+.btn-primary:hover {
+    background: linear-gradient(135deg, #0052cc 0%, #00b386 100%);
+}
+
+/* Focus en inputs */
+.form-control:focus,
+.form-select:focus {
+    border-color: #00d9a5;
+    box-shadow: 0 0 0 0.2rem rgba(0, 217, 165, 0.25);
+}
