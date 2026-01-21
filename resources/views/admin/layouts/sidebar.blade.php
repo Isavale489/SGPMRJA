@@ -46,19 +46,21 @@
         === App Menu Dark Logo-->
         <a href="{{ route('dashboard') }}" class="logo logo-dark">
             <span class="logo-sm">
-                <img src="{{ asset('logo.jpg') }}" alt="" height="32">
+                <img src="{{ asset('atlantico-logo-wide.png') }}" alt="" height="32">
             </span>
             <span class="logo-lg">
-                <img src="{{ asset('logo.jpg') }}" alt="" height="80">
+                <img src="{{ asset('atlantico-logo-wide.png') }}" alt=""
+                    style="height: auto; width: 100%; max-width: 180px;">
             </span>
         </a>
         <!-- Light Logo-->
         <a href="{{ route('dashboard') }}" class="logo logo-light">
             <span class="logo-sm">
-                <img src="{{ asset('logo.jpg') }}" alt="" height="32">
+                <img src="{{ asset('atlantico-logo-wide.png') }}" alt="" height="32">
             </span>
             <span class="logo-lg">
-                <img src="{{ asset('logo.jpg') }}" alt="" height="80">
+                <img src="{{ asset('atlantico-logo-wide.png') }}" alt=""
+                    style="height: auto; width: 100%; max-width: 180px;">
             </span>
         </a>
         <button type="button" class="btn btn-sm p-0 fs-20 header-item float-end btn-vertical-sm-hover"
@@ -85,20 +87,14 @@
                     @if (Auth::user()->isAdmin())
                         <li class="nav-item">
                             <a class="nav-link menu-link" href="#sidebarPersonas" data-bs-toggle="collapse" role="button"
-                                aria-expanded="{{ request()->is('users*') || request()->is('clientes*') || request()->is('empleados*') ? 'true' : 'false' }}"
+                                aria-expanded="{{ request()->is('users*') || request()->is('clientes*') || request()->is('empleados*') || request()->is('proveedores*') ? 'true' : 'false' }}"
                                 aria-controls="sidebarPersonas">
                                 <i class="ri-group-line"></i> <span data-key="t-personas">Gestión de Personas</span>
                             </a>
-                            <div class="collapse menu-dropdown {{ request()->is('users*') || request()->is('clientes*') || request()->is('empleados*') ? 'show' : '' }}"
+                            <div class="collapse menu-dropdown {{ request()->is('users*') || request()->is('clientes*') || request()->is('empleados*') || request()->is('proveedores*') ? 'show' : '' }}"
                                 id="sidebarPersonas">
                                 <ul class="nav nav-sm flex-column">
-                                    <li class="nav-item">
-                                        <a href="{{ url('users') }}"
-                                            class="nav-link {{ request()->is('users*') ? 'active' : '' }}"
-                                            data-key="t-usuarios">
-                                            <i class="ri-user-3-line me-1"></i> Usuarios
-                                        </a>
-                                    </li>
+
                                     <li class="nav-item">
                                         <a href="{{ url('clientes') }}"
                                             class="nav-link {{ request()->is('clientes*') ? 'active' : '' }}"
@@ -111,6 +107,13 @@
                                             class="nav-link {{ request()->is('empleados*') ? 'active' : '' }}"
                                             data-key="t-empleados">
                                             <i class="ri-user-settings-line me-1"></i> Empleados
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a href="{{ url('proveedores') }}"
+                                            class="nav-link {{ request()->is('proveedores*') ? 'active' : '' }}"
+                                            data-key="t-proveedores">
+                                            <i class="ri-user-2-line me-1"></i> Proveedores
                                         </a>
                                     </li>
                                 </ul>
@@ -151,11 +154,11 @@
                         {{-- Menú desplegable: Catálogo --}}
                         <li class="nav-item">
                             <a class="nav-link menu-link" href="#sidebarCatalogo" data-bs-toggle="collapse" role="button"
-                                aria-expanded="{{ request()->is('productos*') || request()->is('proveedores*') ? 'true' : 'false' }}"
+                                aria-expanded="{{ request()->is('productos*') ? 'true' : 'false' }}"
                                 aria-controls="sidebarCatalogo">
                                 <i class="ri-store-2-line"></i> <span data-key="t-catalogo">Catálogo</span>
                             </a>
-                            <div class="collapse menu-dropdown {{ request()->is('productos*') || request()->is('proveedores*') ? 'show' : '' }}"
+                            <div class="collapse menu-dropdown {{ request()->is('productos*') ? 'show' : '' }}"
                                 id="sidebarCatalogo">
                                 <ul class="nav nav-sm flex-column">
                                     <li class="nav-item">
@@ -163,13 +166,6 @@
                                             class="nav-link {{ request()->is('productos*') ? 'active' : '' }}"
                                             data-key="t-productos">
                                             <i class="ri-t-shirt-line me-1"></i> Productos
-                                        </a>
-                                    </li>
-                                    <li class="nav-item">
-                                        <a href="{{ url('proveedores') }}"
-                                            class="nav-link {{ request()->is('proveedores*') ? 'active' : '' }}"
-                                            data-key="t-proveedores">
-                                            <i class="ri-user-2-line me-1"></i> Proveedores
                                         </a>
                                     </li>
                                 </ul>
@@ -180,11 +176,11 @@
                         {{-- Menú desplegable: Producción e Inventario --}}
                         <li class="nav-item">
                             <a class="nav-link menu-link" href="#sidebarProduccion" data-bs-toggle="collapse" role="button"
-                                aria-expanded="{{ request()->is('ordenes*') || request()->is('insumos*') || request()->is('existencia*') ? 'true' : 'false' }}"
+                                aria-expanded="{{ request()->is('ordenes*') || request()->is('insumos*') || request()->is('inventario*') ? 'true' : 'false' }}"
                                 aria-controls="sidebarProduccion">
                                 <i class="ri-building-2-line"></i> <span data-key="t-produccion">Producción e Inventario</span>
                             </a>
-                            <div class="collapse menu-dropdown {{ request()->is('ordenes*') || request()->is('insumos*') || request()->is('existencia*') ? 'show' : '' }}"
+                            <div class="collapse menu-dropdown {{ request()->is('ordenes*') || request()->is('insumos*') || request()->is('inventario*') ? 'show' : '' }}"
                                 id="sidebarProduccion">
                                 <ul class="nav nav-sm flex-column">
                                     <li class="nav-item">
@@ -202,10 +198,10 @@
                                         </a>
                                     </li>
                                     <li class="nav-item">
-                                        <a href="{{ route('existencia.movimientos.index') }}"
-                                            class="nav-link {{ request()->is('existencia*') ? 'active' : '' }}"
-                                            data-key="t-existencia">
-                                            <i class="ri-archive-line me-1"></i> Existencia
+                                        <a href="{{ route('inventario.movimientos.index') }}"
+                                            class="nav-link {{ request()->is('inventario*') ? 'active' : '' }}"
+                                            data-key="t-inventario">
+                                            <i class="ri-archive-line me-1"></i> Movimientos de Inventario
                                         </a>
                                     </li>
                                 </ul>

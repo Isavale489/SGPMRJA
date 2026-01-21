@@ -21,6 +21,12 @@ class Cotizacion extends Model
         'user_id',
     ];
 
+    protected $casts = [
+        'fecha_cotizacion' => 'date',
+        'fecha_validez' => 'date',
+        'total' => 'decimal:2',
+    ];
+
     public function user()
     {
         return $this->belongsTo(User::class);
@@ -42,5 +48,19 @@ class Cotizacion extends Model
     public function pedido()
     {
         return $this->hasOne(Pedido::class);
+    }
+
+    /**
+     * Actualizar automáticamente cotizaciones vencidas
+     * Este método revisa todas las cotizaciones que están en estado Pendiente o Aprobada
+     * y las marca como Vencida si su fecha_validez ya pasó
+     */
+    public static function actualizarCotizacionesVencidas()
+    {
+        $hoy = now()->format('Y-m-d');
+        
+        self::whereIn('estado', ['Pendiente', 'Aprobada'])
+            ->where('fecha_validez', '<', $hoy)
+            ->update(['estado' => 'Vencida']);
     }
 }

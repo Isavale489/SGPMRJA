@@ -32,11 +32,12 @@ class ClienteController extends Controller
                 'apellido' => $cliente->apellido ?? '',
                 'tipo_cliente' => $cliente->tipo_cliente,
                 'email' => $cliente->email,
-                'telefono' => $cliente->telefono, // Usa accessor que obtiene telefono_principal
+                'telefono' => $cliente->telefono,
                 'documento' => $cliente->documento,
-                'direccion' => $cliente->direccion, // Usa accessor que obtiene direccion_principal
-                'ciudad' => $cliente->ciudad, // Usa accessor que obtiene ciudad de direccion_principal
-                'estado' => $cliente->estado,
+                'direccion' => $cliente->direccion,
+                'estado_territorial' => $cliente->estado_territorial, // Estado/territorio geográfico
+                'ciudad' => $cliente->ciudad,
+                'estatus' => $cliente->estatus, // Activo/Inactivo
                 'created_at' => $cliente->created_at ? $cliente->created_at->format('d/m/Y H:i') : null,
             ];
         });
@@ -83,8 +84,9 @@ class ClienteController extends Controller
                 },
             ],
             'direccion' => 'nullable|string|max:500',
+            'estado_territorial' => 'nullable|string|max:50',
             'ciudad' => 'nullable|string|max:100',
-            'estado' => 'required|in:0,1',
+            'estatus' => 'required|in:0,1',
         ], [
             // Mensajes personalizados
             'nombre.required' => 'El nombre es obligatorio.',
@@ -101,9 +103,10 @@ class ClienteController extends Controller
             'telefono.regex' => 'El teléfono debe tener el formato 0424-1234567.',
             'documento.required' => 'El documento de identidad es obligatorio.',
             'direccion.max' => 'La dirección no puede exceder los 500 caracteres.',
+            'estado_territorial.max' => 'El estado territorial no puede exceder los 50 caracteres.',
             'ciudad.max' => 'La ciudad no puede exceder los 100 caracteres.',
-            'estado.required' => 'Debe seleccionar el estado del cliente.',
-            'estado.in' => 'El estado debe ser Activo o Inactivo.',
+            'estatus.required' => 'Debe seleccionar el estatus del cliente.',
+            'estatus.in' => 'El estatus debe ser Activo o Inactivo.',
         ]);
 
         $clienteId = null;
@@ -139,10 +142,11 @@ class ClienteController extends Controller
             }
 
             // Crear dirección en tabla normalizada
-            if (!empty($request->direccion) || !empty($request->ciudad)) {
+            if (!empty($request->direccion) || !empty($request->ciudad) || !empty($request->estado_territorial)) {
                 Direccion::create([
                     'persona_id' => $persona->id,
                     'direccion' => $request->direccion ?? '',
+                    'estado' => $request->estado_territorial,
                     'ciudad' => $request->ciudad,
                     'tipo' => 'casa',
                     'es_principal' => true,
@@ -153,7 +157,7 @@ class ClienteController extends Controller
             $cliente = Cliente::create([
                 'persona_id' => $persona->id,
                 'tipo_cliente' => $request->tipo_cliente,
-                'estado' => $request->estado,
+                'estatus' => $request->estatus,
             ]);
 
             $clienteId = $cliente->id;
@@ -184,8 +188,9 @@ class ClienteController extends Controller
             'telefono' => $telefonoPrincipal ?? '',
             'documento' => $cliente->persona ? ($cliente->persona->tipo_documento . $cliente->persona->documento_identidad) : '',
             'direccion' => $direccionPrincipal ? $direccionPrincipal->direccion : '',
+            'estado_territorial' => $direccionPrincipal ? $direccionPrincipal->estado : '',
             'ciudad' => $direccionPrincipal ? $direccionPrincipal->ciudad : '',
-            'estado' => $cliente->estado,
+            'estatus' => $cliente->estatus,
             // Datos adicionales para UI de múltiples teléfonos/direcciones
             'telefonos' => $cliente->persona ? $cliente->persona->telefonos : [],
             'direcciones' => $cliente->persona ? $cliente->persona->direcciones : [],
@@ -235,8 +240,9 @@ class ClienteController extends Controller
                 },
             ],
             'direccion' => 'nullable|string|max:500',
+            'estado_territorial' => 'nullable|string|max:50',
             'ciudad' => 'nullable|string|max:100',
-            'estado' => 'required|in:0,1',
+            'estatus' => 'required|in:0,1',
         ], [
             // Mensajes personalizados
             'nombre.required' => 'El nombre es obligatorio.',
@@ -253,9 +259,10 @@ class ClienteController extends Controller
             'telefono.regex' => 'El teléfono debe tener el formato 0424-1234567.',
             'documento.required' => 'El documento de identidad es obligatorio.',
             'direccion.max' => 'La dirección no puede exceder los 500 caracteres.',
+            'estado_territorial.max' => 'El estado territorial no puede exceder los 50 caracteres.',
             'ciudad.max' => 'La ciudad no puede exceder los 100 caracteres.',
-            'estado.required' => 'Debe seleccionar el estado del cliente.',
-            'estado.in' => 'El estado debe ser Activo o Inactivo.',
+            'estatus.required' => 'Debe seleccionar el estatus del cliente.',
+            'estatus.in' => 'El estatus debe ser Activo o Inactivo.',
         ]);
 
         DB::transaction(function () use ($request, $cliente) {
@@ -295,17 +302,19 @@ class ClienteController extends Controller
                 }
 
                 // Actualizar o crear dirección principal
-                if (!empty($request->direccion) || !empty($request->ciudad)) {
+                if (!empty($request->direccion) || !empty($request->ciudad) || !empty($request->estado_territorial)) {
                     $direccionPrincipal = $cliente->persona->direcciones()->where('es_principal', true)->first();
                     if ($direccionPrincipal) {
                         $direccionPrincipal->update([
                             'direccion' => $request->direccion ?? '',
+                            'estado' => $request->estado_territorial,
                             'ciudad' => $request->ciudad,
                         ]);
                     } else {
                         Direccion::create([
                             'persona_id' => $cliente->persona->id,
                             'direccion' => $request->direccion ?? '',
+                            'estado' => $request->estado_territorial,
                             'ciudad' => $request->ciudad,
                             'tipo' => 'casa',
                             'es_principal' => true,
@@ -317,7 +326,7 @@ class ClienteController extends Controller
             // Actualizar el cliente
             $cliente->update([
                 'tipo_cliente' => $request->tipo_cliente,
-                'estado' => $request->estado,
+                'estatus' => $request->estatus,
             ]);
         });
 
@@ -356,28 +365,29 @@ class ClienteController extends Controller
             'apellido' => $cliente->apellido ?? '',
             'tipo_cliente' => $cliente->tipo_cliente,
             'email' => $cliente->email,
-            'telefono' => $cliente->telefono, // Usa accessor que obtiene telefono_principal
+            'telefono' => $cliente->telefono,
             'documento' => $cliente->documento,
-            'direccion' => $cliente->direccion, // Usa accessor que obtiene direccion_principal
-            'ciudad' => $cliente->ciudad, // Usa accessor que obtiene ciudad de direccion_principal
-            'estado' => $cliente->estado,
+            'direccion' => $cliente->direccion,
+            'estado_territorial' => $cliente->estado_territorial,
+            'ciudad' => $cliente->ciudad,
+            'estatus' => $cliente->estatus,
             'created_at' => $cliente->created_at ? $cliente->created_at->format('d/m/Y H:i:s') : null,
             'updated_at' => $cliente->updated_at ? $cliente->updated_at->format('d/m/Y H:i:s') : null
         ]);
     }
 
     /**
-     * Buscar clientes por nombre o apellido (para autocompletado AJAX)
+     * Buscar clientes por documento de identidad (para autocompletado AJAX)
      */
     public function searchAjax(Request $request)
     {
         $query = $request->input('q');
         $clientes = Cliente::with(['persona.telefonos', 'persona.direcciones'])
             ->whereHas('persona', function ($q) use ($query) {
-                $q->where('nombre', 'LIKE', "%{$query}%")
-                    ->orWhere('apellido', 'LIKE', "%{$query}%");
+                // Buscar por documento_identidad (solo el número, sin prefijo)
+                $q->where('documento_identidad', 'LIKE', "%{$query}%");
             })
-            ->where('estado', 1)
+            ->where('estatus', 1)
             ->limit(10)
             ->get();
 

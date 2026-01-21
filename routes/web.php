@@ -105,6 +105,7 @@ Route::middleware('auth')->group(function () {
     Route::middleware('role:Administrador,Supervisor')->group(function () {
         Route::get('pedidos', [PedidoController::class, 'index'])->name('pedidos.index');
         Route::get('pedidos-data', [PedidoController::class, 'getPedidos'])->name('pedidos.data');
+        Route::get('pedidos/cotizaciones-disponibles', [PedidoController::class, 'getCotizacionesDisponibles'])->name('pedidos.cotizacionesDisponibles');
         Route::get('pedidos/{pedido}', [PedidoController::class, 'show'])->name('pedidos.show');
         Route::get('pedidos/reporte/pdf', [PedidoController::class, 'reportePdf'])->name('pedidos.reporte.pdf');
         Route::get('pedidos/reporte', [PedidoController::class, 'reporteGeneral'])->name('pedidos.reporteGeneral');
@@ -126,6 +127,7 @@ Route::middleware('auth')->group(function () {
         Route::put('cotizaciones/{cotizacion}/estado', [CotizacionController::class, 'updateEstado'])->name('cotizaciones.updateEstado');
         Route::get('cotizaciones/{cotizacion}/datos-para-pedido', [CotizacionController::class, 'getDatosParaPedido'])->name('cotizaciones.datosParaPedido');
         Route::post('cotizaciones/{cotizacion}/marcar-convertida', [CotizacionController::class, 'marcarComoConvertida'])->name('cotizaciones.marcarConvertida');
+        Route::post('cotizaciones/{cotizacion}/convertir-a-pedido', [CotizacionController::class, 'convertirAPedido'])->name('cotizaciones.convertirAPedido');
     });
 
     // ============================================
@@ -180,14 +182,14 @@ Route::middleware('auth')->group(function () {
         Route::put('produccion/diaria/{id}', [ProduccionDiariaController::class, 'update'])->name('produccion.diaria.update');
         Route::delete('produccion/diaria/{id}', [ProduccionDiariaController::class, 'destroy'])->name('produccion.diaria.destroy');
 
-        // Existencia / Inventario
-        Route::get('existencia/movimientos', [MovimientoInsumoController::class, 'index'])->name('existencia.movimientos.index');
-        Route::get('existencia/movimientos/data', [MovimientoInsumoController::class, 'getMovimientos'])->name('existencia.movimientos.data');
-        Route::post('existencia/movimientos', [MovimientoInsumoController::class, 'store'])->name('existencia.movimientos.store');
-        Route::get('existencia/movimientos/{id}', [MovimientoInsumoController::class, 'show'])->name('existencia.movimientos.show');
-        Route::get('existencia/reporte', [MovimientoInsumoController::class, 'reporteExistencia'])->name('existencia.reporte');
-        Route::get('existencia/alertas', [MovimientoInsumoController::class, 'alertasStock'])->name('existencia.alertas');
-        Route::get('existencia/movimientos/historial/{id}', [MovimientoInsumoController::class, 'historialInsumo'])->name('existencia.movimientos.historial');
+        // Inventario
+        Route::get('inventario/movimientos', [MovimientoInsumoController::class, 'index'])->name('inventario.movimientos.index');
+        Route::get('inventario/movimientos/data', [MovimientoInsumoController::class, 'getMovimientos'])->name('inventario.movimientos.data');
+        Route::post('inventario/movimientos', [MovimientoInsumoController::class, 'store'])->name('inventario.movimientos.store');
+        Route::get('inventario/movimientos/{id}', [MovimientoInsumoController::class, 'show'])->name('inventario.movimientos.show');
+        Route::get('inventario/reporte', [MovimientoInsumoController::class, 'reporteExistencia'])->name('inventario.reporte');
+        Route::get('inventario/alertas', [MovimientoInsumoController::class, 'alertasStock'])->name('inventario.alertas');
+        Route::get('inventario/movimientos/historial/{id}', [MovimientoInsumoController::class, 'historialInsumo'])->name('inventario.movimientos.historial');
 
         // Reportes
         Route::prefix('reportes')->group(function () {

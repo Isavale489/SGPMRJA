@@ -14,13 +14,15 @@ class MovimientoInsumoController extends Controller
     public function index()
     {
         $insumos = Insumo::where('estado', true)->get();
-        return view('admin.inventario.movimientos.index', compact('insumos'));
+        $proveedores = \App\Models\Proveedor::where('estado', true)->get();
+        return view('admin.inventario.movimientos.index', compact('insumos', 'proveedores'));
     }
 
     public function getMovimientos()
     {
         $movimientos = MovimientoInsumo::with(['insumo', 'creadoPor'])
-            ->select('movimiento_insumo.insumo_id', 'movimiento_insumo.tipo_movimiento', 'movimiento_insumo.cantidad', 'movimiento_insumo.stock_anterior', 'movimiento_insumo.stock_nuevo', 'movimiento_insumo.motivo', 'movimiento_insumo.created_by', 'movimiento_insumo.created_at');
+            ->select('movimiento_insumo.id', 'movimiento_insumo.insumo_id', 'movimiento_insumo.tipo_movimiento', 'movimiento_insumo.cantidad', 'movimiento_insumo.stock_anterior', 'movimiento_insumo.stock_nuevo', 'movimiento_insumo.motivo', 'movimiento_insumo.created_by', 'movimiento_insumo.created_at')
+            ->orderBy('movimiento_insumo.created_at', 'desc');
 
         return DataTables::of($movimientos)
             ->addColumn('insumo_nombre', function ($movimiento) {
@@ -92,12 +94,12 @@ class MovimientoInsumoController extends Controller
             DB::commit();
 
             return response()->json([
-                'success' => 'Movimiento de existencia registrado exitosamente'
+                'success' => 'Movimiento de inventario registrado exitosamente'
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([
-                'error' => 'Error al registrar el movimiento de existencia: ' . $e->getMessage()
+                'error' => 'Error al registrar el movimiento de inventario: ' . $e->getMessage()
             ], 500);
         }
     }

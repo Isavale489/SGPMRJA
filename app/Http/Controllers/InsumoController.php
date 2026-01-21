@@ -48,11 +48,17 @@ class InsumoController extends Controller
         ]);
 
         $insumo = Insumo::create($request->only([
-            'nombre', 'tipo', 'unidad_medida', 'costo_unitario',
-            'stock_actual', 'stock_minimo', 'proveedor_id', 'estado'
+            'nombre',
+            'tipo',
+            'unidad_medida',
+            'costo_unitario',
+            'stock_actual',
+            'stock_minimo',
+            'proveedor_id',
+            'estado'
         ]));
 
-        return response()->json(['success' => 'Insumo creado exitosamente.']);
+        return response()->json(['success' => 'Insumo creado exitosamente.', 'insumo' => $insumo]);
     }
 
     public function show($id)
@@ -76,8 +82,14 @@ class InsumoController extends Controller
 
         $insumo = Insumo::findOrFail($id);
         $insumo->update($request->only([
-            'nombre', 'tipo', 'unidad_medida', 'costo_unitario',
-            'stock_actual', 'stock_minimo', 'proveedor_id', 'estado'
+            'nombre',
+            'tipo',
+            'unidad_medida',
+            'costo_unitario',
+            'stock_actual',
+            'stock_minimo',
+            'proveedor_id',
+            'estado'
         ]));
 
         return response()->json(['success' => 'Insumo actualizado exitosamente.']);

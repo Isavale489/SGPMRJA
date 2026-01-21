@@ -31,6 +31,8 @@
     <link href="{{ asset('assets/css/app.min.css') }}" rel="stylesheet" type="text/css" />
     <!-- custom Css-->
     <link href="{{ asset('assets/css/custom.min.css') }}" rel="stylesheet" type="text/css" />
+    <!-- Custom Css Personalizado -->
+    <link href="{{ asset('assets/css/custom.css') }}" rel="stylesheet" type="text/css" />
 
     <!-- Estilo para campos obligatorios -->
     <style>
@@ -50,6 +52,213 @@
         .required-note span {
             color: #dc3545;
             font-weight: bold;
+        }
+
+        /* Estilos globales para botones de SweetAlert con degradado */
+        .swal2-confirm.swal2-styled,
+        .swal2-styled.swal2-confirm {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%) !important;
+            border: none !important;
+            box-shadow: 0 4px 6px rgba(30, 60, 114, 0.3) !important;
+            font-weight: 600 !important;
+            padding: 10px 24px !important;
+            border-radius: 6px !important;
+            transition: all 0.3s ease !important;
+        }
+
+        .swal2-confirm.swal2-styled:hover,
+        .swal2-styled.swal2-confirm:hover {
+            background: linear-gradient(135deg, #2a5298 0%, #1e3c72 100%) !important;
+            box-shadow: 0 6px 12px rgba(30, 60, 114, 0.4) !important;
+            transform: translateY(-2px) !important;
+        }
+
+        .swal2-cancel.swal2-styled,
+        .swal2-styled.swal2-cancel {
+            background: linear-gradient(135deg, #8b3a3a 0%, #a04545 100%) !important;
+            border: none !important;
+            box-shadow: 0 4px 6px rgba(139, 58, 58, 0.3) !important;
+            font-weight: 600 !important;
+            padding: 10px 24px !important;
+            border-radius: 6px !important;
+            transition: all 0.3s ease !important;
+        }
+
+        .swal2-cancel.swal2-styled:hover,
+        .swal2-styled.swal2-cancel:hover {
+            background: linear-gradient(135deg, #a04545 0%, #8b3a3a 100%) !important;
+            box-shadow: 0 6px 12px rgba(139, 58, 58, 0.4) !important;
+            transform: translateY(-2px) !important;
+        }
+
+        /* Botón de cierre personalizado */
+        .swal2-close {
+            color: #6c757d !important;
+            font-size: 28px !important;
+        }
+
+        .swal2-close:hover {
+            color: #495057 !important;
+        }
+
+        /* ========== DARK MODE STYLES ========== */
+        [data-bs-theme="dark"] .app-menu,
+        [data-bs-theme="dark"] .navbar-menu {
+            background-color: #1a1d21 !important;
+            border-right: 1px solid #2d3139 !important;
+        }
+
+        [data-bs-theme="dark"] .navbar-brand-box {
+            background-color: transparent !important;
+            border-bottom: 1px solid #2d3139 !important;
+        }
+
+        /* Remover fondo negro del logo usando filtro en modo oscuro */
+        [data-bs-theme="dark"] .navbar-brand-box img,
+        [data-bs-theme="dark"] .horizontal-logo img,
+        [data-bs-theme="dark"] .logo img {
+            filter: brightness(1.2) contrast(1.1);
+            background: transparent !important;
+        }
+
+        [data-bs-theme="dark"] .menu-title {
+            color: #8b92a7 !important;
+        }
+
+        [data-bs-theme="dark"] .nav-link {
+            color: #c8cbd0 !important;
+        }
+
+        [data-bs-theme="dark"] .nav-link:hover {
+            background-color: #242832 !important;
+            color: #ffffff !important;
+        }
+
+        [data-bs-theme="dark"] .nav-link.active {
+            background: rgba(59, 130, 246, 0.2) !important;
+            color: #60a5fa !important;
+            border-left-color: #60a5fa !important;
+        }
+
+        [data-bs-theme="dark"] .nav-link.active i {
+            color: #60a5fa !important;
+        }
+
+        [data-bs-theme="dark"] .menu-dropdown {
+            background-color: #1f2229 !important;
+        }
+
+        [data-bs-theme="dark"] .menu-dropdown .nav-link {
+            color: #a8adb9 !important;
+        }
+
+        [data-bs-theme="dark"] .card {
+            background-color: #242832 !important;
+            border-color: #2d3139 !important;
+        }
+
+        [data-bs-theme="dark"] .card-header {
+            background-color: #1f2229 !important;
+            border-bottom-color: #2d3139 !important;
+        }
+
+        [data-bs-theme="dark"] .table {
+            color: #c8cbd0 !important;
+            border-color: #2d3139 !important;
+        }
+
+        [data-bs-theme="dark"] .table thead th {
+            background-color: #1f2229 !important;
+            color: #e4e7eb !important;
+            border-color: #2d3139 !important;
+        }
+
+        [data-bs-theme="dark"] .table tbody tr {
+            border-color: #2d3139 !important;
+        }
+
+        [data-bs-theme="dark"] .table tbody tr:hover {
+            background-color: #2a2f3a !important;
+        }
+
+        [data-bs-theme="dark"] .page-content {
+            background-color: #1a1d21 !important;
+        }
+
+        [data-bs-theme="dark"] .main-content {
+            background-color: #1a1d21 !important;
+        }
+
+        [data-bs-theme="dark"] body {
+            background-color: #151820 !important;
+            color: #c8cbd0 !important;
+        }
+
+        [data-bs-theme="dark"] .form-control,
+        [data-bs-theme="dark"] .form-select {
+            background-color: #1f2229 !important;
+            border-color: #2d3139 !important;
+            color: #c8cbd0 !important;
+        }
+
+        [data-bs-theme="dark"] .form-control:focus,
+        [data-bs-theme="dark"] .form-select:focus {
+            background-color: #242832 !important;
+            border-color: #60a5fa !important;
+            color: #ffffff !important;
+        }
+
+        [data-bs-theme="dark"] .modal-content {
+            background-color: #242832 !important;
+            border-color: #2d3139 !important;
+        }
+
+        [data-bs-theme="dark"] .modal-header {
+            background-color: #1f2229 !important;
+            border-bottom-color: #2d3139 !important;
+        }
+
+        [data-bs-theme="dark"] .modal-footer {
+            background-color: #1f2229 !important;
+            border-top-color: #2d3139 !important;
+        }
+
+        [data-bs-theme="dark"] .breadcrumb-item,
+        [data-bs-theme="dark"] .breadcrumb-item.active {
+            color: #8b92a7 !important;
+        }
+
+        [data-bs-theme="dark"] .page-title-box h4 {
+            color: #e4e7eb !important;
+        }
+
+        /* DataTables dark mode */
+        [data-bs-theme="dark"] .dataTables_wrapper .dataTables_filter input,
+        [data-bs-theme="dark"] .dataTables_wrapper .dataTables_length select {
+            background-color: #1f2229 !important;
+            border-color: #2d3139 !important;
+            color: #c8cbd0 !important;
+        }
+
+        [data-bs-theme="dark"] .dataTables_wrapper .dataTables_info,
+        [data-bs-theme="dark"] .dataTables_wrapper .dataTables_paginate {
+            color: #8b92a7 !important;
+        }
+
+        [data-bs-theme="dark"] .pagination .page-link {
+            background-color: #242832 !important;
+            border-color: #2d3139 !important;
+            color: #c8cbd0 !important;
+        }
+
+        [data-bs-theme="dark"] .pagination .page-link:hover {
+            background-color: #2a2f3a !important;
+            color: #ffffff !important;
+        }
+
+        [data-bs-theme="dark"] .pagination .page-item.active .page-link {
+            background-color: #60a5fa !important;
+            border-color: #60a5fa !important;
         }
     </style>
 

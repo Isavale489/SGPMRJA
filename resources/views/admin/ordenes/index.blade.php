@@ -15,6 +15,21 @@
         .estado-Cancelado { background-color: #dc3545; }
         .select2-container { width: 100% !important; }
         #insumos-container .row { margin-bottom: 10px; }
+
+        /* Estilo para buscador personalizado */
+        .search-box {
+            position: relative;
+        }
+        .search-box .search-icon {
+            position: absolute;
+            top: 50%;
+            left: 10px;
+            transform: translateY(-50%);
+            color: #878a99;
+        }
+        .search-box input {
+            padding-left: 30px;
+        }
     </style>
 @endpush
 
@@ -25,10 +40,17 @@
                 <div class="card-header">
                     <div class="d-flex align-items-center">
                         <h5 class="card-title mb-0 flex-grow-1">Órdenes de Producción</h5>
-                        <div class="flex-shrink-0">
-                            <button type="button" class="btn btn-success add-btn" data-bs-toggle="modal" id="create-btn" data-bs-target="#showModal">
-                                <i class="ri-add-line align-bottom me-1"></i> Nueva Orden
-                            </button>
+                        <div class="flex-shrink-0 d-flex align-items-center gap-3">
+                            <!-- Buscador Personalizado -->
+                            <div class="search-box">
+                                <input type="text" class="form-control form-control-sm" id="custom-search-input" placeholder="Buscar orden...">
+                                <i class="ri-search-line search-icon"></i>
+                            </div>
+                            <div>
+                                <button type="button" class="btn btn-success add-btn" data-bs-toggle="modal" id="create-btn" data-bs-target="#showModal">
+                                    <i class="ri-add-line align-bottom me-1"></i> Nueva Orden
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>

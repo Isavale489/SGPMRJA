@@ -19,6 +19,21 @@
         .stock-normal {
             color: #198754;
         }
+
+        /* Estilo para buscador personalizado */
+        .search-box {
+            position: relative;
+        }
+        .search-box .search-icon {
+            position: absolute;
+            top: 50%;
+            left: 10px;
+            transform: translateY(-50%);
+            color: #878a99;
+        }
+        .search-box input {
+            padding-left: 30px;
+        }
     </style>
 @endpush
 
@@ -29,14 +44,21 @@
                 <div class="card-header">
                     <div class="d-flex align-items-center">
                         <h5 class="card-title mb-0 flex-grow-1">Listado de Insumos</h5>
-                        <div class="flex-shrink-0 d-flex gap-2">
-                            <button type="button" class="btn btn-success add-btn" data-bs-toggle="modal" id="create-btn"
-                                data-bs-target="#showModal">
-                                <i class="ri-add-line align-bottom me-1"></i> Agregar Insumo
-                            </button>
-                            <a href="{{ route('insumos.reporte.pdf') }}" class="btn btn-danger" target="_blank">
-                                <i class="ri-file-pdf-fill align-bottom me-1"></i> Exportar PDF
-                            </a>
+                        <div class="flex-shrink-0 d-flex align-items-center gap-3">
+                            <!-- Buscador Personalizado -->
+                            <div class="search-box">
+                                <input type="text" class="form-control form-control-sm" id="custom-search-input" placeholder="Buscar insumo...">
+                                <i class="ri-search-line search-icon"></i>
+                            </div>
+                            <div class="d-flex gap-2">
+                                <button type="button" class="btn btn-success add-btn" data-bs-toggle="modal" id="create-btn"
+                                    data-bs-target="#showModal">
+                                    <i class="ri-add-line align-bottom me-1"></i> Agregar Insumo
+                                </button>
+                                <a href="{{ route('insumos.reporte.pdf') }}" class="btn btn-danger" target="_blank">
+                                    <i class="ri-file-pdf-fill align-bottom me-1"></i> Exportar PDF
+                                </a>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -132,6 +154,7 @@
                         <div class="mb-3">
                             <label for="nombre-field" class="form-label required">Nombre</label><input type="text"
                                 id="nombre-field" name="nombre" class="form-control" required />
+                            <div id="nombre-error" class="invalid-feedback"></div>
                         </div>
                         <div class="mb-3">
                             <label for="tipo-field" class="form-label required">Tipo</label><select id="tipo-field"
@@ -144,41 +167,48 @@
                                 <option value="Etiqueta">Etiqueta</option>
                                 <option value="Otro">Otro</option>
                             </select>
+                            <div id="tipo-error" class="invalid-feedback"></div>
                         </div>
                         <div class="mb-3">
                             <label for="unidad-medida-field" class="form-label required">Unidad de Medida</label><input
                                 type="text" id="unidad-medida-field" name="unidad_medida" class="form-control" required />
+                            <div id="unidad-medida-error" class="invalid-feedback"></div>
                         </div>
                         <div class="mb-3">
-                            <label for="stock-actual-field" class="form-label">Stock Actual</label>
+                            <label for="stock-actual-field" class="form-label required">Stock Actual</label>
                             <input type="number" id="stock-actual-field" name="stock_actual" class="form-control"
-                                step="0.01" min="0" value="0" />
+                                step="0.01" min="0" value="0" required />
+                            <div id="stock-actual-error" class="invalid-feedback"></div>
                         </div>
                         <div class="mb-3">
                             <label for="stock-minimo-field" class="form-label required">Stock Mínimo</label><input
                                 type="number" id="stock-minimo-field" name="stock_minimo" class="form-control" step="0.01"
                                 min="0" required />
+                            <div id="stock-minimo-error" class="invalid-feedback"></div>
                         </div>
                         <div class="mb-3">
                             <label for="costo-unitario-field" class="form-label required">Costo Unitario</label><input
                                 type="number" id="costo-unitario-field" name="costo_unitario" class="form-control"
                                 step="0.01" min="0" required />
+                            <div id="costo-unitario-error" class="invalid-feedback"></div>
                         </div>
                         <div class="mb-3">
-                            <label for="proveedor-id-field" class="form-label">Proveedor</label>
-                            <select id="proveedor-id-field" name="proveedor_id" class="form-control">
+                            <label for="proveedor-id-field" class="form-label required">Proveedor</label>
+                            <select id="proveedor-id-field" name="proveedor_id" class="form-control" required>
                                 <option value="">Seleccione...</option>
                                 @foreach($proveedores as $proveedor)
                                     <option value="{{ $proveedor->id }}">{{ $proveedor->razon_social }}</option>
                                 @endforeach
                             </select>
+                            <div id="proveedor-id-error" class="invalid-feedback"></div>
                         </div>
                         <div class="mb-3">
-                            <label for="estado-field" class="form-label">Estado</label>
-                            <select id="estado-field" name="estado" class="form-control">
+                            <label for="estado-field" class="form-label required">Estado</label>
+                            <select id="estado-field" name="estado" class="form-control" required>
                                 <option value="1">Activo</option>
                                 <option value="0">Inactivo</option>
                             </select>
+                            <div id="estado-error" class="invalid-feedback"></div>
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -208,6 +238,8 @@
     <script src="https://cdn.datatables.net/buttons/2.2.2/js/buttons.html5.min.js"></script>
     <script src="https://cdn.datatables.net/buttons/2.2.2/js/buttons.print.min.js"></script>
     <script src="https://cdn.datatables.net/buttons/2.2.2/js/buttons.colVis.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.2.2/js/buttons.colVis.min.js"></script>
+    <script src="{{ asset('assets/js/form-validation.js') }}"></script>
     <script src="{{ URL::asset('assets/libs/sweetalert2/sweetalert2.min.js') }}"></script>
 
     <script>
@@ -217,7 +249,7 @@
                 serverSide: true,
                 responsive: false,
                 ajax: "{{ route('insumos.data') }}",
-                dom: 'frtip',
+                dom: 'rtip',
                 buttons: [
                     {
                         extend: 'copy',
@@ -266,7 +298,7 @@
                         data: 'estado',
                         name: 'estado',
                         render: function (data) {
-                            return data ? `<span class="badge bg-success">Activo</span>` : `<span class="badge bg-danger">Inactivo</span>`;
+                            return data ? '<span class="badge badge-status status-activo"><i class="ri-checkbox-circle-line me-1"></i>Activo</span>' : '<span class="badge badge-status status-inactivo"><i class="ri-close-circle-line me-1"></i>Inactivo</span>';
                         }
                     },
                     {
@@ -276,34 +308,28 @@
                         searchable: false,
                         render: function (data) {
                             return `
-                                        <div class="dropdown d-inline-block">
-                                            <button class="btn btn-soft-secondary btn-sm dropdown" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                                <i class="ri-more-fill align-middle"></i>
-                                            </button>
-                                            <ul class="dropdown-menu dropdown-menu-end">
-                                                <li>
-                                                    <button class="dropdown-item view-item-btn" data-id="${data}">
-                                                        <i class="ri-eye-fill align-bottom me-2 text-muted"></i> Ver
-                                                    </button>
-                                                </li>
-                                                <li>
-                                                    <button class="dropdown-item edit-item-btn" data-id="${data}">
-                                                        <i class="ri-pencil-fill align-bottom me-2 text-muted"></i> Editar
-                                                    </button>
-                                                </li>
-                                                <li>
-                                                    <button class="dropdown-item remove-item-btn" data-id="${data}">
-                                                        <i class="ri-delete-bin-fill align-bottom me-2 text-muted"></i> Eliminar
-                                                    </button>
-                                                </li>
-                                            </ul>
-                                        </div>
-                                    `;
+                                <div class="d-flex gap-2 justify-content-center">
+                                    <button class="btn btn-sm btn-soft-info view-item-btn" data-id="${data}" title="Ver">
+                                        <i class="ri-eye-fill"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-soft-success edit-item-btn" data-id="${data}" title="Editar">
+                                        <i class="ri-pencil-fill"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-soft-danger remove-item-btn" data-id="${data}" title="Eliminar">
+                                        <i class="ri-delete-bin-fill"></i>
+                                    </button>
+                                </div>
+                            `;
                         }
                     }
                 ],
                 order: [[0, 'desc']],
                 language: lenguajeData
+            });
+
+            // Buscador personalizado
+            $('#custom-search-input').on('keyup', function () {
+                table.search(this.value).draw();
             });
 
             // Ver detalles
@@ -346,6 +372,10 @@
             // Enviar formulario
             $("#insumoForm").on("submit", function (e) {
                 e.preventDefault();
+
+                if (!validator.validateAll()) {
+                    return;
+                }
                 var id = $("#id-field").val();
                 var url = id ? "{{ route('insumos.update', ':id') }}".replace(':id', id) : "{{ route('insumos.store') }}";
                 var method = id ? "PUT" : "POST";
@@ -372,6 +402,12 @@
                             title: '¡Éxito!',
                             text: response.success,
                             showConfirmButton: false,
+                            customClass: {
+                                confirmButton: 'btn btn-primary w-xs me-2',
+                                cancelButton: 'btn btn-danger w-xs'
+                            },
+                            buttonsStyling: false,
+                            showCloseButton: true,
                             timer: 1500
                         });
                     },
@@ -384,7 +420,13 @@
                         Swal.fire({
                             icon: 'error',
                             title: 'Error',
-                            html: errorMessage
+                            html: errorMessage,
+                            customClass: {
+                                confirmButton: 'btn btn-primary w-xs me-2',
+                                cancelButton: 'btn btn-danger w-xs'
+                            },
+                            buttonsStyling: false,
+                            showCloseButton: true
                         });
                     }
                 });
@@ -398,10 +440,12 @@
                     text: "¡No podrás revertir esto!",
                     icon: 'warning',
                     showCancelButton: true,
-                    confirmButtonClass: 'btn btn-primary w-xs me-2 mt-2',
-                    cancelButtonClass: 'btn btn-danger w-xs mt-2',
                     confirmButtonText: 'Sí, eliminar',
                     cancelButtonText: 'Cancelar',
+                    customClass: {
+                        confirmButton: 'btn btn-primary w-xs me-2',
+                        cancelButton: 'btn btn-danger w-xs'
+                    },
                     buttonsStyling: false,
                     showCloseButton: true
                 }).then(function (result) {
@@ -419,6 +463,12 @@
                                     title: '¡Eliminado!',
                                     text: response.success,
                                     showConfirmButton: false,
+                                    customClass: {
+                                        confirmButton: 'btn btn-primary w-xs me-2',
+                                        cancelButton: 'btn btn-danger w-xs'
+                                    },
+                                    buttonsStyling: false,
+                                    showCloseButton: true,
                                     timer: 1500
                                 });
                             },
@@ -426,7 +476,13 @@
                                 Swal.fire({
                                     icon: 'error',
                                     title: 'Error',
-                                    text: 'No se pudo eliminar el insumo'
+                                    text: 'No se pudo eliminar el insumo',
+                                    customClass: {
+                                        confirmButton: 'btn btn-primary w-xs me-2',
+                                        cancelButton: 'btn btn-danger w-xs'
+                                    },
+                                    buttonsStyling: false,
+                                    showCloseButton: true
                                 });
                             }
                         });
@@ -440,8 +496,12 @@
                 $("#insumoForm")[0].reset();
                 $("#id-field").val("");
                 $("#add-btn").show();
+                $("#add-btn").show();
                 $("#edit-btn").hide();
+                validator.resetValidation();
             });
+
+            const validator = new FormValidator('insumoForm');
         });
     </script>
 @endpush

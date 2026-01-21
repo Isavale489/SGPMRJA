@@ -19,7 +19,7 @@
         <div class="container min-vh-100 d-flex flex-column justify-content-center align-items-center py-5">
             <div class="text-center mb-4">
                 <a href="/" class="d-inline-block">
-                    <img src="{{ asset('logo.jpg') }}" alt="logo"  width="200" height="auto">
+                    <img src="{{ asset('atlantico-logo-wide.png') }}" alt="logo"  width="300" height="auto">
                 </a>
             </div>
 

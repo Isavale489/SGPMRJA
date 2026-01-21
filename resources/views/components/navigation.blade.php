@@ -1,4 +1,4 @@
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+<nav class="navbar navbar-expand-lg navbar-dark" style="background-color: #1b2a4e !important;">
     <style>
         .navbar-nav .nav-link {
             transition: color 0.3s ease, transform 0.3s ease;
@@ -115,7 +115,7 @@
     <div class="container px-3">
         <a class="navbar-brand d-flex align-items-center flex-nowrap" href="{{ url('/') }}">
             <div class="d-flex align-items-center gap-3">
-                <img src="{{ asset('img/atlantico-logo.png') }}" alt="Logo de la empresa" style="height: 70px;">
+                <img src="{{ asset('atlantico-logo-wide.png') }}" alt="Logo de la empresa" style="height: 60px; width: auto;">
                 <span class="fs-5 fw-bold text-nowrap">Manufacturas R.J Atlántico</span>
             </div>
         </a>

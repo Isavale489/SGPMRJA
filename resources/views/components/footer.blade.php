@@ -3,7 +3,7 @@
     <div class="container">
         <!-- Logo -->
         <div class="mb-3 text-center d-flex justify-content-center">
-            <img src="{{ asset('img/atlantico-logo.png') }}" alt="Logo de la empresa" style="height: 50px;">
+            <img src="{{ asset('atlantico-logo-wide.png') }}" alt="Logo de la empresa" style="height: 50px;">
         </div>
 
         <!-- Iconos de redes sociales -->

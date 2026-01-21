@@ -224,9 +224,7 @@
             processing: true,
             serverSide: true,
             ajax: "{{ route('ordenes.data') }}",
-            dom: '<"row"<"col-sm-6"l><"col-sm-6"f>>' +
-                 '<"row"<"col-sm-12"tr>>' +
-                 '<"row"<"col-sm-5"i><"col-sm-7"p>>',
+            dom: 'rtip',
             columns: [
                 { 
                     data: 'id', 
@@ -286,12 +284,13 @@
                     className: 'align-middle text-center',
                     render: function(data) {
                         let clases = {
-                            'Pendiente': 'warning',
-                            'En Proceso': 'info',
-                            'Finalizado': 'success',
-                            'Cancelado': 'danger'
+                            'Pendiente': 'status-pendiente badge-soft-warning',
+                            'En Proceso': 'status-procesando badge-soft-info',
+                            'Finalizado': 'status-finalizado badge-soft-success',
+                            'Cancelado': 'status-cancelado badge-soft-danger'
                         };
-                        return `<span class="badge bg-${clases[data]} rounded-pill">${data}</span>`;
+                        let badgeClass = clases[data] || 'badge-soft-secondary';
+                        return `<span class="badge badge-status ${badgeClass} rounded-pill">${data}</span>`;
                     }
                 },
                 { 
@@ -320,30 +319,19 @@
                 searchable: false,
                 className: 'align-middle text-center',
                 render: function(data) {
-                return `
-                <div class="dropdown d-inline-block">
-                <button class="btn btn-soft-secondary btn-sm dropdown" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                <i class="ri-more-fill align-middle"></i>
-                </button>
-                <ul class="dropdown-menu dropdown-menu-end">
-                <li>
-                <button class="dropdown-item view-btn" data-id="${data}">
-                <i class="ri-eye-fill align-bottom me-2 text-muted"></i> Ver
-                </button>
-                </li>
-                <li>
-                <button class="dropdown-item edit-btn" data-id="${data}">
-                <i class="ri-pencil-fill align-bottom me-2 text-muted"></i> Editar
-                </button>
-                </li>
-                <li>
-                <button class="dropdown-item remove-btn" data-id="${data}">
-                <i class="ri-delete-bin-fill align-bottom me-2 text-muted"></i> Eliminar
-                </button>
-                </li>
-                </ul>
-                </div>
-                `;
+                    return `
+                        <div class="d-flex gap-2 justify-content-center">
+                            <button class="btn btn-sm btn-soft-info view-btn" data-id="${data}" title="Ver">
+                                <i class="ri-eye-fill"></i>
+                            </button>
+                            <button class="btn btn-sm btn-soft-success edit-btn" data-id="${data}" title="Editar">
+                                <i class="ri-pencil-fill"></i>
+                            </button>
+                            <button class="btn btn-sm btn-soft-danger remove-btn" data-id="${data}" title="Eliminar">
+                                <i class="ri-delete-bin-fill"></i>
+                            </button>
+                        </div>
+                    `;
                 }
                 }
             ],
@@ -372,6 +360,11 @@
                 }
             ],
             language: lenguajeData
+        });
+
+        // Buscador personalizado
+        $('#custom-search-input').on('keyup', function () {
+            table.search(this.value).draw();
         });
 
         // Agregar fila de insumo
@@ -555,7 +548,16 @@
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonText: 'Sí, eliminar',
-                cancelButtonText: 'Cancelar'
+                cancelButtonText: 'Cancelar',
+                backdrop: true,
+                allowOutsideClick: true,
+                customClass: {
+                    confirmButton: 'btn btn-primary w-xs me-2',
+                    cancelButton: 'btn btn-danger w-xs',
+                    container: 'swal2-container'
+                },
+                buttonsStyling: false,
+                showCloseButton: true
             }).then((result) => {
                 if (result.isConfirmed) {
                     $.ajax({

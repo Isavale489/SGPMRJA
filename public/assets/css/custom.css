@@ -6,8 +6,8 @@ Contact: support@themesbrand.com
 File: Custom Css File
 */
 /* Fix ultra-específico para SweetAlert2 */
-body > .swal2-container,
-html > body > .swal2-container,
+body>.swal2-container,
+html>body>.swal2-container,
 .swal2-container {
     position: fixed !important;
     inset: 0 !important;
@@ -16,6 +16,13 @@ html > body > .swal2-container,
     align-items: center !important;
     justify-content: center !important;
     pointer-events: all !important;
+    background-color: rgba(0, 0, 0, 0.4) !important;
+    /* Backdrop semi-transparente */
+}
+
+/* Backdrop del modal de SweetAlert */
+.swal2-backdrop-show {
+    background-color: rgba(0, 0, 0, 0.4) !important;
 }
 
 .swal2-popup {
@@ -27,107 +34,370 @@ html > body > .swal2-container,
     z-index: 2147483647 !important;
 }
 
-html, body {
+html,
+body {
     overflow: visible !important;
     position: static !important;
     z-index: auto !important;
 }
 
-html.swal2-shown, body.swal2-shown {
+html.swal2-shown,
+body.swal2-shown {
     overflow: hidden !important;
     position: static !important;
     z-index: auto !important;
 }
 
 #layout-wrapper[aria-hidden="true"] {
-    opacity: 0 !important;
+    opacity: 1 !important;
     pointer-events: none !important;
     user-select: none !important;
 }
 
+/* Forzar backdrop semi-transparente con blur */
+body>div.swal2-container,
+div.swal2-container.swal2-backdrop-show {
+    background: rgba(0, 0, 0, 0.5) !important;
+    backdrop-filter: blur(2px) !important;
+}
+
+/* Asegurar que el popup tenga fondo blanco */
+.swal2-popup {
+    background: #ffffff !important;
+    background-color: #ffffff !important;
+}
+
 /* ============================================
-   SIDEBAR PERSONALIZADO - Tema Oscuro
-   Combina con el logo (azul/verde sobre oscuro)
+   BOTONES DE ACCIÓN EN TABLAS
    ============================================ */
 
-/* Fondo del sidebar */
-.app-menu.navbar-menu {
-    background: linear-gradient(180deg, #1a1d21 0%, #2d3436 100%) !important;
+/* Contenedor de botones de acción compacto */
+.table td .d-flex.gap-2 {
+    gap: 0.25rem !important;
+    flex-wrap: nowrap;
+    justify-content: center;
 }
 
-/* Logo box */
-.navbar-brand-box {
-    background: #1a1d21 !important;
-    border-bottom: 1px solid rgba(255,255,255,0.1);
+/* Botones de acción más pequeños */
+.table .btn-sm.btn-soft-info,
+.table .btn-sm.btn-soft-success,
+.table .btn-sm.btn-soft-danger {
+    padding: 0.25rem 0.4rem !important;
+    font-size: 0.75rem !important;
+    line-height: 1 !important;
 }
 
-/* Título del menú */
-.navbar-nav .menu-title {
-    color: #00d9a5 !important;
-    font-weight: 600;
+/* Columna de Estado - compacta */
+.table th:nth-last-child(2),
+.table td:nth-last-child(2) {
+    width: 70px !important;
+    max-width: 80px !important;
+    text-align: center;
+}
+
+/* Columna de Acciones - más ancha */
+.table th:last-child,
+.table td:last-child {
+    width: 120px !important;
+    min-width: 120px !important;
+    white-space: nowrap;
+    text-align: center;
+}
+
+/* ============================================
+   ESTILOS DE TABLA COMPACTA (Solicitado)
+   ============================================ */
+
+/* Reducir padding y alinear verticalmente */
+.table th,
+.table td {
+    padding: 0.4rem 0.5rem !important;
+    vertical-align: middle !important;
+    font-size: 0.8125rem !important;
+    /* 13px */
+}
+
+/* Ajustar tamaño de avatares en tablas */
+.table .avatar-xs {
+    width: 2rem !important;
+    height: 2rem !important;
+}
+
+.table .avatar-xs .avatar-title {
+    width: 100% !important;
+    height: 100% !important;
+    font-size: 10px !important;
+}
+
+.table img {
+    max-height: 2rem !important;
+    width: auto;
+}
+
+/* Asegurar que el contenido no se rompa feo */
+.table th {
+    white-space: nowrap;
+    background-color: #f3f6f9 !important;
+    /* Header gris claro */
+    font-weight: 600 !important;
     text-transform: uppercase;
-    font-size: 11px;
-    letter-spacing: 1px;
+    font-size: 0.75rem !important;
+    /* 12px para headers */
 }
 
-/* Links del menú */
-.app-menu .navbar-nav .nav-link {
-    color: #a3b0c0 !important;
-    transition: all 0.3s ease;
+/* ============================================
+   ICONOS DEL DASHBOARD - Paleta Verde-Azul
+   ============================================ */
+
+/* Total Insumos - Verde esmeralda */
+.card-animate .avatar-title.bg-soft-primary {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(16, 185, 129, 0.25) 100%) !important;
+    border: 1px solid rgba(16, 185, 129, 0.3);
 }
 
-.app-menu .navbar-nav .nav-link:hover {
-    color: #ffffff !important;
-    background: rgba(0, 217, 165, 0.1) !important;
+.card-animate .avatar-title.bg-soft-primary i.text-primary {
+    color: #10b981 !important;
 }
 
-.app-menu .navbar-nav .nav-link i {
-    color: #00d9a5 !important;
+/* Órdenes en Proceso - Turquesa */
+.card-animate .avatar-title.bg-soft-success {
+    background: linear-gradient(135deg, rgba(8, 145, 178, 0.15) 0%, rgba(8, 145, 178, 0.25) 100%) !important;
+    border: 1px solid rgba(8, 145, 178, 0.3);
 }
 
-/* Item activo */
-.app-menu .navbar-nav .nav-link.active {
-    background: linear-gradient(90deg, rgba(0, 217, 165, 0.2) 0%, rgba(0, 102, 255, 0.1) 100%) !important;
-    color: #00d9a5 !important;
-    border-left: 3px solid #00d9a5 !important;
+.card-animate .avatar-title.bg-soft-success i.text-success {
+    color: #0891b2 !important;
+}
+
+/* Producción Total - Azul */
+.card-animate .avatar-title.bg-soft-info {
+    background: linear-gradient(135deg, rgba(13, 110, 253, 0.15) 0%, rgba(13, 110, 253, 0.25) 100%) !important;
+    border: 1px solid rgba(13, 110, 253, 0.3);
+}
+
+.card-animate .avatar-title.bg-soft-info i.text-info {
+    color: #0d6efd !important;
+}
+
+/* Alertas Stock - Naranja cálido */
+.card-animate .avatar-title.bg-soft-warning {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(245, 158, 11, 0.25) 100%) !important;
+    border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.card-animate .avatar-title.bg-soft-warning i.text-warning {
+    color: #f59e0b !important;
+}
+
+/* ============================================
+   TOPBAR PERSONALIZADO - Azul Sólido Elegante
+   ============================================ */
+
+/* Fondo del topbar - Azul Oscuro Elegante (Navy) */
+header#page-topbar,
+#page-topbar,
+.page-topbar,
+[data-topbar="dark"] #page-topbar,
+[data-topbar="light"] #page-topbar {
+    background: #1b2a4e !important;
+    background-color: #1b2a4e !important;
+    box-shadow: 0 2px 10px rgba(27, 42, 78, 0.3);
+}
+
+
+/* ============================================
+   BADGES DE ESTADO - ESTILO UNIFICADO
+   ============================================ */
+
+/* Estilo base para badges de estado */
+.badge-status {
+    padding: 0.35em 0.65em;
+    font-size: 0.75em;
     font-weight: 600;
+    border-radius: 0.25rem;
+    border: 1px solid transparent;
 }
 
-.app-menu .navbar-nav .nav-link.active i {
-    color: #00d9a5 !important;
+/* Pendiente / Info / Normal - Azul Oscuro */
+.badge-soft-info,
+.badge-soft-primary,
+.status-pendiente,
+.status-normal {
+    background-color: rgba(30, 60, 114, 0.15) !important;
+    border-color: rgba(30, 60, 114, 0.2) !important;
+    color: #1e3c72 !important;
 }
 
-/* Submenús */
-.app-menu .menu-dropdown {
-    background: rgba(0, 0, 0, 0.2) !important;
+/* Aprobada / Activo / Completado - Verde Cyan */
+.badge-soft-success,
+.status-aprobada,
+.status-activo,
+.status-completado,
+.status-finalizado {
+    background-color: rgba(0, 217, 165, 0.15) !important;
+    border-color: rgba(0, 217, 165, 0.2) !important;
+    color: #008f6d !important;
+    /* Un poco más oscuro para legibilidad */
 }
 
-.app-menu .menu-dropdown .nav-link {
-    color: #8a98ab !important;
-    padding-left: 52px !important;
+/* Rechazada / Inactivo / Cancelado / Agotado - Rojo */
+.badge-soft-danger,
+.status-rechazada,
+.status-inactivo,
+.status-cancelado,
+.status-agotado {
+    background-color: rgba(220, 53, 69, 0.1) !important;
+    border-color: rgba(220, 53, 69, 0.2) !important;
+    color: #b02a37 !important;
 }
 
-.app-menu .menu-dropdown .nav-link:hover {
-    color: #00d9a5 !important;
+/* Procesando / Alerta / Bajo Stock - Naranja/Amarillo */
+.badge-soft-warning,
+.status-procesando,
+.status-alerta,
+.status-bajo {
+    background-color: rgba(255, 193, 7, 0.15) !important;
+    border-color: rgba(255, 193, 7, 0.2) !important;
+    color: #997404 !important;
 }
 
-.app-menu .menu-dropdown .nav-link.active {
-    color: #00d9a5 !important;
-    background: rgba(0, 217, 165, 0.15) !important;
+
+.topbar-head-dropdown .dropdown-menu,
+.topbar-user .dropdown-menu {
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
 }
 
-/* Scrollbar personalizado */
-.app-menu #scrollbar::-webkit-scrollbar {
-    width: 6px;
+/* Texto e iconos del topbar - Blancos para contraste */
+.header-item,
+#page-topbar .header-item,
+.navbar-header .header-item {
+    color: rgba(255, 255, 255, 0.85) !important;
 }
 
-.app-menu #scrollbar::-webkit-scrollbar-track {
-    background: #1a1d21;
+.header-item:hover,
+#page-topbar .header-item:hover {
+    color: #ffffff !important;
 }
 
-.app-menu #scrollbar::-webkit-scrollbar-thumb {
-    background: #00d9a5;
-    border-radius: 3px;
+/* Botones del topbar */
+.btn-topbar,
+.btn-ghost-secondary,
+#page-topbar .btn-topbar,
+#page-topbar .btn-ghost-secondary {
+    color: rgba(255, 255, 255, 0.85) !important;
+}
+
+.btn-topbar:hover,
+.btn-ghost-secondary:hover,
+#page-topbar .btn-topbar:hover,
+#page-topbar .btn-ghost-secondary:hover {
+    color: #ffffff !important;
+    background-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+/* Logo box en el topbar - Hamburger blanco */
+.topnav-hamburger .hamburger-icon span {
+    background-color: #ffffff !important;
+}
+
+/* Nombre del usuario - Blanco */
+.topbar-user .text-reset,
+.user-name-text,
+#page-topbar .user-name-text {
+    color: #ffffff !important;
+}
+
+.topbar-user .text-muted,
+.user-name-sub-text,
+#page-topbar .user-name-sub-text {
+    color: rgba(255, 255, 255, 0.7) !important;
+}
+
+/* Avatar del usuario */
+.header-profile-user {
+    border: 2px solid rgba(255, 255, 255, 0.4) !important;
+}
+
+/* Quitar fondo oscuro del dropdown usuario */
+.topbar-user.dropdown,
+.dropdown.topbar-user,
+.header-item.topbar-user {
+    background: transparent !important;
+    background-color: transparent !important;
+}
+
+/* ============================================
+   SIDEBAR - Mantener tema Light
+   Solo ajustes mínimos para el logo
+   ============================================ */
+
+/* Logo box - Sin fondo oscuro, transparente */
+.navbar-brand-box {
+    background: transparent !important;
+}
+
+/* Logo redondo */
+/* Logo redondo - REMOVED */
+.navbar-brand-box .logo img {
+    border-radius: 0 !important;
+}
+
+/* ============================================
+   MODALES - Headers con Gradiente Verde-Azul
+   ============================================ */
+
+/* Todos los modal-header con gradiente */
+.modal-header {
+    background: linear-gradient(135deg, #10b981 0%, #0891b2 50%, #0d6efd 100%) !important;
+    border-bottom: none !important;
+    padding: 1rem 1.5rem !important;
+}
+
+/* Título del modal en blanco */
+.modal-header .modal-title,
+.modal-header h5,
+.modal-header h4,
+.modal-header .fs-15,
+.modal-header .fw-bold {
+    color: #ffffff !important;
+}
+
+/* Icono en el título */
+.modal-header .modal-title i,
+.modal-header h5 i {
+    color: #ffffff !important;
+    margin-right: 8px;
+}
+
+/* Botón de cerrar en blanco */
+.modal-header .btn-close {
+    filter: brightness(0) invert(1);
+    opacity: 0.8;
+}
+
+.modal-header .btn-close:hover {
+    opacity: 1;
+}
+
+/* Footer del modal con estilo sutil */
+.modal-footer {
+    border-top: 1px solid rgba(16, 185, 129, 0.2);
+    background: #f8f9fa;
+}
+
+/* Botones del modal */
+.modal-footer .btn-primary,
+.modal-footer .btn-success {
+    background: linear-gradient(135deg, #10b981 0%, #0891b2 100%) !important;
+    border: none !important;
+    box-shadow: 0 2px 10px rgba(16, 185, 129, 0.3);
+}
+
+.modal-footer .btn-primary:hover,
+.modal-footer .btn-success:hover {
+    background: linear-gradient(135deg, #0d9668 0%, #067a99 100%) !important;
+    box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
 }
 
 /* ============================================
@@ -225,8 +495,15 @@ html.swal2-shown, body.swal2-shown {
 }
 
 @keyframes pulse-urgente {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.7; }
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.7;
+    }
 }
 
 /* ============================================
@@ -272,12 +549,12 @@ html.swal2-shown, body.swal2-shown {
    ============================================ */
 
 /* Tablas - filas alternas */
-.table-striped > tbody > tr:nth-of-type(odd) > * {
+.table-striped>tbody>tr:nth-of-type(odd)>* {
     background-color: rgba(0, 217, 165, 0.03);
 }
 
 /* Hover en filas de tabla */
-.table-hover > tbody > tr:hover > * {
+.table-hover>tbody>tr:hover>* {
     background-color: rgba(0, 217, 165, 0.08);
 }
 
@@ -302,4 +579,23 @@ html.swal2-shown, body.swal2-shown {
 .form-select:focus {
     border-color: #00d9a5;
     box-shadow: 0 0 0 0.2rem rgba(0, 217, 165, 0.25);
+}
+
+/* ============================================
+   FIX: Select dentro de input-group
+   Corrige el bug donde el texto se oculta
+   cuando hay checkmark de validación
+   ============================================ */
+.input-group .form-select {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e") !important;
+    background-position: right 0.5rem center !important;
+    background-size: 12px 12px !important;
+    padding-right: 1.5rem !important;
+}
+
+/* Ocultar checkmark de validación en selects dentro de input-group */
+.input-group .form-select.is-valid,
+.input-group .was-validated .form-select:valid {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e") !important;
+    border-color: #00d9a5 !important;
 }

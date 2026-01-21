@@ -15,6 +15,21 @@
             /* overflow-x: auto; */
         }
 
+        /* Estilo para buscador personalizado */
+        .search-box {
+            position: relative;
+        }
+        .search-box .search-icon {
+            position: absolute;
+            top: 50%;
+            left: 10px;
+            transform: translateY(-50%);
+            color: #878a99;
+        }
+        .search-box input {
+            padding-left: 30px;
+        }
+
         #productos-table {
             width: 100% !important;
             font-size: 13px;
@@ -48,7 +63,13 @@
                 <div class="card-header">
                     <div class="d-flex align-items-center">
                         <h5 class="card-title mb-0 flex-grow-1">Listado de Productos</h5>
-                        <div class="flex-shrink-0">
+                        <div class="flex-shrink-0 d-flex align-items-center gap-3">
+                            <!-- Buscador Personalizado -->
+                            <div class="search-box">
+                                <input type="text" class="form-control form-control-sm" id="custom-search-input" placeholder="Buscar producto...">
+                                <i class="ri-search-line search-icon"></i>
+                            </div>
+                            <div class="d-flex gap-2 align-items-center">
                             <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal"
                                 data-bs-target="#tiposModal">
                                 <i class="ri-settings-3-line align-bottom me-1"></i> Gestionar Tipos
@@ -60,6 +81,8 @@
                             <a href="{{ route('productos.reporte.pdf') }}" target="_blank" class="btn btn-danger ms-2">
                                 <i class="ri-file-pdf-fill align-bottom me-1"></i> Exportar PDF
                             </a>
+                            </a>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -67,8 +90,8 @@
                     <table id="productos-table" class="table table-bordered table-striped table-sm align-middle">
                         <thead>
                             <tr>
-                                <th>Imagen</th>
                                 <th>Código</th>
+                                <th>Imagen</th>
                                 <th>Tipo</th>
                                 <th>Modelo</th>
                                 <th>Precio Base</th>
@@ -222,12 +245,14 @@
                                             <i class="ri-add-line"></i>
                                         </button>
                                     </div>
+                                    <div id="tipo-producto-error" class="invalid-feedback"></div>
                                 </div>
                                 <!-- Modelo -->
                                 <div class="mb-3">
                                     <label for="modelo-field" class="form-label required">Modelo</label>
                                     <input type="text" id="modelo-field" name="modelo" class="form-control"
                                         placeholder="Ej: Polo Clásica, Cuello V, Drill Industrial" required />
+                                    <div id="modelo-error" class="invalid-feedback"></div>
                                 </div>
                                 <!-- Código (auto-generado) -->
                                 <div class="mb-3">
@@ -238,9 +263,10 @@
                                 </div>
                                 <!-- Descripción -->
                                 <div class="mb-3">
-                                    <label for="descripcion-field" class="form-label">Descripción</label>
+                                    <label for="descripcion-field" class="form-label required">Descripción</label>
                                     <textarea id="descripcion-field" name="descripcion" class="form-control" rows="3"
-                                        placeholder="Descripción adicional del producto"></textarea>
+                                        placeholder="Descripción adicional del producto" required></textarea>
+                                    <div id="descripcion-error" class="invalid-feedback"></div>
                                 </div>
                             </div>
                             <div class="col-md-6">
@@ -249,12 +275,14 @@
                                     <label for="precio-base-field" class="form-label required">Precio Base ($)</label>
                                     <input type="number" id="precio-base-field" name="precio_base" class="form-control"
                                         step="0.01" min="0" required placeholder="0.00" />
+                                    <div id="precio-base-error" class="invalid-feedback"></div>
                                 </div>
                                 <!-- Imagen -->
                                 <div class="mb-3">
-                                    <label for="imagen-field" class="form-label">Imagen</label>
+                                    <label for="imagen-field" class="form-label required">Imagen</label>
                                     <input type="file" id="imagen-field" name="imagen" class="form-control"
-                                        accept="image/*" />
+                                        accept="image/*" required />
+                                    <div id="imagen-error" class="invalid-feedback"></div>
                                     <div id="imagen-preview" class="mt-2 text-center" style="display: none;">
                                         <img src="" alt="Vista previa de la imagen" class="img-fluid"
                                             style="max-width: 200px;">
@@ -262,11 +290,12 @@
                                 </div>
                                 <!-- Estado -->
                                 <div class="mb-3">
-                                    <label for="estado-field" class="form-label">Estado</label>
-                                    <select id="estado-field" name="estado" class="form-control">
+                                    <label for="estado-field" class="form-label required">Estado</label>
+                                    <select id="estado-field" name="estado" class="form-control" required>
                                         <option value="1">Activo</option>
                                         <option value="0">Inactivo</option>
                                     </select>
+                                    <div id="estado-error" class="invalid-feedback"></div>
                                 </div>
                             </div>
                         </div>
@@ -335,18 +364,21 @@
                             <label for="tipo-nombre-field" class="form-label required">Nombre del Tipo</label>
                             <input type="text" id="tipo-nombre-field" name="nombre" class="form-control"
                                 placeholder="Ej: Chemise, Franela, Pantalón" required />
+                            <div id="tipo-nombre-error" class="invalid-feedback"></div>
                         </div>
                         <div class="mb-3">
                             <label for="tipo-prefijo-field" class="form-label required">Prefijo de Código</label>
                             <input type="text" id="tipo-prefijo-field" name="codigo_prefijo" class="form-control"
                                 placeholder="Ej: CHM, FRN, PNT (máx 5 letras)" maxlength="5" required
                                 style="text-transform: uppercase;" />
+                            <div id="tipo-prefijo-error" class="invalid-feedback"></div>
                             <small class="text-muted">Se usará para generar códigos como CHM-001</small>
                         </div>
                         <div class="mb-3">
-                            <label for="tipo-descripcion-field" class="form-label">Descripción</label>
+                            <label for="tipo-descripcion-field" class="form-label required">Descripción</label>
                             <textarea id="tipo-descripcion-field" name="descripcion" class="form-control" rows="2"
-                                placeholder="Descripción opcional"></textarea>
+                                placeholder="Descripción opcional" required></textarea>
+                            <div id="tipo-descripcion-error" class="invalid-feedback"></div>
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -369,6 +401,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.1.3/jszip.min.js"></script>
+    <script src="{{ asset('assets/js/form-validation.js') }}"></script>
     <script src="{{ URL::asset('assets/libs/sweetalert2/sweetalert2.min.js') }}"></script>
 
     <script>
@@ -396,17 +429,17 @@
                 ajax: "{{ route('productos.data') }}",
                 columns: [
                     {
-                        data: 'imagen',
-                        name: 'imagen',
-                        render: function (data) {
-                            return data ? '<img src="' + data + '" alt="Imagen del producto" class="img-thumbnail" width="50">' : '<span class="text-muted">Sin imagen</span>';
-                        }
-                    },
-                    {
                         data: 'codigo',
                         name: 'codigo',
                         render: function (data) {
                             return data ? '<span class="badge bg-dark">' + data + '</span>' : '-';
+                        }
+                    },
+                    {
+                        data: 'imagen',
+                        name: 'imagen',
+                        render: function (data) {
+                            return data ? '<img src="' + data + '" alt="Imagen del producto" class="img-thumbnail" width="50">' : '<span class="text-muted">Sin imagen</span>';
                         }
                     },
                     {
@@ -428,7 +461,7 @@
                         data: 'estado',
                         name: 'estado',
                         render: function (data) {
-                            return data ? '<span class="badge bg-success">Activo</span>' : '<span class="badge bg-danger">Inactivo</span>';
+                            return data ? '<span class="badge badge-status status-activo"><i class="ri-checkbox-circle-line me-1"></i>Activo</span>' : '<span class="badge badge-status status-inactivo"><i class="ri-close-circle-line me-1"></i>Inactivo</span>';
                         }
                     },
                     {
@@ -438,34 +471,23 @@
                         searchable: false,
                         render: function (data) {
                             return `
-                                                                <div class="dropdown d-inline-block">
-                                                                    <button class="btn btn-soft-secondary btn-sm dropdown" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                                                        <i class="ri-more-fill align-middle"></i>
-                                                                    </button>
-                                                                    <ul class="dropdown-menu dropdown-menu-end">
-                                                                        <li>
-                                                                            <button class="dropdown-item view-item-btn" data-id="${data}">
-                                                                                <i class="ri-eye-fill align-bottom me-2 text-muted"></i> Ver
-                                                                            </button>
-                                                                        </li>
-                                                                        <li>
-                                                                            <button class="dropdown-item edit-item-btn" data-id="${data}">
-                                                                                <i class="ri-pencil-fill align-bottom me-2 text-muted"></i> Editar
-                                                                            </button>
-                                                                        </li>
-                                                                        <li>
-                                                                            <button class="dropdown-item remove-item-btn" data-id="${data}">
-                                                                                <i class="ri-delete-bin-fill align-bottom me-2 text-muted"></i> Eliminar
-                                                                            </button>
-                                                                        </li>
-                                                                    </ul>
-                                                                </div>
-                                                            `;
+                                <div class="d-flex gap-2 justify-content-center">
+                                    <button class="btn btn-sm btn-soft-info view-item-btn" data-id="${data}" title="Ver">
+                                        <i class="ri-eye-fill"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-soft-success edit-item-btn" data-id="${data}" title="Editar">
+                                        <i class="ri-pencil-fill"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-soft-danger remove-item-btn" data-id="${data}" title="Eliminar">
+                                        <i class="ri-delete-bin-fill"></i>
+                                    </button>
+                                </div>
+                            `;
                         }
                     }
                 ],
                 order: [[1, 'desc']], // Cambiar el índice de ordenamiento (ahora la columna "Nombre" es la índice 1)
-                dom: 'frtip',
+                dom: 'rtip',
                 buttons: [
                     {
                         extend: 'copy',
@@ -517,6 +539,11 @@
                         "colvis": "Visibilidad de Columna"
                     }
                 }
+            });
+
+            // Buscador personalizado
+            $('#custom-search-input').on('keyup', function () {
+                table.search(this.value).draw();
             });
 
             // Vista previa de imagen
@@ -603,6 +630,10 @@
             // Enviar formulario
             $("#productoForm").on("submit", function (e) {
                 e.preventDefault();
+
+                if (!validator.validateAll()) {
+                    return;
+                }
                 var id = $("#id-field").val();
                 var url = id ? "{{ route('productos.update', ':id') }}".replace(':id', id) : "{{ route('productos.store') }}";
                 var method = id ? "PUT" : "POST";
@@ -629,6 +660,12 @@
                             title: '¡Éxito!',
                             text: response.success,
                             showConfirmButton: false,
+                            customClass: {
+                                confirmButton: 'btn btn-primary w-xs me-2',
+                                cancelButton: 'btn btn-danger w-xs'
+                            },
+                            buttonsStyling: false,
+                            showCloseButton: true,
                             timer: 1500
                         });
                     },
@@ -641,7 +678,13 @@
                         Swal.fire({
                             icon: 'error',
                             title: 'Error',
-                            html: errorMessage
+                            html: errorMessage,
+                            customClass: {
+                                confirmButton: 'btn btn-primary w-xs me-2',
+                                cancelButton: 'btn btn-danger w-xs'
+                            },
+                            buttonsStyling: false,
+                            showCloseButton: true
                         });
                     }
                 });
@@ -655,10 +698,12 @@
                     text: "¡No podrás revertir esto!",
                     icon: 'warning',
                     showCancelButton: true,
-                    confirmButtonClass: 'btn btn-primary w-xs me-2 mt-2',
-                    cancelButtonClass: 'btn btn-danger w-xs mt-2',
                     confirmButtonText: 'Sí, eliminar',
                     cancelButtonText: 'Cancelar',
+                    customClass: {
+                        confirmButton: 'btn btn-primary w-xs me-2',
+                        cancelButton: 'btn btn-danger w-xs'
+                    },
                     buttonsStyling: false,
                     showCloseButton: true
                 }).then(function (result) {
@@ -676,6 +721,12 @@
                                     title: '¡Eliminado!',
                                     text: response.success,
                                     showConfirmButton: false,
+                                    customClass: {
+                                        confirmButton: 'btn btn-primary w-xs me-2',
+                                        cancelButton: 'btn btn-danger w-xs'
+                                    },
+                                    buttonsStyling: false,
+                                    showCloseButton: true,
                                     timer: 1500
                                 });
                             },
@@ -683,7 +734,13 @@
                                 Swal.fire({
                                     icon: 'error',
                                     title: 'Error',
-                                    text: 'No se pudo eliminar el producto'
+                                    text: 'No se pudo eliminar el producto',
+                                    customClass: {
+                                        confirmButton: 'btn btn-primary w-xs me-2',
+                                        cancelButton: 'btn btn-danger w-xs'
+                                    },
+                                    buttonsStyling: false,
+                                    showCloseButton: true
                                 });
                             }
                         });
@@ -699,8 +756,14 @@
                 $("#codigo-field").val("");
                 $("#imagen-preview").hide();
                 $("#add-btn").show();
+                $("#add-btn").show();
                 $("#edit-btn").hide();
+                validator.resetValidation();
+                tipoValidator.resetValidation();
             });
+
+            const validator = new FormValidator('productoForm');
+            const tipoValidator = new FormValidator('tipoForm');
 
             // ===============================
             // Funciones para Tipos de Producto
@@ -767,7 +830,13 @@
                     icon: 'warning',
                     showCancelButton: true,
                     confirmButtonText: 'Sí, eliminar',
-                    cancelButtonText: 'Cancelar'
+                    cancelButtonText: 'Cancelar',
+                    customClass: {
+                        confirmButton: 'btn btn-primary w-xs me-2',
+                        cancelButton: 'btn btn-danger w-xs'
+                    },
+                    buttonsStyling: false,
+                    showCloseButton: true
                 }).then(function (result) {
                     if (result.isConfirmed) {
                         $.ajax({
@@ -776,10 +845,30 @@
                             headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
                             success: function (response) {
                                 cargarTipos();
-                                Swal.fire('Eliminado', response.message, 'success');
+                                Swal.fire({
+                                    title: 'Eliminado',
+                                    text: response.message,
+                                    icon: 'success',
+                                    customClass: {
+                                        confirmButton: 'btn btn-primary w-xs me-2',
+                                        cancelButton: 'btn btn-danger w-xs'
+                                    },
+                                    buttonsStyling: false,
+                                    showCloseButton: true
+                                });
                             },
                             error: function (xhr) {
-                                Swal.fire('Error', xhr.responseJSON.message, 'error');
+                                Swal.fire({
+                                    title: 'Error',
+                                    text: xhr.responseJSON.message,
+                                    icon: 'error',
+                                    customClass: {
+                                        confirmButton: 'btn btn-primary w-xs me-2',
+                                        cancelButton: 'btn btn-danger w-xs'
+                                    },
+                                    buttonsStyling: false,
+                                    showCloseButton: true
+                                });
                             }
                         });
                     }
@@ -789,6 +878,10 @@
             // Guardar tipo
             $("#tipoForm").on("submit", function (e) {
                 e.preventDefault();
+
+                if (!tipoValidator.validateAll()) {
+                    return;
+                }
 
                 var id = $("#tipo-id-field").val();
                 var url = id ? "{{ url('tipo-productos') }}/" + id : "{{ route('tipo-productos.store') }}";
@@ -814,13 +907,29 @@
                             title: '¡Éxito!',
                             text: response.message,
                             showConfirmButton: false,
+                            customClass: {
+                                confirmButton: 'btn btn-primary w-xs me-2',
+                                cancelButton: 'btn btn-danger w-xs'
+                            },
+                            buttonsStyling: false,
+                            showCloseButton: true,
                             timer: 1500
                         });
                     },
                     error: function (xhr) {
                         var errors = xhr.responseJSON.errors || {};
                         var message = xhr.responseJSON.message || 'Error al guardar';
-                        Swal.fire('Error', message, 'error');
+                        Swal.fire({
+                            title: 'Error',
+                            text: message,
+                            icon: 'error',
+                            customClass: {
+                                confirmButton: 'btn btn-primary w-xs me-2',
+                                cancelButton: 'btn btn-danger w-xs'
+                            },
+                            buttonsStyling: false,
+                            showCloseButton: true
+                        });
                     }
                 });
             });

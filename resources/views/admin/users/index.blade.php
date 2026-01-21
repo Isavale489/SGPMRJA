@@ -39,6 +39,21 @@
             max-width: 60px;
             text-align: center;
         }
+
+        /* Estilo para buscador personalizado */
+        .search-box {
+            position: relative;
+        }
+        .search-box .search-icon {
+            position: absolute;
+            top: 50%;
+            left: 10px;
+            transform: translateY(-50%);
+            color: #878a99;
+        }
+        .search-box input {
+            padding-left: 30px;
+        }
     </style>
     <div class="row">
         <div class="col-lg-12">
@@ -46,11 +61,18 @@
                 <div class="card-header">
                     <div class="d-flex align-items-center">
                         <h5 class="card-title mb-0 flex-grow-1">Listado de Usuarios</h5>
-                        <div class="flex-shrink-0">
-                            <button type="button" class="btn btn-success add-btn" data-bs-toggle="modal" id="create-btn"
-                                data-bs-target="#showModal">
-                                <i class="ri-add-line align-bottom me-1"></i> Agregar Usuario
-                            </button>
+                        <div class="flex-shrink-0 d-flex align-items-center gap-3">
+                            <!-- Buscador Personalizado -->
+                            <div class="search-box">
+                                <input type="text" class="form-control form-control-sm" id="custom-search-input" placeholder="Buscar usuario...">
+                                <i class="ri-search-line search-icon"></i>
+                            </div>
+                            <div class="d-flex gap-2">
+                                <button type="button" class="btn btn-success add-btn" data-bs-toggle="modal" id="create-btn"
+                                    data-bs-target="#showModal">
+                                    <i class="ri-add-line align-bottom me-1"></i> Agregar Usuario
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -252,7 +274,8 @@
     <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/1.11.5/js/dataTables.bootstrap5.min.js"></script>
     <script src="https://cdn.datatables.net/responsive/2.2.9/js/dataTables.responsive.min.js"></script>
-    <!-- Se eliminaron las referencias a los scripts de botones -->
+    <script src="{{ asset('assets/js/form-validation.js') }}"></script>
+
 
     <script>
         $(document).ready(function () {
@@ -264,29 +287,18 @@
 
             function generateButtons(userId) {
                 return `
-                                <div class="dropdown d-inline-block">
-                                <button class="btn btn-soft-secondary btn-sm dropdown" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                <i class="ri-more-fill align-middle"></i>
-                                </button>
-                                <ul class="dropdown-menu dropdown-menu-end">
-                                <li>
-                                <button class="dropdown-item view-item-btn" data-id="${userId}">
-                                <i class="ri-eye-fill align-bottom me-2 text-muted"></i> Ver
-                                </button>
-                                </li>
-                                <li>
-                                <button class="dropdown-item edit-item-btn" data-id="${userId}">
-                                <i class="ri-pencil-fill align-bottom me-2 text-muted"></i> Editar
-                                </button>
-                                </li>
-                                <li>
-                                <button class="dropdown-item remove-item-btn" data-id="${userId}">
-                                <i class="ri-delete-bin-fill align-bottom me-2 text-muted"></i> Eliminar
-                                </button>
-                                </li>
-                                </ul>
-                                </div>
-                                `;
+                    <div class="d-flex gap-2 justify-content-center">
+                        <button class="btn btn-sm btn-soft-info view-item-btn" data-id="${userId}" title="Ver">
+                            <i class="ri-eye-fill"></i>
+                        </button>
+                        <button class="btn btn-sm btn-soft-success edit-item-btn" data-id="${userId}" title="Editar">
+                            <i class="ri-pencil-fill"></i>
+                        </button>
+                        <button class="btn btn-sm btn-soft-danger remove-item-btn" data-id="${userId}" title="Eliminar">
+                            <i class="ri-delete-bin-fill"></i>
+                        </button>
+                    </div>
+                `;
             }
 
             var table = $('#users-table').DataTable({
@@ -327,7 +339,19 @@
                         }
                     },
                     {
-                        data: 'created_at'
+                        data: 'created_at',
+                        render: function(data) {
+                            if (!data) return '';
+                            const date = new Date(data);
+                            return date.toLocaleString('es-VE', {
+                                year: 'numeric', 
+                                month: '2-digit', 
+                                day: '2-digit', 
+                                hour: '2-digit', 
+                                minute: '2-digit',
+                                hour12: true
+                            });
+                        }
                     },
                     {
                         data: null,
@@ -339,7 +363,7 @@
                 order: [
                     [4, 'desc'] // Cambiar el índice de ordenamiento (ahora la columna "Creado" es la índice 4)
                 ],
-                dom: 'frtip', // Se eliminó la 'B' que representa los botones
+                dom: 'rtip', // Se eliminó la 'B' que representa los botones
                 // Se eliminó el array de botones
                 language: {
                     "sProcessing": "Procesando...",
@@ -373,20 +397,36 @@
                         "colvis": "Visibilidad de Columna"
                     }
                 }
+                }
+            });
+
+            // Buscador personalizado
+            $('#custom-search-input').on('keyup', function () {
+                table.search(this.value).draw();
             });
 
             function resetForm() {
-                $("#userForm").trigger("reset");
-                $("#id-field").val("");
-                $("#modalTitle").text("Agregar Usuario");
-                $("#add-btn").show();
-                $("#edit-btn").hide();
+                $('#modalTitle').text('Agregar Usuario');
+                $('#userForm')[0].reset();
+                $('#userForm input[type="hidden"]').val('');
+                $('#avatar-preview').hide().find('img').attr('src', '');
+                $('#add-btn').show();
+                $('#edit-btn').hide();
+                $('#password-group').show();
+                $('#password-field').prop('required', true); // Requerir contraseña al crear
+                $('#password_confirmation-field').prop('required', true);
+                
+                // Reiniciar validaciones
+                validator.resetValidation();
             }
 
             function setEditMode() {
                 $("#modalTitle").text("Actualizar Usuario");
                 $("#add-btn").hide();
                 $("#edit-btn").show();
+                $('#password-group').hide(); // Ocultar campo de contraseña al editar
+                $('#password-field').prop('required', false); // No requerir contraseña al editar
+                $('#password_confirmation-field').prop('required', false);
             }
 
             // Función para mostrar vista previa de imágenes
@@ -406,10 +446,6 @@
                 readURL(this, '#avatar-preview');
             });
 
-
-
-
-
             $("#create-btn").click(function () {
                 resetForm();
                 // Ocultar vista previa
@@ -420,8 +456,16 @@
                 resetForm();
             });
 
-            $("#add-btn, #edit-btn").click(function (e) {
+            const validator = new FormValidator('userForm');
+
+            $('#add-btn').click(function (e) {
                 e.preventDefault();
+
+                // Run validation
+                if (!validator.validateAll()) {
+                    return;
+                }
+
                 $("#userForm").submit();
             });
 
@@ -450,7 +494,13 @@
                             icon: 'success',
                             title: '¡Éxito!',
                             text: response.message,
-                            showConfirmButton: false,
+                            customClass: {
+                                confirmButton: 'btn btn-primary w-xs me-2',
+                                cancelButton: 'btn btn-danger w-xs'
+                            },
+                            buttonsStyling: false,
+                            showCloseButton: true,
+                            showConfirmButton: true,
                             timer: 2000
                         });
                     },
@@ -458,7 +508,13 @@
                         Swal.fire({
                             icon: 'error',
                             title: 'Error',
-                            text: xhr.responseJSON.message
+                            text: xhr.responseJSON.message,
+                            customClass: {
+                                confirmButton: 'btn btn-primary w-xs me-2',
+                                cancelButton: 'btn btn-danger w-xs'
+                            },
+                            buttonsStyling: false,
+                            showCloseButton: true
                         });
                     }
                 });
@@ -513,7 +569,13 @@
                     icon: 'warning',
                     showCancelButton: true,
                     confirmButtonText: 'Sí, eliminar',
-                    cancelButtonText: 'Cancelar'
+                    cancelButtonText: 'Cancelar',
+                    customClass: {
+                        confirmButton: 'btn btn-primary w-xs me-2',
+                        cancelButton: 'btn btn-danger w-xs'
+                    },
+                    buttonsStyling: false,
+                    showCloseButton: true
                 }).then(function (result) {
                     if (result.isConfirmed) {
                         $.ajax({
@@ -525,7 +587,12 @@
                                     icon: 'success',
                                     title: '¡Eliminado!',
                                     text: response.message,
-                                    showConfirmButton: false,
+                                    customClass: {
+                                        confirmButton: 'btn btn-primary w-xs me-2',
+                                        cancelButton: 'btn btn-danger w-xs'
+                                    },
+                                    buttonsStyling: false,
+                                    showCloseButton: true,
                                     timer: 2000
                                 });
                             },
@@ -533,7 +600,13 @@
                                 Swal.fire({
                                     icon: 'error',
                                     title: 'Error',
-                                    text: xhr.responseJSON.message
+                                    text: xhr.responseJSON.message,
+                                    customClass: {
+                                        confirmButton: 'btn btn-primary w-xs me-2',
+                                        cancelButton: 'btn btn-danger w-xs'
+                                    },
+                                    buttonsStyling: false,
+                                    showCloseButton: true
                                 });
                             }
                         });

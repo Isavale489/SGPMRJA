@@ -95,10 +95,10 @@
         <div class="col-xl-6">
             <div class="card">
                 <div class="card-header">
-                    <h4 class="card-title mb-0">Existencia de Insumos</h4>
+                    <h4 class="card-title mb-0">Inventario de Insumos</h4>
                 </div>
                 <div class="card-body">
-                    <canvas id="existenciaChart" class="chartjs-chart" height="300"></canvas>
+                    <canvas id="inventarioChart" class="chartjs-chart" height="300"></canvas>
                 </div>
             </div>
         </div>
@@ -119,7 +119,7 @@
         <div class="col-xl-12">
             <div class="card">
                 <div class="card-header align-items-center d-flex">
-                    <h4 class="card-title mb-0 flex-grow-1">Últimos Movimientos de Existencia</h4>
+                    <h4 class="card-title mb-0 flex-grow-1">Últimos Movimientos de Inventario</h4>
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">
@@ -163,24 +163,24 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // Datos para el gráfico de existencia
-            const existenciaCtx = document.getElementById('existenciaChart').getContext('2d');
-            const existenciaChart = new Chart(existenciaCtx, {
+            // Datos para el gráfico de inventario
+            const inventarioCtx = document.getElementById('inventarioChart').getContext('2d');
+            const inventarioChart = new Chart(inventarioCtx, {
                 type: 'bar',
                 data: {
                     labels: {!! json_encode($insumos->pluck('nombre')->toArray()) !!},
                     datasets: [{
                         label: 'Stock Actual',
                         data: {!! json_encode($insumos->pluck('stock_actual')->toArray()) !!},
-                        backgroundColor: 'rgba(94, 129, 244, 0.8)',
-                        borderColor: 'rgba(94, 129, 244, 1)',
-                        borderWidth: 1
+                        backgroundColor: 'rgba(30, 60, 114, 0.6)',
+                        borderColor: 'rgba(30, 60, 114, 0.8)',
+                        borderWidth: 2
                     }, {
                         label: 'Stock Mínimo',
                         data: {!! json_encode($insumos->pluck('stock_minimo')->toArray()) !!},
-                        backgroundColor: 'rgba(241, 85, 108, 0.8)',
-                        borderColor: 'rgba(241, 85, 108, 1)',
-                        borderWidth: 1
+                        backgroundColor: 'rgba(220, 53, 69, 0.6)',
+                        borderColor: 'rgba(220, 53, 69, 0.8)',
+                        borderWidth: 2
                     }]
                 },
                 options: {
@@ -209,16 +209,16 @@
                     datasets: [{
                         data: [pendientes, enProceso, finalizadas, canceladas],
                         backgroundColor: [
-                            'rgba(255, 184, 34, 0.8)',   // Amarillo para Pendiente
-                            'rgba(10, 179, 156, 0.8)',   // Verde para En Proceso
-                            'rgba(94, 129, 244, 0.8)',   // Azul para Finalizado
-                            'rgba(241, 85, 108, 0.8)'    // Rojo para Cancelado
+                            'rgba(30, 60, 114, 0.6)',   // Pendiente - azul suave
+                            'rgba(0, 217, 165, 0.6)',   // En Proceso - cyan suave
+                            'rgba(46, 204, 113, 0.6)',  // Finalizado - verde suave
+                            'rgba(220, 53, 69, 0.6)'    // Cancelado - rojo puro
                         ],
                         borderColor: [
-                            'rgba(255, 184, 34, 1)',
-                            'rgba(10, 179, 156, 1)',
-                            'rgba(94, 129, 244, 1)',
-                            'rgba(241, 85, 108, 1)'
+                            'rgba(30, 60, 114, 0.8)',
+                            'rgba(0, 217, 165, 0.8)',
+                            'rgba(46, 204, 113, 0.8)',
+                            'rgba(220, 53, 69, 0.8)'
                         ],
                         borderWidth: 1
                     }]

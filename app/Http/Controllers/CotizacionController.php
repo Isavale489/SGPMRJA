@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Cotizacion;
 use App\Models\Producto;
 use App\Models\DetalleCotizacion;
+use App\Models\Pedido;
+use App\Models\DetallePedido;
 use App\Models\Insumo;
 use App\Models\MovimientoInsumo;
 use App\Models\Banco;
@@ -29,6 +31,9 @@ class CotizacionController extends Controller
 
     public function getCotizaciones()
     {
+        // Actualizar automáticamente cotizaciones vencidas
+        Cotizacion::actualizarCotizacionesVencidas();
+
         // Cargar clientes incluso si están eliminados (soft deleted)
         $cotizaciones = Cotizacion::with(['user:id,name'])
             ->with([
@@ -74,6 +79,12 @@ class CotizacionController extends Controller
                     return $cotizacion->cliente->deleted_at ? '<span class="text-muted">' . $documento . '</span>' : $documento;
                 }
                 return 'N/A';
+            })
+            ->addColumn('fecha_cotizacion', function ($cotizacion) {
+                return $cotizacion->fecha_cotizacion ? $cotizacion->fecha_cotizacion->format('d/m/Y') : 'N/A';
+            })
+            ->addColumn('fecha_validez', function ($cotizacion) {
+                return $cotizacion->fecha_validez ? $cotizacion->fecha_validez->format('d/m/Y') : 'N/A';
             })
             ->addColumn('actions', function ($cotizacion) {
                 $actions = '<div class="d-flex gap-2">';
@@ -210,7 +221,7 @@ class CotizacionController extends Controller
             'cliente_id' => 'required|exists:cliente,id',
             'fecha_cotizacion' => 'required|date',
             'fecha_validez' => 'nullable|date|after_or_equal:fecha_cotizacion',
-            'estado' => 'required|in:Pendiente,Aprobada,Rechazada',
+            'estado' => 'required|in:Pendiente,Aprobada,Cancelado,Convertida,Vencida',
             'productos' => 'required|array|min:1',
             'productos.*.producto_id' => 'required|exists:producto,id',
             'productos.*.cantidad' => 'required|integer|min:1',
@@ -305,8 +316,8 @@ class CotizacionController extends Controller
 
     public function reportePdf()
     {
-        // Obtener todas las cotizaciones con su usuario asociado
-        $cotizaciones = Cotizacion::with('user:id,name')->get();
+        // Obtener todas las cotizaciones con cliente y usuario asociado
+        $cotizaciones = Cotizacion::with(['user:id,name', 'cliente.persona'])->get();
 
         // Cargar la vista y generar el PDF (A4 vertical)
         $pdf = PDF::loadView('admin.cotizaciones.reporte_pdf', compact('cotizaciones'))
@@ -324,11 +335,15 @@ class CotizacionController extends Controller
 
     public function cotizacionPdf(Cotizacion $cotizacion)
     {
-        // Cargar relaciones necesarias (incluyendo clientes eliminados)
-        $cotizacion->load(['user:id,name', 'productos.producto']);
+        // Cargar relaciones necesarias (incluyendo clientes eliminados y productos eliminados/tipos)
+        $cotizacion->load(['user:id,name']);
+
         $cotizacion->load([
             'cliente' => function ($query) {
                 $query->withTrashed()->with('persona');
+            },
+            'productos.producto' => function ($query) {
+                $query->withTrashed()->with('tipoProducto');
             }
         ]);
 
@@ -356,7 +371,7 @@ class CotizacionController extends Controller
     public function updateEstado(Request $request, $id)
     {
         $request->validate([
-            'estado' => 'required|in:Pendiente,Aprobada,Rechazada,Convertida,Vencida'
+            'estado' => 'required|in:Pendiente,Aprobada,Cancelado,Convertida,Vencida'
         ]);
 
         $cotizacion = Cotizacion::findOrFail($id);
@@ -424,7 +439,7 @@ class CotizacionController extends Controller
     }
 
     /**
-     * Marcar cotización como convertida después de crear el pedido
+     * Marcar cotización como convertida después de crear el pedido (automático)
      */
     public function marcarComoConvertida($id)
     {
@@ -439,5 +454,75 @@ class CotizacionController extends Controller
         $cotizacion->update(['estado' => 'Convertida']);
 
         return response()->json(['success' => 'Cotización marcada como convertida.']);
+    }
+
+    /**
+     * Convertir cotización a pedido directamente
+     */
+    public function convertirAPedido($id)
+    {
+        $cotizacion = Cotizacion::with(['cliente', 'productos'])->findOrFail($id);
+
+        // Verificar que esté aprobada
+        if ($cotizacion->estado !== 'Aprobada') {
+            return response()->json([
+                'error' => 'Solo se pueden convertir cotizaciones con estado Aprobada.'
+            ], 422);
+        }
+
+        // Verificar que no haya sido convertida previamente
+        $pedidoExistente = Pedido::where('cotizacion_id', $cotizacion->id)->first();
+        if ($pedidoExistente) {
+            return response()->json([
+                'error' => 'Esta cotización ya fue convertida a pedido anteriormente.',
+                'pedido_id' => $pedidoExistente->id
+            ], 422);
+        }
+
+        $pedido = null;
+
+        DB::transaction(function () use ($cotizacion, &$pedido) {
+            // Crear el pedido con los datos de la cotización
+            $pedido = Pedido::create([
+                'cotizacion_id' => $cotizacion->id,
+                'cliente_id' => $cotizacion->cliente_id,
+                'fecha_pedido' => now(),
+                'fecha_entrega_estimada' => now()->addDays(7), // Por defecto 7 días
+                'total' => $cotizacion->total,
+                'abono' => 0,
+                'efectivo_pagado' => 0,
+                'transferencia_pagado' => 0,
+                'pago_movil_pagado' => 0,
+                'prioridad' => 'Normal',
+                'estado' => 'Pendiente',
+                'user_id' => Auth::id(),
+            ]);
+
+            // Copiar los productos de la cotización al pedido
+            foreach ($cotizacion->productos as $detalleCotizacion) {
+                DetallePedido::create([
+                    'pedido_id' => $pedido->id,
+                    'producto_id' => $detalleCotizacion->producto_id,
+                    'cantidad' => $detalleCotizacion->cantidad,
+                    'precio_unitario' => $detalleCotizacion->precio_unitario,
+                    'descripcion' => $detalleCotizacion->descripcion,
+                    'lleva_bordado' => $detalleCotizacion->lleva_bordado ?? false,
+                    'nombre_logo' => $detalleCotizacion->nombre_logo,
+                    'ubicacion_logo' => $detalleCotizacion->ubicacion_logo,
+                    'cantidad_logo' => $detalleCotizacion->cantidad_logo,
+                    'talla' => $detalleCotizacion->talla,
+                    'color' => null, // El color se puede agregar después al editar el pedido
+                ]);
+            }
+
+            // Marcar la cotización como convertida
+            $cotizacion->update(['estado' => 'Convertida']);
+        });
+
+        return response()->json([
+            'success' => 'Cotización convertida a pedido exitosamente.',
+            'pedido_id' => $pedido->id,
+            'message' => 'Se ha creado el pedido #' . $pedido->id . '. Puede editar el pedido para agregar fechas de entrega, abonos y método de pago.'
+        ]);
     }
 }

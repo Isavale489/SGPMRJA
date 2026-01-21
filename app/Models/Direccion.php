@@ -15,6 +15,7 @@ class Direccion extends Model
     protected $fillable = [
         'persona_id',
         'direccion',
+        'estado',
         'ciudad',
         'tipo',
         'es_principal',

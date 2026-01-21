@@ -15,7 +15,7 @@ class Cliente extends Model
     protected $fillable = [
         'persona_id',
         'tipo_cliente',
-        'estado',
+        'estatus', // Renombrado de 'estado' para evitar confusión con estado territorial
     ];
 
     protected $dates = ['deleted_at'];
@@ -97,4 +97,14 @@ class Cliente extends Model
         $direccionPrincipal = $this->persona ? $this->persona->direccion_principal : null;
         return $direccionPrincipal ? $direccionPrincipal->ciudad : null;
     }
+
+    /**
+     * Obtener estado/territorio de la dirección principal
+     */
+    public function getEstadoTerritorialAttribute()
+    {
+        $direccionPrincipal = $this->persona ? $this->persona->direccion_principal : null;
+        return $direccionPrincipal ? $direccionPrincipal->estado : null;
+    }
 }
+

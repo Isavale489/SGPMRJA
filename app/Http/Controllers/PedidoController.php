@@ -29,39 +29,71 @@ class PedidoController extends Controller
 
     public function getPedidos()
     {
-        // Cargar relaciones incluyendo cliente normalizado
-        $pedidos = Pedido::with(['user:id,name', 'cliente.persona'])->select('pedido.*');
+        // Hacer JOINs para permitir ordenamiento y búsqueda por datos del cliente
+        $pedidos = Pedido::select('pedido.*')
+            ->join('cliente', 'pedido.cliente_id', '=', 'cliente.id')
+            ->join('persona', 'cliente.persona_id', '=', 'persona.id')
+            ->with(['user:id,name', 'cliente.persona']);
+
         return DataTables::of($pedidos)
-            ->addColumn('usuario_creador', function ($pedido) {
-                return $pedido->user ? $pedido->user->name : 'N/A';
-            })
             // Usar accessors para mostrar datos normalizados del cliente
             ->addColumn('cliente_nombre_display', function ($pedido) {
                 return $pedido->cliente_nombre_completo ?? 'N/A';
             })
-            ->addColumn('cliente_email_display', function ($pedido) {
-                return $pedido->cliente_email_normalizado ?? 'N/A';
+            ->filterColumn('cliente_nombre_display', function ($query, $keyword) {
+                $query->where(function ($q) use ($keyword) {
+                    $q->where('persona.nombre', 'like', "%{$keyword}%")
+                        ->orWhere('persona.apellido', 'like', "%{$keyword}%")
+                        ->orWhereRaw("CONCAT(persona.nombre, ' ', persona.apellido) like ?", ["%{$keyword}%"]);
+                });
             })
+
             ->addColumn('cliente_telefono_display', function ($pedido) {
                 return $pedido->cliente_telefono_normalizado ?? 'N/A';
             })
-            ->addColumn('cliente_documento_display', function ($pedido) {
-                return $pedido->cliente_documento ?? 'N/A';
+
+
+            ->addColumn('fecha_pedido', function ($pedido) {
+                return $pedido->fecha_pedido ? $pedido->fecha_pedido->format('d/m/Y') : 'N/A';
             })
-            ->addColumn('actions', function ($pedido) {
-                $isAdmin = auth()->user()->isAdmin();
-                $actions = '<div class="d-flex gap-2">';
-                $actions .= '<button type="button" class="btn btn-sm btn-info view-btn" data-id="' . $pedido->id . '" title="Ver detalles"><i class="ri-eye-fill"></i></button>';
-                if ($isAdmin) {
-                    $actions .= '<button type="button" class="btn btn-sm btn-success edit-btn" data-id="' . $pedido->id . '" title="Editar pedido"><i class="ri-pencil-fill"></i></button>';
-                    $actions .= '<button type="button" class="btn btn-sm btn-danger remove-btn" data-id="' . $pedido->id . '" title="Eliminar pedido"><i class="ri-delete-bin-fill"></i></button>';
-                }
-                $actions .= '<a href="' . route('pedidos.pdf', $pedido->id) . '" class="btn btn-sm btn-warning" title="Descargar PDF"><i class="ri-file-pdf-fill"></i></a>';
-                $actions .= '</div>';
-                return $actions;
+            ->addColumn('fecha_entrega_estimada', function ($pedido) {
+                return $pedido->fecha_entrega_estimada ? $pedido->fecha_entrega_estimada->format('d/m/Y') : 'N/A';
             })
-            ->rawColumns(['actions'])
+
             ->make(true);
+    }
+
+    /**
+     * Obtener cotizaciones aprobadas disponibles para crear pedidos
+     * (que no tengan un pedido asociado)
+     */
+    public function getCotizacionesDisponibles()
+    {
+        $cotizaciones = Cotizacion::with(['cliente', 'productos'])
+            ->where('estado', 'Aprobada')
+            ->doesntHave('pedido') // Solo cotizaciones sin pedido asociado
+            ->orderBy('fecha_cotizacion', 'desc')
+            ->get()
+            ->map(function ($cotizacion) {
+                return [
+                    'id' => $cotizacion->id,
+                    'cliente_nombre' => $cotizacion->cliente ?
+                        trim(($cotizacion->cliente->nombre ?? '') . ' ' . ($cotizacion->cliente->apellido ?? '')) :
+                        'N/A',
+                    'cliente_documento' => $cotizacion->cliente->documento ?? 'N/A',
+                    'fecha_cotizacion' => $cotizacion->fecha_cotizacion ?
+                        $cotizacion->fecha_cotizacion->format('d/m/Y') :
+                        'N/A',
+                    'fecha_validez' => $cotizacion->fecha_validez ?
+                        $cotizacion->fecha_validez->format('d/m/Y') :
+                        'N/A',
+                    'total' => number_format($cotizacion->total, 2),
+                    'total_raw' => $cotizacion->total,
+                    'cantidad_productos' => $cotizacion->productos->count(),
+                ];
+            });
+
+        return response()->json($cotizaciones);
     }
 
     public function store(Request $request)
@@ -77,7 +109,8 @@ class PedidoController extends Controller
             'pago_movil_pagado' => 'boolean',
             'referencia_transferencia' => 'nullable|string|max:255|required_if:transferencia_pagado,true',
             'referencia_pago_movil' => 'nullable|string|max:255|required_if:pago_movil_pagado,true',
-            'banco_id' => 'nullable|exists:banco,id|required_if:transferencia_pagado,true|required_if:pago_movil_pagado,true',
+            'banco_transferencia_id' => 'nullable|exists:banco,id|required_if:transferencia_pagado,true',
+            'banco_pago_movil_id' => 'nullable|exists:banco,id|required_if:pago_movil_pagado,true',
             'prioridad' => 'required|in:Normal,Alta,Urgente',
             'productos' => 'required|array|min:1',
             'productos.*.producto_id' => 'required|exists:producto,id',
@@ -87,47 +120,8 @@ class PedidoController extends Controller
             'productos.*.nombre_logo' => 'nullable|string|max:100|required_if:productos.*.lleva_bordado,true',
             'productos.*.color' => 'nullable|string|max:50',
             'productos.*.talla' => 'nullable|in:Talla Unica,XS,S,M,L,XL,XXL,2,4,6,8,10,12,14,16',
-            'productos.*.insumos' => 'nullable|array',
-            'productos.*.insumos.*.id' => 'required|exists:insumo,id',
-            'productos.*.insumos.*.cantidad_estimada' => 'required|numeric|min:0.01',
-        ], [
-            // Mensajes personalizados
-            'cotizacion_id.exists' => 'La cotización seleccionada no existe.',
-            'cliente_id.required' => 'Debe seleccionar un cliente.',
-            'cliente_id.exists' => 'El cliente seleccionado no existe.',
-            'fecha_pedido.required' => 'La fecha del pedido es obligatoria.',
-            'fecha_pedido.date' => 'La fecha del pedido debe ser una fecha válida.',
-            'fecha_entrega_estimada.date' => 'La fecha de entrega debe ser una fecha válida.',
-            'fecha_entrega_estimada.after_or_equal' => 'La fecha de entrega debe ser igual o posterior a la fecha del pedido.',
-            'abono.required' => 'El monto del abono es obligatorio.',
-            'abono.numeric' => 'El abono debe ser un número válido.',
-            'abono.min' => 'El abono no puede ser negativo.',
-            'referencia_transferencia.required_if' => 'La referencia de transferencia es obligatoria cuando se paga por transferencia.',
-            'referencia_transferencia.max' => 'La referencia de transferencia no puede exceder 255 caracteres.',
-            'referencia_pago_movil.required_if' => 'La referencia de pago móvil es obligatoria cuando se paga por pago móvil.',
-            'referencia_pago_movil.max' => 'La referencia de pago móvil no puede exceder 255 caracteres.',
-            'banco_id.required_if' => 'Debe seleccionar un banco cuando paga por transferencia o pago móvil.',
-            'banco_id.exists' => 'El banco seleccionado no existe.',
-            'prioridad.required' => 'Debe seleccionar la prioridad del pedido.',
-            'prioridad.in' => 'La prioridad debe ser Normal, Alta o Urgente.',
-            'productos.required' => 'Debe agregar al menos un producto.',
-            'productos.min' => 'Debe agregar al menos un producto.',
-            'productos.*.producto_id.required' => 'Debe seleccionar un producto.',
-            'productos.*.producto_id.exists' => 'El producto seleccionado no existe.',
-            'productos.*.cantidad.required' => 'La cantidad es obligatoria.',
-            'productos.*.cantidad.integer' => 'La cantidad debe ser un número entero.',
-            'productos.*.cantidad.min' => 'La cantidad debe ser al menos 1.',
-            'productos.*.descripcion.max' => 'La descripción no puede exceder 500 caracteres.',
-            'productos.*.nombre_logo.required_if' => 'El nombre del logo es obligatorio cuando lleva bordado.',
-            'productos.*.nombre_logo.max' => 'El nombre del logo no puede exceder 100 caracteres.',
-            'productos.*.color.max' => 'El color no puede exceder 50 caracteres.',
-            'productos.*.talla.in' => 'La talla seleccionada no es válida.',
-            'productos.*.insumos.*.id.required' => 'Debe seleccionar un insumo.',
-            'productos.*.insumos.*.id.exists' => 'El insumo seleccionado no existe.',
-            'productos.*.insumos.*.cantidad_estimada.required' => 'La cantidad estimada del insumo es obligatoria.',
-            'productos.*.insumos.*.cantidad_estimada.numeric' => 'La cantidad estimada debe ser un número.',
-            'productos.*.insumos.*.cantidad_estimada.min' => 'La cantidad estimada debe ser mayor a 0.',
         ]);
+
 
         DB::transaction(function () use ($request) {
             $total_pedido = 0;
@@ -151,6 +145,8 @@ class PedidoController extends Controller
                 'referencia_transferencia' => $request->referencia_transferencia,
                 'referencia_pago_movil' => $request->referencia_pago_movil,
                 'banco_id' => $request->banco_id,
+                'banco_transferencia_id' => $request->banco_transferencia_id,
+                'banco_pago_movil_id' => $request->banco_pago_movil_id,
                 'prioridad' => $request->prioridad,
             ]);
 
@@ -170,40 +166,7 @@ class PedidoController extends Controller
                     'precio_unitario' => $producto->precio_base,
                 ]);
 
-                // Procesar insumos para cada producto del pedido
-                if (isset($item['insumos']) && is_array($item['insumos'])) {
-                    foreach ($item['insumos'] as $insumoData) {
-                        $insumo = Insumo::find($insumoData['id']);
 
-                        if ($insumo) {
-                            $cantidadARestar = $insumoData['cantidad_estimada'];
-
-                            if ($insumo->stock_actual >= $cantidadARestar) {
-                                $stockAnterior = $insumo->stock_actual;
-                                $insumo->stock_actual -= $cantidadARestar;
-                                $insumo->save();
-
-                                // Registrar movimiento de insumo (Salida)
-                                MovimientoInsumo::create([
-                                    'insumo_id' => $insumo->id,
-                                    'tipo_movimiento' => 'Salida',
-                                    'cantidad' => $cantidadARestar,
-                                    'stock_anterior' => $stockAnterior,
-                                    'stock_nuevo' => $insumo->stock_actual,
-                                    'motivo' => 'Consumo por Pedido #' . $pedido->id . ' - Producto: ' . $producto->nombre,
-                                    'created_by' => Auth::id(),
-                                ]);
-
-                                // IMPORTANTE: Asociar insumo al detalle de pedido
-                                $detallePedido->insumos()->attach($insumo->id, ['cantidad_estimada' => $cantidadARestar]);
-
-                            } else {
-                                // Si el stock es insuficiente, revertir la transacción y retornar un error
-                                throw new \Exception('Stock insuficiente para el insumo: ' . $insumo->nombre . '. Stock actual: ' . $insumo->stock_actual . ', Cantidad requerida: ' . $cantidadARestar);
-                            }
-                        }
-                    }
-                }
             }
 
             // Si el pedido viene desde una cotización, marcarla como Convertida
@@ -224,7 +187,7 @@ class PedidoController extends Controller
         $pedido = Pedido::with([
             'user:id,name',
             'productos.producto.tipoProducto',
-            'productos.insumos',
+            'productos.producto.tipoProducto',
             'banco:id,nombre',
             'cliente.persona.telefonos',
             'cliente.persona.direcciones'
@@ -242,6 +205,12 @@ class PedidoController extends Controller
 
     public function update(Request $request, $id)
     {
+        $pedido = Pedido::findOrFail($id);
+
+        if (in_array($pedido->estado, ['Completado', 'Cancelado'])) {
+            return response()->json(['error' => 'No se puede editar un pedido completado o cancelado.'], 403);
+        }
+
         $request->validate([
             'cliente_id' => 'required|exists:cliente,id',
             'fecha_pedido' => 'required|date',
@@ -263,76 +232,13 @@ class PedidoController extends Controller
             'productos.*.nombre_logo' => 'nullable|string|max:100|required_if:productos.*.lleva_bordado,true',
             'productos.*.color' => 'nullable|string|max:50',
             'productos.*.talla' => 'nullable|in:Talla Unica,XS,S,M,L,XL,XXL,2,4,6,8,10,12,14,16',
-            'productos.*.insumos' => 'nullable|array',
-            'productos.*.insumos.*.id' => 'required|exists:insumo,id',
-            'productos.*.insumos.*.cantidad_estimada' => 'required|numeric|min:0.01',
-        ], [
-            // Mensajes personalizados
-            'cliente_id.required' => 'Debe seleccionar un cliente.',
-            'cliente_id.exists' => 'El cliente seleccionado no existe.',
-            'fecha_pedido.required' => 'La fecha del pedido es obligatoria.',
-            'fecha_pedido.date' => 'La fecha del pedido debe ser una fecha válida.',
-            'fecha_entrega_estimada.date' => 'La fecha de entrega debe ser una fecha válida.',
-            'fecha_entrega_estimada.after_or_equal' => 'La fecha de entrega debe ser igual o posterior a la fecha del pedido.',
-            'estado.required' => 'El estado es obligatorio.',
-            'estado.in' => 'El estado debe ser Pendiente, Procesando, Completado o Cancelado.',
-            'abono.required' => 'El monto del abono es obligatorio.',
-            'abono.numeric' => 'El abono debe ser un número válido.',
-            'abono.min' => 'El abono no puede ser negativo.',
-            'referencia_transferencia.required_if' => 'La referencia de transferencia es obligatoria cuando se paga por transferencia.',
-            'referencia_transferencia.max' => 'La referencia de transferencia no puede exceder 255 caracteres.',
-            'referencia_pago_movil.required_if' => 'La referencia de pago móvil es obligatoria cuando se paga por pago móvil.',
-            'referencia_pago_movil.max' => 'La referencia de pago móvil no puede exceder 255 caracteres.',
-            'banco_id.required_if' => 'Debe seleccionar un banco cuando paga por transferencia o pago móvil.',
-            'banco_id.exists' => 'El banco seleccionado no existe.',
-            'prioridad.required' => 'Debe seleccionar la prioridad del pedido.',
-            'prioridad.in' => 'La prioridad debe ser Normal, Alta o Urgente.',
-            'productos.required' => 'Debe agregar al menos un producto.',
-            'productos.min' => 'Debe agregar al menos un producto.',
-            'productos.*.producto_id.required' => 'Debe seleccionar un producto.',
-            'productos.*.producto_id.exists' => 'El producto seleccionado no existe.',
-            'productos.*.cantidad.required' => 'La cantidad es obligatoria.',
-            'productos.*.cantidad.integer' => 'La cantidad debe ser un número entero.',
-            'productos.*.cantidad.min' => 'La cantidad debe ser al menos 1.',
-            'productos.*.descripcion.max' => 'La descripción no puede exceder 500 caracteres.',
-            'productos.*.nombre_logo.required_if' => 'El nombre del logo es obligatorio cuando lleva bordado.',
-            'productos.*.nombre_logo.max' => 'El nombre del logo no puede exceder 100 caracteres.',
-            'productos.*.color.max' => 'El color no puede exceder 50 caracteres.',
-            'productos.*.talla.in' => 'La talla seleccionada no es válida.',
-            'productos.*.insumos.*.id.required' => 'Debe seleccionar un insumo.',
-            'productos.*.insumos.*.id.exists' => 'El insumo seleccionado no existe.',
-            'productos.*.insumos.*.cantidad_estimada.required' => 'La cantidad estimada del insumo es obligatoria.',
-            'productos.*.insumos.*.cantidad_estimada.numeric' => 'La cantidad estimada debe ser un número.',
-            'productos.*.insumos.*.cantidad_estimada.min' => 'La cantidad estimada debe ser mayor a 0.',
         ]);
 
-        DB::transaction(function () use ($request, $id) {
-            $pedido = Pedido::findOrFail($id);
 
-            // Revertir el stock de insumos de los productos existentes antes de eliminarlos
-            foreach ($pedido->productos as $detallePedidoExistente) {
-                if ($detallePedidoExistente->insumos) { // Asumiendo que existe una relación 'insumos' en DetallePedido
-                    foreach ($detallePedidoExistente->insumos as $insumoExistente) {
-                        $insumo = Insumo::find($insumoExistente->id);
-                        if ($insumo) {
-                            $stockAnterior = $insumo->stock_actual;
-                            $cantidadADevolver = $insumoExistente->pivot->cantidad_estimada; // Asumiendo tabla pivote
-                            $insumo->stock_actual += $cantidadADevolver;
-                            $insumo->save();
+        DB::transaction(function () use ($request, $pedido) {
+            // $pedido ya fue recuperado arriba
 
-                            MovimientoInsumo::create([
-                                'insumo_id' => $insumo->id,
-                                'tipo_movimiento' => 'Entrada',
-                                'cantidad' => $cantidadADevolver,
-                                'stock_anterior' => $stockAnterior,
-                                'stock_nuevo' => $insumo->stock_actual,
-                                'motivo' => 'Reversión por actualización de Pedido #' . $pedido->id . ' - Producto: ' . $detallePedidoExistente->producto->nombre,
-                                'created_by' => Auth::id(),
-                            ]);
-                        }
-                    }
-                }
-            }
+
 
             // Eliminar los detalles de pedido existentes (y sus relaciones con insumos si usas attach/detach en la sincronización)
             $pedido->productos()->delete();
@@ -376,41 +282,7 @@ class PedidoController extends Controller
                     'precio_unitario' => $producto->precio_base,
                 ]);
 
-                // Procesar insumos para cada producto del pedido
-                if (isset($item['insumos']) && is_array($item['insumos'])) {
-                    foreach ($item['insumos'] as $insumoData) {
-                        $insumo = Insumo::find($insumoData['id']);
 
-                        if ($insumo) {
-                            $cantidadARestar = $insumoData['cantidad_estimada'];
-
-                            if ($insumo->stock_actual >= $cantidadARestar) {
-                                $stockAnterior = $insumo->stock_actual;
-                                $insumo->stock_actual -= $cantidadARestar;
-                                $insumo->save();
-
-                                // Registrar movimiento de insumo (Salida)
-                                MovimientoInsumo::create([
-                                    'insumo_id' => $insumo->id,
-                                    'tipo_movimiento' => 'Salida',
-                                    'cantidad' => $cantidadARestar,
-                                    'stock_anterior' => $stockAnterior,
-                                    'stock_nuevo' => $insumo->stock_actual,
-                                    'motivo' => 'Consumo por actualización de Pedido #' . $pedido->id . ' - Producto: ' . $producto->nombre,
-                                    'created_by' => Auth::id(),
-                                ]);
-
-                                // Asociar insumo al detalle de pedido (si usas tabla pivote para DetallePedido e Insumo)
-                                // Esto es crucial si quieres cargar los insumos al editar el pedido
-                                $detallePedido->insumos()->attach($insumo->id, ['cantidad_estimada' => $cantidadARestar]);
-
-                            } else {
-                                // Si el stock es insuficiente, revertir la transacción y retornar un error
-                                throw new \Exception('Stock insuficiente para el insumo: ' . $insumo->nombre . '. Stock actual: ' . $insumo->stock_actual . ', Cantidad requerida: ' . $cantidadARestar);
-                            }
-                        }
-                    }
-                }
             }
         });
 
@@ -420,14 +292,19 @@ class PedidoController extends Controller
     public function destroy($id)
     {
         $pedido = Pedido::findOrFail($id);
+
+        if (in_array($pedido->estado, ['Completado', 'Cancelado'])) {
+            return response()->json(['error' => 'No se puede eliminar un pedido completado o cancelado.'], 403);
+        }
+
         $pedido->delete();
         return response()->json(['success' => 'Pedido eliminado exitosamente.']);
     }
 
     public function reportePdf()
     {
-        // Obtener todos los pedidos con su usuario asociado
-        $pedidos = Pedido::with('user:id,name')->get();
+        // Obtener todos los pedidos con su usuario asociado y cliente
+        $pedidos = Pedido::with(['user:id,name', 'cliente', 'cliente.persona'])->get();
 
         // Cargar la vista y generar el PDF (A4 vertical)
         $pdf = PDF::loadView('admin.pedidos.reporte_pdf', compact('pedidos'))
@@ -446,7 +323,7 @@ class PedidoController extends Controller
     public function pedidoPdf(Pedido $pedido)
     {
         // Cargar relaciones necesarias
-        $pedido->load(['user:id,name', 'productos.producto']);
+        $pedido->load(['user:id,name', 'productos.producto', 'cliente', 'cliente.persona']);
 
         // Cálculos financieros
         $ivaTasa = 0.16; // 16 %

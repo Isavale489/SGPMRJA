@@ -20,23 +20,70 @@
         }
 
         #cotizaciones-table {
-            min-width: 1400px;
+            width: 100%;
         }
 
         #cotizaciones-table th:last-child,
         #cotizaciones-table td:last-child {
-            width: 48px;
-            min-width: 40px;
-            max-width: 60px;
+            width: 260px;
+            min-width: 260px;
             text-align: center;
         }
 
-        #cotizaciones-table th:first-child,
-        #cotizaciones-table td:first-child {
-            width: 70px;
-            min-width: 50px;
-            max-width: 90px;
-            text-align: center;
+        /* Prevent wrapping in phone/document columns */
+        #cotizaciones-table td {
+            white-space: nowrap;
+        }
+
+        /* Backdrop más oscuro y difuminado para modal de cliente */
+        #modalAddCliente ~ .modal-backdrop {
+            background-color: rgba(0, 0, 0, 0.7) !important;
+            backdrop-filter: blur(3px);
+            -webkit-backdrop-filter: blur(3px);
+        }
+
+        /* Mejorar visibilidad del modal de cliente */
+        #modalAddCliente .modal-content {
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+        }
+
+        /* Estilos para modal de selección de productos */
+        .producto-selector-btn {
+            cursor: pointer;
+            background: #fff;
+            border: 1px solid #ced4da;
+            border-radius: 0.25rem;
+            padding: 0.375rem 0.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            min-height: 38px;
+            transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+        }
+
+        .producto-selector-btn:hover {
+            border-color: #86b7fe;
+            box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+        }
+
+        #productosModalCotizacionTable tbody tr {
+            cursor: pointer;
+            transition: background-color 0.15s;
+        }
+
+        #productosModalCotizacionTable tbody tr:hover {
+            background-color: #e3f2fd !important;
+        }
+
+        #productosModalCotizacionTable tbody tr.selected {
+            background-color: #bbdefb !important;
+        }
+
+        .producto-img-thumb {
+            width: 40px;
+            height: 40px;
+            object-fit: cover;
+            border-radius: 4px;
         }
     </style>
     <div class="row">
@@ -45,7 +92,13 @@
                 <div class="card-header">
                     <div class="d-flex align-items-center">
                         <h5 class="card-title mb-0 flex-grow-1">Listado de Cotizaciones</h5>
-                        <div class="flex-shrink-0">
+                        <div class="flex-shrink-0 d-flex align-items-center gap-3">
+                            <!-- Buscador Personalizado -->
+                            <div class="search-box">
+                                <input type="text" class="form-control form-control-sm" id="custom-search-input" placeholder="Buscar cotización...">
+                                <i class="ri-search-line search-icon"></i>
+                            </div>
+
                             @if(Auth::user()->isAdmin())
                                 <button type="button" class="btn btn-success add-btn" data-bs-toggle="modal" id="create-btn"
                                     data-bs-target="#showModal">
@@ -63,15 +116,13 @@
                         <thead>
                             <tr>
                                 <th>Nro. de cotización</th>
-                                <th>Cliente</th>
-                                <th>Email</th>
-                                <th>Teléfono</th>
                                 <th>Documento de identidad</th>
+                                <th>Cliente</th>
+                                <th>Teléfono</th>
                                 <th>Fecha Cotización</th>
-                                <th>Fecha Validez</th>
-                                <th>Estado</th>
+                                <th>Fecha de Validez</th>
                                 <th>Total</th>
-                                <th>Usuario Creador</th>
+                                <th>Estado</th>
                                 <th>Acciones</th>
                             </tr>
                         </thead>
@@ -90,5 +141,6 @@
     <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/1.11.5/js/dataTables.bootstrap5.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="{{ URL::asset('/assets/js/municipios-venezuela.js') }}"></script>
     @include('admin.cotizaciones.scripts.main')
 @endpush

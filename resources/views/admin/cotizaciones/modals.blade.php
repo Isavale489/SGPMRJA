@@ -1,4 +1,5 @@
-﻿<!-- Modal para ver detalles de Cotización -->
+﻿
+<!-- Modal para ver detalles de Cotización -->
 <div class="modal fade" id="viewModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static"
     data-bs-keyboard="false">
     <div class="modal-dialog modal-dialog-centered modal-xl">
@@ -220,13 +221,21 @@
                                     <div class="row">
                                         <div class="col-md-6">
                                             <div class="mb-3 position-relative">
-                                                <label for="cliente-nombre-field" class="form-label">Nombre
-                                                    Cliente</label>
+                                                <label for="ci-rif-number-field" class="form-label">Documento de
+                                                    identidad</label>
                                                 <div class="input-group">
-                                                    <input type="text" id="cliente-nombre-field" name="cliente_nombre"
+                                                    <select class="form-select" id="ci-rif-prefix-field"
+                                                        name="rif_prefix" style="max-width: 70px;">
+                                                        <option value="V-">V-</option>
+                                                        <option value="J-">J-</option>
+                                                        <option value="E-">E-</option>
+                                                        <option value="G-">G-</option>
+                                                    </select>
+                                                    <input type="text" id="ci-rif-number-field" name="rif_number"
                                                         class="form-control"
-                                                        placeholder="Buscar o escribir nombre del cliente"
+                                                        placeholder="Buscar o escribir documento del cliente"
                                                         autocomplete="off" required />
+                                                    <input type="hidden" id="ci-rif-full-field" name="ci_rif" />
                                                     <button type="button" class="btn btn-outline-success"
                                                         id="open-add-cliente-modal" title="Agregar nuevo cliente">
                                                         <i class="ri-user-add-line"></i>
@@ -238,37 +247,34 @@
                                         </div>
                                         <div class="col-md-6">
                                             <div class="mb-3">
-                                                <label for="cliente-apellido-field" class="form-label">Apellido
+                                                <label for="cliente-nombre-field" class="form-label">Nombre
                                                     Cliente</label>
-                                                <input type="text" id="cliente-apellido-field" name="cliente_apellido"
-                                                    class="form-control" placeholder="Apellido del cliente" readonly />
+                                                <input type="text" id="cliente-nombre-field" name="cliente_nombre"
+                                                    class="form-control bg-light" placeholder="" 
+                                                    readonly style="cursor: not-allowed;" />
                                             </div>
                                         </div>
                                         <div class="col-md-6">
                                             <div class="mb-3">
-                                                <label for="ci-rif-field" class="form-label">Documento de
-                                                    identidad</label>
-                                                <div class="input-group">
-                                                    <select class="form-select" id="ci-rif-prefix-field"
-                                                        name="rif_prefix" required>
-                                                        <option value="V-">V-</option>
-                                                        <option value="J-">J-</option>
-                                                        <option value="E-">E-</option>
-                                                        <option value="G-">G-</option>
-                                                    </select>
-                                                    <input type="text" id="ci-rif-number-field" name="rif_number"
-                                                        class="form-control" placeholder="Número de identificación"
-                                                        required />
-                                                    <input type="hidden" id="ci-rif-full-field" name="ci_rif" />
-                                                </div>
+                                                <label for="cliente-apellido-field" class="form-label">Apellido
+                                                    Cliente</label>
+                                                <input type="text" id="cliente-apellido-field" name="cliente_apellido"
+                                                    class="form-control bg-light" placeholder="" 
+                                                    readonly style="cursor: not-allowed;" />
                                             </div>
                                         </div>
                                         <div class="col-md-6">
                                             <div class="mb-3">
                                                 <label for="cliente-telefono-field" class="form-label required">Teléfono
-                                                    Cliente</label><input type="text" id="cliente-telefono-field"
-                                                    name="cliente_telefono" class="form-control"
-                                                    placeholder="Teléfono del cliente" required />
+                                                    Cliente</label>
+                                                <input type="text" id="cliente-telefono-field" name="cliente_telefono"
+                                                    class="form-control bg-light"
+                                                    placeholder="" readonly
+                                                    style="cursor: not-allowed;" />
+                                                <small class="text-muted">
+                                                    <i class="ri-information-line me-1"></i>Se obtiene del cliente
+                                                    seleccionado
+                                                </small>
                                             </div>
                                         </div>
                                     </div>
@@ -278,7 +284,8 @@
                                                 <label for="cliente-email-field" class="form-label">Email
                                                     Cliente</label>
                                                 <input type="email" id="cliente-email-field" name="cliente_email"
-                                                    class="form-control" placeholder="correo@ejemplo.com" />
+                                                    class="form-control bg-light" placeholder=""
+                                                    readonly style="cursor: not-allowed;" />
                                             </div>
                                         </div>
                                     </div>
@@ -309,10 +316,12 @@
                                     <label for="estado-field" class="form-label">Estado</label>
                                     <select id="estado-field" name="estado" class="form-control">
                                         <option value="Pendiente">Pendiente</option>
-                                        <option value="Procesando">Procesando</option>
-                                        <option value="Completado">Completado</option>
+                                        <option value="Aprobada">Aprobada</option>
                                         <option value="Cancelado">Cancelado</option>
                                     </select>
+                                    <small class="text-muted">
+                                        <i class="ri-information-line me-1"></i>El estado "Vencida" se asigna automáticamente al pasar la fecha de vencimiento
+                                    </small>
                                 </div>
                             </div>
                             <!-- Sección de Total de la Cotización -->
@@ -346,8 +355,9 @@
                                     <div id="productos-container">
                                         <!-- Aquí se agregarán dinámicamente los campos de producto -->
                                     </div>
-                                    <button type="button" class="btn btn-sm btn-info mt-2"
-                                        id="add-producto-item">Agregar Producto</button>
+                                    <button type="button" class="btn btn-sm btn-info mt-2" id="add-producto-item">
+                                        <i class="ri-add-line me-1"></i>Agregar Otro Producto
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -375,77 +385,140 @@
                 <h5 class="modal-title" id="modalClienteTitle">Agregar Cliente</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div id="cliente-modal-errors" class="alert alert-danger d-none" role="alert"></div>
             <form id="clienteFormCotizacion">
                 <div class="modal-body">
                     <input type="hidden" id="id-field-cliente" />
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="nombre-field-cliente" class="form-label required">Nombre</label><input
-                                    type="text" id="nombre-field-cliente" name="nombre" class="form-control"
-                                    placeholder="Nombre" required />
-                            </div>
-                            <div class="mb-3">
-                                <label for="apellido-field-cliente" class="form-label">Apellido</label><input
-                                    type="text" id="apellido-field-cliente" name="apellido" class="form-control"
-                                    placeholder="Apellido" />
-                            </div>
-                            <div class="mb-3">
-                                <label for="tipo_cliente-field-cliente" class="form-label required">Tipo de
-                                    Cliente</label><select id="tipo_cliente-field-cliente" name="tipo_cliente"
-                                    class="form-control" required>
-                                    <option value="">Seleccione tipo</option>
-                                    <option value="natural">Natural</option>
-                                    <option value="juridico">Jurídico</option>
+                    
+                    <!-- Fila 1: Documento + Tipo Cliente + Estatus -->
+                    <div class="row mb-3">
+                        <div class="col-md-5">
+                            <label for="documento-field-cliente" class="form-label required">Documento (Cédula o RIF)</label>
+                            <div class="input-group">
+                                <select class="form-select" id="documento-prefix-field-cliente" style="max-width: 70px;">
+                                    <option value="V-">V-</option>
+                                    <option value="J-">J-</option>
+                                    <option value="E-">E-</option>
+                                    <option value="G-">G-</option>
                                 </select>
+                                <input type="text" id="documento-number-field-cliente" class="form-control"
+                                    placeholder="Nro. documento" maxlength="10" required />
                             </div>
-                            <div class="mb-3">
-                                <label for="email-field-cliente" class="form-label">Email</label>
-                                <input type="email" id="email-field-cliente" name="email" class="form-control"
-                                    placeholder="Email" />
-                            </div>
-                            <div class="mb-3">
-                                <label for="telefono-field-cliente" class="form-label required">Teléfono</label><input
-                                    type="text" id="telefono-field-cliente" name="telefono" class="form-control"
-                                    placeholder="Teléfono" required />
-                            </div>
-                            <div class="mb-3">
-                                <label for="documento-field-cliente" class="form-label">Documento (Cédula o RIF)</label>
-                                <div class="input-group">
-                                    <select class="form-select" id="documento-prefix-field-cliente"
-                                        style="max-width: 80px;">
-                                        <option value="V-">V-</option>
-                                        <option value="J-">J-</option>
-                                        <option value="E-">E-</option>
-                                        <option value="G-">G-</option>
-                                    </select>
-                                    <input type="text" id="documento-number-field-cliente" class="form-control"
-                                        placeholder="Número de documento" required />
-                                </div>
-                                <input type="hidden" id="documento-field-cliente" name="documento" />
-                            </div>
+                            <input type="hidden" id="documento-field-cliente" name="documento" />
+                            <small class="text-muted">Máximo 10 dígitos</small>
+                            <div id="documento-error-cliente" class="invalid-feedback"></div>
                         </div>
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="direccion-field-cliente" class="form-label required">Dirección</label><input
-                                    type="text" id="direccion-field-cliente" name="direccion" class="form-control"
-                                    placeholder="Dirección" required />
-                            </div>
-                            <div class="mb-3">
-                                <label for="ciudad-field-cliente" class="form-label required">Ciudad</label><input
-                                    type="text" id="ciudad-field-cliente" name="ciudad" class="form-control"
-                                    placeholder="Ciudad" required />
-                            </div>
-                            <div class="mb-3">
-                                <label for="estado-field-cliente" class="form-label required">Estado</label><select
-                                    name="estado" id="estado-field-cliente" class="form-control form-select" required>
-                                    <option value="1">Activo</option>
-                                    <option value="0">Inactivo</option>
-                                </select>
+                        <div class="col-md-4">
+                            <label for="tipo_cliente-field-cliente" class="form-label required">Tipo de Cliente</label>
+                            <select id="tipo_cliente-field-cliente" name="tipo_cliente" class="form-select" required>
+                                <option value="">Seleccione</option>
+                                <option value="natural">Natural</option>
+                                <option value="juridico">Jurídico</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label d-block">Estatus</label>
+                            <div class="form-check form-switch form-switch-success mt-2">
+                                <input type="hidden" name="estatus" value="0" />
+                                <input class="form-check-input" type="checkbox" role="switch" 
+                                    id="estatus-field-cliente" name="estatus" value="1" checked />
+                                <label class="form-check-label" for="estatus-field-cliente" id="estatus-label-cliente">Activo</label>
                             </div>
                         </div>
                     </div>
+
+                    <!-- Fila 2: Nombre + Apellido -->
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="nombre-field-cliente" class="form-label required">Nombre</label>
+                            <input type="text" id="nombre-field-cliente" name="nombre" class="form-control" 
+                                placeholder="Nombre" maxlength="100" required />
+                            <div id="nombre-error-cliente" class="invalid-feedback"></div>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="apellido-field-cliente" class="form-label required">Apellido</label>
+                            <input type="text" id="apellido-field-cliente" name="apellido" class="form-control" 
+                                placeholder="Apellido" maxlength="100" required />
+                            <div id="apellido-error-cliente" class="invalid-feedback"></div>
+                        </div>
+                    </div>
+
+                    <!-- Fila 3: Email + Teléfono -->
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="email-field-cliente" class="form-label">Email</label>
+                            <input type="email" id="email-field-cliente" name="email" class="form-control"
+                                placeholder="correo@ejemplo.com" />
+                            <div id="email-error-cliente" class="invalid-feedback"></div>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="telefono-field-cliente" class="form-label required">Teléfono</label>
+                            <div class="input-group">
+                                <select class="form-select" id="telefono-prefix-field-cliente" style="max-width: 100px; min-width: 100px;">
+                                    <option value="0412">0412</option>
+                                    <option value="0422">0422</option>
+                                    <option value="0414">0414</option>
+                                    <option value="0424" selected>0424</option>
+                                    <option value="0416">0416</option>
+                                    <option value="0426">0426</option>
+                                </select>
+                                <input type="text" id="telefono-number-field-cliente" class="form-control"
+                                    placeholder="1234567" maxlength="7" required />
+                            </div>
+                            <input type="hidden" id="telefono-field-cliente" name="telefono" />
+                            <div id="telefono-error-cliente" class="invalid-feedback"></div>
+                        </div>
+                    </div>
+
+                    <!-- Fila 4: Dirección -->
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <label for="direccion-field-cliente" class="form-label required">Dirección</label>
+                            <input type="text" id="direccion-field-cliente" name="direccion" class="form-control"
+                                placeholder="Dirección completa" maxlength="500" required />
+                            <div id="direccion-error-cliente" class="invalid-feedback"></div>
+                        </div>
+                    </div>
+
+                    <!-- Fila 5: Estado (Territorio) + Ciudad -->
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label for="estado_territorial-field-cliente" class="form-label required">Estado</label>
+                            <select name="estado_territorial" id="estado_territorial-field-cliente" class="form-select" required>
+                                <option value="">Seleccione estado</option>
+                                <option value="Amazonas">Amazonas</option>
+                                <option value="Anzoátegui">Anzoátegui</option>
+                                <option value="Apure">Apure</option>
+                                <option value="Aragua">Aragua</option>
+                                <option value="Barinas">Barinas</option>
+                                <option value="Bolívar">Bolívar</option>
+                                <option value="Carabobo">Carabobo</option>
+                                <option value="Cojedes">Cojedes</option>
+                                <option value="Delta Amacuro">Delta Amacuro</option>
+                                <option value="Distrito Capital">Distrito Capital</option>
+                                <option value="Falcón">Falcón</option>
+                                <option value="Guárico">Guárico</option>
+                                <option value="La Guaira">La Guaira</option>
+                                <option value="Lara">Lara</option>
+                                <option value="Mérida">Mérida</option>
+                                <option value="Miranda">Miranda</option>
+                                <option value="Monagas">Monagas</option>
+                                <option value="Nueva Esparta">Nueva Esparta</option>
+                                <option value="Portuguesa">Portuguesa</option>
+                                <option value="Sucre">Sucre</option>
+                                <option value="Táchira">Táchira</option>
+                                <option value="Trujillo">Trujillo</option>
+                                <option value="Yaracuy">Yaracuy</option>
+                                <option value="Zulia">Zulia</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="ciudad-field-cliente" class="form-label required">Municipio</label>
+                            <select name="ciudad" id="ciudad-field-cliente" class="form-select" required>
+                                <option value="">Primero seleccione un estado</option>
+                            </select>
+                        </div>
+                    </div>
+
                 </div>
                 <div class="modal-footer">
                     <div class="hstack gap-2 justify-content-end">
@@ -456,6 +529,104 @@
                     </div>
                 </div>
             </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para seleccionar producto (Movido al final para z-index) -->
+<div class="modal fade" id="productosModalCotizacion" tabindex="-1" aria-labelledby="productosModalCotizacionLabel" aria-hidden="true"
+    data-bs-backdrop="static" data-bs-keyboard="false" style="z-index: 1060;">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow-lg">
+            <!-- Header con gradiente marca Atlantico -->
+            <div class="modal-header py-3"
+                style="background: linear-gradient(135deg, #1e3c72 0%, #2ecc71 50%, #00d9a5 100%);">
+                <h5 class="modal-title text-white d-flex align-items-center" id="productosModalCotizacionLabel">
+                    <i class="ri-search-line me-2 fs-4"></i>Buscar y Seleccionar Producto
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                    aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <!-- Estilos específicos para este modal -->
+                <style>
+                    #productosModalCotizacionTable thead tr th {
+                        background: #1e3c72 !important; /* Fallback */
+                        background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%) !important;
+                        color: white !important;
+                        border: none !important;
+                    }
+                    #productosModalCotizacionTable tbody tr:hover {
+                        background-color: #f1faff !important;
+                    }
+                    /* Asegurar que texto en tabla sea visible */
+                    #productosModalCotizacionTable tbody td {
+                        color: #333 !important;
+                        vertical-align: middle;
+                    }
+                </style>
+
+                <!-- Card de Filtros -->
+                <div class="card border-0 shadow-sm mb-3">
+                    <div class="card-header border-0 bg-soft-success">
+                        <h6 class="mb-0 text-atlantico-cyan">
+                            <i class="ri-filter-3-line me-2"></i>Filtros de búsqueda
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-7">
+                                <div class="input-group">
+                                    <span class="input-group-text bg-soft-primary border-primary text-primary">
+                                        <i class="ri-search-line"></i>
+                                    </span>
+                                    <input type="text" id="buscarProductoModalCotizacion" class="form-control border-primary"
+                                        placeholder="Buscar por código, tipo o modelo...">
+                                </div>
+                            </div>
+                            <div class="col-md-5">
+                                <select id="filtroTipoProductoCotizacion" class="form-select border-success text-success">
+                                    <option value="">📁 Todos los tipos</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card de Tabla de Productos -->
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header border-0 bg-soft-primary">
+                        <h6 class="mb-0 text-atlantico-dark">
+                            <i class="ri-store-2-line me-2"></i>Catálogo de Productos
+                        </h6>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive" style="max-height: 350px;">
+                            <table class="table table-hover mb-0" id="productosModalCotizacionTable">
+                                <thead style="position: sticky; top: 0; z-index: 10;">
+                                    <tr>
+                                        <th width="60" class="text-center"><i class="ri-image-line"></i></th>
+                                        <th><i class="ri-barcode-line me-1"></i>Código</th>
+                                        <th><i class="ri-folder-line me-1"></i>Tipo</th>
+                                        <th><i class="ri-t-shirt-line me-1"></i>Modelo</th>
+                                        <th><i class="ri-money-dollar-circle-line me-1"></i>Precio</th>
+                                        <th width="80" class="text-center"><i class="ri-check-line"></i></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="productosModalCotizacionBody">
+                                    <!-- Se llena con JavaScript -->
+                                    <tr><td colspan="6" class="text-center text-muted py-4">Cargando productos...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                    <i class="ri-close-line me-1"></i>Cancelar
+                </button>
+            </div>
         </div>
     </div>
 </div>

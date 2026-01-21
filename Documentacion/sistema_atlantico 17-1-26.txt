@@ -1,0 +1,1308 @@
+-- phpMyAdmin SQL Dump
+-- version 5.2.1
+-- https://www.phpmyadmin.net/
+--
+-- Servidor: 127.0.0.1
+-- Tiempo de generación: 18-01-2026 a las 05:02:18
+-- Versión del servidor: 10.4.32-MariaDB
+-- Versión de PHP: 8.2.12
+
+SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
+START TRANSACTION;
+SET time_zone = "+00:00";
+
+
+/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
+/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
+/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
+/*!40101 SET NAMES utf8mb4 */;
+
+--
+-- Base de datos: `sistema_atlantico`
+--
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `banco`
+--
+
+CREATE TABLE `banco` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `nombre` varchar(191) NOT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `cliente`
+--
+
+CREATE TABLE `cliente` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `persona_id` bigint(20) UNSIGNED NOT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  `tipo_cliente` enum('natural','juridico') NOT NULL DEFAULT 'natural',
+  `estatus` tinyint(1) NOT NULL DEFAULT 1
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Volcado de datos para la tabla `cliente`
+--
+
+INSERT INTO `cliente` (`id`, `persona_id`, `created_at`, `updated_at`, `deleted_at`, `tipo_cliente`, `estatus`) VALUES
+(1, 3, '2025-12-04 19:37:44', '2026-01-16 21:57:40', '2026-01-16 21:57:40', 'natural', 1),
+(2, 6, '2025-12-05 19:22:15', '2026-01-16 21:57:58', '2026-01-16 21:57:58', 'natural', 1),
+(3, 7, '2025-12-08 19:23:05', '2026-01-16 21:57:47', '2026-01-16 21:57:47', 'natural', 1),
+(4, 8, '2025-12-08 20:04:57', '2025-12-09 18:51:56', '2025-12-09 18:51:56', 'natural', 1),
+(5, 9, '2025-12-08 20:19:32', '2025-12-09 18:16:57', '2025-12-09 18:16:57', 'natural', 1),
+(6, 10, '2025-12-09 18:54:35', '2025-12-09 18:57:12', '2025-12-09 18:57:12', 'natural', 1),
+(7, 11, '2025-12-10 18:09:48', '2026-01-16 21:57:54', '2026-01-16 21:57:54', 'natural', 1),
+(8, 12, '2025-12-10 20:29:40', '2026-01-17 22:34:46', NULL, 'natural', 1),
+(9, 15, '2026-01-17 16:51:52', '2026-01-17 16:51:52', NULL, 'natural', 1),
+(10, 16, '2026-01-17 17:11:09', '2026-01-17 17:11:09', NULL, 'natural', 1),
+(11, 17, '2026-01-17 22:05:23', '2026-01-17 22:10:55', '2026-01-17 22:10:55', 'natural', 1),
+(12, 18, '2026-01-17 22:31:33', '2026-01-17 22:31:33', NULL, 'natural', 1),
+(13, 19, '2026-01-18 03:49:00', '2026-01-18 03:54:29', '2026-01-18 03:54:29', 'natural', 1),
+(14, 20, '2026-01-18 03:56:57', '2026-01-18 03:56:57', NULL, 'natural', 1);
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `cotizacion`
+--
+
+CREATE TABLE `cotizacion` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `cliente_id` bigint(20) UNSIGNED NOT NULL,
+  `fecha_cotizacion` date NOT NULL,
+  `fecha_validez` date DEFAULT NULL,
+  `estado` varchar(191) NOT NULL DEFAULT 'Pendiente',
+  `total` decimal(10,2) NOT NULL DEFAULT 0.00,
+  `user_id` bigint(20) UNSIGNED NOT NULL,
+  `prioridad` varchar(191) NOT NULL DEFAULT 'Normal',
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Volcado de datos para la tabla `cotizacion`
+--
+
+INSERT INTO `cotizacion` (`id`, `cliente_id`, `fecha_cotizacion`, `fecha_validez`, `estado`, `total`, `user_id`, `prioridad`, `created_at`, `updated_at`, `deleted_at`) VALUES
+(1, 2, '2025-11-11', '2025-12-31', 'Aprobada', 59.80, 1, 'Normal', '2025-12-08 18:51:54', '2026-01-17 16:56:05', '2026-01-17 16:56:05'),
+(2, 3, '2025-11-10', '2026-01-01', 'Aprobada', 599.00, 1, 'Normal', '2025-12-08 19:24:18', '2026-01-17 16:56:10', '2026-01-17 16:56:10'),
+(3, 5, '2025-10-09', '2025-12-24', 'Aprobada', 599.00, 1, 'Normal', '2025-12-08 20:21:31', '2026-01-17 16:56:16', '2026-01-17 16:56:16'),
+(4, 6, '2025-11-13', '2026-01-30', 'Aprobada', 2396.00, 1, 'Normal', '2025-12-09 18:56:23', '2026-01-17 16:48:18', '2026-01-17 16:48:18'),
+(5, 7, '2025-11-06', '2025-12-28', 'Pendiente', 897.00, 1, 'Normal', '2025-12-10 18:11:52', '2026-01-17 16:48:14', '2026-01-17 16:48:14'),
+(6, 7, '2025-12-10', '2025-12-31', 'Aprobada', 419.00, 1, 'Normal', '2025-12-11 00:29:48', '2026-01-16 22:02:54', '2026-01-16 22:02:54'),
+(7, 1, '2025-12-19', '2025-12-30', 'Convertida', 34.00, 1, 'Normal', '2025-12-19 20:15:18', '2026-01-16 22:02:37', '2026-01-16 22:02:37'),
+(8, 9, '2026-01-17', '2026-01-24', 'Cancelado', 119.60, 5, 'Normal', '2026-01-17 16:53:23', '2026-01-17 22:48:34', NULL),
+(9, 12, '2026-01-17', '2026-01-22', 'Pendiente', 119.60, 5, 'Normal', '2026-01-17 17:11:33', '2026-01-17 22:37:51', NULL),
+(10, 8, '2026-01-17', '2026-01-22', 'Completado', 9956.70, 5, 'Normal', '2026-01-17 22:35:19', '2026-01-17 23:40:25', NULL);
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `detalle_cotizacion`
+--
+
+CREATE TABLE `detalle_cotizacion` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `cotizacion_id` bigint(20) UNSIGNED NOT NULL,
+  `producto_id` bigint(20) UNSIGNED NOT NULL,
+  `cantidad` int(11) NOT NULL,
+  `descripcion` text DEFAULT NULL,
+  `lleva_bordado` tinyint(1) NOT NULL DEFAULT 0,
+  `nombre_logo` varchar(191) DEFAULT NULL,
+  `ubicacion_logo` varchar(191) DEFAULT NULL,
+  `cantidad_logo` int(11) DEFAULT NULL,
+  `color` varchar(50) DEFAULT NULL,
+  `talla` varchar(191) DEFAULT NULL,
+  `precio_unitario` decimal(10,2) NOT NULL DEFAULT 0.00,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Volcado de datos para la tabla `detalle_cotizacion`
+--
+
+INSERT INTO `detalle_cotizacion` (`id`, `cotizacion_id`, `producto_id`, `cantidad`, `descripcion`, `lleva_bordado`, `nombre_logo`, `ubicacion_logo`, `cantidad_logo`, `color`, `talla`, `precio_unitario`, `created_at`, `updated_at`) VALUES
+(3, 1, 1, 2, 'Promo Utah Valley University', 1, 'Turning Point USA', 'Frontal Izquierdo', 1, NULL, 'S', 29.90, '2025-12-08 19:11:06', '2025-12-08 19:11:06'),
+(4, 2, 2, 10, 'Camisa para Oracle', 1, 'Oracle', 'Frontal Izquierdo', 1, NULL, 'M', 59.90, '2025-12-08 19:24:18', '2025-12-08 19:24:18'),
+(5, 3, 2, 10, 'Camisas Corte Clasico', 1, 'maxcell corporation logo', 'Frontal Izquierdo', 1, NULL, 'XL', 59.90, '2025-12-08 20:21:31', '2025-12-08 20:21:31'),
+(6, 4, 2, 40, 'Camisas Corte Columbia para Empresa de GPU\'S', 1, 'nvidia logo', 'Frontal Izquierdo', 1, NULL, 'M', 59.90, '2025-12-09 18:56:23', '2025-12-09 18:56:23'),
+(8, 5, 1, 30, 'Cotizacion para empresa de IA', 1, 'Palantir Logo', 'Frontal Izquierdo', 1, NULL, 'S', 29.90, '2025-12-10 23:45:22', '2025-12-10 23:45:22'),
+(9, 6, 1, 6, 'Chemise Clasica para empresa de IA', 1, 'Logo de IA', 'Frontal Izquierdo', 1, NULL, '6', 29.90, '2025-12-11 00:29:48', '2025-12-11 00:29:48'),
+(10, 6, 2, 4, 'Camisa para empresa', 1, 'Logo de Camisa', 'Frontal Derecho', 1, NULL, 'L', 59.90, '2025-12-11 00:29:48', '2025-12-11 00:29:48'),
+(11, 7, 6, 2, NULL, 1, 'Logo UPTP', 'Frontal Izquierdo', 1, NULL, 'M', 17.00, '2025-12-19 20:15:18', '2025-12-19 20:15:18'),
+(20, 9, 1, 4, 'null', 0, 'null', NULL, 1, NULL, '2', 29.90, '2026-01-17 22:37:51', '2026-01-17 22:37:51'),
+(21, 8, 1, 4, 'null', 1, 'Logo UPTP', 'Frontal Izquierdo', 1, NULL, 'XS', 29.90, '2026-01-17 22:48:34', '2026-01-17 22:48:34'),
+(22, 10, 1, 333, 'null', 0, 'null', NULL, 1, NULL, 'Talla Unica', 29.90, '2026-01-17 23:40:25', '2026-01-17 23:40:25');
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `detalle_orden_insumo`
+--
+
+CREATE TABLE `detalle_orden_insumo` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `orden_produccion_id` bigint(20) UNSIGNED NOT NULL,
+  `insumo_id` bigint(20) UNSIGNED NOT NULL,
+  `cantidad_estimada` decimal(10,2) NOT NULL,
+  `cantidad_utilizada` decimal(10,2) NOT NULL DEFAULT 0.00,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Volcado de datos para la tabla `detalle_orden_insumo`
+--
+
+INSERT INTO `detalle_orden_insumo` (`id`, `orden_produccion_id`, `insumo_id`, `cantidad_estimada`, `cantidad_utilizada`, `created_at`, `updated_at`) VALUES
+(3, 4, 1, 2.00, 0.00, '2025-12-18 18:00:17', '2025-12-18 18:00:17'),
+(4, 5, 1, 2.00, 0.00, '2025-12-19 18:44:18', '2025-12-19 18:44:18'),
+(6, 6, 1, 2.00, 0.00, '2026-01-16 18:10:26', '2026-01-16 18:10:26'),
+(9, 7, 2, 4.00, 0.00, '2026-01-17 17:35:23', '2026-01-17 17:35:23');
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `detalle_pedido`
+--
+
+CREATE TABLE `detalle_pedido` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `pedido_id` bigint(20) UNSIGNED NOT NULL,
+  `producto_id` bigint(20) UNSIGNED NOT NULL,
+  `cantidad` int(11) NOT NULL,
+  `descripcion` text DEFAULT NULL,
+  `lleva_bordado` tinyint(1) NOT NULL DEFAULT 0,
+  `nombre_logo` varchar(191) DEFAULT NULL,
+  `color` varchar(50) DEFAULT NULL,
+  `talla` varchar(50) DEFAULT NULL,
+  `ubicacion_logo` varchar(191) DEFAULT NULL,
+  `cantidad_logo` int(11) DEFAULT NULL,
+  `precio_unitario` decimal(10,2) NOT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Volcado de datos para la tabla `detalle_pedido`
+--
+
+INSERT INTO `detalle_pedido` (`id`, `pedido_id`, `producto_id`, `cantidad`, `descripcion`, `lleva_bordado`, `nombre_logo`, `color`, `talla`, `ubicacion_logo`, `cantidad_logo`, `precio_unitario`, `created_at`, `updated_at`) VALUES
+(3, 3, 5, 1, 'con tapa botones', 1, 'Los Caminos', 'Blanco', 'L', 'Frontal Izquierdo', 1, 25.00, '2025-12-18 17:45:32', '2025-12-18 17:45:32'),
+(7, 4, 6, 2, NULL, 0, NULL, 'Blanco', '6', NULL, NULL, 17.00, '2026-01-16 18:00:46', '2026-01-16 18:00:46'),
+(8, 2, 5, 2, 'manga corta', 1, 'Palantir Logo', 'Blanco', 'M', 'Frontal Izquierdo', 1, 25.00, '2026-01-16 18:07:36', '2026-01-16 18:07:36'),
+(9, 1, 1, 1, 'Chemises clasicas para empresa de Inteligencia Artificial', 1, 'Palantir Logo', 'azul', 'L', 'Frontal Izquierdo', 1, 29.90, '2026-01-16 18:07:49', '2026-01-16 18:07:49'),
+(12, 6, 1, 4, 'null', 0, 'null', 'Blanco', '2', NULL, 1, 29.90, '2026-01-17 22:34:12', '2026-01-17 22:34:12'),
+(13, 5, 1, 4, 'null', 1, 'Logo UPTP', 'Blanco', 'XS', 'Frontal Izquierdo', 1, 29.90, '2026-01-17 22:34:28', '2026-01-17 22:34:28'),
+(15, 7, 1, 4, 'null', 0, 'null', 'Blanco', '2', NULL, 1, 29.90, '2026-01-17 23:23:25', '2026-01-17 23:23:25');
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `detalle_pedido_insumo`
+--
+
+CREATE TABLE `detalle_pedido_insumo` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `detalle_pedido_id` bigint(20) UNSIGNED NOT NULL,
+  `insumo_id` bigint(20) UNSIGNED NOT NULL,
+  `cantidad_estimada` decimal(8,2) NOT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Volcado de datos para la tabla `detalle_pedido_insumo`
+--
+
+INSERT INTO `detalle_pedido_insumo` (`id`, `detalle_pedido_id`, `insumo_id`, `cantidad_estimada`, `created_at`, `updated_at`) VALUES
+(3, 3, 1, 2.00, NULL, NULL),
+(7, 7, 2, 4.00, NULL, NULL),
+(8, 7, 1, 4.00, NULL, NULL),
+(9, 8, 1, 4.00, NULL, NULL),
+(10, 9, 1, 5.00, NULL, NULL),
+(13, 12, 2, 4.00, NULL, NULL),
+(14, 13, 2, 1.00, NULL, NULL),
+(16, 15, 2, 4.00, NULL, NULL);
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `direccion`
+--
+
+CREATE TABLE `direccion` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `persona_id` bigint(20) UNSIGNED NOT NULL,
+  `direccion` varchar(255) NOT NULL,
+  `ciudad` varchar(100) DEFAULT NULL,
+  `estado` varchar(50) DEFAULT NULL COMMENT 'Estado/Territorio geográfico',
+  `tipo` enum('casa','trabajo','envio') NOT NULL DEFAULT 'casa',
+  `es_principal` tinyint(1) NOT NULL DEFAULT 0,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Volcado de datos para la tabla `direccion`
+--
+
+INSERT INTO `direccion` (`id`, `persona_id`, `direccion`, `ciudad`, `estado`, `tipo`, `es_principal`, `created_at`, `updated_at`, `deleted_at`) VALUES
+(1, 2, 'La Goajira', 'acarigua', NULL, 'casa', 1, '2025-12-10 18:42:20', '2025-12-10 18:42:20', NULL),
+(2, 3, 'Washington DC', 'Washington', NULL, 'casa', 1, '2025-12-10 18:42:20', '2025-12-10 18:42:20', NULL),
+(3, 4, 'Urbanización Fundación Mendoza\r\nAvenida 7, Calle Principal', 'Acarigua, Municipio Paez', NULL, 'casa', 1, '2025-12-10 18:42:20', '2025-12-10 18:42:20', NULL),
+(4, 6, 'Wall Street', 'New York NY', NULL, 'casa', 1, '2025-12-10 18:42:20', '2025-12-10 18:42:20', NULL),
+(5, 7, 'Sillycon Valley', 'California', NULL, 'casa', 1, '2025-12-10 18:42:20', '2025-12-10 18:42:20', NULL),
+(6, 8, 'Dayton', 'Ohio', NULL, 'casa', 1, '2025-12-10 18:42:20', '2025-12-10 18:42:20', NULL),
+(7, 9, 'Headington Hill Hall, Reino Unido', 'Oxford', NULL, 'casa', 1, '2025-12-10 18:42:20', '2025-12-10 18:42:20', NULL),
+(8, 10, 'San Tomas Expressway', 'Santa Clara, CA', NULL, 'casa', 1, '2025-12-10 18:42:20', '2025-12-10 18:42:20', NULL),
+(9, 11, 'Denver', 'Colorado', NULL, 'casa', 1, '2025-12-10 18:42:20', '2025-12-10 18:42:20', NULL),
+(10, 12, 'Crescent Park, 11 Avenue Palo Alto', 'California', NULL, 'casa', 1, '2025-12-10 20:29:40', '2025-12-10 20:31:20', NULL),
+(11, 14, 'Avenue 10', 'Dallas', NULL, 'casa', 1, '2025-12-10 21:09:58', '2025-12-10 21:09:58', NULL),
+(12, 13, 'villas', 'acarigua', NULL, 'casa', 1, '2025-12-10 21:17:57', '2025-12-10 21:17:57', NULL),
+(13, 15, 'Urb prados del sol', 'Araure', NULL, 'casa', 1, '2026-01-17 16:51:52', '2026-01-17 16:51:52', NULL),
+(14, 16, 'prados del sol', 'araure', NULL, 'casa', 1, '2026-01-17 17:11:09', '2026-01-17 17:11:09', NULL),
+(15, 18, 'Urb prados del sol', 'Araure', NULL, 'casa', 1, '2026-01-17 22:31:33', '2026-01-17 22:31:33', NULL),
+(17, 20, 'Urb. Los Cortijos', 'Páez', 'Portuguesa', 'casa', 1, '2026-01-18 03:56:57', '2026-01-18 03:56:57', NULL);
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `empleado`
+--
+
+CREATE TABLE `empleado` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `persona_id` bigint(20) UNSIGNED NOT NULL,
+  `codigo_empleado` varchar(50) NOT NULL,
+  `fecha_ingreso` date NOT NULL,
+  `cargo` varchar(100) NOT NULL,
+  `departamento` varchar(100) NOT NULL,
+  `salario` decimal(10,2) DEFAULT NULL,
+  `estado` tinyint(1) NOT NULL DEFAULT 1,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Volcado de datos para la tabla `empleado`
+--
+
+INSERT INTO `empleado` (`id`, `persona_id`, `codigo_empleado`, `fecha_ingreso`, `cargo`, `departamento`, `salario`, `estado`, `created_at`, `updated_at`, `deleted_at`) VALUES
+(1, 2, 'EMP-001', '2025-12-04', 'Supervisor de Producción', 'Produccion', NULL, 1, '2025-12-04 19:45:19', '2026-01-17 05:25:17', '2026-01-17 05:25:17'),
+(2, 3, 'EMP-002', '2025-04-07', 'Supervisor', 'Administracion', 897000.00, 1, '2025-12-04 20:19:19', '2026-01-16 21:58:15', '2026-01-16 21:58:15'),
+(3, 4, 'EMP-003', '2025-09-29', 'Cortador', 'Produccion', NULL, 1, '2025-12-05 20:14:04', '2025-12-05 20:14:04', NULL),
+(4, 13, 'EMP-004', '2025-05-08', 'Limpieza', 'Produccion', NULL, 1, '2025-12-10 20:57:36', '2025-12-10 20:57:36', NULL),
+(5, 14, 'EMP-005', '2025-12-10', 'Supervisor 2', 'Produccion', NULL, 1, '2025-12-10 21:09:58', '2026-01-16 21:58:10', '2026-01-16 21:58:10');
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `failed_jobs`
+--
+
+CREATE TABLE `failed_jobs` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `uuid` varchar(191) NOT NULL,
+  `connection` text NOT NULL,
+  `queue` text NOT NULL,
+  `payload` longtext NOT NULL,
+  `exception` longtext NOT NULL,
+  `failed_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `insumo`
+--
+
+CREATE TABLE `insumo` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `nombre` varchar(100) NOT NULL,
+  `tipo` enum('Tela','Hilo','Botón','Cierre','Etiqueta','Otro') NOT NULL,
+  `unidad_medida` varchar(20) NOT NULL,
+  `costo_unitario` decimal(10,2) NOT NULL,
+  `stock_actual` decimal(10,2) NOT NULL,
+  `stock_minimo` decimal(10,2) NOT NULL,
+  `proveedor_id` bigint(20) UNSIGNED DEFAULT NULL,
+  `estado` tinyint(1) NOT NULL DEFAULT 1,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Volcado de datos para la tabla `insumo`
+--
+
+INSERT INTO `insumo` (`id`, `nombre`, `tipo`, `unidad_medida`, `costo_unitario`, `stock_actual`, `stock_minimo`, `proveedor_id`, `estado`, `created_at`, `updated_at`, `deleted_at`) VALUES
+(1, 'Tela Algodón Pima', 'Tela', 'Metro', 15.50, 985.00, 200.00, 1, 1, '2025-12-04 18:58:28', '2026-01-17 17:35:36', '2026-01-17 17:35:36'),
+(2, 'Botón Nacar 18mm', 'Botón', 'Unidad', 0.50, 4987.00, 1000.00, 2, 1, '2025-12-04 18:58:28', '2026-01-17 23:23:25', NULL),
+(3, 'Pique', 'Tela', 'Kilos', 50.00, 30.00, 5.00, 1, 1, '2025-12-11 00:39:02', '2025-12-11 00:40:50', NULL),
+(4, 'microdurazno', 'Hilo', '43', 29.00, 40.00, 39.00, 2, 1, '2026-01-14 23:55:14', '2026-01-17 05:19:57', '2026-01-17 05:19:57');
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `migrations`
+--
+
+CREATE TABLE `migrations` (
+  `id` int(10) UNSIGNED NOT NULL,
+  `migration` varchar(191) NOT NULL,
+  `batch` int(11) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Volcado de datos para la tabla `migrations`
+--
+
+INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES
+(1, '2014_10_12_000000_create_users_table', 1),
+(2, '2014_10_12_100000_create_password_resets_table', 1),
+(3, '2019_08_19_000000_create_failed_jobs_table', 1),
+(4, '2019_12_14_000001_create_personal_access_tokens_table', 1),
+(5, '2025_03_01_000000_create_sistema_produccion_tables', 1),
+(6, '2025_06_14_091624_create_pedidos_table', 1),
+(7, '2025_06_14_091726_create_detalle_pedidos_table', 1),
+(8, '2025_06_14_094205_add_fecha_entrega_estimada_to_pedidos_table', 1),
+(9, '2025_06_14_100214_add_rif_to_pedidos_table', 1),
+(10, '2025_06_14_102229_remove_unique_rif_from_pedidos_table', 1),
+(11, '2025_06_14_103232_rename_rif_to_ci_rif_in_pedidos_table', 1),
+(12, '2025_06_14_112859_add_description_and_logo_fields_to_detalle_pedidos_table', 1),
+(13, '2025_06_14_114729_add_talla_and_color_to_detalle_pedidos_table', 1),
+(14, '2025_06_14_115649_update_talla_enum_in_detalle_pedidos_table', 1),
+(15, '2025_06_14_123551_force_update_talla_enum_in_detalle_pedidos_table', 1),
+(16, '2025_06_14_210039_create_detalle_pedido_insumo_table', 1),
+(17, '2025_06_15_191252_create_bancos_table', 1),
+(18, '2025_06_15_191339_add_payment_fields_to_pedidos_table', 1),
+(19, '2025_06_19_143226_create_clientes_table', 1),
+(20, '2025_06_19_143359_add_cliente_id_to_pedidos_table', 1),
+(21, '2025_06_20_000001_create_cotizaciones_table', 1),
+(22, '2025_06_20_000002_create_detalle_cotizaciones_table', 1),
+(23, '2025_06_21_112333_add_deleted_at_to_clientes_table', 1),
+(24, '2025_06_26_221106_remove_prioridad_column_from_cotizaciones_table', 1),
+(25, '2025_12_04_134221_update_user_role_enum', 1),
+(26, '2025_12_04_150028_rename_all_tables_to_singular_final', 2),
+(27, '2025_12_04_153326_add_missing_columns_to_cliente_table', 3),
+(28, '2025_12_04_154406_create_persona_table', 4),
+(29, '2025_12_04_154408_create_empleado_table', 4),
+(30, '2025_12_04_154409_add_persona_id_to_user_table', 4),
+(31, '2025_12_04_154448_migrate_users_to_persona', 4),
+(32, '2025_12_04_154449_create_empleados_from_supervisores', 4),
+(33, '2025_12_05_165423_rename_ruc_to_rif_in_proveedor_table', 5),
+(34, '2025_12_08_151400_add_cliente_id_to_cotizacion', 6),
+(36, '2025_12_08_153400_normalize_cotizacion_remove_redundant_cliente_fields', 7),
+(37, '2025_12_08_154900_normalize_cliente_with_persona', 8),
+(38, '2025_12_09_170406_remove_payment_columns_from_cotizacion_table', 9),
+(39, '2025_12_10_143835_create_telefono_table', 10),
+(40, '2025_12_10_144011_create_direccion_table', 10),
+(41, '2025_12_10_144137_migrate_telefono_direccion_data_from_persona', 10),
+(42, '2025_12_10_164505_remove_telefono_direccion_ciudad_from_persona_table', 11),
+(43, '2025_12_10_173653_add_cliente_id_to_pedido_table', 12),
+(44, '2025_12_10_194225_remove_legacy_cliente_columns_from_pedido_table', 13),
+(45, '2025_12_15_150500_make_color_nullable_in_producto_table', 14),
+(46, '2025_12_15_155200_make_material_talla_nullable_in_producto_table', 15),
+(47, '2025_12_15_160400_drop_material_talla_from_producto_table', 16),
+(48, '2025_12_15_164400_create_tasa_cambio_table', 17),
+(49, '2025_12_16_134300_create_tipo_producto_table', 18),
+(50, '2025_12_16_134400_add_tipo_and_codigo_to_producto_table', 18),
+(51, '2025_12_18_134800_add_pedido_id_and_logo_to_orden_produccion', 19),
+(52, '2025_12_19_152000_add_cotizacion_id_to_pedido', 20),
+(53, '2026_01_17_225337_rename_estado_to_estatus_and_add_estado_territorial', 21);
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `movimiento_insumo`
+--
+
+CREATE TABLE `movimiento_insumo` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `insumo_id` bigint(20) UNSIGNED NOT NULL,
+  `tipo_movimiento` enum('Entrada','Salida') NOT NULL,
+  `cantidad` decimal(10,2) NOT NULL,
+  `stock_anterior` decimal(10,2) NOT NULL,
+  `stock_nuevo` decimal(10,2) NOT NULL,
+  `motivo` text DEFAULT NULL,
+  `created_by` bigint(20) UNSIGNED NOT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Volcado de datos para la tabla `movimiento_insumo`
+--
+
+INSERT INTO `movimiento_insumo` (`id`, `insumo_id`, `tipo_movimiento`, `cantidad`, `stock_anterior`, `stock_nuevo`, `motivo`, `created_by`, `created_at`, `updated_at`) VALUES
+(1, 1, 'Entrada', 1000.00, 0.00, 1000.00, 'Inventario inicial', 2, '2025-12-04 18:58:28', '2025-12-04 18:58:28'),
+(2, 2, 'Entrada', 5000.00, 0.00, 5000.00, 'Compra inicial', 2, '2025-12-04 18:58:28', '2025-12-04 18:58:28'),
+(3, 1, 'Salida', 5.00, 1000.00, 995.00, 'Consumo por Pedido #1 - Producto: Polo Clásico', 1, '2025-12-10 23:24:45', '2025-12-10 23:24:45'),
+(4, 3, 'Salida', 20.00, 50.00, 30.00, 'Vendidos a una costurera', 1, '2025-12-11 00:40:50', '2025-12-11 00:40:50'),
+(5, 1, 'Salida', 4.00, 995.00, 991.00, 'Consumo por Pedido #2 - Producto: Camisa Oxford Clasica', 1, '2025-12-16 20:47:53', '2025-12-16 20:47:53'),
+(6, 1, 'Salida', 2.00, 991.00, 989.00, 'Consumo por Pedido #3 - Producto: Camisa Oxford Clasica', 1, '2025-12-18 17:45:32', '2025-12-18 17:45:32'),
+(7, 1, 'Salida', 4.00, 989.00, 985.00, 'Consumo por Pedido #4 - Producto: Chemise Cuello Mao', 1, '2025-12-19 20:28:18', '2025-12-19 20:28:18'),
+(8, 1, 'Entrada', 4.00, 985.00, 989.00, 'Reversión por actualización de Pedido #4 - Producto: Chemise Cuello Mao', 5, '2026-01-16 17:28:16', '2026-01-16 17:28:16'),
+(9, 1, 'Salida', 4.00, 989.00, 985.00, 'Consumo por actualización de Pedido #4 - Producto: Chemise Cuello Mao', 5, '2026-01-16 17:28:16', '2026-01-16 17:28:16'),
+(10, 1, 'Entrada', 4.00, 985.00, 989.00, 'Reversión por actualización de Pedido #4 - Producto: Chemise Cuello Mao', 5, '2026-01-16 17:59:27', '2026-01-16 17:59:27'),
+(11, 2, 'Salida', 4.00, 5000.00, 4996.00, 'Consumo por actualización de Pedido #4 - Producto: CE-001', 5, '2026-01-16 17:59:27', '2026-01-16 17:59:27'),
+(12, 2, 'Entrada', 4.00, 4996.00, 5000.00, 'Reversión por actualización de Pedido #4 - Producto: CE-001', 5, '2026-01-16 18:00:46', '2026-01-16 18:00:46'),
+(13, 2, 'Salida', 4.00, 5000.00, 4996.00, 'Consumo por actualización de Pedido #4 - Producto: Chemise Cuello Mao', 5, '2026-01-16 18:00:46', '2026-01-16 18:00:46'),
+(14, 1, 'Salida', 4.00, 989.00, 985.00, 'Consumo por actualización de Pedido #4 - Producto: Chemise Cuello Mao', 5, '2026-01-16 18:00:46', '2026-01-16 18:00:46'),
+(15, 1, 'Entrada', 4.00, 985.00, 989.00, 'Reversión por actualización de Pedido #2 - Producto: Camisa Oxford Clasica', 5, '2026-01-16 18:07:36', '2026-01-16 18:07:36'),
+(16, 1, 'Salida', 4.00, 989.00, 985.00, 'Consumo por actualización de Pedido #2 - Producto: Camisa Oxford Clasica', 5, '2026-01-16 18:07:36', '2026-01-16 18:07:36'),
+(17, 1, 'Entrada', 5.00, 985.00, 990.00, 'Reversión por actualización de Pedido #1 - Producto: Chemise Clasica', 5, '2026-01-16 18:07:49', '2026-01-16 18:07:49'),
+(18, 1, 'Salida', 5.00, 990.00, 985.00, 'Consumo por actualización de Pedido #1 - Producto: Chemise Clasica', 5, '2026-01-16 18:07:49', '2026-01-16 18:07:49'),
+(19, 2, 'Salida', 1.00, 4996.00, 4995.00, 'Consumo por Pedido #5 - Producto: Chemise Clasica', 5, '2026-01-17 16:59:42', '2026-01-17 16:59:42'),
+(20, 2, 'Salida', 4.00, 4995.00, 4991.00, 'Consumo por Pedido #6 - Producto: Chemise Clasica', 5, '2026-01-17 22:33:53', '2026-01-17 22:33:53'),
+(21, 2, 'Entrada', 4.00, 4991.00, 4995.00, 'Reversión por actualización de Pedido #6 - Producto: Chemise Clasica', 5, '2026-01-17 22:34:12', '2026-01-17 22:34:12'),
+(22, 2, 'Salida', 4.00, 4995.00, 4991.00, 'Consumo por actualización de Pedido #6 - Producto: Chemise Clasica', 5, '2026-01-17 22:34:12', '2026-01-17 22:34:12'),
+(23, 2, 'Entrada', 1.00, 4991.00, 4992.00, 'Reversión por actualización de Pedido #5 - Producto: Chemise Clasica', 5, '2026-01-17 22:34:28', '2026-01-17 22:34:28'),
+(24, 2, 'Salida', 1.00, 4992.00, 4991.00, 'Consumo por actualización de Pedido #5 - Producto: Chemise Clasica', 5, '2026-01-17 22:34:28', '2026-01-17 22:34:28'),
+(25, 2, 'Salida', 4.00, 4991.00, 4987.00, 'Consumo por Pedido #7 - Producto: Chemise Clasica', 5, '2026-01-17 22:36:10', '2026-01-17 22:36:10'),
+(26, 2, 'Entrada', 4.00, 4987.00, 4991.00, 'Reversión por actualización de Pedido #7 - Producto: Chemise Clasica', 5, '2026-01-17 23:23:25', '2026-01-17 23:23:25'),
+(27, 2, 'Salida', 4.00, 4991.00, 4987.00, 'Consumo por actualización de Pedido #7 - Producto: Chemise Clasica', 5, '2026-01-17 23:23:25', '2026-01-17 23:23:25');
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `orden_produccion`
+--
+
+CREATE TABLE `orden_produccion` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `pedido_id` bigint(20) UNSIGNED DEFAULT NULL,
+  `producto_id` bigint(20) UNSIGNED NOT NULL,
+  `cantidad_solicitada` int(11) NOT NULL,
+  `cantidad_producida` int(11) NOT NULL DEFAULT 0,
+  `fecha_inicio` date NOT NULL,
+  `fecha_fin_estimada` date NOT NULL,
+  `estado` enum('Pendiente','En Proceso','Finalizado','Cancelado') NOT NULL DEFAULT 'Pendiente',
+  `costo_estimado` decimal(12,2) NOT NULL DEFAULT 0.00,
+  `logo` varchar(191) DEFAULT NULL,
+  `notas` text DEFAULT NULL,
+  `created_by` bigint(20) UNSIGNED NOT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Volcado de datos para la tabla `orden_produccion`
+--
+
+INSERT INTO `orden_produccion` (`id`, `pedido_id`, `producto_id`, `cantidad_solicitada`, `cantidad_producida`, `fecha_inicio`, `fecha_fin_estimada`, `estado`, `costo_estimado`, `logo`, `notas`, `created_by`, `created_at`, `updated_at`, `deleted_at`) VALUES
+(3, 3, 5, 1, 0, '2025-12-18', '2026-01-28', 'Pendiente', 25.00, 'Los Caminos', 'urgenteeeee', 1, '2025-12-18 17:51:44', '2025-12-19 18:43:30', '2025-12-19 18:43:30'),
+(4, 3, 5, 1, 0, '2025-12-18', '2026-01-28', 'Pendiente', 25.00, 'Los Caminos', 'urgente', 1, '2025-12-18 18:00:17', '2025-12-19 18:43:21', '2025-12-19 18:43:21'),
+(5, 3, 5, 1, 0, '2025-12-19', '2026-01-28', 'Pendiente', 25.00, 'Los Caminos', 'urgente', 1, '2025-12-19 18:44:18', '2026-01-17 16:56:43', '2026-01-17 16:56:43'),
+(6, 3, 5, 1, 0, '2026-01-16', '2026-01-28', 'Finalizado', 25.00, 'Los Caminos', NULL, 5, '2026-01-16 18:10:08', '2026-01-16 18:10:26', NULL),
+(7, 5, 1, 4, 0, '2026-01-17', '2026-01-20', 'Finalizado', 119.60, 'Logo UPTP', NULL, 5, '2026-01-17 17:01:08', '2026-01-17 17:35:23', NULL);
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `password_resets`
+--
+
+CREATE TABLE `password_resets` (
+  `email` varchar(191) NOT NULL,
+  `token` varchar(191) NOT NULL,
+  `created_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Volcado de datos para la tabla `password_resets`
+--
+
+INSERT INTO `password_resets` (`email`, `token`, `created_at`) VALUES
+('vanessalopez090551@gmail.com', '$2y$12$y7iiZTcAZq9wHPrufhpSK./ZStflchwZvYdOigU4/YZJlzXQWr6C2', '2026-01-15 00:32:57');
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `pedido`
+--
+
+CREATE TABLE `pedido` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `cotizacion_id` bigint(20) UNSIGNED DEFAULT NULL,
+  `cliente_id` bigint(20) UNSIGNED DEFAULT NULL,
+  `fecha_pedido` date NOT NULL,
+  `fecha_entrega_estimada` date DEFAULT NULL,
+  `estado` varchar(191) NOT NULL DEFAULT 'Pendiente',
+  `prioridad` varchar(191) NOT NULL DEFAULT 'Normal',
+  `total` decimal(10,2) NOT NULL DEFAULT 0.00,
+  `abono` decimal(10,2) NOT NULL DEFAULT 0.00,
+  `efectivo_pagado` tinyint(1) NOT NULL DEFAULT 0,
+  `transferencia_pagado` tinyint(1) NOT NULL DEFAULT 0,
+  `pago_movil_pagado` tinyint(1) NOT NULL DEFAULT 0,
+  `referencia_transferencia` varchar(191) DEFAULT NULL,
+  `referencia_pago_movil` varchar(191) DEFAULT NULL,
+  `user_id` bigint(20) UNSIGNED NOT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  `banco_id` bigint(20) UNSIGNED DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Volcado de datos para la tabla `pedido`
+--
+
+INSERT INTO `pedido` (`id`, `cotizacion_id`, `cliente_id`, `fecha_pedido`, `fecha_entrega_estimada`, `estado`, `prioridad`, `total`, `abono`, `efectivo_pagado`, `transferencia_pagado`, `pago_movil_pagado`, `referencia_transferencia`, `referencia_pago_movil`, `user_id`, `created_at`, `updated_at`, `deleted_at`, `banco_id`) VALUES
+(1, NULL, 7, '2025-12-10', '2026-01-07', 'Procesando', 'Normal', 29.90, 0.00, 0, 0, 0, NULL, NULL, 1, '2025-12-10 23:24:45', '2026-01-17 16:58:05', '2026-01-17 16:58:05', NULL),
+(2, NULL, 7, '2025-12-16', '2025-12-31', 'Cancelado', 'Normal', 50.00, 0.00, 0, 0, 0, NULL, NULL, 1, '2025-12-16 20:47:53', '2026-01-17 16:58:01', '2026-01-17 16:58:01', NULL),
+(3, NULL, 3, '2025-12-18', '2026-01-30', 'Pendiente', 'Urgente', 25.00, 0.00, 0, 0, 0, NULL, NULL, 1, '2025-12-18 17:45:32', '2026-01-17 16:57:54', '2026-01-17 16:57:54', NULL),
+(4, 7, 1, '2025-12-20', '2026-01-16', 'Completado', 'Urgente', 34.00, 4.00, 0, 0, 0, NULL, NULL, 1, '2025-12-19 20:28:18', '2026-01-17 16:57:58', '2026-01-17 16:57:58', NULL),
+(5, 8, 9, '2026-01-17', '2026-01-22', 'Cancelado', 'Normal', 119.60, 11.00, 1, 0, 0, NULL, NULL, 5, '2026-01-17 16:59:42', '2026-01-17 22:34:28', NULL, NULL),
+(6, 9, 12, '2026-01-24', '2026-01-31', 'Completado', 'Normal', 119.60, 7.00, 1, 0, 0, NULL, NULL, 5, '2026-01-17 22:33:53', '2026-01-17 22:34:12', NULL, NULL),
+(7, 10, 8, '2026-01-24', '2026-01-31', 'Procesando', 'Normal', 119.60, 0.00, 0, 0, 0, NULL, NULL, 5, '2026-01-17 22:36:10', '2026-01-17 23:23:25', NULL, NULL);
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `persona`
+--
+
+CREATE TABLE `persona` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `nombre` varchar(100) NOT NULL,
+  `apellido` varchar(100) NOT NULL,
+  `documento_identidad` varchar(50) NOT NULL,
+  `tipo_documento` enum('V-','E-','J-','G-') NOT NULL DEFAULT 'V-',
+  `email` varchar(255) DEFAULT NULL,
+  `estado_persona` varchar(100) DEFAULT NULL,
+  `fecha_nacimiento` date DEFAULT NULL,
+  `genero` enum('M','F','Otro') DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Volcado de datos para la tabla `persona`
+--
+
+INSERT INTO `persona` (`id`, `nombre`, `apellido`, `documento_identidad`, `tipo_documento`, `email`, `estado_persona`, `fecha_nacimiento`, `genero`, `created_at`, `updated_at`, `deleted_at`) VALUES
+(1, 'Administrador', 'Sistema', '00000001', 'V-', 'admin@gmail.com', NULL, NULL, NULL, '2025-12-04 18:58:27', '2025-12-04 18:58:27', NULL),
+(2, 'El', 'Supervisor', '00000002', 'V-', NULL, 'Portuguesa', '2003-04-08', 'M', '2025-12-04 18:58:28', '2025-12-08 14:30:58', NULL),
+(3, 'James David', 'Vance', '8889292', 'G-', 'jdvance@gmail.com', 'Washington DC', '1980-04-04', 'M', '2025-12-04 20:19:19', '2025-12-04 20:19:19', NULL),
+(4, 'Jose Luis', 'Rodriguez', '4567899', 'V-', 'isavale10@gmail.com', 'Portuguesa', '2005-03-31', 'M', '2025-12-05 20:14:04', '2025-12-05 20:14:04', NULL),
+(6, 'Peter', 'Thiel', '8769044', 'E-', 'pltrinvest@gmail.com', NULL, NULL, NULL, '2025-12-08 19:55:18', '2025-12-08 20:23:37', NULL),
+(7, 'Larry', 'Ellison', '545683666', 'E-', 'oraclecorporation@gmail.com', NULL, NULL, NULL, '2025-12-08 19:55:18', '2025-12-08 20:23:29', NULL),
+(8, 'Leslie Herbert', 'Wexner', '6233455', 'E-', 'vsecret@gmail.com', NULL, NULL, NULL, '2025-12-08 20:04:57', '2025-12-08 20:23:20', NULL),
+(9, 'Robert', 'Maxwell', '987489', 'E-', 'maxwellcorporation@gmail.com', NULL, NULL, NULL, '2025-12-08 20:19:32', '2025-12-08 20:22:30', NULL),
+(10, 'Jose', 'Juan', '7499586', 'E-', 'nvidiaceo@gmail.com', NULL, NULL, NULL, '2025-12-09 18:54:35', '2025-12-09 18:56:47', NULL),
+(11, 'Alexander Caedmon', 'Karp', '89320234', 'E-', 'alexkpr@gmail.com', NULL, NULL, NULL, '2025-12-10 18:09:48', '2025-12-10 18:09:48', NULL),
+(12, 'Mark', 'Zuckerberg', '18728555', 'V-', 'facebook@gmail.com', NULL, NULL, NULL, '2025-12-10 20:29:40', '2025-12-10 20:31:20', NULL),
+(13, 'Santiago', 'Mendoza', '30822318', 'V-', 'santitron@gmail.com', 'Portuguesa', '2005-01-11', 'M', '2025-12-10 20:57:36', '2025-12-10 20:57:36', NULL),
+(14, 'Mark', 'Cuban', '6786543', 'E-', 'markcu@gmail.com', 'Texas', '2004-03-10', 'M', '2025-12-10 21:09:58', '2025-12-10 21:09:58', NULL),
+(15, 'Vanessa', 'diaz', '30966655', 'V-', 'vanessalopez090551@gmail.com', NULL, NULL, NULL, '2026-01-17 16:51:52', '2026-01-17 16:51:52', NULL),
+(16, 'valeria', 'diaz', '32152373', 'V-', 'valediaz@gmail.com', NULL, NULL, NULL, '2026-01-17 17:11:09', '2026-01-17 17:11:09', NULL),
+(17, 'cvane', '', '30966654', 'V-', NULL, NULL, NULL, NULL, '2026-01-17 22:05:23', '2026-01-17 22:05:23', NULL),
+(18, 'alalalallaa', 'kneoucnewuivcw', '30966659', 'V-', 'alalallala@email.com', NULL, NULL, NULL, '2026-01-17 22:31:33', '2026-01-17 22:31:33', NULL),
+(19, 'Cleymar', 'Mendoza', '30966271', 'V-', 'cley@gmail.com', NULL, NULL, NULL, '2026-01-18 03:49:00', '2026-01-18 03:49:00', NULL),
+(20, 'Cleymar', 'Mendoza', '30966275', 'V-', 'cleymar@gmail.com', NULL, NULL, NULL, '2026-01-18 03:56:57', '2026-01-18 03:56:57', NULL);
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `personal_access_tokens`
+--
+
+CREATE TABLE `personal_access_tokens` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `tokenable_type` varchar(191) NOT NULL,
+  `tokenable_id` bigint(20) UNSIGNED NOT NULL,
+  `name` varchar(191) NOT NULL,
+  `token` varchar(64) NOT NULL,
+  `abilities` text DEFAULT NULL,
+  `last_used_at` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `produccion_diaria`
+--
+
+CREATE TABLE `produccion_diaria` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `orden_id` bigint(20) UNSIGNED NOT NULL,
+  `operario_id` bigint(20) UNSIGNED NOT NULL,
+  `cantidad_producida` int(11) NOT NULL,
+  `cantidad_defectuosa` int(11) NOT NULL DEFAULT 0,
+  `observaciones` text DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `producto`
+--
+
+CREATE TABLE `producto` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `tipo_producto_id` bigint(20) UNSIGNED DEFAULT NULL,
+  `codigo` varchar(20) DEFAULT NULL,
+  `descripcion` text DEFAULT NULL,
+  `modelo` varchar(50) NOT NULL,
+  `precio_base` decimal(10,2) NOT NULL,
+  `imagen` varchar(191) DEFAULT NULL,
+  `estado` tinyint(1) NOT NULL DEFAULT 1,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Volcado de datos para la tabla `producto`
+--
+
+INSERT INTO `producto` (`id`, `tipo_producto_id`, `codigo`, `descripcion`, `modelo`, `precio_base`, `imagen`, `estado`, `created_at`, `updated_at`, `deleted_at`) VALUES
+(1, 1, 'CHM-001', 'Polo de algodón pima con cuello redondo', 'Clasica', 29.90, 'productoimg/imagenes/69406d911e834.jpg', 1, '2025-12-04 18:58:28', '2025-12-16 17:58:22', NULL),
+(2, NULL, NULL, 'Camisa manga larga para oficina', 'CE-001', 59.90, NULL, 1, '2025-12-04 18:58:28', '2025-12-04 18:58:28', NULL),
+(3, NULL, NULL, 'Corte Columbia I', 'CL-1', 19.00, 'productoimg/imagenes/6940679f046be.png', 1, '2025-12-15 19:55:11', '2025-12-15 19:55:11', NULL),
+(4, NULL, NULL, 'Pantalon de Seguridad', 'JORNES-001', 19.00, 'productoimg/imagenes/69406ba3c92c3.jpg', 1, '2025-12-15 20:12:19', '2025-12-15 20:12:19', NULL),
+(5, 3, 'CAM-001', NULL, 'Oxford Clasica', 25.00, NULL, 1, '2025-12-16 18:30:44', '2025-12-16 18:30:44', NULL),
+(6, 1, 'CHM-002', 'chemise cuello chino', 'Cuello Mao', 17.00, 'productoimg/imagenes/6941a6dcf11a1.jpg', 1, '2025-12-16 18:37:16', '2025-12-16 18:37:16', NULL),
+(7, 2, 'FRN-CEV-001', NULL, 'Cuello en V', 12.00, NULL, 1, '2025-12-16 18:57:27', '2025-12-16 18:57:27', NULL);
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `proveedor`
+--
+
+CREATE TABLE `proveedor` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `razon_social` varchar(100) NOT NULL,
+  `rif` varchar(11) NOT NULL,
+  `direccion` varchar(191) DEFAULT NULL,
+  `telefono` varchar(20) DEFAULT NULL,
+  `email` varchar(191) DEFAULT NULL,
+  `contacto` varchar(100) DEFAULT NULL,
+  `telefono_contacto` varchar(20) DEFAULT NULL,
+  `estado` tinyint(1) NOT NULL DEFAULT 1,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Volcado de datos para la tabla `proveedor`
+--
+
+INSERT INTO `proveedor` (`id`, `razon_social`, `rif`, `direccion`, `telefono`, `email`, `contacto`, `telefono_contacto`, `estado`, `created_at`, `updated_at`, `deleted_at`) VALUES
+(1, 'Textiles Caracas Vzla', 'J-1231321', 'Av. Industrial 123, Venezuela', '0412-555666', 'ventas@textilesvenezuela.com', 'Juan Pérez', '0412-5231234', 1, '2025-12-04 18:58:28', '2025-12-05 20:55:48', NULL),
+(2, 'Insumos Textiles C.C.S', 'J-11112222', 'Torre Jalisco, Las Mercedes', '01-3214567', 'ventas@insumostextiles.com', 'María García', '0424890457', 1, '2025-12-04 18:58:28', '2025-12-04 18:58:28', NULL);
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `tasa_cambio`
+--
+
+CREATE TABLE `tasa_cambio` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `moneda` varchar(10) NOT NULL,
+  `valor` decimal(12,4) NOT NULL,
+  `fecha_bcv` date NOT NULL,
+  `fuente` varchar(191) NOT NULL DEFAULT 'BCV',
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Volcado de datos para la tabla `tasa_cambio`
+--
+
+INSERT INTO `tasa_cambio` (`id`, `moneda`, `valor`, `fecha_bcv`, `fuente`, `created_at`, `updated_at`) VALUES
+(1, 'USD', 270.7900, '2025-12-15', 'BCV (DolarAPI)', '2025-12-15 20:47:22', '2025-12-15 20:47:22'),
+(2, 'USD', 273.5900, '2025-12-16', 'BCV (DolarAPI)', '2025-12-16 15:36:07', '2025-12-16 15:36:07'),
+(3, 'USD', 279.5600, '2025-12-18', 'BCV (DolarAPI)', '2025-12-18 13:34:20', '2025-12-18 13:34:20'),
+(4, 'USD', 282.5100, '2025-12-19', 'BCV (DolarAPI)', '2025-12-19 18:34:37', '2025-12-19 18:34:37'),
+(5, 'USD', 336.4600, '2026-01-14', 'BCV (DolarAPI)', '2026-01-14 23:32:37', '2026-01-14 23:32:37'),
+(6, 'USD', 339.1500, '2026-01-15', 'BCV (DolarAPI)', '2026-01-15 17:04:21', '2026-01-15 17:04:21'),
+(7, 'USD', 341.7400, '2026-01-16', 'BCV (DolarAPI)', '2026-01-16 17:18:16', '2026-01-16 17:18:16'),
+(8, 'USD', 344.5100, '2026-01-17', 'BCV (DolarAPI)', '2026-01-17 04:00:35', '2026-01-17 04:00:35');
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `telefono`
+--
+
+CREATE TABLE `telefono` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `persona_id` bigint(20) UNSIGNED NOT NULL,
+  `numero` varchar(20) NOT NULL,
+  `tipo` enum('movil','casa','trabajo') NOT NULL DEFAULT 'movil',
+  `es_principal` tinyint(1) NOT NULL DEFAULT 0,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Volcado de datos para la tabla `telefono`
+--
+
+INSERT INTO `telefono` (`id`, `persona_id`, `numero`, `tipo`, `es_principal`, `created_at`, `updated_at`, `deleted_at`) VALUES
+(1, 2, '0426-3412567', 'movil', 1, '2025-12-10 18:42:20', '2025-12-10 18:42:20', NULL),
+(2, 3, '0412-3453314', 'movil', 1, '2025-12-10 18:42:20', '2025-12-10 18:42:20', NULL),
+(3, 4, '0426-1135645', 'movil', 1, '2025-12-10 18:42:20', '2025-12-10 18:42:20', NULL),
+(4, 6, '0412555777', 'movil', 1, '2025-12-10 18:42:20', '2025-12-10 18:42:20', NULL),
+(5, 7, '0424-869334', 'movil', 1, '2025-12-10 18:42:20', '2025-12-10 18:42:20', NULL),
+(6, 8, '0422-344859', 'movil', 1, '2025-12-10 18:42:20', '2025-12-10 18:42:20', NULL),
+(7, 9, '0424-898099', 'movil', 1, '2025-12-10 18:42:20', '2025-12-10 18:42:20', NULL),
+(8, 10, '0422-778456', 'movil', 1, '2025-12-10 18:42:20', '2025-12-10 18:42:20', NULL),
+(9, 11, '0414-5548982', 'movil', 1, '2025-12-10 18:42:20', '2025-12-10 18:42:20', NULL),
+(10, 12, '0412-4436668', 'movil', 1, '2025-12-10 20:29:40', '2026-01-17 03:27:27', NULL),
+(11, 14, '0412-3556789', 'movil', 1, '2025-12-10 21:09:58', '2025-12-10 21:09:58', NULL),
+(12, 13, '0412-4435673', 'movil', 1, '2025-12-10 21:17:57', '2025-12-10 21:17:57', NULL),
+(13, 15, '0412-9288102', 'movil', 1, '2026-01-17 16:51:52', '2026-01-17 16:51:52', NULL),
+(14, 16, '0414-5684402', 'movil', 1, '2026-01-17 17:11:09', '2026-01-17 17:11:09', NULL),
+(15, 17, '0424-3637623', 'movil', 1, '2026-01-17 22:05:23', '2026-01-17 22:05:23', NULL),
+(16, 18, '0414-5684402', 'movil', 1, '2026-01-17 22:31:33', '2026-01-17 22:31:33', NULL),
+(17, 19, '0424-1595466', 'movil', 1, '2026-01-18 03:49:00', '2026-01-18 03:49:00', NULL),
+(18, 20, '0424-1595466', 'movil', 1, '2026-01-18 03:56:57', '2026-01-18 03:56:57', NULL);
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `tipo_producto`
+--
+
+CREATE TABLE `tipo_producto` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `nombre` varchar(100) NOT NULL,
+  `codigo_prefijo` varchar(5) NOT NULL,
+  `descripcion` text DEFAULT NULL,
+  `contador` int(11) NOT NULL DEFAULT 0,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Volcado de datos para la tabla `tipo_producto`
+--
+
+INSERT INTO `tipo_producto` (`id`, `nombre`, `codigo_prefijo`, `descripcion`, `contador`, `created_at`, `updated_at`) VALUES
+(1, 'Chemise', 'CHM', 'Camisas tipo polo con cuello', 2, '2025-12-16 17:48:48', '2025-12-16 18:37:16'),
+(2, 'Franela', 'FRN', 'Franelas cuello redondo o V', 0, '2025-12-16 17:48:48', '2025-12-16 17:48:48'),
+(3, 'Camisa', 'CAM', 'Camisas formales manga larga/corta', 1, '2025-12-16 17:48:48', '2025-12-16 18:30:44'),
+(4, 'Pantalón', 'PNT', 'Pantalones de trabajo o formales', 0, '2025-12-16 17:48:48', '2025-12-16 17:48:48'),
+(5, 'Chaqueta', 'CHQ', 'Chaquetas industriales o formales', 0, '2025-12-16 17:48:48', '2025-12-16 17:48:48'),
+(6, 'Overol', 'OVR', 'Overoles y monos de trabajo', 0, '2025-12-16 17:48:48', '2025-12-16 17:48:48'),
+(7, 'Uniforme Escolar', 'ESC', 'Prendas para uniformes escolares', 0, '2025-12-16 17:48:48', '2025-12-16 17:48:48'),
+(8, 'Accesorio', 'ACC', 'Gorras, delantales, chalecos, etc.', 0, '2025-12-16 17:48:48', '2025-12-16 17:48:48');
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `user`
+--
+
+CREATE TABLE `user` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `persona_id` bigint(20) UNSIGNED DEFAULT NULL,
+  `name` varchar(191) NOT NULL,
+  `email` varchar(191) NOT NULL,
+  `role` enum('Administrador','Supervisor') NOT NULL,
+  `email_verified_at` timestamp NULL DEFAULT NULL,
+  `password` varchar(191) NOT NULL,
+  `avatar` text DEFAULT NULL,
+  `estado` tinyint(1) NOT NULL DEFAULT 1,
+  `remember_token` varchar(100) DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Volcado de datos para la tabla `user`
+--
+
+INSERT INTO `user` (`id`, `persona_id`, `name`, `email`, `role`, `email_verified_at`, `password`, `avatar`, `estado`, `remember_token`, `created_at`, `updated_at`) VALUES
+(1, 1, 'Administrador', 'admin@gmail.com', 'Administrador', NULL, '$2y$12$eq5H9CQvR.2WeRggx.y92Ot93ftz0Ml0rrPRGhmxGMsfEwq0/zahm', NULL, 1, '677Qsz6D16wnZjVu7xvkUhtWW4CbSD6CWYl2TDlxppZJQ78JlgPdVrcvZoDQ', '2025-12-04 18:58:27', '2025-12-04 18:58:27'),
+(2, 2, 'Supervisor', 'supervisor@gmail.com', 'Supervisor', NULL, '$2y$12$WZ9jnte4F/DkVPbh64iBKOt91FLUDEDRzmYtJYvc6.iwwLhn3wef6', NULL, 1, NULL, '2025-12-04 18:58:28', '2025-12-04 18:58:28'),
+(5, NULL, 'Vanessa Diaz', 'vanessalopez090551@gmail.com', 'Administrador', NULL, '$2y$12$d0G/88tSU7qJKgmtlYP.ZO95ss9hgFYK8lZF6N9tsRQAsmlansFHC', 'avatars/69682f4d49bb1.jpg', 1, 'Egbv2pBcVPvjVa8jdqGym2kvHdikOyAWaF03sHTyIAY1ZE28cT8ARZkfl6GR', '2026-01-15 00:05:33', '2026-01-15 00:05:33');
+
+--
+-- Índices para tablas volcadas
+--
+
+--
+-- Indices de la tabla `banco`
+--
+ALTER TABLE `banco`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `bancos_nombre_unique` (`nombre`);
+
+--
+-- Indices de la tabla `cliente`
+--
+ALTER TABLE `cliente`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `cliente_persona_id_foreign` (`persona_id`);
+
+--
+-- Indices de la tabla `cotizacion`
+--
+ALTER TABLE `cotizacion`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `cotizaciones_user_id_foreign` (`user_id`),
+  ADD KEY `cotizacion_cliente_id_foreign` (`cliente_id`);
+
+--
+-- Indices de la tabla `detalle_cotizacion`
+--
+ALTER TABLE `detalle_cotizacion`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `detalle_cotizaciones_cotizacion_id_foreign` (`cotizacion_id`),
+  ADD KEY `detalle_cotizaciones_producto_id_foreign` (`producto_id`);
+
+--
+-- Indices de la tabla `detalle_orden_insumo`
+--
+ALTER TABLE `detalle_orden_insumo`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `detalle_orden_insumos_orden_produccion_id_foreign` (`orden_produccion_id`),
+  ADD KEY `detalle_orden_insumos_insumo_id_foreign` (`insumo_id`);
+
+--
+-- Indices de la tabla `detalle_pedido`
+--
+ALTER TABLE `detalle_pedido`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `detalle_pedidos_pedido_id_foreign` (`pedido_id`),
+  ADD KEY `detalle_pedidos_producto_id_foreign` (`producto_id`);
+
+--
+-- Indices de la tabla `detalle_pedido_insumo`
+--
+ALTER TABLE `detalle_pedido_insumo`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `detalle_pedido_insumo_detalle_pedido_id_insumo_id_unique` (`detalle_pedido_id`,`insumo_id`),
+  ADD KEY `detalle_pedido_insumo_insumo_id_foreign` (`insumo_id`);
+
+--
+-- Indices de la tabla `direccion`
+--
+ALTER TABLE `direccion`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `direccion_persona_id_index` (`persona_id`);
+
+--
+-- Indices de la tabla `empleado`
+--
+ALTER TABLE `empleado`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `empleado_persona_id_unique` (`persona_id`),
+  ADD UNIQUE KEY `empleado_codigo_empleado_unique` (`codigo_empleado`);
+
+--
+-- Indices de la tabla `failed_jobs`
+--
+ALTER TABLE `failed_jobs`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `failed_jobs_uuid_unique` (`uuid`);
+
+--
+-- Indices de la tabla `insumo`
+--
+ALTER TABLE `insumo`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `insumos_proveedor_id_foreign` (`proveedor_id`);
+
+--
+-- Indices de la tabla `migrations`
+--
+ALTER TABLE `migrations`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- Indices de la tabla `movimiento_insumo`
+--
+ALTER TABLE `movimiento_insumo`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `movimientos_insumos_insumo_id_foreign` (`insumo_id`),
+  ADD KEY `movimientos_insumos_created_by_foreign` (`created_by`);
+
+--
+-- Indices de la tabla `orden_produccion`
+--
+ALTER TABLE `orden_produccion`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `ordenes_produccion_producto_id_foreign` (`producto_id`),
+  ADD KEY `ordenes_produccion_created_by_foreign` (`created_by`),
+  ADD KEY `orden_produccion_pedido_id_foreign` (`pedido_id`);
+
+--
+-- Indices de la tabla `password_resets`
+--
+ALTER TABLE `password_resets`
+  ADD KEY `password_resets_email_index` (`email`);
+
+--
+-- Indices de la tabla `pedido`
+--
+ALTER TABLE `pedido`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `pedidos_user_id_foreign` (`user_id`),
+  ADD KEY `pedidos_banco_id_foreign` (`banco_id`),
+  ADD KEY `pedido_cliente_id_foreign` (`cliente_id`),
+  ADD KEY `pedido_cotizacion_id_foreign` (`cotizacion_id`);
+
+--
+-- Indices de la tabla `persona`
+--
+ALTER TABLE `persona`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `persona_documento_identidad_unique` (`documento_identidad`),
+  ADD UNIQUE KEY `persona_email_unique` (`email`);
+
+--
+-- Indices de la tabla `personal_access_tokens`
+--
+ALTER TABLE `personal_access_tokens`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `personal_access_tokens_token_unique` (`token`),
+  ADD KEY `personal_access_tokens_tokenable_type_tokenable_id_index` (`tokenable_type`,`tokenable_id`);
+
+--
+-- Indices de la tabla `produccion_diaria`
+--
+ALTER TABLE `produccion_diaria`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `produccion_diaria_orden_id_foreign` (`orden_id`),
+  ADD KEY `produccion_diaria_operario_id_foreign` (`operario_id`);
+
+--
+-- Indices de la tabla `producto`
+--
+ALTER TABLE `producto`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `producto_codigo_unique` (`codigo`),
+  ADD KEY `producto_tipo_producto_id_foreign` (`tipo_producto_id`);
+
+--
+-- Indices de la tabla `proveedor`
+--
+ALTER TABLE `proveedor`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `proveedores_ruc_unique` (`rif`);
+
+--
+-- Indices de la tabla `tasa_cambio`
+--
+ALTER TABLE `tasa_cambio`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `tasa_cambio_moneda_fecha_bcv_unique` (`moneda`,`fecha_bcv`);
+
+--
+-- Indices de la tabla `telefono`
+--
+ALTER TABLE `telefono`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `telefono_persona_id_index` (`persona_id`);
+
+--
+-- Indices de la tabla `tipo_producto`
+--
+ALTER TABLE `tipo_producto`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `tipo_producto_codigo_prefijo_unique` (`codigo_prefijo`);
+
+--
+-- Indices de la tabla `user`
+--
+ALTER TABLE `user`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `users_email_unique` (`email`),
+  ADD UNIQUE KEY `user_persona_id_unique` (`persona_id`);
+
+--
+-- AUTO_INCREMENT de las tablas volcadas
+--
+
+--
+-- AUTO_INCREMENT de la tabla `banco`
+--
+ALTER TABLE `banco`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT de la tabla `cliente`
+--
+ALTER TABLE `cliente`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
+
+--
+-- AUTO_INCREMENT de la tabla `cotizacion`
+--
+ALTER TABLE `cotizacion`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
+
+--
+-- AUTO_INCREMENT de la tabla `detalle_cotizacion`
+--
+ALTER TABLE `detalle_cotizacion`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=23;
+
+--
+-- AUTO_INCREMENT de la tabla `detalle_orden_insumo`
+--
+ALTER TABLE `detalle_orden_insumo`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
+
+--
+-- AUTO_INCREMENT de la tabla `detalle_pedido`
+--
+ALTER TABLE `detalle_pedido`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
+
+--
+-- AUTO_INCREMENT de la tabla `detalle_pedido_insumo`
+--
+ALTER TABLE `detalle_pedido_insumo`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
+
+--
+-- AUTO_INCREMENT de la tabla `direccion`
+--
+ALTER TABLE `direccion`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=18;
+
+--
+-- AUTO_INCREMENT de la tabla `empleado`
+--
+ALTER TABLE `empleado`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+
+--
+-- AUTO_INCREMENT de la tabla `failed_jobs`
+--
+ALTER TABLE `failed_jobs`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT de la tabla `insumo`
+--
+ALTER TABLE `insumo`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+
+--
+-- AUTO_INCREMENT de la tabla `migrations`
+--
+ALTER TABLE `migrations`
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=54;
+
+--
+-- AUTO_INCREMENT de la tabla `movimiento_insumo`
+--
+ALTER TABLE `movimiento_insumo`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=28;
+
+--
+-- AUTO_INCREMENT de la tabla `orden_produccion`
+--
+ALTER TABLE `orden_produccion`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+
+--
+-- AUTO_INCREMENT de la tabla `pedido`
+--
+ALTER TABLE `pedido`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+
+--
+-- AUTO_INCREMENT de la tabla `persona`
+--
+ALTER TABLE `persona`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=21;
+
+--
+-- AUTO_INCREMENT de la tabla `personal_access_tokens`
+--
+ALTER TABLE `personal_access_tokens`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT de la tabla `produccion_diaria`
+--
+ALTER TABLE `produccion_diaria`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+
+--
+-- AUTO_INCREMENT de la tabla `producto`
+--
+ALTER TABLE `producto`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+
+--
+-- AUTO_INCREMENT de la tabla `proveedor`
+--
+ALTER TABLE `proveedor`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+
+--
+-- AUTO_INCREMENT de la tabla `tasa_cambio`
+--
+ALTER TABLE `tasa_cambio`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+
+--
+-- AUTO_INCREMENT de la tabla `telefono`
+--
+ALTER TABLE `telefono`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=19;
+
+--
+-- AUTO_INCREMENT de la tabla `tipo_producto`
+--
+ALTER TABLE `tipo_producto`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+
+--
+-- AUTO_INCREMENT de la tabla `user`
+--
+ALTER TABLE `user`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+
+--
+-- Restricciones para tablas volcadas
+--
+
+--
+-- Filtros para la tabla `cliente`
+--
+ALTER TABLE `cliente`
+  ADD CONSTRAINT `cliente_persona_id_foreign` FOREIGN KEY (`persona_id`) REFERENCES `persona` (`id`);
+
+--
+-- Filtros para la tabla `cotizacion`
+--
+ALTER TABLE `cotizacion`
+  ADD CONSTRAINT `cotizacion_cliente_id_foreign` FOREIGN KEY (`cliente_id`) REFERENCES `cliente` (`id`),
+  ADD CONSTRAINT `cotizaciones_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `user` (`id`) ON DELETE CASCADE;
+
+--
+-- Filtros para la tabla `detalle_cotizacion`
+--
+ALTER TABLE `detalle_cotizacion`
+  ADD CONSTRAINT `detalle_cotizaciones_cotizacion_id_foreign` FOREIGN KEY (`cotizacion_id`) REFERENCES `cotizacion` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `detalle_cotizaciones_producto_id_foreign` FOREIGN KEY (`producto_id`) REFERENCES `producto` (`id`) ON DELETE CASCADE;
+
+--
+-- Filtros para la tabla `detalle_orden_insumo`
+--
+ALTER TABLE `detalle_orden_insumo`
+  ADD CONSTRAINT `detalle_orden_insumos_insumo_id_foreign` FOREIGN KEY (`insumo_id`) REFERENCES `insumo` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `detalle_orden_insumos_orden_produccion_id_foreign` FOREIGN KEY (`orden_produccion_id`) REFERENCES `orden_produccion` (`id`) ON DELETE CASCADE;
+
+--
+-- Filtros para la tabla `detalle_pedido`
+--
+ALTER TABLE `detalle_pedido`
+  ADD CONSTRAINT `detalle_pedidos_pedido_id_foreign` FOREIGN KEY (`pedido_id`) REFERENCES `pedido` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `detalle_pedidos_producto_id_foreign` FOREIGN KEY (`producto_id`) REFERENCES `producto` (`id`) ON DELETE CASCADE;
+
+--
+-- Filtros para la tabla `detalle_pedido_insumo`
+--
+ALTER TABLE `detalle_pedido_insumo`
+  ADD CONSTRAINT `detalle_pedido_insumo_detalle_pedido_id_foreign` FOREIGN KEY (`detalle_pedido_id`) REFERENCES `detalle_pedido` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `detalle_pedido_insumo_insumo_id_foreign` FOREIGN KEY (`insumo_id`) REFERENCES `insumo` (`id`) ON DELETE CASCADE;
+
+--
+-- Filtros para la tabla `direccion`
+--
+ALTER TABLE `direccion`
+  ADD CONSTRAINT `direccion_persona_id_foreign` FOREIGN KEY (`persona_id`) REFERENCES `persona` (`id`) ON DELETE CASCADE;
+
+--
+-- Filtros para la tabla `empleado`
+--
+ALTER TABLE `empleado`
+  ADD CONSTRAINT `empleado_persona_id_foreign` FOREIGN KEY (`persona_id`) REFERENCES `persona` (`id`) ON DELETE CASCADE;
+
+--
+-- Filtros para la tabla `insumo`
+--
+ALTER TABLE `insumo`
+  ADD CONSTRAINT `insumos_proveedor_id_foreign` FOREIGN KEY (`proveedor_id`) REFERENCES `proveedor` (`id`) ON DELETE SET NULL;
+
+--
+-- Filtros para la tabla `movimiento_insumo`
+--
+ALTER TABLE `movimiento_insumo`
+  ADD CONSTRAINT `movimientos_insumos_created_by_foreign` FOREIGN KEY (`created_by`) REFERENCES `user` (`id`),
+  ADD CONSTRAINT `movimientos_insumos_insumo_id_foreign` FOREIGN KEY (`insumo_id`) REFERENCES `insumo` (`id`) ON DELETE CASCADE;
+
+--
+-- Filtros para la tabla `orden_produccion`
+--
+ALTER TABLE `orden_produccion`
+  ADD CONSTRAINT `orden_produccion_pedido_id_foreign` FOREIGN KEY (`pedido_id`) REFERENCES `pedido` (`id`) ON DELETE SET NULL,
+  ADD CONSTRAINT `ordenes_produccion_created_by_foreign` FOREIGN KEY (`created_by`) REFERENCES `user` (`id`),
+  ADD CONSTRAINT `ordenes_produccion_producto_id_foreign` FOREIGN KEY (`producto_id`) REFERENCES `producto` (`id`) ON DELETE CASCADE;
+
+--
+-- Filtros para la tabla `pedido`
+--
+ALTER TABLE `pedido`
+  ADD CONSTRAINT `pedido_cliente_id_foreign` FOREIGN KEY (`cliente_id`) REFERENCES `cliente` (`id`) ON DELETE SET NULL,
+  ADD CONSTRAINT `pedido_cotizacion_id_foreign` FOREIGN KEY (`cotizacion_id`) REFERENCES `cotizacion` (`id`) ON DELETE SET NULL,
+  ADD CONSTRAINT `pedidos_banco_id_foreign` FOREIGN KEY (`banco_id`) REFERENCES `banco` (`id`) ON DELETE SET NULL,
+  ADD CONSTRAINT `pedidos_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `user` (`id`) ON DELETE CASCADE;
+
+--
+-- Filtros para la tabla `produccion_diaria`
+--
+ALTER TABLE `produccion_diaria`
+  ADD CONSTRAINT `produccion_diaria_operario_id_foreign` FOREIGN KEY (`operario_id`) REFERENCES `user` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `produccion_diaria_orden_id_foreign` FOREIGN KEY (`orden_id`) REFERENCES `orden_produccion` (`id`) ON DELETE CASCADE;
+
+--
+-- Filtros para la tabla `producto`
+--
+ALTER TABLE `producto`
+  ADD CONSTRAINT `producto_tipo_producto_id_foreign` FOREIGN KEY (`tipo_producto_id`) REFERENCES `tipo_producto` (`id`) ON DELETE SET NULL;
+
+--
+-- Filtros para la tabla `telefono`
+--
+ALTER TABLE `telefono`
+  ADD CONSTRAINT `telefono_persona_id_foreign` FOREIGN KEY (`persona_id`) REFERENCES `persona` (`id`) ON DELETE CASCADE;
+
+--
+-- Filtros para la tabla `user`
+--
+ALTER TABLE `user`
+  ADD CONSTRAINT `user_persona_id_foreign` FOREIGN KEY (`persona_id`) REFERENCES `persona` (`id`) ON DELETE CASCADE;
+COMMIT;
+
+/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
+/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
+/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;

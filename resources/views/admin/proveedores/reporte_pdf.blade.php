@@ -38,6 +38,9 @@
             padding: 4px;
             text-align: center;
             font-size: 10px;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            word-break: break-all;
         }
 
         th {
@@ -88,24 +91,34 @@
         <table>
             <thead>
                 <tr>
-                    <th style="width: 20%;">Razón Social</th>
-                    <th style="width: 12%;">RIF</th>
+                    <th style="width: 8%;">Tipo</th>
+                    <th style="width: 12%;">Documento</th>
+                    <th style="width: 18%;">Nombre/Razón Social</th>
                     <th style="width: 18%;">Dirección</th>
                     <th style="width: 10%;">Teléfono</th>
                     <th style="width: 15%;">Email</th>
-                    <th style="width: 12%;">Contacto</th>
-                    <th style="width: 8%;">Estado</th>
+                    <th style="width: 10%;">Contacto</th>
+                    <th style="width: 7%;">Estado</th>
                 </tr>
             </thead>
             <tbody>
                 @foreach($proveedores as $proveedor)
                     <tr>
-                        <td style="text-align: left; padding-left: 5px;">{{ $proveedor->razon_social }}</td>
-                        <td>{{ $proveedor->rif }}</td>
-                        <td style="text-align: left; padding-left: 5px;">{{ $proveedor->direccion }}</td>
-                        <td>{{ $proveedor->telefono }}</td>
-                        <td style="font-size: 8px;">{{ $proveedor->email }}</td>
-                        <td>{{ $proveedor->contacto }}</td>
+                        <td>
+                            @if($proveedor->tipo_proveedor === 'natural')
+                                <span
+                                    style="background:#17a2b8; color:white; padding:2px 4px; border-radius:3px; font-size:8px;">Natural</span>
+                            @else
+                                <span
+                                    style="background:#007bff; color:white; padding:2px 4px; border-radius:3px; font-size:8px;">Jurídico</span>
+                            @endif
+                        </td>
+                        <td>{{ $proveedor->documento }}</td>
+                        <td style="text-align: left; padding-left: 5px;">{{ $proveedor->nombre_completo }}</td>
+                        <td style="text-align: left; padding-left: 5px;">{{ $proveedor->direccion_unificada }}</td>
+                        <td>{{ $proveedor->telefono_unificado }}</td>
+                        <td style="font-size: 8px;">{{ $proveedor->email_unificado }}</td>
+                        <td>{{ $proveedor->tipo_proveedor === 'natural' ? '-' : $proveedor->contacto }}</td>
                         <td>
                             @if($proveedor->estado)
                                 <span class="badge-activo">Activo</span>
