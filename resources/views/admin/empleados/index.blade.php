@@ -532,29 +532,29 @@
 
             function generateButtons(empleadoId) {
                 return `
-                                        <div class="dropdown d-inline-block">
-                                            <button class="btn btn-soft-secondary btn-sm dropdown" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                                <i class="ri-more-fill align-middle"></i>
-                                            </button>
-                                            <ul class="dropdown-menu dropdown-menu-end">
-                                                <li>
-                                                    <button class="dropdown-item view-item-btn" data-id="${empleadoId}">
-                                                        <i class="ri-eye-fill align-bottom me-2 text-muted"></i> Ver
-                                                    </button>
-                                                </li>
-                                                <li>
-                                                    <button class="dropdown-item edit-item-btn" data-id="${empleadoId}">
-                                                        <i class="ri-pencil-fill align-bottom me-2 text-muted"></i> Editar
-                                                    </button>
-                                                </li>
-                                                <li>
-                                                    <button class="dropdown-item remove-item-btn" data-id="${empleadoId}">
-                                                        <i class="ri-delete-bin-fill align-bottom me-2 text-muted"></i> Eliminar
-                                                    </button>
-                                                </li>
-                                            </ul>
-                                        </div>
-                                        `;
+                                            <div class="dropdown d-inline-block">
+                                                <button class="btn btn-soft-secondary btn-sm dropdown" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                                    <i class="ri-more-fill align-middle"></i>
+                                                </button>
+                                                <ul class="dropdown-menu dropdown-menu-end">
+                                                    <li>
+                                                        <button class="dropdown-item view-item-btn" data-id="${empleadoId}">
+                                                            <i class="ri-eye-fill align-bottom me-2 text-muted"></i> Ver
+                                                        </button>
+                                                    </li>
+                                                    <li>
+                                                        <button class="dropdown-item edit-item-btn" data-id="${empleadoId}">
+                                                            <i class="ri-pencil-fill align-bottom me-2 text-muted"></i> Editar
+                                                        </button>
+                                                    </li>
+                                                    <li>
+                                                        <button class="dropdown-item remove-item-btn" data-id="${empleadoId}">
+                                                            <i class="ri-delete-bin-fill align-bottom me-2 text-muted"></i> Eliminar
+                                                        </button>
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                            `;
             }
 
             var table = $('#empleados-table').DataTable({
@@ -575,7 +575,15 @@
                     { data: 'telefono', defaultContent: 'N/A' },
                     { data: 'cargo' },
                     { data: 'departamento' },
-                    { data: 'fecha_ingreso' },
+                    {
+                        data: 'fecha_ingreso', render: function (data) {
+                            if (!data) return 'N/A';
+                            // Asumiendo formato ISO YYYY-MM-DD...
+                            const datePart = data.split('T')[0];
+                            const [year, month, day] = datePart.split('-');
+                            return `${day}/${month}/${year}`;
+                        }
+                    },
                     {
                         data: 'estado', render: function (data) {
                             return data == 1 ? '<span class="badge bg-success">Activo</span>' : '<span class="badge bg-danger">Inactivo</span>';
