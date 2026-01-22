@@ -342,20 +342,10 @@
                         <input type="hidden" id="id-field" />
 
                         <h6 class="mb-3 text-primary">Datos Personales</h6>
-                        <div class="row">
-                            <div class="col-md-6">
+                        <div class="row g-3">
+                            <div class="col-md-4">
                                 <div class="mb-3">
-                                    <label for="nombre-field" class="form-label required">Nombre</label><input type="text"
-                                        id="nombre-field" name="nombre" class="form-control" placeholder="Nombre"
-                                        required />
-                                </div>
-                                <div class="mb-3">
-                                    <label for="apellido-field" class="form-label required">Apellido</label><input
-                                        type="text" id="apellido-field" name="apellido" class="form-control"
-                                        placeholder="Apellido" required />
-                                </div>
-                                <div class="mb-3">
-                                    <label for="documento-field" class="form-label">Documento de Identidad</label>
+                                    <label for="documento-field" class="form-label required">Documento de Identidad</label>
                                     <div class="input-group">
                                         <select class="form-select" id="tipo-documento-field" name="tipo_documento"
                                             style="max-width: 80px;">
@@ -365,41 +355,33 @@
                                             <option value="G-">G-</option>
                                         </select>
                                         <input type="text" id="documento-identidad-field" name="documento_identidad"
-                                            class="form-control" placeholder="Número de documento" required />
+                                            class="form-control" placeholder="Número" required />
                                     </div>
                                 </div>
+                            </div>
+                            <div class="col-md-4">
                                 <div class="mb-3">
-                                    <label for="email-field" class="form-label">Email</label>
-                                    <input type="email" id="email-field" name="email" class="form-control"
-                                        placeholder="Email" />
-                                </div>
-                                <div class="mb-3">
-                                    <label for="telefono-field" class="form-label">Teléfono</label>
-                                    <input type="text" id="telefono-field" name="telefono" class="form-control"
-                                        placeholder="0424-1234567" />
+                                    <label for="nombre-field" class="form-label required">Nombre</label>
+                                    <input type="text" id="nombre-field" name="nombre" class="form-control"
+                                        placeholder="Nombre" required />
                                 </div>
                             </div>
-                            <div class="col-md-6">
+                            <div class="col-md-4">
                                 <div class="mb-3">
-                                    <label for="direccion-field" class="form-label">Dirección</label>
-                                    <textarea id="direccion-field" name="direccion" class="form-control"
-                                        placeholder="Dirección completa" rows="2"></textarea>
+                                    <label for="apellido-field" class="form-label required">Apellido</label>
+                                    <input type="text" id="apellido-field" name="apellido" class="form-control"
+                                        placeholder="Apellido" required />
                                 </div>
-                                <div class="mb-3">
-                                    <label for="ciudad-field" class="form-label">Ciudad</label>
-                                    <input type="text" id="ciudad-field" name="ciudad" class="form-control"
-                                        placeholder="Ciudad" />
-                                </div>
-                                <div class="mb-3">
-                                    <label for="estado-persona-field" class="form-label">Estado/Provincia</label>
-                                    <input type="text" id="estado-persona-field" name="estado_persona" class="form-control"
-                                        placeholder="Estado" />
-                                </div>
+                            </div>
+
+                            <div class="col-md-4">
                                 <div class="mb-3">
                                     <label for="fecha-nacimiento-field" class="form-label">Fecha de Nacimiento</label>
                                     <input type="date" id="fecha-nacimiento-field" name="fecha_nacimiento"
                                         class="form-control" />
                                 </div>
+                            </div>
+                            <div class="col-md-4">
                                 <div class="mb-3">
                                     <label for="genero-field" class="form-label">Género</label>
                                     <select id="genero-field" name="genero" class="form-control">
@@ -410,42 +392,86 @@
                                     </select>
                                 </div>
                             </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="email-field" class="form-label">Email</label>
+                                    <input type="email" id="email-field" name="email" class="form-control"
+                                        placeholder="Email" />
+                                </div>
+                            </div>
+
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="telefono-field" class="form-label">Teléfono</label>
+                                    <input type="text" id="telefono-field" name="telefono" class="form-control"
+                                        placeholder="0424-1234567" />
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="estado-persona-field" class="form-label">Estado/Provincia</label>
+                                    <input type="text" id="estado-persona-field" name="estado_persona" class="form-control"
+                                        placeholder="Estado" />
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="ciudad-field" class="form-label">Ciudad</label>
+                                    <input type="text" id="ciudad-field" name="ciudad" class="form-control"
+                                        placeholder="Ciudad" />
+                                </div>
+                            </div>
+
+                            <div class="col-md-12">
+                                <div class="mb-3">
+                                    <label for="direccion-field" class="form-label">Dirección</label>
+                                    <textarea id="direccion-field" name="direccion" class="form-control"
+                                        placeholder="Dirección completa" rows="2"></textarea>
+                                </div>
+                            </div>
                         </div>
 
-                        <hr>
+                        <hr class="my-4">
                         <h6 class="mb-3 text-success">Datos Laborales</h6>
-                        <div class="row">
-                            <div class="col-md-6">
+                        <div class="row g-3">
+                            <div class="col-md-4">
                                 <div class="mb-3">
                                     <label for="codigo-empleado-field" class="form-label">Código Empleado</label>
                                     <input type="text" id="codigo-empleado-field" name="codigo_empleado"
                                         class="form-control" placeholder="Auto-generado" readonly />
                                     <small class="text-muted">Se generará automáticamente</small>
                                 </div>
+                            </div>
+                            <div class="col-md-4">
                                 <div class="mb-3">
-                                    <label for="cargo-field" class="form-label required">Cargo</label><input type="text"
-                                        id="cargo-field" name="cargo" class="form-control"
-                                        placeholder="Ej: Operario, Supervisor" required />
+                                    <label for="cargo-field" class="form-label required">Cargo</label>
+                                    <input type="text" id="cargo-field" name="cargo" class="form-control"
+                                        placeholder="Ej: Operario" required />
                                 </div>
+                            </div>
+                            <div class="col-md-4">
                                 <div class="mb-3">
-                                    <label for="departamento-field" class="form-label required">Departamento</label><select
-                                        id="departamento-field" name="departamento" class="form-control form-select"
+                                    <label for="departamento-field" class="form-label required">Departamento</label>
+                                    <select id="departamento-field" name="departamento" class="form-control form-select"
                                         required>
-                                        <option value="">Seleccione departamento...</option>
+                                        <option value="">Seleccione...</option>
                                         <option value="Administracion">Administracion</option>
                                         <option value="Produccion">Produccion</option>
                                     </select>
                                 </div>
                             </div>
+
                             <div class="col-md-6">
                                 <div class="mb-3">
-                                    <label for="fecha-ingreso-field" class="form-label required">Fecha de
-                                        Ingreso</label><input type="date" id="fecha-ingreso-field" name="fecha_ingreso"
-                                        class="form-control" required />
+                                    <label for="fecha-ingreso-field" class="form-label required">Fecha de Ingreso</label>
+                                    <input type="date" id="fecha-ingreso-field" name="fecha_ingreso" class="form-control"
+                                        required />
                                 </div>
+                            </div>
+                            <div class="col-md-6">
                                 <div class="mb-3">
-                                    <label for="estado-field" class="form-label required">Estado</label><select
-                                        name="estado" id="estado-field" class="form-control form-select" required>
+                                    <label for="estado-field" class="form-label required">Estado</label>
+                                    <select name="estado" id="estado-field" class="form-control form-select" required>
                                         <option value="1">Activo</option>
                                         <option value="0">Inactivo</option>
                                     </select>
@@ -506,29 +532,29 @@
 
             function generateButtons(empleadoId) {
                 return `
-                                    <div class="dropdown d-inline-block">
-                                        <button class="btn btn-soft-secondary btn-sm dropdown" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                            <i class="ri-more-fill align-middle"></i>
-                                        </button>
-                                        <ul class="dropdown-menu dropdown-menu-end">
-                                            <li>
-                                                <button class="dropdown-item view-item-btn" data-id="${empleadoId}">
-                                                    <i class="ri-eye-fill align-bottom me-2 text-muted"></i> Ver
-                                                </button>
-                                            </li>
-                                            <li>
-                                                <button class="dropdown-item edit-item-btn" data-id="${empleadoId}">
-                                                    <i class="ri-pencil-fill align-bottom me-2 text-muted"></i> Editar
-                                                </button>
-                                            </li>
-                                            <li>
-                                                <button class="dropdown-item remove-item-btn" data-id="${empleadoId}">
-                                                    <i class="ri-delete-bin-fill align-bottom me-2 text-muted"></i> Eliminar
-                                                </button>
-                                            </li>
-                                        </ul>
-                                    </div>
-                                    `;
+                                        <div class="dropdown d-inline-block">
+                                            <button class="btn btn-soft-secondary btn-sm dropdown" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                                <i class="ri-more-fill align-middle"></i>
+                                            </button>
+                                            <ul class="dropdown-menu dropdown-menu-end">
+                                                <li>
+                                                    <button class="dropdown-item view-item-btn" data-id="${empleadoId}">
+                                                        <i class="ri-eye-fill align-bottom me-2 text-muted"></i> Ver
+                                                    </button>
+                                                </li>
+                                                <li>
+                                                    <button class="dropdown-item edit-item-btn" data-id="${empleadoId}">
+                                                        <i class="ri-pencil-fill align-bottom me-2 text-muted"></i> Editar
+                                                    </button>
+                                                </li>
+                                                <li>
+                                                    <button class="dropdown-item remove-item-btn" data-id="${empleadoId}">
+                                                        <i class="ri-delete-bin-fill align-bottom me-2 text-muted"></i> Eliminar
+                                                    </button>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                        `;
             }
 
             var table = $('#empleados-table').DataTable({
