@@ -115,7 +115,7 @@
                     <div class="text-center mb-4" id="user-avatar-container">
                         <div class="rounded-circle mx-auto d-flex align-items-center justify-content-center"
                             style="width: 100px; height: 100px; background: linear-gradient(135deg, #1e3c72 0%, #00d9a5 100%); padding: 3px;">
-                            <img id="user-avatar" src="/assets/images/users/default-avatar.jpg" alt="Avatar del usuario"
+                            <img id="user-avatar" src="/assets/images/users/user-dummy-img.jpg" alt="Avatar del usuario"
                                 class="rounded-circle bg-white" style="width: 94px; height: 94px; object-fit: cover;">
                         </div>
                     </div>
@@ -314,7 +314,7 @@
                                                     <div class="d-flex align-items-center">
                                                         <div class="flex-shrink-0 me-2">
                                                             <div class="avatar-xs">
-                                                                <img src="${row.avatar || '/assets/images/users/default-avatar.jpg'}" alt="Avatar" class="img-fluid rounded-circle">
+                                                                <img src="${row.avatar || '/assets/images/users/user-dummy-img.jpg'}" alt="Avatar" class="img-fluid rounded-circle">
                                                             </div>
                                                         </div>
                                                         <div class="flex-grow-1">${data}</div>
@@ -361,10 +361,10 @@
                     }
                 ],
                 order: [
-                    [4, 'desc'] // Cambiar el índice de ordenamiento (ahora la columna "Creado" es la índice 4)
+                    [4, 'desc']
                 ],
-                dom: 'rtip', // Se eliminó la 'B' que representa los botones
-                // Se eliminó el array de botones
+                dom: 'rtip',
+                responsive: true,
                 language: {
                     "sProcessing": "Procesando...",
                     "sLengthMenu": "Mostrar _MENU_ registros",
@@ -396,7 +396,6 @@
                         "print": "Imprimir",
                         "colvis": "Visibilidad de Columna"
                     }
-                }
                 }
             });
 
@@ -533,7 +532,7 @@
                     if (data.avatar) {
                         $("#user-avatar").attr("src", data.avatar);
                     } else {
-                        $("#user-avatar").attr("src", "/assets/images/users/default-avatar.jpg");
+                        $("#user-avatar").attr("src", "/assets/images/users/user-dummy-img.jpg");
                     }
 
 

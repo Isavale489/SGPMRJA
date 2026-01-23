@@ -1,0 +1,32 @@
+@echo off
+TITLE Sistema SGPMRJA - Auto Start 🚀
+COLOR 0A
+
+echo ==========================================
+echo      INICIANDO SISTEMA SGPMRJA
+echo ==========================================
+echo.
+
+:: 1. Ir a la carpeta del proyecto
+:: Confirma que esta sea tu ruta real. Si falla, revísala.
+cd /d "C:\Users\Santi\Project\SGPMRJA"
+
+:: 2. Actualizar desde GitHub
+echo [1/3] 🔄 Buscando actualizaciones en GitHub...
+call git pull origin main
+echo.
+
+:: 3. Instalar librerías nuevas (Por si acaso alguien agregó algo)
+echo [2/3] 📦 Verificando librerías (Composer)...
+call composer install --no-interaction --prefer-dist
+echo.
+
+:: 4. Abrir navegador y Servidor
+echo [3/3] 🌐 Abriendo sistema y encendiendo motores...
+start http://127.0.0.1:8000
+echo.
+echo    ----------------------------------------
+echo    NO CIERRES ESTA VENTANA MIENTRAS TRABAJAS
+echo    ----------------------------------------
+echo.
+php artisan serve
