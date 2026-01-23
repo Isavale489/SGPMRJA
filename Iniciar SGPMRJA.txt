@@ -2,31 +2,50 @@
 TITLE Sistema SGPMRJA - Auto Start 🚀
 COLOR 0A
 
+:: --- TUS RUTAS ---
+set XAMPP_DIR=C:\xampp
+set PROYECTO_DIR=C:\Users\Santi\Project\SGPMRJA
+:: -----------------
+
 echo ==========================================
-echo      INICIANDO SISTEMA SGPMRJA
+echo    INICIANDO SISTEMA SGPMRJA (SILENCIOSO)
 echo ==========================================
 echo.
 
-:: 1. Ir a la carpeta del proyecto
-:: Confirma que esta sea tu ruta real. Si falla, revísala.
-cd /d "C:\Users\Santi\Project\SGPMRJA"
+:: 1. ENCENDER MOTORES (XAMPP)
+echo [1/4] 🔧 Encendiendo motores (Apache y MySQL)...
+if exist "%XAMPP_DIR%" (
+    pushd "%XAMPP_DIR%"
+    :: Arrancamos minimizados (/min)
+    if not exist "%XAMPP_DIR%\mysql\data\*.pid" start /min "MySQL" "mysql_start.bat"
+    start /min "Apache" "apache_start.bat"
+    popd
+) else (
+    echo   - ERROR: No encuentro XAMPP.
+    pause
+    exit
+)
 
-:: 2. Actualizar desde GitHub
-echo [1/3] 🔄 Buscando actualizaciones en GitHub...
+:: 2. IR AL PROYECTO
+cd /d "%PROYECTO_DIR%"
+
+:: 3. ACTUALIZAR
+echo [2/4] 🔄 Buscando actualizaciones en GitHub...
 call git pull origin main
 echo.
 
-:: 3. Instalar librerías nuevas (Por si acaso alguien agregó algo)
-echo [2/3] 📦 Verificando librerías (Composer)...
-call composer install --no-interaction --prefer-dist
+:: 4. LIBRERIAS
+echo [3/4] 📦 Verificando dependencias...
+call composer install --no-interaction --prefer-dist >NUL 2>&1
 echo.
 
-:: 4. Abrir navegador y Servidor
-echo [3/3] 🌐 Abriendo sistema y encendiendo motores...
+:: 5. LANZAMIENTO
+echo [4/4] 🌐 Abriendo sistema...
 start http://127.0.0.1:8000
 echo.
 echo    ----------------------------------------
-echo    NO CIERRES ESTA VENTANA MIENTRAS TRABAJAS
+echo    SISTEMA CORRIENDO.
+echo    MINIMIZA ESTA VENTANA Y A TRABAJAR.
 echo    ----------------------------------------
 echo.
 php artisan serve
