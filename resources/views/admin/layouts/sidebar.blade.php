@@ -128,7 +128,7 @@
                             <a class="nav-link menu-link" href="#sidebarVentas" data-bs-toggle="collapse" role="button"
                                 aria-expanded="{{ request()->is('cotizaciones*') || request()->is('pedidos*') ? 'true' : 'false' }}"
                                 aria-controls="sidebarVentas">
-                                <i class="ri-shopping-bag-line"></i> <span data-key="t-ventas">Ventas</span>
+                                <i class="ri-clipboard-line"></i> <span data-key="t-ventas">Gestión de Pedidos</span>
                             </a>
                             <div class="collapse menu-dropdown {{ request()->is('cotizaciones*') || request()->is('pedidos*') ? 'show' : '' }}"
                                 id="sidebarVentas">

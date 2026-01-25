@@ -135,7 +135,7 @@ Sigue estos pasos para desplegar el proyecto en un entorno local:
 *   **Santiago Mendoza** - *Desarrollador*
 *   **Johiner Orellana** - *Analista*
 *   **Luis Rodriguez** - *Analista*
-*   **Vanessa Lopez** - *Analista*
+*   **Vanessa Lopez** - *Desarrolladora*
 *   **Isabella Colmenarez** - *Analista*
 *   **Alejandro Adam** - *Analista*
 

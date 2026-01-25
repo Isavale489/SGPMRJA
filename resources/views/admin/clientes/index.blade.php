@@ -33,9 +33,11 @@
         }
 
         #clientes-table {
-            width: 100% !important;
+            width: auto !important;
+            /* El ancho justo del contenido */
             font-size: 13px;
-            min-width: 1200px;
+            min-width: 0 !important;
+            /* No forzar ancho mínimo */
         }
 
         #clientes-table th,
@@ -44,30 +46,11 @@
             vertical-align: middle;
         }
 
+        /* Acciones: Ancho mínimo fijo */
         #clientes-table th:last-child,
         #clientes-table td:last-child {
-            width: 48px;
-            min-width: 40px;
-            max-width: 60px;
-            text-align: center;
-        }
-
-        #clientes-table th:nth-last-child(2),
-        #clientes-table td:nth-last-child(2) {
-            width: 100px;
-            min-width: 80px;
-            max-width: 120px;
-            text-align: center;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-
-        #clientes-table th:nth-child(5),
-        #clientes-table td:nth-child(5) {
-            width: 100px;
-            min-width: 80px;
-            max-width: 120px;
+            width: 80px;
+            /* Suficiente para 3 botones */
             text-align: center;
         }
 
@@ -91,22 +74,14 @@
                 <div class="card-header">
                     <div class="d-flex align-items-center">
                         <h5 class="card-title mb-0 flex-grow-1">Listado de Clientes</h5>
-                        <div class="flex-shrink-0 d-flex align-items-center gap-3">
-                            <!-- Buscador Personalizado -->
-                            <div class="search-box">
-                                <input type="text" class="form-control form-control-sm" id="custom-search-input"
-                                    placeholder="Buscar cliente...">
-                                <i class="ri-search-line search-icon"></i>
-                            </div>
-                            <div class="d-flex gap-2">
-                                <button type="button" class="btn btn-success add-btn" data-bs-toggle="modal" id="create-btn"
-                                    data-bs-target="#showModal">
-                                    <i class="ri-add-line align-bottom me-1"></i> Agregar Cliente
-                                </button>
-                                <a href="{{ route('clientes.reporte.pdf') }}" class="btn btn-danger" target="_blank">
-                                    <i class="ri-file-pdf-fill align-bottom me-1"></i> Exportar PDF
-                                </a>
-                            </div>
+                        <div class="flex-shrink-0 d-flex gap-2">
+                            <button type="button" class="btn btn-success add-btn" data-bs-toggle="modal" id="create-btn"
+                                data-bs-target="#showModal">
+                                <i class="ri-add-line align-bottom me-1"></i> Agregar Cliente
+                            </button>
+                            <a href="{{ route('clientes.reporte.pdf') }}" class="btn btn-danger" target="_blank">
+                                <i class="ri-file-pdf-fill align-bottom me-1"></i> Exportar PDF
+                            </a>
                         </div>
                     </div>
                 </div>
@@ -115,15 +90,10 @@
                         <thead>
                             <tr>
                                 <th>Documento</th>
-                                <th>Nombre</th>
-                                <th>Apellido</th>
+                                <th>Cliente</th>
                                 <th>Tipo</th>
                                 <th>Email</th>
                                 <th>Teléfono</th>
-                                <th>Dirección</th>
-                                <th>Estado</th>
-                                <th>Ciudad</th>
-                                <th>Estatus</th>
                                 <th>Acciones</th>
                             </tr>
                         </thead>
@@ -706,47 +676,47 @@
             });
             function generateButtons(clienteId) {
                 return `
-                            <div class="d-flex gap-2 justify-content-center">
-                                <button class="btn btn-sm btn-soft-info view-item-btn" data-id="${clienteId}" title="Ver">
-                                    <i class="ri-eye-fill"></i>
-                                </button>
-                                <button class="btn btn-sm btn-soft-success edit-item-btn" data-id="${clienteId}" title="Editar">
-                                    <i class="ri-pencil-fill"></i>
-                                </button>
-                                <button class="btn btn-sm btn-soft-danger remove-item-btn" data-id="${clienteId}" title="Eliminar">
-                                    <i class="ri-delete-bin-fill"></i>
-                                </button>
-                            </div>
-                        `;
+                                                                                    <div class="d-flex gap-2 justify-content-center">
+                                                                                        <button class="btn btn-sm btn-soft-info view-item-btn" data-id="${clienteId}" title="Ver">
+                                                                                            <i class="ri-eye-fill"></i>
+                                                                                        </button>
+                                                                                        <button class="btn btn-sm btn-soft-success edit-item-btn" data-id="${clienteId}" title="Editar">
+                                                                                            <i class="ri-pencil-fill"></i>
+                                                                                        </button>
+                                                                                        <button class="btn btn-sm btn-soft-danger remove-item-btn" data-id="${clienteId}" title="Eliminar">
+                                                                                            <i class="ri-delete-bin-fill"></i>
+                                                                                        </button>
+                                                                                    </div>
+                                                                                `;
             }
             var table = $('#clientes-table').DataTable({
                 ajax: { url: "{{ route('clientes.data') }}", dataSrc: 'data' },
                 columns: [
                     { data: 'documento' },
-                    { data: 'nombre' },
-                    { data: 'apellido' },
+                    {
+                        data: null,
+                        render: function (data, type, row) {
+                            return row.nombre + ' ' + row.apellido;
+                        }
+                    },
                     { data: 'tipo_cliente', render: function (data) { return data === 'natural' ? 'Natural' : 'Jurídico'; } },
                     { data: 'email' },
                     { data: 'telefono' },
-                    { data: 'direccion' },
-                    { data: 'estado_territorial' },
-                    { data: 'ciudad' },
-                    { data: 'estatus', render: function (data) { return data == 1 ? '<span class="badge bg-success">Activo</span>' : '<span class="badge bg-danger">Inactivo</span>'; } },
                     { data: null, render: function (data, type, row) { return generateButtons(row.id); } }
                 ],
                 order: [[0, 'asc']], // Ordenar por documento (primera columna)
-                dom: 'rtip',
+                dom: 'frtip',
                 buttons: [
                     {
                         extend: 'copy',
                         exportOptions: {
-                            columns: [0, 1, 2, 3, 4, 5, 6, 7, 8]
+                            columns: [0, 1, 2, 3, 4]
                         }
                     },
                     {
                         extend: 'excel',
                         exportOptions: {
-                            columns: [0, 1, 2, 3, 4, 5, 6, 7, 8]
+                            columns: [0, 1, 2, 3, 4]
                         }
                     }
                 ],
@@ -784,10 +754,7 @@
                 }
             });
 
-            // Buscador personalizado
-            $('#custom-search-input').on('keyup', function () {
-                table.search(this.value).draw();
-            });
+
             // Ajustar columnas cuando se redimensiona la ventana
             $(window).on('resize', function () {
                 table.columns.adjust();
