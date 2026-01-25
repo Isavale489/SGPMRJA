@@ -19,6 +19,7 @@
         .search-box {
             position: relative;
         }
+
         .search-box .search-icon {
             position: absolute;
             top: 50%;
@@ -26,6 +27,7 @@
             transform: translateY(-50%);
             color: #878a99;
         }
+
         .search-box input {
             padding-left: 30px;
         }
@@ -92,17 +94,18 @@
                         <div class="flex-shrink-0 d-flex align-items-center gap-3">
                             <!-- Buscador Personalizado -->
                             <div class="search-box">
-                                <input type="text" class="form-control form-control-sm" id="custom-search-input" placeholder="Buscar cliente...">
+                                <input type="text" class="form-control form-control-sm" id="custom-search-input"
+                                    placeholder="Buscar cliente...">
                                 <i class="ri-search-line search-icon"></i>
                             </div>
                             <div class="d-flex gap-2">
-                            <button type="button" class="btn btn-success add-btn" data-bs-toggle="modal" id="create-btn"
-                                data-bs-target="#showModal">
-                                <i class="ri-add-line align-bottom me-1"></i> Agregar Cliente
-                            </button>
-                            <a href="{{ route('clientes.reporte.pdf') }}" class="btn btn-danger" target="_blank">
-                                <i class="ri-file-pdf-fill align-bottom me-1"></i> Exportar PDF
-                            </a>
+                                <button type="button" class="btn btn-success add-btn" data-bs-toggle="modal" id="create-btn"
+                                    data-bs-target="#showModal">
+                                    <i class="ri-add-line align-bottom me-1"></i> Agregar Cliente
+                                </button>
+                                <a href="{{ route('clientes.reporte.pdf') }}" class="btn btn-danger" target="_blank">
+                                    <i class="ri-file-pdf-fill align-bottom me-1"></i> Exportar PDF
+                                </a>
                             </div>
                         </div>
                     </div>
@@ -359,7 +362,7 @@
                 <form id="clienteForm">
                     <div class="modal-body">
                         <input type="hidden" id="id-field" />
-                        
+
                         <!-- Fila 1: Documento + Tipo Cliente + Estatus -->
                         <div class="row mb-3">
                             <div class="col-md-5">
@@ -390,8 +393,8 @@
                                 <label class="form-label d-block">Estatus</label>
                                 <div class="form-check form-switch form-switch-success mt-2">
                                     <input type="hidden" name="estatus" value="0" />
-                                    <input class="form-check-input" type="checkbox" role="switch" 
-                                        id="estatus-field" name="estatus" value="1" checked />
+                                    <input class="form-check-input" type="checkbox" role="switch" id="estatus-field"
+                                        name="estatus" value="1" checked />
                                     <label class="form-check-label" for="estatus-field" id="estatus-label">Activo</label>
                                 </div>
                             </div>
@@ -401,13 +404,13 @@
                         <div class="row mb-3">
                             <div class="col-md-6">
                                 <label for="nombre-field" class="form-label required">Nombre</label>
-                                <input type="text" id="nombre-field" name="nombre" class="form-control" 
-                                    placeholder="Nombre" maxlength="100" required />
+                                <input type="text" id="nombre-field" name="nombre" class="form-control" placeholder="Nombre"
+                                    maxlength="100" required />
                                 <div id="nombre-error" class="invalid-feedback"></div>
                             </div>
                             <div class="col-md-6">
                                 <label for="apellido-field" class="form-label required">Apellido</label>
-                                <input type="text" id="apellido-field" name="apellido" class="form-control" 
+                                <input type="text" id="apellido-field" name="apellido" class="form-control"
                                     placeholder="Apellido" maxlength="100" required />
                                 <div id="apellido-error" class="invalid-feedback"></div>
                             </div>
@@ -424,7 +427,8 @@
                             <div class="col-md-6">
                                 <label for="telefono-field" class="form-label required">Teléfono</label>
                                 <div class="input-group">
-                                    <select class="form-select" id="telefono-prefix-field" style="max-width: 100px; min-width: 100px;">
+                                    <select class="form-select" id="telefono-prefix-field"
+                                        style="max-width: 100px; min-width: 100px;">
                                         <option value="0412">0412</option>
                                         <option value="0422">0422</option>
                                         <option value="0414">0414</option>
@@ -432,8 +436,8 @@
                                         <option value="0416">0416</option>
                                         <option value="0426">0426</option>
                                     </select>
-                                    <input type="text" id="telefono-number-field" class="form-control"
-                                        placeholder="1234567" maxlength="7" required />
+                                    <input type="text" id="telefono-number-field" class="form-control" placeholder="1234567"
+                                        maxlength="7" required />
                                 </div>
                                 <input type="hidden" id="telefono-field" name="telefono" />
                                 <div id="telefono-error" class="invalid-feedback"></div>
@@ -453,7 +457,8 @@
                         <div class="row">
                             <div class="col-md-6">
                                 <label for="estado_territorial-field" class="form-label required">Estado</label>
-                                <select name="estado_territorial" id="estado_territorial-field" class="form-select" required>
+                                <select name="estado_territorial" id="estado_territorial-field" class="form-select"
+                                    required>
                                     <option value="">Seleccione estado</option>
                                     <option value="Amazonas">Amazonas</option>
                                     <option value="Anzoátegui">Anzoátegui</option>
@@ -529,7 +534,7 @@
         });
 
         // === Capitalizar solo la primera letra del campo dirección ===
-        $(document).on('blur', '#direccion-field', function() {
+        $(document).on('blur', '#direccion-field', function () {
             var val = $(this).val();
             if (val && val.length > 0) {
                 $(this).val(val.charAt(0).toUpperCase() + val.slice(1));
@@ -636,18 +641,18 @@
             });
             function generateButtons(clienteId) {
                 return `
-                    <div class="d-flex gap-2 justify-content-center">
-                        <button class="btn btn-sm btn-soft-info view-item-btn" data-id="${clienteId}" title="Ver">
-                            <i class="ri-eye-fill"></i>
-                        </button>
-                        <button class="btn btn-sm btn-soft-success edit-item-btn" data-id="${clienteId}" title="Editar">
-                            <i class="ri-pencil-fill"></i>
-                        </button>
-                        <button class="btn btn-sm btn-soft-danger remove-item-btn" data-id="${clienteId}" title="Eliminar">
-                            <i class="ri-delete-bin-fill"></i>
-                        </button>
-                    </div>
-                `;
+                        <div class="d-flex gap-2 justify-content-center">
+                            <button class="btn btn-sm btn-soft-info view-item-btn" data-id="${clienteId}" title="Ver">
+                                <i class="ri-eye-fill"></i>
+                            </button>
+                            <button class="btn btn-sm btn-soft-success edit-item-btn" data-id="${clienteId}" title="Editar">
+                                <i class="ri-pencil-fill"></i>
+                            </button>
+                            <button class="btn btn-sm btn-soft-danger remove-item-btn" data-id="${clienteId}" title="Eliminar">
+                                <i class="ri-delete-bin-fill"></i>
+                            </button>
+                        </div>
+                    `;
             }
             var table = $('#clientes-table').DataTable({
                 ajax: { url: "{{ route('clientes.data') }}", dataSrc: 'data' },
@@ -733,7 +738,9 @@
                 $("#add-btn").show();
                 $("#edit-btn").hide();
                 $("#documento-prefix-field").val("V-");
+                $("#documento-prefix-field").prop('disabled', false); // Habilitar
                 $("#documento-number-field").val("");
+                $("#documento-number-field").prop('disabled', false); // Habilitar
                 // Reset teléfono
                 $("#telefono-prefix-field").val("0424");
                 $("#telefono-number-field").val("");
@@ -742,38 +749,41 @@
                 $("#modalTitle").text("Actualizar Cliente");
                 $("#add-btn").hide();
                 $("#edit-btn").show();
+                // Bloquear edición de documento
+                $("#documento-prefix-field").prop('disabled', true);
+                $("#documento-number-field").prop('disabled', true);
             }
             $("#create-btn").click(function () { resetForm(); });
             $("#showModal").on('hidden.bs.modal', function () { resetForm(); });
-            
+
             // Listener para actualizar label del checkbox de estatus
-            $("#estatus-field").on('change', function() {
+            $("#estatus-field").on('change', function () {
                 if ($(this).is(':checked')) {
                     $("#estatus-label").text('Activo');
                 } else {
                     $("#estatus-label").text('Inactivo');
                 }
             });
-            
+
             // Dropdown dependiente: Poblar municipios cuando cambia el estado
-            $("#estado_territorial-field").on('change', function() {
+            $("#estado_territorial-field").on('change', function () {
                 const estado = $(this).val();
                 const municipios = getMunicipios(estado);
                 const ciudadSelect = $("#ciudad-field");
-                
+
                 // Limpiar opciones anteriores
                 ciudadSelect.empty();
-                
+
                 if (estado === '') {
                     ciudadSelect.append('<option value="">Primero seleccione un estado</option>');
                 } else {
                     ciudadSelect.append('<option value="">Seleccione municipio</option>');
-                    municipios.forEach(function(municipio) {
+                    municipios.forEach(function (municipio) {
                         ciudadSelect.append('<option value="' + municipio + '">' + municipio + '</option>');
                     });
                 }
             });
-            
+
             const validator = new FormValidator('clienteForm');
 
             $('#add-btn').click(function (e) {
@@ -859,10 +869,10 @@
                         $("#documento-number-field").val(data.documento.slice(2));
                     }
                     $("#direccion-field").val(data.direccion || '');
-                    
+
                     // Primero establecer el estado
                     $("#estado_territorial-field").val(data.estado_territorial || '');
-                    
+
                     // Poblar los municipios del estado seleccionado
                     const estado = data.estado_territorial || '';
                     const municipios = getMunicipios(estado);
@@ -872,11 +882,11 @@
                         ciudadSelect.append('<option value="">Primero seleccione un estado</option>');
                     } else {
                         ciudadSelect.append('<option value="">Seleccione municipio</option>');
-                        municipios.forEach(function(municipio) {
+                        municipios.forEach(function (municipio) {
                             ciudadSelect.append('<option value="' + municipio + '">' + municipio + '</option>');
                         });
                     }
-                    
+
                     // Ahora seleccionar el municipio guardado
                     $("#ciudad-field").val(data.ciudad || '');
                     // Manejar checkbox de estatus

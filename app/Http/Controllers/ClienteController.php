@@ -201,15 +201,7 @@ class ClienteController extends Controller
     {
         $cliente = Cliente::with(['persona.telefonos', 'persona.direcciones'])->findOrFail($id);
 
-        // Extraer prefijo y número del documento para validar unicidad
-        $documento = $request->documento;
-        $tipoDocumento = 'V-';
-        $numeroDocumento = $documento;
-
-        if (preg_match('/^(V-|J-|E-|G-)(.+)$/', $documento, $matches)) {
-            $tipoDocumento = $matches[1];
-            $numeroDocumento = $matches[2];
-        }
+        // Ya no actualizamos documento, así que no es necesario extraerlo ni validarlo para update
 
         $request->validate([
             'nombre' => 'required|string|min:2|max:100|regex:/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/',
@@ -217,28 +209,7 @@ class ClienteController extends Controller
             'tipo_cliente' => 'required|in:natural,juridico',
             'email' => 'nullable|string|email:rfc,dns|max:255|unique:persona,email,' . ($cliente->persona_id ?? 'NULL'),
             'telefono' => 'required|string|regex:/^[0-9]{4}-[0-9]{7}$/',
-            'documento' => [
-                'required',
-                'string',
-                'max:50',
-                function ($attribute, $value, $fail) use ($numeroDocumento, $cliente) {
-                    // Validar que el número de documento solo contenga números
-                    if (!preg_match('/^[0-9]+$/', $numeroDocumento)) {
-                        $fail('El número de documento solo puede contener números.');
-                    }
-                    // Validar longitud mínima
-                    if (strlen($numeroDocumento) < 6) {
-                        $fail('El documento debe tener al menos 6 dígitos.');
-                    }
-                    // Verificar unicidad en la tabla persona (excluyendo el registro actual)
-                    $exists = \App\Models\Persona::where('documento_identidad', $numeroDocumento)
-                        ->where('id', '!=', $cliente->persona_id)
-                        ->exists();
-                    if ($exists) {
-                        $fail('Este documento ya está registrado en el sistema.');
-                    }
-                },
-            ],
+            // Eliminada validación de documento para update
             'direccion' => 'nullable|string|max:500',
             'estado_territorial' => 'nullable|string|max:50',
             'ciudad' => 'nullable|string|max:100',
@@ -257,7 +228,7 @@ class ClienteController extends Controller
             'email.unique' => 'Este email ya está registrado en el sistema.',
             'telefono.required' => 'El teléfono es obligatorio.',
             'telefono.regex' => 'El teléfono debe tener el formato 0424-1234567.',
-            'documento.required' => 'El documento de identidad es obligatorio.',
+            // Eliminados mensajes de documento
             'direccion.max' => 'La dirección no puede exceder los 500 caracteres.',
             'estado_territorial.max' => 'El estado territorial no puede exceder los 50 caracteres.',
             'ciudad.max' => 'La ciudad no puede exceder los 100 caracteres.',
@@ -266,23 +237,13 @@ class ClienteController extends Controller
         ]);
 
         DB::transaction(function () use ($request, $cliente) {
-            // Extraer prefijo y número del documento
-            $documento = $request->documento;
-            $tipoDocumento = 'V-';
-            $numeroDocumento = $documento;
-
-            if (preg_match('/^(V-|J-|E-|G-)(.+)$/', $documento, $matches)) {
-                $tipoDocumento = $matches[1];
-                $numeroDocumento = $matches[2];
-            }
-
-            // Actualizar la persona asociada (sin telefono/direccion)
+            // Actualizar la persona asociada (sin telefono/direccion y SIN DOCUMENTO)
             if ($cliente->persona) {
                 $cliente->persona->update([
                     'nombre' => $request->nombre,
                     'apellido' => $request->apellido ?? '',
-                    'documento_identidad' => $numeroDocumento,
-                    'tipo_documento' => $tipoDocumento,
+                    // 'documento_identidad' => ... SE MANTIENE INTACTO
+                    // 'tipo_documento' => ... SE MANTIENE INTACTO
                     'email' => $request->email,
                 ]);
 
