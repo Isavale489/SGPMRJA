@@ -53,16 +53,22 @@ Route::middleware('auth')->group(function () {
         // Usuarios
         Route::resource('users', UserController::class);
         Route::get('users-data', [UserController::class, 'getUsers'])->name('users.data');
+        Route::get('users-check-email', [UserController::class, 'checkEmail'])->name('users.check-email');
 
         // Clientes
         Route::resource('clientes', ClienteController::class);
         Route::get('clientes-data', [ClienteController::class, 'getClientes'])->name('clientes.data');
+        Route::get('clientes-check-documento', [ClienteController::class, 'checkDocumento'])->name('clientes.check-documento');
+        Route::get('clientes-check-email', [ClienteController::class, 'checkEmail'])->name('clientes.check-email');
         Route::get('clientes-search', [ClienteController::class, 'searchAjax'])->name('clientes.search');
         Route::get('/clientes/reporte/pdf', [ClienteController::class, 'exportarPDF'])->name('clientes.reporte.pdf');
 
         // Empleados
         Route::resource('empleados', EmpleadoController::class);
         Route::get('empleados-data', [EmpleadoController::class, 'getEmpleados'])->name('empleados.data');
+        Route::get('empleados-check-documento', [EmpleadoController::class, 'checkDocumento'])->name('empleados.check-documento');
+        Route::get('empleados-check-email', [EmpleadoController::class, 'checkEmail'])->name('empleados.check-email');
+        Route::get('empleados-check-codigo', [EmpleadoController::class, 'checkCodigo'])->name('empleados.check-codigo');
         Route::get('/empleados/reporte/pdf', [EmpleadoController::class, 'reportePdf'])->name('empleados.reporte.pdf');
     });
 
@@ -137,6 +143,9 @@ Route::middleware('auth')->group(function () {
         Route::get('proveedores', [ProveedorController::class, 'index'])->name('proveedores.index');
         Route::get('proveedores-data', [ProveedorController::class, 'getProveedores'])->name('proveedores.data');
         Route::get('proveedores/{proveedore}', [ProveedorController::class, 'show'])->name('proveedores.show');
+        Route::get('proveedores-check-rif', [ProveedorController::class, 'checkRif'])->name('proveedores.check-rif');
+        Route::get('proveedores-check-documento', [ProveedorController::class, 'checkDocumento'])->name('proveedores.check-documento');
+        Route::get('proveedores-check-email', [ProveedorController::class, 'checkEmail'])->name('proveedores.check-email');
         Route::get('proveedores/reporte/pdf', [ProveedorController::class, 'reportePdf'])->name('proveedores.reporte.pdf');
     });
 
@@ -156,6 +165,8 @@ Route::middleware('auth')->group(function () {
         Route::put('tipo-productos/{tipoProducto}', [App\Http\Controllers\TipoProductoController::class, 'update'])->name('tipo-productos.update');
         Route::delete('tipo-productos/{tipoProducto}', [App\Http\Controllers\TipoProductoController::class, 'destroy'])->name('tipo-productos.destroy');
         Route::get('tipo-productos/{tipoProducto}/proximo-codigo', [App\Http\Controllers\TipoProductoController::class, 'proximoCodigo'])->name('tipo-productos.proximo-codigo');
+        Route::get('tipo-productos-check-nombre', [App\Http\Controllers\TipoProductoController::class, 'checkNombre'])->name('tipo-productos.check-nombre');
+        Route::get('tipo-productos-check-codigo', [App\Http\Controllers\TipoProductoController::class, 'checkCodigoPrefijo'])->name('tipo-productos.check-codigo');
 
         // Insumos
         Route::resource('insumos', InsumoController::class);

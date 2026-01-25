@@ -15,6 +15,7 @@
         .search-box {
             position: relative;
         }
+
         .search-box .search-icon {
             position: absolute;
             top: 50%;
@@ -22,6 +23,7 @@
             transform: translateY(-50%);
             color: #878a99;
         }
+
         .search-box input {
             padding-left: 30px;
         }
@@ -36,19 +38,20 @@
                         <div class="flex-shrink-0 d-flex align-items-center gap-3">
                             <!-- Buscador Personalizado -->
                             <div class="search-box">
-                                <input type="text" class="form-control form-control-sm" id="custom-search-input" placeholder="Buscar proveedor...">
+                                <input type="text" class="form-control form-control-sm" id="custom-search-input"
+                                    placeholder="Buscar proveedor...">
                                 <i class="ri-search-line search-icon"></i>
                             </div>
                             <div class="d-flex gap-2">
-                            @if(Auth::user()->isAdmin())
-                                <button type="button" class="btn btn-success add-btn" data-bs-toggle="modal" id="create-btn"
-                                    data-bs-target="#showModal">
-                                    <i class="ri-add-line align-bottom me-1"></i> Agregar Proveedor
-                                </button>
-                            @endif
-                            <a href="{{ route('proveedores.reporte.pdf') }}" class="btn btn-danger" target="_blank">
-                                <i class="ri-file-pdf-fill align-bottom me-1"></i> Exportar PDF
-                            </a>
+                                @if(Auth::user()->isAdmin())
+                                    <button type="button" class="btn btn-success add-btn" data-bs-toggle="modal" id="create-btn"
+                                        data-bs-target="#showModal">
+                                        <i class="ri-add-line align-bottom me-1"></i> Agregar Proveedor
+                                    </button>
+                                @endif
+                                <a href="{{ route('proveedores.reporte.pdf') }}" class="btn btn-danger" target="_blank">
+                                    <i class="ri-file-pdf-fill align-bottom me-1"></i> Exportar PDF
+                                </a>
                             </div>
                         </div>
                     </div>
@@ -442,21 +445,21 @@
                         render: function (data) {
                             var isAdmin = {{ Auth::user()->isAdmin() ? 'true' : 'false' }};
                             var editDeleteBtns = isAdmin ? `
-                                                    <button class="btn btn-sm btn-soft-success edit-item-btn" data-id="${data}" title="Editar">
-                                                        <i class="ri-pencil-fill"></i>
-                                                    </button>
-                                                    <button class="btn btn-sm btn-soft-danger remove-item-btn" data-id="${data}" title="Eliminar">
-                                                        <i class="ri-delete-bin-fill"></i>
-                                                    </button>
-                                                ` : '';
-                            return `
-                                                    <div class="d-flex gap-2 justify-content-center">
-                                                        <button class="btn btn-sm btn-soft-info view-item-btn" data-id="${data}" title="Ver">
-                                                            <i class="ri-eye-fill"></i>
+                                                        <button class="btn btn-sm btn-soft-success edit-item-btn" data-id="${data}" title="Editar">
+                                                            <i class="ri-pencil-fill"></i>
                                                         </button>
-                                                        ${editDeleteBtns}
-                                                    </div>
-                                                `;
+                                                        <button class="btn btn-sm btn-soft-danger remove-item-btn" data-id="${data}" title="Eliminar">
+                                                            <i class="ri-delete-bin-fill"></i>
+                                                        </button>
+                                                    ` : '';
+                            return `
+                                                        <div class="d-flex gap-2 justify-content-center">
+                                                            <button class="btn btn-sm btn-soft-info view-item-btn" data-id="${data}" title="Ver">
+                                                                <i class="ri-eye-fill"></i>
+                                                            </button>
+                                                            ${editDeleteBtns}
+                                                        </div>
+                                                    `;
                         }
                     }
                 ],
@@ -733,7 +736,93 @@
                 toggleCampos();
                 $("#add-btn").show();
                 $("#edit-btn").hide();
+                $('.is-invalid').removeClass('is-invalid');
+                $('.is-valid').removeClass('is-valid');
+                $('.invalid-feedback').hide();
+                $('#add-btn').prop('disabled', false);
             });
+
+            // Validaciones AJAX onblur
+
+            // 1. RIF (Juridicio)
+            $('#rif-number-field').on('blur', function () {
+                let number = $(this).val();
+                let prefix = $('#rif-prefix-field').val();
+                let fullRif = prefix + number;
+                let $input = $(this);
+                let isEdit = $('#id-field').val() !== '';
+
+                if (number.length > 5 && !isEdit) {
+                    $.get("{{ route('proveedores.check-rif') }}", { rif: fullRif }, function (res) {
+                        if (res.exists) {
+                            $input.addClass('is-invalid');
+                            // Agregar feedback si no existe
+                            if ($input.next('.invalid-feedback').length === 0) {
+                                $input.parent().after('<div class="invalid-feedback d-block">Este RIF ya está registrado</div>');
+                            } else {
+                                $input.next('.invalid-feedback').text('Este RIF ya está registrado').show();
+                            }
+                            $('#add-btn').prop('disabled', true);
+                        } else {
+                            $input.removeClass('is-invalid').addClass('is-valid');
+                            $input.next('.invalid-feedback').hide();
+                            $input.parent().next('.invalid-feedback').hide();
+                            $('#add-btn').prop('disabled', false);
+                        }
+                    });
+                }
+            });
+
+            // 2. Documento (Natural)
+            $('#documento-identidad-field').on('blur', function () {
+                let val = $(this).val();
+                let $input = $(this);
+                let isEdit = $('#id-field').val() !== '';
+
+                if (val.length > 5 && !isEdit) {
+                    $.get("{{ route('proveedores.check-documento') }}", { numero: val }, function (res) {
+                        if (res.exists) {
+                            $input.addClass('is-invalid');
+                            if ($input.parent().next('.invalid-feedback').length === 0) {
+                                $input.parent().after('<div class="invalid-feedback d-block">Este documento ya está registrado</div>');
+                            } else {
+                                $input.parent().next('.invalid-feedback').text('Este documento ya está registrado').show();
+                            }
+                            $('#add-btn').prop('disabled', true);
+                        } else {
+                            $input.removeClass('is-invalid').addClass('is-valid');
+                            $input.parent().next('.invalid-feedback').hide();
+                            $('#add-btn').prop('disabled', false);
+                        }
+                    });
+                }
+            });
+
+            // 3. Email (Ambos)
+            $('#email-jur-field, #email-nat-field').on('blur', function () {
+                let val = $(this).val();
+                let $input = $(this);
+                let isEdit = $('#id-field').val() !== '';
+
+                if (val.includes('@') && !isEdit) {
+                    $.get("{{ route('proveedores.check-email') }}", { email: val }, function (res) {
+                        if (res.exists) {
+                            $input.addClass('is-invalid');
+                            if ($input.next('.invalid-feedback').length === 0) {
+                                $input.after('<div class="invalid-feedback">Este correo ya está registrado</div>');
+                            } else {
+                                $input.next('.invalid-feedback').text('Este correo ya está registrado').show();
+                            }
+                            $('#add-btn').prop('disabled', true);
+                        } else {
+                            $input.removeClass('is-invalid').addClass('is-valid');
+                            $input.next('.invalid-feedback').hide();
+                            $('#add-btn').prop('disabled', false);
+                        }
+                    });
+                }
+            });
+
         });
     </script>
 @endpush

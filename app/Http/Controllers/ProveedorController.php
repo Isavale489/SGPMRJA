@@ -325,4 +325,34 @@ class ProveedorController extends Controller
             ->setPaper('a4', 'landscape');
         return $pdf->download('proveedores_' . now()->format('Y-m-d_H-i-s') . '.pdf');
     }
+
+    public function checkRif(Request $request)
+    {
+        $rif = $request->input('rif');
+        if (!$rif)
+            return response()->json(['exists' => false]);
+        $exists = Proveedor::where('rif', $rif)->exists();
+        return response()->json(['exists' => $exists]);
+    }
+
+    public function checkDocumento(Request $request)
+    {
+        $numero = $request->input('numero');
+        if (!$numero)
+            return response()->json(['exists' => false]);
+        $exists = Persona::where('documento_identidad', $numero)->exists();
+        return response()->json(['exists' => $exists]);
+    }
+
+    public function checkEmail(Request $request)
+    {
+        $email = $request->input('email');
+        if (!$email)
+            return response()->json(['exists' => false]);
+        // Verificar en proveedores (juridicos) y personas (naturales)
+        $existsProveedor = Proveedor::where('email', $email)->exists();
+        $existsPersona = Persona::where('email', $email)->exists();
+
+        return response()->json(['exists' => $existsProveedor || $existsPersona]);
+    }
 }

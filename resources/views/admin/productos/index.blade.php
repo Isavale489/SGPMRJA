@@ -19,6 +19,7 @@
         .search-box {
             position: relative;
         }
+
         .search-box .search-icon {
             position: absolute;
             top: 50%;
@@ -26,6 +27,7 @@
             transform: translateY(-50%);
             color: #878a99;
         }
+
         .search-box input {
             padding-left: 30px;
         }
@@ -66,22 +68,23 @@
                         <div class="flex-shrink-0 d-flex align-items-center gap-3">
                             <!-- Buscador Personalizado -->
                             <div class="search-box">
-                                <input type="text" class="form-control form-control-sm" id="custom-search-input" placeholder="Buscar producto...">
+                                <input type="text" class="form-control form-control-sm" id="custom-search-input"
+                                    placeholder="Buscar producto...">
                                 <i class="ri-search-line search-icon"></i>
                             </div>
                             <div class="d-flex gap-2 align-items-center">
-                            <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal"
-                                data-bs-target="#tiposModal">
-                                <i class="ri-settings-3-line align-bottom me-1"></i> Gestionar Tipos
-                            </button>
-                            <button type="button" class="btn btn-success add-btn ms-2" data-bs-toggle="modal"
-                                id="create-btn" data-bs-target="#showModal">
-                                <i class="ri-add-line align-bottom me-1"></i> Agregar Producto
-                            </button>
-                            <a href="{{ route('productos.reporte.pdf') }}" target="_blank" class="btn btn-danger ms-2">
-                                <i class="ri-file-pdf-fill align-bottom me-1"></i> Exportar PDF
-                            </a>
-                            </a>
+                                <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal"
+                                    data-bs-target="#tiposModal">
+                                    <i class="ri-settings-3-line align-bottom me-1"></i> Gestionar Tipos
+                                </button>
+                                <button type="button" class="btn btn-success add-btn ms-2" data-bs-toggle="modal"
+                                    id="create-btn" data-bs-target="#showModal">
+                                    <i class="ri-add-line align-bottom me-1"></i> Agregar Producto
+                                </button>
+                                <a href="{{ route('productos.reporte.pdf') }}" target="_blank" class="btn btn-danger ms-2">
+                                    <i class="ri-file-pdf-fill align-bottom me-1"></i> Exportar PDF
+                                </a>
+                                </a>
                             </div>
                         </div>
                     </div>
@@ -280,8 +283,8 @@
                                 <!-- Imagen -->
                                 <div class="mb-3">
                                     <label for="imagen-field" class="form-label required">Imagen</label>
-                                    <input type="file" id="imagen-field" name="imagen" class="form-control"
-                                        accept="image/*" required />
+                                    <input type="file" id="imagen-field" name="imagen" class="form-control" accept="image/*"
+                                        required />
                                     <div id="imagen-error" class="invalid-feedback"></div>
                                     <div id="imagen-preview" class="mt-2 text-center" style="display: none;">
                                         <img src="" alt="Vista previa de la imagen" class="img-fluid"
@@ -471,18 +474,18 @@
                         searchable: false,
                         render: function (data) {
                             return `
-                                <div class="d-flex gap-2 justify-content-center">
-                                    <button class="btn btn-sm btn-soft-info view-item-btn" data-id="${data}" title="Ver">
-                                        <i class="ri-eye-fill"></i>
-                                    </button>
-                                    <button class="btn btn-sm btn-soft-success edit-item-btn" data-id="${data}" title="Editar">
-                                        <i class="ri-pencil-fill"></i>
-                                    </button>
-                                    <button class="btn btn-sm btn-soft-danger remove-item-btn" data-id="${data}" title="Eliminar">
-                                        <i class="ri-delete-bin-fill"></i>
-                                    </button>
-                                </div>
-                            `;
+                                    <div class="d-flex gap-2 justify-content-center">
+                                        <button class="btn btn-sm btn-soft-info view-item-btn" data-id="${data}" title="Ver">
+                                            <i class="ri-eye-fill"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-soft-success edit-item-btn" data-id="${data}" title="Editar">
+                                            <i class="ri-pencil-fill"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-soft-danger remove-item-btn" data-id="${data}" title="Eliminar">
+                                            <i class="ri-delete-bin-fill"></i>
+                                        </button>
+                                    </div>
+                                `;
                         }
                     }
                 ],
@@ -608,21 +611,21 @@
                 var tipoId = $("#tipo-producto-field").val();
                 var modelo = $("#modelo-field").val();
                 var isEditing = $("#id-field").val() !== "";
-                
+
                 if (tipoId && !isEditing) {
-                    $.get("{{ url('tipo-productos') }}/" + tipoId + "/proximo-codigo", {modelo: modelo}, function(response) {
+                    $.get("{{ url('tipo-productos') }}/" + tipoId + "/proximo-codigo", { modelo: modelo }, function (response) {
                         $("#codigo-field").val(response.codigo);
                     });
                 } else if (!tipoId) {
                     $("#codigo-field").val("");
                 }
             }
-            
+
             $("#tipo-producto-field").on("change", actualizarCodigoPreview);
-            
+
             // Actualizar código cuando el usuario escribe el modelo (con delay)
             var modeloTimer;
-            $("#modelo-field").on("keyup", function() {
+            $("#modelo-field").on("keyup", function () {
                 clearTimeout(modeloTimer);
                 modeloTimer = setTimeout(actualizarCodigoPreview, 500);
             });
@@ -781,27 +784,84 @@
 
                     tipos.forEach(function (tipo) {
                         tbody.append(`
-                                <tr>
-                                    <td>${tipo.nombre}</td>
-                                    <td><span class="badge bg-secondary">${tipo.codigo_prefijo}</span></td>
-                                    <td><span class="badge bg-info">${tipo.contador}</span></td>
-                                    <td>
-                                        <button class="btn btn-sm btn-outline-primary edit-tipo-btn" 
-                                            data-id="${tipo.id}" 
-                                            data-nombre="${tipo.nombre}" 
-                                            data-prefijo="${tipo.codigo_prefijo}"
-                                            data-descripcion="${tipo.descripcion || ''}">
-                                            <i class="ri-pencil-line"></i>
-                                        </button>
-                                        <button class="btn btn-sm btn-outline-danger delete-tipo-btn" data-id="${tipo.id}">
-                                            <i class="ri-delete-bin-line"></i>
-                                        </button>
-                                    </td>
-                                </tr>
-                            `);
+                                    <tr>
+                                        <td>${tipo.nombre}</td>
+                                        <td><span class="badge bg-secondary">${tipo.codigo_prefijo}</span></td>
+                                        <td><span class="badge bg-info">${tipo.contador}</span></td>
+                                        <td>
+                                            <button class="btn btn-sm btn-outline-primary edit-tipo-btn" 
+                                                data-id="${tipo.id}" 
+                                                data-nombre="${tipo.nombre}" 
+                                                data-prefijo="${tipo.codigo_prefijo}"
+                                                data-descripcion="${tipo.descripcion || ''}">
+                                                <i class="ri-pencil-line"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-danger delete-tipo-btn" data-id="${tipo.id}">
+                                                <i class="ri-delete-bin-line"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                `);
                     });
                 });
             }
+
+            // Validaciones AJAX onblur para Tipos de Producto
+
+            // 1. Nombre
+            $('#tipo-nombre-field').on('blur', function () {
+                let value = $(this).val();
+                let $input = $(this);
+                let $error = $('#tipo-nombre-error');
+                let isEdit = $('#tipo-id-field').val() !== '';
+
+                if (value.length > 0 && !isEdit) {
+                    $.get("{{ route('tipo-productos.check-nombre') }}", { nombre: value }, function (res) {
+                        if (res.exists) {
+                            $input.addClass('is-invalid');
+                            $error.text('Este nombre ya existe').show();
+                            $('#save-tipo-btn').prop('disabled', true);
+                        } else {
+                            $input.removeClass('is-invalid').addClass('is-valid');
+                            $error.hide();
+                            $('#save-tipo-btn').prop('disabled', false);
+                        }
+                    });
+                }
+            });
+
+            // 2. Prefijo
+            $('#tipo-prefijo-field').on('blur', function () {
+                let value = $(this).val();
+                let $input = $(this);
+                let $error = $('#tipo-prefijo-error');
+                let isEdit = $('#tipo-id-field').val() !== '';
+
+                if (value.length > 0 && !isEdit) {
+                    $.get("{{ route('tipo-productos.check-codigo') }}", { codigo: value }, function (res) {
+                        if (res.exists) {
+                            $input.addClass('is-invalid');
+                            $error.text('Este prefijo ya existe').show();
+                            $('#save-tipo-btn').prop('disabled', true);
+                        } else {
+                            $input.removeClass('is-invalid').addClass('is-valid');
+                            $error.hide();
+                            $('#save-tipo-btn').prop('disabled', false);
+                        }
+                    });
+                }
+            });
+
+            // Limpiar validaciones al cerrar modal de tipo
+            $("#addTipoModal").on("hidden.bs.modal", function () {
+                $('#tipoForm')[0].reset();
+                $('#tipo-id-field').val('');
+                $('#tipoModalTitle').html('<i class="ri-add-line me-2"></i>Agregar Tipo de Producto');
+                $('.is-invalid').removeClass('is-invalid');
+                $('.is-valid').removeClass('is-valid');
+                $('.invalid-feedback').hide();
+                $('#save-tipo-btn').prop('disabled', false);
+            });
 
             // Editar tipo
             $(document).on("click", ".edit-tipo-btn", function () {

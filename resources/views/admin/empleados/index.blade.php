@@ -504,6 +504,100 @@
             $(document).on('mouseleave', '[title]', function () {
                 $(this).tooltip('dispose');
             });
+
+            // Validación onblur para documento (duplicados)
+            $(document).on('blur', '#documento-identidad-field', function () {
+                let value = $(this).val().trim();
+                let $input = $(this);
+                let $error = $input.next('.invalid-feedback'); // Asumiendo estructura
+                // Si no existe el div de error, lo creamos
+                if ($error.length === 0) {
+                    $input.after('<div class="invalid-feedback"></div>');
+                    $error = $input.next('.invalid-feedback');
+                }
+
+                let isEditMode = $('#id-field').val() !== '';
+
+                if (value.length < 6) {
+                    $input.addClass('is-invalid');
+                    $error.text('El documento debe tener al menos 6 dígitos.').show();
+                } else {
+                    // Si longitud válida y NO es edición, verificar duplicado
+                    if (!isEditMode) {
+                        $.ajax({
+                            url: "{{ route('empleados.check-documento') }}",
+                            method: 'GET',
+                            data: { numero: value },
+                            success: function (response) {
+                                if (response.exists) {
+                                    $input.addClass('is-invalid');
+                                    $error.text('Este empleado ya se encuentra registrado.').show();
+                                    $('#add-btn').prop('disabled', true);
+                                } else {
+                                    $input.removeClass('is-invalid').addClass('is-valid');
+                                    $error.hide();
+                                    $('#add-btn').prop('disabled', false);
+                                }
+                            },
+                            error: function () {
+                                console.error('Error al verificar documento de empleado');
+                            }
+                        });
+                    } else {
+                        $input.removeClass('is-invalid').addClass('is-valid');
+                        $error.hide();
+                    }
+                }
+            });
+
+            // Validación onblur para Email
+            $(document).on('blur', '#email-field', function () {
+                let value = $(this).val().trim();
+                let $input = $(this);
+                let $error = $input.next('.invalid-feedback');
+                if ($error.length === 0) {
+                    $input.after('<div class="invalid-feedback"></div>');
+                    $error = $input.next('.invalid-feedback');
+                }
+
+                let isEditMode = $('#id-field').val() !== '';
+                let regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+                if (value.length > 0) {
+                    if (!regex.test(value)) {
+                        $input.addClass('is-invalid');
+                        $error.text('Ingrese un email válido.').show();
+                    } else {
+                        // Si formato válido y NO es edición, verificar duplicado
+                        if (!isEditMode) {
+                            console.log("Checking email duplicate: " + value);
+                            $.ajax({
+                                url: "{{ route('empleados.check-email') }}",
+                                method: 'GET',
+                                data: { email: value },
+                                success: function (response) {
+                                    console.log("Email check response:", response);
+                                    if (response.exists) {
+                                        $input.addClass('is-invalid');
+                                        $error.text('Este correo ya está registrado.').show();
+                                        $('#add-btn').prop('disabled', true);
+                                    } else {
+                                        $input.removeClass('is-invalid').addClass('is-valid');
+                                        $error.hide();
+                                        $('#add-btn').prop('disabled', false);
+                                    }
+                                }
+                            });
+                        } else {
+                            $input.removeClass('is-invalid').addClass('is-valid');
+                            $error.hide();
+                        }
+                    }
+                } else {
+                    $input.removeClass('is-invalid').removeClass('is-valid');
+                    $error.hide();
+                }
+            });
         });
 
         // Validación para teléfono
@@ -532,29 +626,29 @@
 
             function generateButtons(empleadoId) {
                 return `
-                                            <div class="dropdown d-inline-block">
-                                                <button class="btn btn-soft-secondary btn-sm dropdown" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                                    <i class="ri-more-fill align-middle"></i>
-                                                </button>
-                                                <ul class="dropdown-menu dropdown-menu-end">
-                                                    <li>
-                                                        <button class="dropdown-item view-item-btn" data-id="${empleadoId}">
-                                                            <i class="ri-eye-fill align-bottom me-2 text-muted"></i> Ver
-                                                        </button>
-                                                    </li>
-                                                    <li>
-                                                        <button class="dropdown-item edit-item-btn" data-id="${empleadoId}">
-                                                            <i class="ri-pencil-fill align-bottom me-2 text-muted"></i> Editar
-                                                        </button>
-                                                    </li>
-                                                    <li>
-                                                        <button class="dropdown-item remove-item-btn" data-id="${empleadoId}">
-                                                            <i class="ri-delete-bin-fill align-bottom me-2 text-muted"></i> Eliminar
-                                                        </button>
-                                                    </li>
-                                                </ul>
-                                            </div>
-                                            `;
+                                                            <div class="dropdown d-inline-block">
+                                                                <button class="btn btn-soft-secondary btn-sm dropdown" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                                                    <i class="ri-more-fill align-middle"></i>
+                                                                </button>
+                                                                <ul class="dropdown-menu dropdown-menu-end">
+                                                                    <li>
+                                                                        <button class="dropdown-item view-item-btn" data-id="${empleadoId}">
+                                                                            <i class="ri-eye-fill align-bottom me-2 text-muted"></i> Ver
+                                                                        </button>
+                                                                    </li>
+                                                                    <li>
+                                                                        <button class="dropdown-item edit-item-btn" data-id="${empleadoId}">
+                                                                            <i class="ri-pencil-fill align-bottom me-2 text-muted"></i> Editar
+                                                                        </button>
+                                                                    </li>
+                                                                    <li>
+                                                                        <button class="dropdown-item remove-item-btn" data-id="${empleadoId}">
+                                                                            <i class="ri-delete-bin-fill align-bottom me-2 text-muted"></i> Eliminar
+                                                                        </button>
+                                                                    </li>
+                                                                </ul>
+                                                            </div>
+                                                            `;
             }
 
             var table = $('#empleados-table').DataTable({

@@ -313,6 +313,22 @@ class EmpleadoController extends Controller
         return response()->json(['message' => 'Empleado eliminado exitosamente.']);
     }
 
+    /**
+     * Verificar si un documento ya existe (AJAX)
+     */
+    public function checkDocumento(Request $request)
+    {
+        $numero = $request->input('numero');
+        if (!$numero) {
+            return response()->json(['exists' => false]);
+        }
+
+        // Buscar coincidencia exacta en la tabla 'persona'
+        $exists = \App\Models\Persona::where('documento_identidad', $numero)->exists();
+
+        return response()->json(['exists' => $exists]);
+    }
+
     public function reportePdf()
     {
         // Obtener todos los empleados con sus datos de persona
@@ -324,5 +340,23 @@ class EmpleadoController extends Controller
 
         // Descargar el archivo con una marca de tiempo
         return $pdf->download('reporte_empleados_' . now()->format('Ymd_His') . '.pdf');
+    }
+
+    public function checkEmail(Request $request)
+    {
+        $email = $request->input('email');
+        if (!$email)
+            return response()->json(['exists' => false]);
+        $exists = \App\Models\Persona::where('email', $email)->exists();
+        return response()->json(['exists' => $exists]);
+    }
+
+    public function checkCodigo(Request $request)
+    {
+        $codigo = $request->input('codigo');
+        if (!$codigo)
+            return response()->json(['exists' => false]);
+        $exists = Empleado::where('codigo_empleado', $codigo)->exists();
+        return response()->json(['exists' => $exists]);
     }
 }

@@ -581,14 +581,43 @@
         });
 
         // Validación onblur para documento
+        // Validación onblur para documento
         $(document).on('blur', '#documento-number-field', function () {
             let value = $(this).val().trim();
+            let $input = $(this);
+            let $error = $('#documento-error');
+            let isEditMode = $('#id-field').val() !== ''; // Comprobar si estamos en edición
+
             if (value.length < 6) {
-                $(this).addClass('is-invalid');
-                $('#documento-error').text('El documento debe tener al menos 6 dígitos.').show();
+                $input.addClass('is-invalid');
+                $error.text('El documento debe tener al menos 6 dígitos.').show();
             } else {
-                $(this).removeClass('is-invalid').addClass('is-valid');
-                $('#documento-error').hide();
+                // Si la longitud es válida y NO estamos en edición, verificamos duplicados
+                if (!isEditMode) {
+                    $.ajax({
+                        url: "{{ route('clientes.check-documento') }}",
+                        method: 'GET',
+                        data: { numero: value },
+                        success: function (response) {
+                            if (response.exists) {
+                                $input.addClass('is-invalid');
+                                $error.text('Este cliente ya se encuentra registrado.').show();
+                                // Opcional: Deshabilitar el botón de agregar
+                                $('#add-btn').prop('disabled', true);
+                            } else {
+                                $input.removeClass('is-invalid').addClass('is-valid');
+                                $error.hide();
+                                $('#add-btn').prop('disabled', false);
+                            }
+                        },
+                        error: function () {
+                            console.error('Error al verificar documento');
+                        }
+                    });
+                } else {
+                    $input.removeClass('is-invalid').addClass('is-valid');
+                    $error.hide();
+                }
             }
         });
 
@@ -608,13 +637,49 @@
         // Validación onblur para email
         $(document).on('blur', '#email-field', function () {
             let value = $(this).val().trim();
+            let $input = $(this);
+            let $error = $('#email-error');
+            let isEditMode = $('#id-field').val() !== '';
             let regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            if (value.length > 0 && !regex.test(value)) {
-                $(this).addClass('is-invalid');
-                $('#email-error').text('Ingrese un email válido.').show();
+
+            if (value.length > 0) {
+                if (!regex.test(value)) {
+                    $input.addClass('is-invalid');
+                    $error.text('Ingrese un email válido.').show();
+                } else {
+                    // Si formato es válido y NO es edición, verificar duplicado
+                    if (!isEditMode) {
+                        $.ajax({
+                            url: "{{ route('clientes.check-email') }}",
+                            method: 'GET',
+                            data: { email: value },
+                            success: function (response) {
+                                if (response.exists) {
+                                    $input.addClass('is-invalid');
+                                    $error.text('Este correo ya está registrado.').show();
+                                    $('#add-btn').prop('disabled', true);
+                                } else {
+                                    $input.removeClass('is-invalid').addClass('is-valid');
+                                    $error.hide();
+                                    $('#add-btn').prop('disabled', false);
+                                }
+                            },
+                            error: function () {
+                                console.error('Error al verificar email');
+                            }
+                        });
+                    } else {
+                        // En modo edición no validamos duplicado (limitación por now)
+                        $input.removeClass('is-invalid').addClass('is-valid');
+                        $error.hide();
+                    }
+                }
             } else {
-                $(this).removeClass('is-invalid').addClass('is-valid');
-                $('#email-error').hide();
+                // Si está vacío, quitar clases (o mostrar error si required)
+                // Es opcional en el html? No tiene "required" en el html form, pero tiene validator?
+                // En el HTML no tiene 'required'.
+                $input.removeClass('is-invalid').removeClass('is-valid');
+                $error.hide();
             }
         });
 
@@ -641,18 +706,18 @@
             });
             function generateButtons(clienteId) {
                 return `
-                        <div class="d-flex gap-2 justify-content-center">
-                            <button class="btn btn-sm btn-soft-info view-item-btn" data-id="${clienteId}" title="Ver">
-                                <i class="ri-eye-fill"></i>
-                            </button>
-                            <button class="btn btn-sm btn-soft-success edit-item-btn" data-id="${clienteId}" title="Editar">
-                                <i class="ri-pencil-fill"></i>
-                            </button>
-                            <button class="btn btn-sm btn-soft-danger remove-item-btn" data-id="${clienteId}" title="Eliminar">
-                                <i class="ri-delete-bin-fill"></i>
-                            </button>
-                        </div>
-                    `;
+                            <div class="d-flex gap-2 justify-content-center">
+                                <button class="btn btn-sm btn-soft-info view-item-btn" data-id="${clienteId}" title="Ver">
+                                    <i class="ri-eye-fill"></i>
+                                </button>
+                                <button class="btn btn-sm btn-soft-success edit-item-btn" data-id="${clienteId}" title="Editar">
+                                    <i class="ri-pencil-fill"></i>
+                                </button>
+                                <button class="btn btn-sm btn-soft-danger remove-item-btn" data-id="${clienteId}" title="Eliminar">
+                                    <i class="ri-delete-bin-fill"></i>
+                                </button>
+                            </div>
+                        `;
             }
             var table = $('#clientes-table').DataTable({
                 ajax: { url: "{{ route('clientes.data') }}", dataSrc: 'data' },
