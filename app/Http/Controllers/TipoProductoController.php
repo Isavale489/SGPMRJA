@@ -114,4 +114,22 @@ class TipoProductoController extends Controller
             'abreviatura' => $modelo ? TipoProducto::abreviarModelo($modelo) : 'XXX',
         ]);
     }
+
+    public function checkNombre(Request $request)
+    {
+        $nombre = $request->input('nombre');
+        if (!$nombre)
+            return response()->json(['exists' => false]);
+        $exists = TipoProducto::where('nombre', $nombre)->exists();
+        return response()->json(['exists' => $exists]);
+    }
+
+    public function checkCodigoPrefijo(Request $request)
+    {
+        $codigo = $request->input('codigo');
+        if (!$codigo)
+            return response()->json(['exists' => false]);
+        $exists = TipoProducto::where('codigo_prefijo', $codigo)->exists();
+        return response()->json(['exists' => $exists]);
+    }
 }

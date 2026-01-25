@@ -368,6 +368,22 @@ class ClienteController extends Controller
     }
 
     /**
+     * Verificar si un documento ya existe (AJAX)
+     */
+    public function checkDocumento(Request $request)
+    {
+        $numero = $request->input('numero');
+        if (!$numero) {
+            return response()->json(['exists' => false]);
+        }
+
+        // Buscar coincidencia exacta en la tabla 'persona'
+        $exists = \App\Models\Persona::where('documento_identidad', $numero)->exists();
+
+        return response()->json(['exists' => $exists]);
+    }
+
+    /**
      * Exportar reporte de clientes en PDF
      */
     public function exportarPDF()
@@ -375,5 +391,14 @@ class ClienteController extends Controller
         $clientes = Cliente::with('persona')->get();
         $pdf = Pdf::loadView('admin.clientes.reporte_pdf', compact('clientes'))->setPaper('a4', 'portrait');
         return $pdf->download('reporte_clientes_' . now()->format('Ymd_His') . '.pdf');
+    }
+
+    public function checkEmail(Request $request)
+    {
+        $email = $request->input('email');
+        if (!$email)
+            return response()->json(['exists' => false]);
+        $exists = \App\Models\Persona::where('email', $email)->exists();
+        return response()->json(['exists' => $exists]);
     }
 }

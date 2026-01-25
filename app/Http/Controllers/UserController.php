@@ -143,5 +143,17 @@ class UserController extends Controller
             ->setPaper('a4', 'landscape');
         return $pdf->download('usuarios_' . now()->format('Y-m-d_H-i-s') . '.pdf');
     }
+
+    /**
+     * Verificar email (AJAX)
+     */
+    public function checkEmail(Request $request)
+    {
+        $email = $request->input('email');
+        if (!$email)
+            return response()->json(['exists' => false]);
+        $exists = User::where('email', $email)->exists();
+        return response()->json(['exists' => $exists]);
+    }
 }
 
