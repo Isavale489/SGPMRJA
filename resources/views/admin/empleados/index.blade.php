@@ -42,6 +42,17 @@
                     <div class="d-flex align-items-center">
                         <h5 class="card-title mb-0 flex-grow-1">Listado de Empleados</h5>
                         <div class="flex-shrink-0 d-flex align-items-center gap-3">
+                            <!-- Toggle Historial -->
+                            @if($historial)
+                                <a href="{{ route('empleados.index') }}" class="btn-historial btn-historial-volver">
+                                    <i class="ri-arrow-left-line"></i> Solo Activos
+                                </a>
+                            @else
+                                <a href="{{ route('empleados.index', ['historial' => true]) }}"
+                                    class="btn-historial btn-historial-ver">
+                                    <i class="ri-time-line"></i> Ver Historial
+                                </a>
+                            @endif
                             <div class="d-flex gap-2">
                                 <a href="{{ url('departamentos') }}" class="btn btn-link-depto" title="Ir al catálogo de departamentos">
                                     <i class="ri-building-line align-bottom me-1"></i> Departamentos
@@ -49,10 +60,12 @@
                                 <a href="{{ url('cargos') }}" class="btn btn-link-cargo" title="Ir al catálogo de cargos">
                                     <i class="ri-briefcase-line align-bottom me-1"></i> Cargos
                                 </a>
-                                <button type="button" class="btn btn-success add-btn" data-bs-toggle="modal" id="create-btn"
-                                    data-bs-target="#showModal">
-                                    <i class="ri-add-line align-bottom me-1"></i> Agregar Empleado
-                                </button>
+                                @if(!$historial)
+                                    <button type="button" class="btn btn-success add-btn" data-bs-toggle="modal" id="create-btn"
+                                        data-bs-target="#showModal">
+                                        <i class="ri-add-line align-bottom me-1"></i> Agregar Empleado
+                                    </button>
+                                @endif
                                 <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#pdfExportModal">
                                     <i class="ri-file-pdf-fill align-bottom me-1"></i> Exportar PDF
                                 </button>
@@ -582,13 +595,6 @@
                             </div>
 
                             <input type="hidden" id="field-codigo_empleado" name="codigo_empleado" />
-                            <div class="row mb-0">
-                                <div class="col-md-6">
-                                    <x-forms.select name="estado" label="Estado Laboral"
-                                        :options="['1' => 'Activo', '0' => 'Inactivo']" required
-                                        placeholder="" value="1" />
-                                </div>
-                            </div>
                         </div>
 
                     </div>
@@ -897,7 +903,19 @@
                 headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') }
             });
 
-            function generateButtons(empleadoId) {
+            function generateButtons(empleadoId, isTrashed) {
+                // Inhabilitado (trashed) → Ver + Restaurar
+                if (isTrashed) {
+                    return '<div class="d-flex gap-1 justify-content-center">' +
+                        '<button class="btn btn-sm btn-soft-secondary view-item-btn dt-action-btn" data-id="' + empleadoId + '" title="Ver">' +
+                        '<i class="ri-eye-fill dt-action-icon"></i>' +
+                        '</button>' +
+                        '<button class="btn btn-sm btn-soft-success restore-item-btn dt-action-btn" data-id="' + empleadoId + '" title="Restaurar">' +
+                        '<i class="ri-arrow-go-back-line dt-action-icon"></i>' +
+                        '</button>' +
+                        '</div>';
+                }
+                // Activo → Ver + Editar + Inhabilitar
                 return '<div class="d-flex gap-1 justify-content-center">' +
                     '<button class="btn btn-sm btn-soft-secondary view-item-btn dt-action-btn" data-id="' + empleadoId + '" title="Ver">' +
                     '<i class="ri-eye-fill dt-action-icon"></i>' +
@@ -905,8 +923,8 @@
                     '<button class="btn btn-sm btn-soft-success edit-item-btn dt-action-btn" data-id="' + empleadoId + '" title="Editar">' +
                     '<i class="ri-pencil-fill dt-action-icon"></i>' +
                     '</button>' +
-                    '<button class="btn btn-sm btn-soft-danger remove-item-btn dt-action-btn" data-id="' + empleadoId + '" title="Eliminar">' +
-                    '<i class="ri-delete-bin-fill dt-action-icon"></i>' +
+                    '<button class="btn btn-sm btn-soft-danger remove-item-btn dt-action-btn" data-id="' + empleadoId + '" title="Inhabilitar">' +
+                    '<i class="ri-forbid-line dt-action-icon"></i>' +
                     '</button>' +
                     '</div>';
             }
@@ -978,10 +996,10 @@
                         }
                     },
                     {
-                        data: 'estado', render: function (data) {
-                            return data == 1
-                                ? '<span class="badge-status badge-status-activo"><i class="ri-checkbox-circle-line"></i> Activo</span>'
-                                : '<span class="badge-status badge-status-inactivo"><i class="ri-close-circle-line"></i> Inactivo</span>';
+                        data: 'trashed', render: function (data) {
+                            return data
+                                ? '<span class="badge-status badge-status-inactivo"><i class="ri-close-circle-line"></i> Inhabilitado</span>'
+                                : '<span class="badge-status badge-status-activo"><i class="ri-checkbox-circle-line"></i> Activo</span>';
                         }
                     },
                     {
@@ -989,7 +1007,7 @@
                         orderable: false,
                         searchable: false,
                         render: function (data, type, row) {
-                            return generateButtons(row.id);
+                            return generateButtons(row.id, row.trashed);
                         }
                     }
                 ],
@@ -1044,6 +1062,13 @@
                 updateFilterBadge();
             });
 
+            // ── Si se llegó por toggle historial (?historial=true) → mostrar inhabilitados ──
+            @if($historial)
+                $('#filter-estatus').val('0');
+                table.ajax.reload();
+                updateFilterBadge();
+            @endif
+
             // ── Botón limpiar: resetea búsqueda + filtros + orden ──
             $('#btn-clear-filters').on('click', function () {
                 $('#filter-departamento').val('');
@@ -1067,7 +1092,6 @@
                 $("#field-codigo_empleado").val("");
                 $("#tipo-documento-field").val("V-").prop('disabled', false).removeClass('campo-protegido');
                 $("#field-documento_identidad").prop('disabled', false).removeClass('campo-protegido');
-                $("#field-estado").val("1");
                 // Resetear teléfono
                 $("#telefono-prefix-field").val("0424");
                 $("#telefono-number-field").val("");
@@ -1236,7 +1260,7 @@
                     $("#view-cargo").text(data.cargo);
                     $("#view-departamento").text(data.departamento);
                     $("#view-fecha-ingreso").text(formatDate(data.fecha_ingreso));
-                    $("#view-estado").html(data.estado == 1 ? '<span class="badge bg-success">Activo</span>' : '<span class="badge bg-danger">Inactivo</span>');
+                    $("#view-estado").html(data.trashed ? '<span class="badge bg-danger">Inhabilitado</span>' : '<span class="badge bg-success">Activo</span>');
                 });
             });
 
@@ -1286,8 +1310,6 @@
                     $("#field-genero").val(data.persona.genero);
                     $("#field-codigo_empleado").val(data.codigo_empleado);
                     $("#field-fecha_ingreso").val(data.fecha_ingreso);
-                    // 'estado' viene como booleano (cast en el modelo); el select usa '1'/'0'
-                    $("#field-estado").val(data.estado ? '1' : '0');
 
                     // Departamento → cargo en cascada
                     var $deptoSel = $('#field-departamento_id');
@@ -1323,10 +1345,10 @@
                 var id = $(this).data("id");
                 Swal.fire({
                     title: '¿Estás seguro?',
-                    text: "¡No podrás revertir esto!",
+                    text: "El empleado será inhabilitado y moverá al historial.",
                     icon: 'warning',
                     showCancelButton: true,
-                    confirmButtonText: 'Sí, eliminar',
+                    confirmButtonText: 'Sí, inhabilitar',
                     cancelButtonText: 'Cancelar',
                     customClass: {
                         confirmButton: 'btn btn-primary w-xs me-2',
@@ -1342,15 +1364,65 @@
                                 table.ajax.reload();
                                 Swal.fire({
                                     icon: 'success',
-                                    title: 'Eliminado',
-                                    text: response.message
+                                    title: '¡Inhabilitado!',
+                                    text: response.message,
+                                    showConfirmButton: false,
+                                    timer: 1500
                                 });
                             },
                             error: function (xhr) {
                                 Swal.fire({
                                     icon: 'error',
                                     title: 'Error',
-                                    text: xhr.responseJSON.message || 'Error al eliminar'
+                                    text: xhr.responseJSON.message || 'Error al inhabilitar'
+                                });
+                            }
+                        });
+                    }
+                });
+            });
+
+            // ══════════════════════════════════════════════════════
+            // RESTAURAR — SoftDelete Restore (estándar Clientes/Proveedores)
+            // ══════════════════════════════════════════════════════
+            $(document).on("click", ".restore-item-btn", function () {
+                var id = $(this).data("id");
+                Swal.fire({
+                    title: '¿Restaurar empleado?',
+                    text: "El empleado volverá a estar activo.",
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonText: 'Sí, restaurar',
+                    cancelButtonText: 'Cancelar',
+                    customClass: {
+                        confirmButton: 'btn btn-success w-xs me-2',
+                        cancelButton: 'btn btn-light w-xs'
+                    },
+                    buttonsStyling: false,
+                    showCloseButton: true
+                }).then(function (result) {
+                    if (result.value) {
+                        $.ajax({
+                            url: "{{ url('empleados') }}/" + id + "/restore",
+                            method: "POST",
+                            headers: {
+                                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                            },
+                            success: function (response) {
+                                table.ajax.reload();
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: '¡Restaurado!',
+                                    text: response.message,
+                                    showConfirmButton: false,
+                                    timer: 1500
+                                });
+                            },
+                            error: function (xhr) {
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Error',
+                                    text: 'No se pudo restaurar el empleado'
                                 });
                             }
                         });

@@ -20,11 +20,12 @@ class EmpleadoController extends Controller
     ) {
     }
 
-    public function index()
+    public function index(Request $request)
     {
+        $historial = $request->has('historial');
         $departamentos = Departamento::orderBy('nombre')->pluck('nombre', 'id');
         $cargos = Cargo::orderBy('nombre')->pluck('nombre', 'id');
-        return view('admin.empleados.index', compact('departamentos', 'cargos'));
+        return view('admin.empleados.index', compact('departamentos', 'cargos', 'historial'));
     }
 
     public function create()
@@ -52,9 +53,9 @@ class EmpleadoController extends Controller
             $query->where('cargo_id', $request->input('filter_cargo'));
         }
 
-        // Filtro: Estatus (1 = activo, 0 = inactivo)
-        if ($request->filled('filter_estatus')) {
-            $query->where('empleado.estado', $request->input('filter_estatus'));
+        // Filtro: Estatus (1 = activo/default, 0 = inhabilitado/trashed) — estándar Clientes/Proveedores
+        if ($request->filled('filter_estatus') && $request->input('filter_estatus') === '0') {
+            $query->onlyTrashed();
         }
 
         // ══════════════════════════════════════════════════════════
@@ -108,6 +109,7 @@ class EmpleadoController extends Controller
                     </div>
                 ';
             })
+            ->addColumn('trashed', fn($emp) => $emp->trashed())
             ->rawColumns(['actions'])
             ->make(true);
     }
@@ -135,7 +137,6 @@ class EmpleadoController extends Controller
                     $fail('El cargo seleccionado no pertenece al departamento elegido.');
                 }
             }],
-            'estado'              => 'required|boolean',
         ], [
             'nombre.required'              => 'El nombre es obligatorio',
             'nombre.min'                   => 'El nombre debe tener al menos 2 caracteres',
@@ -156,7 +157,6 @@ class EmpleadoController extends Controller
             'departamento_id.exists'       => 'El departamento seleccionado no es válido',
             'cargo_id.required'            => 'El cargo es obligatorio',
             'cargo_id.exists'              => 'El cargo seleccionado no es válido',
-            'estado.required'              => 'Debe seleccionar el estado del empleado',
         ]);
 
         $this->empleadoService->crear($request->all());
@@ -166,7 +166,10 @@ class EmpleadoController extends Controller
 
     public function show($id)
     {
-        $empleado = Empleado::with(['persona.telefonos', 'persona.direcciones', 'cargo', 'departamento'])->findOrFail($id);
+        // withTrashed: también se ven detalles de empleados inhabilitados (desde el historial)
+        $empleado = Empleado::withTrashed()
+            ->with(['persona.telefonos', 'persona.direcciones', 'cargo', 'departamento'])
+            ->findOrFail($id);
 
         $data                = $empleado->toArray();
         $data['telefono']    = $empleado->telefono;
@@ -174,6 +177,7 @@ class EmpleadoController extends Controller
         $data['ciudad']      = $empleado->ciudad;
         $data['cargo']       = $empleado->cargo ? $empleado->cargo->nombre : null;
         $data['departamento'] = $empleado->departamento ? $empleado->departamento->nombre : null;
+        $data['trashed']     = $empleado->trashed();
 
         return response()->json($data);
     }
@@ -232,7 +236,6 @@ class EmpleadoController extends Controller
                     $fail('El cargo seleccionado no pertenece al departamento elegido.');
                 }
             }],
-            'estado'              => 'required|boolean',
         ], [
             'nombre.required'               => 'El nombre es obligatorio',
             'nombre.min'                    => 'El nombre debe tener al menos 2 caracteres',
@@ -250,7 +253,6 @@ class EmpleadoController extends Controller
             'departamento_id.exists'        => 'El departamento seleccionado no es válido',
             'cargo_id.required'             => 'El cargo es obligatorio',
             'cargo_id.exists'               => 'El cargo seleccionado no es válido',
-            'estado.required'               => 'Debe seleccionar el estado del empleado',
         ]);
 
         $this->empleadoService->actualizar($empleado, $request->all());
@@ -261,8 +263,18 @@ class EmpleadoController extends Controller
     public function destroy($id)
     {
         $empleado = Empleado::findOrFail($id);
-        $empleado->delete();
-        return response()->json(['message' => 'Empleado eliminado exitosamente.']);
+        $empleado->delete(); // SoftDelete: marca deleted_at (va al historial)
+        return response()->json(['message' => 'Empleado inhabilitado exitosamente.']);
+    }
+
+    /**
+     * Restaurar un empleado inhabilitado (soft-deleted). Estándar Clientes/Proveedores.
+     */
+    public function restore($id)
+    {
+        $empleado = Empleado::onlyTrashed()->findOrFail($id);
+        $empleado->restore();
+        return response()->json(['message' => 'Empleado restaurado exitosamente.']);
     }
 
     public function checkDocumento(Request $request)
@@ -308,8 +320,9 @@ class EmpleadoController extends Controller
         if ($request->filled('cargo_id')) {
             $query->where('cargo_id', $request->cargo_id);
         }
-        if ($request->filled('estatus')) {
-            $query->where('estado', (int) $request->estatus);
+        // Estatus: 1 = activos (default), 0 = inhabilitados (trashed) — estándar Clientes/Proveedores
+        if ($request->input('estatus') === '0') {
+            $query->onlyTrashed();
         }
         $empleados = $query->get();
         $pdf = \PDF::loadView('admin.empleados.reporte_pdf', compact('empleados'))

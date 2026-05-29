@@ -80,6 +80,7 @@ Route::middleware(['auth', 'throttle:60,1', 'recovery.questions.required'])->gro
 
         // Empleados
         Route::resource('empleados', EmpleadoController::class);
+        Route::post('empleados/{id}/restore', [EmpleadoController::class, 'restore'])->name('empleados.restore');
         Route::get('empleados-data', [EmpleadoController::class, 'getEmpleados'])->name('empleados.data');
         Route::get('empleados-check-documento', [EmpleadoController::class, 'checkDocumento'])->name('empleados.check-documento');
         Route::get('empleados-check-email', [EmpleadoController::class, 'checkEmail'])->name('empleados.check-email');

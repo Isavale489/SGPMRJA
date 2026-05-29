@@ -74,7 +74,9 @@ class EmpleadoService
                 'fecha_ingreso'   => $data['fecha_ingreso'],
                 'cargo_id'        => $data['cargo_id'],
                 'departamento_id' => $data['departamento_id'],
-                'estado'          => $data['estado'],
+                // 'estado' (laboral) ya no se edita: activo=1 por defecto. La inhabilitación
+                // se maneja con SoftDeletes (deleted_at), igual que Clientes/Proveedores.
+                'estado'          => $data['estado'] ?? 1,
             ]);
 
             return $empleado->id;
@@ -109,7 +111,7 @@ class EmpleadoService
                 'fecha_ingreso'   => $data['fecha_ingreso'],
                 'cargo_id'        => $data['cargo_id'],
                 'departamento_id' => $data['departamento_id'],
-                'estado'          => $data['estado'],
+                // 'estado' (laboral) ya no se edita aquí; la baja se hace con SoftDeletes
             ]);
         });
     }
