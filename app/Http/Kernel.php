@@ -67,5 +67,6 @@ class Kernel extends HttpKernel
         'admin' => \App\Http\Middleware\CheckAdminRole::class,
         'role' => \App\Http\Middleware\CheckRole::class,
         'recovery.questions.required' => \App\Http\Middleware\EnsureRecoveryQuestionsConfigured::class,
+        'active.user' => \App\Http\Middleware\EnsureUserIsActive::class,
     ];
 }

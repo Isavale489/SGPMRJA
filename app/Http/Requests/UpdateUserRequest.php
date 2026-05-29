@@ -20,7 +20,6 @@ class UpdateUserRequest extends FormRequest
             'email' => 'required|string|email|max:255|unique:user,email,' . $userId,
             'avatar' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             'role' => 'required|in:Administrador,Supervisor',
-            'estado' => 'nullable|boolean',
         ];
     }
 }
