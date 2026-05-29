@@ -24,7 +24,6 @@ class OrdenProduccion extends Model
         'fecha_fin_estimada',
         'fecha_fin_real',
         'estado',
-        'costo_estimado',
         'notas',
         'created_by',
     ];
@@ -33,7 +32,6 @@ class OrdenProduccion extends Model
         'fecha_inicio' => 'date',
         'fecha_fin_estimada' => 'date',
         'fecha_fin_real' => 'date',
-        'costo_estimado' => 'decimal:2',
         'cantidad_solicitada' => 'integer',
         'cantidad_producida' => 'integer',
         'cantidad_defectuosa' => 'integer',

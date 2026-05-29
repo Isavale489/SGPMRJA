@@ -25,18 +25,6 @@
         if ($fin.val()) { $fin.trigger('blur'); }
     });
 
-    // Validación onblur: costo_estimado — mayor a cero
-    $(document).on('blur', '#costo-estimado-field', function () {
-        let val = parseFloat($(this).val());
-        if ($(this).val() === '' || isNaN(val)) {
-            marcarInvalido($(this), 'El costo estimado es obligatorio.');
-        } else if (val <= 0) {
-            marcarInvalido($(this), 'El costo estimado debe ser mayor a cero.');
-        } else {
-            marcarValido($(this));
-        }
-    });
-
     // Validación al cerrar Select2 — insumo obligatorio (modal nested)
     $(document).on('select2:close', '#insumo-add-select', function () {
         if (!$(this).val()) {
@@ -229,27 +217,44 @@
                     const bordadoBadge = l.lleva_bordado
                         ? `<span class="badge bg-info-subtle text-info ms-1"><i class="ri-scissors-cut-line"></i> ${l.bordados_count} bordado(s)</span>`
                         : '';
-                    const accion = l.orden_id
-                        ? `<span class="badge bg-secondary"><i class="ri-check-line"></i> Orden #${l.orden_id}</span>`
-                        : `<button type="button" class="btn btn-sm btn-success crear-orden-linea-btn"
-                              data-pedido-id="${p.id}" data-detalle-id="${l.detalle_id}">
-                              <i class="ri-add-line"></i> Crear orden
-                           </button>`;
+                    // Líneas con orden activa → solo badge informativo
+                    if (l.orden_id) {
+                        return `
+                            <div class="list-group-item d-flex justify-content-between align-items-center gap-2 flex-wrap">
+                                <div>
+                                    <div class="fw-semibold text-muted">${escHtml(l.producto_nombre)}${bordadoBadge}</div>
+                                    <small class="text-muted">${escHtml(meta)}</small>
+                                </div>
+                                <span class="badge bg-secondary"><i class="ri-check-line"></i> Orden #${l.orden_id}</span>
+                            </div>`;
+                    }
+                    // Líneas pendientes → checkbox seleccionable
                     return `
-                        <div class="list-group-item d-flex justify-content-between align-items-center gap-2 flex-wrap">
-                            <div>
+                        <label class="list-group-item d-flex align-items-center gap-2 flex-wrap" style="cursor: pointer;">
+                            <input type="checkbox" class="form-check-input linea-check"
+                                data-pedido-id="${p.id}" data-detalle-id="${l.detalle_id}">
+                            <div class="flex-grow-1">
                                 <div class="fw-semibold">${escHtml(l.producto_nombre)}${bordadoBadge}</div>
                                 <small class="text-muted">${escHtml(meta)}</small>
                             </div>
-                            <div>${accion}</div>
-                        </div>`;
+                        </label>`;
                 }).join('');
+
+                const hayPendientes = p.lineas_pendientes > 0;
+                const footerHtml = hayPendientes
+                    ? `<div class="d-flex justify-content-end mt-2">
+                          <button type="button" class="btn btn-sm btn-success crear-batch-btn"
+                              data-pedido-id="${p.id}" disabled>
+                              <i class="ri-add-line me-1"></i><span class="batch-btn-label">Selecciona líneas</span>
+                          </button>
+                       </div>`
+                    : '';
 
                 const card = `
                     <div class="cotizacion-card" data-pedido-id="${p.id}">
                         <div class="cotizacion-header">
                             <span class="cotizacion-numero"><i class="ri-shopping-bag-line"></i> Pedido #${p.id}</span>
-                            <span class="badge ${p.lineas_pendientes > 0 ? 'bg-success-subtle text-success' : 'bg-secondary'}">
+                            <span class="badge ${hayPendientes ? 'bg-success-subtle text-success' : 'bg-secondary'}">
                                 ${p.lineas_pendientes} de ${p.total_lineas} sin orden
                             </span>
                         </div>
@@ -260,10 +265,28 @@
                             <div class="cotizacion-info-item"><i class="ri-bar-chart-line"></i><span>Progreso ${p.progreso}%</span></div>
                         </div>
                         <div class="list-group mt-2">${lineasHtml}</div>
+                        ${footerHtml}
                     </div>`;
                 $cont.append(card);
             });
         }
+
+        // Actualizar texto y estado disabled del botón "Crear N" por pedido
+        function actualizarBotonBatch(pedidoId) {
+            const $card = $('#pedidos-orden-container .cotizacion-card[data-pedido-id="' + pedidoId + '"]');
+            const seleccionadas = $card.find('.linea-check:checked').length;
+            const $btn = $card.find('.crear-batch-btn');
+            $btn.prop('disabled', seleccionadas === 0);
+            const $label = $btn.find('.batch-btn-label');
+            if (seleccionadas === 0)      $label.text('Selecciona líneas');
+            else if (seleccionadas === 1) $label.text('Crear 1 orden');
+            else                          $label.text('Crear ' + seleccionadas + ' órdenes');
+        }
+
+        // Tracking de checkboxes
+        $(document).on('change', '.linea-check', function () {
+            actualizarBotonBatch($(this).data('pedido-id'));
+        });
 
         // Búsqueda
         $('#buscarPedidoOrden').on('keyup', function () {
@@ -277,17 +300,27 @@
             renderPedidosOrden(filtradas);
         });
 
-        // Click en "Crear orden" de una línea → hidratar y abrir el form
-        $(document).on('click', '.crear-orden-linea-btn', function () {
-            const pedidoId  = $(this).data('pedido-id');
-            const detalleId = $(this).data('detalle-id');
+        // Click "Crear N órdenes" → 1 línea: modal single; 2+ líneas: modal batch
+        $(document).on('click', '.crear-batch-btn', function () {
+            const pedidoId = $(this).data('pedido-id');
             const pedido = pedidosOrdenData.find(p => p.id == pedidoId);
             if (!pedido) return;
-            const linea = pedido.lineas.find(l => l.detalle_id == detalleId);
-            if (!linea) return;
+            const $card = $(this).closest('.cotizacion-card');
+            const detalleIds = $card.find('.linea-check:checked').map(function () {
+                return parseInt($(this).data('detalle-id'), 10);
+            }).get();
+            if (!detalleIds.length) return;
 
+            const lineas = detalleIds.map(id => pedido.lineas.find(l => l.detalle_id == id)).filter(Boolean);
             $('#seleccionarPedidoModal').modal('hide');
-            setTimeout(function () { ordenAbrirDesdeLinea(pedido, linea); }, 300);
+
+            // 1 línea → modal individual (UX completa, edita insumos)
+            if (lineas.length === 1) {
+                setTimeout(() => ordenAbrirDesdeLinea(pedido, lineas[0]), 300);
+                return;
+            }
+            // 2+ líneas → modal batch (defaults compartidos, insumos por template)
+            setTimeout(() => batchAbrir(pedido, lineas), 300);
         });
 
         // ══════════════════════════════════════════════════════
@@ -348,9 +381,6 @@
                 $('#fecha-fin-estimada-field').val('');
             }
 
-            // Costo sugerido = subtotal de la línea
-            $('#costo-estimado-field').val(Number(linea.subtotal || 0).toFixed(2));
-
             // Insumos: prefill desde el template del tipo_producto (si tiene)
             resetInsumos();
             if (Array.isArray(linea.insumos_default) && linea.insumos_default.length) {
@@ -371,6 +401,177 @@
 
             $('#showModal').modal('show');
         }
+
+        // ══════════════════════════════════════════════════════
+        // BATCH: crear varias órdenes del mismo pedido en un solo flow
+        // ══════════════════════════════════════════════════════
+        // Estado en memoria. Cada fila = una orden a crear. Los insumos vienen
+        // del template del tipo (Feature D) y se envían sin edición en batch.
+        let batchState = { pedido: null, filas: [] };
+
+        function batchAbrir(pedido, lineas) {
+            batchState.pedido = pedido;
+            batchState.filas = lineas.map(function (l) {
+                return {
+                    detalle_id: l.detalle_id,
+                    producto_nombre: l.producto_nombre,
+                    color: l.color,
+                    talla: l.talla,
+                    lleva_bordado: l.lleva_bordado,
+                    bordados_count: l.bordados_count,
+                    cantidad: l.cantidad,
+                    insumos: Array.isArray(l.insumos_default) ? l.insumos_default.slice() : [],
+                    // editables
+                    empleado_id: '',
+                    fecha_inicio: hoyISO(),
+                    fecha_fin_estimada: pedido.fecha_entrega ? (function () {
+                        const fe = new Date(pedido.fecha_entrega);
+                        fe.setDate(fe.getDate() - 2);
+                        return fe.toISOString().split('T')[0];
+                    })() : '',
+                };
+            });
+
+            // Header
+            $('#batch-pedido-label').text('Pedido #' + pedido.id + ' — ' + pedido.cliente_nombre);
+            $('#batch-submit-count').text(batchState.filas.length);
+
+            // Defaults arriba: vacíos
+            $('#batch-default-empleado').val('');
+            $('#batch-default-inicio').val(hoyISO());
+            $('#batch-default-fin').val(batchState.filas[0]?.fecha_fin_estimada || '');
+
+            batchRenderFilas();
+            $('#batchOrdenModal').modal('show');
+        }
+
+        function batchRenderFilas() {
+            const $tbody = $('#batch-ordenes-tbody');
+            // Cache de opciones de empleado (las mismas que en el select default)
+            const empleadosOpts = $('#batch-default-empleado').html();
+
+            $tbody.html(batchState.filas.map(function (f, idx) {
+                const meta = [
+                    f.color || 'Sin color',
+                    f.talla || 'Talla única',
+                    f.lleva_bordado ? (f.bordados_count + ' bord.') : ''
+                ].filter(Boolean).join(' · ');
+                return '<tr data-idx="' + idx + '">' +
+                    '<td class="cot-col-num">' + (idx + 1) + '</td>' +
+                    '<td class="cot-col-prod">' +
+                        '<div class="fw-semibold">' + escHtml(f.producto_nombre) + '</div>' +
+                        '<small class="text-muted">' + escHtml(meta) + '</small>' +
+                    '</td>' +
+                    '<td class="cot-col-num text-center fw-semibold">' + f.cantidad + '</td>' +
+                    '<td><select class="form-select form-select-sm batch-empleado">' + empleadosOpts + '</select></td>' +
+                    '<td><input type="date" class="form-control form-control-sm batch-inicio" value="' + (f.fecha_inicio || '') + '"></td>' +
+                    '<td><input type="date" class="form-control form-control-sm batch-fin" value="' + (f.fecha_fin_estimada || '') + '"></td>' +
+                    '<td class="text-center"><span class="badge bg-info-subtle text-info" title="Insumos prellenados desde el template del tipo">' +
+                        '<i class="ri-tools-line"></i> ' + (f.insumos ? f.insumos.length : 0) +
+                    '</span></td>' +
+                '</tr>';
+            }).join(''));
+
+            // Setear el valor de empleado seleccionado por fila
+            batchState.filas.forEach(function (f, idx) {
+                $('#batch-ordenes-tbody tr[data-idx="' + idx + '"] .batch-empleado').val(f.empleado_id || '');
+            });
+        }
+
+        // Sincronizar inputs visibles → estado (antes de submit / aplicar defaults)
+        function batchSyncFilasDesdeDom() {
+            $('#batch-ordenes-tbody tr').each(function () {
+                const idx = parseInt($(this).data('idx'), 10);
+                batchState.filas[idx].empleado_id        = $(this).find('.batch-empleado').val() || '';
+                batchState.filas[idx].fecha_inicio       = $(this).find('.batch-inicio').val();
+                batchState.filas[idx].fecha_fin_estimada = $(this).find('.batch-fin').val();
+            });
+        }
+
+        // "Aplicar a todas" → propaga defaults a cada fila
+        $(document).on('click', '#batch-apply-defaults', function () {
+            const emp = $('#batch-default-empleado').val();
+            const ini = $('#batch-default-inicio').val();
+            const fin = $('#batch-default-fin').val();
+            $('#batch-ordenes-tbody tr').each(function () {
+                if (emp) $(this).find('.batch-empleado').val(emp);
+                if (ini) $(this).find('.batch-inicio').val(ini);
+                if (fin) $(this).find('.batch-fin').val(fin);
+            });
+            Swal.fire({
+                icon: 'success', title: 'Defaults aplicados', toast: true, position: 'top-end',
+                showConfirmButton: false, timer: 1500
+            });
+        });
+
+        // Submit del batch
+        $(document).on('click', '#batch-submit-btn', function () {
+            batchSyncFilasDesdeDom();
+
+            // Validación cliente: empleado + fechas + costo + fin > inicio
+            const errores = [];
+            batchState.filas.forEach(function (f, idx) {
+                if (!f.empleado_id)                    errores.push('Fila ' + (idx + 1) + ': empleado requerido');
+                if (!f.fecha_inicio)                   errores.push('Fila ' + (idx + 1) + ': fecha inicio requerida');
+                if (!f.fecha_fin_estimada)             errores.push('Fila ' + (idx + 1) + ': fecha fin requerida');
+                if (f.fecha_inicio && f.fecha_fin_estimada && f.fecha_fin_estimada <= f.fecha_inicio)
+                    errores.push('Fila ' + (idx + 1) + ': la fecha fin debe ser posterior al inicio');
+                if (!f.insumos || !f.insumos.length)
+                    errores.push('Fila ' + (idx + 1) + ': sin insumos (configura el template del tipo)');
+            });
+            if (errores.length) {
+                Swal.fire({ icon: 'warning', title: 'Revisa los datos', html: errores.join('<br>') });
+                return;
+            }
+
+            const payload = {
+                _token: '{{ csrf_token() }}',
+                pedido_id: batchState.pedido.id,
+                ordenes: batchState.filas.map(function (f) {
+                    return {
+                        detalle_pedido_id: f.detalle_id,
+                        empleado_id: f.empleado_id,
+                        fecha_inicio: f.fecha_inicio,
+                        fecha_fin_estimada: f.fecha_fin_estimada,
+                        insumos: f.insumos.map(function (i) {
+                            return { id: i.id, cantidad_estimada: i.cantidad };
+                        })
+                    };
+                })
+            };
+
+            const $btn = $('#batch-submit-btn').prop('disabled', true);
+            $.ajax({
+                url: "{{ route('ordenes.batch') }}",
+                method: 'POST',
+                data: payload,
+                success: function (resp) {
+                    $btn.prop('disabled', false);
+                    $('#batchOrdenModal').modal('hide');
+                    table.ajax.reload(null, false);
+                    Swal.fire({
+                        icon: 'success', title: '¡Listo!', text: resp.message,
+                        timer: 2200, showConfirmButton: false
+                    });
+                },
+                error: function (xhr) {
+                    $btn.prop('disabled', false);
+                    let msg = 'Error al crear las órdenes.';
+                    if (xhr.responseJSON) {
+                        if (xhr.responseJSON.errors) {
+                            msg = Object.values(xhr.responseJSON.errors).map(v => Array.isArray(v) ? v[0] : v).join('\n');
+                        } else if (xhr.responseJSON.message) { msg = xhr.responseJSON.message; }
+                    }
+                    Swal.fire({ icon: 'error', title: 'Error', text: msg });
+                }
+            });
+        });
+
+        // Reset al cerrar
+        $('#batchOrdenModal').on('hidden.bs.modal', function () {
+            batchState = { pedido: null, filas: [] };
+            $('#batch-ordenes-tbody').empty();
+        });
 
         // ══════════════════════════════════════════════════════
         // DataTable
@@ -594,13 +795,6 @@
             else if ($inicio.val() && $fin.val() <= $inicio.val()) { marcarInvalido($fin, 'La fecha fin estimada debe ser posterior a la fecha de inicio.'); esValido = false; }
             else { marcarValido($fin); }
 
-            // Costo
-            let $costo = $('#costo-estimado-field');
-            let costoVal = parseFloat($costo.val());
-            if ($costo.val() === '' || isNaN(costoVal)) { marcarInvalido($costo, 'El costo estimado es obligatorio.'); esValido = false; }
-            else if (costoVal <= 0) { marcarInvalido($costo, 'El costo estimado debe ser mayor a cero.'); esValido = false; }
-            else { marcarValido($costo); }
-
             // Insumos: al menos 1 en el estado (cada uno se valida al agregarlo)
             if (!ordenInsumosState.length) {
                 Swal.fire({ icon: 'warning', title: 'Sin insumos', text: 'Agrega al menos un insumo a la orden.', timer: 2200, showConfirmButton: false });
@@ -678,7 +872,6 @@
                 $('#empleado-id-field').val(data.empleado_id || '');
                 $('#fecha-inicio-field').val(formatDateForInput(data.fecha_inicio));
                 $('#fecha-fin-estimada-field').val(formatDateForInput(data.fecha_fin_estimada));
-                $('#costo-estimado-field').val(data.costo_estimado);
                 $('#estado-field').val(data.estado);
                 $('#notas-field').val(data.notas);
 
@@ -732,7 +925,6 @@
                 $('#view-fecha-inicio').text(formatDate(data.fecha_inicio));
                 $('#view-fecha-fin-estimada').text(formatDate(data.fecha_fin_estimada));
                 $('#view-estado').html(`<span class="badge badge-status ${estadoClases[data.estado] || 'badge-soft-secondary'} rounded-pill">${data.estado}</span>`);
-                $('#view-costo-estimado').text('$/ ' + fmtMoneda(data.costo_estimado));
                 $('#view-creado-por').text(data.creado_por ? data.creado_por.name : 'Sin especificar');
                 $('#view-empleado').text(
                     data.empleado && data.empleado.persona ? data.empleado.persona.nombre_completo : 'Sin asignar'

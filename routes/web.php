@@ -218,6 +218,7 @@ Route::middleware(['auth', 'throttle:60,1', 'recovery.questions.required'])->gro
         // (rutas específicas ANTES del resource para que no colisionen con ordenes/{orden})
         Route::get('ordenes/pedidos-disponibles', [OrdenProduccionController::class, 'pedidosDisponibles'])->name('ordenes.pedidos-disponibles');
         Route::get('ordenes-data', [OrdenProduccionController::class, 'getOrdenes'])->name('ordenes.data');
+        Route::post('ordenes/batch', [OrdenProduccionController::class, 'storeBatch'])->name('ordenes.batch');
         Route::post('ordenes/{orden}/avance', [OrdenProduccionController::class, 'registrarAvance'])->name('ordenes.avance');
         Route::resource('ordenes', OrdenProduccionController::class);
 

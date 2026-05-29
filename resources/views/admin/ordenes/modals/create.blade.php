@@ -70,29 +70,22 @@
                         </div>
                     </div>
 
-                    {{-- ── Cronograma: fechas + costo ─────────────────────────── --}}
+                    {{-- ── Cronograma ─────────────────────────────────────────── --}}
                     <div class="card border-0 shadow-sm mb-2">
                         <div class="card-header border-0 bg-soft-primary py-2 px-3">
                             <h6 class="mb-0 text-atlantico-dark fs-13">
-                                <i class="ri-calendar-2-line me-1"></i>Cronograma y costo
+                                <i class="ri-calendar-2-line me-1"></i>Cronograma
                             </h6>
                         </div>
                         <div class="card-body p-3">
                             <div class="row g-2">
-                                <div class="col-md-4">
+                                <div class="col-md-6">
                                     <label for="fecha-inicio-field" class="form-label form-label-sm required mb-1">Inicio</label>
                                     <input type="date" id="fecha-inicio-field" name="fecha_inicio" class="form-control form-control-sm" required />
                                 </div>
-                                <div class="col-md-4">
+                                <div class="col-md-6">
                                     <label for="fecha-fin-estimada-field" class="form-label form-label-sm required mb-1">Fin estimado</label>
                                     <input type="date" id="fecha-fin-estimada-field" name="fecha_fin_estimada" class="form-control form-control-sm" required />
-                                </div>
-                                <div class="col-md-4">
-                                    <label for="costo-estimado-field" class="form-label form-label-sm required mb-1">Costo estimado</label>
-                                    <div class="input-group input-group-sm">
-                                        <span class="input-group-text">$</span>
-                                        <input type="number" id="costo-estimado-field" name="costo_estimado" class="form-control" step="0.01" min="0" required />
-                                    </div>
                                 </div>
                             </div>
                         </div>

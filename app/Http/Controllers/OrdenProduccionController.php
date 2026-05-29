@@ -10,6 +10,7 @@ use App\Models\Empleado;
 use Illuminate\Http\Request;
 use Yajra\DataTables\DataTables;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class OrdenProduccionController extends Controller
 {
@@ -190,7 +191,6 @@ class OrdenProduccionController extends Controller
             'empleado_id' => 'required|exists:empleado,id',
             'fecha_inicio' => 'required|date',
             'fecha_fin_estimada' => 'required|date|after:fecha_inicio',
-            'costo_estimado' => 'required|numeric|min:0',
             'notas' => 'nullable|string',
             'insumos' => 'required|array|min:1',
             'insumos.*.id' => 'required|exists:insumo,id',
@@ -220,7 +220,6 @@ class OrdenProduccionController extends Controller
             'fecha_inicio' => $validated['fecha_inicio'],
             'fecha_fin_estimada' => $validated['fecha_fin_estimada'],
             'estado' => 'Pendiente',
-            'costo_estimado' => $validated['costo_estimado'],
             'notas' => $validated['notas'] ?? null,
             'created_by' => Auth::id(),
         ]);
@@ -233,6 +232,80 @@ class OrdenProduccionController extends Controller
         }
 
         return response()->json(['message' => 'Orden de producción creada exitosamente.']);
+    }
+
+    /**
+     * Crear varias órdenes del mismo pedido en una sola transacción.
+     * Cada orden trae sus propios empleado/fechas/costo/insumos. Si alguna
+     * línea ya tiene orden activa o falla la validación, no se crea ninguna.
+     */
+    public function storeBatch(Request $request)
+    {
+        $validated = $request->validate([
+            'pedido_id' => 'required|exists:pedido,id',
+            'ordenes' => 'required|array|min:1',
+            'ordenes.*.detalle_pedido_id' => 'required|exists:detalle_pedido,id',
+            'ordenes.*.empleado_id' => 'required|exists:empleado,id',
+            'ordenes.*.fecha_inicio' => 'required|date',
+            'ordenes.*.fecha_fin_estimada' => 'required|date|after:ordenes.*.fecha_inicio',
+            'ordenes.*.notas' => 'nullable|string',
+            'ordenes.*.insumos' => 'required|array|min:1',
+            'ordenes.*.insumos.*.id' => 'required|exists:insumo,id',
+            'ordenes.*.insumos.*.cantidad_estimada' => 'required|numeric|min:0.01',
+        ]);
+
+        // Todas las líneas deben pertenecer al mismo pedido_id (anti-tampering)
+        $detalleIds = collect($validated['ordenes'])->pluck('detalle_pedido_id');
+        $detalles = DetallePedido::whereIn('id', $detalleIds)
+            ->where('pedido_id', $validated['pedido_id'])
+            ->get()->keyBy('id');
+        if ($detalles->count() !== $detalleIds->unique()->count()) {
+            return response()->json([
+                'message' => 'Una o más líneas no pertenecen al pedido indicado.'
+            ], 422);
+        }
+
+        // Ninguna línea debe tener ya orden activa (no Cancelada)
+        $yaConOrden = OrdenProduccion::whereIn('detalle_pedido_id', $detalleIds)
+            ->where('estado', '!=', 'Cancelado')
+            ->pluck('detalle_pedido_id');
+        if ($yaConOrden->isNotEmpty()) {
+            return response()->json([
+                'message' => 'Algunas líneas seleccionadas ya tienen orden activa. Recarga e intenta de nuevo.',
+            ], 422);
+        }
+
+        $creadas = [];
+        DB::transaction(function () use ($validated, $detalles, &$creadas) {
+            foreach ($validated['ordenes'] as $o) {
+                $detalle = $detalles[$o['detalle_pedido_id']];
+                $orden = OrdenProduccion::create([
+                    'pedido_id' => $detalle->pedido_id,
+                    'detalle_pedido_id' => $detalle->id,
+                    'producto_id' => $detalle->producto_id,
+                    'empleado_id' => $o['empleado_id'],
+                    'cantidad_solicitada' => $detalle->cantidad,
+                    'cantidad_producida' => 0,
+                    'fecha_inicio' => $o['fecha_inicio'],
+                    'fecha_fin_estimada' => $o['fecha_fin_estimada'],
+                    'estado' => 'Pendiente',
+                    'notas' => $o['notas'] ?? null,
+                    'created_by' => Auth::id(),
+                ]);
+                foreach ($o['insumos'] as $ins) {
+                    $orden->insumos()->attach($ins['id'], [
+                        'cantidad_estimada' => $ins['cantidad_estimada'],
+                        'cantidad_utilizada' => 0,
+                    ]);
+                }
+                $creadas[] = $orden->id;
+            }
+        });
+
+        return response()->json([
+            'message' => count($creadas) . ' ' . (count($creadas) === 1 ? 'orden creada' : 'órdenes creadas') . ' correctamente.',
+            'ordenes' => $creadas,
+        ]);
     }
 
     public function show($id)
@@ -310,7 +383,6 @@ class OrdenProduccionController extends Controller
             'fecha_inicio' => 'required|date',
             'fecha_fin_estimada' => 'required|date|after:fecha_inicio',
             'estado' => 'required|in:Pendiente,En Proceso,Finalizado,Cancelado',
-            'costo_estimado' => 'required|numeric|min:0',
             'notas' => 'nullable|string',
             'insumos' => 'required|array|min:1',
             'insumos.*.id' => 'required|exists:insumo,id',
@@ -331,7 +403,6 @@ class OrdenProduccionController extends Controller
             'fecha_fin_estimada' => $validated['fecha_fin_estimada'],
             'estado' => $validated['estado'],
             'fecha_fin_real' => $fechaFinReal,
-            'costo_estimado' => $validated['costo_estimado'],
             'notas' => $validated['notas'] ?? null,
         ]);
 

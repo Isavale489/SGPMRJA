@@ -41,28 +41,15 @@
 
                 <!-- KPI Strip — jerarquía tipográfica pura -->
                 <div class="row g-0 mb-3">
-                    <div class="col-4 kpi-sep pe-4">
-                        <p class="text-uppercase text-muted mb-1 kpi-label"
-                           >Solicitada</p>
-                        <p class="mb-0 fw-bold kpi-number"
-                           
-                            id="view-cantidad-solicitada"></p>
+                    <div class="col-6 kpi-sep pe-4">
+                        <p class="text-uppercase text-muted mb-1 kpi-label">Solicitada</p>
+                        <p class="mb-0 fw-bold kpi-number" id="view-cantidad-solicitada"></p>
                         <p class="text-muted mb-0 kpi-unit">unidades</p>
                     </div>
-                    <div class="col-4 kpi-sep px-4">
-                        <p class="text-uppercase text-muted mb-1 kpi-label"
-                           >Producida</p>
-                        <p class="mb-0 fw-bold kpi-number"
-                           
-                            id="view-cantidad-producida"></p>
+                    <div class="col-6 kpi-sep ps-4">
+                        <p class="text-uppercase text-muted mb-1 kpi-label">Producida</p>
+                        <p class="mb-0 fw-bold kpi-number" id="view-cantidad-producida"></p>
                         <p class="text-muted mb-0 kpi-unit">unidades</p>
-                    </div>
-                    <div class="col-4 kpi-sep ps-4">
-                        <p class="text-uppercase text-muted mb-1 kpi-label"
-                           >Costo Estimado</p>
-                        <p class="mb-0 fw-bold kpi-number kpi-number-sm"
-                            id="view-costo-estimado"></p>
-                        <p class="text-muted mb-0 kpi-unit">estimado</p>
                     </div>
                 </div>
 
