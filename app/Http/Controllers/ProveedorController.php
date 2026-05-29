@@ -129,7 +129,6 @@ class ProveedorController extends Controller
                 'email' => 'required|email|max:100|unique:persona,email',
                 'contacto' => 'nullable|string|max:100',
                 'telefono_contacto' => 'nullable|string|max:20',
-                'estado' => 'nullable|boolean',
             ]);
 
             $this->proveedorService->crearJuridico($request->all());
@@ -139,7 +138,8 @@ class ProveedorController extends Controller
 
     public function show($id)
     {
-        $proveedor = Proveedor::with('persona.telefonos', 'persona.direcciones')->findOrFail($id);
+        // withTrashed: también se ven detalles de proveedores inhabilitados (desde el historial)
+        $proveedor = Proveedor::withTrashed()->with('persona.telefonos', 'persona.direcciones')->findOrFail($id);
         $persona = $proveedor->persona;
         $telefonoPrincipal = $persona ? $persona->telefonos->where('es_principal', true)->first() : null;
         $direccionPrincipal = $persona ? $persona->direcciones->where('es_principal', true)->first() : null;
@@ -156,6 +156,7 @@ class ProveedorController extends Controller
             'nombre_display' => $proveedor->nombre_completo,
             'documento_display' => $proveedor->documento,
             'estado' => $proveedor->estado,
+            'trashed' => $proveedor->trashed(),
             'created_at' => $proveedor->created_at->format('d/m/Y H:i:s'),
             'updated_at' => $proveedor->updated_at->format('d/m/Y H:i:s'),
         ];
@@ -205,7 +206,6 @@ class ProveedorController extends Controller
                 'email' => 'required|email|max:100|unique:persona,email,' . ($proveedor->persona_id ?? 0),
                 'contacto' => 'nullable|string|max:100',
                 'telefono_contacto' => 'nullable|string|max:20',
-                'estado' => 'nullable|boolean',
                 'ciudad' => 'nullable|string|max:100',
                 'estado_territorial' => 'nullable|string|max:50',
             ]);
@@ -239,8 +239,9 @@ class ProveedorController extends Controller
         if ($request->filled('tipo_proveedor')) {
             $query->where('tipo_proveedor', $request->tipo_proveedor);
         }
-        if ($request->filled('estatus')) {
-            $query->where('estado', (int) $request->estatus);
+        // Estatus: 1 = activos (default), 0 = inhabilitados (trashed) — estándar de inhabilitación
+        if ($request->input('estatus') === '0') {
+            $query->onlyTrashed();
         }
         $proveedores = $query->get();
         $pdf = \PDF::loadView('admin.proveedores.reporte_pdf', compact('proveedores'))

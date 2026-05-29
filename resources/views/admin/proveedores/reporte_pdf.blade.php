@@ -48,11 +48,11 @@
     </td>
     <td>
         <span class="label">Activos:</span>
-        <span class="value">{{ $proveedores->where('estado', 1)->count() }}</span>
+        <span class="value">{{ $proveedores->filter(fn($p) => !$p->trashed())->count() }}</span>
     </td>
     <td>
-        <span class="label">Inactivos:</span>
-        <span class="value">{{ $proveedores->where('estado', 0)->count() }}</span>
+        <span class="label">Inhabilitados:</span>
+        <span class="value">{{ $proveedores->filter(fn($p) => $p->trashed())->count() }}</span>
     </td>
     <td>
         <span class="label">Naturales:</span>
@@ -97,8 +97,8 @@
                     <td class="col-email">{{ $proveedor->email_unificado }}</td>
                     <td class="col-contacto">{{ $proveedor->tipo_proveedor === 'natural' ? '-' : $proveedor->contacto }}</td>
                     <td class="col-estatus">
-                        <span class="{{ $proveedor->estado ? 'badge-activo' : 'badge-inactivo' }}">
-                            {{ $proveedor->estado ? 'Activo' : 'Inactivo' }}
+                        <span class="{{ $proveedor->trashed() ? 'badge-inactivo' : 'badge-activo' }}">
+                            {{ $proveedor->trashed() ? 'Inhabilitado' : 'Activo' }}
                         </span>
                     </td>
                 </tr>

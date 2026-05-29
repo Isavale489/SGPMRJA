@@ -707,11 +707,15 @@
 
                         <div class="modal-form-section mb-0">
                             <div class="modal-form-section-title"><i class="ri-shield-check-line"></i>Estatus</div>
-                            <div class="form-check form-switch form-switch-success">
-                                <input type="hidden" name="estado" value="0" />
-                                <input class="form-check-input" type="checkbox" role="switch" id="estado-field"
-                                    name="estado" value="1" checked />
-                                <label class="form-check-label" for="estado-field" id="estado-label">Activo</label>
+                            {{-- Estatus: solo lectura. Lo gobierna Inhabilitar/Restaurar, no es editable aquí. --}}
+                            <input type="text" class="form-control bg-light" id="estado-display"
+                                value="Activo" readonly tabindex="-1">
+                            <div class="d-flex align-items-start gap-2 mt-2 p-2 rounded-3 bg-info-subtle border border-info-subtle">
+                                <i class="ri-information-line text-info fs-5 lh-1 mt-1"></i>
+                                <small class="text-info-emphasis mb-0 lh-sm">
+                                    Se asigna automáticamente: un proveedor nuevo o restaurado queda <strong>Activo</strong>.
+                                    Para darlo de baja usa <strong>Inhabilitar</strong> (pasa a Inactivo y al historial).
+                                </small>
                             </div>
                         </div>
 
@@ -854,15 +858,6 @@
 
             $('#tipo-proveedor-field').on('change', toggleCampos);
             toggleCampos(); // Inicializar: quitar required de los campos ocultos al cargar
-
-            // Listener para actualizar label del checkbox de estatus
-            $("#estado-field").on('change', function () {
-                if ($(this).is(':checked')) {
-                    $("#estado-label").text('Activo');
-                } else {
-                    $("#estado-label").text('Inactivo');
-                }
-            });
 
             // Dropdown dependiente: Poblar municipios cuando cambia el estado (Natural)
             $("#estado-territorial-field").on('change', function () {
@@ -1043,9 +1038,9 @@
                     $("#view-telefono").text(data.telefono || 'No especificado');
                     $("#view-email").text(data.email || 'No especificado');
                     $("#view-direccion").text(data.direccion || 'No especificada');
-                    $("#view-estatus").html(data.estado == 1 ?
-                        '<span class="badge bg-success">Activo</span>' :
-                        '<span class="badge bg-danger">Inactivo</span>');
+                    $("#view-estatus").html(data.trashed ?
+                        '<span class="badge bg-danger">Inhabilitado</span>' :
+                        '<span class="badge bg-success">Activo</span>');
 
                     // Mostrar/ocultar campos de contacto según tipo
                     if (data.tipo_proveedor === 'juridico') {
@@ -1070,7 +1065,7 @@
                     $("#modalTitle").text("Editar Proveedor");
                     $("#id-field").val(data.id);
                     $("#tipo-proveedor-field").val(data.tipo_proveedor || 'juridico');
-                    $("#estado-field").val(data.estado ? '1' : '0');
+                    $("#estado-display").val(data.trashed ? 'Inhabilitado' : 'Activo');
 
                     toggleCampos();
 
@@ -1377,6 +1372,7 @@
                 $("#proveedorForm")[0].reset();
                 $("#id-field").val("");
                 $("#tipo-proveedor-field").val("juridico");
+                $("#estado-display").val("Activo");
                 toggleCampos();
                 $("#add-btn").show().prop('disabled', false);
                 $("#edit-btn").hide();
