@@ -95,7 +95,7 @@
                                         </label>
                                         <select class="form-select navy-filter-select" id="filter-estado">
                                             <option value="">Todos los estados</option>
-                                            <option value="1">Activo</option>
+                                            <option value="1" selected>Activo</option>
                                             <option value="0">Inactivo</option>
                                         </select>
                                     </div>
@@ -399,7 +399,11 @@
             function updateFilterBadge() {
                 let count = 0;
                 $('.navy-filter-select').each(function () {
-                    if ($(this).val() && $(this).val() !== '') {
+                    var v = $(this).val();
+                    // filter-estado='1' (Activo) es el default → no cuenta como filtro activo
+                    if (this.id === 'filter-estado') {
+                        if (v && v !== '1') count++;
+                    } else if (v && v !== '') {
                         count++;
                     }
                 });
@@ -536,6 +540,7 @@
 
             $('#btn-clear-filters').on('click', function () {
                 $('.navy-filter-select').val('');
+                $('#filter-estado').val('1'); // default: solo activos (los inhabilitados van al historial)
                 $('#custom-search-input').val('');
                 table.search('').draw();
                 table.ajax.reload(null, true);
