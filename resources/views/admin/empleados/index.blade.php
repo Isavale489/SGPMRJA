@@ -595,6 +595,20 @@
                             </div>
 
                             <input type="hidden" id="field-codigo_empleado" name="codigo_empleado" />
+
+                            {{-- Estado Laboral: solo lectura. Lo gobierna Inhabilitar/Restaurar, no es editable aquí. --}}
+                            <div class="row mb-0">
+                                <div class="col-md-6">
+                                    <label class="form-label">Estado Laboral</label>
+                                    <input type="text" class="form-control bg-light" id="field-estado-display"
+                                        value="Activo" readonly tabindex="-1">
+                                    <small class="text-muted d-block mt-1">
+                                        <i class="ri-information-line"></i>
+                                        Se asigna automáticamente: un empleado nuevo o restaurado queda <strong>Activo</strong>.
+                                        Para darlo de baja usa <strong>Inhabilitar</strong> (pasa a Inactivo y al historial).
+                                    </small>
+                                </div>
+                            </div>
                         </div>
 
                     </div>
@@ -1092,6 +1106,7 @@
                 $("#field-codigo_empleado").val("");
                 $("#tipo-documento-field").val("V-").prop('disabled', false).removeClass('campo-protegido');
                 $("#field-documento_identidad").prop('disabled', false).removeClass('campo-protegido');
+                $("#field-estado-display").val("Activo");
                 // Resetear teléfono
                 $("#telefono-prefix-field").val("0424");
                 $("#telefono-number-field").val("");
@@ -1310,6 +1325,7 @@
                     $("#field-genero").val(data.persona.genero);
                     $("#field-codigo_empleado").val(data.codigo_empleado);
                     $("#field-fecha_ingreso").val(data.fecha_ingreso);
+                    $("#field-estado-display").val(data.trashed ? 'Inhabilitado' : 'Activo');
 
                     // Departamento → cargo en cascada
                     var $deptoSel = $('#field-departamento_id');
