@@ -1251,7 +1251,7 @@
                     },
                     success: function (response) {
                         $("#showModal").modal('hide');
-                        table.draw();
+                        table.ajax.reload();
                         Swal.fire({
                             icon: 'success',
                             title: '¡Éxito!',
@@ -1302,7 +1302,7 @@
                                 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
                             },
                             success: function (response) {
-                                table.draw();
+                                table.ajax.reload();
                                 Swal.fire({
                                     icon: 'success',
                                     title: '¡Inhabilitado!',
@@ -1350,7 +1350,7 @@
                                 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
                             },
                             success: function (response) {
-                                table.draw();
+                                table.ajax.reload();
                                 Swal.fire({
                                     icon: 'success',
                                     title: '¡Restaurado!',
