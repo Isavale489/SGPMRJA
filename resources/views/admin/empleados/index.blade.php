@@ -602,11 +602,13 @@
                                     <label class="form-label">Estado Laboral</label>
                                     <input type="text" class="form-control bg-light" id="field-estado-display"
                                         value="Activo" readonly tabindex="-1">
-                                    <small class="text-muted d-block mt-1">
-                                        <i class="ri-information-line"></i>
-                                        Se asigna automáticamente: un empleado nuevo o restaurado queda <strong>Activo</strong>.
-                                        Para darlo de baja usa <strong>Inhabilitar</strong> (pasa a Inactivo y al historial).
-                                    </small>
+                                    <div class="d-flex align-items-start gap-2 mt-2 p-2 rounded-3 bg-info-subtle border border-info-subtle">
+                                        <i class="ri-information-line text-info fs-5 lh-1 mt-1"></i>
+                                        <small class="text-info-emphasis mb-0 lh-sm">
+                                            Se asigna automáticamente: un empleado nuevo o restaurado queda <strong>Activo</strong>.
+                                            Para darlo de baja usa <strong>Inhabilitar</strong> (pasa a Inactivo y al historial).
+                                        </small>
+                                    </div>
                                 </div>
                             </div>
                         </div>
