@@ -218,7 +218,8 @@ class ClienteController extends Controller
 
     public function show($id)
     {
-        $cliente = Cliente::with(['persona.telefonos', 'persona.direcciones'])->findOrFail($id);
+        // withTrashed: también se ven detalles de clientes inhabilitados (desde el historial)
+        $cliente = Cliente::withTrashed()->with(['persona.telefonos', 'persona.direcciones'])->findOrFail($id);
         return response()->json([
             'id' => $cliente->id,
             'nombre' => $cliente->nombre ?? 'N/A',
@@ -231,6 +232,7 @@ class ClienteController extends Controller
             'estado_territorial' => $cliente->estado_territorial,
             'ciudad' => $cliente->ciudad,
             'estatus' => $cliente->estatus,
+            'trashed' => $cliente->trashed(),
             'created_at' => $cliente->created_at ? $cliente->created_at->format('d/m/Y H:i:s') : null,
             'updated_at' => $cliente->updated_at ? $cliente->updated_at->format('d/m/Y H:i:s') : null
         ]);
@@ -310,8 +312,9 @@ class ClienteController extends Controller
     public function exportarPDF(Request $request)
     {
         $query = Cliente::with('persona');
-        if ($request->filled('estado')) {
-            $query->where('estatus', (int) $request->estado);
+        // Estatus: 1 = activos (default), 0 = inhabilitados (trashed) — estándar de inhabilitación
+        if ($request->input('estado') === '0') {
+            $query->onlyTrashed();
         }
         if ($request->filled('tipo_cliente')) {
             $query->where('tipo_cliente', $request->tipo_cliente);

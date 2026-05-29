@@ -26,7 +26,6 @@ class UpdateClienteRequest extends FormRequest
             'direccion' => 'nullable|string|max:500',
             'estado_territorial' => 'nullable|string|max:50',
             'ciudad' => 'nullable|string|max:100',
-            'estatus' => 'required|in:0,1',
         ];
     }
 
@@ -48,8 +47,6 @@ class UpdateClienteRequest extends FormRequest
             'direccion.max' => 'La dirección no puede exceder los 500 caracteres.',
             'estado_territorial.max' => 'El estado territorial no puede exceder los 50 caracteres.',
             'ciudad.max' => 'La ciudad no puede exceder los 100 caracteres.',
-            'estatus.required' => 'Debe seleccionar el estatus del cliente.',
-            'estatus.in' => 'El estatus debe ser Activo o Inactivo.',
         ];
     }
 }

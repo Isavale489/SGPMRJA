@@ -604,11 +604,15 @@
 
                     <div class="modal-form-section mb-0">
                         <div class="modal-form-section-title"><i class="ri-shield-check-line"></i>Estatus</div>
-                        <div class="form-check form-switch form-switch-success">
-                            <input type="hidden" name="estatus" value="0" />
-                            <input class="form-check-input" type="checkbox" role="switch" id="estatus-field"
-                                name="estatus" value="1" checked />
-                            <label class="form-check-label" for="estatus-field" id="estatus-label">Activo</label>
+                        {{-- Estatus: solo lectura. Lo gobierna Inhabilitar/Restaurar, no es editable aquí. --}}
+                        <input type="text" class="form-control bg-light" id="estatus-display"
+                            value="Activo" readonly tabindex="-1">
+                        <div class="d-flex align-items-start gap-2 mt-2 p-2 rounded-3 bg-info-subtle border border-info-subtle">
+                            <i class="ri-information-line text-info fs-5 lh-1 mt-1"></i>
+                            <small class="text-info-emphasis mb-0 lh-sm">
+                                Se asigna automáticamente: un cliente nuevo o restaurado queda <strong>Activo</strong>.
+                                Para darlo de baja usa <strong>Inhabilitar</strong> (pasa a Inactivo y al historial).
+                            </small>
                         </div>
                     </div>
 
@@ -1181,6 +1185,7 @@
                 $("#documento-prefix-field").prop('disabled', false).removeClass('campo-protegido');
                 $("#documento-number-field").val("");
                 $("#documento-number-field").prop('disabled', false).removeClass('campo-protegido');
+                $("#estatus-display").val("Activo");
                 // Reset teléfono
                 $("#telefono-prefix-field").val("0424");
                 $("#telefono-number-field").val("");
@@ -1209,15 +1214,6 @@
             }
             $("#create-btn").click(function () { resetForm(); });
             $("#showModal").on('hidden.bs.modal', function () { resetForm(); });
-
-            // Listener para actualizar label del checkbox de estatus
-            $("#estatus-field").on('change', function () {
-                if ($(this).is(':checked')) {
-                    $("#estatus-label").text('Activo');
-                } else {
-                    $("#estatus-label").text('Inactivo');
-                }
-            });
 
             // Dropdown dependiente: Poblar municipios cuando cambia el estado
             $("#estado_territorial-field").on('change', function () {
@@ -1386,7 +1382,7 @@
                     $("#view-direccion").text(data.direccion || 'N/A');
                     $("#view-estado-territorial").text(data.estado_territorial || 'N/A');
                     $("#view-ciudad").text(data.ciudad || 'N/A');
-                    $("#view-estatus").html(data.estatus == 1 ? '<span class="badge bg-success">Activo</span>' : '<span class="badge bg-danger">Inactivo</span>');
+                    $("#view-estatus").html(data.trashed ? '<span class="badge bg-danger">Inhabilitado</span>' : '<span class="badge bg-success">Activo</span>');
                     $("#view-created").text(formatDate(data.created_at));
                 });
             });
@@ -1444,14 +1440,8 @@
 
                     // Ahora seleccionar el municipio guardado
                     $("#ciudad-field").val(data.ciudad || '');
-                    // Manejar checkbox de estatus
-                    if (data.estatus == 1) {
-                        $("#estatus-field").prop('checked', true);
-                        $("#estatus-label").text('Activo');
-                    } else {
-                        $("#estatus-field").prop('checked', false);
-                        $("#estatus-label").text('Inactivo');
-                    }
+                    // Estatus: display de solo lectura (siempre Activo al editar, los inhabilitados no se editan)
+                    $("#estatus-display").val(data.trashed ? 'Inhabilitado' : 'Activo');
                     $("#showModal").modal("show");
                 });
             });
