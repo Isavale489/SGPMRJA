@@ -574,6 +574,110 @@
         });
 
         // ══════════════════════════════════════════════════════
+        // MIS ÓRDENES (consulta por empleado + registrar avance)
+        // ══════════════════════════════════════════════════════
+        let misOrdenesEmpleadoId = '';
+
+        const estadoBadgeCls = {
+            'Pendiente':  'badge-soft-warning',
+            'En Proceso': 'badge-soft-info',
+            'Finalizado': 'badge-soft-success',
+            'Cancelado':  'badge-soft-danger'
+        };
+
+        function renderMisOrdenes(ordenes) {
+            const $cont = $('#mis-ordenes-container');
+            $cont.empty();
+
+            ordenes.forEach(function (o) {
+                const badge = estadoBadgeCls[o.estado] || 'badge-soft-secondary';
+                const activa = (o.estado === 'Pendiente' || o.estado === 'En Proceso');
+                const pedidoTxt = o.pedido_id ? ('Pedido #' + o.pedido_id) : 'Orden manual';
+                const avanceBtn = activa
+                    ? `<button type="button" class="btn btn-sm btn-success avance-btn" data-id="${o.id}">
+                           <i class="ri-add-circle-line me-1"></i>Registrar avance
+                       </button>`
+                    : '';
+                const card = `
+                    <div class="cotizacion-card">
+                        <div class="cotizacion-header">
+                            <span class="cotizacion-numero"><i class="ri-file-list-3-line"></i> Orden #${o.id}</span>
+                            <span class="badge badge-status ${badge} rounded-pill">${escHtml(o.estado)}</span>
+                        </div>
+                        <div class="cotizacion-info">
+                            <div class="cotizacion-info-item"><i class="ri-t-shirt-line"></i><span>${escHtml(o.producto)}</span></div>
+                            <div class="cotizacion-info-item"><i class="ri-shopping-bag-line"></i><span>${escHtml(pedidoTxt)}</span></div>
+                            <div class="cotizacion-info-item"><i class="ri-calendar-check-line"></i><span>Entrega: ${escHtml(o.fecha_fin_estimada || 'N/A')}</span></div>
+                        </div>
+                        <div class="mt-2">
+                            <div class="d-flex justify-content-between fs-12 text-muted mb-1">
+                                <span>${o.cantidad_producida} / ${o.cantidad_solicitada} u producidas</span>
+                                <span>${o.progreso}%</span>
+                            </div>
+                            <div class="progress" style="height: 12px;">
+                                <div class="progress-bar bg-success" role="progressbar" style="width: ${o.progreso}%"
+                                    aria-valuenow="${o.progreso}" aria-valuemin="0" aria-valuemax="100"></div>
+                            </div>
+                        </div>
+                        ${avanceBtn ? `<div class="d-flex justify-content-end mt-2">${avanceBtn}</div>` : ''}
+                    </div>`;
+                $cont.append(card);
+            });
+        }
+
+        function cargarMisOrdenes(empleadoId) {
+            const $cont   = $('#mis-ordenes-container');
+            const $empty  = $('#mis-ordenes-empty');
+            const $hold   = $('#mis-ordenes-placeholder');
+            const $load   = $('#mis-ordenes-loading');
+            const $resumen = $('#mis-ordenes-resumen');
+
+            $cont.empty().hide();
+            $empty.hide();
+            $hold.hide();
+            $resumen.hide();
+
+            if (!empleadoId) { $hold.show(); return; }
+            $load.show();
+
+            $.ajax({
+                url: "{{ route('ordenes.por-empleado', ':id') }}".replace(':id', empleadoId),
+                method: 'GET',
+                success: function (resp) {
+                    $load.hide();
+                    $('#mo-total').text(resp.resumen.total);
+                    $('#mo-pendientes').text(resp.resumen.pendientes);
+                    $('#mo-en-proceso').text(resp.resumen.en_proceso);
+                    $('#mo-finalizadas').text(resp.resumen.finalizadas);
+                    $resumen.css('display', 'flex');
+
+                    if (!resp.ordenes.length) { $empty.show(); return; }
+                    renderMisOrdenes(resp.ordenes);
+                    $cont.show();
+                },
+                error: function () {
+                    $load.hide();
+                    Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudieron cargar las órdenes del empleado.' });
+                }
+            });
+        }
+
+        $('#mis-ordenes-empleado').on('change', function () {
+            misOrdenesEmpleadoId = $(this).val();
+            cargarMisOrdenes(misOrdenesEmpleadoId);
+        });
+
+        // Reset al cerrar
+        $('#misOrdenesModal').on('hidden.bs.modal', function () {
+            misOrdenesEmpleadoId = '';
+            $('#mis-ordenes-empleado').val('');
+            $('#mis-ordenes-container').empty().hide();
+            $('#mis-ordenes-empty').hide();
+            $('#mis-ordenes-resumen').hide();
+            $('#mis-ordenes-placeholder').show();
+        });
+
+        // ══════════════════════════════════════════════════════
         // DataTable
         // ══════════════════════════════════════════════════════
         function debounce(func, wait) {
@@ -1061,6 +1165,8 @@
                 success: function () {
                     $('#avanceModal').modal('hide');
                     table.ajax.reload(null, false);
+                    // Si "Mis Órdenes" está abierto, refrescar su lista con el avance recién registrado
+                    if (misOrdenesEmpleadoId) { cargarMisOrdenes(misOrdenesEmpleadoId); }
                     Swal.fire({ icon: 'success', title: 'Avance registrado', toast: true, position: 'top-end', showConfirmButton: false, timer: 2500 });
                 },
                 error: function (xhr) {

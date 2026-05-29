@@ -35,13 +35,15 @@
                 <div class="card-header">
                     <div class="d-flex align-items-center">
                         <h5 class="card-title mb-0 flex-grow-1">Órdenes de Producción</h5>
-                        <div class="flex-shrink-0 d-flex align-items-center gap-3">
-                            <div>
-                                <button type="button" class="btn btn-success add-btn" data-bs-toggle="modal" id="create-btn"
-                                    data-bs-target="#seleccionarPedidoModal">
-                                    <i class="ri-add-line align-bottom me-1"></i> Nueva Orden
-                                </button>
-                            </div>
+                        <div class="flex-shrink-0 d-flex align-items-center gap-2">
+                            <button type="button" class="btn btn-outline-success" id="mis-ordenes-btn"
+                                data-bs-toggle="modal" data-bs-target="#misOrdenesModal">
+                                <i class="ri-user-follow-line align-bottom me-1"></i> Mis Órdenes
+                            </button>
+                            <button type="button" class="btn btn-success add-btn" data-bs-toggle="modal" id="create-btn"
+                                data-bs-target="#seleccionarPedidoModal">
+                                <i class="ri-add-line align-bottom me-1"></i> Nueva Orden
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -129,6 +131,7 @@
     </div>
 
     @include('admin.ordenes.modals.seleccionar_pedido')
+    @include('admin.ordenes.modals.mis_ordenes')
     @include('admin.ordenes.modals.batch')
     @include('admin.ordenes.modals.create')
     @include('admin.ordenes.modals.insumo_add')

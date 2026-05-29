@@ -184,6 +184,44 @@ class OrdenProduccionController extends Controller
         return response()->json($data);
     }
 
+    /**
+     * Órdenes asignadas a un empleado — alimenta el modal "Mis Órdenes".
+     * Solo consulta; las activas se muestran primero para registrar avance.
+     */
+    public function ordenesPorEmpleado($empleadoId)
+    {
+        $empleado = Empleado::with('persona')->findOrFail($empleadoId);
+
+        $ordenes = OrdenProduccion::with(['producto', 'pedido'])
+            ->where('empleado_id', $empleadoId)
+            ->orderByRaw("FIELD(estado,'En Proceso','Pendiente','Finalizado','Cancelado')")
+            ->orderBy('fecha_fin_estimada')
+            ->get()
+            ->map(fn($o) => [
+                'id'                  => $o->id,
+                'pedido_id'           => $o->pedido_id,
+                'producto'            => optional($o->producto)->nombre ?? ('Producto #' . $o->producto_id),
+                'cantidad_solicitada' => $o->cantidad_solicitada,
+                'cantidad_producida'  => $o->cantidad_producida,
+                'cantidad_defectuosa' => $o->cantidad_defectuosa,
+                'progreso'            => round($o->progreso * 100, 1),
+                'estado'              => $o->estado,
+                'fecha_inicio'        => optional($o->fecha_inicio)->format('d/m/Y'),
+                'fecha_fin_estimada'  => optional($o->fecha_fin_estimada)->format('d/m/Y'),
+            ]);
+
+        return response()->json([
+            'empleado' => optional($empleado->persona)->nombre_completo ?? ('Empleado #' . $empleado->id),
+            'resumen'  => [
+                'total'       => $ordenes->count(),
+                'pendientes'  => $ordenes->where('estado', 'Pendiente')->count(),
+                'en_proceso'  => $ordenes->where('estado', 'En Proceso')->count(),
+                'finalizadas' => $ordenes->where('estado', 'Finalizado')->count(),
+            ],
+            'ordenes'  => $ordenes->values(),
+        ]);
+    }
+
     public function store(Request $request)
     {
         $validated = $request->validate([
