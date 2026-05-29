@@ -21,7 +21,7 @@ class UpdateClienteRequest extends FormRequest
             'nombre' => 'required|string|min:2|max:100|regex:/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/',
             'apellido' => 'nullable|string|max:100|regex:/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]*$/',
             'tipo_cliente' => 'required|in:natural,juridico',
-            'email' => 'nullable|string|email:rfc,dns|max:255|unique:persona,email,' . $personaId,
+            'email' => 'nullable|string|email:rfc|max:255|unique:persona,email,' . $personaId,
             'telefono' => 'required|string|regex:/^[0-9]{4}-[0-9]{7}$/',
             'direccion' => 'nullable|string|max:500',
             'estado_territorial' => 'nullable|string|max:50',

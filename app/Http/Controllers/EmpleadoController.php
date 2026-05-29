@@ -119,7 +119,7 @@ class EmpleadoController extends Controller
             'apellido'            => 'required|string|min:2|max:100|regex:/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/',
             'documento_identidad' => 'required|string|min:6|max:15|regex:/^[0-9]+$/',
             'tipo_documento'      => 'required|in:V-,E-,J-,G-',
-            'email'               => 'nullable|email:rfc,dns|max:255',
+            'email'               => 'nullable|email:rfc|max:255',
             'telefono'            => 'nullable|string|regex:/^[0-9]{4}-[0-9]{7}$/',
             'direccion'           => 'nullable|string|max:500',
             'ciudad'              => 'nullable|string|max:100',
@@ -210,12 +210,13 @@ class EmpleadoController extends Controller
         $empleado = Empleado::findOrFail($id);
         $persona  = $empleado->persona;
 
+        // El documento de identidad y su tipo son inmutables en edición (igual que en
+        // Clientes): la cédula no se puede editar, por eso el campo va deshabilitado en
+        // el modal y no se envía. NO se valida ni se reescribe aquí.
         $request->validate([
             'nombre'              => 'required|string|min:2|max:100|regex:/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/',
             'apellido'            => 'required|string|min:2|max:100|regex:/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/',
-            'documento_identidad' => 'required|string|min:6|max:15|regex:/^[0-9]+$/|unique:persona,documento_identidad,' . $persona->id,
-            'tipo_documento'      => 'required|in:V-,E-,J-,G-',
-            'email'               => 'nullable|email:rfc,dns|max:255|unique:persona,email,' . $persona->id,
+            'email'               => 'nullable|email:rfc|max:255|unique:persona,email,' . $persona->id,
             'telefono'            => 'nullable|string|regex:/^[0-9]{4}-[0-9]{7}$/',
             'direccion'           => 'nullable|string|max:500',
             'ciudad'              => 'nullable|string|max:100',
@@ -239,11 +240,6 @@ class EmpleadoController extends Controller
             'apellido.required'             => 'El apellido es obligatorio',
             'apellido.min'                  => 'El apellido debe tener al menos 2 caracteres',
             'apellido.regex'                => 'El apellido solo puede contener letras y espacios',
-            'documento_identidad.required'  => 'El documento de identidad es obligatorio',
-            'documento_identidad.min'       => 'El documento debe tener al menos 6 dígitos',
-            'documento_identidad.regex'     => 'El documento solo puede contener números',
-            'documento_identidad.unique'    => 'Este documento ya está registrado',
-            'tipo_documento.required'       => 'Debe seleccionar el tipo de documento',
             'email.email'                   => 'El email debe ser una dirección válida',
             'email.unique'                  => 'Este email ya está registrado',
             'telefono.regex'                => 'El teléfono debe tener el formato 0424-1234567',

@@ -1286,7 +1286,8 @@
                     $("#field-genero").val(data.persona.genero);
                     $("#field-codigo_empleado").val(data.codigo_empleado);
                     $("#field-fecha_ingreso").val(data.fecha_ingreso);
-                    $("#field-estado").val(data.estado);
+                    // 'estado' viene como booleano (cast en el modelo); el select usa '1'/'0'
+                    $("#field-estado").val(data.estado ? '1' : '0');
 
                     // Departamento → cargo en cascada
                     var $deptoSel = $('#field-departamento_id');
