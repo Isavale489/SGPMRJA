@@ -93,7 +93,9 @@ Se alimenta de la **misma fuente** que la card del paso 1: la función `<pref>Mo
 
 Avatar (iniciales + color por hash), nombre completo (sin truncar, envuelve si es largo) y documento se reusan de la card; el badge de rol se omite a propósito (ya está en la card del paso 1). IDs: `#cot-banner-*` / `#ped-banner-*`.
 
-**Chip "Creada/Creado por" (gutter derecho).** Simétrico al de cliente, en `.wiz-stepper-side--right`. Muestra el usuario logueado (`Auth::user()->name` + `->avatar_url` como imagen) renderizado server-side. Visibilidad: **todos los pasos, solo al crear** (`!isEditMode()`) — siempre visible porque no depende de ninguna selección; en edición se oculta porque el operador logueado no es necesariamente el creador original. IDs `#cot-creador-banner` / `#ped-creador-banner`. Reusa `.wiz-client-banner` + `.wiz-client-banner-avatar--img`.
+**Chip "Creada/Creado por" (gutter derecho).** Simétrico al de cliente, en `.wiz-stepper-side--right`. Muestra el usuario logueado (`Auth::user()->name` + `->avatar_url` como imagen) renderizado server-side. Visibilidad: **todos los pasos, en crear y editar**. En **crear** muestra al usuario logueado (`window.<pref>CreadorDefault`, render server-side); en **editar** se hidrata con el creador real (`data.creador.{name,avatar_url}` que devuelve el `show()`), y `showStep` solo restablece al usuario logueado cuando `!isEditMode()` (para no arrastrar el creador de una edición previa al abrir en modo crear).
+
+Para que el creador sea fiable, `user_id` se setea con `Auth::id()` **solo al crear** y NO se sobrescribe en `actualizar()` (queda fijo como creador original). Los `show()` de Cotizacion/Pedido eager-cargan `user:id,name,avatar` y exponen un objeto `creador`. IDs `#cot-creador-banner` / `#ped-creador-banner`. Reusa `.wiz-client-banner` + `.wiz-client-banner-avatar--img`.
 
 Todas tienen dark mode completo en el mismo archivo. Las clases son **agnósticas del dominio** — reutilízalas tal cual. Para contenido específico del módulo usa clases propias con prefijo del módulo (p. ej. `.cot-kpi`, `.ped-product-card`).
 

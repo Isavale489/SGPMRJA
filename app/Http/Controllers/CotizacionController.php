@@ -221,7 +221,7 @@ class CotizacionController extends Controller
     public function show($id)
     {
         // Cargar cliente incluso si está eliminado (soft deleted)
-        $cotizacion = Cotizacion::with(['user:id,name', 'productos.producto.tipoProducto', 'productos.bordados.logo:id,name'])
+        $cotizacion = Cotizacion::with(['user:id,name,avatar', 'productos.producto.tipoProducto', 'productos.bordados.logo:id,name'])
             ->with([
                 'cliente' => function ($query) {
                     $query->withTrashed()->with('persona');
@@ -247,6 +247,11 @@ class CotizacionController extends Controller
 
         $response = $cotizacion->toArray();
         $response['cliente'] = $clienteData;
+        // Creador real (no se sobrescribe al editar) para el chip "Creada por"
+        $response['creador'] = $cotizacion->user ? [
+            'name' => $cotizacion->user->name,
+            'avatar_url' => $cotizacion->user->avatar_url,
+        ] : null;
 
         return response()->json($response);
     }

@@ -149,7 +149,7 @@ class PedidoController extends Controller
     {
         // Cargar pedido con cliente y sus relaciones normalizadas
         $pedido = Pedido::with([
-            'user:id,name',
+            'user:id,name,avatar',
             'productos.producto.tipoProducto',
             'productos.bordados.logo:id,name',
             'pagos.banco:id,nombre',
@@ -163,6 +163,11 @@ class PedidoController extends Controller
         $data['cliente_email_normalizado'] = $pedido->cliente_email_normalizado;
         $data['cliente_telefono_normalizado'] = $pedido->cliente_telefono_normalizado;
         $data['cliente_documento'] = $pedido->cliente_documento;
+        // Creador real (no se sobrescribe al editar) para el chip "Creado por"
+        $data['creador'] = $pedido->user ? [
+            'name' => $pedido->user->name,
+            'avatar_url' => $pedido->user->avatar_url,
+        ] : null;
 
         return response()->json($data);
     }

@@ -2377,6 +2377,11 @@
                     $('#estado-field').val(data.estado);
                     $('#prioridad-field').val(data.prioridad || 'Normal');
                     $('#notas-field').val(data.notas || '');
+                    // Creador real: mostrar quién creó la cotización (no el editor)
+                    if (data.creador) {
+                        $('#cot-creador-name').text(data.creador.name || '—');
+                        if (data.creador.avatar_url) $('#cot-creador-avatar').attr('src', data.creador.avatar_url);
+                    }
                     // Cargar productos existentes
                     $('#productos-container').empty();
                     if (data.productos && data.productos.length > 0) {
@@ -4938,6 +4943,9 @@
                 });
             }
 
+            // Datos del usuario logueado para el chip "Creada por" en modo crear
+            window.cotCreadorDefault = { name: @json(Auth::user()->name), avatar: @json(Auth::user()->avatar_url) };
+
             function showStep(n) {
                 n = Math.max(1, Math.min(TOTAL_STEPS, n));
                 currentStep = n;
@@ -4988,9 +4996,12 @@
                 var showBanner = hasClient && n > 1;
                 $('#cot-cliente-banner').attr('hidden', !showBanner).attr('aria-hidden', showBanner ? 'false' : 'true');
 
-                // Chip "Creada por": visible en todos los pasos al crear (en edición no sabemos el creador real)
-                var showCreador = !isEditMode();
-                $('#cot-creador-banner').attr('hidden', !showCreador).attr('aria-hidden', showCreador ? 'false' : 'true');
+                // Chip "Creada por": siempre visible. Crear → usuario logueado; editar → creador real (hidratado).
+                if (!isEditMode() && window.cotCreadorDefault) {
+                    $('#cot-creador-name').text(window.cotCreadorDefault.name);
+                    $('#cot-creador-avatar').attr('src', window.cotCreadorDefault.avatar);
+                }
+                $('#cot-creador-banner').removeAttr('hidden').attr('aria-hidden', 'false');
             }
 
             function nextStep() {

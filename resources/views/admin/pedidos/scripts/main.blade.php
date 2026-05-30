@@ -13,6 +13,9 @@ $(document).ready(function () {
 
         function isEditMode() { return !!$('#ped-wiz-id-field').val(); }
 
+        // Datos del usuario logueado para el chip "Creado por" en modo crear
+        window.pedCreadorDefault = { name: @json(Auth::user()->name), avatar: @json(Auth::user()->avatar_url) };
+
         function showStep(n) {
             n = Math.max(1, Math.min(TOTAL_STEPS, n));
             currentStep = n;
@@ -76,9 +79,12 @@ $(document).ready(function () {
             var showBanner = hasClient && n > 1;
             $('#ped-cliente-banner').attr('hidden', !showBanner).attr('aria-hidden', showBanner ? 'false' : 'true');
 
-            // Chip "Creado por": visible en todos los pasos al crear (en edición no sabemos el creador real)
-            var showCreador = !isEditMode();
-            $('#ped-creador-banner').attr('hidden', !showCreador).attr('aria-hidden', showCreador ? 'false' : 'true');
+            // Chip "Creado por": siempre visible. Crear → usuario logueado; editar → creador real (hidratado).
+            if (!isEditMode() && window.pedCreadorDefault) {
+                $('#ped-creador-name').text(window.pedCreadorDefault.name);
+                $('#ped-creador-avatar').attr('src', window.pedCreadorDefault.avatar);
+            }
+            $('#ped-creador-banner').removeAttr('hidden').attr('aria-hidden', 'false');
         }
 
         function validateStep(n) {
@@ -1667,6 +1673,11 @@ $(document).ready(function () {
                     pedPendingEdit = data;
                     // Marca edit ANTES de abrir → los resets de modo crear (show.bs.modal) se saltan
                     $('#ped-wiz-id-field').val(data.id);
+                    // Creador real: mostrar quién creó el pedido (no el editor)
+                    if (data.creador) {
+                        $('#ped-creador-name').text(data.creador.name || '—');
+                        if (data.creador.avatar_url) $('#ped-creador-avatar').attr('src', data.creador.avatar_url);
+                    }
                     $('#showModal').modal('show');
                 },
                 error: function (xhr) {

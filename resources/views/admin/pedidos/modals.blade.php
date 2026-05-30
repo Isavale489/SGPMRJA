@@ -60,9 +60,9 @@
                         aria-hidden="true" title="Creado por">
                         <span class="wiz-client-banner-label">Creado por:</span>
                         <img class="wiz-client-banner-avatar wiz-client-banner-avatar--img"
-                            src="{{ Auth::user()->avatar_url }}" alt="" />
+                            id="ped-creador-avatar" src="{{ Auth::user()->avatar_url }}" alt="" />
                         <div class="wiz-client-banner-main">
-                            <span class="wiz-client-banner-name">{{ Auth::user()->name }}</span>
+                            <span class="wiz-client-banner-name" id="ped-creador-name">{{ Auth::user()->name }}</span>
                         </div>
                     </div>
                 </div>

@@ -72,7 +72,7 @@ class CotizacionService
                 'estado' => $data['estado'],
                 'total' => $total,
                 'notas' => $data['notas'] ?? null,
-                'user_id' => Auth::id(),
+                // NO se sobrescribe user_id: queda fijo como el creador original.
             ]);
 
             $this->crearDetalles($cotizacion, $data['productos']);
