@@ -156,10 +156,10 @@ $(document).ready(function () {
                     if (!(p3.monto > 0)) {
                         Swal.fire({
                             icon: 'warning', title: 'Monto requerido',
-                            text: 'Ingresá un monto mayor a 0 para ' + label3 + ', o desactivá ese método.',
+                            text: 'Ingresá un monto mayor a 0 para ' + label3 + ', o quitá ese pago.',
                             timer: 2600, showConfirmButton: false
                         });
-                        $('#ped-monto-' + p3.metodo).trigger('focus');
+                        $('#ped-pay-list .ped-pay-monto').eq(i).trigger('focus');
                         return false;
                     }
                     if (p3.metodo === 'transferencia' || p3.metodo === 'pago_movil') {
@@ -1183,115 +1183,157 @@ $(document).ready(function () {
     (function () {
         'use strict';
 
-        var PED_METODOS = ['efectivo', 'transferencia', 'pago_movil'];
+        // Metadatos por método: label, ícono y si pide banco+referencia
+        var PED_METODOS = {
+            efectivo:      { label: 'Efectivo',      icon: 'ri-money-dollar-circle-line', banco: false },
+            transferencia: { label: 'Transferencia', icon: 'ri-bank-line',                banco: true  },
+            pago_movil:    { label: 'Pago móvil',     icon: 'ri-smartphone-line',          banco: true  }
+        };
 
         function pedFmtPago(n) { return parseFloat(n || 0).toFixed(2); }
-
-        function pedMetodoBanco(m) {
-            if (m === 'transferencia') return $('#ped-pago-transferencia-banco').val() || null;
-            if (m === 'pago_movil')   return $('#ped-pago-movil-banco').val() || null;
-            return null;
+        function pedMoney(n) {
+            return '$' + parseFloat(n || 0).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         }
-        function pedMetodoRef(m) {
-            if (m === 'transferencia') return ($('#ped-pago-transferencia-ref').val() || '').trim() || null;
-            if (m === 'pago_movil')   return ($('#ped-pago-movil-ref').val() || '').trim() || null;
-            return null;
-        }
+        function pedPagoTotal() { return (window.pedProdState && window.pedProdState.total) || 0; }
+        function pedHayEfectivo() { return $('#ped-pay-list .ped-pay-row[data-metodo="efectivo"]').length > 0; }
 
-        // Pagos activos (toggle encendido) → [{metodo, monto, banco_id, referencia}]
-        function pedPagosActivos() {
+        // Lee las filas del DOM → [{metodo, monto, banco_id, referencia, banco_nombre}]
+        function pedLeerPagos() {
             var pagos = [];
-            PED_METODOS.forEach(function (m) {
-                if (!$('#ped-metodo-toggle-' + m).is(':checked')) return;
-                pagos.push({
-                    metodo:     m,
-                    monto:      parseFloat($('#ped-monto-' + m).val()) || 0,
-                    banco_id:   pedMetodoBanco(m),
-                    referencia: pedMetodoRef(m)
-                });
+            $('#ped-pay-list .ped-pay-row').each(function () {
+                var $row = $(this);
+                var m = $row.attr('data-metodo');
+                var meta = PED_METODOS[m];
+                if (!meta) return;
+                var pago = {
+                    metodo:       m,
+                    monto:        parseFloat($row.find('.ped-pay-monto').val()) || 0,
+                    banco_id:     null,
+                    referencia:   null,
+                    banco_nombre: null
+                };
+                if (meta.banco) {
+                    var $banco = $row.find('.ped-pay-banco');
+                    pago.banco_id     = $banco.val() || null;
+                    pago.banco_nombre = ($banco.find('option:selected').text() || '').trim() || null;
+                    pago.referencia   = ($row.find('.ped-pay-ref').val() || '').trim() || null;
+                }
+                pagos.push(pago);
             });
             return pagos;
         }
 
         function pedAbonoTotal() {
-            return pedPagosActivos().reduce(function (a, p) { return a + (p.monto || 0); }, 0);
+            return pedLeerPagos().reduce(function (a, p) { return a + (p.monto || 0); }, 0);
         }
 
-        // Recalcular abono (suma) + restante en vivo
+        // Recalcular resumen, barra de progreso, estado, empty state y botón efectivo
         function pedRecalcularPago() {
-            var total = (window.pedProdState && window.pedProdState.total) || 0;
+            var total = pedPagoTotal();
             var abono = pedAbonoTotal();
+            var rest  = total - abono;
+
+            $('#ped-pay-total').text(pedMoney(total));
+            $('#ped-pay-abono').text(pedMoney(abono));
+            $('#ped-pay-restante').text(pedMoney(rest < 0 ? 0 : rest));
+
+            // Compat con validación/submit legacy
+            $('#ped-pago-total-display').val(pedFmtPago(total));
             $('#ped-pago-abono-field').val(pedFmtPago(abono));
-            $('#ped-pago-restante-display').val(pedFmtPago(total - abono));
+
+            var pct = total > 0 ? Math.min(100, (abono / total) * 100) : (abono > 0 ? 100 : 0);
+            $('#ped-pay-progress-bar').css('width', pct.toFixed(1) + '%');
+
+            var $sum = $('#ped-pay-summary').removeClass('is-empty is-partial is-complete is-over');
+            var $badge = $('#ped-pay-badge');
+            if (abono <= 0) {
+                $sum.addClass('is-empty');           $badge.text('Sin abono');
+            } else if (abono > total + 0.001) {
+                $sum.addClass('is-over');             $badge.text('Excede el total por ' + pedMoney(abono - total));
+            } else if (rest <= 0.001) {
+                $sum.addClass('is-complete');         $badge.text('Pagado completo');
+            } else {
+                $sum.addClass('is-partial');          $badge.text('Resta ' + pedMoney(rest));
+            }
+
+            $('#ped-pay-empty').toggle($('#ped-pay-list .ped-pay-row').length === 0);
+            $('#ped-pay-add-efectivo').prop('disabled', pedHayEfectivo());
+        }
+
+        // Crear una fila de pago (opcionalmente con datos para hidratar)
+        function pedAgregarFila(metodo, data) {
+            var meta = PED_METODOS[metodo];
+            if (!meta) return;
+            if (metodo === 'efectivo' && pedHayEfectivo()) return; // solo un efectivo
+
+            var tpl = document.getElementById('ped-pay-row-tpl');
+            var $row = $(tpl.content.firstElementChild.cloneNode(true));
+            $row.attr('data-metodo', metodo);
+            $row.find('.ped-pay-row-icon i').attr('class', meta.icon);
+            $row.find('.ped-pay-row-method').text(meta.label);
+            if (!meta.banco) $row.find('.ped-pay-row-fields').remove();
+
+            if (data) {
+                if (data.monto != null) $row.find('.ped-pay-monto').val(parseFloat(data.monto).toFixed(2));
+                if (meta.banco) {
+                    if (data.banco_id)   $row.find('.ped-pay-banco').val(String(data.banco_id));
+                    if (data.referencia) $row.find('.ped-pay-ref').val(data.referencia);
+                }
+            }
+
+            $('#ped-pay-list').append($row);
+            pedRecalcularPago();
+            if (!data) $row.find('.ped-pay-monto').trigger('focus');
+            return $row;
         }
 
         function pedResetPaso3() {
-            $('#ped-pago-total-display').val('0.00');
-            $('#ped-pago-abono-field').val('0.00');
-            $('#ped-pago-restante-display').val('0.00');
-            PED_METODOS.forEach(function (m) {
-                $('#ped-metodo-toggle-' + m).prop('checked', false);
-                $('#ped-monto-' + m).val('').prop('disabled', true);
-                $('.ped-pago-metodo[data-metodo="' + m + '"]').removeClass('is-active');
-            });
-            $('#ped-pago-extra-transferencia, #ped-pago-extra-pago_movil').attr('hidden', true);
-            $('#ped-pago-transferencia-banco, #ped-pago-movil-banco').val('');
-            $('#ped-pago-transferencia-ref, #ped-pago-movil-ref').val('');
+            $('#ped-pay-list').empty();
+            pedRecalcularPago();
         }
 
         // Sincronizar total desde paso 2 al navegar al paso 3
-        window.pedSincronizarTotalPago = function () {
-            var total = (window.pedProdState && window.pedProdState.total) || 0;
-            $('#ped-pago-total-display').val(pedFmtPago(total));
-            pedRecalcularPago();
-        };
+        window.pedSincronizarTotalPago = function () { pedRecalcularPago(); };
 
-        // Toggle de método: habilita/deshabilita su monto y el bloque banco/ref
-        $(document).on('change', '.ped-metodo-toggle', function () {
-            var m  = $(this).data('metodo');
-            var on = $(this).is(':checked');
-            $('#ped-monto-' + m).prop('disabled', !on);
-            $('.ped-pago-metodo[data-metodo="' + m + '"]').toggleClass('is-active', on);
-            if (m === 'transferencia') $('#ped-pago-extra-transferencia').attr('hidden', !on);
-            if (m === 'pago_movil')   $('#ped-pago-extra-pago_movil').attr('hidden', !on);
-            if (!on) { $('#ped-monto-' + m).val(''); }
+        // === Eventos ===
+        $(document).on('click', '.ped-pay-add-btn', function () {
+            pedAgregarFila($(this).data('metodo'));
+        });
+        $(document).on('click', '.ped-pay-row-del', function () {
+            $(this).closest('.ped-pay-row').remove();
             pedRecalcularPago();
         });
-
-        // Cambio de monto → recalcular abono/restante
-        $(document).on('input', '.ped-metodo-monto', pedRecalcularPago);
+        $(document).on('input', '#ped-pay-list .ped-pay-monto', pedRecalcularPago);
+        // "Saldar restante": rellena esta fila con lo que falta (sin contarse a sí misma)
+        $(document).on('click', '.ped-pay-fill', function () {
+            var $row = $(this).closest('.ped-pay-row');
+            var propio = parseFloat($row.find('.ped-pay-monto').val()) || 0;
+            var otros = pedAbonoTotal() - propio;
+            var rest = pedPagoTotal() - otros;
+            if (rest < 0) rest = 0;
+            $row.find('.ped-pay-monto').val(rest.toFixed(2));
+            pedRecalcularPago();
+        });
 
         // Reset al abrir el wizard en modo crear
-        var $wizModal = $(document).find('#pedidoForm').closest('.modal');
-        if (!$wizModal.length) $wizModal = $('#showModal');
+        var $wizModal = $('#showModal');
         $wizModal.on('show.bs.modal', function () {
-            if (!$('#ped-wiz-id-field').val()) {
-                pedResetPaso3();
-            }
+            if (!$('#ped-wiz-id-field').val()) pedResetPaso3();
         });
 
-        // Hidratar pagos existentes (edit / completar) — soporta múltiples
+        // Hidratar pagos existentes (edit) — soporta múltiples por método
         window.pedHidratarPagos = function (pagos) {
-            pedResetPaso3();
+            $('#ped-pay-list').empty();
             (pagos || []).forEach(function (p) {
-                var m = p.metodo;
-                if (PED_METODOS.indexOf(m) === -1) return;
-                $('#ped-metodo-toggle-' + m).prop('checked', true).trigger('change');
-                $('#ped-monto-' + m).val(parseFloat(p.monto || 0).toFixed(2));
-                if (m === 'transferencia') {
-                    $('#ped-pago-transferencia-banco').val(p.banco_id || '');
-                    $('#ped-pago-transferencia-ref').val(p.referencia || '');
-                } else if (m === 'pago_movil') {
-                    $('#ped-pago-movil-banco').val(p.banco_id || '');
-                    $('#ped-pago-movil-ref').val(p.referencia || '');
-                }
+                if (!PED_METODOS[p.metodo]) return;
+                pedAgregarFila(p.metodo, { monto: p.monto, banco_id: p.banco_id, referencia: p.referencia });
             });
             pedRecalcularPago();
         };
 
-        // Exponer estado para validación, resumen y submit
+        // Exponer estado para validación, resumen y submit (mismo shape que antes)
         window.pedPagoState = {
-            get pagos() { return pedPagosActivos(); },
+            get pagos() { return pedLeerPagos(); },
             get abono() { return pedAbonoTotal(); }
         };
 
@@ -1392,9 +1434,7 @@ $(document).ready(function () {
                     var label = METODO_LABELS[p.metodo] || p.metodo;
                     var extra = '';
                     if (p.metodo === 'transferencia' || p.metodo === 'pago_movil') {
-                        var $bancoSel = p.metodo === 'transferencia'
-                            ? $('#ped-pago-transferencia-banco') : $('#ped-pago-movil-banco');
-                        var bancoNombre = ($bancoSel.find('option:selected').text() || '').trim() || '—';
+                        var bancoNombre = p.banco_nombre || '—';
                         extra = '<small class="text-muted d-block">' + bancoNombre + ' · Ref: ' + (p.referencia || '—') + '</small>';
                     }
                     return '<div class="d-flex justify-content-between align-items-start py-1 border-top">' +

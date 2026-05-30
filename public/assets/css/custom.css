@@ -6410,69 +6410,208 @@ header#page-topbar,
 
 /* ════════════════════════════════════════════════════════════════════
    PEDIDO WIZARD — PASO 3: PAGO
-   Métodos de pago — bloques con toggle (se pueden combinar varios)
+   Lista aditiva de pagos: multi-transferencia / multi-pago móvil + 1 efectivo.
+   Resumen con barra de progreso + tarjetas de pago + estado vacío.
    ════════════════════════════════════════════════════════════════════ */
 
-.ped-pago-metodo {
-    border: 1px solid rgba(30,60,114,0.16);
-    border-radius: 10px;
-    padding: 10px 14px;
-    margin-bottom: 10px;
-    background: rgba(30,60,114,0.02);
-    transition: border-color .15s ease, background .15s ease, box-shadow .15s ease;
+/* Resumen / progreso de pago */
+.ped-pay-summary {
+    border: 1px solid rgba(30,60,114,0.14);
+    border-radius: 14px;
+    padding: 16px 18px;
+    background: linear-gradient(135deg, rgba(30,60,114,0.04) 0%, rgba(0,217,165,0.05) 100%);
+    margin-bottom: 18px;
 }
-.ped-pago-metodo.is-active {
-    border-color: rgba(0,217,165,0.5);
-    background: rgba(0,217,165,0.06);
-    box-shadow: 0 1px 8px rgba(0,217,165,0.12);
+.ped-pay-figs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 28px;
+    align-items: flex-end;
+    margin-bottom: 12px;
 }
-.ped-pago-metodo-head {
+.ped-pay-fig { display: flex; flex-direction: column; gap: 2px; }
+.ped-pay-fig-label {
+    font-size: 0.66rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #64748b;
+}
+.ped-pay-fig-value {
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: #1e3c72;
+    font-variant-numeric: tabular-nums;
+}
+.ped-pay-fig--abono .ped-pay-fig-value { color: #047857; }
+.ped-pay-fig--rest .ped-pay-fig-value  { color: #b45309; }
+
+.ped-pay-progress {
+    height: 8px;
+    border-radius: 999px;
+    background: rgba(30,60,114,0.10);
+    overflow: hidden;
+}
+.ped-pay-progress-bar {
+    height: 100%;
+    width: 0;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #1e3c72 0%, #10b981 100%);
+    transition: width 0.35s ease;
+}
+.ped-pay-summary.is-complete .ped-pay-progress-bar { background: linear-gradient(90deg, #059669 0%, #10b981 100%); }
+.ped-pay-summary.is-over .ped-pay-progress-bar     { background: linear-gradient(90deg, #b91c1c 0%, #ef4444 100%); }
+
+.ped-pay-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    margin-top: 10px;
+    font-size: 0.74rem;
+    font-weight: 700;
+    padding: 3px 12px;
+    border-radius: 999px;
+    background: rgba(30,60,114,0.08);
+    color: #475569;
+}
+.ped-pay-summary.is-partial  .ped-pay-badge { background: rgba(180,83,9,0.12); color: #b45309; }
+.ped-pay-summary.is-complete .ped-pay-badge { background: rgba(5,150,105,0.14); color: #047857; }
+.ped-pay-summary.is-over     .ped-pay-badge { background: rgba(185,28,28,0.12); color: #b91c1c; }
+
+/* Card "Métodos de pago": header con título + botones de agregar */
+.ped-pay-card-head {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 12px;
+    flex-wrap: wrap;
+    gap: 10px 14px;
 }
-.ped-pago-switch {
-    margin: 0;
-    min-height: auto;
-    padding-left: 2.4em;
-}
-.ped-pago-switch .form-check-input {
+.ped-pay-add-btns { display: flex; flex-wrap: wrap; gap: 8px; }
+.ped-pay-add-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border: 1px solid rgba(30,60,114,0.2);
+    background: rgba(30,60,114,0.04);
+    color: #1e3c72;
+    border-radius: 10px;
+    padding: 7px 14px;
+    font-size: 0.8rem;
+    font-weight: 700;
     cursor: pointer;
-    width: 2em;
-    height: 1em;
-    margin-left: -2.4em;
+    transition: all 0.15s ease;
 }
-.ped-pago-switch .form-check-input:checked {
-    background-color: #00d9a5;
-    border-color: #00d9a5;
+.ped-pay-add-btn i { font-size: 1.05rem; color: #10b981; }
+.ped-pay-add-btn:hover:not(:disabled) {
+    border-color: #10b981;
+    color: #047857;
+    background: rgba(16,185,129,0.08);
+    transform: translateY(-1px);
 }
-.ped-pago-switch .form-check-label {
-    font-size: 0.84rem;
+.ped-pay-add-btn:hover:not(:disabled) i { color: #047857; }
+.ped-pay-add-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+/* Lista de pagos — filas compactas de una línea + scroll interno acotado */
+.ped-pay-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 268px;
+    overflow-y: auto;
+    padding-right: 4px;
+}
+.ped-pay-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    border: 1px solid rgba(30,60,114,0.16);
+    border-radius: 10px;
+    padding: 8px 12px;
+    background: #fff;
+    animation: wizClientBannerIn 0.2s ease;
+}
+.ped-pay-row-icon {
+    width: 30px;
+    height: 30px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    font-size: 1rem;
+    background: rgba(16,185,129,0.12);
+    color: #047857;
+}
+.ped-pay-row[data-metodo="transferencia"] .ped-pay-row-icon { background: rgba(30,60,114,0.10); color: #1e3c72; }
+.ped-pay-row[data-metodo="pago_movil"] .ped-pay-row-icon { background: rgba(8,145,178,0.12); color: #0e7490; }
+.ped-pay-row-method {
+    font-size: 0.8rem;
     font-weight: 700;
     color: #1e3c72;
+    flex-shrink: 0;
+    min-width: 84px;
+}
+.ped-pay-row-fields { display: flex; gap: 8px; flex: 1 1 240px; min-width: 190px; }
+.ped-pay-row-fields .ped-pay-banco { flex: 1 1 45%; min-width: 0; }
+.ped-pay-row-fields .ped-pay-ref { flex: 1 1 55%; min-width: 0; }
+.ped-pay-amount { width: 140px; margin-left: auto; flex-shrink: 0; }
+.ped-pay-amount .ped-pay-monto { text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
+.ped-pay-fill {
+    flex-shrink: 0;
+    border: 1px solid rgba(30,60,114,0.2);
+    background: rgba(30,60,114,0.04);
+    color: #1e3c72;
+    font-size: 0.7rem;
+    font-weight: 600;
+    border-radius: 7px;
+    padding: 5px 9px;
     cursor: pointer;
+    white-space: nowrap;
 }
-.ped-pago-switch .form-check-label i { font-size: 0.92rem; }
-.ped-pago-monto-wrap { width: 150px; flex-shrink: 0; }
-.ped-pago-metodo-extra {
-    margin-top: 12px;
-    padding-top: 12px;
-    border-top: 1px dashed rgba(30,60,114,0.2);
+.ped-pay-fill:hover { background: rgba(16,185,129,0.1); color: #047857; border-color: #10b981; }
+.ped-pay-row-del {
+    flex-shrink: 0;
+    border: 0;
+    background: transparent;
+    color: #94a3b8;
+    font-size: 1.05rem;
+    width: 30px;
+    height: 30px;
+    border-radius: 7px;
+    cursor: pointer;
+    transition: all 0.15s ease;
 }
+.ped-pay-row-del:hover { background: rgba(220,38,38,0.1); color: #dc2626; }
 
-/* ── Dark mode — Paso 3 métodos ──────────────────────────────── */
-[data-bs-theme="dark"] .ped-pago-metodo {
+/* Estado vacío */
+.ped-pay-empty {
+    text-align: center;
+    padding: 26px 16px;
+    border: 1.5px dashed rgba(30,60,114,0.18);
+    border-radius: 12px;
+    color: #94a3b8;
+}
+.ped-pay-empty i { font-size: 1.8rem; display: block; margin-bottom: 8px; color: #cbd5e1; }
+.ped-pay-empty p { font-size: 0.82rem; max-width: 380px; margin: 0 auto; }
+
+/* ── Dark mode — Paso 3 pagos ──────────────────────────────── */
+[data-bs-theme="dark"] .ped-pay-summary {
     border-color: rgba(78,122,199,0.22);
-    background: rgba(78,122,199,0.05);
+    background: linear-gradient(135deg, rgba(30,60,114,0.22) 0%, rgba(0,217,165,0.06) 100%);
 }
-[data-bs-theme="dark"] .ped-pago-metodo.is-active {
-    border-color: rgba(110,231,183,0.42);
-    background: rgba(110,231,183,0.08);
-    box-shadow: 0 1px 8px rgba(110,231,183,0.12);
-}
-[data-bs-theme="dark"] .ped-pago-switch .form-check-label { color: #93c5fd; }
-[data-bs-theme="dark"] .ped-pago-metodo-extra { border-top-color: rgba(78,122,199,0.25); }
+[data-bs-theme="dark"] .ped-pay-fig-label { color: #94a3b8; }
+[data-bs-theme="dark"] .ped-pay-fig-value { color: #e2e8f0; }
+[data-bs-theme="dark"] .ped-pay-fig--abono .ped-pay-fig-value { color: #6ee7b7; }
+[data-bs-theme="dark"] .ped-pay-fig--rest .ped-pay-fig-value { color: #fbbf24; }
+[data-bs-theme="dark"] .ped-pay-progress { background: rgba(255,255,255,0.1); }
+[data-bs-theme="dark"] .ped-pay-badge { background: rgba(255,255,255,0.08); color: #cbd5e1; }
+[data-bs-theme="dark"] .ped-pay-add-btn { background: #1f2937; border-color: rgba(148,163,184,0.4); color: #cbd5e1; }
+[data-bs-theme="dark"] .ped-pay-add-btn:hover:not(:disabled) { border-color: #34d399; color: #6ee7b7; background: rgba(52,211,153,0.1); }
+[data-bs-theme="dark"] .ped-pay-row { background: #1f2937; border-color: rgba(78,122,199,0.22); }
+[data-bs-theme="dark"] .ped-pay-row-method { color: #e2e8f0; }
+[data-bs-theme="dark"] .ped-pay-fill { background: rgba(255,255,255,0.06); color: #cbd5e1; border-color: rgba(148,163,184,0.3); }
+[data-bs-theme="dark"] .ped-pay-empty { border-color: rgba(78,122,199,0.25); color: #94a3b8; }
 
 /* ════════════════════════════════════════════════════════════════════
    PEDIDO WIZARD — Banner "Datos heredados de cotización" (amber)

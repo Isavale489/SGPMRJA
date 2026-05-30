@@ -346,200 +346,88 @@
                         <div class="wiz-step-header">
                             <span class="wiz-step-tag">Paso 3 de 4</span>
                             <h4 class="wiz-step-title">Pago</h4>
-                            <p class="wiz-step-desc">Registra el abono, el restante y el método de pago del pedido.</p>
+                            <p class="wiz-step-desc">Registra uno o varios pagos para abonar al pedido. Podés combinar métodos y registrar pagos parciales; también podés continuar sin abono.</p>
                         </div>
-                        <div class="row g-3">
-
-                            {{-- Card: Total / Abono / Restante --}}
-                            <div class="col-12">
-                                <div class="card border-0 shadow-sm">
-                                    <div class="card-header border-0 bg-soft-primary">
-                                        <h6 class="mb-0 text-atlantico-dark">
-                                            <i class="ri-money-dollar-circle-line me-2"></i>Distribución del pago
-                                        </h6>
-                                    </div>
-                                    <div class="card-body">
-                                        <div class="row g-3">
-                                            <div class="col-md-4">
-                                                <label class="form-label small fw-semibold mb-1">
-                                                    Total del pedido ($)
-                                                </label>
-                                                <div class="pago-kpi-box">
-                                                    <div class="input-group input-group-sm">
-                                                        <span class="input-group-text">$</span>
-                                                        <input type="text" id="ped-pago-total-display"
-                                                            class="form-control fw-bold" readonly />
-                                                    </div>
-                                                </div>
-                                                <small class="text-muted d-block mt-1" style="font-size:0.68rem;">
-                                                    <i class="ri-refresh-line me-1"></i>Viene del paso 2
-                                                </small>
-                                            </div>
-                                            <div class="col-md-4">
-                                                <label for="ped-pago-abono-field"
-                                                    class="form-label small fw-semibold mb-1">Abono ($)</label>
-                                                <div class="pago-kpi-box">
-                                                    <div class="input-group input-group-sm">
-                                                        <span class="input-group-text">$</span>
-                                                        <input type="number" id="ped-pago-abono-field"
-                                                            name="abono" class="form-control fw-bold"
-                                                            step="0.01" min="0" value="0" readonly />
-                                                    </div>
-                                                </div>
-                                                <small class="text-muted d-block mt-1" style="font-size:0.68rem;">
-                                                    <i class="ri-add-circle-line me-1"></i>Suma de los métodos
-                                                </small>
-                                            </div>
-                                            <div class="col-md-4">
-                                                <label class="form-label small fw-semibold mb-1">
-                                                    Restante ($)
-                                                </label>
-                                                <div class="pago-kpi-box">
-                                                    <div class="input-group input-group-sm">
-                                                        <span class="input-group-text">$</span>
-                                                        <input type="text" id="ped-pago-restante-display"
-                                                            class="form-control" readonly />
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
+                        {{-- Resumen / progreso de pago --}}
+                        <div class="ped-pay-summary is-empty" id="ped-pay-summary">
+                            <div class="ped-pay-figs">
+                                <div class="ped-pay-fig">
+                                    <span class="ped-pay-fig-label">Total del pedido</span>
+                                    <span class="ped-pay-fig-value" id="ped-pay-total">$0,00</span>
+                                </div>
+                                <div class="ped-pay-fig ped-pay-fig--abono">
+                                    <span class="ped-pay-fig-label">Abonado</span>
+                                    <span class="ped-pay-fig-value" id="ped-pay-abono">$0,00</span>
+                                </div>
+                                <div class="ped-pay-fig ped-pay-fig--rest">
+                                    <span class="ped-pay-fig-label">Restante</span>
+                                    <span class="ped-pay-fig-value" id="ped-pay-restante">$0,00</span>
                                 </div>
                             </div>
+                            <div class="ped-pay-progress">
+                                <div class="ped-pay-progress-bar" id="ped-pay-progress-bar"></div>
+                            </div>
+                            <span class="ped-pay-badge" id="ped-pay-badge">Sin abono</span>
+                        </div>
 
-                            {{-- Card: Métodos de pago (multi-método — se pueden combinar) --}}
-                            <div class="col-12">
-                                <div class="card border-0 shadow-sm">
-                                    <div class="card-header border-0 bg-soft-primary">
-                                        <h6 class="mb-0 text-atlantico-dark">
-                                            <i class="ri-bank-card-line me-2"></i>Métodos de pago
-                                        </h6>
-                                    </div>
-                                    <div class="card-body">
-                                        <p class="text-muted small mb-3">
-                                            Activá uno o varios métodos y repartí el abono. Dejalos apagados si el pedido se paga después.
-                                        </p>
+                        {{-- Compat: campos leídos por validación/submit legacy --}}
+                        <input type="hidden" id="ped-pago-total-display" />
+                        <input type="hidden" id="ped-pago-abono-field" />
 
-                                        {{-- Efectivo --}}
-                                        <div class="ped-pago-metodo" data-metodo="efectivo">
-                                            <div class="ped-pago-metodo-head">
-                                                <div class="form-check form-switch ped-pago-switch">
-                                                    <input class="form-check-input ped-metodo-toggle" type="checkbox"
-                                                        data-metodo="efectivo" id="ped-metodo-toggle-efectivo">
-                                                    <label class="form-check-label" for="ped-metodo-toggle-efectivo">
-                                                        <i class="ri-money-dollar-circle-line me-1"></i>Efectivo
-                                                    </label>
-                                                </div>
-                                                <div class="ped-pago-monto-wrap">
-                                                    <div class="input-group input-group-sm">
-                                                        <span class="input-group-text">$</span>
-                                                        <input type="number" class="form-control ped-metodo-monto"
-                                                            data-metodo="efectivo" id="ped-monto-efectivo"
-                                                            step="0.01" min="0" placeholder="0.00" disabled>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {{-- Transferencia --}}
-                                        <div class="ped-pago-metodo" data-metodo="transferencia">
-                                            <div class="ped-pago-metodo-head">
-                                                <div class="form-check form-switch ped-pago-switch">
-                                                    <input class="form-check-input ped-metodo-toggle" type="checkbox"
-                                                        data-metodo="transferencia" id="ped-metodo-toggle-transferencia">
-                                                    <label class="form-check-label" for="ped-metodo-toggle-transferencia">
-                                                        <i class="ri-bank-card-line me-1"></i>Transferencia
-                                                    </label>
-                                                </div>
-                                                <div class="ped-pago-monto-wrap">
-                                                    <div class="input-group input-group-sm">
-                                                        <span class="input-group-text">$</span>
-                                                        <input type="number" class="form-control ped-metodo-monto"
-                                                            data-metodo="transferencia" id="ped-monto-transferencia"
-                                                            step="0.01" min="0" placeholder="0.00" disabled>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div class="ped-pago-metodo-extra" id="ped-pago-extra-transferencia" hidden>
-                                                <div class="row g-2">
-                                                    <div class="col-md-6">
-                                                        <label for="ped-pago-transferencia-banco"
-                                                            class="form-label small fw-semibold mb-1">
-                                                            Banco <span class="text-danger">*</span>
-                                                        </label>
-                                                        <select id="ped-pago-transferencia-banco"
-                                                            class="form-select form-select-sm">
-                                                            <option value="">Seleccione banco</option>
-                                                            @foreach($bancos as $banco)
-                                                                <option value="{{ $banco->id }}">{{ $banco->nombre }}</option>
-                                                            @endforeach
-                                                        </select>
-                                                    </div>
-                                                    <div class="col-md-6">
-                                                        <label for="ped-pago-transferencia-ref"
-                                                            class="form-label small fw-semibold mb-1">
-                                                            Referencia <span class="text-danger">*</span>
-                                                        </label>
-                                                        <input type="text" id="ped-pago-transferencia-ref"
-                                                            class="form-control form-control-sm"
-                                                            placeholder="Nro. referencia" />
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {{-- Pago Móvil --}}
-                                        <div class="ped-pago-metodo" data-metodo="pago_movil">
-                                            <div class="ped-pago-metodo-head">
-                                                <div class="form-check form-switch ped-pago-switch">
-                                                    <input class="form-check-input ped-metodo-toggle" type="checkbox"
-                                                        data-metodo="pago_movil" id="ped-metodo-toggle-pago_movil">
-                                                    <label class="form-check-label" for="ped-metodo-toggle-pago_movil">
-                                                        <i class="ri-smartphone-line me-1"></i>Pago Móvil
-                                                    </label>
-                                                </div>
-                                                <div class="ped-pago-monto-wrap">
-                                                    <div class="input-group input-group-sm">
-                                                        <span class="input-group-text">$</span>
-                                                        <input type="number" class="form-control ped-metodo-monto"
-                                                            data-metodo="pago_movil" id="ped-monto-pago_movil"
-                                                            step="0.01" min="0" placeholder="0.00" disabled>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div class="ped-pago-metodo-extra" id="ped-pago-extra-pago_movil" hidden>
-                                                <div class="row g-2">
-                                                    <div class="col-md-6">
-                                                        <label for="ped-pago-movil-banco"
-                                                            class="form-label small fw-semibold mb-1">
-                                                            Banco <span class="text-danger">*</span>
-                                                        </label>
-                                                        <select id="ped-pago-movil-banco"
-                                                            class="form-select form-select-sm">
-                                                            <option value="">Seleccione banco</option>
-                                                            @foreach($bancos as $banco)
-                                                                <option value="{{ $banco->id }}">{{ $banco->nombre }}</option>
-                                                            @endforeach
-                                                        </select>
-                                                    </div>
-                                                    <div class="col-md-6">
-                                                        <label for="ped-pago-movil-ref"
-                                                            class="form-label small fw-semibold mb-1">
-                                                            Referencia <span class="text-danger">*</span>
-                                                        </label>
-                                                        <input type="text" id="ped-pago-movil-ref"
-                                                            class="form-control form-control-sm"
-                                                            placeholder="Nro. referencia" />
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                    </div>
+                        {{-- Card: Métodos de pago (agregar + lista) --}}
+                        <div class="card border-0 shadow-sm">
+                            <div class="card-header border-0 bg-soft-primary ped-pay-card-head">
+                                <h6 class="mb-0 text-atlantico-dark">
+                                    <i class="ri-bank-card-line me-2"></i>Métodos de pago
+                                </h6>
+                                <div class="ped-pay-add-btns">
+                                    <button type="button" class="ped-pay-add-btn" data-metodo="efectivo" id="ped-pay-add-efectivo">
+                                        <i class="ri-add-line"></i><span>Efectivo</span>
+                                    </button>
+                                    <button type="button" class="ped-pay-add-btn" data-metodo="transferencia">
+                                        <i class="ri-add-line"></i><span>Transferencia</span>
+                                    </button>
+                                    <button type="button" class="ped-pay-add-btn" data-metodo="pago_movil">
+                                        <i class="ri-add-line"></i><span>Pago móvil</span>
+                                    </button>
                                 </div>
                             </div>
+                            <div class="card-body">
+                                {{-- Lista de pagos --}}
+                                <div class="ped-pay-list" id="ped-pay-list"></div>
 
+                                {{-- Estado vacío --}}
+                                <div class="ped-pay-empty" id="ped-pay-empty">
+                                    <i class="ri-wallet-3-line"></i>
+                                    <p>Aún no registras pagos. Usá los botones de arriba para agregar uno, o continuá sin abono.</p>
+                                </div>
+                            </div>
                         </div>
+
+                        {{-- Template de fila de pago compacta (una línea, clonada por JS) --}}
+                        <template id="ped-pay-row-tpl">
+                            <div class="ped-pay-row">
+                                <span class="ped-pay-row-icon"><i></i></span>
+                                <span class="ped-pay-row-method"></span>
+                                <div class="ped-pay-row-fields">
+                                    <select class="form-select form-select-sm ped-pay-banco" title="Banco">
+                                        <option value="">Banco…</option>
+                                        @foreach($bancos as $banco)
+                                            <option value="{{ $banco->id }}">{{ $banco->nombre }}</option>
+                                        @endforeach
+                                    </select>
+                                    <input type="text" class="form-control form-control-sm ped-pay-ref" placeholder="Nro. referencia" title="Referencia" />
+                                </div>
+                                <div class="ped-pay-amount input-group input-group-sm">
+                                    <span class="input-group-text">$</span>
+                                    <input type="number" class="form-control ped-pay-monto" min="0" step="0.01" placeholder="0,00" />
+                                </div>
+                                <button type="button" class="ped-pay-fill" title="Saldar el restante en este pago">Resto</button>
+                                <button type="button" class="ped-pay-row-del" title="Quitar pago">
+                                    <i class="ri-delete-bin-line"></i>
+                                </button>
+                            </div>
+                        </template>
                     </section>
 
                     {{-- ════════════════════════ PASO 4 — RESUMEN ════════════════════════ --}}
