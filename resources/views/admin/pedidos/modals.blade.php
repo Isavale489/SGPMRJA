@@ -54,7 +54,7 @@
                         <span class="wiz-step-label">Resumen</span>
                     </button>
                 </div>
-                {{-- Chip "Creado por" — usuario logueado, gutter derecho (pasos 2+, solo al crear) --}}
+                {{-- Chip "Creado por" — usuario logueado, gutter derecho (todos los pasos, solo al crear) --}}
                 <div class="wiz-stepper-side wiz-stepper-side--right">
                     <div class="wiz-client-banner wiz-client-banner--creator" id="ped-creador-banner" hidden
                         aria-hidden="true" title="Creado por">
