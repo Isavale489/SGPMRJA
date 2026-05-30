@@ -3424,6 +3424,12 @@
 
                 $('#cot-cliente-roles').html(buildRolesBadges(persona.roles));
 
+                // Banner persistente (pasos 2+): misma fuente de datos que la card
+                $('#cot-banner-avatar').text(iniciales).css({ background: color.bg, color: color.fg });
+                $('#cot-banner-name').text(nombre || '—');
+                $('#cot-banner-doc').text(persona.documento || '—');
+                if (typeof window.cotActualizarBannerCliente === 'function') window.cotActualizarBannerCliente();
+
                 var count = parseInt(persona.cotizaciones_count, 10);
                 if (clienteId && !isNaN(count) && count > 0) {
                     $('#cot-cliente-stat-count').text(count);
@@ -3453,6 +3459,17 @@
                 $('#cliente-email-field').val('');
                 $('#cliente-razon-social-display').val('');
                 if (typeof clienteSeleccionado !== 'undefined') clienteSeleccionado = false;
+                // Banner persistente: ocultar al limpiar el cliente
+                $('#cot-cliente-banner').attr('hidden', true).attr('aria-hidden', 'true');
+            };
+
+            // Muestra/oculta el banner según paso y cliente seleccionado.
+            // Visible solo en pasos 2+ (en el paso 1 ya está la card grande).
+            window.cotActualizarBannerCliente = function () {
+                var hasClient = !!$('#cliente-id-field').val();
+                var step = (typeof currentStep !== 'undefined') ? currentStep : 1;
+                var show = hasClient && step > 1;
+                $('#cot-cliente-banner').attr('hidden', !show).attr('aria-hidden', show ? 'false' : 'true');
             };
 
             window.cotShowLoading = function (show) {
@@ -4965,6 +4982,15 @@
                 }
 
                 if (n === 2) refreshKPIs();
+
+                // Banner cliente persistente: visible en pasos 2+ si hay cliente
+                var hasClient = !!$('#cliente-id-field').val();
+                var showBanner = hasClient && n > 1;
+                $('#cot-cliente-banner').attr('hidden', !showBanner).attr('aria-hidden', showBanner ? 'false' : 'true');
+
+                // Chip "Creada por": visible en todos los pasos al crear (en edición no sabemos el creador real)
+                var showCreador = !isEditMode();
+                $('#cot-creador-banner').attr('hidden', !showCreador).attr('aria-hidden', showCreador ? 'false' : 'true');
             }
 
             function nextStep() {

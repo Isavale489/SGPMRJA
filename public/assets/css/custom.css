@@ -1312,13 +1312,114 @@ header#page-topbar,
     background: linear-gradient(180deg, #f6f9fd 0%, #ffffff 100%);
     padding: 18px 24px 16px;
     border-bottom: 1px solid rgba(30, 60, 114, 0.08);
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+/* Truco de 3 columnas: dos laterales de igual ancho mantienen el stepper
+   perfectamente centrado mientras el chip del cliente ocupa el gutter derecho. */
+.wiz-stepper-side {
+    flex: 1 1 0;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+}
+.wiz-stepper-side--right { justify-content: flex-end; }
+
+/* ── Chip cliente persistente (visible en pasos 2+) ─────────────────
+   Vive en el espacio libre a la derecha del stepper. Mantiene visible
+   "para quién" es la cotización/pedido en todos los pasos.
+   Compartido por ambos wizards (#cot-cliente-banner / #ped-cliente-banner). */
+.wiz-client-banner {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    max-width: 100%;
+    min-width: 0;
+    padding: 5px 12px;
+    background: rgba(255, 255, 255, 0.65);
+    border: 1px solid rgba(30, 60, 114, 0.12);
+    border-radius: 999px;
+    box-shadow: 0 2px 8px -4px rgba(30, 60, 114, 0.25);
+    animation: wizClientBannerIn 0.25s ease;
+}
+.wiz-client-banner[hidden] { display: none; }
+
+.wiz-client-banner-label {
+    flex-shrink: 0;
+    font-size: 0.66rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #64748b;
+}
+
+.wiz-client-banner-avatar {
+    flex-shrink: 0;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.72rem;
+    background: #1e3c72;
+    color: #ffffff;
+    box-shadow: 0 2px 6px -2px rgba(30, 60, 114, 0.45);
+}
+.wiz-client-banner-avatar--img {
+    object-fit: cover;
+    background: #e2e8f0;
+}
+
+.wiz-client-banner-main {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.15;
+    min-width: 0;
+}
+.wiz-client-banner-name {
+    font-weight: 700;
+    font-size: 0.82rem;
+    color: #1e3c72;
+    line-height: 1.2;
+    word-break: break-word;
+}
+.wiz-client-banner-sub {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 3px 8px;
+    margin-top: 2px;
+}
+.wiz-client-banner-doc {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.68rem;
+    font-weight: 600;
+    color: #475569;
+}
+
+@keyframes wizClientBannerIn {
+    from { opacity: 0; transform: translateY(-4px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Pantallas chicas: los chips bajan apilados y centrados bajo el stepper */
+@media (max-width: 991.98px) {
+    .wiz-stepper-wrapper { flex-wrap: wrap; row-gap: 10px; }
+    .wiz-stepper { flex: 1 1 100%; max-width: none; margin: 0 auto; order: 1; }
+    .wiz-stepper-side { flex: 1 1 100%; justify-content: center; }
+    .wiz-stepper-side--left { order: 2; }
+    .wiz-stepper-side--right { order: 3; }
 }
 
 .wiz-stepper {
     display: flex;
     align-items: flex-start;
+    flex: 0 1 540px;
     max-width: 540px;
-    margin: 0 auto;
     gap: 4px;
 }
 
@@ -1705,6 +1806,15 @@ header#page-topbar,
 [data-bs-theme="dark"] .wiz-step-marker.is-active .wiz-step-label { color: #cbd5e1; }
 [data-bs-theme="dark"] .wiz-step-marker.is-complete .wiz-step-label { color: #34d399; }
 [data-bs-theme="dark"] .wiz-step-line { background: #334155; }
+
+[data-bs-theme="dark"] .wiz-client-banner {
+    background: rgba(30, 41, 59, 0.7);
+    border-color: rgba(255, 255, 255, 0.12);
+    box-shadow: 0 2px 8px -4px rgba(0, 0, 0, 0.5);
+}
+[data-bs-theme="dark"] .wiz-client-banner-label { color: #94a3b8; }
+[data-bs-theme="dark"] .wiz-client-banner-name { color: #e2e8f0; }
+[data-bs-theme="dark"] .wiz-client-banner-doc { color: #cbd5e1; }
 
 [data-bs-theme="dark"] .wiz-wizard-body { background: #0f1521; }
 [data-bs-theme="dark"] .wiz-step-title { color: #e2e8f0; }

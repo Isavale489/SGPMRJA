@@ -15,6 +15,20 @@
 
             {{-- Stepper visual — 4 pasos --}}
             <div class="wiz-stepper-wrapper">
+                {{-- Chip cliente persistente — ocupa el gutter izquierdo del stepper (pasos 2+) --}}
+                <div class="wiz-stepper-side wiz-stepper-side--left">
+                    <div class="wiz-client-banner" id="ped-cliente-banner" hidden aria-hidden="true"
+                        title="Cliente del pedido">
+                        <span class="wiz-client-banner-label">Para:</span>
+                        <div class="wiz-client-banner-avatar" id="ped-banner-avatar">—</div>
+                        <div class="wiz-client-banner-main">
+                            <span class="wiz-client-banner-name" id="ped-banner-name">—</span>
+                            <div class="wiz-client-banner-sub">
+                                <span class="wiz-client-banner-doc" id="ped-banner-doc">—</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 <div class="wiz-stepper" role="tablist" aria-label="Pasos del pedido">
                     <button type="button" class="wiz-step-marker is-active" data-step="1"
                         role="tab" aria-selected="true" aria-controls="ped-wiz-step-1">
@@ -39,6 +53,18 @@
                         <span class="wiz-step-dot">4</span>
                         <span class="wiz-step-label">Resumen</span>
                     </button>
+                </div>
+                {{-- Chip "Creado por" — usuario logueado, gutter derecho (pasos 2+, solo al crear) --}}
+                <div class="wiz-stepper-side wiz-stepper-side--right">
+                    <div class="wiz-client-banner wiz-client-banner--creator" id="ped-creador-banner" hidden
+                        aria-hidden="true" title="Creado por">
+                        <span class="wiz-client-banner-label">Creado por:</span>
+                        <img class="wiz-client-banner-avatar wiz-client-banner-avatar--img"
+                            src="{{ Auth::user()->avatar_url }}" alt="" />
+                        <div class="wiz-client-banner-main">
+                            <span class="wiz-client-banner-name">{{ Auth::user()->name }}</span>
+                        </div>
+                    </div>
                 </div>
             </div>
 

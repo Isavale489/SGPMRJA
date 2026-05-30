@@ -78,6 +78,22 @@ Convención de IDs por paso: `#<prefijo>-wiz-step-N` para la `section` y `data-s
 | `.wiz-step-header` / `.wiz-step-tag` / `.wiz-step-title` / `.wiz-step-desc` | Encabezado de cada paso |
 | `.wiz-wizard-body` / `.wiz-wizard-footer` / `.wiz-wizard-footer-actions` | Layout body + footer fijo |
 | `.wiz-wizard-btn-prev` / `-next` / `-submit` | Botones de navegación del footer |
+| `.wiz-stepper-side` (`--left` / `--right`) | Dos columnas laterales de igual ancho que centran el stepper; la izquierda aloja el chip de cliente |
+| `.wiz-client-banner` (+ `-label` / `-avatar` / `-main` / `-name` / `-sub` / `-doc`) | Chip-píldora ("Para: <cliente>") que mantiene visible **a quién** es la cotización/pedido en todos los pasos |
+
+### Chip de cliente persistente (`.wiz-client-banner`)
+
+Vive **dentro de `.wiz-stepper-wrapper`**, en el gutter libre a la izquierda del stepper. El wrapper usa un layout de 3 columnas (`.wiz-stepper-side--left` con el chip + `.wiz-stepper` + `.wiz-stepper-side--right` vacío); las dos columnas laterales son `flex: 1 1 0` → el stepper queda perfectamente centrado aunque el chip aparezca o no. En `≤991px` el chip baja a una fila centrada bajo el stepper.
+
+Se alimenta de la **misma fuente** que la card del paso 1: la función `<pref>MostrarTarjetaCliente(persona)` rellena tanto la card grande como los `#<pref>-banner-*`. Reglas de visibilidad (en `showStep` + helper `<pref>ActualizarBannerCliente`):
+
+- **Oculto en el paso 1** (ahí ya está la card grande de selección) y cuando no hay cliente.
+- **Visible en pasos 2+** si hay cliente seleccionado.
+- Se oculta al limpiar el cliente (`<pref>ResetearCliente`).
+
+Avatar (iniciales + color por hash), nombre completo (sin truncar, envuelve si es largo) y documento se reusan de la card; el badge de rol se omite a propósito (ya está en la card del paso 1). IDs: `#cot-banner-*` / `#ped-banner-*`.
+
+**Chip "Creada/Creado por" (gutter derecho).** Simétrico al de cliente, en `.wiz-stepper-side--right`. Muestra el usuario logueado (`Auth::user()->name` + `->avatar_url` como imagen) renderizado server-side. Visibilidad: **todos los pasos, solo al crear** (`!isEditMode()`) — siempre visible porque no depende de ninguna selección; en edición se oculta porque el operador logueado no es necesariamente el creador original. IDs `#cot-creador-banner` / `#ped-creador-banner`. Reusa `.wiz-client-banner` + `.wiz-client-banner-avatar--img`.
 
 Todas tienen dark mode completo en el mismo archivo. Las clases son **agnósticas del dominio** — reutilízalas tal cual. Para contenido específico del módulo usa clases propias con prefijo del módulo (p. ej. `.cot-kpi`, `.ped-product-card`).
 

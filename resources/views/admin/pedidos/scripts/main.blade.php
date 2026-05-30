@@ -70,6 +70,15 @@ $(document).ready(function () {
             if (n === 4 && typeof window.pedRenderResumen === 'function') {
                 window.pedRenderResumen();
             }
+
+            // Banner cliente persistente: visible en pasos 2+ si hay cliente
+            var hasClient = !!$('#ped-wiz-cliente-id-field').val();
+            var showBanner = hasClient && n > 1;
+            $('#ped-cliente-banner').attr('hidden', !showBanner).attr('aria-hidden', showBanner ? 'false' : 'true');
+
+            // Chip "Creado por": visible en todos los pasos al crear (en edición no sabemos el creador real)
+            var showCreador = !isEditMode();
+            $('#ped-creador-banner').attr('hidden', !showCreador).attr('aria-hidden', showCreador ? 'false' : 'true');
         }
 
         function validateStep(n) {
@@ -359,6 +368,12 @@ $(document).ready(function () {
             $('#ped-cliente-email-display').text(email || '—');
 
             $('#ped-cliente-roles').html(buildRolesBadges(persona.roles));
+
+            // Banner persistente (pasos 2+): misma fuente de datos que la card
+            $('#ped-banner-avatar').text(iniciales).css({ background: color.bg, color: color.fg });
+            $('#ped-banner-name').text(nombre || '—');
+            $('#ped-banner-doc').text(persona.documento || '—');
+            if (typeof window.pedActualizarBannerCliente === 'function') window.pedActualizarBannerCliente();
         };
 
         window.pedResetearCliente = function () {
@@ -367,6 +382,17 @@ $(document).ready(function () {
             $('#ped-cliente-empty').show();
             $('#ped-wiz-cliente-id-field').val('');
             pedClienteSeleccionado = false;
+            // Banner persistente: ocultar al limpiar el cliente
+            $('#ped-cliente-banner').attr('hidden', true).attr('aria-hidden', 'true');
+        };
+
+        // Muestra/oculta el banner según paso y cliente seleccionado.
+        // Visible solo en pasos 2+ (en el paso 1 ya está la card grande).
+        window.pedActualizarBannerCliente = function () {
+            var hasClient = !!$('#ped-wiz-cliente-id-field').val();
+            var step = (typeof currentStep !== 'undefined') ? currentStep : 1;
+            var show = hasClient && step > 1;
+            $('#ped-cliente-banner').attr('hidden', !show).attr('aria-hidden', show ? 'false' : 'true');
         };
 
         window.pedShowLoading = function (show) {
