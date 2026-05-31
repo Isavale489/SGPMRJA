@@ -14,7 +14,7 @@
                         <div class="input-group">
                             <select class="form-select" id="insumo_id" name="insumo_id" required>
                                 <option value="">Seleccione un insumo</option>
-                                @foreach($insumos as $insumo)
+                                @foreach($insumosInventariables as $insumo)
                                     <option value="{{ $insumo->id }}" data-stock="{{ $insumo->stock_actual }}"
                                         data-unidad="{{ $insumo->unidad_medida }}">
                                         {{ $insumo->nombre }} ({{ $insumo->tipo }}) - Stock: {{ $insumo->stock_actual }}

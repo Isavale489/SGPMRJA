@@ -13,8 +13,15 @@ class MovimientoInsumoController extends Controller
 {
     public function index()
     {
+        // Todos los activos: alimenta el filtro del listado (un insumo legacy
+        // no inventariable podría tener movimientos históricos que filtrar).
         $insumos = Insumo::where('estado', true)->get();
-        return view('admin.inventario.movimientos.index', compact('insumos'));
+        // Solo inventariables: alimenta el select de "registrar movimiento";
+        // los no inventariables no gestionan stock, así que no se mueven.
+        $insumosInventariables = Insumo::where('estado', true)
+            ->where('is_inventoriable', true)
+            ->get();
+        return view('admin.inventario.movimientos.index', compact('insumos', 'insumosInventariables'));
     }
 
     public function getMovimientos(Request $request)
@@ -82,6 +89,15 @@ class MovimientoInsumoController extends Controller
             DB::beginTransaction();
 
             $insumo = Insumo::findOrFail($request->insumo_id);
+
+            // Un insumo no inventariable no gestiona stock: no admite movimientos.
+            if (!$insumo->is_inventoriable) {
+                DB::rollBack();
+                return response()->json([
+                    'error' => 'Este insumo no es inventariable, por lo que no gestiona stock ni admite movimientos de inventario.'
+                ], 422);
+            }
+
             $stockAnterior = $insumo->stock_actual;
 
             // Calcular nuevo stock
@@ -154,6 +170,7 @@ class MovimientoInsumoController extends Controller
         // El módulo de insumos eliminó la relación con proveedor (Santiago, e607f64).
         // Aquí solo listamos los insumos en alerta sin info de proveedor.
         $insumosConBajoStock = Insumo::where('estado', true)
+            ->where('is_inventoriable', true)
             ->whereRaw('stock_actual <= stock_minimo')
             ->get();
 

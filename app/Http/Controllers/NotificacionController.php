@@ -12,6 +12,7 @@ class NotificacionController extends Controller
         $items = [];
 
         $insumos = Insumo::where('estado', true)
+            ->where('is_inventoriable', true)
             ->whereRaw('stock_actual <= stock_minimo')
             ->orderByRaw('(stock_actual / NULLIF(stock_minimo, 0)) ASC')
             ->get(['id', 'nombre', 'codigo', 'stock_actual', 'stock_minimo', 'unidad_medida']);
