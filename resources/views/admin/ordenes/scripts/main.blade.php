@@ -250,6 +250,7 @@
                        </div>`
                     : '';
 
+                const inicialCliente = (p.cliente_nombre || '?').trim().charAt(0).toUpperCase() || '?';
                 const card = `
                     <div class="cotizacion-card" data-pedido-id="${p.id}">
                         <div class="cotizacion-header">
@@ -258,13 +259,23 @@
                                 ${p.lineas_pendientes} de ${p.total_lineas} sin orden
                             </span>
                         </div>
-                        <div class="cotizacion-info">
-                            <div class="cotizacion-info-item"><i class="ri-user-line"></i><span>${escHtml(p.cliente_nombre)}</span></div>
-                            <div class="cotizacion-info-item"><i class="ri-bank-card-line"></i><span>${escHtml(p.cliente_documento)}</span></div>
-                            <div class="cotizacion-info-item"><i class="ri-calendar-line"></i><span>${p.fecha_pedido || 'N/A'}</span></div>
-                            <div class="cotizacion-info-item"><i class="ri-bar-chart-line"></i><span>Progreso ${p.progreso}%</span></div>
+                        <div class="d-flex align-items-center gap-2 flex-wrap mt-1 mb-2">
+                            <span class="wiz-client-banner wiz-client-banner--sm" title="Cliente del pedido">
+                                <span class="wiz-client-banner-avatar">${escHtml(inicialCliente)}</span>
+                                <span class="wiz-client-banner-main">
+                                    <span class="wiz-client-banner-name">${escHtml(p.cliente_nombre)}</span>
+                                </span>
+                            </span>
+                            <span class="cotizacion-info-item"><i class="ri-bank-card-line"></i><span>${escHtml(p.cliente_documento)}</span></span>
+                            <span class="cotizacion-info-item"><i class="ri-calendar-line"></i><span>${p.fecha_pedido || 'N/A'}</span></span>
                         </div>
-                        <div class="list-group mt-2">${lineasHtml}</div>
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <div class="progress flex-grow-1" style="height: 6px;">
+                                <div class="progress-bar bg-success" role="progressbar" style="width: ${p.progreso}%;"></div>
+                            </div>
+                            <small class="text-muted fw-semibold" style="white-space: nowrap;">Progreso ${p.progreso}%</small>
+                        </div>
+                        <div class="list-group">${lineasHtml}</div>
                         ${footerHtml}
                     </div>`;
                 $cont.append(card);
@@ -326,9 +337,26 @@
         // ══════════════════════════════════════════════════════
         // HIDRATAR FORM DESDE UNA LÍNEA (modo crear)
         // ══════════════════════════════════════════════════════
+        // Chip "Registrada por": creador real (editar) o usuario logueado (crear).
+        function ordSetCreador(name, avatar) {
+            $('#orden-creador-name').text(name || '—');
+            if (avatar) $('#orden-creador-avatar').attr('src', avatar);
+        }
+        function ordResetCreador() {
+            var $b = $('#orden-creador-banner');
+            ordSetCreador($b.data('default-name'), $b.data('default-avatar'));
+        }
+
+        // Chip "Cliente": nombre + avatar con inicial.
+        function ordSetCliente(name) {
+            var n = (name || '').trim();
+            $('#orden-cliente-name').text(n || '—');
+            $('#orden-cliente-avatar').text(n ? n.charAt(0).toUpperCase() : '—');
+        }
+
         function llenarPanelLinea(d) {
             $('#orden-linea-pedido').text('Pedido #' + d.pedido_id);
-            $('#orden-linea-cliente').text(d.cliente_nombre || '');
+            ordSetCliente(d.cliente_nombre);
             $('#orden-linea-producto').text(d.producto_nombre || '—');
             $('#orden-linea-cantidad').text(d.cantidad != null ? d.cantidad : 0);
 
@@ -367,6 +395,9 @@
                 lleva_bordado: linea.lleva_bordado,
                 bordados_count: linea.bordados_count
             });
+
+            // Creador: la registra el usuario logueado
+            ordResetCreador();
 
             // Empleado
             $('#empleado-id-field').val('');
@@ -978,10 +1009,17 @@
                 $('#pedido-id-hidden-field').val(data.pedido_id || '');
                 $('#producto-id-field').val(data.producto_id || '');
 
+                // Creador real de la orden (no quien edita)
+                if (data.creador) {
+                    ordSetCreador(data.creador.name, data.creador.avatar_url);
+                } else {
+                    ordResetCreador();
+                }
+
                 const det = data.detalle_pedido || {};
                 llenarPanelLinea({
                     pedido_id: data.pedido_id || '—',
-                    cliente_nombre: '',
+                    cliente_nombre: data.cliente_nombre || '',
                     producto_nombre: data.producto ? data.producto.nombre : ('Producto #' + data.producto_id),
                     cantidad: data.cantidad_solicitada,
                     color: det.color ? det.color.nombre : null,
@@ -1214,7 +1252,8 @@
             $('#pedido-id-hidden-field').val('');
             $('#producto-id-field').val('');
             $('#orden-linea-pedido').text('Pedido #—');
-            $('#orden-linea-cliente').text('');
+            ordSetCliente('');
+            ordResetCreador();
             $('#orden-linea-producto').text('—');
             $('#orden-linea-cantidad').text('0');
             $('#orden-linea-meta').empty();

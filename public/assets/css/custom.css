@@ -1522,6 +1522,21 @@ header#page-topbar,
     to   { opacity: 1; transform: translateY(0); }
 }
 
+/* Variante compacta del chip de cliente (p. ej. dentro de cards) */
+.wiz-client-banner--sm {
+    padding: 3px 11px 3px 4px;
+    gap: 6px;
+}
+.wiz-client-banner--sm .wiz-client-banner-avatar {
+    width: 24px;
+    height: 24px;
+    font-size: 0.64rem;
+    box-shadow: none;
+}
+.wiz-client-banner--sm .wiz-client-banner-name {
+    font-size: 0.78rem;
+}
+
 /* Pantallas chicas: los chips bajan apilados y centrados bajo el stepper */
 @media (max-width: 991.98px) {
     .wiz-stepper-wrapper { flex-wrap: wrap; row-gap: 10px; }

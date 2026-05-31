@@ -409,13 +409,22 @@ class OrdenProduccionController extends Controller
                 'insumos',
                 'producto',
                 'empleado.persona',
-                'pedido',
+                'pedido.cliente',
                 'detallePedido.color',
                 'detallePedido.talla',
                 'detallePedido.bordados',
+                'creadoPor:id,name,avatar',
             ])->findOrFail($id);
 
-        return response()->json($orden);
+        $data = $orden->toArray();
+        // Cliente del pedido y creador real (para el chip "Registrada por").
+        $data['cliente_nombre'] = $orden->pedido?->cliente_nombre_completo;
+        $data['creador'] = $orden->creadoPor ? [
+            'name'       => $orden->creadoPor->name,
+            'avatar_url' => $orden->creadoPor->avatar_url,
+        ] : null;
+
+        return response()->json($data);
     }
 
     public function update(Request $request, $id)

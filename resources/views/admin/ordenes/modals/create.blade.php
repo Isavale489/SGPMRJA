@@ -17,6 +17,30 @@
                     <input type="hidden" id="pedido-id-hidden-field" />
                     <input type="hidden" id="producto-id-field" />
 
+                    {{-- ── Chips: cliente (izq.) + usuario que registra (der.) ──────── --}}
+                    <div class="d-flex justify-content-between align-items-center gap-2 flex-wrap mb-2">
+                        {{-- Cliente del pedido --}}
+                        <div class="wiz-client-banner" id="orden-cliente-banner" title="Cliente del pedido">
+                            <span class="wiz-client-banner-label">Cliente:</span>
+                            <div class="wiz-client-banner-avatar" id="orden-cliente-avatar">—</div>
+                            <div class="wiz-client-banner-main">
+                                <span class="wiz-client-banner-name" id="orden-cliente-name">—</span>
+                            </div>
+                        </div>
+                        {{-- Usuario que registra la orden --}}
+                        <div class="wiz-client-banner wiz-client-banner--creator" id="orden-creador-banner"
+                            title="Creada por"
+                            data-default-name="{{ Auth::user()->name }}"
+                            data-default-avatar="{{ Auth::user()->avatar_url }}">
+                            <span class="wiz-client-banner-label">Creada por:</span>
+                            <img class="wiz-client-banner-avatar wiz-client-banner-avatar--img" id="orden-creador-avatar"
+                                src="{{ Auth::user()->avatar_url }}" alt="" />
+                            <div class="wiz-client-banner-main">
+                                <span class="wiz-client-banner-name" id="orden-creador-name">{{ Auth::user()->name }}</span>
+                            </div>
+                        </div>
+                    </div>
+
                     {{-- ── Hero: línea seleccionada (solo lectura, compacto) ────────── --}}
                     <div class="cot-resumen-card mb-2" id="orden-linea-panel">
                         <div class="cot-resumen-card-header py-2 px-3">
@@ -27,8 +51,7 @@
                         <div class="cot-resumen-card-body p-3">
                             <div class="d-flex align-items-center justify-content-between gap-3 flex-wrap">
                                 <div class="flex-grow-1 min-w-0">
-                                    <div class="text-white fw-semibold mb-1" id="orden-linea-producto">—</div>
-                                    <div class="text-white-50 fs-12 mb-2" id="orden-linea-cliente"></div>
+                                    <div class="text-white fw-semibold mb-2" id="orden-linea-producto">—</div>
                                     <div class="d-flex flex-wrap gap-1" id="orden-linea-meta"></div>
                                 </div>
                                 <div class="text-end">
@@ -56,6 +79,9 @@
                                             <option value="{{ $emp->id }}">{{ $emp->name }}</option>
                                         @endforeach
                                     </select>
+                                    <small class="text-muted d-block mt-1" style="font-size: 10.5px;">
+                                        <i class="ri-information-line"></i> Responsable de producir esta orden.
+                                    </small>
                                 </div>
                                 <div class="col-md-6" id="estado-container" style="display: none;">
                                     <label for="estado-field" class="form-label form-label-sm mb-1">Estado</label>
