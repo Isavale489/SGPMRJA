@@ -6584,6 +6584,24 @@ header#page-topbar,
 }
 .ped-pay-row-del:hover { background: rgba(220,38,38,0.1); color: #dc2626; }
 
+/* Estado del pedido (solo lectura — gobernado por producción) */
+.ped-estado-readonly {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px 14px;
+}
+.ped-estado-readonly .badge { font-size: 0.82rem; padding: 6px 14px; }
+.ped-estado-auto-hint {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.74rem;
+    color: #64748b;
+}
+.ped-estado-auto-hint i { color: #10b981; font-size: 0.95rem; }
+[data-bs-theme="dark"] .ped-estado-auto-hint { color: #94a3b8; }
+
 /* Estado vacío */
 .ped-pay-empty {
     text-align: center;

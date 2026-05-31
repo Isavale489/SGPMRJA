@@ -112,6 +112,58 @@ class Pedido extends Model
         return round(min(1.0, $suma / $totalLineas) * 100, 1);
     }
 
+    /**
+     * Recalcula el estado del pedido a partir de sus órdenes de producción.
+     *
+     * Reglas:
+     *   - Cancelado es terminal/manual: nunca se auto-recalcula.
+     *   - Sin órdenes activas (o todas canceladas) → Pendiente.
+     *   - Todas las líneas con orden Finalizada → Completado.
+     *   - Al menos una orden En Proceso o Finalizada → Procesando.
+     *   - Solo órdenes Pendientes → Pendiente.
+     *
+     * El estado deja de ser manual (salvo Cancelar/Reactivar): refleja la
+     * realidad de producción. Ver docs y PedidoController::cancelar/reactivar.
+     */
+    public function recalcularEstado(): void
+    {
+        if ($this->estado === 'Cancelado') {
+            return; // terminal y manual
+        }
+
+        $totalLineas = $this->productos()->count();
+        $activas = $this->ordenes()->get()->where('estado', '!=', 'Cancelado');
+
+        if ($totalLineas === 0 || $activas->isEmpty()) {
+            $nuevo = 'Pendiente';
+        } else {
+            $finalizadas = $activas->where('estado', 'Finalizado')->count();
+            $enMarcha    = $activas->whereIn('estado', ['En Proceso', 'Finalizado'])->count();
+
+            if ($finalizadas >= $totalLineas) {
+                $nuevo = 'Completado';
+            } elseif ($enMarcha > 0) {
+                $nuevo = 'Procesando';
+            } else {
+                $nuevo = 'Pendiente';
+            }
+        }
+
+        if ($this->estado !== $nuevo) {
+            $this->update(['estado' => $nuevo]);
+        }
+    }
+
+    /**
+     * ¿El pedido ya tiene producción iniciada? (al menos una orden no cancelada).
+     * Si la tiene, editar/eliminar el pedido recrearía sus líneas y dejaría
+     * huérfanas las órdenes que las referencian, por eso se bloquea.
+     */
+    public function tieneProduccionActiva(): bool
+    {
+        return $this->ordenes()->where('estado', '!=', 'Cancelado')->exists();
+    }
+
     // ============================================
     // ACCESSORS para obtener datos del cliente
     // ============================================

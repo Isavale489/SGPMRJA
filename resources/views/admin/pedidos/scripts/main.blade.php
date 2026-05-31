@@ -579,19 +579,28 @@ $(document).ready(function () {
             $('.ped-priority-chip[data-value="' + val + '"]').addClass('is-active').attr('aria-checked', 'true');
         });
 
-        // === Chips de estado (solo modo edición) ========================
-        $(document).on('click', '.ped-estado-chip', function () {
-            var $b = $(this), val = $b.data('value');
-            $('.ped-estado-chip').removeClass('is-active').attr('aria-checked', 'false');
-            $b.addClass('is-active').attr('aria-checked', 'true');
-            $('#ped-estado-field').val(val).trigger('change');
-        });
-        $(document).on('change', '#ped-estado-field', function () {
-            var val = $(this).val();
-            if (!val) return;
-            $('.ped-estado-chip').removeClass('is-active').attr('aria-checked', 'false');
-            $('.ped-estado-chip[data-value="' + val + '"]').addClass('is-active').attr('aria-checked', 'true');
-        });
+        // === Estado del pedido (solo lectura — lo gobierna producción) ===
+        // El estado ya no se edita a mano; se muestra como badge. Cancelar/Reactivar
+        // viven en el listado. Aquí solo renderizamos el badge actual.
+        window.pedRenderEstadoBadge = function (estado) {
+            var clases = {
+                Pendiente:  'status-pendiente',
+                Procesando: 'status-procesando',
+                Completado: 'status-completado',
+                Cancelado:  'status-cancelado'
+            };
+            var iconos = {
+                Pendiente:  'ri-time-line',
+                Procesando: 'ri-loader-4-line',
+                Completado: 'ri-check-double-line',
+                Cancelado:  'ri-close-circle-line'
+            };
+            var e = estado || 'Pendiente';
+            $('#ped-estado-field').val(e);
+            $('#ped-estado-badge')
+                .attr('class', 'badge ' + (clases[e] || ''))
+                .html('<i class="' + (iconos[e] || 'ri-question-line') + ' me-1"></i>' + e);
+        };
 
         // === Reset al abrir en modo crear ================================
         var $wizModal = $(document).find('#pedidoForm').closest('.modal');
@@ -1763,11 +1772,7 @@ $(document).ready(function () {
 
             // ── Estado: mostrar card (solo edit) y marcar chip ──
             $('#ped-estado-field-wrapper').show();
-            if (data.estado) {
-                $('#ped-estado-field').val(data.estado);
-                $('.ped-estado-chip').removeClass('is-active').attr('aria-checked', 'false');
-                $('.ped-estado-chip[data-value="' + data.estado + '"]').addClass('is-active').attr('aria-checked', 'true');
-            }
+            window.pedRenderEstadoBadge(data.estado || 'Pendiente');
 
             // ── Paso 2: productos (mapear formato show() → el esperado por hidratar) ──
             if (data.productos && data.productos.length && typeof window.pedHidratarProductosDesde === 'function') {

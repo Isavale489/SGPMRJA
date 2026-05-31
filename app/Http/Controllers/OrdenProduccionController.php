@@ -269,6 +269,8 @@ class OrdenProduccionController extends Controller
             ]);
         }
 
+        Pedido::find($detalle->pedido_id)?->recalcularEstado();
+
         return response()->json(['message' => 'Orden de producción creada exitosamente.']);
     }
 
@@ -340,6 +342,8 @@ class OrdenProduccionController extends Controller
             }
         });
 
+        Pedido::find($validated['pedido_id'])?->recalcularEstado();
+
         return response()->json([
             'message' => count($creadas) . ' ' . (count($creadas) === 1 ? 'orden creada' : 'órdenes creadas') . ' correctamente.',
             'ordenes' => $creadas,
@@ -393,6 +397,8 @@ class OrdenProduccionController extends Controller
             $orden->estado = 'En Proceso';
         }
         $orden->save();
+
+        Pedido::find($orden->pedido_id)?->recalcularEstado();
 
         return response()->json(['message' => 'Avance registrado correctamente.']);
     }
@@ -452,6 +458,8 @@ class OrdenProduccionController extends Controller
             ]);
         }
 
+        Pedido::find($orden->pedido_id)?->recalcularEstado();
+
         return response()->json(['message' => 'Orden de producción actualizada exitosamente.']);
     }
 
@@ -465,7 +473,9 @@ class OrdenProduccionController extends Controller
             ], 422);
         }
 
+        $pedidoId = $orden->pedido_id;
         $orden->delete();
+        Pedido::find($pedidoId)?->recalcularEstado();
         return response()->json(['message' => 'Orden de producción eliminada exitosamente.']);
     }
 }

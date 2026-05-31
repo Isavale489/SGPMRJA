@@ -268,28 +268,18 @@
                                         </h6>
                                     </div>
                                     <div class="card-body py-3">
-                                        <div class="cot-estado-chips" role="radiogroup" aria-label="Estado">
-                                            <button type="button"
-                                                class="cot-estado-chip ped-estado-chip cot-estado-chip--pendiente is-active"
-                                                data-value="Pendiente" role="radio" aria-checked="true">Pendiente</button>
-                                            <button type="button"
-                                                class="cot-estado-chip ped-estado-chip"
-                                                data-value="Procesando" role="radio" aria-checked="false">Procesando</button>
-                                            <button type="button"
-                                                class="cot-estado-chip ped-estado-chip cot-estado-chip--aprobada"
-                                                data-value="Completado" role="radio" aria-checked="false">Completado</button>
-                                            <button type="button"
-                                                class="cot-estado-chip ped-estado-chip cot-estado-chip--cancelada"
-                                                data-value="Cancelado" role="radio" aria-checked="false">Cancelado</button>
+                                        <div class="ped-estado-readonly">
+                                            <span class="badge" id="ped-estado-badge">—</span>
+                                            <span class="ped-estado-auto-hint">
+                                                <i class="ri-flashlight-line"></i>
+                                                Se actualiza automáticamente según el avance de producción.
+                                            </span>
                                         </div>
-                                        <select id="ped-estado-field" name="estado" class="d-none" tabindex="-1">
-                                            <option value="Pendiente">Pendiente</option>
-                                            <option value="Procesando">Procesando</option>
-                                            <option value="Completado">Completado</option>
-                                            <option value="Cancelado">Cancelado</option>
-                                        </select>
+                                        {{-- Estado gobernado por producción; el campo solo refleja el actual --}}
+                                        <input type="hidden" id="ped-estado-field" name="estado" value="Pendiente" />
                                         <small class="text-muted d-block mt-2">
-                                            <i class="ri-information-line me-1"></i>Cambia el estado actual del pedido.
+                                            <i class="ri-information-line me-1"></i>Para anular el pedido usá el botón
+                                            <strong>Cancelar</strong> del listado.
                                         </small>
                                     </div>
                                 </div>

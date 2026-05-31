@@ -77,7 +77,8 @@ class PedidoService
                 'cliente_id' => $data['cliente_id'],
                 'fecha_pedido' => $data['fecha_pedido'],
                 'fecha_entrega_estimada' => $data['fecha_entrega_estimada'] ?? null,
-                'estado' => $data['estado'],
+                // 'estado' NO se toca aquí: lo gobierna producción (recalcularEstado)
+                // y Cancelar/Reactivar (manual). Ver PedidoController.
                 'total' => $total_pedido,
                 'prioridad' => $data['prioridad'],
             ]);
@@ -85,6 +86,9 @@ class PedidoService
             $this->syncPagos($pedido, $data['pagos'] ?? []);
             $this->crearDetalles($pedido, $data['productos']);
         });
+
+        // El estado refleja la realidad de producción (no el formulario)
+        $pedido->recalcularEstado();
 
         Log::info('Pedido actualizado', [
             'pedido_id' => $pedido->id,

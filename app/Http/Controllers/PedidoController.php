@@ -48,7 +48,10 @@ class PedidoController extends Controller
         $pedidos = Pedido::select('pedido.*')
             ->join('cliente', 'pedido.cliente_id', '=', 'cliente.id')
             ->join('persona', 'cliente.persona_id', '=', 'persona.id')
-            ->with(['user:id,name', 'cliente.persona']);
+            ->with(['user:id,name', 'cliente.persona'])
+            ->withCount(['ordenes as ordenes_activas_count' => function ($q) {
+                $q->where('estado', '!=', 'Cancelado');
+            }]);
 
         if ($request->filled('filter_estado')) {
             $pedidos->where('pedido.estado', $request->input('filter_estado'));
@@ -96,6 +99,10 @@ class PedidoController extends Controller
             })
             ->addColumn('fecha_entrega_estimada', function ($pedido) {
                 return $pedido->fecha_entrega_estimada ? $pedido->fecha_entrega_estimada->format('d/m/Y') : 'N/A';
+            })
+            // Bandera para el frontend: ¿tiene producción iniciada? (bloquea editar/eliminar)
+            ->addColumn('tiene_produccion', function ($pedido) {
+                return $pedido->ordenes_activas_count > 0;
             })
 
             ->make(true);
@@ -179,6 +186,9 @@ class PedidoController extends Controller
         if (in_array($pedido->estado, ['Completado', 'Cancelado'])) {
             return response()->json(['error' => 'No se puede editar un pedido completado o cancelado.'], 403);
         }
+        if ($pedido->tieneProduccionActiva()) {
+            return response()->json(['error' => 'No se puede editar un pedido con producción iniciada. Cancela primero sus órdenes de producción.'], 403);
+        }
 
         try {
             $this->pedidoService->actualizar($pedido, $request->validated());
@@ -196,6 +206,9 @@ class PedidoController extends Controller
         if (in_array($pedido->estado, ['Completado', 'Cancelado'])) {
             return response()->json(['error' => 'No se puede eliminar un pedido completado o cancelado.'], 403);
         }
+        if ($pedido->tieneProduccionActiva()) {
+            return response()->json(['error' => 'No se puede eliminar un pedido con producción iniciada. Cancela primero sus órdenes de producción.'], 403);
+        }
 
         $pedido->delete();
 
@@ -207,6 +220,46 @@ class PedidoController extends Controller
         ]);
 
         return response()->json(['success' => 'Pedido eliminado exitosamente.']);
+    }
+
+    /**
+     * Cancelar un pedido (acción manual). Cancelado es terminal: el estado deja
+     * de auto-recalcularse desde producción hasta que se reactive.
+     */
+    public function cancelar($id)
+    {
+        $pedido = Pedido::findOrFail($id);
+
+        if ($pedido->estado === 'Completado') {
+            return response()->json(['error' => 'No se puede cancelar un pedido completado.'], 422);
+        }
+        if ($pedido->estado === 'Cancelado') {
+            return response()->json(['success' => 'El pedido ya estaba cancelado.']);
+        }
+
+        $pedido->update(['estado' => 'Cancelado']);
+
+        Log::warning('Pedido cancelado', ['pedido_id' => $id, 'user_id' => auth()->id()]);
+
+        return response()->json(['success' => 'Pedido cancelado.']);
+    }
+
+    /**
+     * Reactivar un pedido cancelado: vuelve a quedar gobernado por producción.
+     */
+    public function reactivar($id)
+    {
+        $pedido = Pedido::findOrFail($id);
+
+        if ($pedido->estado !== 'Cancelado') {
+            return response()->json(['error' => 'Solo se puede reactivar un pedido cancelado.'], 422);
+        }
+
+        // Sale de Cancelado y se deja que producción determine el estado real
+        $pedido->update(['estado' => 'Pendiente']);
+        $pedido->recalcularEstado();
+
+        return response()->json(['success' => 'Pedido reactivado.']);
     }
 
     public function reportePdf(Request $request)

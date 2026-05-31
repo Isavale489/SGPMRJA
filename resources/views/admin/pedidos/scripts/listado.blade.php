@@ -92,7 +92,9 @@
                     render: function (data, type, row) {
                         var isAdmin = {{ Auth::user()->isAdmin() ? 'true' : 'false' }};
                         var editDelete = '';
-                        if (isAdmin && row.estado !== 'Completado' && row.estado !== 'Cancelado') {
+                        // Sin producción iniciada: se puede editar/eliminar. Con órdenes activas se bloquea
+                        // (editar recrearía las líneas y dejaría huérfanas las órdenes).
+                        if (isAdmin && row.estado !== 'Completado' && row.estado !== 'Cancelado' && !row.tiene_produccion) {
                             editDelete = `
                                 <button class="btn btn-sm btn-soft-success edit-btn" data-id="${data}" title="Editar">
                                     <i class="ri-pencil-fill"></i>
@@ -101,12 +103,26 @@
                                     <i class="ri-delete-bin-fill"></i>
                                 </button>`;
                         }
+                        // Cancelar (Pendiente/Procesando) o Reactivar (Cancelado) — acción manual
+                        var estadoAccion = '';
+                        if (isAdmin && (row.estado === 'Pendiente' || row.estado === 'Procesando')) {
+                            estadoAccion = `
+                                <button class="btn btn-sm btn-soft-warning cancelar-btn" data-id="${data}" title="Cancelar pedido">
+                                    <i class="ri-close-circle-line"></i>
+                                </button>`;
+                        } else if (isAdmin && row.estado === 'Cancelado') {
+                            estadoAccion = `
+                                <button class="btn btn-sm btn-soft-secondary reactivar-btn" data-id="${data}" title="Reactivar pedido">
+                                    <i class="ri-refresh-line"></i>
+                                </button>`;
+                        }
                         return `
                             <div class="d-flex gap-1 justify-content-center align-items-center">
                                 <button class="btn btn-sm btn-soft-info view-btn" data-id="${data}" title="Ver">
                                     <i class="ri-eye-fill"></i>
                                 </button>
                                 ${editDelete}
+                                ${estadoAccion}
                                 <a class="btn btn-sm btn-soft-secondary" href="/pedidos/${data}/pdf" target="_blank" title="PDF">
                                     <i class="ri-file-pdf-line"></i>
                                 </a>
@@ -194,6 +210,42 @@
             } else {
                 console.error('window.pedAbrirEnEdit no está disponible');
             }
+        });
+
+        // === Cancelar / Reactivar pedido (acción manual de estado) ==========
+        function pedCambiarEstado(id, accion, titulo, texto, confirmText) {
+            Swal.fire({
+                title: titulo, text: texto, icon: 'warning',
+                showCancelButton: true, confirmButtonText: confirmText, cancelButtonText: 'No',
+                customClass: { confirmButton: 'btn btn-primary w-xs me-2', cancelButton: 'btn btn-light w-xs' },
+                buttonsStyling: false
+            }).then(function (r) {
+                if (!r.isConfirmed) return;
+                $.ajax({
+                    url: '/pedidos/' + id + '/' + accion,
+                    method: 'POST',
+                    data: { _method: 'PATCH', _token: $('meta[name="csrf-token"]').attr('content') },
+                    success: function (resp) {
+                        Swal.fire({ icon: 'success', title: resp.success || 'Listo', showConfirmButton: false, timer: 1600 });
+                        if ($.fn.DataTable.isDataTable('#pedidos-table')) {
+                            $('#pedidos-table').DataTable().ajax.reload(null, false);
+                        }
+                    },
+                    error: function (xhr) {
+                        var msg = (xhr.responseJSON && (xhr.responseJSON.error || xhr.responseJSON.message)) || 'No se pudo completar la acción.';
+                        Swal.fire({ icon: 'error', title: 'Error', text: msg });
+                    }
+                });
+            });
+        }
+
+        $('#pedidos-table').on('click', '.cancelar-btn', function () {
+            pedCambiarEstado($(this).data('id'), 'cancelar', '¿Cancelar pedido?',
+                'El pedido quedará cancelado. Podrás reactivarlo más adelante.', 'Sí, cancelar');
+        });
+        $('#pedidos-table').on('click', '.reactivar-btn', function () {
+            pedCambiarEstado($(this).data('id'), 'reactivar', '¿Reactivar pedido?',
+                'El estado volverá a calcularse según el avance de producción.', 'Sí, reactivar');
         });
 
         // === Ver → viewModal (read-only) ====================================

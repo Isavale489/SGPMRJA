@@ -111,6 +111,8 @@ Route::middleware(['auth', 'throttle:60,1', 'active.user', 'recovery.questions.r
         Route::post('pedidos', [PedidoController::class, 'store'])->name('pedidos.store');
         Route::get('pedidos/create', [PedidoController::class, 'create'])->name('pedidos.create');
         Route::put('pedidos/{pedido}', [PedidoController::class, 'update'])->name('pedidos.update');
+        Route::patch('pedidos/{pedido}/cancelar', [PedidoController::class, 'cancelar'])->name('pedidos.cancelar');
+        Route::patch('pedidos/{pedido}/reactivar', [PedidoController::class, 'reactivar'])->name('pedidos.reactivar');
         Route::delete('pedidos/{pedido}', [PedidoController::class, 'destroy'])->name('pedidos.destroy');
         Route::get('pedidos/{pedido}/edit', [PedidoController::class, 'edit'])->name('pedidos.edit');
 
