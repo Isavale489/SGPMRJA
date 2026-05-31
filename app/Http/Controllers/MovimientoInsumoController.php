@@ -76,6 +76,37 @@ class MovimientoInsumoController extends Controller
             ->make(true);
     }
 
+    /**
+     * Panel de existencias dentro de /inventario/movimientos:
+     * stock mínimo, actual y máximo de cada insumo inventariable,
+     * para consultarlo sin salir a /insumos.
+     */
+    public function getExistencias(Request $request)
+    {
+        $query = Insumo::where('estado', true)
+            ->where('is_inventoriable', true)
+            ->select('id', 'nombre', 'codigo', 'tipo', 'unidad_medida', 'stock_minimo', 'stock_actual', 'stock_maximo');
+
+        if ($request->filled('filter_tipo')) {
+            $query->where('tipo', $request->input('filter_tipo'));
+        }
+
+        if ($request->input('filter_estado') === 'alerta') {
+            $query->whereRaw('stock_actual <= stock_minimo');
+        }
+
+        return DataTables::of($query)
+            ->addColumn('stock_status', function ($insumo) {
+                if ($insumo->stock_actual <= $insumo->stock_minimo) {
+                    return 'bajo';
+                } elseif ($insumo->stock_actual <= ($insumo->stock_minimo * 1.5)) {
+                    return 'medio';
+                }
+                return 'normal';
+            })
+            ->make(true);
+    }
+
     public function store(Request $request)
     {
         $request->validate([

@@ -237,6 +237,7 @@ Route::middleware(['auth', 'throttle:60,1', 'active.user', 'recovery.questions.r
         // Inventario
         Route::get('inventario/movimientos', [MovimientoInsumoController::class, 'index'])->name('inventario.movimientos.index');
         Route::get('inventario/movimientos/data', [MovimientoInsumoController::class, 'getMovimientos'])->name('inventario.movimientos.data');
+        Route::get('inventario/existencias-data', [MovimientoInsumoController::class, 'getExistencias'])->name('inventario.existencias.data');
         Route::post('inventario/movimientos', [MovimientoInsumoController::class, 'store'])->name('inventario.movimientos.store');
         Route::get('inventario/movimientos/{id}', [MovimientoInsumoController::class, 'show'])->name('inventario.movimientos.show');
         Route::get('inventario/reporte', [MovimientoInsumoController::class, 'reporteExistencia'])->name('inventario.reporte');

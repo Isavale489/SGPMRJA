@@ -130,6 +130,54 @@
                 </div>
             </div>
         </div>
+
+        {{-- ============================================================
+             EXISTENCIAS DE INSUMOS — consulta de stock sin salir de aquí
+             Mín. / Actual / Máx. de cada insumo inventariable.
+             ============================================================ --}}
+        <div class="row">
+            <div class="col-lg-12">
+                <div class="card card-reportes">
+                    <div class="card-header">
+                        <div class="d-flex align-items-center flex-wrap gap-2">
+                            <h5 class="card-title mb-0 flex-grow-1">
+                                <i class="ri-stack-line align-bottom me-1"></i>Existencias de Insumos
+                            </h5>
+                            <select class="form-select form-select-sm" id="exist-filter-tipo" style="width:auto;">
+                                <option value="">Todos los tipos</option>
+                                <option value="Tela">Tela</option>
+                                <option value="Hilo">Hilo</option>
+                                <option value="Boton">Botón</option>
+                                <option value="Cierre">Cierre</option>
+                                <option value="Etiqueta">Etiqueta</option>
+                            </select>
+                            <div class="form-check form-switch mb-0">
+                                <input class="form-check-input" type="checkbox" id="exist-filter-alerta">
+                                <label class="form-check-label" for="exist-filter-alerta">Solo en alerta</label>
+                            </div>
+                        </div>
+                        <small class="text-muted">Stock mínimo, actual y máximo de cada insumo. Se actualiza al registrar un movimiento.</small>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table id="existencias-table" class="table table-bordered table-striped table-sm align-middle dt-reportes table-operativa">
+                                <thead>
+                                    <tr>
+                                        <th>Insumo</th>
+                                        <th>Tipo</th>
+                                        <th>Existencia Mín.</th>
+                                        <th>Existencia Actual</th>
+                                        <th>Existencia Máx.</th>
+                                        <th>Estado</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     @include('admin.inventario.movimientos.modals.create')

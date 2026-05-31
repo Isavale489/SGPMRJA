@@ -87,6 +87,68 @@
             responsive: true
         });
 
+        // ══════════════════════════════════════════════════
+        // PANEL DE EXISTENCIAS — stock Mín./Actual/Máx. por insumo
+        // ══════════════════════════════════════════════════
+        function badgeEstadoStock(status) {
+            if (status === 'bajo')  return '<span class="badge bg-danger">Bajo</span>';
+            if (status === 'medio') return '<span class="badge bg-warning text-dark">Medio</span>';
+            return '<span class="badge bg-success">Normal</span>';
+        }
+
+        var existenciasTable = $('#existencias-table').DataTable({
+            processing: true,
+            serverSide: true,
+            autoWidth: false,
+            ajax: {
+                url: "{{ route('inventario.existencias.data') }}",
+                data: function (d) {
+                    d.filter_tipo   = $('#exist-filter-tipo').val();
+                    d.filter_estado = $('#exist-filter-alerta').is(':checked') ? 'alerta' : '';
+                }
+            },
+            columns: [
+                {
+                    data: 'nombre', name: 'nombre', width: '32%',
+                    render: function (data, type, row) {
+                        var pill = row.codigo
+                            ? '<span style="font-family:monospace;padding:.1rem .45rem;background:rgba(12,74,110,.10);color:#0c4a6e;border-radius:4px;font-size:.72rem;font-weight:600;margin-right:.4rem;">' + row.codigo + '</span>'
+                            : '';
+                        return pill + (data || '');
+                    }
+                },
+                { data: 'tipo', name: 'tipo', width: '12%' },
+                {
+                    data: 'stock_minimo', name: 'stock_minimo', width: '14%',
+                    render: function (data) { return parseFloat(data).toFixed(2); }
+                },
+                {
+                    data: 'stock_actual', name: 'stock_actual', width: '14%',
+                    render: function (data, type, row) {
+                        return '<span class="stock-' + row.stock_status + '">' + parseFloat(data).toFixed(2) + '</span>';
+                    }
+                },
+                {
+                    data: 'stock_maximo', name: 'stock_maximo', width: '14%',
+                    render: function (data) { return parseFloat(data).toFixed(2); }
+                },
+                {
+                    data: 'stock_status', name: 'stock_status', width: '14%',
+                    orderable: false, searchable: false,
+                    render: function (data) { return badgeEstadoStock(data); }
+                }
+            ],
+            order: [],
+            pageLength: 5,
+            dom: 'frtip',
+            language: lenguajeData,
+            responsive: true
+        });
+
+        $('#exist-filter-tipo, #exist-filter-alerta').on('change', function () {
+            existenciasTable.ajax.reload();
+        });
+
         // Buscador personalizado
         $('#custom-search-input').on('input', debounce(function () {
             table.search(this.value).draw();
@@ -179,6 +241,7 @@
                     $('#createForm').trigger('reset');
                     $('#createForm').removeClass('was-validated');
                     table.ajax.reload();
+                    existenciasTable.ajax.reload(null, false);
 
                     Swal.fire({
                         title: 'Éxito',
@@ -349,6 +412,7 @@
                         $(newOption).attr('data-unidad', nuevoInsumo.unidad_medida);
                         $('#insumo_id').append(newOption).trigger('change');
                     }
+                    existenciasTable.ajax.reload(null, false);
 
                     Swal.fire({
                         title: '¡Éxito!',
