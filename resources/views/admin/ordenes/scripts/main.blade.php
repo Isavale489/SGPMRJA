@@ -765,18 +765,18 @@
                     orderable: false,
                     searchable: false,
                     className: 'align-middle text-center',
-                    width: '12%',
+                    width: '16%',
                     render: function (data, type, row) {
                         const estadoActivo = ['Pendiente', 'En Proceso'].includes(row.estado);
                         const avanceBtn = estadoActivo
-                            ? `<button class="btn-tbl-action text-warning avance-btn" data-id="${data}" title="Registrar Avance"><i class="ri-add-circle-line"></i></button>`
+                            ? `<button class="btn btn-sm btn-soft-primary avance-btn" data-id="${data}" title="Registrar Avance"><i class="ri-add-circle-line"></i></button>`
                             : '';
                         return `
                             <div class="d-flex gap-1 justify-content-center align-items-center">
                                 ${avanceBtn}
-                                <button class="btn-tbl-action text-info view-btn" data-id="${data}" title="Ver detalle"><i class="ri-eye-line"></i></button>
-                                <button class="btn-tbl-action text-success edit-btn" data-id="${data}" title="Editar"><i class="ri-pencil-line"></i></button>
-                                <button class="btn-tbl-action text-danger remove-btn" data-id="${data}" title="Eliminar"><i class="ri-delete-bin-line"></i></button>
+                                <button class="btn btn-sm btn-soft-info view-btn" data-id="${data}" title="Ver detalle"><i class="ri-eye-fill"></i></button>
+                                <button class="btn btn-sm btn-soft-success edit-btn" data-id="${data}" title="Editar"><i class="ri-pencil-fill"></i></button>
+                                <button class="btn btn-sm btn-soft-danger remove-btn" data-id="${data}" title="Eliminar"><i class="ri-delete-bin-fill"></i></button>
                             </div>
                         `;
                     }
