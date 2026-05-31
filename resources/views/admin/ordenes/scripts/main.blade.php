@@ -585,6 +585,17 @@
             'Cancelado':  'badge-soft-danger'
         };
 
+        // Íconos del semáforo de estado (consistente con Pedidos/Cotizaciones).
+        const estadoIconCls = {
+            'Pendiente':  'ri-time-line',
+            'En Proceso': 'ri-loader-4-line',
+            'Finalizado': 'ri-check-double-line',
+            'Cancelado':  'ri-close-circle-line'
+        };
+        function iconEstadoOrden(estado) {
+            return estadoIconCls[estado] || 'ri-question-line';
+        }
+
         function renderMisOrdenes(ordenes) {
             const $cont = $('#mis-ordenes-container');
             $cont.empty();
@@ -602,7 +613,7 @@
                     <div class="cotizacion-card">
                         <div class="cotizacion-header">
                             <span class="cotizacion-numero"><i class="ri-file-list-3-line"></i> Orden #${o.id}</span>
-                            <span class="badge badge-status ${badge} rounded-pill">${escHtml(o.estado)}</span>
+                            <span class="badge badge-status ${badge} rounded-pill"><i class="${iconEstadoOrden(o.estado)} me-1"></i>${escHtml(o.estado)}</span>
                         </div>
                         <div class="cotizacion-info">
                             <div class="cotizacion-info-item"><i class="ri-t-shirt-line"></i><span>${escHtml(o.producto)}</span></div>
@@ -745,7 +756,7 @@
                             'Cancelado': 'status-cancelado badge-soft-danger'
                         };
                         let badgeClass = clases[data] || 'badge-soft-secondary';
-                        return `<span class="badge badge-status ${badgeClass} rounded-pill">${data}</span>`;
+                        return `<span class="badge badge-status ${badgeClass} rounded-pill"><i class="${iconEstadoOrden(data)} me-1"></i>${data}</span>`;
                     }
                 },
                 {
@@ -1028,7 +1039,7 @@
 
                 $('#view-fecha-inicio').text(formatDate(data.fecha_inicio));
                 $('#view-fecha-fin-estimada').text(formatDate(data.fecha_fin_estimada));
-                $('#view-estado').html(`<span class="badge badge-status ${estadoClases[data.estado] || 'badge-soft-secondary'} rounded-pill">${data.estado}</span>`);
+                $('#view-estado').html(`<span class="badge badge-status ${estadoClases[data.estado] || 'badge-soft-secondary'} rounded-pill"><i class="${iconEstadoOrden(data.estado)} me-1"></i>${data.estado}</span>`);
                 $('#view-creado-por').text(data.creado_por ? data.creado_por.name : 'Sin especificar');
                 $('#view-empleado').text(
                     data.empleado && data.empleado.persona ? data.empleado.persona.nombre_completo : 'Sin asignar'
