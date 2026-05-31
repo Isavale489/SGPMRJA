@@ -419,38 +419,42 @@
                 });
 
             function generateButtons(userId, recoveryLocked, isSelf, userName, userEmail, estado) {
-                var viewBtn =
-                    '<button class="btn btn-sm btn-soft-secondary view-item-btn" data-id="' + userId + '" title="Ver" style="padding:0.2rem 0.45rem;">' +
-                    '<i class="ri-eye-fill" style="font-size:13px;"></i>' +
-                    '</button>';
+                var sVer =
+                    '<button class="btn btn-sm btn-soft-info view-item-btn" data-id="' + userId + '" title="Ver"><i class="ri-eye-fill"></i></button>';
 
-                // Inhabilitado (estado != 1) → Ver + Habilitar
+                var items = '';
+
                 if (estado != 1) {
-                    return '<div class="d-flex gap-1 justify-content-center">' + viewBtn +
-                        '<button class="btn btn-sm btn-soft-success restore-item-btn" data-id="' + userId + '" title="Habilitar" style="padding:0.2rem 0.45rem;">' +
-                        '<i class="ri-arrow-go-back-line" style="font-size:13px;"></i>' +
-                        '</button>' +
-                        '</div>';
+                    // Inhabilitado → menú con solo Habilitar
+                    items +=
+                        '<li><button type="button" class="dropdown-item act-item act-restore restore-item-btn" data-id="' + userId + '"><span class="act-ic"><i class="ri-arrow-go-back-line"></i></span>Habilitar</button></li>';
+                } else {
+                    // Activo → Editar + [desbloquear] + [resetear pass] + [separador + Inhabilitar]
+                    items +=
+                        '<li><button type="button" class="dropdown-item act-item act-edit edit-item-btn" data-id="' + userId + '"><span class="act-ic"><i class="ri-pencil-fill"></i></span>Editar</button></li>';
+
+                    if (recoveryLocked) {
+                        items +=
+                            '<li><button type="button" class="dropdown-item act-item act-warn unlock-recovery-btn" data-id="' + userId + '"><span class="act-ic"><i class="ri-lock-unlock-line"></i></span>Desbloquear recuperación</button></li>';
+                    }
+
+                    if (!isSelf) {
+                        items +=
+                            '<li><button type="button" class="dropdown-item act-item act-primary reset-password-btn" data-id="' + userId + '" data-name="' + (userName || '') + '" data-email="' + (userEmail || '') + '"><span class="act-ic"><i class="ri-key-2-line"></i></span>Resetear contraseña</button></li>';
+                        // No permitir auto-inhabilitarse desde la UI (el backend también lo bloquea)
+                        items +=
+                            '<li><hr class="dropdown-divider"></li>' +
+                            '<li><button type="button" class="dropdown-item act-item act-del remove-item-btn" data-id="' + userId + '"><span class="act-ic"><i class="ri-forbid-line"></i></span>Inhabilitar</button></li>';
+                    }
                 }
 
-                // Activo → Ver + Editar + [desbloquear] + [resetear pass] + Inhabilitar (salvo uno mismo)
-                var unlockBtn = recoveryLocked
-                    ? '<button class="btn btn-sm btn-soft-warning unlock-recovery-btn" data-id="' + userId + '" title="Desbloquear recuperación" style="padding:0.2rem 0.45rem;"><i class="ri-lock-unlock-line" style="font-size:13px;"></i></button>'
-                    : '';
-                var resetPwBtn = !isSelf
-                    ? '<button class="btn btn-sm btn-soft-info reset-password-btn" data-id="' + userId + '" data-name="' + (userName || '') + '" data-email="' + (userEmail || '') + '" title="Resetear contraseña" style="padding:0.2rem 0.45rem;"><i class="ri-key-2-line" style="font-size:13px;"></i></button>'
-                    : '';
-                // No permitir auto-inhabilitarse desde la UI (el backend también lo bloquea)
-                var inhabilitarBtn = !isSelf
-                    ? '<button class="btn btn-sm btn-soft-danger remove-item-btn" data-id="' + userId + '" title="Inhabilitar" style="padding:0.2rem 0.45rem;"><i class="ri-forbid-line" style="font-size:13px;"></i></button>'
-                    : '';
-
-                return '<div class="d-flex gap-1 justify-content-center">' + viewBtn +
-                    '<button class="btn btn-sm btn-soft-success edit-item-btn" data-id="' + userId + '" title="Editar" style="padding:0.2rem 0.45rem;">' +
-                    '<i class="ri-pencil-fill" style="font-size:13px;"></i>' +
-                    '</button>' +
-                    unlockBtn + resetPwBtn + inhabilitarBtn +
+                var menu =
+                    '<div class="dropdown d-inline-block">' +
+                    '<button class="btn btn-sm btn-soft-secondary" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Más acciones"><i class="ri-more-2-fill"></i></button>' +
+                    '<ul class="dropdown-menu dropdown-menu-end actions-menu">' + items + '</ul>' +
                     '</div>';
+
+                return '<div class="d-flex gap-1 justify-content-center align-items-center">' + sVer + menu + '</div>';
             }
 
             var currentUserId = {{ auth()->id() ?? 'null' }};

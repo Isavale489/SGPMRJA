@@ -512,41 +512,42 @@
                     render: function (data, type, row) {
                         var isAdmin = {{ Auth::user()->isAdmin() ? 'true' : 'false' }};
 
-                        // Botón Convertir a Pedido (solo si está Aprobada)
-                        var convertBtn = '';
+                        // Ver inline
+                        var sVer = `<button class="btn btn-sm btn-soft-info view-btn" data-id="${data}" title="Ver"><i class="ri-eye-fill"></i></button>`;
+
+                        // Items del menú ⋮
+                        var items = '';
+                        var hadItems = false;
+
+                        // Convertir a Pedido (solo si está Aprobada)
                         if (row.estado === 'Aprobada' && isAdmin) {
-                            convertBtn = `
-                                <button class="btn btn-sm btn-soft-primary convert-to-pedido-btn" data-id="${data}" title="Convertir a Pedido">
-                                    <i class="ri-exchange-line"></i>
-                                </button>
-                            `;
+                            items += `<li><button type="button" class="dropdown-item act-item act-primary convert-to-pedido-btn" data-id="${data}"><span class="act-ic"><i class="ri-exchange-line"></i></span>Convertir a Pedido</button></li>`;
+                            hadItems = true;
                         }
 
-                        // Botones Editar y Eliminar (solo si NO está Convertida ni Cancelada)
-                        var editDelete = '';
+                        // Editar y Eliminar (solo si NO está Convertida ni Cancelada ni Vencida)
                         if (isAdmin && row.estado !== 'Convertida' && row.estado !== 'Cancelada' && row.estado !== 'Vencida') {
-                            editDelete = `
-                            <button class="btn btn-sm btn-soft-success edit-btn" data-id="${data}" title="Editar">
-                                <i class="ri-pencil-fill"></i>
-                            </button>
-                            <button class="btn btn-sm btn-soft-danger remove-btn" data-id="${data}" title="Eliminar">
-                                <i class="ri-delete-bin-fill"></i>
-                            </button>`;
+                            items += `<li><button type="button" class="dropdown-item act-item act-edit edit-btn" data-id="${data}"><span class="act-ic"><i class="ri-pencil-fill"></i></span>Editar</button></li>`;
+                            items += `<li><button type="button" class="dropdown-item act-item act-del remove-btn" data-id="${data}"><span class="act-ic"><i class="ri-delete-bin-fill"></i></span>Eliminar</button></li>`;
+                            hadItems = true;
                         }
 
-                        // Layout horizontal compacto con gap-1
-                        return `
-                            <div class="d-flex gap-1 justify-content-center align-items-center flex-wrap">
-                                <button class="btn btn-sm btn-soft-info view-btn" data-id="${data}" title="Ver">
-                                    <i class="ri-eye-fill"></i>
-                                </button>
-                                ${convertBtn}
-                                ${editDelete}
-                                <a class="btn btn-sm btn-soft-secondary" href="/cotizaciones/${data}/pdf" target="_blank" title="PDF">
-                                    <i class="ri-file-pdf-line"></i>
-                                </a>
+                        // Separador antes del PDF (solo si hubo items antes)
+                        if (hadItems) {
+                            items += `<li><hr class="dropdown-divider"></li>`;
+                        }
+
+                        // PDF como enlace
+                        items += `<li><a class="dropdown-item act-item act-pdf" href="/cotizaciones/${data}/pdf" target="_blank"><span class="act-ic"><i class="ri-file-pdf-fill"></i></span>Ver / Descargar PDF</a></li>`;
+
+                        var menu = `
+                            <div class="dropdown d-inline-block">
+                              <button class="btn btn-sm btn-soft-secondary" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Más acciones"><i class="ri-more-2-fill"></i></button>
+                              <ul class="dropdown-menu dropdown-menu-end actions-menu">${items}</ul>
                             </div>
                         `;
+
+                        return `<div class="d-flex gap-1 justify-content-center align-items-center">${sVer}${menu}</div>`;
                     }
                 }
             ],

@@ -768,17 +768,23 @@
                     width: '16%',
                     render: function (data, type, row) {
                         const estadoActivo = ['Pendiente', 'En Proceso'].includes(row.estado);
-                        const avanceBtn = estadoActivo
-                            ? `<button class="btn btn-sm btn-soft-primary avance-btn" data-id="${data}" title="Registrar Avance"><i class="ri-add-circle-line"></i></button>`
-                            : '';
-                        return `
-                            <div class="d-flex gap-1 justify-content-center align-items-center">
-                                ${avanceBtn}
-                                <button class="btn btn-sm btn-soft-info view-btn" data-id="${data}" title="Ver detalle"><i class="ri-eye-fill"></i></button>
-                                <button class="btn btn-sm btn-soft-success edit-btn" data-id="${data}" title="Editar"><i class="ri-pencil-fill"></i></button>
-                                <button class="btn btn-sm btn-soft-danger remove-btn" data-id="${data}" title="Eliminar"><i class="ri-delete-bin-fill"></i></button>
-                            </div>
-                        `;
+
+                        const sVer = `<button class="btn btn-sm btn-soft-info view-btn" data-id="${data}" title="Ver detalle"><i class="ri-eye-fill"></i></button>`;
+
+                        let items = '';
+                        if (estadoActivo) {
+                            items += `<li><button type="button" class="dropdown-item act-item act-primary avance-btn" data-id="${data}"><span class="act-ic"><i class="ri-add-circle-line"></i></span>Registrar avance</button></li>`;
+                        }
+                        items += `<li><button type="button" class="dropdown-item act-item act-edit edit-btn" data-id="${data}"><span class="act-ic"><i class="ri-pencil-fill"></i></span>Editar</button></li>`;
+                        items += `<li><button type="button" class="dropdown-item act-item act-del remove-btn" data-id="${data}"><span class="act-ic"><i class="ri-delete-bin-fill"></i></span>Eliminar</button></li>`;
+
+                        const menu = `
+                            <div class="dropdown d-inline-block">
+                              <button class="btn btn-sm btn-soft-secondary" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Más acciones"><i class="ri-more-2-fill"></i></button>
+                              <ul class="dropdown-menu dropdown-menu-end actions-menu">${items}</ul>
+                            </div>`;
+
+                        return `<div class="d-flex gap-1 justify-content-center align-items-center">${sVer}${menu}</div>`;
                     }
                 }
             ],

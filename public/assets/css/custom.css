@@ -200,9 +200,17 @@ body:not(.swal2-toast-shown) div.swal2-container.swal2-backdrop-show {
 .actions-menu .act-pdf     .act-ic { background: rgba(71,85,105,.14);  color: #475569; }
 .actions-menu .act-pdf:hover,
 .actions-menu .act-pdf:focus       { background: rgba(71,85,105,.10);  color: #334155; }
+.actions-menu .act-primary .act-ic { background: rgba(79,70,229,.14);  color: #4f46e5; }
+.actions-menu .act-primary:hover,
+.actions-menu .act-primary:focus   { background: rgba(79,70,229,.10);  color: #4338ca; }
 
 /* Neutraliza el fondo azul que Bootstrap aplica en :active */
 .actions-menu .act-item:active { background-color: rgba(15,23,42,.05); }
+
+/* Evita que un contenedor .table-responsive recorte el menú ⋮ cuando está
+   abierto (p. ej. tabla de Insumos). Solo libera el overflow mientras hay un
+   menú visible; el resto del tiempo conserva el scroll horizontal. */
+.table-responsive:has(.actions-menu.show) { overflow: visible; }
 
 /* Dark mode */
 [data-bs-theme="dark"] .actions-menu {
@@ -215,6 +223,8 @@ body:not(.swal2-toast-shown) div.swal2-container.swal2-backdrop-show {
 [data-bs-theme="dark"] .actions-menu .act-warn    .act-ic { background: rgba(245,158,11,.22);  color: #fbbf24; }
 [data-bs-theme="dark"] .actions-menu .act-restore .act-ic { background: rgba(59,130,246,.22);  color: #60a5fa; }
 [data-bs-theme="dark"] .actions-menu .act-pdf     .act-ic { background: rgba(148,163,184,.20); color: #cbd5e1; }
+[data-bs-theme="dark"] .actions-menu .act-primary .act-ic { background: rgba(99,102,241,.24);  color: #a5b4fc; }
+[data-bs-theme="dark"] .actions-menu .act-primary:hover  { background: rgba(99,102,241,.16); }
 [data-bs-theme="dark"] .actions-menu .act-edit:hover    { background: rgba(34,197,94,.14); }
 [data-bs-theme="dark"] .actions-menu .act-del:hover     { background: rgba(239,68,68,.14); }
 [data-bs-theme="dark"] .actions-menu .act-warn:hover    { background: rgba(245,158,11,.16); }

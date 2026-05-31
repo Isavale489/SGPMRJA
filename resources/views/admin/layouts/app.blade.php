@@ -148,6 +148,22 @@
 
     <!-- JAVASCRIPT -->
     <script src="{{ asset('assets/libs/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
+    <script>
+        // Solo un menú de acciones (⋮) abierto a la vez en las tablas.
+        // Listener en FASE DE CAPTURA: corre antes que cualquier otro handler de la
+        // página, así que cierra de forma fiable los demás menús de acciones abiertos
+        // sin importar qué interfiera con el auto-cierre nativo de Bootstrap.
+        document.addEventListener('click', function (e) {
+            var clickedToggle = e.target.closest('[data-bs-toggle="dropdown"]');
+            document.querySelectorAll('.dropdown-menu.actions-menu.show').forEach(function (menu) {
+                var dd = menu.closest('.dropdown');
+                var toggle = dd ? dd.querySelector('[data-bs-toggle="dropdown"]') : null;
+                if (toggle && toggle !== clickedToggle) {
+                    bootstrap.Dropdown.getOrCreateInstance(toggle).hide();
+                }
+            });
+        }, true);
+    </script>
     <script src="{{ asset('assets/libs/simplebar/simplebar.min.js') }}"></script>
     <script src="{{ asset('assets/libs/node-waves/waves.min.js') }}"></script>
     <script src="{{ asset('assets/libs/feather-icons/feather.min.js') }}"></script>

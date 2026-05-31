@@ -920,29 +920,22 @@
             });
 
             function generateButtons(empleadoId, isTrashed) {
-                // Inhabilitado (trashed) → Ver + Restaurar
+                // Patrón unificado: Ver inline + menú ⋮ con el resto de acciones.
+                var sVer = '<button class="btn btn-sm btn-soft-info view-item-btn" data-id="' + empleadoId + '" title="Ver"><i class="ri-eye-fill"></i></button>';
+                var items;
                 if (isTrashed) {
-                    return '<div class="d-flex gap-1 justify-content-center">' +
-                        '<button class="btn btn-sm btn-soft-secondary view-item-btn dt-action-btn" data-id="' + empleadoId + '" title="Ver">' +
-                        '<i class="ri-eye-fill dt-action-icon"></i>' +
-                        '</button>' +
-                        '<button class="btn btn-sm btn-soft-success restore-item-btn dt-action-btn" data-id="' + empleadoId + '" title="Restaurar">' +
-                        '<i class="ri-arrow-go-back-line dt-action-icon"></i>' +
-                        '</button>' +
-                        '</div>';
+                    items = '<li><button type="button" class="dropdown-item act-item act-restore restore-item-btn" data-id="' + empleadoId + '"><span class="act-ic"><i class="ri-arrow-go-back-line"></i></span>Restaurar</button></li>';
+                } else {
+                    items =
+                        '<li><button type="button" class="dropdown-item act-item act-edit edit-item-btn" data-id="' + empleadoId + '"><span class="act-ic"><i class="ri-pencil-fill"></i></span>Editar</button></li>' +
+                        '<li><button type="button" class="dropdown-item act-item act-del remove-item-btn" data-id="' + empleadoId + '"><span class="act-ic"><i class="ri-forbid-line"></i></span>Inhabilitar</button></li>';
                 }
-                // Activo → Ver + Editar + Inhabilitar
-                return '<div class="d-flex gap-1 justify-content-center">' +
-                    '<button class="btn btn-sm btn-soft-secondary view-item-btn dt-action-btn" data-id="' + empleadoId + '" title="Ver">' +
-                    '<i class="ri-eye-fill dt-action-icon"></i>' +
-                    '</button>' +
-                    '<button class="btn btn-sm btn-soft-success edit-item-btn dt-action-btn" data-id="' + empleadoId + '" title="Editar">' +
-                    '<i class="ri-pencil-fill dt-action-icon"></i>' +
-                    '</button>' +
-                    '<button class="btn btn-sm btn-soft-danger remove-item-btn dt-action-btn" data-id="' + empleadoId + '" title="Inhabilitar">' +
-                    '<i class="ri-forbid-line dt-action-icon"></i>' +
-                    '</button>' +
+                var menu =
+                    '<div class="dropdown d-inline-block">' +
+                        '<button class="btn btn-sm btn-soft-secondary" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Más acciones"><i class="ri-more-2-fill"></i></button>' +
+                        '<ul class="dropdown-menu dropdown-menu-end actions-menu">' + items + '</ul>' +
                     '</div>';
+                return '<div class="d-flex gap-1 justify-content-center align-items-center">' + sVer + menu + '</div>';
             }
 
             function renderEllipsis(value) {

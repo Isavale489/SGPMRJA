@@ -787,34 +787,25 @@
         $(document).ready(function () {
 
             function generateButtons(proveedorId, isTrashed) {
-                // Si el registro está inhabilitado (trashed), mostrar botón "Ver" + "Restaurar"
+                var sVer = '<button class="btn btn-sm btn-soft-info view-item-btn" data-id="' + proveedorId + '" title="Ver"><i class="ri-eye-fill"></i></button>';
+                var items = '';
                 if (isTrashed) {
-                    return '<div class="d-flex gap-1 justify-content-center">' +
-                        '<button class="btn btn-sm btn-soft-secondary view-item-btn" data-id="' + proveedorId + '" title="Ver" style="padding:0.2rem 0.45rem;">' +
-                        '<i class="ri-eye-fill" style="font-size:13px;"></i>' +
-                        '</button>' +
-                        '<button class="btn btn-sm btn-soft-success restore-item-btn" data-id="' + proveedorId + '" title="Restaurar" style="padding:0.2rem 0.45rem;">' +
-                        '<i class="ri-arrow-go-back-line" style="font-size:13px;"></i>' +
-                        '</button>' +
-                        '</div>';
+                    items = '<li><button type="button" class="dropdown-item act-item act-restore restore-item-btn" data-id="' + proveedorId + '"><span class="act-ic"><i class="ri-arrow-go-back-line"></i></span>Restaurar</button></li>';
+                } else {
+                    var isAdmin = {{ Auth::user()->isAdmin() ? 'true' : 'false' }};
+                    if (isAdmin) {
+                        items =
+                            '<li><button type="button" class="dropdown-item act-item act-edit edit-item-btn" data-id="' + proveedorId + '"><span class="act-ic"><i class="ri-pencil-fill"></i></span>Editar</button></li>' +
+                            '<li><button type="button" class="dropdown-item act-item act-del remove-item-btn" data-id="' + proveedorId + '"><span class="act-ic"><i class="ri-forbid-line"></i></span>Inhabilitar</button></li>';
+                    }
                 }
-
-                var isAdmin = {{ Auth::user()->isAdmin() ? 'true' : 'false' }};
-                var editDeleteBtns = isAdmin
-                    ? '<button class="btn btn-sm btn-soft-success edit-item-btn" data-id="' + proveedorId + '" title="Editar" style="padding:0.2rem 0.45rem;">' +
-                    '<i class="ri-pencil-fill" style="font-size:13px;"></i>' +
-                    '</button>' +
-                    '<button class="btn btn-sm btn-soft-danger remove-item-btn" data-id="' + proveedorId + '" title="Inhabilitar" style="padding:0.2rem 0.45rem;">' +
-                    '<i class="ri-forbid-line" style="font-size:13px;"></i>' +
-                    '</button>'
+                var menu = items
+                    ? '<div class="dropdown d-inline-block">' +
+                        '<button class="btn btn-sm btn-soft-secondary" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Más acciones"><i class="ri-more-2-fill"></i></button>' +
+                        '<ul class="dropdown-menu dropdown-menu-end actions-menu">' + items + '</ul>' +
+                    '</div>'
                     : '';
-
-                return '<div class="d-flex gap-1 justify-content-center">' +
-                    '<button class="btn btn-sm btn-soft-secondary view-item-btn" data-id="' + proveedorId + '" title="Ver" style="padding:0.2rem 0.45rem;">' +
-                    '<i class="ri-eye-fill" style="font-size:13px;"></i>' +
-                    '</button>' +
-                    editDeleteBtns +
-                    '</div>';
+                return '<div class="d-flex gap-1 justify-content-center align-items-center">' + sVer + menu + '</div>';
             }
 
             // Toggle campos según tipo de proveedor.

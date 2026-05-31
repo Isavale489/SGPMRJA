@@ -168,15 +168,20 @@
                 const id     = row.id;
                 const nombre = $('<div>').text(row.nombre).html();
 
+                var items;
                 if (HISTORIAL) {
-                    return '<div class="d-flex gap-1 justify-content-center">' +
-                        '<button class="btn btn-sm btn-soft-success restore-btn" data-id="' + id + '" title="Restaurar"><i class="ri-arrow-go-back-line"></i></button>' +
-                        '</div>';
+                    items = `<li><button type="button" class="dropdown-item act-item act-restore restore-btn" data-id="${id}"><span class="act-ic"><i class="ri-arrow-go-back-line"></i></span>Restaurar</button></li>`;
+                } else {
+                    items =
+                        `<li><button type="button" class="dropdown-item act-item act-edit edit-btn" data-id="${id}" data-nombre="${nombre}"><span class="act-ic"><i class="ri-pencil-fill"></i></span>Editar</button></li>` +
+                        `<li><button type="button" class="dropdown-item act-item act-del delete-btn" data-id="${id}"><span class="act-ic"><i class="ri-forbid-line"></i></span>Inhabilitar</button></li>`;
                 }
-                return '<div class="d-flex gap-1 justify-content-center">' +
-                    '<button class="btn btn-sm btn-soft-primary edit-btn" data-id="' + id + '" data-nombre="' + nombre + '" title="Editar"><i class="ri-pencil-line"></i></button>' +
-                    '<button class="btn btn-sm btn-soft-danger delete-btn" data-id="' + id + '" title="Inhabilitar"><i class="ri-delete-bin-line"></i></button>' +
-                    '</div>';
+                return `<div class="d-flex gap-1 justify-content-center align-items-center">` +
+                    `<div class="dropdown d-inline-block">` +
+                        `<button class="btn btn-sm btn-soft-secondary" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Acciones"><i class="ri-more-2-fill"></i></button>` +
+                        `<ul class="dropdown-menu dropdown-menu-end actions-menu">${items}</ul>` +
+                    `</div>` +
+                `</div>`;
             }
 
             // ──────────────────────────────────────────────
