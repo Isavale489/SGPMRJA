@@ -755,12 +755,12 @@
             },
             dom: 'rtip',
             columns: [
-                { data: 'id', name: 'id', className: 'align-middle text-center', width: '7%' },
+                { data: 'id', name: 'id', className: 'align-middle text-center', width: '8%' },
                 { data: 'pedido_info', name: 'pedido.id', className: 'align-middle text-center', orderable: false, width: '9%' },
-                { data: 'producto_info', name: 'producto.nombre', className: 'align-middle', orderable: false, searchable: false, width: '23%' },
-                { data: 'cantidad_solicitada', name: 'cantidad_solicitada', className: 'align-middle text-center', width: '9%' },
+                { data: 'producto_info', name: 'producto.nombre', className: 'align-middle', orderable: false, searchable: false, width: '26%' },
+                { data: 'cantidad_solicitada', name: 'cantidad_solicitada', className: 'align-middle text-center', width: '10%' },
                 {
-                    data: null, className: 'align-middle', width: '16%',
+                    data: null, className: 'align-middle', width: '18%',
                     render: function (data) {
                         let porcentaje = data.cantidad_solicitada > 0
                             ? (data.cantidad_producida / data.cantidad_solicitada * 100).toFixed(2) : '0.00';
@@ -771,14 +771,7 @@
                     }
                 },
                 {
-                    data: 'fecha_fin_estimada', name: 'fecha_fin_estimada', className: 'align-middle', width: '12%',
-                    render: function (data) {
-                        let fecha = new Date(data);
-                        return `<div class="text-nowrap"><div class="fw-medium">${fecha.toLocaleDateString('es-ES')}</div></div>`;
-                    }
-                },
-                {
-                    data: 'estado', className: 'align-middle text-center', width: '10%',
+                    data: 'estado', className: 'align-middle text-center', width: '13%',
                     render: function (data) {
                         let clases = {
                             'Pendiente': 'status-pendiente badge-soft-warning',
@@ -824,11 +817,11 @@
             autoWidth: false,
             responsive: false,
             buttons: [
-                { extend: 'copy',  exportOptions: { columns: [0, 1, 2, 3, 4, 5, 6] } },
-                { extend: 'csv',   exportOptions: { columns: [0, 1, 2, 3, 4, 5, 6] } },
-                { extend: 'excel', exportOptions: { columns: [0, 1, 2, 3, 4, 5, 6] } },
-                { extend: 'pdf',   exportOptions: { columns: [0, 1, 2, 3, 4, 5, 6] } },
-                { extend: 'print', exportOptions: { columns: [0, 1, 2, 3, 4, 5, 6] } }
+                { extend: 'copy',  exportOptions: { columns: [0, 1, 2, 3, 4, 5] } },
+                { extend: 'csv',   exportOptions: { columns: [0, 1, 2, 3, 4, 5] } },
+                { extend: 'excel', exportOptions: { columns: [0, 1, 2, 3, 4, 5] } },
+                { extend: 'pdf',   exportOptions: { columns: [0, 1, 2, 3, 4, 5] } },
+                { extend: 'print', exportOptions: { columns: [0, 1, 2, 3, 4, 5] } }
             ],
             language: lenguajeData
         });

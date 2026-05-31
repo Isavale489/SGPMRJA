@@ -4787,15 +4787,16 @@ header#page-topbar,
 .estado-Finalizado { background-color: #198754; }
 .estado-Cancelado  { background-color: #dc3545; }
 
-/* Anchos de columna #ordenes-table */
-#ordenes-table th:nth-child(1) { width: 8%;  text-align: center; }
-#ordenes-table th:nth-child(2) { width: 8%;  text-align: center; }
-#ordenes-table th:nth-child(3) { width: 12%; text-align: center; }
-#ordenes-table th:nth-child(4) { width: 18%; }
-#ordenes-table th:nth-child(5) { width: 15%; }
-#ordenes-table th:nth-child(6) { width: 14%; text-align: center; }
-#ordenes-table th:nth-child(7) { width: 25%; text-align: center; }
+/* Anchos de columna #ordenes-table (7 columnas) */
+#ordenes-table th:nth-child(1) { width: 8%;  text-align: center; } /* Nro. Orden */
+#ordenes-table th:nth-child(2) { width: 9%;  text-align: center; } /* Nro. Pedido */
+#ordenes-table th:nth-child(3) { width: 26%; }                     /* Producto / Empleado */
+#ordenes-table th:nth-child(4) { width: 10%; text-align: center; } /* Cant. Solicitada */
+#ordenes-table th:nth-child(5) { width: 18%; text-align: center; } /* Progreso */
+#ordenes-table th:nth-child(6) { width: 13%; text-align: center; } /* Estado */
+#ordenes-table th:nth-child(7) { width: 16%; text-align: center; } /* Acciones */
 
+/* Estado (6) y Acciones (última) sin recorte para badges y menú ⋮ */
 #ordenes-table td:nth-child(6),
 #ordenes-table td:last-child { overflow: visible; text-overflow: clip; text-align: center; }
 

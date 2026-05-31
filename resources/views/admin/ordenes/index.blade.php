@@ -114,10 +114,9 @@
                             <tr>
                                 <th>Nro. Orden</th>
                                 <th>Nro. Pedido</th>
-                                <th>Producto / Empleado</th>
+                                <th>Producto</th>
                                 <th>Cant. Solicitada</th>
                                 <th>Progreso</th>
-                                <th>Fecha Fin Estimada</th>
                                 <th>Estado</th>
                                 <th>Acciones</th>
                             </tr>
