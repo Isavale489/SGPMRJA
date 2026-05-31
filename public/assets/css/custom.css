@@ -140,6 +140,87 @@ body:not(.swal2-toast-shown) div.swal2-container.swal2-backdrop-show {
 [data-bs-theme="dark"] .btn-soft-primary   { --vz-btn-color:#a5b4fc; --vz-btn-bg:rgba(129,116,255,.22); }
 [data-bs-theme="dark"] .btn-soft-warning   { --vz-btn-color:#fbbf24; --vz-btn-bg:rgba(245,158,11,.22); }
 
+/* ============================================================
+   MENÚ DE ACCIONES (dropdown ⋮) — moderno y color-coded
+   Cada opción con su ícono en un chip de color; el hover tinta la
+   fila con el color de la acción para lectura visual inmediata.
+   Clase .actions-menu en el <ul>; .act-item + variante en cada item.
+   ============================================================ */
+.actions-menu {
+  min-width: 224px;
+  padding: 6px;
+  border: 1px solid rgba(15, 23, 42, .08);
+  border-radius: 14px;
+  box-shadow: 0 12px 32px -8px rgba(15, 23, 42, .28), 0 2px 8px rgba(15, 23, 42, .08);
+  animation: actionsMenuIn .14s ease-out;
+}
+@keyframes actionsMenuIn {
+  from { opacity: 0; transform: translateY(-6px) scale(.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+.actions-menu .act-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border-radius: 10px;
+  font-weight: 500;
+  font-size: .85rem;
+  color: #334155;
+  white-space: nowrap;
+  transition: background .14s ease, color .14s ease, transform .08s ease;
+}
+.actions-menu .act-item:active { transform: scale(.98); }
+.actions-menu .act-ic {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px; height: 30px;
+  border-radius: 9px;
+  font-size: 1.05rem;
+  flex-shrink: 0;
+  transition: transform .14s ease;
+}
+.actions-menu .act-item:hover .act-ic { transform: scale(1.12); }
+.actions-menu .dropdown-divider { margin: 5px 8px; opacity: .5; }
+
+/* Variantes (chip + tinte de hover por color de acción) */
+.actions-menu .act-edit    .act-ic { background: rgba(22,163,74,.14);  color: #16a34a; }
+.actions-menu .act-edit:hover,
+.actions-menu .act-edit:focus      { background: rgba(22,163,74,.10);  color: #15803d; }
+.actions-menu .act-del     .act-ic { background: rgba(220,38,38,.14);  color: #dc2626; }
+.actions-menu .act-del:hover,
+.actions-menu .act-del:focus       { background: rgba(220,38,38,.10);  color: #b91c1c; }
+.actions-menu .act-warn    .act-ic { background: rgba(245,158,11,.16); color: #d97706; }
+.actions-menu .act-warn:hover,
+.actions-menu .act-warn:focus      { background: rgba(245,158,11,.12); color: #b45309; }
+.actions-menu .act-restore .act-ic { background: rgba(37,99,235,.14);  color: #2563eb; }
+.actions-menu .act-restore:hover,
+.actions-menu .act-restore:focus   { background: rgba(37,99,235,.10);  color: #1d4ed8; }
+.actions-menu .act-pdf     .act-ic { background: rgba(71,85,105,.14);  color: #475569; }
+.actions-menu .act-pdf:hover,
+.actions-menu .act-pdf:focus       { background: rgba(71,85,105,.10);  color: #334155; }
+
+/* Neutraliza el fondo azul que Bootstrap aplica en :active */
+.actions-menu .act-item:active { background-color: rgba(15,23,42,.05); }
+
+/* Dark mode */
+[data-bs-theme="dark"] .actions-menu {
+  border-color: rgba(255,255,255,.08);
+  box-shadow: 0 12px 32px -8px rgba(0,0,0,.6);
+}
+[data-bs-theme="dark"] .actions-menu .act-item { color: #cbd5e1; }
+[data-bs-theme="dark"] .actions-menu .act-edit    .act-ic { background: rgba(34,197,94,.20);   color: #4ade80; }
+[data-bs-theme="dark"] .actions-menu .act-del     .act-ic { background: rgba(239,68,68,.20);   color: #f87171; }
+[data-bs-theme="dark"] .actions-menu .act-warn    .act-ic { background: rgba(245,158,11,.22);  color: #fbbf24; }
+[data-bs-theme="dark"] .actions-menu .act-restore .act-ic { background: rgba(59,130,246,.22);  color: #60a5fa; }
+[data-bs-theme="dark"] .actions-menu .act-pdf     .act-ic { background: rgba(148,163,184,.20); color: #cbd5e1; }
+[data-bs-theme="dark"] .actions-menu .act-edit:hover    { background: rgba(34,197,94,.14); }
+[data-bs-theme="dark"] .actions-menu .act-del:hover     { background: rgba(239,68,68,.14); }
+[data-bs-theme="dark"] .actions-menu .act-warn:hover    { background: rgba(245,158,11,.16); }
+[data-bs-theme="dark"] .actions-menu .act-restore:hover { background: rgba(59,130,246,.16); }
+[data-bs-theme="dark"] .actions-menu .act-pdf:hover     { background: rgba(148,163,184,.14); }
+
 /* Botones de acción centrados en su celda */
 .table td:last-child {
   text-align: center;
@@ -3723,16 +3804,21 @@ header#page-topbar,
 
 /* ── DataTable — anchos de columna (base en .table-operativa) ── */
 #pedidos-table th:nth-child(1) { width: 8%;  text-align: center; }
-#pedidos-table th:nth-child(2) { width: 30%; }
+#pedidos-table th:nth-child(2) { width: 40%; }
 #pedidos-table th:nth-child(3) { width: 14%; }
 #pedidos-table th:nth-child(4) { width: 12%; }
 #pedidos-table th:nth-child(5) { width: 14%; text-align: center; }
-#pedidos-table th:nth-child(6) { width: 22%; text-align: center; }
+#pedidos-table th:nth-child(6) { width: 12%; text-align: center; }
 
 #pedidos-table td:nth-child(5) {
     overflow: visible;
     text-overflow: clip;
     text-align: center;
+}
+
+/* Celda de acciones: overflow visible para que el menú ⋮ no se recorte */
+#pedidos-table td:nth-child(6) {
+    overflow: visible;
 }
 
 /* ── Header gradient para tabla de productos del modal ───────── */

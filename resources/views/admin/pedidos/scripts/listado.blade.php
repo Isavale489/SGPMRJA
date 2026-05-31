@@ -91,43 +91,36 @@
                     width: '22%',
                     render: function (data, type, row) {
                         var isAdmin = {{ Auth::user()->isAdmin() ? 'true' : 'false' }};
-                        var editDelete = '';
-                        // Sin producción iniciada: se puede editar/eliminar. Con órdenes activas se bloquea
-                        // (editar recrearía las líneas y dejaría huérfanas las órdenes).
-                        if (isAdmin && row.estado !== 'Completado' && row.estado !== 'Cancelado' && !row.tiene_produccion) {
-                            editDelete = `
-                                <button class="btn btn-sm btn-soft-success edit-btn" data-id="${data}" title="Editar">
-                                    <i class="ri-pencil-fill"></i>
-                                </button>
-                                <button class="btn btn-sm btn-soft-danger remove-btn" data-id="${data}" title="Eliminar">
-                                    <i class="ri-delete-bin-fill"></i>
-                                </button>`;
+                        // Ver inline (acción rápida, en todas las filas) + menú "⋮ Más" con
+                        // el resto de acciones, que son contextuales. Así cada fila es
+                        // idéntica ([Ver][⋮]): columna alineada y sin huecos en blanco.
+                        var sVer = `<button class="btn btn-sm btn-soft-info view-btn" data-id="${data}" title="Ver"><i class="ri-eye-fill"></i></button>`;
+
+                        var items = '';
+                        // Editar / Eliminar (bloqueado si hay producción activa o el pedido
+                        // ya está completado/cancelado).
+                        var puedeEditar = isAdmin && row.estado !== 'Completado' && row.estado !== 'Cancelado' && !row.tiene_produccion;
+                        if (puedeEditar) {
+                            items += `<li><button type="button" class="dropdown-item act-item act-edit edit-btn" data-id="${data}"><span class="act-ic"><i class="ri-pencil-fill"></i></span>Editar</button></li>`;
+                            items += `<li><button type="button" class="dropdown-item act-item act-del remove-btn" data-id="${data}"><span class="act-ic"><i class="ri-delete-bin-fill"></i></span>Eliminar</button></li>`;
                         }
-                        // Cancelar (Pendiente/Procesando) o Reactivar (Cancelado) — acción manual
-                        var estadoAccion = '';
+                        // Cancelar (Pendiente/Procesando) o Reactivar (Cancelado).
                         if (isAdmin && (row.estado === 'Pendiente' || row.estado === 'Procesando')) {
-                            estadoAccion = `
-                                <button class="btn btn-sm btn-soft-warning cancelar-btn" data-id="${data}" title="Cancelar pedido">
-                                    <i class="ri-close-circle-line"></i>
-                                </button>`;
+                            items += `<li><button type="button" class="dropdown-item act-item act-warn cancelar-btn" data-id="${data}"><span class="act-ic"><i class="ri-close-circle-line"></i></span>Cancelar pedido</button></li>`;
                         } else if (isAdmin && row.estado === 'Cancelado') {
-                            estadoAccion = `
-                                <button class="btn btn-sm btn-soft-secondary reactivar-btn" data-id="${data}" title="Reactivar pedido">
-                                    <i class="ri-refresh-line"></i>
-                                </button>`;
+                            items += `<li><button type="button" class="dropdown-item act-item act-restore reactivar-btn" data-id="${data}"><span class="act-ic"><i class="ri-refresh-line"></i></span>Reactivar pedido</button></li>`;
                         }
-                        return `
-                            <div class="d-flex gap-1 justify-content-center align-items-center">
-                                <button class="btn btn-sm btn-soft-info view-btn" data-id="${data}" title="Ver">
-                                    <i class="ri-eye-fill"></i>
-                                </button>
-                                ${editDelete}
-                                ${estadoAccion}
-                                <a class="btn btn-sm btn-soft-secondary" href="/pedidos/${data}/pdf" target="_blank" title="PDF">
-                                    <i class="ri-file-pdf-line"></i>
-                                </a>
-                            </div>
-                        `;
+                        // Separador antes del PDF si hubo acciones previas.
+                        if (items) items += `<li><hr class="dropdown-divider"></li>`;
+                        items += `<li><a class="dropdown-item act-item act-pdf" href="/pedidos/${data}/pdf" target="_blank"><span class="act-ic"><i class="ri-file-pdf-fill"></i></span>Ver / Descargar PDF</a></li>`;
+
+                        var menu = `
+                            <div class="dropdown d-inline-block">
+                                <button class="btn btn-sm btn-soft-secondary" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Más acciones"><i class="ri-more-2-fill"></i></button>
+                                <ul class="dropdown-menu dropdown-menu-end actions-menu">${items}</ul>
+                            </div>`;
+
+                        return `<div class="d-flex gap-1 justify-content-center align-items-center">${sVer}${menu}</div>`;
                     }
                 }
             ],
