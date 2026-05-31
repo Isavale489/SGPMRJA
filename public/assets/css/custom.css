@@ -4244,6 +4244,12 @@ header#page-topbar,
     transition: background-color 0.16s ease;
 }
 
+/* Header "Acciones" centrado (coincide con los botones centrados del cuerpo).
+   La columna de acciones es la última en estas tablas. */
+#insumos-table thead th:last-child,
+#productos-table thead th:last-child,
+#alertas-table thead th:last-child { text-align: center; }
+
 .table-maestro.dataTable tbody tr td {
     border-top: 1px solid rgba(30, 60, 114, 0.07);
     border-bottom: 1px solid rgba(255, 255, 255, 0.7);
