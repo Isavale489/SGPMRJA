@@ -21,6 +21,7 @@ class Insumo extends Model
         'costo_unitario',
         'stock_actual',
         'stock_minimo',
+        'stock_maximo',
         'estado',
     ];
 
@@ -30,6 +31,7 @@ class Insumo extends Model
         'costo_unitario' => 'decimal:2',
         'stock_actual' => 'decimal:2',
         'stock_minimo' => 'decimal:2',
+        'stock_maximo' => 'decimal:2',
     ];
 
     public function ordenesProduccion()

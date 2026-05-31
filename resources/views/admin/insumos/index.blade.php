@@ -148,7 +148,9 @@
                                     <th>Nombre</th>
                                     <th>Código</th>
                                     <th>Tipo</th>
-                                    <th>Stock Actual</th>
+                                    <th>Mín.</th>
+                                    <th>Actual</th>
+                                    <th>Máx.</th>
                                     <th>Costo Unit.</th>
                                     <th>Acciones</th>
                                 </tr>
@@ -235,27 +237,39 @@
                                 </div>
                                 <div class="card-body">
                                     <div class="row g-3">
-                                        <div class="col-6">
+                                        <div class="col-4">
+                                            <div class="d-flex align-items-center">
+                                                <div class="rounded-circle me-2 d-flex align-items-center justify-content-center flex-shrink-0"
+                                                    style="width:32px;height:32px;background:rgba(30,60,114,0.1);">
+                                                    <i class="ri-arrow-down-line" style="color:#1e3c72;"></i>
+                                                </div>
+                                                <div>
+                                                    <small class="text-muted d-block">Existencia Mínima</small>
+                                                    <span class="fw-semibold" id="view-stock-minimo">-</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-4">
                                             <div class="d-flex align-items-center">
                                                 <div class="rounded-circle me-2 d-flex align-items-center justify-content-center flex-shrink-0"
                                                     style="width:32px;height:32px;background:rgba(30,60,114,0.1);">
                                                     <i class="ri-store-3-line" style="color:#1e3c72;"></i>
                                                 </div>
                                                 <div>
-                                                    <small class="text-muted d-block">Stock Actual</small>
+                                                    <small class="text-muted d-block">Existencia Actual</small>
                                                     <span class="fw-semibold" id="view-stock-actual">-</span>
                                                 </div>
                                             </div>
                                         </div>
-                                        <div class="col-6">
+                                        <div class="col-4">
                                             <div class="d-flex align-items-center">
                                                 <div class="rounded-circle me-2 d-flex align-items-center justify-content-center flex-shrink-0"
                                                     style="width:32px;height:32px;background:rgba(30,60,114,0.1);">
-                                                    <i class="ri-alarm-warning-line" style="color:#1e3c72;"></i>
+                                                    <i class="ri-arrow-up-line" style="color:#1e3c72;"></i>
                                                 </div>
                                                 <div>
-                                                    <small class="text-muted d-block">Stock Mínimo</small>
-                                                    <span class="fw-semibold" id="view-stock-minimo">-</span>
+                                                    <small class="text-muted d-block">Existencia Máxima</small>
+                                                    <span class="fw-semibold" id="view-stock-maximo">-</span>
                                                 </div>
                                             </div>
                                         </div>
@@ -366,11 +380,14 @@
 
                             <div id="stock-fields-wrapper">
                                 <div class="row mb-0">
-                                    <div class="col-md-6">
-                                        <x-forms.input name="stock_actual" label="Stock Actual" type="number" step="0.01" min="0" value="0" />
+                                    <div class="col-md-4">
+                                        <x-forms.input name="stock_minimo" label="Existencia Mínima" type="number" step="0.01" min="0" />
                                     </div>
-                                    <div class="col-md-6">
-                                        <x-forms.input name="stock_minimo" label="Stock Mínimo" type="number" step="0.01" min="0" />
+                                    <div class="col-md-4">
+                                        <x-forms.input name="stock_actual" label="Existencia Actual" type="number" step="0.01" min="0" value="0" />
+                                    </div>
+                                    <div class="col-md-4">
+                                        <x-forms.input name="stock_maximo" label="Existencia Máxima" type="number" step="0.01" min="0" />
                                     </div>
                                 </div>
                             </div>
@@ -499,30 +516,30 @@
                 buttons: [
                     {
                         extend: 'copy',
-                        exportOptions: { columns: [0, 1, 2, 3, 4] }
+                        exportOptions: { columns: [0, 1, 2, 3, 4, 5, 6] }
                     },
                     {
                         extend: 'csv',
-                        exportOptions: { columns: [0, 1, 2, 3, 4] }
+                        exportOptions: { columns: [0, 1, 2, 3, 4, 5, 6] }
                     },
                     {
                         extend: 'excel',
-                        exportOptions: { columns: [0, 1, 2, 3, 4] }
+                        exportOptions: { columns: [0, 1, 2, 3, 4, 5, 6] }
                     },
                     {
                         extend: 'pdf',
-                        exportOptions: { columns: [0, 1, 2, 3, 4] }
+                        exportOptions: { columns: [0, 1, 2, 3, 4, 5, 6] }
                     },
                     {
                         extend: 'print',
-                        exportOptions: { columns: [0, 1, 2, 3, 4] }
+                        exportOptions: { columns: [0, 1, 2, 3, 4, 5, 6] }
                     }
                 ],
                 columns: [
                     {
                         data: 'nombre',
                         name: 'nombre',
-                        width: '18%',
+                        width: '20%',
                         render: function (data) {
                             return renderEllipsis(data);
                         }
@@ -540,7 +557,7 @@
                     {
                         data: 'tipo',
                         name: 'tipo',
-                        width: '11%',
+                        width: '12%',
                         render: function (data) {
                             var tipos = {
                                 'Tela': '<span class="badge-tipo badge-tipo-tela"><i class="ri-t-shirt-line"></i> Tela</span>',
@@ -553,18 +570,34 @@
                         }
                     },
                     {
+                        data: 'stock_minimo',
+                        name: 'stock_minimo',
+                        width: '9%',
+                        render: function (data) {
+                            return parseFloat(data).toFixed(2);
+                        }
+                    },
+                    {
                         data: 'stock_actual',
                         name: 'stock_actual',
-                        width: '11%',
+                        width: '9%',
                         render: function (data, type, row) {
                             var stockClass = 'stock-' + row.stock_status;
-                            return `<span class="${stockClass}">${data}</span>`;
+                            return `<span class="${stockClass}">${parseFloat(data).toFixed(2)}</span>`;
+                        }
+                    },
+                    {
+                        data: 'stock_maximo',
+                        name: 'stock_maximo',
+                        width: '9%',
+                        render: function (data) {
+                            return parseFloat(data).toFixed(2);
                         }
                     },
                     {
                         data: 'costo_unitario',
                         name: 'costo_unitario',
-                        width: '20%',
+                        width: '14%',
                         render: function (data) {
                             return '$/ ' + parseFloat(data).toFixed(2);
                         }
@@ -572,7 +605,7 @@
                     {
                         data: 'id',
                         name: 'actions',
-                        width: '14%',
+                        width: '19%',
                         orderable: false,
                         searchable: false,
                         render: function (data) {
@@ -674,6 +707,7 @@
                     $("#view-unidad-medida").text(data.unidad_medida);
                     $("#view-stock-actual").text(parseFloat(data.stock_actual).toFixed(2));
                     $("#view-stock-minimo").text(parseFloat(data.stock_minimo).toFixed(2));
+                    $("#view-stock-maximo").text(parseFloat(data.stock_maximo).toFixed(2));
                     $("#view-costo-unitario").text('$/ ' + parseFloat(data.costo_unitario).toFixed(2));
                     $("#view-created").text(formatDate(data.created_at));
                     $("#viewModal").modal('show');
@@ -696,6 +730,7 @@
                     $("#stock-fields-wrapper").toggle(inventoriable);
                     $("#field-stock_actual").val(data.stock_actual);
                     $("#field-stock_minimo").val(data.stock_minimo);
+                    $("#field-stock_maximo").val(data.stock_maximo);
                     $("#field-costo_unitario").val(data.costo_unitario);
                     $("#field-estado").val(data.estado ? '1' : '0');
 
@@ -932,6 +967,21 @@
                 }
             });
 
+            // Existencia Máxima — no negativa + no menor que la mínima
+            $(document).on('blur', '#field-stock_maximo', function () {
+                if (!$('#is-inventoriable-switch').is(':checked')) return;
+                var val = parseFloat($(this).val());
+                if ($(this).val() === '') { marcarValido($(this)); return; }
+                var stockMin = parseFloat($('#field-stock_minimo').val());
+                if (isNaN(val) || val < 0) {
+                    marcarInvalido($(this), 'La existencia máxima no puede ser negativa.');
+                } else if (!isNaN(stockMin) && val < stockMin) {
+                    marcarInvalido($(this), 'La existencia máxima no puede ser menor que la mínima.');
+                } else {
+                    marcarValido($(this));
+                }
+            });
+
             // Costo Unitario — mayor a 0
             $(document).on('blur', '#field-costo_unitario', function () {
                 var val = parseFloat($(this).val());
@@ -988,6 +1038,18 @@
                         marcarInvalido($stockMin, 'El stock mínimo no puede superar el stock actual.');
                         esValido = false;
                     } else { marcarValido($stockMin); }
+
+                    let $stockMax = $('#field-stock_maximo');
+                    if ($stockMax.val() !== '') {
+                        let stockMax = parseFloat($stockMax.val());
+                        if (isNaN(stockMax) || stockMax < 0) {
+                            marcarInvalido($stockMax, 'La existencia máxima no puede ser negativa.');
+                            esValido = false;
+                        } else if (!isNaN(stockMin) && stockMin >= 0 && stockMax < stockMin) {
+                            marcarInvalido($stockMax, 'La existencia máxima no puede ser menor que la mínima.');
+                            esValido = false;
+                        } else { marcarValido($stockMax); }
+                    }
                 }
 
                 let $costo = $('#field-costo_unitario');

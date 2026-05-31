@@ -78,10 +78,12 @@ class InsumoController extends Controller
             'costo_unitario'  => 'required|numeric|min:0.01',
             'stock_actual'    => 'nullable|numeric|min:0',
             'stock_minimo'    => 'nullable|numeric|min:0',
+            'stock_maximo'    => 'nullable|numeric|min:0|gte:stock_minimo',
             'estado'          => 'nullable|boolean',
         ], [
             'codigo.regex'  => 'El código solo admite letras mayúsculas y números.',
             'codigo.unique' => 'Ya existe un insumo con este código.',
+            'stock_maximo.gte' => 'La existencia máxima no puede ser menor que la mínima.',
         ]);
 
         $inventoriable = $request->boolean('is_inventoriable', true);
@@ -90,6 +92,7 @@ class InsumoController extends Controller
         $data['is_inventoriable'] = $inventoriable;
         $data['stock_actual']     = $inventoriable ? ($request->input('stock_actual', 0)) : 0;
         $data['stock_minimo']     = $inventoriable ? ($request->input('stock_minimo', 0)) : 0;
+        $data['stock_maximo']     = $inventoriable ? ($request->input('stock_maximo', 0)) : 0;
 
         $insumo = Insumo::create($data);
 
@@ -115,10 +118,12 @@ class InsumoController extends Controller
             'costo_unitario'  => 'required|numeric|min:0.01',
             'stock_actual'    => 'nullable|numeric|min:0',
             'stock_minimo'    => 'nullable|numeric|min:0',
+            'stock_maximo'    => 'nullable|numeric|min:0|gte:stock_minimo',
             'estado'          => 'nullable|boolean',
         ], [
             'codigo.regex'  => 'El código solo admite letras mayúsculas y números.',
             'codigo.unique' => 'Ya existe un insumo con este código.',
+            'stock_maximo.gte' => 'La existencia máxima no puede ser menor que la mínima.',
         ]);
 
         $inventoriable = $request->boolean('is_inventoriable', true);
@@ -126,6 +131,7 @@ class InsumoController extends Controller
         $data['is_inventoriable'] = $inventoriable;
         $data['stock_actual']     = $inventoriable ? ($request->input('stock_actual', 0)) : 0;
         $data['stock_minimo']     = $inventoriable ? ($request->input('stock_minimo', 0)) : 0;
+        $data['stock_maximo']     = $inventoriable ? ($request->input('stock_maximo', 0)) : 0;
         if (empty($insumo->codigo) && $request->filled('codigo')) {
             $data['codigo'] = strtoupper(trim($request->codigo));
         }
