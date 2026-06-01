@@ -327,6 +327,13 @@ class CotizacionController extends Controller
         return response()->json(['success' => 'Cotización actualizada exitosamente.']);
     }
 
+    public function reactivar($id)
+    {
+        $cotizacion = Cotizacion::findOrFail($id);
+        $this->cotizacionService->reactivar($cotizacion);
+        return response()->json(['success' => 'Cotización reactivada correctamente. Nueva validez: 15 días.']);
+    }
+
     public function destroy($id)
     {
         $cotizacion = Cotizacion::findOrFail($id);

@@ -92,6 +92,28 @@ class CotizacionService
     }
 
     /**
+     * Reactivar una cotización vencida, reseteando su validez a 15 días desde hoy.
+     */
+    public function reactivar(Cotizacion $cotizacion): void
+    {
+        if ($cotizacion->estado !== 'Vencida') {
+            throw new \InvalidArgumentException('Solo se pueden reactivar cotizaciones en estado Vencida.');
+        }
+
+        $cotizacion->update([
+            'estado'              => 'Pendiente',
+            'fecha_validez'       => now()->addDays(15)->toDateString(),
+            'tasa_cambio_valor'   => TasaCambio::obtenerValorUsd(),
+        ]);
+
+        Log::info('Cotización reactivada', [
+            'cotizacion_id'    => $cotizacion->id,
+            'nueva_fecha_validez' => $cotizacion->fecha_validez,
+            'user_id'          => Auth::id(),
+        ]);
+    }
+
+    /**
      * Convertir una cotización aprobada a pedido.
      *
      * @return Pedido El pedido creado
