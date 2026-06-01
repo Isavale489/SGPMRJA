@@ -18,15 +18,18 @@ class Cotizacion extends Model
         'fecha_validez',
         'estado',
         'total',
+        'tasa_cambio_valor',
         'notas',
+        'condiciones_terminos',
         'user_id',
         'prioridad',
     ];
 
     protected $casts = [
-        'fecha_cotizacion' => 'date',
-        'fecha_validez' => 'date',
-        'total' => 'decimal:2',
+        'fecha_cotizacion'   => 'date',
+        'fecha_validez'      => 'date',
+        'total'              => 'decimal:2',
+        'tasa_cambio_valor'  => 'decimal:4',
     ];
 
     public function user()
