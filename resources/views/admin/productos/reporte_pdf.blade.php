@@ -67,7 +67,6 @@
                 <th class="col-num">#</th>
                 <th class="col-imagen">Imagen</th>
                 <th class="col-nombre">Nombre</th>
-                <th class="col-modelo">Modelo</th>
                 <th class="col-descripcion">Descripción</th>
                 <th class="col-precio">Precio Base ($)</th>
                 <th class="col-estatus">Estado</th>
@@ -86,7 +85,6 @@
                         @endif
                     </td>
                     <td class="col-nombre">{{ $producto->nombre }}</td>
-                    <td class="col-modelo">{{ $producto->modelo }}</td>
                     <td class="col-descripcion">{{ $producto->descripcion }}</td>
                     <td class="col-precio">{{ number_format($producto->precio_base, 2) }}</td>
                     <td class="col-estatus">

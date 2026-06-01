@@ -42,13 +42,39 @@ class PedidoController extends Controller
         return view('admin.pedidos.index', compact('productos', 'insumos', 'bancos', 'tallas', 'colores', 'logos'));
     }
 
-    public function getPedidos()
+    public function getPedidos(Request $request)
     {
         // Hacer JOINs para permitir ordenamiento y búsqueda por datos del cliente
         $pedidos = Pedido::select('pedido.*')
             ->join('cliente', 'pedido.cliente_id', '=', 'cliente.id')
             ->join('persona', 'cliente.persona_id', '=', 'persona.id')
-            ->with(['user:id,name', 'cliente.persona']);
+            ->with(['user:id,name', 'cliente.persona'])
+            ->withCount(['ordenes as ordenes_activas_count' => function ($q) {
+                $q->where('estado', '!=', 'Cancelado');
+            }]);
+
+        if ($request->filled('filter_estado')) {
+            $pedidos->where('pedido.estado', $request->input('filter_estado'));
+        }
+
+        if ($request->filled('filter_fecha_entrega')) {
+            $pedidos->whereDate('pedido.fecha_entrega_estimada', $request->input('filter_fecha_entrega'));
+        }
+
+        $orden = $request->input('filter_orden', 'recientes');
+
+        switch ($orden) {
+            case 'monto_desc':
+                $pedidos->orderBy('pedido.total', 'desc');
+                break;
+            case 'entrega_asc':
+                $pedidos->orderBy('pedido.fecha_entrega_estimada', 'asc');
+                break;
+            case 'recientes':
+            default:
+                $pedidos->orderBy('pedido.created_at', 'desc');
+                break;
+        }
 
         return DataTables::of($pedidos)
             // Usar accessors para mostrar datos normalizados del cliente
@@ -73,6 +99,10 @@ class PedidoController extends Controller
             })
             ->addColumn('fecha_entrega_estimada', function ($pedido) {
                 return $pedido->fecha_entrega_estimada ? $pedido->fecha_entrega_estimada->format('d/m/Y') : 'N/A';
+            })
+            // Bandera para el frontend: ¿tiene producción iniciada? (bloquea editar/eliminar)
+            ->addColumn('tiene_produccion', function ($pedido) {
+                return $pedido->ordenes_activas_count > 0;
             })
 
             ->make(true);
@@ -126,7 +156,7 @@ class PedidoController extends Controller
     {
         // Cargar pedido con cliente y sus relaciones normalizadas
         $pedido = Pedido::with([
-            'user:id,name',
+            'user:id,name,avatar',
             'productos.producto.tipoProducto',
             'productos.bordados.logo:id,name',
             'pagos.banco:id,nombre',
@@ -140,6 +170,11 @@ class PedidoController extends Controller
         $data['cliente_email_normalizado'] = $pedido->cliente_email_normalizado;
         $data['cliente_telefono_normalizado'] = $pedido->cliente_telefono_normalizado;
         $data['cliente_documento'] = $pedido->cliente_documento;
+        // Creador real (no se sobrescribe al editar) para el chip "Creado por"
+        $data['creador'] = $pedido->user ? [
+            'name' => $pedido->user->name,
+            'avatar_url' => $pedido->user->avatar_url,
+        ] : null;
 
         return response()->json($data);
     }
@@ -150,6 +185,9 @@ class PedidoController extends Controller
 
         if (in_array($pedido->estado, ['Completado', 'Cancelado'])) {
             return response()->json(['error' => 'No se puede editar un pedido completado o cancelado.'], 403);
+        }
+        if ($pedido->tieneProduccionActiva()) {
+            return response()->json(['error' => 'No se puede editar un pedido con producción iniciada. Cancela primero sus órdenes de producción.'], 403);
         }
 
         try {
@@ -168,6 +206,9 @@ class PedidoController extends Controller
         if (in_array($pedido->estado, ['Completado', 'Cancelado'])) {
             return response()->json(['error' => 'No se puede eliminar un pedido completado o cancelado.'], 403);
         }
+        if ($pedido->tieneProduccionActiva()) {
+            return response()->json(['error' => 'No se puede eliminar un pedido con producción iniciada. Cancela primero sus órdenes de producción.'], 403);
+        }
 
         $pedido->delete();
 
@@ -181,16 +222,61 @@ class PedidoController extends Controller
         return response()->json(['success' => 'Pedido eliminado exitosamente.']);
     }
 
-    public function reportePdf()
+    /**
+     * Cancelar un pedido (acción manual). Cancelado es terminal: el estado deja
+     * de auto-recalcularse desde producción hasta que se reactive.
+     */
+    public function cancelar($id)
     {
-        // Obtener todos los pedidos con su usuario asociado y cliente
-        $pedidos = Pedido::with(['user:id,name', 'cliente', 'cliente.persona'])->get();
+        $pedido = Pedido::findOrFail($id);
 
-        // Cargar la vista y generar el PDF (A4 vertical)
+        if ($pedido->estado === 'Completado') {
+            return response()->json(['error' => 'No se puede cancelar un pedido completado.'], 422);
+        }
+        if ($pedido->estado === 'Cancelado') {
+            return response()->json(['success' => 'El pedido ya estaba cancelado.']);
+        }
+
+        $pedido->update(['estado' => 'Cancelado']);
+
+        Log::warning('Pedido cancelado', ['pedido_id' => $id, 'user_id' => auth()->id()]);
+
+        return response()->json(['success' => 'Pedido cancelado.']);
+    }
+
+    /**
+     * Reactivar un pedido cancelado: vuelve a quedar gobernado por producción.
+     */
+    public function reactivar($id)
+    {
+        $pedido = Pedido::findOrFail($id);
+
+        if ($pedido->estado !== 'Cancelado') {
+            return response()->json(['error' => 'Solo se puede reactivar un pedido cancelado.'], 422);
+        }
+
+        // Sale de Cancelado y se deja que producción determine el estado real
+        $pedido->update(['estado' => 'Pendiente']);
+        $pedido->recalcularEstado();
+
+        return response()->json(['success' => 'Pedido reactivado.']);
+    }
+
+    public function reportePdf(Request $request)
+    {
+        $query = Pedido::with(['user:id,name', 'cliente', 'cliente.persona']);
+        if ($request->filled('estado')) {
+            $query->where('estado', $request->estado);
+        }
+        if ($request->filled('fecha_desde')) {
+            $query->whereDate('fecha_entrega', '>=', $request->fecha_desde);
+        }
+        if ($request->filled('fecha_hasta')) {
+            $query->whereDate('fecha_entrega', '<=', $request->fecha_hasta);
+        }
+        $pedidos = $query->get();
         $pdf = PDF::loadView('admin.pedidos.reporte_pdf', compact('pedidos'))
             ->setPaper('a4', 'portrait');
-
-        // Descargar el archivo con una marca de tiempo para evitar colisiones
         return $pdf->download('reporte_pedidos_' . now()->format('Ymd_His') . '.pdf');
     }
 

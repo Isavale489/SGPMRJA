@@ -1,0 +1,892 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Implementación — Catálogo de Productos con Variantes y Atributos</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    font-size: 13px;
+    line-height: 1.65;
+    color: #1f2937;
+    background: #fff;
+    padding: 40px 52px;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  .doc-header {
+    text-align: center;
+    border-bottom: 4px solid #1e3c72;
+    padding-bottom: 22px;
+    margin-bottom: 32px;
+  }
+  .doc-header h1 {
+    font-size: 24px;
+    font-weight: 800;
+    color: #1e3c72;
+    letter-spacing: 0.5px;
+    margin-bottom: 6px;
+  }
+  .doc-header .subtitle { font-size: 15px; font-weight: 600; color: #374151; margin-bottom: 10px; }
+  .doc-header .meta { font-size: 12px; color: #6b7280; }
+  .doc-header .meta span { margin: 0 10px; }
+  .doc-header .meta code {
+    background: #eef2ff;
+    color: #1e3c72;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+
+  .section { margin-bottom: 32px; page-break-inside: avoid; }
+  .section-title {
+    font-size: 17px;
+    font-weight: 800;
+    color: #1e3c72;
+    border-bottom: 2px solid #c7d2fe;
+    padding-bottom: 6px;
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .section-title .num {
+    background: #1e3c72;
+    color: #fff;
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .subsection-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: #2a5298;
+    margin: 18px 0 8px;
+  }
+  .section p { margin-bottom: 8px; }
+  .section ul { margin: 6px 0 12px 22px; }
+  .section ul li { margin-bottom: 4px; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 10px 0 16px;
+    font-size: 12.5px;
+  }
+  thead th {
+    background: linear-gradient(135deg, #1e3c72, #2a5298);
+    color: #fff;
+    padding: 9px 12px;
+    text-align: left;
+    font-weight: 700;
+    font-size: 11.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+  }
+  tbody td {
+    padding: 8px 12px;
+    border-bottom: 1px solid #e5e7eb;
+    vertical-align: top;
+  }
+  tbody tr:nth-child(even) { background: #f8fafc; }
+  tbody tr:hover { background: #eef2ff; }
+
+  code {
+    background: #f1f5f9;
+    padding: 1px 6px;
+    border-radius: 3px;
+    font-size: 11.5px;
+    font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+    color: #1e3c72;
+  }
+
+  .callout {
+    border-radius: 8px;
+    padding: 14px 18px;
+    margin: 12px 0;
+    font-size: 12.5px;
+    line-height: 1.65;
+  }
+  .callout-problem  { background: #fff7ed; border-left: 4px solid #ea580c; }
+  .callout-problem  .callout-label { color: #c2410c; font-weight: 700; }
+  .callout-solution { background: #f0fdf4; border-left: 4px solid #22c55e; }
+  .callout-solution .callout-label { color: #166534; font-weight: 700; }
+  .callout-info     { background: #eff6ff; border-left: 4px solid #2563eb; }
+  .callout-info     .callout-label { color: #1d4ed8; font-weight: 700; }
+  .callout-context  { background: #f8fafc; border-left: 4px solid #94a3b8; }
+  .callout-context  .callout-label { color: #475569; font-weight: 700; }
+
+  .badge {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+  }
+  .badge-new    { background: #dcfce7; color: #166534; }
+  .badge-mod    { background: #dbeafe; color: #1e40af; }
+  .badge-fix    { background: #fef3c7; color: #92400e; }
+  .badge-db     { background: #ede9fe; color: #5b21b6; }
+  .badge-ui     { background: #e0f2fe; color: #075985; }
+  .badge-be     { background: #fce7f3; color: #9d174d; }
+
+  .diagram-box {
+    background: #0f172a;
+    color: #e2e8f0;
+    border-radius: 8px;
+    padding: 18px 22px;
+    font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+    font-size: 12px;
+    line-height: 1.8;
+    margin: 12px 0;
+    overflow-x: auto;
+    white-space: pre;
+  }
+  .diagram-box .node-master  { color: #4ade80; font-weight: 700; }
+  .diagram-box .node-detail  { color: #fbbf24; font-weight: 700; }
+  .diagram-box .node-link    { color: #60a5fa; font-weight: 700; }
+  .diagram-box .arrow        { color: #94a3b8; }
+  .diagram-box .dim          { color: #64748b; }
+
+  .exec-summary {
+    background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+    color: #fff;
+    border-radius: 10px;
+    padding: 22px 26px;
+    margin: 16px 0;
+  }
+  .exec-summary h3 { font-size: 15px; font-weight: 800; margin-bottom: 14px; color: #fff; }
+  .exec-summary p { font-size: 12.5px; line-height: 1.7; color: #e2e8f0; margin-bottom: 8px; }
+  .exec-summary .highlight { color: #fde68a; font-weight: 700; }
+  .exec-summary .metrics {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-top: 16px;
+  }
+  .exec-summary .metric {
+    background: rgba(255,255,255,0.12);
+    border-radius: 6px;
+    padding: 12px;
+    text-align: center;
+  }
+  .exec-summary .metric .num {
+    font-size: 22px;
+    font-weight: 800;
+    color: #fde68a;
+    display: block;
+  }
+  .exec-summary .metric .lbl {
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #e2e8f0;
+  }
+
+  .feature-card {
+    background: #f8fafc;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    padding: 14px 18px;
+    margin: 8px 0;
+  }
+  .feature-card h4 {
+    font-size: 13px;
+    font-weight: 700;
+    color: #1e3c72;
+    margin-bottom: 6px;
+  }
+  .feature-card p { margin-bottom: 4px; }
+
+  .step-list {
+    counter-reset: step;
+    margin: 8px 0;
+  }
+  .step-list .step {
+    counter-increment: step;
+    background: #f8fafc;
+    border-left: 3px solid #2a5298;
+    padding: 10px 14px;
+    margin-bottom: 8px;
+    border-radius: 0 6px 6px 0;
+  }
+  .step-list .step::before {
+    content: counter(step) ". ";
+    font-weight: 800;
+    color: #1e3c72;
+  }
+
+  .footer-note {
+    margin-top: 40px;
+    padding-top: 16px;
+    border-top: 2px solid #e5e7eb;
+    text-align: center;
+    color: #6b7280;
+    font-size: 11px;
+  }
+
+  @media print {
+    body { padding: 24px; max-width: 100%; }
+    .section { page-break-inside: avoid; }
+    .doc-header { page-break-after: avoid; }
+  }
+</style>
+</head>
+<body>
+
+<header class="doc-header">
+  <h1>Catálogo de Productos con Variantes y Atributos</h1>
+  <p class="subtitle">Refactor arquitectónico — SGPMRJA · Manufacturas R.J. Atlántico</p>
+  <p class="meta">
+    <span>Rama: <code>feat/producto-variantes</code></span>
+    <span>17 commits · 11 migraciones aditivas</span>
+    <span>Fecha: 2026-05-07</span>
+  </p>
+</header>
+
+<!-- ════════════════════════════════════════ -->
+<section class="exec-summary">
+  <h3>Resumen ejecutivo</h3>
+  <p>
+    Se rediseñó el catálogo de productos para que cada SKU represente una
+    <span class="highlight">variante específica de fabricación</span> (tipo + tela +
+    atributos de confección) en lugar de una fila plana en una tabla. El resultado:
+    SKUs determinísticos como <code style="background:rgba(255,255,255,0.18);color:#fde68a;">CAM-OXF-L-MAO-001</code>,
+    sugerencia de precio automática, snapshot histórico inmutable en cotizaciones y
+    pedidos, y un wizard de ventas que agrupa el catálogo por familia de prendas.
+  </p>
+  <p>
+    El cambio toca <span class="highlight">9 capas del sistema</span> sin pérdida de
+    datos: BD, modelos, services, controllers, vistas Blade, JavaScript, seeders,
+    PDFs y rutas. Todas las migraciones son <span class="highlight">aditivas</span> y
+    reversibles. Los 13 productos legacy del catálogo siguen funcionando sin tela
+    ni atributos hasta que el admin los re-edite.
+  </p>
+  <div class="metrics">
+    <div class="metric"><span class="num">11</span><span class="lbl">Migraciones</span></div>
+    <div class="metric"><span class="num">4</span><span class="lbl">Tablas nuevas</span></div>
+    <div class="metric"><span class="num">17</span><span class="lbl">Commits</span></div>
+    <div class="metric"><span class="num">5</span><span class="lbl">Fases del refactor</span></div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════ -->
+<section class="section">
+  <h2 class="section-title"><span class="num">1</span>Diagnóstico del modelo anterior</h2>
+  <p>El catálogo original tenía limitaciones que se hacían evidentes al crecer:</p>
+
+  <div class="callout callout-problem">
+    <p><span class="callout-label">Problema #1 — Catálogo plano sin estructura.</span>
+       Una "Camisa Oxford Manga Larga Cuello V" y una "Camisa Dacron Manga Corta
+       Cuello Redondo" eran <strong>dos productos completamente independientes</strong>,
+       sin manera de saber que pertenecían a la misma familia ni cuáles atributos
+       las diferenciaban.</p>
+  </div>
+
+  <div class="callout callout-problem">
+    <p><span class="callout-label">Problema #2 — SKU frágil.</span>
+       El código se generaba abreviando texto libre con la función
+       <code>abreviarModelo()</code>: tomaba 3 letras del campo <code>modelo</code>.
+       Renombrar un producto rompía la consistencia, y dos modelos parecidos podían
+       colisionar en la abreviatura.</p>
+  </div>
+
+  <div class="callout callout-problem">
+    <p><span class="callout-label">Problema #3 — Sin trazabilidad histórica.</span>
+       Si una cotización de marzo decía "Camisa Oxford" y el admin renombraba la tela
+       Oxford en abril, la cotización vieja mostraba el nombre nuevo. El cliente veía
+       cosas distintas a lo que firmó.</p>
+  </div>
+
+  <div class="callout callout-problem">
+    <p><span class="callout-label">Problema #4 — Catálogos duplicados.</span>
+       Las telas se modelaban como insumos pero el catálogo de productos no las
+       referenciaba. El precio de "Camisa Oxford" no estaba conectado al costo
+       real de la materia prima.</p>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════ -->
+<section class="section">
+  <h2 class="section-title"><span class="num">2</span>Decisiones arquitectónicas</h2>
+
+  <div class="subsection-title">2.1 Modelo de variantes con atributos estructurados</div>
+  <p>Patrón estándar de e-commerce serio (Shopify, NetSuite, WooCommerce):
+     <code>tipo_producto</code> define <strong>qué atributos aplican</strong>
+     (Manga, Cuello, Corte, Cierre, Capucha) y cada <code>producto</code> es
+     una variante concreta con valores específicos. Se descartó EAV puro
+     (overkill, joins en cascada) y JSON-only (pierde integridad referencial).</p>
+
+  <div class="subsection-title">2.2 Tela como insumo reutilizado</div>
+  <p>El sistema ya tenía una tabla <code>insumo</code> con tipo
+     <code>'Tela'</code>, costo unitario y unidad de medida. Crear una tabla
+     <code>tela</code> separada habría duplicado catálogos. Decisión:
+     <strong>reutilizar <code>insumo</code></strong> filtrando por tipo y
+     agregar solo una columna <code>codigo</code> para que la abreviatura
+     forme parte del SKU.</p>
+
+  <div class="callout callout-info">
+    <p><span class="callout-label">Separación de compromiso comercial vs material.</span>
+       La cotización es <strong>solo referencial</strong>: usa el costo de la tela
+       para sugerir precio, pero NO descuenta stock. Solo la orden de producción
+       descuenta inventario. Una cotización rechazada no deja stock fantasma reservado.</p>
+  </div>
+
+  <div class="subsection-title">2.3 SKU determinístico</div>
+  <p>El código del producto se construye concatenando códigos cortos en orden
+     definido por la asociación tipo↔atributo:</p>
+
+  <div class="diagram-box"><span class="dim">Fórmula: PREFIJO_TIPO - CODIGO_TELA - VALORES_ATRIBUTOS - SECUENCIAL</span>
+
+<span class="node-master">CAM</span><span class="arrow"> · </span><span class="node-link">OXF</span><span class="arrow"> · </span><span class="node-detail">L</span><span class="arrow"> · </span><span class="node-detail">MAO</span><span class="arrow"> · </span><span class="dim">001</span>
+<span class="dim">  ↑       ↑       ↑       ↑       ↑</span>
+<span class="dim">Camisa  Oxford  Larga   Mao    primera variante</span>
+
+<span class="dim">Ejemplos:</span>
+<span class="node-master">CAM</span>-<span class="node-link">OXF</span>-<span class="node-detail">L-MAO</span>-001     <span class="dim">→ Camisa Oxford Manga Larga Cuello Mao</span>
+<span class="node-master">FRN</span>-<span class="node-link">AJR</span>-<span class="node-detail">C-V</span>-001       <span class="dim">→ Franela Algodón Jersey Manga Corta Cuello V</span>
+<span class="node-master">PNT</span>-<span class="node-link">GBD</span>-<span class="node-detail">STR</span>-001        <span class="dim">→ Pantalón Gabardina Stretch</span></div>
+
+  <p>El secuencial se calcula con <code>withTrashed()</code> y loop defensivo
+     para tolerar SoftDeletes y race conditions (regla del proyecto).</p>
+
+  <div class="subsection-title">2.4 Snapshots inmutables</div>
+  <p>Cada renglón de cotización y pedido guarda dos columnas JSON:</p>
+  <ul>
+    <li><code>tela_snapshot</code>: <code>{id, nombre, codigo, costo_unitario, unidad_medida, snapshot_at}</code></li>
+    <li><code>atributos_snapshot</code>: <code>{"Manga":"Larga","Cuello":"Mao"}</code></li>
+  </ul>
+  <p>Si el catálogo cambia entre cotizar y pedir, los documentos viejos siguen
+     mostrando exactamente lo que el cliente firmó. Mismo patrón ya usado por
+     el módulo de bordados con <code>nombre_logo_aplicado</code>.</p>
+</section>
+
+<!-- ════════════════════════════════════════ -->
+<section class="section">
+  <h2 class="section-title"><span class="num">3</span>Diseño de base de datos</h2>
+
+  <div class="subsection-title">3.1 Tablas nuevas</div>
+
+  <table>
+    <thead>
+      <tr>
+        <th style="width: 22%;">Tabla</th>
+        <th style="width: 38%;">Propósito</th>
+        <th>Columnas clave</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>atributo</code></td>
+        <td>Catálogo global de atributos de confección.</td>
+        <td><code>id</code>, <code>nombre</code>, <code>codigo</code>, <code>descripcion</code></td>
+      </tr>
+      <tr>
+        <td><code>atributo_valor</code></td>
+        <td>Valores posibles por atributo (Larga, Mao, V, etc.).</td>
+        <td><code>id</code>, <code>atributo_id</code>, <code>nombre</code>, <code>codigo</code>, <code>orden</code></td>
+      </tr>
+      <tr>
+        <td><code>tipo_producto_atributo</code></td>
+        <td>Pivot: qué atributos aplica cada tipo + orden en SKU.</td>
+        <td><code>tipo_producto_id</code>, <code>atributo_id</code>, <code>es_obligatorio</code>, <code>orden</code></td>
+      </tr>
+      <tr>
+        <td><code>producto_atributo_valor</code></td>
+        <td>Pivot: qué valores tiene cada variante.</td>
+        <td><code>producto_id</code>, <code>atributo_valor_id</code></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="subsection-title">3.2 Tablas modificadas</div>
+
+  <table>
+    <thead>
+      <tr>
+        <th style="width: 22%;">Tabla</th>
+        <th>Cambios</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>insumo</code></td>
+        <td>+ <code>codigo VARCHAR(8) UNIQUE NULL</code> para participar en el SKU.</td>
+      </tr>
+      <tr>
+        <td><code>tipo_producto</code></td>
+        <td>
+          + <code>precio_confeccion DECIMAL(10,2)</code> (mano de obra base)<br>
+          + <code>requiere_tela BOOLEAN</code> (flag para variantes que sí/no llevan tela)<br>
+          • <code>codigo_prefijo</code> renombrado a <code>prefijo</code> (estándar nomenclatura)
+        </td>
+      </tr>
+      <tr>
+        <td><code>producto</code></td>
+        <td>
+          + <code>insumo_tela_id</code> FK→insumo (ON DELETE SET NULL)<br>
+          + <code>atributos_snapshot JSON</code> (cache para listados)<br>
+          • <code>modelo</code> nullable → eliminado en Fase 5 (ya no aporta)
+        </td>
+      </tr>
+      <tr>
+        <td><code>detalle_cotizacion</code></td>
+        <td>+ <code>tela_snapshot JSON</code>, + <code>atributos_snapshot JSON</code></td>
+      </tr>
+      <tr>
+        <td><code>detalle_pedido</code></td>
+        <td>+ <code>tela_snapshot JSON</code>, + <code>atributos_snapshot JSON</code></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="subsection-title">3.3 Diagrama relacional</div>
+
+  <div class="diagram-box"><span class="node-master">tipo_producto</span>          <span class="node-link">atributo</span>            <span class="node-master">insumo</span>
+  <span class="dim">id</span>                       <span class="dim">id</span>                 <span class="dim">id</span>
+  <span class="dim">nombre</span>                   <span class="dim">nombre</span>             <span class="dim">nombre</span>
+  <span class="dim">prefijo</span>                  <span class="dim">codigo</span>             <span class="dim">tipo (=Tela)</span>
+  <span class="dim">precio_confeccion</span>         │                <span class="dim">codigo</span>
+  <span class="dim">requiere_tela</span>             │                <span class="dim">costo_unitario</span>
+        │                       │
+        │  <span class="node-link">tipo_producto_atributo</span>        │            <span class="node-link">atributo_valor</span>
+        └──┤  tipo_producto_id  ├────┐ │              <span class="dim">id</span>
+           │  atributo_id       │    │ └──┐           <span class="dim">atributo_id</span>
+           │  es_obligatorio    │    │    │           <span class="dim">nombre</span>
+           │  orden             │    │    └────┐      <span class="dim">codigo</span>
+           └────────────────────┘    │         │      <span class="dim">orden</span>
+                                     │         │           │
+                                     │         │           │
+                                     ↓         ↓           ↓
+                                   <span class="node-detail">producto</span>      <span class="node-link">producto_atributo_valor</span>
+                                     <span class="dim">tipo_producto_id</span>  <span class="dim">producto_id</span>
+                                     <span class="dim">insumo_tela_id</span>    <span class="dim">atributo_valor_id</span>
+                                     <span class="dim">codigo (SKU)</span>
+                                     <span class="dim">atributos_snapshot</span>
+                                     <span class="dim">precio_base</span>
+                                          ↓
+                              <span class="node-detail">detalle_cotizacion</span>      <span class="node-detail">detalle_pedido</span>
+                                <span class="dim">producto_id</span>             <span class="dim">producto_id</span>
+                                <span class="dim">tela_snapshot 🔒</span>         <span class="dim">tela_snapshot 🔒</span>
+                                <span class="dim">atributos_snapshot 🔒</span>    <span class="dim">atributos_snapshot 🔒</span></div>
+
+  <p style="font-size: 11.5px; color: #6b7280; margin-top: 8px;">
+    🔒 = inmutable. Los snapshots se llenan al crear el detalle y nunca se sobreescriben.
+    Si en el futuro se renombra una tela o atributo, los documentos históricos siguen
+    mostrando los valores que el cliente firmó.
+  </p>
+</section>
+
+<!-- ════════════════════════════════════════ -->
+<section class="section">
+  <h2 class="section-title"><span class="num">4</span>Capa de servicios y controladores</h2>
+
+  <div class="subsection-title">4.1 ProductoService (nuevo)</div>
+  <p>Centraliza la lógica de creación, actualización, generación de SKU y composición
+     de snapshots. Métodos clave:</p>
+  <ul>
+    <li><code>generarCodigo(tipo, tela, valoresOrdenados)</code> — SKU determinístico con
+        loop defensivo y <code>withTrashed()</code>.</li>
+    <li><code>sugerirPrecio(tipo, tela)</code> — <code>tela.costo_unitario + tipo.precio_confeccion</code>.</li>
+    <li><code>ordenarValoresParaTipo(tipo, valoresIds)</code> — respeta el orden definido
+        en <code>tipo_producto_atributo.orden</code>.</li>
+    <li><code>buildAtributosSnapshot(valoresOrdenados)</code> — formato display-friendly
+        <code>{Manga: "Larga", Cuello: "V"}</code>.</li>
+    <li><code>buildSnapshotsParaDetalle(producto)</code> — usado por CotizacionService y
+        PedidoService al persistir renglones.</li>
+    <li><code>crear(data)</code> y <code>actualizar(producto, data)</code> — transaccional
+        con sync de pivot.</li>
+  </ul>
+
+  <div class="subsection-title">4.2 Controladores actualizados</div>
+  <table>
+    <thead>
+      <tr>
+        <th style="width: 28%;">Controlador</th>
+        <th>Cambios principales</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>ProductoController</code> <span class="badge badge-mod">MOD</span></td>
+        <td>Inyecta ProductoService. <code>store</code> y <code>update</code> validan
+            tela según <code>requiere_tela</code> y verifican que los valores de atributos
+            pertenezcan a atributos asociados al tipo. <code>show</code> carga tela y
+            atributoValores. Endpoints nuevos: <code>sugerir-precio</code>,
+            <code>preview-codigo</code>, <code>resolver-variante</code>.</td>
+      </tr>
+      <tr>
+        <td><code>TipoProductoController</code> <span class="badge badge-mod">MOD</span></td>
+        <td>Acepta <code>precio_confeccion</code>, <code>requiere_tela</code> y
+            <code>atributos[]</code> en store/update. <code>show</code> carga la
+            relación atributos con sus valores y orden del pivot.</td>
+      </tr>
+      <tr>
+        <td><code>AtributoController</code> <span class="badge badge-new">NEW</span></td>
+        <td>CRUD completo de atributos con validación de código inmutable.</td>
+      </tr>
+      <tr>
+        <td><code>AtributoValorController</code> <span class="badge badge-new">NEW</span></td>
+        <td>CRUD anidado de valores por atributo + endpoint de reorden.</td>
+      </tr>
+      <tr>
+        <td><code>InsumoController</code> <span class="badge badge-mod">MOD</span></td>
+        <td>Acepta <code>codigo</code> en store/update con validación de inmutabilidad.</td>
+      </tr>
+      <tr>
+        <td><code>CotizacionService</code> y <code>PedidoService</code> <span class="badge badge-mod">MOD</span></td>
+        <td>Inyectan ProductoService y persisten <code>tela_snapshot</code> y
+            <code>atributos_snapshot</code> al crear cada detalle. Al convertir
+            cotización→pedido, los snapshots se copian intactos (no se regeneran).</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ════════════════════════════════════════ -->
+<section class="section">
+  <h2 class="section-title"><span class="num">5</span>Frontend e interfaz de usuario</h2>
+
+  <div class="feature-card">
+    <h4><span class="badge badge-new">NEW</span> /atributos — Master-detail</h4>
+    <p>Vista de dos paneles: tabla de atributos a la izquierda con conteos de valores
+       y tipos asociados; al click en un atributo se carga la tabla de sus valores a
+       la derecha. CRUD completo con código inmutable post-creación. Eliminación
+       bloqueada si hay productos o tipos asociados (protege integridad histórica).</p>
+  </div>
+
+  <div class="feature-card">
+    <h4><span class="badge badge-mod">MOD</span> /productos — Form de variantes</h4>
+    <p>El modal Crear/Editar gana: selector de tela filtrado por <code>insumo.tipo='Tela'</code>,
+       sección "Variaciones" con chips dinámicos por atributo (cargados del tipo elegido),
+       preview del SKU en vivo, indicador de precio sugerido con desglose y botón
+       "Aplicar sugerido". El listado gana columnas <strong>Tela</strong> y
+       <strong>Atributos</strong> leyendo del snapshot.</p>
+  </div>
+
+  <div class="feature-card">
+    <h4><span class="badge badge-mod">MOD</span> Modal de Tipos de Producto</h4>
+    <p>Extendido para asignar precio de confección, flag <code>requiere_tela</code> y
+       checklist de atributos asociados con orden numérico (define el orden de
+       concatenación en el SKU).</p>
+  </div>
+
+  <div class="feature-card">
+    <h4><span class="badge badge-mod">MOD</span> Wizard de Cotizaciones — Paso 2</h4>
+    <p>El catálogo del paso 2 ahora muestra <strong>una card por familia de producto</strong>
+       (ej: "Camisa · 6 variantes · $30 – $48") en lugar de una card por SKU. Al
+       seleccionar la familia se abre el <strong>Selector de Variante</strong>: un modal
+       con chips de tela y atributos que resuelve el SKU exacto contra el catálogo. Si
+       la combinación no existe, mensaje claro de que hay que crearla en /productos.</p>
+  </div>
+
+  <div class="feature-card">
+    <h4><span class="badge badge-new">NEW</span> Botón "Cambiar variante" en el configurador</h4>
+    <p>Patrón de e-commerce admin (Shopify, NetSuite). Al editar un bloque ya configurado,
+       el header del configurador muestra un botón que abre el selector con los valores
+       actuales pre-marcados. Al elegir nueva combinación se reabre el configurador con
+       el nuevo SKU pero conservando color, tallas, precio y bordados que ya estaban
+       definidos. Los bordados se migran automáticamente del SKU viejo al nuevo.</p>
+  </div>
+
+  <div class="feature-card">
+    <h4><span class="badge badge-mod">MOD</span> Tabla agrupada y resumen</h4>
+    <p>Cada renglón de la tabla del paso 2 y del resumen del paso 3 incluye una línea
+       pequeña con la variante: <em>"Oxford · Manga: Larga · Cuello: Mao"</em>. Reusa
+       <code>cotBuildVariantLabel()</code> para mantener consistencia. Igual en las
+       facturas PDF de cotización y pedido.</p>
+  </div>
+
+  <div class="feature-card">
+    <h4><span class="badge badge-mod">MOD</span> /insumos — Código de tela</h4>
+    <p>Datatable e form ganan columna <strong>Código</strong>. Inmutable después de
+       crear (readonly post-asignación, protegido también en backend) porque el código
+       forma parte del SKU del producto y renombrarlo rompería los SKUs históricos.</p>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════ -->
+<section class="section">
+  <h2 class="section-title"><span class="num">6</span>Fases del refactor</h2>
+
+  <table>
+    <thead>
+      <tr>
+        <th style="width: 6%;">#</th>
+        <th style="width: 22%;">Fase</th>
+        <th>Alcance</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>1</strong></td>
+        <td>Schema y maestros</td>
+        <td>9 migraciones aditivas, 4 modelos Eloquent (Atributo, AtributoValor +
+            ampliación Producto, TipoProducto, Insumo, DetalleCotizacion, DetallePedido),
+            seeder idempotente, CRUD admin /atributos, integración en form de tipo_producto.</td>
+      </tr>
+      <tr>
+        <td><strong>2</strong></td>
+        <td>Refactor /productos</td>
+        <td>ProductoService nuevo, controlador refactorizado a usar el service, modal
+            con selector de tela y chips de atributos, listado con columnas Tela y Atributos.</td>
+      </tr>
+      <tr>
+        <td><strong>3</strong></td>
+        <td>Snapshots inmutables</td>
+        <td>CotizacionService y PedidoService persisten snapshots por renglón.
+            Conversión cotización→pedido los copia intactos. PDFs leen del snapshot.</td>
+      </tr>
+      <tr>
+        <td><strong>4</strong></td>
+        <td>Wizard agrupado</td>
+        <td>Catálogo del paso 2 reagrupado por tipo, modal selector de variante,
+            botón "Cambiar variante" en configurador con migración automática de bordados,
+            visualización de variantes en tabla agrupada y resumen.</td>
+      </tr>
+      <tr>
+        <td><strong>5</strong></td>
+        <td>Limpieza y documento</td>
+        <td>Renames (<code>codigo_prefijo</code>→<code>prefijo</code>), drop de
+            <code>producto.modelo</code>, deprecación de <code>abreviarModelo</code> y
+            <code>contarProductosConModelo</code>, fix de bug heredado en
+            ProduccionDiariaController, generación de este documento.</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ════════════════════════════════════════ -->
+<section class="section">
+  <h2 class="section-title"><span class="num">7</span>Migraciones aplicadas</h2>
+
+  <table>
+    <thead>
+      <tr>
+        <th style="width: 6%;">#</th>
+        <th>Archivo</th>
+        <th style="width: 15%;">Tipo</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>1</td><td><code>2026_05_07_100000_create_atributo_table</code></td><td><span class="badge badge-db">CREATE</span></td></tr>
+      <tr><td>2</td><td><code>2026_05_07_100001_create_atributo_valor_table</code></td><td><span class="badge badge-db">CREATE</span></td></tr>
+      <tr><td>3</td><td><code>2026_05_07_100002_create_tipo_producto_atributo_table</code></td><td><span class="badge badge-db">CREATE</span></td></tr>
+      <tr><td>4</td><td><code>2026_05_07_100003_create_producto_atributo_valor_table</code></td><td><span class="badge badge-db">CREATE</span></td></tr>
+      <tr><td>5</td><td><code>2026_05_07_100004_add_codigo_to_insumo</code></td><td><span class="badge badge-mod">ALTER</span></td></tr>
+      <tr><td>6</td><td><code>2026_05_07_100005_add_precio_confeccion_and_requiere_tela_to_tipo_producto</code></td><td><span class="badge badge-mod">ALTER</span></td></tr>
+      <tr><td>7</td><td><code>2026_05_07_100006_add_insumo_tela_and_atributos_to_producto</code></td><td><span class="badge badge-mod">ALTER</span></td></tr>
+      <tr><td>8</td><td><code>2026_05_07_100007_add_snapshots_to_detalle_cotizacion</code></td><td><span class="badge badge-mod">ALTER</span></td></tr>
+      <tr><td>9</td><td><code>2026_05_07_100008_add_snapshots_to_detalle_pedido</code></td><td><span class="badge badge-mod">ALTER</span></td></tr>
+      <tr><td>10</td><td><code>2026_05_07_100009_modelo_nullable_in_producto</code></td><td><span class="badge badge-mod">ALTER</span></td></tr>
+      <tr><td>11</td><td><code>2026_05_07_100010_rename_codigo_prefijo_to_prefijo_in_tipo_producto</code></td><td><span class="badge badge-fix">RENAME</span></td></tr>
+      <tr><td>12</td><td><code>2026_05_07_100011_drop_modelo_from_producto</code></td><td><span class="badge badge-fix">DROP</span></td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout callout-context">
+    <p><span class="callout-label">Reversibilidad.</span>
+       Toda migración tiene <code>down()</code> que la revierte sin pérdida de datos
+       siempre que el rollback se haga en orden inverso. Los datos legacy de los
+       13 productos preexistentes quedan intactos en todas las migraciones.</p>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════ -->
+<section class="section">
+  <h2 class="section-title"><span class="num">8</span>Datos sembrados en seeder</h2>
+
+  <div class="subsection-title">Telas (insumo.tipo='Tela')</div>
+  <table>
+    <thead>
+      <tr>
+        <th>Nombre</th>
+        <th>Código</th>
+        <th>Costo</th>
+        <th>Uso típico</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>Dacron</td><td><code>DAC</code></td><td>$12.00</td><td>Camisas escolares o corporativas básicas</td></tr>
+      <tr><td>Oxford</td><td><code>OXF</code></td><td>$18.00</td><td>Camisas casuales y ejecutivas resistentes</td></tr>
+      <tr><td>Algodón Jersey</td><td><code>AJR</code></td><td>$10.00</td><td>Tela estándar para franelas</td></tr>
+      <tr><td>Piqué</td><td><code>PIQ</code></td><td>$15.00</td><td>Tela texturizada para chemises</td></tr>
+      <tr><td>Microfibra</td><td><code>MFB</code></td><td>$14.00</td><td>Ropa deportiva o secado rápido</td></tr>
+      <tr><td>Gabardina / Dril</td><td><code>GBD</code></td><td>$22.00</td><td>Pantalones y chaquetas</td></tr>
+    </tbody>
+  </table>
+
+  <div class="subsection-title">Tipos de producto</div>
+  <table>
+    <thead>
+      <tr>
+        <th>Tipo</th>
+        <th>Prefijo</th>
+        <th>Confección</th>
+        <th>Atributos asociados</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>Camisa</td><td><code>CAM</code></td><td>$15.00</td><td>Manga, Cuello</td></tr>
+      <tr><td>Franela</td><td><code>FRN</code></td><td>$8.00</td><td>Manga, Cuello</td></tr>
+      <tr><td>Chemise</td><td><code>CHM</code></td><td>$12.00</td><td>Manga, Cuello</td></tr>
+      <tr><td>Pantalón</td><td><code>PNT</code></td><td>$18.00</td><td>Corte</td></tr>
+      <tr><td>Chaqueta</td><td><code>CHQ</code></td><td>$25.00</td><td>Cierre, Capucha</td></tr>
+    </tbody>
+  </table>
+
+  <div class="subsection-title">Atributos de confección</div>
+  <table>
+    <thead>
+      <tr>
+        <th>Atributo</th>
+        <th>Código</th>
+        <th>Valores</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>Manga</td><td><code>MNG</code></td><td>Larga (L), Corta (C)</td></tr>
+      <tr><td>Cuello</td><td><code>CLL</code></td><td>Clásico (CLA), Mao (MAO), Con Tapa Botones (CTB), Redondo (R), V (V)</td></tr>
+      <tr><td>Corte</td><td><code>CRT</code></td><td>Rígido (RIG), Stretch (STR)</td></tr>
+      <tr><td>Cierre</td><td><code>CRR</code></td><td>Cremallera (CRE), Botones (BOT), Cerrado (CER)</td></tr>
+      <tr><td>Capucha</td><td><code>CPC</code></td><td>Con capucha (CCH), Sin capucha (SCH)</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ════════════════════════════════════════ -->
+<section class="section">
+  <h2 class="section-title"><span class="num">9</span>Recorrido de uso</h2>
+
+  <p>Flujo completo desde el catálogo hasta la factura:</p>
+
+  <div class="step-list">
+    <div class="step">
+      <strong>Configurar atributos</strong> (una vez): admin en <code>/atributos</code>
+      revisa que existan Manga, Cuello y sus valores. En el modal de Tipos de Producto
+      (desde <code>/productos</code>) confirma que cada tipo tiene los atributos que
+      aplican.
+    </div>
+    <div class="step">
+      <strong>Crear variante</strong>: admin en <code>/productos</code> elige tipo
+      "Camisa", tela "Oxford", marca chips Manga Larga + Cuello Mao. El SKU
+      <code>CAM-OXF-L-MAO-001</code> aparece en el preview, el precio sugerido $33
+      se pre-llena automáticamente. Guarda.
+    </div>
+    <div class="step">
+      <strong>Cotizar</strong>: en el wizard de cotizaciones, paso 2, ve una card
+      "Camisa · X variantes". Click → selector de variante → marca Oxford + Manga
+      Larga + Cuello Mao → SKU resuelto → "Configurar".
+    </div>
+    <div class="step">
+      <strong>Configurar línea</strong>: el configurador clásico permite color, tallas,
+      cantidades, precio personalizado y bordados. El header muestra la variante
+      seleccionada para evitar confusión.
+    </div>
+    <div class="step">
+      <strong>Editar (opcional)</strong>: si necesita cambiar la variante después,
+      botón "Cambiar variante" en el header. Modifica tela o atributos sin perder
+      color, tallas ni bordados ya configurados.
+    </div>
+    <div class="step">
+      <strong>Persistir</strong>: al guardar la cotización, cada renglón captura el
+      <code>tela_snapshot</code> y <code>atributos_snapshot</code> del momento.
+    </div>
+    <div class="step">
+      <strong>Convertir a pedido</strong>: cotización aprobada → pedido. Los snapshots
+      se copian intactos. La factura PDF muestra <em>"Camisa (Tela: Oxford · Manga:
+      Larga · Cuello: Mao)"</em> leyendo del snapshot, no del catálogo vivo.
+    </div>
+    <div class="step">
+      <strong>Producir</strong>: cuando se crea la orden de producción, recién aquí
+      se descuenta <code>insumo.stock_actual</code> de la tela. La cotización rechazada
+      o el pedido no aprobado nunca afectan inventario.
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════ -->
+<section class="section">
+  <h2 class="section-title"><span class="num">10</span>Historial de commits</h2>
+
+  <table>
+    <thead>
+      <tr>
+        <th style="width: 12%;">Hash</th>
+        <th>Descripción</th>
+        <th style="width: 8%;">Fase</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td><code>697b064</code></td><td>schema variantes/atributos + tela como insumo</td><td>1.1</td></tr>
+      <tr><td><code>90a3bfe</code></td><td>modelos Eloquent + seeder de variantes</td><td>1.2</td></tr>
+      <tr><td><code>48b60d3</code></td><td>registrar ProductoVariantesSeeder en DatabaseSeeder</td><td>1.2</td></tr>
+      <tr><td><code>f48d5fc</code></td><td>CRUD admin /atributos master-detail</td><td>1.3</td></tr>
+      <tr><td><code>56cea70</code></td><td>asociar atributos + precio_confeccion + requiere_tela</td><td>1.4</td></tr>
+      <tr><td><code>003dfc1</code></td><td>refactor a variantes con tela + atributos</td><td>2</td></tr>
+      <tr><td><code>4cab87e</code></td><td>inmutabilidad histórica en cotización y pedido</td><td>3</td></tr>
+      <tr><td><code>731cf9a</code></td><td>catálogo agrupado por tipo + selector de variante</td><td>4</td></tr>
+      <tr><td><code>b4237f1</code></td><td>mostrar tela y atributos en tabla agrupada y resumen</td><td>4</td></tr>
+      <tr><td><code>f3feb79</code></td><td>mostrar variante en header del configurador</td><td>4</td></tr>
+      <tr><td><code>8481c55</code></td><td>botón "Cambiar variante" en configurador</td><td>4</td></tr>
+      <tr><td><code>1546d06</code></td><td>exponer código en datatable y form de insumos</td><td>4</td></tr>
+      <tr><td><code>06ef9d5</code></td><td>hint del código en tooltip para no romper layout</td><td>4</td></tr>
+      <tr><td><code>afdc523</code></td><td>fix /ordenes — usar departamento_id FK</td><td>5</td></tr>
+      <tr><td><code>cbfccc1</code></td><td>renames y limpieza Fase 5 — prefijo, drop modelo</td><td>5</td></tr>
+      <tr><td><code>366ec92</code></td><td>configurador mostraba "Sin modelo" tras eliminar campo</td><td>5</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ════════════════════════════════════════ -->
+<section class="section">
+  <h2 class="section-title"><span class="num">11</span>Resultados y trazabilidad</h2>
+
+  <div class="callout callout-solution">
+    <p><span class="callout-label">Beneficios concretos del refactor:</span></p>
+    <ul style="margin: 6px 0 0 20px;">
+      <li>SKUs determinísticos legibles (ej: <code>CAM-OXF-L-MAO-001</code> dice todo).</li>
+      <li>Sugerencia automática de precio basada en costo real de materia prima.</li>
+      <li>Una sola fuente de verdad para telas (módulo <code>/insumos</code>).</li>
+      <li>Trazabilidad histórica: cotizaciones de hace meses muestran exactamente lo
+          que se firmó, aunque el catálogo cambie.</li>
+      <li>Wizard de ventas más rápido: una card por familia en lugar de ver decenas
+          de SKUs planos.</li>
+      <li>Cambiar variante en plena edición sin perder color, tallas ni bordados.</li>
+    </ul>
+  </div>
+
+  <div class="callout callout-info">
+    <p><span class="callout-label">Compatibilidad hacia atrás.</span>
+       Los 13 productos legacy del catálogo siguen funcionando sin tela ni atributos
+       asignados. La columna <code>insumo_tela_id</code> es nullable y
+       <code>atributos_snapshot</code> también. Cuando el admin los re-edite,
+       quedan integrados al nuevo modelo. Sin urgencia.</p>
+  </div>
+
+  <div class="callout callout-context">
+    <p><span class="callout-label">Bug colateral resuelto.</span>
+       Durante el barrido de Fase 5 se detectaron y corrigieron dos controladores
+       (<code>OrdenProduccionController</code> y <code>ProduccionDiariaController</code>)
+       que aún usaban la columna <code>empleado.departamento</code> varchar (eliminada
+       hace semanas en una auditoría previa). Migrados a <code>whereHas('departamento', …)</code>
+       contra la FK normalizada.</p>
+  </div>
+</section>
+
+<footer class="footer-note">
+  Manufacturas R.J. Atlántico · Sistema de Gestión de Producción · Mayo 2026<br>
+  Documento generado al cierre del refactor de variantes y atributos · Rama <code>feat/producto-variantes</code>
+</footer>
+
+</body>
+</html>

@@ -28,14 +28,20 @@ class CotizacionController extends Controller
     }
     public function index()
     {
-        $productos = Producto::with('tipoProducto')->where('estado', true)->get();
+        $productos = Producto::with([
+            'tipoProducto',
+            'tela:id,nombre,codigo,costo_unitario,unidad_medida',
+            'atributoValores:id,atributo_id,nombre,codigo',
+            'atributoValores.atributo:id,nombre,codigo',
+        ])->where('estado', true)->get();
+
         $logos = Logo::orderBy('name')->get(['id', 'name', 'original_filename']);
         $insumos = Insumo::all();
         $bancos = Banco::all();
         return view('admin.cotizaciones.index', compact('productos', 'logos', 'insumos', 'bancos'));
     }
 
-    public function getCotizaciones()
+    public function getCotizaciones(Request $request)
     {
         // Actualizar automáticamente cotizaciones vencidas
         Cotizacion::actualizarCotizacionesVencidas();
@@ -48,7 +54,39 @@ class CotizacionController extends Controller
                 }
             ])
             ->select('cotizacion.*');
+
+        if ($request->filled('filter_estado')) {
+            $cotizaciones->where('cotizacion.estado', $request->input('filter_estado'));
+        }
+
+        if ($request->filled('filter_fecha')) {
+            $cotizaciones->whereDate('cotizacion.fecha_cotizacion', $request->input('filter_fecha'));
+        }
+
+        $orden = $request->input('filter_orden', 'recientes');
+
+        switch ($orden) {
+            case 'total_desc':
+                $cotizaciones->orderBy('cotizacion.total', 'desc');
+                break;
+            case 'total_asc':
+                $cotizaciones->orderBy('cotizacion.total', 'asc');
+                break;
+            case 'recientes':
+            default:
+                $cotizaciones->orderBy('cotizacion.created_at', 'desc');
+                break;
+        }
         return DataTables::of($cotizaciones)
+            ->filterColumn('cliente_nombre', function ($query, $keyword) {
+                $query->whereHas('cliente', function ($clienteQuery) use ($keyword) {
+                    $clienteQuery->withTrashed()->whereHas('persona', function ($personaQuery) use ($keyword) {
+                        $personaQuery->where('nombre', 'like', "%{$keyword}%")
+                            ->orWhere('apellido', 'like', "%{$keyword}%")
+                            ->orWhereRaw("CONCAT(nombre, ' ', apellido) like ?", ["%{$keyword}%"]);
+                    });
+                });
+            })
             ->addColumn('usuario_creador', function ($cotizacion) {
                 return $cotizacion->user ? $cotizacion->user->name : 'N/A';
             })
@@ -183,7 +221,7 @@ class CotizacionController extends Controller
     public function show($id)
     {
         // Cargar cliente incluso si está eliminado (soft deleted)
-        $cotizacion = Cotizacion::with(['user:id,name', 'productos.producto.tipoProducto', 'productos.bordados.logo:id,name'])
+        $cotizacion = Cotizacion::with(['user:id,name,avatar', 'productos.producto.tipoProducto', 'productos.bordados.logo:id,name'])
             ->with([
                 'cliente' => function ($query) {
                     $query->withTrashed()->with('persona');
@@ -201,6 +239,8 @@ class CotizacionController extends Controller
                 'email' => $cotizacion->cliente->email,
                 'telefono' => $cotizacion->cliente->telefono,
                 'documento' => $cotizacion->cliente->documento,
+                'tipo_documento' => optional($cotizacion->cliente->persona)->tipo_documento,
+                'razon_social' => optional($cotizacion->cliente->persona)->razon_social,
                 'direccion' => $cotizacion->cliente->direccion,
                 'ciudad' => $cotizacion->cliente->ciudad,
                 'eliminado' => $cotizacion->cliente->deleted_at ? true : false,
@@ -209,6 +249,11 @@ class CotizacionController extends Controller
 
         $response = $cotizacion->toArray();
         $response['cliente'] = $clienteData;
+        // Creador real (no se sobrescribe al editar) para el chip "Creada por"
+        $response['creador'] = $cotizacion->user ? [
+            'name' => $cotizacion->user->name,
+            'avatar_url' => $cotizacion->user->avatar_url,
+        ] : null;
 
         return response()->json($response);
     }
@@ -297,16 +342,21 @@ class CotizacionController extends Controller
         return response()->json(['success' => 'Cotización eliminada exitosamente.']);
     }
 
-    public function reportePdf()
+    public function reportePdf(Request $request)
     {
-        // Obtener todas las cotizaciones con cliente y usuario asociado
-        $cotizaciones = Cotizacion::with(['user:id,name', 'cliente.persona'])->get();
-
-        // Cargar la vista y generar el PDF (A4 vertical)
+        $query = Cotizacion::with(['user:id,name', 'cliente.persona']);
+        if ($request->filled('estado')) {
+            $query->where('estado', $request->estado);
+        }
+        if ($request->filled('fecha_desde')) {
+            $query->whereDate('created_at', '>=', $request->fecha_desde);
+        }
+        if ($request->filled('fecha_hasta')) {
+            $query->whereDate('created_at', '<=', $request->fecha_hasta);
+        }
+        $cotizaciones = $query->get();
         $pdf = PDF::loadView('admin.cotizaciones.reporte_pdf', compact('cotizaciones'))
             ->setPaper('a4', 'portrait');
-
-        // Descargar el archivo con una marca de tiempo para evitar colisiones
         return $pdf->download('reporte_cotizaciones_' . now()->format('Ymd_His') . '.pdf');
     }
 

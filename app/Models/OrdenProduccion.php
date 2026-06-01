@@ -14,15 +14,16 @@ class OrdenProduccion extends Model
 
     protected $fillable = [
         'pedido_id',
+        'detalle_pedido_id',
         'producto_id',
+        'empleado_id',
         'cantidad_solicitada',
         'cantidad_producida',
+        'cantidad_defectuosa',
         'fecha_inicio',
         'fecha_fin_estimada',
         'fecha_fin_real',
         'estado',
-        'costo_estimado',
-        'logo_id',
         'notas',
         'created_by',
     ];
@@ -31,9 +32,9 @@ class OrdenProduccion extends Model
         'fecha_inicio' => 'date',
         'fecha_fin_estimada' => 'date',
         'fecha_fin_real' => 'date',
-        'costo_estimado' => 'decimal:2',
         'cantidad_solicitada' => 'integer',
         'cantidad_producida' => 'integer',
+        'cantidad_defectuosa' => 'integer',
     ];
 
     public function producto()
@@ -48,14 +49,26 @@ class OrdenProduccion extends Model
             ->withTimestamps();
     }
 
-    public function logo()
+    public function empleado()
     {
-        return $this->belongsTo(Logo::class);
+        return $this->belongsTo(Empleado::class);
     }
 
-    public function produccionDiaria()
+    public function detallePedido()
     {
-        return $this->hasMany(ProduccionDiaria::class, 'orden_id');
+        return $this->belongsTo(DetallePedido::class, 'detalle_pedido_id');
+    }
+
+    /**
+     * Fracción de avance de la orden (0..1) = producida / solicitada.
+     */
+    public function getProgresoAttribute(): float
+    {
+        if (!$this->cantidad_solicitada) {
+            return 0.0;
+        }
+
+        return min(1.0, $this->cantidad_producida / $this->cantidad_solicitada);
     }
 
     public function creadoPor()

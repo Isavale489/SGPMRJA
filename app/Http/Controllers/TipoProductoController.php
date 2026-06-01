@@ -13,7 +13,7 @@ class TipoProductoController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $query = TipoProducto::withCount('productos')->orderBy('nombre');
+        $query = TipoProducto::withCount(['productos', 'atributos'])->orderBy('nombre');
 
         if ($request->boolean('historial')) {
             $query->onlyTrashed();
@@ -30,27 +30,42 @@ class TipoProductoController extends Controller
     {
         $request->validate([
             'nombre' => 'required|string|max:100|unique:tipo_producto,nombre',
-            'codigo_prefijo' => 'required|string|max:5|unique:tipo_producto,codigo_prefijo|alpha',
+            'prefijo' => 'required|string|max:5|unique:tipo_producto,prefijo|alpha',
             'descripcion' => 'nullable|string|max:500',
+            'precio_confeccion' => 'nullable|numeric|min:0|max:99999.99',
+            'requiere_tela' => 'nullable|boolean',
+            'consumo_tela_por_unidad' => 'nullable|numeric|min:0|max:9999.99',
+            'atributos' => 'nullable|array',
+            'atributos.*.id' => 'required_with:atributos|integer|exists:atributo,id',
+            'atributos.*.orden' => 'required_with:atributos|integer|min:1|max:99',
+            'insumos_default' => 'nullable|array',
+            'insumos_default.*.id' => 'required_with:insumos_default|integer|exists:insumo,id',
+            'insumos_default.*.cantidad_estimada' => 'required_with:insumos_default|numeric|min:0.01',
         ], [
             'nombre.required' => 'El nombre es obligatorio',
             'nombre.unique' => 'Ya existe un tipo con este nombre',
-            'codigo_prefijo.required' => 'El prefijo de código es obligatorio',
-            'codigo_prefijo.unique' => 'Ya existe un tipo con este prefijo',
-            'codigo_prefijo.alpha' => 'El prefijo solo puede contener letras',
-            'codigo_prefijo.max' => 'El prefijo no puede tener más de 5 caracteres',
+            'prefijo.required' => 'El prefijo de código es obligatorio',
+            'prefijo.unique' => 'Ya existe un tipo con este prefijo',
+            'prefijo.alpha' => 'El prefijo solo puede contener letras',
+            'prefijo.max' => 'El prefijo no puede tener más de 5 caracteres',
         ]);
 
         $tipo = TipoProducto::create([
             'nombre' => $request->nombre,
-            'codigo_prefijo' => strtoupper($request->codigo_prefijo),
+            'prefijo' => strtoupper($request->prefijo),
             'descripcion' => $request->descripcion,
+            'precio_confeccion' => $request->input('precio_confeccion', 0),
+            'requiere_tela' => $request->boolean('requiere_tela', true),
+            'consumo_tela_por_unidad' => $request->input('consumo_tela_por_unidad', 0),
         ]);
+
+        $this->syncAtributos($tipo, $request->input('atributos', []));
+        $this->syncInsumosDefault($tipo, $request->input('insumos_default', []));
 
         return response()->json([
             'success' => true,
             'message' => 'Tipo de producto creado correctamente',
-            'tipo' => $tipo,
+            'tipo' => $tipo->load(['atributos', 'insumosDefault']),
         ]);
     }
 
@@ -59,6 +74,14 @@ class TipoProductoController extends Controller
      */
     public function show(TipoProducto $tipoProducto): JsonResponse
     {
+        $tipoProducto->load([
+            'atributos' => function ($q) {
+                $q->orderBy('tipo_producto_atributo.orden');
+            },
+            'atributos.valores',
+            'insumosDefault',
+        ]);
+
         return response()->json($tipoProducto);
     }
 
@@ -69,21 +92,69 @@ class TipoProductoController extends Controller
     {
         $request->validate([
             'nombre' => 'required|string|max:100|unique:tipo_producto,nombre,' . $tipoProducto->id,
-            'codigo_prefijo' => 'required|string|max:5|unique:tipo_producto,codigo_prefijo,' . $tipoProducto->id . '|alpha',
+            'prefijo' => 'required|string|max:5|unique:tipo_producto,prefijo,' . $tipoProducto->id . '|alpha',
             'descripcion' => 'nullable|string|max:500',
+            'precio_confeccion' => 'nullable|numeric|min:0|max:99999.99',
+            'requiere_tela' => 'nullable|boolean',
+            'consumo_tela_por_unidad' => 'nullable|numeric|min:0|max:9999.99',
+            'atributos' => 'nullable|array',
+            'atributos.*.id' => 'required_with:atributos|integer|exists:atributo,id',
+            'atributos.*.orden' => 'required_with:atributos|integer|min:1|max:99',
+            'insumos_default' => 'nullable|array',
+            'insumos_default.*.id' => 'required_with:insumos_default|integer|exists:insumo,id',
+            'insumos_default.*.cantidad_estimada' => 'required_with:insumos_default|numeric|min:0.01',
         ]);
 
         $tipoProducto->update([
             'nombre' => $request->nombre,
-            'codigo_prefijo' => strtoupper($request->codigo_prefijo),
+            'prefijo' => strtoupper($request->prefijo),
             'descripcion' => $request->descripcion,
+            'precio_confeccion' => $request->input('precio_confeccion', $tipoProducto->precio_confeccion),
+            'requiere_tela' => $request->boolean('requiere_tela', $tipoProducto->requiere_tela),
+            'consumo_tela_por_unidad' => $request->input('consumo_tela_por_unidad', $tipoProducto->consumo_tela_por_unidad),
         ]);
+
+        $this->syncAtributos($tipoProducto, $request->input('atributos', []));
+        $this->syncInsumosDefault($tipoProducto, $request->input('insumos_default', []));
 
         return response()->json([
             'success' => true,
             'message' => 'Tipo de producto actualizado correctamente',
-            'tipo' => $tipoProducto,
+            'tipo' => $tipoProducto->load(['atributos', 'insumosDefault']),
         ]);
+    }
+
+    /**
+     * Sincroniza la asociación tipo↔atributo respetando el orden indicado.
+     * Bloquea la remoción de atributos que estén siendo usados por productos del tipo.
+     */
+    private function syncAtributos(TipoProducto $tipo, array $atributos): void
+    {
+        $sync = [];
+        foreach ($atributos as $a) {
+            $sync[(int) $a['id']] = [
+                'es_obligatorio' => true,
+                'orden' => (int) $a['orden'],
+            ];
+        }
+
+        $tipo->atributos()->sync($sync);
+    }
+
+    /**
+     * Sincroniza los insumos default del tipo (templates de orden de producción).
+     * Cada entrada: ['id' => insumo_id, 'cantidad_estimada' => decimal]
+     */
+    private function syncInsumosDefault(TipoProducto $tipo, array $insumos): void
+    {
+        $sync = [];
+        foreach ($insumos as $i) {
+            $sync[(int) $i['id']] = [
+                'cantidad_estimada' => (float) $i['cantidad_estimada'],
+            ];
+        }
+
+        $tipo->insumosDefault()->sync($sync);
     }
 
     /**
@@ -130,19 +201,6 @@ class TipoProductoController extends Controller
         ]);
     }
 
-    /**
-     * Obtener el próximo código para un tipo (con preview del modelo)
-     */
-    public function proximoCodigo(Request $request, TipoProducto $tipoProducto): JsonResponse
-    {
-        $modelo = $request->query('modelo', '');
-
-        return response()->json([
-            'codigo' => $tipoProducto->proximoCodigo($modelo),
-            'abreviatura' => $modelo ? TipoProducto::abreviarModelo($modelo) : 'XXX',
-        ]);
-    }
-
     public function checkNombre(Request $request)
     {
         $nombre = $request->input('nombre');
@@ -157,7 +215,7 @@ class TipoProductoController extends Controller
         $codigo = $request->input('codigo');
         if (!$codigo)
             return response()->json(['exists' => false]);
-        $exists = TipoProducto::where('codigo_prefijo', $codigo)->exists();
+        $exists = TipoProducto::where('prefijo', $codigo)->exists();
         return response()->json(['exists' => $exists]);
     }
 }

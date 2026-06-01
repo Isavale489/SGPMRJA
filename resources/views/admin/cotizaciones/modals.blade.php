@@ -169,6 +169,9 @@
                                     <div class="text-end">
                                         <span class="fw-bold text-white" style="font-size:1.8rem;line-height:1;"
                                             id="view-total">$0.00</span>
+                                        <small class="text-white-50 d-block mt-1" style="font-size:0.72rem;">
+                                            <i class="ri-exchange-dollar-line me-1"></i><span id="view-total-bs">Bs 0,00</span>
+                                        </small>
                                     </div>
                                 </div>
                             </div>
@@ -209,7 +212,7 @@
      Modal Cotización — Wizard 3 pasos (Cliente · Productos · Resumen)
      IDs de campos preservados para compatibilidad con scripts/main.blade.php
      ════════════════════════════════════════════════════════════════════ -->
-<div class="modal fade atlantico-modal atlantico-modal--op cot-wizard-modal" id="showModal" tabindex="-1"
+<div class="modal fade atlantico-modal atlantico-modal--op wiz-modal" id="showModal" tabindex="-1"
     aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-dialog-centered modal-xl">
         <div class="modal-content">
@@ -219,22 +222,48 @@
             </div>
 
             {{-- Stepper visual --}}
-            <div class="cot-stepper-wrapper">
-                <div class="cot-stepper" role="tablist" aria-label="Pasos de la cotización">
-                    <button type="button" class="cot-step-marker is-active" data-step="1" role="tab" aria-selected="true">
-                        <span class="cot-step-dot">1</span>
-                        <span class="cot-step-label">Cliente</span>
+            <div class="wiz-stepper-wrapper">
+                {{-- Chip cliente persistente — ocupa el gutter izquierdo del stepper (pasos 2+) --}}
+                <div class="wiz-stepper-side wiz-stepper-side--left">
+                    <div class="wiz-client-banner" id="cot-cliente-banner" hidden aria-hidden="true"
+                        title="Cliente de la cotización">
+                        <span class="wiz-client-banner-label">Para:</span>
+                        <div class="wiz-client-banner-avatar" id="cot-banner-avatar">—</div>
+                        <div class="wiz-client-banner-main">
+                            <span class="wiz-client-banner-name" id="cot-banner-name">—</span>
+                            <div class="wiz-client-banner-sub">
+                                <span class="wiz-client-banner-doc" id="cot-banner-doc">—</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="wiz-stepper" role="tablist" aria-label="Pasos de la cotización">
+                    <button type="button" class="wiz-step-marker is-active" data-step="1" role="tab" aria-selected="true">
+                        <span class="wiz-step-dot">1</span>
+                        <span class="wiz-step-label">Cliente</span>
                     </button>
-                    <span class="cot-step-line"><span class="cot-step-line-fill" data-line="1"></span></span>
-                    <button type="button" class="cot-step-marker" data-step="2" role="tab" aria-selected="false">
-                        <span class="cot-step-dot">2</span>
-                        <span class="cot-step-label">Productos</span>
+                    <span class="wiz-step-line"><span class="wiz-step-line-fill" data-line="1"></span></span>
+                    <button type="button" class="wiz-step-marker" data-step="2" role="tab" aria-selected="false">
+                        <span class="wiz-step-dot">2</span>
+                        <span class="wiz-step-label">Productos</span>
                     </button>
-                    <span class="cot-step-line"><span class="cot-step-line-fill" data-line="2"></span></span>
-                    <button type="button" class="cot-step-marker" data-step="3" role="tab" aria-selected="false">
-                        <span class="cot-step-dot">3</span>
-                        <span class="cot-step-label">Resumen</span>
+                    <span class="wiz-step-line"><span class="wiz-step-line-fill" data-line="2"></span></span>
+                    <button type="button" class="wiz-step-marker" data-step="3" role="tab" aria-selected="false">
+                        <span class="wiz-step-dot">3</span>
+                        <span class="wiz-step-label">Resumen</span>
                     </button>
+                </div>
+                {{-- Chip "Creada por" — usuario logueado, gutter derecho (todos los pasos, solo al crear) --}}
+                <div class="wiz-stepper-side wiz-stepper-side--right">
+                    <div class="wiz-client-banner wiz-client-banner--creator" id="cot-creador-banner" hidden
+                        aria-hidden="true" title="Creada por">
+                        <span class="wiz-client-banner-label">Creada por:</span>
+                        <img class="wiz-client-banner-avatar wiz-client-banner-avatar--img"
+                            id="cot-creador-avatar" src="{{ Auth::user()->avatar_url }}" alt="" />
+                        <div class="wiz-client-banner-main">
+                            <span class="wiz-client-banner-name" id="cot-creador-name">{{ Auth::user()->name }}</span>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -243,14 +272,14 @@
                 <input type="hidden" id="id-field" />
                 <input type="hidden" id="cliente-id-field" name="cliente_id" />
 
-                <div class="modal-body p-0 cot-wizard-body">
+                <div class="modal-body p-0 wiz-wizard-body">
 
                     {{-- ═════════════════════════ PASO 1 — CLIENTE ═════════════════════════ --}}
-                    <section class="cot-step-content is-active" id="cot-step-1" data-step="1">
-                        <div class="cot-step-header">
-                            <span class="cot-step-tag">Paso 1 de 3</span>
-                            <h4 class="cot-step-title">Cliente y datos generales</h4>
-                            <p class="cot-step-desc">Busca el cliente por su documento o créalo en línea, luego define las fechas y la prioridad.</p>
+                    <section class="wiz-step-content is-active" id="cot-step-1" data-step="1">
+                        <div class="wiz-step-header">
+                            <span class="wiz-step-tag">Paso 1 de 3</span>
+                            <h4 class="wiz-step-title">Cliente y datos generales</h4>
+                            <p class="wiz-step-desc">Busca el cliente por su documento o créalo en línea, luego define las fechas y la prioridad.</p>
                         </div>
 
                         <div class="row g-3">
@@ -467,13 +496,13 @@
                     </section>
 
                     {{-- ═════════════════════════ PASO 2 — PRODUCTOS ═════════════════════════ --}}
-                    <section class="cot-step-content" id="cot-step-2" data-step="2" hidden>
-                        <div class="cot-step-header">
+                    <section class="wiz-step-content" id="cot-step-2" data-step="2" hidden>
+                        <div class="wiz-step-header">
                             <div class="d-flex align-items-end justify-content-between flex-wrap gap-3">
                                 <div>
-                                    <span class="cot-step-tag">Paso 2 de 3</span>
-                                    <h4 class="cot-step-title">Productos de la cotización</h4>
-                                    <p class="cot-step-desc">Explora el catálogo y configura cada prenda con sus colores, tallas y bordados.</p>
+                                    <span class="wiz-step-tag">Paso 2 de 3</span>
+                                    <h4 class="wiz-step-title">Productos de la cotización</h4>
+                                    <p class="wiz-step-desc">Explora el catálogo y configura cada prenda con sus colores, tallas y bordados.</p>
                                 </div>
                                 <div class="d-flex gap-2 flex-wrap">
                                     <button type="button" class="btn btn-atlantico-brand" id="btn-explorar-catalogo">
@@ -529,11 +558,11 @@
                     </section>
 
                     {{-- ═════════════════════════ PASO 3 — RESUMEN ═════════════════════════ --}}
-                    <section class="cot-step-content" id="cot-step-3" data-step="3" hidden>
-                        <div class="cot-step-header">
-                            <span class="cot-step-tag">Paso 3 de 3</span>
-                            <h4 class="cot-step-title">Resumen y notas</h4>
-                            <p class="cot-step-desc">Revisa el desglose, agrega condiciones y finaliza.</p>
+                    <section class="wiz-step-content" id="cot-step-3" data-step="3" hidden>
+                        <div class="wiz-step-header">
+                            <span class="wiz-step-tag">Paso 3 de 3</span>
+                            <h4 class="wiz-step-title">Resumen y notas</h4>
+                            <p class="wiz-step-desc">Revisa el desglose, agrega condiciones y finaliza.</p>
                         </div>
 
                         <div class="row g-3">
@@ -607,6 +636,12 @@
                                             <span class="cot-resumen-row-label">Total</span>
                                             <span class="cot-resumen-row-value" id="cot-resumen-total">$0,00</span>
                                         </div>
+                                        <div class="cot-resumen-row" style="opacity: 0.85;">
+                                            <span class="cot-resumen-row-label" style="font-size: 0.75rem;">
+                                                <i class="ri-exchange-dollar-line me-1"></i>Equivalente Bs
+                                            </span>
+                                            <span class="cot-resumen-row-value" id="cot-resumen-total-bs" style="font-size: 0.85rem; color: rgba(255,255,255,0.85);">Bs 0,00</span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -615,28 +650,28 @@
 
                 </div>{{-- /modal-body --}}
 
-                <div class="modal-footer cot-wizard-footer">
-                    <div class="cot-wizard-footer-info">
-                        <span class="cot-wizard-step-info">
+                <div class="modal-footer wiz-wizard-footer">
+                    <div class="wiz-wizard-footer-info">
+                        <span class="wiz-wizard-step-info">
                             <span id="cot-step-current">1</span> de 3
                         </span>
                     </div>
-                    <div class="cot-wizard-footer-actions">
-                        <button type="button" class="btn btn-light cot-wizard-btn-prev" id="btn-cot-prev"
+                    <div class="wiz-wizard-footer-actions">
+                        <button type="button" class="btn btn-light wiz-wizard-btn-prev" id="btn-cot-prev"
                             style="display:none;">
                             <i class="ri-arrow-left-line me-1"></i>Anterior
                         </button>
                         <button type="button" class="btn btn-light" data-bs-dismiss="modal">
                             <i class="ri-close-line me-1"></i>Cerrar
                         </button>
-                        <button type="button" class="btn btn-atlantico-brand cot-wizard-btn-next" id="btn-cot-next">
+                        <button type="button" class="btn btn-atlantico-brand wiz-wizard-btn-next" id="btn-cot-next">
                             Continuar<i class="ri-arrow-right-line ms-1"></i>
                         </button>
-                        <button type="submit" class="btn btn-success cot-wizard-btn-submit" id="add-btn"
+                        <button type="submit" class="btn btn-success wiz-wizard-btn-submit" id="add-btn"
                             style="display:none;">
                             <i class="ri-check-line me-1"></i>Crear cotización
                         </button>
-                        <button type="submit" class="btn btn-success cot-wizard-btn-submit" id="edit-btn"
+                        <button type="submit" class="btn btn-success wiz-wizard-btn-submit" id="edit-btn"
                             style="display:none;">
                             <i class="ri-save-line me-1"></i>Actualizar
                         </button>
@@ -766,6 +801,73 @@
 </div>
 
 {{-- ════════════════════════════════════════════════════════════════════
+     Modal Selector de Variante — Fase 4 (variantes/atributos)
+     Se abre al clickear una card de TIPO en el catálogo. Permite elegir
+     tela y valores de atributos para resolver el producto exacto antes
+     de configurar color/tallas/bordados.
+     ════════════════════════════════════════════════════════════════════ --}}
+<div class="modal fade atlantico-modal atlantico-modal--op cot-variant-modal" id="varianteSelectorModal"
+    tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="cat-icon-square">
+                        <i class="ri-shape-2-line"></i>
+                    </div>
+                    <div>
+                        <p class="cat-eyebrow mb-0">Selecciona la variante</p>
+                        <h5 class="modal-title m-0" id="vs-tipo-nombre">—</h5>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body p-4">
+                <p class="text-muted small mb-3">
+                    Elige la combinación que vas a cotizar. El SKU se resuelve automáticamente.
+                </p>
+
+                {{-- Sección Tela --}}
+                <div class="mb-3" id="vs-tela-section">
+                    <label class="form-label small fw-semibold mb-2">
+                        <i class="ri-shirt-line me-1"></i>Tela
+                    </label>
+                    <div id="vs-tela-options" class="d-flex flex-wrap gap-2">
+                        {{-- Render dinámico --}}
+                    </div>
+                </div>
+
+                {{-- Sección Atributos (chips por atributo) --}}
+                <div id="vs-atributos-section">
+                    <div class="text-muted small text-center py-3">
+                        <span class="spinner-border spinner-border-sm me-2"></span>Cargando variantes…
+                    </div>
+                </div>
+
+                {{-- Resultado de resolución --}}
+                <div id="vs-result-found" class="alert alert-success py-2 small mt-3 mb-0" style="display:none;">
+                    <i class="ri-check-line me-1"></i>
+                    <strong id="vs-result-codigo">—</strong> · <span id="vs-result-precio">—</span>
+                </div>
+                <div id="vs-result-missing" class="alert alert-warning py-2 small mt-3 mb-0" style="display:none;">
+                    <i class="ri-error-warning-line me-1"></i>
+                    Esta combinación no existe en el catálogo. Crea el producto en
+                    <a href="{{ url('productos') }}" target="_blank">/productos</a> primero.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">
+                    <i class="ri-close-line me-1"></i>Cancelar
+                </button>
+                <button type="button" class="btn btn-atlantico-brand" id="vs-confirm" disabled>
+                    <i class="ri-arrow-right-line me-1"></i>Configurar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{{-- ════════════════════════════════════════════════════════════════════
      Modal Configurador de Producto — Fase 3
      Se abre al clickear una card del catálogo. Color + tallas matrix.
      Los bordados se configuran por línea desde el paso 2 (Fase 4).
@@ -806,6 +908,9 @@
                                 <span class="cfg-info-price-label">Precio base</span>
                                 <span class="cfg-info-price-value" id="cfg-info-precio">$0,00</span>
                             </div>
+                            <button type="button" class="btn btn-sm btn-outline-secondary w-100 mt-2" id="cfg-cambiar-variante" style="display:none;">
+                                <i class="ri-shape-2-line me-1"></i>Cambiar variante
+                            </button>
                             <p class="cfg-info-help">
                                 <i class="ri-information-line me-1"></i>El bordado se configura por
                                 línea en el paso 2 después de confirmar el carrito.

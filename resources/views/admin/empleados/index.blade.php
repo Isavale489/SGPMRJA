@@ -7,6 +7,14 @@
     <link href="https://cdn.datatables.net/responsive/2.2.9/css/responsive.bootstrap.min.css" rel="stylesheet"
         type="text/css" />
     <link href="https://cdn.datatables.net/buttons/2.2.2/css/buttons.dataTables.min.css" rel="stylesheet" type="text/css" />
+    {{-- Grid responsivo para filtros: 1 col mobile → 4 cols desktop --}}
+    <style>
+        @media (min-width: 768px) {
+            .navy-filter-grid {
+                grid-template-columns: repeat(4, 1fr) !important;
+            }
+        }
+    </style>
 @endpush
 
 @section('content')
@@ -34,12 +42,17 @@
                     <div class="d-flex align-items-center">
                         <h5 class="card-title mb-0 flex-grow-1">Listado de Empleados</h5>
                         <div class="flex-shrink-0 d-flex align-items-center gap-3">
-                            <!-- Buscador Personalizado -->
-                            <div class="search-box">
-                                <input type="text" class="form-control form-control-sm" id="custom-search-input"
-                                    placeholder="Buscar empleado...">
-                                <i class="ri-search-line search-icon"></i>
-                            </div>
+                            <!-- Toggle Historial -->
+                            @if($historial)
+                                <a href="{{ route('empleados.index') }}" class="btn-historial btn-historial-volver">
+                                    <i class="ri-arrow-left-line"></i> Solo Activos
+                                </a>
+                            @else
+                                <a href="{{ route('empleados.index', ['historial' => true]) }}"
+                                    class="btn-historial btn-historial-ver">
+                                    <i class="ri-time-line"></i> Ver Historial
+                                </a>
+                            @endif
                             <div class="d-flex gap-2">
                                 <a href="{{ url('departamentos') }}" class="btn btn-link-depto" title="Ir al catálogo de departamentos">
                                     <i class="ri-building-line align-bottom me-1"></i> Departamentos
@@ -47,18 +60,116 @@
                                 <a href="{{ url('cargos') }}" class="btn btn-link-cargo" title="Ir al catálogo de cargos">
                                     <i class="ri-briefcase-line align-bottom me-1"></i> Cargos
                                 </a>
-                                <button type="button" class="btn btn-success add-btn" data-bs-toggle="modal" id="create-btn"
-                                    data-bs-target="#showModal">
-                                    <i class="ri-add-line align-bottom me-1"></i> Agregar Empleado
-                                </button>
-                                <a href="{{ route('empleados.reporte.pdf') }}" class="btn btn-danger" target="_blank">
+                                @if(!$historial)
+                                    <button type="button" class="btn btn-success add-btn" data-bs-toggle="modal" id="create-btn"
+                                        data-bs-target="#showModal">
+                                        <i class="ri-add-line align-bottom me-1"></i> Agregar Empleado
+                                    </button>
+                                @endif
+                                <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#pdfExportModal">
                                     <i class="ri-file-pdf-fill align-bottom me-1"></i> Exportar PDF
-                                </a>
+                                </button>
                             </div>
                         </div>
                     </div>
                 </div>
                 <div class="card-body">
+                    {{-- ============================================================
+                         FILTROS — Patrón Maestro S-07 (Colapsable)
+                         CSS genérico en custom.css: .navy-filter-*
+                         ============================================================ --}}
+                    <div class="advanced-filters-wrapper navy-theme" id="advanced-filters">
+                        {{-- Header unificado: búsqueda global + trigger de filtros --}}
+                        <div class="navy-filter-header is-collapsed">
+                            {{-- Búsqueda global (siempre visible) --}}
+                            <div class="navy-header-search">
+                                <i class="ri-search-line"></i>
+                                <input type="text" id="custom-search-input"
+                                    class="navy-search-input"
+                                    placeholder="Buscar empleado..."
+                                    autocomplete="off">
+                            </div>
+                            {{-- Divisor vertical --}}
+                            <div class="navy-header-divider"></div>
+                            {{-- Trigger del collapse de filtros --}}
+                            <button class="navy-filter-btn collapsed" type="button"
+                                data-bs-toggle="collapse" data-bs-target="#filters-collapse-body"
+                                aria-expanded="false" aria-controls="filters-collapse-body">
+                                <i class="ri-filter-3-line"></i>
+                                <span class="position-relative">
+                                    Filtros
+                                    <span class="d-none position-absolute" id="filter-dot-indicator"
+                                        style="top: -3px; right: -10px; width: 8px; height: 8px; background: #ef4444; border-radius: 50%; border: 2px solid #1b2e4b; display: inline-block;"></span>
+                                </span>
+                                <span class="navy-filter-badge d-none" id="active-filter-count"></span>
+                                <i class="ri-arrow-down-s-line navy-filter-chevron"></i>
+                            </button>
+                        </div>
+                        {{-- Body: colapsable, oculto por defecto --}}
+                        <div class="collapse" id="filters-collapse-body">
+                            <div class="navy-filter-body">
+                                <div style="display: grid; grid-template-columns: 1fr; gap: 0.75rem;" class="navy-filter-grid">
+                                    {{-- Filtro 1: Departamento --}}
+                                    <div>
+                                        <label class="navy-filter-label" for="filter-departamento">
+                                            <i class="ri-building-2-line"></i> Departamento
+                                        </label>
+                                        <select class="form-select navy-filter-select" id="filter-departamento">
+                                            <option value="">Todos</option>
+                                            @foreach($departamentos as $id => $nombre)
+                                                <option value="{{ $id }}">{{ $nombre }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                    {{-- Filtro 2: Cargo --}}
+                                    <div>
+                                        <label class="navy-filter-label" for="filter-cargo">
+                                            <i class="ri-briefcase-line"></i> Cargo
+                                        </label>
+                                        <select class="form-select navy-filter-select" id="filter-cargo">
+                                            <option value="">Todos</option>
+                                            @foreach($cargos as $id => $nombre)
+                                                <option value="{{ $id }}">{{ $nombre }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                    {{-- Filtro 3: Estatus --}}
+                                    <div>
+                                        <label class="navy-filter-label" for="filter-estatus">
+                                            <i class="ri-shield-check-line"></i> Estatus
+                                        </label>
+                                        <select class="form-select navy-filter-select" id="filter-estatus">
+                                            <option value="">Todos</option>
+                                            <option value="1" selected>Activo</option>
+                                            <option value="0">Inactivo</option>
+                                        </select>
+                                    </div>
+                                    {{-- Filtro 4: Ordenar por --}}
+                                    <div>
+                                        <label class="navy-filter-label" for="filter-orden">
+                                            <i class="ri-sort-asc"></i> Ordenar por
+                                        </label>
+                                        <select class="form-select navy-filter-select" id="filter-orden">
+                                            <option value="recientes">Más recientes primero</option>
+                                            <option value="nombre_asc">Nombre (A-Z)</option>
+                                            <option value="nombre_desc">Nombre (Z-A)</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                {{-- Botón limpiar: estilo ghost con icono de escoba --}}
+                                <div class="d-flex justify-content-end mt-2">
+                                    <button type="button" class="btn btn-sm" id="btn-clear-filters"
+                                        style="background: transparent; color: #8a9bb5; border: none; font-size: 0.8rem; transition: all 0.2s ease;"
+                                        onmouseover="this.style.color='#ef4444'; this.style.textDecoration='underline';"
+                                        onmouseout="this.style.color='#8a9bb5'; this.style.textDecoration='none';">
+                                        <i class='bx bx-broom' style="margin-right: 4px; font-size: 1rem; vertical-align: middle;"></i>Limpiar filtros
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {{-- FIN FILTROS --}}
+
                     <table id="empleados-table" class="table table-bordered table-striped table-sm align-middle table-operativa table-maestro">
                         <thead>
                             <tr>
@@ -484,11 +595,20 @@
                             </div>
 
                             <input type="hidden" id="field-codigo_empleado" name="codigo_empleado" />
+
+                            {{-- Estado Laboral: solo lectura. Lo gobierna Inhabilitar/Restaurar, no es editable aquí. --}}
                             <div class="row mb-0">
                                 <div class="col-md-6">
-                                    <x-forms.select name="estado" label="Estado Laboral"
-                                        :options="['1' => 'Activo', '0' => 'Inactivo']" required
-                                        placeholder="" value="1" />
+                                    <label class="form-label">Estado Laboral</label>
+                                    <input type="text" class="form-control bg-light" id="field-estado-display"
+                                        value="Activo" readonly tabindex="-1">
+                                    <div class="d-flex align-items-start gap-2 mt-2 p-2 rounded-3 bg-info-subtle border border-info-subtle">
+                                        <i class="ri-information-line text-info fs-5 lh-1 mt-1"></i>
+                                        <small class="text-info-emphasis mb-0 lh-sm">
+                                            Se asigna automáticamente: un empleado nuevo o restaurado queda <strong>Activo</strong>.
+                                            Para darlo de baja usa <strong>Inhabilitar</strong> (pasa a Inactivo y al historial).
+                                        </small>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -564,6 +684,54 @@
     </div>
     {{-- Modales de gestión completa (CRUD) de Departamentos y Cargos movidos a /departamentos y /cargos. Los mini-modales addDepartamentoModal y addCargoModal de arriba se mantienen para creación rápida desde el form de empleado. --}}
 
+    {{-- Modal: Exportar PDF con filtros --}}
+    <div class="modal fade atlantico-modal" id="pdfExportModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" style="max-width: 380px;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="ri-file-pdf-line me-2"></i>Exportar PDF</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <p class="text-muted small mb-3">Filtra qué empleados incluir en el reporte.</p>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold" for="pdf-filter-departamento">Departamento</label>
+                        <select class="form-select" id="pdf-filter-departamento">
+                            <option value="">Todos los departamentos</option>
+                            @foreach($departamentos as $id => $nombre)
+                                <option value="{{ $id }}">{{ $nombre }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold" for="pdf-filter-cargo">Cargo</label>
+                        <select class="form-select" id="pdf-filter-cargo">
+                            <option value="">Todos los cargos</option>
+                            @foreach($cargos as $id => $nombre)
+                                <option value="{{ $id }}">{{ $nombre }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="mb-0">
+                        <label class="form-label fw-semibold" for="pdf-filter-estatus">Estatus</label>
+                        <select class="form-select" id="pdf-filter-estatus">
+                            <option value="">Todos</option>
+                            <option value="1">Activo</option>
+                            <option value="0">Inactivo</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light border-0">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">
+                        <i class="ri-close-line me-1"></i>Cancelar
+                    </button>
+                    <button type="button" class="btn btn-danger" id="btn-generar-pdf">
+                        <i class="ri-file-pdf-fill me-1"></i>Generar PDF
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 @endsection
 
 @push('scripts')
@@ -751,18 +919,23 @@
                 headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') }
             });
 
-            function generateButtons(empleadoId) {
-                return '<div class="d-flex gap-1 justify-content-center">' +
-                    '<button class="btn btn-sm btn-soft-secondary view-item-btn dt-action-btn" data-id="' + empleadoId + '" title="Ver">' +
-                    '<i class="ri-eye-fill dt-action-icon"></i>' +
-                    '</button>' +
-                    '<button class="btn btn-sm btn-soft-success edit-item-btn dt-action-btn" data-id="' + empleadoId + '" title="Editar">' +
-                    '<i class="ri-pencil-fill dt-action-icon"></i>' +
-                    '</button>' +
-                    '<button class="btn btn-sm btn-soft-danger remove-item-btn dt-action-btn" data-id="' + empleadoId + '" title="Eliminar">' +
-                    '<i class="ri-delete-bin-fill dt-action-icon"></i>' +
-                    '</button>' +
+            function generateButtons(empleadoId, isTrashed) {
+                // Patrón unificado: Ver inline + menú ⋮ con el resto de acciones.
+                var sVer = '<button class="btn btn-sm btn-soft-info view-item-btn" data-id="' + empleadoId + '" title="Ver"><i class="ri-eye-fill"></i></button>';
+                var items;
+                if (isTrashed) {
+                    items = '<li><button type="button" class="dropdown-item act-item act-restore restore-item-btn" data-id="' + empleadoId + '"><span class="act-ic"><i class="ri-arrow-go-back-line"></i></span>Restaurar</button></li>';
+                } else {
+                    items =
+                        '<li><button type="button" class="dropdown-item act-item act-edit edit-item-btn" data-id="' + empleadoId + '"><span class="act-ic"><i class="ri-pencil-fill"></i></span>Editar</button></li>' +
+                        '<li><button type="button" class="dropdown-item act-item act-del remove-item-btn" data-id="' + empleadoId + '"><span class="act-ic"><i class="ri-forbid-line"></i></span>Inhabilitar</button></li>';
+                }
+                var menu =
+                    '<div class="dropdown d-inline-block">' +
+                        '<button class="btn btn-sm btn-soft-secondary" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Más acciones"><i class="ri-more-2-fill"></i></button>' +
+                        '<ul class="dropdown-menu dropdown-menu-end actions-menu">' + items + '</ul>' +
                     '</div>';
+                return '<div class="d-flex gap-1 justify-content-center align-items-center">' + sVer + menu + '</div>';
             }
 
             function renderEllipsis(value) {
@@ -786,7 +959,19 @@
             }
 
             var table = $('#empleados-table').DataTable({
-                ajax: { url: "{{ route('empleados.data') }}", dataSrc: 'data' },
+                processing: true,
+                serverSide: true,
+                ajax: {
+                    url: "{{ route('empleados.data') }}",
+                    dataSrc: 'data',
+                    data: function (d) {
+                        // ── Filtros avanzados: enviar valores al server ──
+                        d.filter_departamento   = $('#filter-departamento').val();
+                        d.filter_cargo          = $('#filter-cargo').val();
+                        d.filter_estatus        = $('#filter-estatus').val();
+                        d.filter_orden          = $('#filter-orden').val();
+                    }
+                },
                 columns: [
                     {
                         data: 'documento', render: function (data, type, row) {
@@ -820,10 +1005,10 @@
                         }
                     },
                     {
-                        data: 'estado', render: function (data) {
-                            return data == 1
-                                ? '<span class="badge-status badge-status-activo"><i class="ri-checkbox-circle-line"></i> Activo</span>'
-                                : '<span class="badge-status badge-status-inactivo"><i class="ri-close-circle-line"></i> Inactivo</span>';
+                        data: 'trashed', render: function (data) {
+                            return data
+                                ? '<span class="badge-status badge-status-inactivo"><i class="ri-close-circle-line"></i> Inhabilitado</span>'
+                                : '<span class="badge-status badge-status-activo"><i class="ri-checkbox-circle-line"></i> Activo</span>';
                         }
                     },
                     {
@@ -831,18 +1016,79 @@
                         orderable: false,
                         searchable: false,
                         render: function (data, type, row) {
-                            return generateButtons(row.id);
+                            return generateButtons(row.id, row.trashed);
                         }
                     }
                 ],
-                order: [[0, 'desc']],
+                order: [],
+                ordering: false,
                 dom: 'rtip',
                 language: lenguajeData
             });
 
-            // Buscador personalizado
+            // ══════════════════════════════════════════════════
+            // BÚSQUEDA + FILTROS AVANZADOS — Patrón Maestro S-07
+            // ══════════════════════════════════════════════════
+
+            // ── Badge: actualizar contador de filtros activos + punto rojo ──
+            function updateFilterBadge() {
+                var count = 0;
+                if ($('#filter-departamento').val() !== '')                          count++;
+                if ($('#filter-cargo').val() !== '')                                 count++;
+                if ($('#filter-estatus').val() !== '1')                              count++;
+                if ($('#filter-orden').val() !== 'recientes')                        count++;
+                var $badge = $('#active-filter-count');
+                var $dot   = $('#filter-dot-indicator');
+                if (count > 0) {
+                    $badge.text(count).removeClass('d-none');
+                    $dot.removeClass('d-none');
+                } else {
+                    $badge.addClass('d-none');
+                    $dot.addClass('d-none');
+                }
+            }
+
+            // ── Sincronizar clase is-collapsed con el estado del collapse ──
+            $('#filters-collapse-body').on('show.bs.collapse', function () {
+                $('.navy-filter-header').removeClass('is-collapsed');
+            }).on('hidden.bs.collapse', function () {
+                $('.navy-filter-header').addClass('is-collapsed');
+            });
+
+            // ── Búsqueda global (debounce 300ms) ──
+            var searchTimeout = null;
             $('#custom-search-input').on('keyup', function () {
-                table.search(this.value).draw();
+                clearTimeout(searchTimeout);
+                var val = this.value;
+                searchTimeout = setTimeout(function () {
+                    table.search(val).draw();
+                }, 300);
+            });
+
+            // ── Filtros de select: recargar al cambiar ──
+            $('.navy-filter-select').on('change', function () {
+                table.ajax.reload();
+                updateFilterBadge();
+            });
+
+            // ── Si se llegó por toggle historial (?historial=true) → mostrar inhabilitados ──
+            @if($historial)
+                $('#filter-estatus').val('0');
+                table.ajax.reload();
+                updateFilterBadge();
+            @endif
+
+            // ── Botón limpiar: resetea búsqueda + filtros + orden ──
+            $('#btn-clear-filters').on('click', function () {
+                $('#filter-departamento').val('');
+                $('#filter-cargo').val('');
+                $('#filter-estatus').val('1');
+                $('#filter-orden').val('recientes');
+                $('#custom-search-input').val('');
+                updateFilterBadge();
+                table.search('').ajax.reload(function () {
+                    updateFilterBadge();
+                });
             });
 
             // === Funciones del modal crear/editar (estándar Clientes) ===
@@ -855,7 +1101,7 @@
                 $("#field-codigo_empleado").val("");
                 $("#tipo-documento-field").val("V-").prop('disabled', false).removeClass('campo-protegido');
                 $("#field-documento_identidad").prop('disabled', false).removeClass('campo-protegido');
-                $("#field-estado").val("1");
+                $("#field-estado-display").val("Activo");
                 // Resetear teléfono
                 $("#telefono-prefix-field").val("0424");
                 $("#telefono-number-field").val("");
@@ -1024,7 +1270,7 @@
                     $("#view-cargo").text(data.cargo);
                     $("#view-departamento").text(data.departamento);
                     $("#view-fecha-ingreso").text(formatDate(data.fecha_ingreso));
-                    $("#view-estado").html(data.estado == 1 ? '<span class="badge bg-success">Activo</span>' : '<span class="badge bg-danger">Inactivo</span>');
+                    $("#view-estado").html(data.trashed ? '<span class="badge bg-danger">Inhabilitado</span>' : '<span class="badge bg-success">Activo</span>');
                 });
             });
 
@@ -1074,7 +1320,7 @@
                     $("#field-genero").val(data.persona.genero);
                     $("#field-codigo_empleado").val(data.codigo_empleado);
                     $("#field-fecha_ingreso").val(data.fecha_ingreso);
-                    $("#field-estado").val(data.estado);
+                    $("#field-estado-display").val(data.trashed ? 'Inhabilitado' : 'Activo');
 
                     // Departamento → cargo en cascada
                     var $deptoSel = $('#field-departamento_id');
@@ -1110,10 +1356,10 @@
                 var id = $(this).data("id");
                 Swal.fire({
                     title: '¿Estás seguro?',
-                    text: "¡No podrás revertir esto!",
+                    text: "El empleado será inhabilitado y moverá al historial.",
                     icon: 'warning',
                     showCancelButton: true,
-                    confirmButtonText: 'Sí, eliminar',
+                    confirmButtonText: 'Sí, inhabilitar',
                     cancelButtonText: 'Cancelar',
                     customClass: {
                         confirmButton: 'btn btn-primary w-xs me-2',
@@ -1129,15 +1375,65 @@
                                 table.ajax.reload();
                                 Swal.fire({
                                     icon: 'success',
-                                    title: 'Eliminado',
-                                    text: response.message
+                                    title: '¡Inhabilitado!',
+                                    text: response.message,
+                                    showConfirmButton: false,
+                                    timer: 1500
                                 });
                             },
                             error: function (xhr) {
                                 Swal.fire({
                                     icon: 'error',
                                     title: 'Error',
-                                    text: xhr.responseJSON.message || 'Error al eliminar'
+                                    text: xhr.responseJSON.message || 'Error al inhabilitar'
+                                });
+                            }
+                        });
+                    }
+                });
+            });
+
+            // ══════════════════════════════════════════════════════
+            // RESTAURAR — SoftDelete Restore (estándar Clientes/Proveedores)
+            // ══════════════════════════════════════════════════════
+            $(document).on("click", ".restore-item-btn", function () {
+                var id = $(this).data("id");
+                Swal.fire({
+                    title: '¿Restaurar empleado?',
+                    text: "El empleado volverá a estar activo.",
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonText: 'Sí, restaurar',
+                    cancelButtonText: 'Cancelar',
+                    customClass: {
+                        confirmButton: 'btn btn-success w-xs me-2',
+                        cancelButton: 'btn btn-light w-xs'
+                    },
+                    buttonsStyling: false,
+                    showCloseButton: true
+                }).then(function (result) {
+                    if (result.value) {
+                        $.ajax({
+                            url: "{{ url('empleados') }}/" + id + "/restore",
+                            method: "POST",
+                            headers: {
+                                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                            },
+                            success: function (response) {
+                                table.ajax.reload();
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: '¡Restaurado!',
+                                    text: response.message,
+                                    showConfirmButton: false,
+                                    timer: 1500
+                                });
+                            },
+                            error: function (xhr) {
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Error',
+                                    text: 'No se pudo restaurar el empleado'
                                 });
                             }
                         });
@@ -1295,5 +1591,23 @@
             });
         }
 
+        // PDF Export Modal — Empleados
+        $('#btn-generar-pdf').on('click', function () {
+            var baseUrl = '{{ route('empleados.reporte.pdf') }}';
+            var params  = [];
+            var dep     = $('#pdf-filter-departamento').val();
+            var cargo   = $('#pdf-filter-cargo').val();
+            var estatus = $('#pdf-filter-estatus').val();
+            if (dep)            params.push('departamento_id=' + encodeURIComponent(dep));
+            if (cargo)          params.push('cargo_id='        + encodeURIComponent(cargo));
+            if (estatus !== '') params.push('estatus='         + encodeURIComponent(estatus));
+            window.open(baseUrl + (params.length ? '?' + params.join('&') : ''), '_blank');
+            bootstrap.Modal.getInstance(document.getElementById('pdfExportModal'))?.hide();
+        });
+        $('#pdfExportModal').on('show.bs.modal', function () {
+            $('#pdf-filter-departamento').val('');
+            $('#pdf-filter-cargo').val('');
+            $('#pdf-filter-estatus').val('');
+        });
     </script>
 @endpush

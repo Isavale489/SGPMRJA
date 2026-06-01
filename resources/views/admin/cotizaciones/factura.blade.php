@@ -1,199 +1,212 @@
-<!DOCTYPE html>
-<html lang="es">
+@extends('layouts.pdf')
 
-<head>
-    <meta charset="UTF-8">
-    <title>Cotización #{{ $cotizacion->id }}</title>
-    <style>
-        body {
-            font-family: DejaVu Sans, sans-serif;
-            font-size: 12px;
-            margin: 0;
-        }
+@section('page-title', 'Cotización #' . $cotizacion->id)
+@section('report-title', 'Cotización N° ' . str_pad($cotizacion->id, 5, '0', STR_PAD_LEFT))
 
-        .container {
-            max-width: 750px;
-            width: 100%;
-            margin: 0 auto;
-            padding-left: 0px;
-            padding-right: 30px;
-            padding-top: 10px;
-            padding-bottom: 10px;
-        }
+@section('extra-styles')
+    /* ── Bloque de datos (cliente / cotización) ── */
+    .info-block {
+        width: 100%;
+        border: none;
+        margin-bottom: 12px;
+    }
 
-        h2 {
-            text-align: center;
-            margin-bottom: 20px;
-        }
+    .info-block td {
+        border: none;
+        padding: 0 14px 0 0;
+        font-size: 9.5px;
+        line-height: 1.7;
+        vertical-align: top;
+        width: 50%;
+    }
 
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            table-layout: fixed;
-        }
+    .info-block .label {
+        font-weight: bold;
+        color: #1e3c72;
+    }
 
-        th,
-        td {
-            border: 1px solid #000;
-            padding: 4px;
-            text-align: center;
-            font-size: 11px;
-            word-wrap: break-word;
-            overflow-wrap: break-word;
-        }
+    /* ── Anchos de columnas de la tabla de productos ── */
+    .col-cant     { width: 6%;  text-align: center; }
+    .col-prod     { width: 22%; }
+    .col-desc     { width: 16%; }
+    .col-talla    { width: 7%;  text-align: center; }
+    .col-logo     { width: 13%; }
+    .col-ubic     { width: 12%; }
+    .col-bord     { width: 6%;  text-align: center; }
+    .col-punit    { width: 9%;  text-align: right; }
+    .col-monto    { width: 9%;  text-align: right; }
 
-        th {
-            background-color: #f0f0f0;
-        }
+    .data-table tbody td.text-center { text-align: center; }
+    .data-table tbody td.text-right  { text-align: right; }
 
-        .nota-especial {
-            background-color: #ffff99;
-            color: #000;
-            padding: 8px;
-            border: 1px solid #e6e600;
-            margin-top: 18px;
-            font-size: 11px;
-        }
+    /* ── Bloque de totales ── */
+    .totals-block {
+        width: 100%;
+        border: none;
+        margin-top: 10px;
+        margin-bottom: 14px;
+    }
 
-        .datos-section {
-            margin-bottom: 10px;
-        }
+    .totals-block > tbody > tr > td {
+        border: none;
+        padding: 0;
+    }
 
-        .label {
-            font-weight: bold;
-        }
+    .totals-inner {
+        width: 230px;
+        border: none;
+    }
 
-        .text-left {
-            text-align: left;
-        }
+    .totals-inner td {
+        border: none;
+        padding: 3px 8px;
+        font-size: 10px;
+    }
 
-        .text-right {
-            text-align: right;
-        }
-    </style>
-</head>
+    .totals-inner .t-label {
+        text-align: right;
+        color: #3d4852;
+        font-weight: 600;
+    }
 
-<body>
-    <div class="container">
-        <!-- Encabezado -->
-        <div style="position: relative; min-height: 100px; margin-bottom: 8px;">
-            <img src="{{ public_path('logo.jpg') }}" alt="Logo"
-                style="width: 100px; position: absolute; left: 0; top: 0;">
-            <div style="text-align: center; padding-left: 30px;">
-                <div class="company-name" style="font-size: 18px; font-weight: bold;">Manufacturas R.J. ATLANTICO C.A.
-                </div>
-                <div class="company-info" style="font-size: 11px;">
-                    Rif: J-40391423-0 &nbsp;&nbsp; Telf.: 0414-3558537 - 0255-6640625 &nbsp;&nbsp; Email:
-                    rjatlantico@gmail.com
-                </div>
-                <div class="company-info" style="font-size: 11px;">
-                    Av. Esquina calle 35 locales 1 y 2 sector centro Acarigua - Edo. Portuguesa
-                </div>
-            </div>
-        </div>
-        <div style="text-align:right; font-size:13px; font-weight:bold; margin-bottom: 8px;">
-            COTIZACIÓN: {{ str_pad($cotizacion->id, 5, '0', STR_PAD_LEFT) }}<br>
-            FECHA: {{ \Carbon\Carbon::parse($cotizacion->fecha_cotizacion)->format('d/m/Y') }}
-        </div>
-        <!-- Datos del Cliente y Cotización -->
-        <div class="datos-section">
-            <table style="width:100%; border:none; margin-bottom: 8px;">
-                <tr>
-                    <td class="text-left" style="border:none;">
-                        <span class="label">Cliente:</span> {{ $cotizacion->cliente->nombre ?? '-' }}
-                        {{ $cotizacion->cliente->apellido ?? '' }}<br>
-                        <span class="label">Email:</span> {{ $cotizacion->cliente->email ?? '-' }}<br>
-                        <span class="label">Teléfono:</span> {{ $cotizacion->cliente->telefono ?? '-' }}<br>
-                        <span class="label">Documento de identidad:</span>
-                        {{ $cotizacion->cliente->documento ?? '-' }}<br>
-                    </td>
-                    <td class="text-left" style="border:none;">
-                        <span class="label">Fecha Validez:</span>
-                        {{ $cotizacion->fecha_validez ? \Carbon\Carbon::parse($cotizacion->fecha_validez)->format('d/m/Y') : '-' }}<br>
-                        <span class="label">Estado:</span> {{ $cotizacion->estado }}<br>
-                        <span class="label">Elaborado por:</span> {{ $cotizacion->user->name ?? '-' }}<br>
-                    </td>
-                </tr>
-            </table>
-        </div>
-        <!-- Tabla de Productos -->
-        <table style="margin-bottom: 10px;">
-            <thead>
-                <tr>
-                    <th style="width: 50px;">CANT.</th>
-                    <th>PRODUCTO</th>
-                    <th style="width: 100px;">DESCRIPCIÓN</th>
-                    <th style="width: 50px;">TALLA</th>
-                    <th>LOGO</th>
-                    <th style="width: 70px;">UBICACIÓN</th>
-                    <th style="width: 40px;">N° BORD.</th>
-                    <th style="width: 60px;">P. UNIT.</th>
-                    <th style="width: 60px;">MONTO</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach($cotizacion->productos as $detalle)
-                    @php
-                        $ubicacionesTexto = $detalle->bordados->pluck('nombre_aplicado')->implode(', ');
-                        $logosTexto = $detalle->bordados
-                            ->map(function ($item) {
-                                return trim((string) ($item->nombre_logo_aplicado ?? ''));
-                            })
-                            ->filter()
-                            ->unique()
-                            ->implode(', ');
-                        $cantidadBordados = $detalle->bordados->sum(function ($item) {
-                            return (int) ($item->cantidad ?? 1);
-                        });
-                    @endphp
-                    <tr>
-                        <td>{{ $detalle->cantidad }}</td>
-                        <td>{{ $detalle->producto->nombre ?? '-' }}</td>
-                        <td class="text-left">{{ $detalle->descripcion ?? '-' }}</td>
-                        <td>{{ $detalle->talla?->etiqueta ?? '-' }}</td>
-                        <td>{{ $detalle->lleva_bordado ? ($logosTexto ?: ($detalle->nombre_logo ?: '-')) : '-' }}</td>
-                        <td>{{ $detalle->lleva_bordado ? ($ubicacionesTexto ?: '-') : '-' }}</td>
-                        <td>{{ $detalle->lleva_bordado ? ($cantidadBordados ?: '-') : '-' }}</td>
-                        <td>{{ number_format($detalle->precio_unitario, 2) }}</td>
-                        <td>{{ number_format($detalle->cantidad * $detalle->precio_unitario, 2) }}</td>
-                    </tr>
-                @endforeach
-            </tbody>
-        </table>
-        <!-- Totales -->
-        <table style="width: 100%; margin-bottom: 10px;">
+    .totals-inner .t-value {
+        text-align: right;
+        width: 90px;
+    }
+
+    .totals-inner .t-grand {
+        border-top: 2px solid #1e3c72;
+        color: #1e3c72;
+        font-weight: bold;
+        font-size: 11px;
+    }
+
+    /* ── Nota especial ── */
+    .nota-especial {
+        clear: both;
+        background-color: #fff8e1;
+        color: #5d4037;
+        padding: 10px 12px;
+        border: 1px solid #ffe082;
+        border-left: 3px solid #ffb300;
+        margin-top: 16px;
+        font-size: 9.5px;
+        line-height: 1.6;
+    }
+@endsection
+
+@section('content')
+    {{-- ═══════ Datos del cliente y de la cotización ═══════ --}}
+    <table class="info-block">
+        <tr>
+            <td>
+                <span class="label">Cliente:</span> {{ $cotizacion->cliente->nombre ?? '-' }}
+                {{ $cotizacion->cliente->apellido ?? '' }}<br>
+                <span class="label">Email:</span> {{ $cotizacion->cliente->email ?? '-' }}<br>
+                <span class="label">Teléfono:</span> {{ $cotizacion->cliente->telefono ?? '-' }}<br>
+                <span class="label">Documento:</span> {{ $cotizacion->cliente->documento ?? '-' }}
+            </td>
+            <td>
+                <span class="label">Fecha Cotización:</span>
+                {{ \Carbon\Carbon::parse($cotizacion->fecha_cotizacion)->format('d/m/Y') }}<br>
+                <span class="label">Fecha Validez:</span>
+                {{ $cotizacion->fecha_validez ? \Carbon\Carbon::parse($cotizacion->fecha_validez)->format('d/m/Y') : '-' }}<br>
+                <span class="label">Estado:</span> {{ $cotizacion->estado }}<br>
+                <span class="label">Elaborado por:</span> {{ $cotizacion->user->name ?? '-' }}
+            </td>
+        </tr>
+    </table>
+
+    {{-- ═══════ Tabla de productos ═══════ --}}
+    <table class="data-table">
+        <thead>
             <tr>
-                <td class="text-right" style="border:none;"></td>
-                <td style="width: 180px; border:none;">
-                    <table style="width:100%;">
-                        <tr>
-                            <td class="label text-right">Subtotal:</td>
-                            <td class="text-right">{{ number_format($subtotal, 2) }}</td>
-                        </tr>
-                        <tr>
-                            <td class="label text-right">Descuento:</td>
-                            <td class="text-right">{{ number_format($descuento, 2) }}</td>
-                        </tr>
-                        <tr>
-                            <td class="label text-right">IVA (16%):</td>
-                            <td class="text-right">{{ number_format($iva, 2) }}</td>
-                        </tr>
-                        <tr>
-                            <td class="label text-right">Total a Pagar:</td>
-                            <td class="text-right"><b>{{ number_format($totalPagar, 2) }}</b></td>
-                        </tr>
-                    </table>
-                </td>
+                <th class="col-cant">Cant.</th>
+                <th class="col-prod">Producto</th>
+                <th class="col-desc">Descripción</th>
+                <th class="col-talla">Talla</th>
+                <th class="col-logo">Logo</th>
+                <th class="col-ubic">Ubicación</th>
+                <th class="col-bord">N° Bord.</th>
+                <th class="col-punit">P. Unit.</th>
+                <th class="col-monto">Monto</th>
             </tr>
-        </table>
-        <!-- Nota especial -->
-        <div class="nota-especial">
-            <b>Tiempo de Ejecución del Trabajo:</b> 30 días hábiles.<br>
-            70% del costo total para la formalización del pedido, 30% a la entrega.<br>
-            El plazo de entrega comienza a transcurrir una vez realizado el pago.<br>
-            <b>No se modifican pedidos ya formalizados (ni tallas ni cantidades).</b>
-        </div>
-    </div>
-</body>
+        </thead>
+        <tbody>
+            @foreach($cotizacion->productos as $index => $detalle)
+                @php
+                    $ubicacionesTexto = $detalle->bordados->pluck('nombre_aplicado')->implode(', ');
+                    $logosTexto = $detalle->bordados
+                        ->map(function ($item) {
+                            return trim((string) ($item->nombre_logo_aplicado ?? ''));
+                        })
+                        ->filter()
+                        ->unique()
+                        ->implode(', ');
+                    $cantidadBordados = $detalle->bordados->sum(function ($item) {
+                        return (int) ($item->cantidad ?? 1);
+                    });
+                    // Snapshot inmutable: lo que se cotizó al momento, no lo que está vivo en catálogo
+                    $telaSnap = $detalle->tela_snapshot;
+                    $atrSnap  = $detalle->atributos_snapshot;
+                    $variantPartes = [];
+                    if (is_array($telaSnap) && !empty($telaSnap['nombre'])) {
+                        $variantPartes[] = 'Tela: ' . $telaSnap['nombre'];
+                    }
+                    if (is_array($atrSnap)) {
+                        foreach ($atrSnap as $atrNombre => $valNombre) {
+                            $variantPartes[] = $atrNombre . ': ' . $valNombre;
+                        }
+                    }
+                    $variantTexto = !empty($variantPartes) ? ' (' . implode(' · ', $variantPartes) . ')' : '';
+                @endphp
+                <tr class="{{ $index % 2 === 1 ? 'zebra' : '' }}">
+                    <td class="col-cant text-center">{{ $detalle->cantidad }}</td>
+                    <td class="col-prod">{{ ($detalle->producto->nombre ?? '-') }}{{ $variantTexto }}</td>
+                    <td class="col-desc">{{ $detalle->descripcion ?? '-' }}</td>
+                    <td class="col-talla text-center">{{ $detalle->talla?->etiqueta ?? '-' }}</td>
+                    <td class="col-logo">{{ $detalle->lleva_bordado ? ($logosTexto ?: ($detalle->nombre_logo ?: '-')) : '-' }}</td>
+                    <td class="col-ubic">{{ $detalle->lleva_bordado ? ($ubicacionesTexto ?: '-') : '-' }}</td>
+                    <td class="col-bord text-center">{{ $detalle->lleva_bordado ? ($cantidadBordados ?: '-') : '-' }}</td>
+                    <td class="col-punit text-right">{{ number_format($detalle->precio_unitario, 2) }}</td>
+                    <td class="col-monto text-right">{{ number_format($detalle->cantidad * $detalle->precio_unitario, 2) }}</td>
+                </tr>
+            @endforeach
+        </tbody>
+    </table>
 
-</html>
+    {{-- ═══════ Totales ═══════ --}}
+    <table class="totals-block">
+        <tr>
+            <td>&nbsp;</td>
+            <td style="width: 230px;">
+                <table class="totals-inner">
+                    <tr>
+                        <td class="t-label">Subtotal:</td>
+                        <td class="t-value">{{ number_format($subtotal, 2) }}</td>
+                    </tr>
+                    <tr>
+                        <td class="t-label">Descuento:</td>
+                        <td class="t-value">{{ number_format($descuento, 2) }}</td>
+                    </tr>
+                    <tr>
+                        <td class="t-label">IVA (16%):</td>
+                        <td class="t-value">{{ number_format($iva, 2) }}</td>
+                    </tr>
+                    <tr>
+                        <td class="t-label t-grand">Total a Pagar:</td>
+                        <td class="t-value t-grand">{{ number_format($totalPagar, 2) }}</td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+
+    {{-- ═══════ Nota especial ═══════ --}}
+    <div class="nota-especial">
+        <b>Tiempo de Ejecución del Trabajo:</b> 30 días hábiles.<br>
+        70% del costo total para la formalización del pedido, 30% a la entrega.<br>
+        El plazo de entrega comienza a transcurrir una vez realizado el pago.<br>
+        <b>No se modifican pedidos ya formalizados (ni tallas ni cantidades).</b>
+    </div>
+@endsection

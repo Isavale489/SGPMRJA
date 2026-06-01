@@ -14,8 +14,12 @@ class DetalleOrdenInsumoController extends Controller
     public function index($ordenId)
     {
         $orden = OrdenProduccion::with(['producto', 'insumos'])->findOrFail($ordenId);
-        $insumos = Insumo::where('estado', true)->get();
-        
+        // Solo insumos inventariables: los no inventariables no gestionan stock,
+        // por lo que no pueden consumirse en una orden de producción.
+        $insumos = Insumo::where('estado', true)
+            ->where('is_inventoriable', true)
+            ->get();
+
         return view('admin.ordenes.insumos.index', compact('orden', 'insumos'));
     }
 
@@ -50,7 +54,15 @@ class DetalleOrdenInsumoController extends Controller
         ]);
 
         $orden = OrdenProduccion::findOrFail($ordenId);
-        
+
+        // Un insumo no inventariable no gestiona stock: no puede consumirse en producción.
+        $insumo = Insumo::findOrFail($request->insumo_id);
+        if (!$insumo->is_inventoriable) {
+            return response()->json([
+                'error' => 'Este insumo no es inventariable, por lo que no puede asignarse ni consumirse en una orden de producción.'
+            ], 422);
+        }
+
         // Verificar si el insumo ya existe en la orden
         $existente = DetalleOrdenInsumo::where('orden_produccion_id', $ordenId)
             ->where('insumo_id', $request->insumo_id)
@@ -82,7 +94,14 @@ class DetalleOrdenInsumoController extends Controller
         ]);
 
         $detalle = DetalleOrdenInsumo::findOrFail($id);
-        
+
+        // Guardia defensiva: si el insumo dejó de ser inventariable, no descontar stock.
+        if ($detalle->insumo && !$detalle->insumo->is_inventoriable) {
+            return response()->json([
+                'error' => 'Este insumo no es inventariable; no se puede registrar consumo de stock.'
+            ], 422);
+        }
+
         // Verificar que la cantidad utilizada no exceda la estimada
         if ($request->cantidad_utilizada > $detalle->cantidad_estimada) {
             return response()->json([

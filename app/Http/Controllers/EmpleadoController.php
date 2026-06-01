@@ -20,10 +20,12 @@ class EmpleadoController extends Controller
     ) {
     }
 
-    public function index()
+    public function index(Request $request)
     {
+        $historial = $request->has('historial');
         $departamentos = Departamento::orderBy('nombre')->pluck('nombre', 'id');
-        return view('admin.empleados.index', compact('departamentos'));
+        $cargos = Cargo::orderBy('nombre')->pluck('nombre', 'id');
+        return view('admin.empleados.index', compact('departamentos', 'cargos', 'historial'));
     }
 
     public function create()
@@ -32,11 +34,54 @@ class EmpleadoController extends Controller
         return view('admin.empleados.create', compact('departamentos'));
     }
 
-    public function getEmpleados()
+    public function getEmpleados(Request $request)
     {
-        $empleados = Empleado::with(['persona.telefonos', 'persona.direcciones', 'cargo', 'departamento'])->get();
+        // ── Base query con relaciones ──
+        $query = Empleado::with(['persona.telefonos', 'persona.direcciones', 'cargo', 'departamento']);
 
-        return DataTables::of($empleados)
+        // ══════════════════════════════════════════════════════════
+        // FILTROS AVANZADOS — Server-Side (Patrón Maestro S-07)
+        // ══════════════════════════════════════════════════════════
+
+        // Filtro: Departamento
+        if ($request->filled('filter_departamento')) {
+            $query->where('departamento_id', $request->input('filter_departamento'));
+        }
+
+        // Filtro: Cargo
+        if ($request->filled('filter_cargo')) {
+            $query->where('cargo_id', $request->input('filter_cargo'));
+        }
+
+        // Filtro: Estatus (1 = activo/default, 0 = inhabilitado/trashed) — estándar Clientes/Proveedores
+        if ($request->filled('filter_estatus') && $request->input('filter_estatus') === '0') {
+            $query->onlyTrashed();
+        }
+
+        // ══════════════════════════════════════════════════════════
+        // ORDENAMIENTO — Selector "Ordenar por" del frontend
+        // Fallback: más recientes primero (created_at DESC)
+        // ══════════════════════════════════════════════════════════
+        $orden = $request->input('filter_orden', 'recientes');
+
+        switch ($orden) {
+            case 'nombre_asc':
+                $query->join('persona', 'empleado.persona_id', '=', 'persona.id')
+                      ->orderBy('persona.nombre', 'asc')
+                      ->select('empleado.*');
+                break;
+            case 'nombre_desc':
+                $query->join('persona', 'empleado.persona_id', '=', 'persona.id')
+                      ->orderBy('persona.nombre', 'desc')
+                      ->select('empleado.*');
+                break;
+            case 'recientes':
+            default:
+                $query->orderBy('empleado.created_at', 'desc');
+                break;
+        }
+
+        return DataTables::of($query)
             ->addColumn('nombre_completo', function ($emp) {
                 return $emp->persona ? $emp->persona->nombre_completo : 'N/A';
             })
@@ -64,6 +109,7 @@ class EmpleadoController extends Controller
                     </div>
                 ';
             })
+            ->addColumn('trashed', fn($emp) => $emp->trashed())
             ->rawColumns(['actions'])
             ->make(true);
     }
@@ -75,7 +121,7 @@ class EmpleadoController extends Controller
             'apellido'            => 'required|string|min:2|max:100|regex:/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/',
             'documento_identidad' => 'required|string|min:6|max:15|regex:/^[0-9]+$/',
             'tipo_documento'      => 'required|in:V-,E-,J-,G-',
-            'email'               => 'nullable|email:rfc,dns|max:255',
+            'email'               => 'nullable|email:rfc|max:255',
             'telefono'            => 'nullable|string|regex:/^[0-9]{4}-[0-9]{7}$/',
             'direccion'           => 'nullable|string|max:500',
             'ciudad'              => 'nullable|string|max:100',
@@ -91,7 +137,6 @@ class EmpleadoController extends Controller
                     $fail('El cargo seleccionado no pertenece al departamento elegido.');
                 }
             }],
-            'estado'              => 'required|boolean',
         ], [
             'nombre.required'              => 'El nombre es obligatorio',
             'nombre.min'                   => 'El nombre debe tener al menos 2 caracteres',
@@ -112,7 +157,6 @@ class EmpleadoController extends Controller
             'departamento_id.exists'       => 'El departamento seleccionado no es válido',
             'cargo_id.required'            => 'El cargo es obligatorio',
             'cargo_id.exists'              => 'El cargo seleccionado no es válido',
-            'estado.required'              => 'Debe seleccionar el estado del empleado',
         ]);
 
         $this->empleadoService->crear($request->all());
@@ -122,7 +166,10 @@ class EmpleadoController extends Controller
 
     public function show($id)
     {
-        $empleado = Empleado::with(['persona.telefonos', 'persona.direcciones', 'cargo', 'departamento'])->findOrFail($id);
+        // withTrashed: también se ven detalles de empleados inhabilitados (desde el historial)
+        $empleado = Empleado::withTrashed()
+            ->with(['persona.telefonos', 'persona.direcciones', 'cargo', 'departamento'])
+            ->findOrFail($id);
 
         $data                = $empleado->toArray();
         $data['telefono']    = $empleado->telefono;
@@ -130,6 +177,7 @@ class EmpleadoController extends Controller
         $data['ciudad']      = $empleado->ciudad;
         $data['cargo']       = $empleado->cargo ? $empleado->cargo->nombre : null;
         $data['departamento'] = $empleado->departamento ? $empleado->departamento->nombre : null;
+        $data['trashed']     = $empleado->trashed();
 
         return response()->json($data);
     }
@@ -166,12 +214,13 @@ class EmpleadoController extends Controller
         $empleado = Empleado::findOrFail($id);
         $persona  = $empleado->persona;
 
+        // El documento de identidad y su tipo son inmutables en edición (igual que en
+        // Clientes): la cédula no se puede editar, por eso el campo va deshabilitado en
+        // el modal y no se envía. NO se valida ni se reescribe aquí.
         $request->validate([
             'nombre'              => 'required|string|min:2|max:100|regex:/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/',
             'apellido'            => 'required|string|min:2|max:100|regex:/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/',
-            'documento_identidad' => 'required|string|min:6|max:15|regex:/^[0-9]+$/|unique:persona,documento_identidad,' . $persona->id,
-            'tipo_documento'      => 'required|in:V-,E-,J-,G-',
-            'email'               => 'nullable|email:rfc,dns|max:255|unique:persona,email,' . $persona->id,
+            'email'               => 'nullable|email:rfc|max:255|unique:persona,email,' . $persona->id,
             'telefono'            => 'nullable|string|regex:/^[0-9]{4}-[0-9]{7}$/',
             'direccion'           => 'nullable|string|max:500',
             'ciudad'              => 'nullable|string|max:100',
@@ -187,7 +236,6 @@ class EmpleadoController extends Controller
                     $fail('El cargo seleccionado no pertenece al departamento elegido.');
                 }
             }],
-            'estado'              => 'required|boolean',
         ], [
             'nombre.required'               => 'El nombre es obligatorio',
             'nombre.min'                    => 'El nombre debe tener al menos 2 caracteres',
@@ -195,11 +243,6 @@ class EmpleadoController extends Controller
             'apellido.required'             => 'El apellido es obligatorio',
             'apellido.min'                  => 'El apellido debe tener al menos 2 caracteres',
             'apellido.regex'                => 'El apellido solo puede contener letras y espacios',
-            'documento_identidad.required'  => 'El documento de identidad es obligatorio',
-            'documento_identidad.min'       => 'El documento debe tener al menos 6 dígitos',
-            'documento_identidad.regex'     => 'El documento solo puede contener números',
-            'documento_identidad.unique'    => 'Este documento ya está registrado',
-            'tipo_documento.required'       => 'Debe seleccionar el tipo de documento',
             'email.email'                   => 'El email debe ser una dirección válida',
             'email.unique'                  => 'Este email ya está registrado',
             'telefono.regex'                => 'El teléfono debe tener el formato 0424-1234567',
@@ -210,7 +253,6 @@ class EmpleadoController extends Controller
             'departamento_id.exists'        => 'El departamento seleccionado no es válido',
             'cargo_id.required'             => 'El cargo es obligatorio',
             'cargo_id.exists'               => 'El cargo seleccionado no es válido',
-            'estado.required'               => 'Debe seleccionar el estado del empleado',
         ]);
 
         $this->empleadoService->actualizar($empleado, $request->all());
@@ -221,8 +263,18 @@ class EmpleadoController extends Controller
     public function destroy($id)
     {
         $empleado = Empleado::findOrFail($id);
-        $empleado->delete();
-        return response()->json(['message' => 'Empleado eliminado exitosamente.']);
+        $empleado->delete(); // SoftDelete: marca deleted_at (va al historial)
+        return response()->json(['message' => 'Empleado inhabilitado exitosamente.']);
+    }
+
+    /**
+     * Restaurar un empleado inhabilitado (soft-deleted). Estándar Clientes/Proveedores.
+     */
+    public function restore($id)
+    {
+        $empleado = Empleado::onlyTrashed()->findOrFail($id);
+        $empleado->restore();
+        return response()->json(['message' => 'Empleado restaurado exitosamente.']);
     }
 
     public function checkDocumento(Request $request)
@@ -259,13 +311,22 @@ class EmpleadoController extends Controller
         return response()->json(['exists' => $exists, 'other_role' => $otherRole, 'persona' => $personaData]);
     }
 
-    public function reportePdf()
+    public function reportePdf(Request $request)
     {
-        $empleados = Empleado::with(['persona', 'cargo', 'departamento'])->orderBy('codigo_empleado', 'asc')->get();
-
+        $query = Empleado::with(['persona', 'cargo', 'departamento'])->orderBy('codigo_empleado', 'asc');
+        if ($request->filled('departamento_id')) {
+            $query->where('departamento_id', $request->departamento_id);
+        }
+        if ($request->filled('cargo_id')) {
+            $query->where('cargo_id', $request->cargo_id);
+        }
+        // Estatus: 1 = activos (default), 0 = inhabilitados (trashed) — estándar Clientes/Proveedores
+        if ($request->input('estatus') === '0') {
+            $query->onlyTrashed();
+        }
+        $empleados = $query->get();
         $pdf = \PDF::loadView('admin.empleados.reporte_pdf', compact('empleados'))
             ->setPaper('a4', 'landscape');
-
         return $pdf->download('reporte_empleados_' . now()->format('Ymd_His') . '.pdf');
     }
 

@@ -74,7 +74,9 @@ class EmpleadoService
                 'fecha_ingreso'   => $data['fecha_ingreso'],
                 'cargo_id'        => $data['cargo_id'],
                 'departamento_id' => $data['departamento_id'],
-                'estado'          => $data['estado'],
+                // 'estado' (laboral) ya no se edita: activo=1 por defecto. La inhabilitación
+                // se maneja con SoftDeletes (deleted_at), igual que Clientes/Proveedores.
+                'estado'          => $data['estado'] ?? 1,
             ]);
 
             return $empleado->id;
@@ -92,8 +94,9 @@ class EmpleadoService
             $persona->update([
                 'nombre' => $data['nombre'],
                 'apellido' => $data['apellido'],
-                'documento_identidad' => $data['documento_identidad'],
-                'tipo_documento' => $data['tipo_documento'],
+                // Documento inmutable: si no viene (campo deshabilitado en edición) se conserva el actual
+                'documento_identidad' => $data['documento_identidad'] ?? $persona->documento_identidad,
+                'tipo_documento' => $data['tipo_documento'] ?? $persona->tipo_documento,
                 'email' => $data['email'] ?? null,
                 'estado_geografico' => $data['estado_geografico'] ?? null,
                 'fecha_nacimiento' => $data['fecha_nacimiento'] ?? null,
@@ -108,7 +111,7 @@ class EmpleadoService
                 'fecha_ingreso'   => $data['fecha_ingreso'],
                 'cargo_id'        => $data['cargo_id'],
                 'departamento_id' => $data['departamento_id'],
-                'estado'          => $data['estado'],
+                // 'estado' (laboral) ya no se edita aquí; la baja se hace con SoftDeletes
             ]);
         });
     }

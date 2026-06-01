@@ -1,4 +1,4 @@
-﻿@extends('admin.layouts.app')
+@extends('admin.layouts.app')
 
 @push('styles')
     <!-- Sweet Alert css-->
@@ -7,7 +7,14 @@
     <link href="https://cdn.datatables.net/responsive/2.2.9/css/responsive.bootstrap5.min.css" rel="stylesheet"
         type="text/css" />
     <link href="https://cdn.datatables.net/buttons/2.2.2/css/buttons.bootstrap5.min.css" rel="stylesheet" type="text/css" />
-    {{-- Estilos en public/assets/css/custom.css — sección "MÓDULO MAESTROS — Insumos" --}}
+    {{-- Grid responsivo para filtros: 1 col mobile → 3 cols desktop --}}
+    <style>
+        @media (min-width: 768px) {
+            .navy-filter-grid {
+                grid-template-columns: repeat(3, 1fr) !important;
+            }
+        }
+    </style>
 @endpush
 
 @section('content')
@@ -33,34 +40,118 @@
                     <div class="d-flex align-items-center">
                         <h5 class="card-title mb-0 flex-grow-1">Listado de Insumos</h5>
                         <div class="flex-shrink-0 d-flex align-items-center gap-3">
-                            <!-- Buscador Personalizado -->
-                            <div class="search-box">
-                                <input type="text" class="form-control form-control-sm" id="custom-search-input"
-                                    placeholder="Buscar insumo...">
-                                <i class="ri-search-line search-icon"></i>
-                            </div>
                             <div class="d-flex gap-2">
                                 <button type="button" class="btn btn-success add-btn" data-bs-toggle="modal" id="create-btn"
                                     data-bs-target="#showModal">
                                     <i class="ri-add-line align-bottom me-1"></i> Agregar Insumo
                                 </button>
-                                <a href="{{ route('insumos.reporte.pdf') }}" class="btn btn-danger" target="_blank">
+                                <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#pdfExportModal">
                                     <i class="ri-file-pdf-fill align-bottom me-1"></i> Exportar PDF
-                                </a>
+                                </button>
                             </div>
                         </div>
                     </div>
                 </div>
                 <div class="card-body">
+                    {{-- ============================================================
+                         FILTROS — Patrón Maestro S-07 (Colapsable)
+                         CSS genérico en custom.css: .navy-filter-*
+                         ============================================================ --}}
+                    <div class="advanced-filters-wrapper navy-theme" id="advanced-filters">
+                        {{-- Header unificado: búsqueda global + trigger de filtros --}}
+                        <div class="navy-filter-header is-collapsed">
+                            {{-- Búsqueda global (siempre visible) --}}
+                            <div class="navy-header-search">
+                                <i class="ri-search-line"></i>
+                                <input type="text" id="custom-search-input"
+                                    class="navy-search-input"
+                                    placeholder="Buscar insumo..."
+                                    autocomplete="off">
+                            </div>
+                            {{-- Divisor vertical --}}
+                            <div class="navy-header-divider"></div>
+                            {{-- Trigger del collapse de filtros --}}
+                            <button class="navy-filter-btn collapsed" type="button"
+                                data-bs-toggle="collapse" data-bs-target="#filters-collapse-body"
+                                aria-expanded="false" aria-controls="filters-collapse-body">
+                                <i class="ri-filter-3-line"></i>
+                                <span class="position-relative">
+                                    Filtros
+                                    <span class="d-none position-absolute" id="filter-dot-indicator"
+                                        style="top: -3px; right: -10px; width: 8px; height: 8px; background: #ef4444; border-radius: 50%; border: 2px solid #1b2e4b; display: inline-block;"></span>
+                                </span>
+                                <span class="navy-filter-badge d-none" id="active-filter-count"></span>
+                                <i class="ri-arrow-down-s-line navy-filter-chevron"></i>
+                            </button>
+                        </div>
+                        {{-- Body: colapsable, oculto por defecto --}}
+                        <div class="collapse" id="filters-collapse-body">
+                            <div class="navy-filter-body">
+                                <div style="display: grid; grid-template-columns: 1fr; gap: 0.75rem;" class="navy-filter-grid">
+                                    {{-- Filtro 1: Tipo de Insumo --}}
+                                    <div>
+                                        <label class="navy-filter-label" for="filter-tipo">
+                                            <i class="ri-price-tag-3-line"></i> Tipo de Insumo
+                                        </label>
+                                        <select class="form-select navy-filter-select" id="filter-tipo">
+                                            <option value="">Todos</option>
+                                            <option value="Tela">Tela</option>
+                                            <option value="Hilo">Hilo</option>
+                                            <option value="Boton">Botón</option>
+                                            <option value="Cierre">Cierre</option>
+                                            <option value="Etiqueta">Etiqueta</option>
+                                        </select>
+                                    </div>
+                                    {{-- Filtro 2: Disponibilidad --}}
+                                    <div>
+                                        <label class="navy-filter-label" for="filter-stock">
+                                            <i class="ri-store-3-line"></i> Disponibilidad
+                                        </label>
+                                        <select class="form-select navy-filter-select" id="filter-stock">
+                                            <option value="">Todos</option>
+                                            <option value="con_stock">Con Stock</option>
+                                            <option value="agotado">Agotados</option>
+                                        </select>
+                                    </div>
+                                    {{-- Filtro 3: Ordenar por --}}
+                                    <div>
+                                        <label class="navy-filter-label" for="filter-orden">
+                                            <i class="ri-sort-asc"></i> Ordenar por
+                                        </label>
+                                        <select class="form-select navy-filter-select" id="filter-orden">
+                                            <option value="recientes">Más recientes primero</option>
+                                            <option value="mayor_costo">Mayor Costo</option>
+                                            <option value="menor_costo">Menor Costo</option>
+                                            <option value="mayor_stock">Mayor Stock</option>
+                                            <option value="menor_stock">Menor Stock</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                {{-- Botón limpiar: estilo ghost con icono de escoba --}}
+                                <div class="d-flex justify-content-end mt-2">
+                                    <button type="button" class="btn btn-sm" id="btn-clear-filters"
+                                        style="background: transparent; color: #8a9bb5; border: none; font-size: 0.8rem; transition: all 0.2s ease;"
+                                        onmouseover="this.style.color='#ef4444'; this.style.textDecoration='underline';"
+                                        onmouseout="this.style.color='#8a9bb5'; this.style.textDecoration='none';">
+                                        <i class='bx bx-broom' style="margin-right: 4px; font-size: 1rem; vertical-align: middle;"></i>Limpiar filtros
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {{-- FIN FILTROS --}}
+
                     <div class="table-responsive">
                         <table id="insumos-table" class="table table-bordered table-striped table-sm align-middle table-operativa table-maestro">
                             <thead>
                                 <tr>
                                     <th>Nombre</th>
+                                    <th>Código</th>
                                     <th>Tipo</th>
-                                    <th>Stock Actual</th>
+                                    <th>Mín.</th>
+                                    <th>Actual</th>
+                                    <th>Máx.</th>
                                     <th>Costo Unit.</th>
-                                    <th>Proveedor</th>
                                     <th>Acciones</th>
                                 </tr>
                             </thead>
@@ -131,18 +222,6 @@
                                                 </div>
                                             </div>
                                         </div>
-                                        <div class="col-12">
-                                            <div class="d-flex align-items-center">
-                                                <div class="rounded-circle me-2 d-flex align-items-center justify-content-center flex-shrink-0"
-                                                    style="width:32px;height:32px;background:rgba(30,60,114,0.1);">
-                                                    <i class="ri-building-2-line" style="color:#1e3c72;"></i>
-                                                </div>
-                                                <div>
-                                                    <small class="text-muted d-block">Proveedor</small>
-                                                    <span class="fw-semibold" id="view-proveedor">-</span>
-                                                </div>
-                                            </div>
-                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -158,27 +237,39 @@
                                 </div>
                                 <div class="card-body">
                                     <div class="row g-3">
-                                        <div class="col-6">
+                                        <div class="col-4">
+                                            <div class="d-flex align-items-center">
+                                                <div class="rounded-circle me-2 d-flex align-items-center justify-content-center flex-shrink-0"
+                                                    style="width:32px;height:32px;background:rgba(30,60,114,0.1);">
+                                                    <i class="ri-arrow-down-line" style="color:#1e3c72;"></i>
+                                                </div>
+                                                <div>
+                                                    <small class="text-muted d-block">Existencia Mínima</small>
+                                                    <span class="fw-semibold" id="view-stock-minimo">-</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-4">
                                             <div class="d-flex align-items-center">
                                                 <div class="rounded-circle me-2 d-flex align-items-center justify-content-center flex-shrink-0"
                                                     style="width:32px;height:32px;background:rgba(30,60,114,0.1);">
                                                     <i class="ri-store-3-line" style="color:#1e3c72;"></i>
                                                 </div>
                                                 <div>
-                                                    <small class="text-muted d-block">Stock Actual</small>
+                                                    <small class="text-muted d-block">Existencia Actual</small>
                                                     <span class="fw-semibold" id="view-stock-actual">-</span>
                                                 </div>
                                             </div>
                                         </div>
-                                        <div class="col-6">
+                                        <div class="col-4">
                                             <div class="d-flex align-items-center">
                                                 <div class="rounded-circle me-2 d-flex align-items-center justify-content-center flex-shrink-0"
                                                     style="width:32px;height:32px;background:rgba(30,60,114,0.1);">
-                                                    <i class="ri-alarm-warning-line" style="color:#1e3c72;"></i>
+                                                    <i class="ri-arrow-up-line" style="color:#1e3c72;"></i>
                                                 </div>
                                                 <div>
-                                                    <small class="text-muted d-block">Stock Mínimo</small>
-                                                    <span class="fw-semibold" id="view-stock-minimo">-</span>
+                                                    <small class="text-muted d-block">Existencia Máxima</small>
+                                                    <span class="fw-semibold" id="view-stock-maximo">-</span>
                                                 </div>
                                             </div>
                                         </div>
@@ -244,23 +335,32 @@
                             <div class="modal-form-section-title"><i class="ri-box-3-line"></i>Datos del Insumo</div>
 
                             <div class="row mb-0">
-                                <div class="col-md-6">
+                                <div class="col-md-5">
                                     <x-forms.input name="nombre" label="Nombre" required />
                                 </div>
-                                <div class="col-md-6">
+                                <div class="col-md-3">
+                                    <div class="mb-3">
+                                        <label for="codigo-field" class="form-label">
+                                            Código
+                                            <i class="ri-information-line text-muted" data-bs-toggle="tooltip"
+                                               title="2-8 caracteres (mayúsculas/números). No se puede modificar después de guardar. Recomendado para Telas: forma parte del código del producto."
+                                               style="cursor: help;"></i>
+                                        </label>
+                                        <input type="text" id="codigo-field" name="codigo" class="form-control text-uppercase"
+                                            maxlength="8" placeholder="Ej: OXF"
+                                            style="font-family: monospace;" />
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
                                     <x-forms.select name="tipo" label="Tipo" required
                                         :options="['Tela' => 'Tela', 'Hilo' => 'Hilo', 'Boton' => 'Botón', 'Cierre' => 'Cierre', 'Etiqueta' => 'Etiqueta']" />
                                 </div>
                             </div>
 
                             <div class="row mb-0">
-                                <div class="col-md-6">
+                                <div class="col-md-12">
                                     <x-forms.select name="unidad_medida" label="Unidad de Medida" required
                                         :options="['Metro' => 'Metro (m)', 'Kg' => 'Kilogramo (Kg)', 'Gramo' => 'Gramo (g)', 'Unidad' => 'Unidad (Und)', 'Rollo' => 'Rollo', 'Cono' => 'Cono', 'Docena' => 'Docena']" />
-                                </div>
-                                <div class="col-md-6">
-                                    <x-forms.select name="proveedor_id" label="Proveedor" required
-                                        :options="$proveedores->mapWithKeys(fn($p) => [$p->id => $p->nombre_completo])->toArray()" />
                                 </div>
                             </div>
                         </div>
@@ -268,22 +368,35 @@
                         <div class="modal-form-section mb-0">
                             <div class="modal-form-section-title"><i class="ri-bar-chart-grouped-line"></i>Control de Inventario y Costo</div>
 
-                            <div class="row mb-0">
-                                <div class="col-md-4">
-                                    <x-forms.input name="stock_actual" label="Stock Actual" type="number" step="0.01" min="0" value="0"
-                                        required />
+                            <div class="mb-3">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="is-inventoriable-switch"
+                                        name="is_inventoriable" value="1" checked>
+                                    <label class="form-check-label" for="is-inventoriable-switch">
+                                        Inventariable <small class="text-muted">(gestionar stock)</small>
+                                    </label>
                                 </div>
-                                <div class="col-md-4">
-                                    <x-forms.input name="stock_minimo" label="Stock Mínimo" type="number" step="0.01" min="0"
-                                        required />
-                                </div>
-                                <div class="col-md-4">
-                                    <x-forms.input name="costo_unitario" label="Costo Unitario" type="number" step="0.01" min="0"
-                                        required />
+                            </div>
+
+                            <div id="stock-fields-wrapper">
+                                <div class="row mb-0">
+                                    <div class="col-md-4">
+                                        <x-forms.input name="stock_minimo" label="Existencia Mínima" type="number" step="0.01" min="0" />
+                                    </div>
+                                    <div class="col-md-4">
+                                        <x-forms.input name="stock_actual" label="Existencia Actual" type="number" step="0.01" min="0" value="0" />
+                                    </div>
+                                    <div class="col-md-4">
+                                        <x-forms.input name="stock_maximo" label="Existencia Máxima" type="number" step="0.01" min="0" />
+                                    </div>
                                 </div>
                             </div>
 
                             <div class="row mb-0">
+                                <div class="col-md-6">
+                                    <x-forms.input name="costo_unitario" label="Costo Unitario" type="number" step="0.01" min="0"
+                                        required />
+                                </div>
                                 <div class="col-md-6">
                                     <x-forms.select name="estado" label="Estado" required
                                         :options="['1' => 'Activo', '0' => 'Inactivo']" placeholder="" value="1" />
@@ -302,6 +415,48 @@
                         </div>
                     </div>
                 </form>
+            </div>
+        </div>
+    </div>
+
+    {{-- Modal: Exportar PDF con filtros --}}
+    <div class="modal fade atlantico-modal" id="pdfExportModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" style="max-width: 360px;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="ri-file-pdf-line me-2"></i>Exportar PDF</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <p class="text-muted small mb-3">Filtra qué insumos incluir en el reporte.</p>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold" for="pdf-filter-tipo">Tipo de Insumo</label>
+                        <select class="form-select" id="pdf-filter-tipo">
+                            <option value="">Todos los tipos</option>
+                            <option value="Tela">Tela</option>
+                            <option value="Hilo">Hilo</option>
+                            <option value="Boton">Botón</option>
+                            <option value="Cierre">Cierre</option>
+                            <option value="Etiqueta">Etiqueta</option>
+                        </select>
+                    </div>
+                    <div class="mb-0">
+                        <label class="form-label fw-semibold" for="pdf-filter-stock">Disponibilidad</label>
+                        <select class="form-select" id="pdf-filter-stock">
+                            <option value="">Todos</option>
+                            <option value="con_stock">Con Stock</option>
+                            <option value="agotado">Agotados</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light border-0">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">
+                        <i class="ri-close-line me-1"></i>Cancelar
+                    </button>
+                    <button type="button" class="btn btn-danger" id="btn-generar-pdf">
+                        <i class="ri-file-pdf-fill me-1"></i>Generar PDF
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -326,17 +481,16 @@
     <script>
         $(document).ready(function () {
             function generateButtons(insumoId) {
-                return '<div class="d-flex gap-1 justify-content-center">' +
-                    '<button class="btn btn-sm btn-soft-secondary view-item-btn" data-id="' + insumoId + '" title="Ver" style="padding:0.2rem 0.45rem;">' +
-                    '<i class="ri-eye-fill" style="font-size:13px;"></i>' +
-                    '</button>' +
-                    '<button class="btn btn-sm btn-soft-success edit-item-btn" data-id="' + insumoId + '" title="Editar" style="padding:0.2rem 0.45rem;">' +
-                    '<i class="ri-pencil-fill" style="font-size:13px;"></i>' +
-                    '</button>' +
-                    '<button class="btn btn-sm btn-soft-danger remove-item-btn" data-id="' + insumoId + '" title="Eliminar" style="padding:0.2rem 0.45rem;">' +
-                    '<i class="ri-delete-bin-fill" style="font-size:13px;"></i>' +
-                    '</button>' +
-                    '</div>';
+                var sVer = `<button class="btn btn-sm btn-soft-info view-item-btn" data-id="${insumoId}" title="Ver"><i class="ri-eye-fill"></i></button>`;
+                var items =
+                    `<li><button type="button" class="dropdown-item act-item act-edit edit-item-btn" data-id="${insumoId}"><span class="act-ic"><i class="ri-pencil-fill"></i></span>Editar</button></li>` +
+                    `<li><button type="button" class="dropdown-item act-item act-del remove-item-btn" data-id="${insumoId}"><span class="act-ic"><i class="ri-delete-bin-fill"></i></span>Eliminar</button></li>`;
+                var menu =
+                    `<div class="dropdown d-inline-block">` +
+                        `<button class="btn btn-sm btn-soft-secondary" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Más acciones"><i class="ri-more-2-fill"></i></button>` +
+                        `<ul class="dropdown-menu dropdown-menu-end actions-menu">${items}</ul>` +
+                    `</div>`;
+                return `<div class="d-flex gap-1 justify-content-center align-items-center">${sVer}${menu}</div>`;
             }
 
             function renderEllipsis(value) {
@@ -349,28 +503,35 @@
                 serverSide: true,
                 autoWidth: false,
                 responsive: false,
-                ajax: "{{ route('insumos.data') }}",
+                ajax: {
+                    url: "{{ route('insumos.data') }}",
+                    data: function (d) {
+                        d.filter_tipo   = $('#filter-tipo').val();
+                        d.filter_stock  = $('#filter-stock').val();
+                        d.filter_orden  = $('#filter-orden').val();
+                    }
+                },
                 dom: 'rtip',
                 buttons: [
                     {
                         extend: 'copy',
-                        exportOptions: { columns: [0, 1, 2, 3, 4] }
+                        exportOptions: { columns: [0, 1, 2, 3, 4, 5, 6] }
                     },
                     {
                         extend: 'csv',
-                        exportOptions: { columns: [0, 1, 2, 3, 4] }
+                        exportOptions: { columns: [0, 1, 2, 3, 4, 5, 6] }
                     },
                     {
                         extend: 'excel',
-                        exportOptions: { columns: [0, 1, 2, 3, 4] }
+                        exportOptions: { columns: [0, 1, 2, 3, 4, 5, 6] }
                     },
                     {
                         extend: 'pdf',
-                        exportOptions: { columns: [0, 1, 2, 3, 4] }
+                        exportOptions: { columns: [0, 1, 2, 3, 4, 5, 6] }
                     },
                     {
                         extend: 'print',
-                        exportOptions: { columns: [0, 1, 2, 3, 4] }
+                        exportOptions: { columns: [0, 1, 2, 3, 4, 5, 6] }
                     }
                 ],
                 columns: [
@@ -383,9 +544,19 @@
                         }
                     },
                     {
+                        data: 'codigo',
+                        name: 'codigo',
+                        width: '8%',
+                        render: function (data) {
+                            return data
+                                ? '<span class="codigo-pill" style="font-family: monospace; padding: .12rem .55rem; background: rgba(30,60,114,.10); color: #1e3c72; border-radius: 4px; font-size: .78rem; font-weight: 600;">' + data + '</span>'
+                                : '<span class="text-muted">—</span>';
+                        }
+                    },
+                    {
                         data: 'tipo',
                         name: 'tipo',
-                        width: '13%',
+                        width: '12%',
                         render: function (data) {
                             var tipos = {
                                 'Tela': '<span class="badge-tipo badge-tipo-tela"><i class="ri-t-shirt-line"></i> Tela</span>',
@@ -398,12 +569,28 @@
                         }
                     },
                     {
+                        data: 'stock_minimo',
+                        name: 'stock_minimo',
+                        width: '9%',
+                        render: function (data) {
+                            return parseFloat(data).toFixed(2);
+                        }
+                    },
+                    {
                         data: 'stock_actual',
                         name: 'stock_actual',
-                        width: '11%',
+                        width: '9%',
                         render: function (data, type, row) {
                             var stockClass = 'stock-' + row.stock_status;
-                            return `<span class="${stockClass}">${data}</span>`;
+                            return `<span class="${stockClass}">${parseFloat(data).toFixed(2)}</span>`;
+                        }
+                    },
+                    {
+                        data: 'stock_maximo',
+                        name: 'stock_maximo',
+                        width: '9%',
+                        render: function (data) {
+                            return parseFloat(data).toFixed(2);
                         }
                     },
                     {
@@ -415,17 +602,9 @@
                         }
                     },
                     {
-                        data: 'proveedor_nombre',
-                        name: 'proveedor_nombre',
-                        width: '28%',
-                        render: function (data) {
-                            return renderEllipsis(data);
-                        }
-                    },
-                    {
                         data: 'id',
                         name: 'actions',
-                        width: '14%',
+                        width: '19%',
                         orderable: false,
                         searchable: false,
                         render: function (data) {
@@ -433,13 +612,66 @@
                         }
                     }
                 ],
-                order: [[0, 'desc']],
+                order: [],
+                ordering: false,
                 language: lenguajeData
             });
 
-            // Buscador personalizado
+            // ══════════════════════════════════════════════════
+            // BÚSQUEDA + FILTROS AVANZADOS — Patrón Maestro S-07
+            // Header unificado: búsqueda global + panel colapsable
+            // ══════════════════════════════════════════════════
+
+            // ── Badge: actualizar contador de filtros activos + punto rojo ──
+            function updateFilterBadge() {
+                var count = 0;
+                if ($('#filter-tipo').val() !== '')           count++;
+                if ($('#filter-stock').val() !== '')          count++;
+                if ($('#filter-orden').val() !== 'recientes') count++;
+                var $badge = $('#active-filter-count');
+                var $dot   = $('#filter-dot-indicator');
+                if (count > 0) {
+                    $badge.text(count).removeClass('d-none');
+                    $dot.removeClass('d-none');
+                } else {
+                    $badge.addClass('d-none');
+                    $dot.addClass('d-none');
+                }
+            }
+
+            // ── Sincronizar clase is-collapsed con el estado del collapse ──
+            $('#filters-collapse-body').on('show.bs.collapse', function () {
+                $('.navy-filter-header').removeClass('is-collapsed');
+            }).on('hidden.bs.collapse', function () {
+                $('.navy-filter-header').addClass('is-collapsed');
+            });
+
+            // ── Búsqueda global (debounce 300ms) ──
+            var searchTimeout = null;
             $('#custom-search-input').on('keyup', function () {
-                table.search(this.value).draw();
+                clearTimeout(searchTimeout);
+                var val = this.value;
+                searchTimeout = setTimeout(function () {
+                    table.search(val).draw();
+                }, 300);
+            });
+
+            // ── Filtros de select: recargar al cambiar ──
+            $('.navy-filter-select').on('change', function () {
+                table.ajax.reload();
+                updateFilterBadge();
+            });
+
+            // ── Botón limpiar: resetea búsqueda + filtros + orden ──
+            $('#btn-clear-filters').on('click', function () {
+                $('#filter-tipo').val('');
+                $('#filter-stock').val('');
+                $('#filter-orden').val('recientes');
+                $('#custom-search-input').val('');
+                updateFilterBadge();
+                table.search('').ajax.reload(function () {
+                    updateFilterBadge();
+                });
             });
 
             function formatDate(dateStr) {
@@ -474,8 +706,8 @@
                     $("#view-unidad-medida").text(data.unidad_medida);
                     $("#view-stock-actual").text(parseFloat(data.stock_actual).toFixed(2));
                     $("#view-stock-minimo").text(parseFloat(data.stock_minimo).toFixed(2));
+                    $("#view-stock-maximo").text(parseFloat(data.stock_maximo).toFixed(2));
                     $("#view-costo-unitario").text('$/ ' + parseFloat(data.costo_unitario).toFixed(2));
-                    $("#view-proveedor").text(data.proveedor ? (data.proveedor.persona ? data.proveedor.persona.nombre_completo : 'Sin nombre') : 'Sin proveedor asignado');
                     $("#view-created").text(formatDate(data.created_at));
                     $("#viewModal").modal('show');
                 });
@@ -488,12 +720,17 @@
                     $("#modalTitle").text("Editar Insumo");
                     $("#id-field").val(data.id);
                     $("#field-nombre").val(data.nombre);
+                    $("#codigo-field").val(data.codigo || '');
+                    $("#codigo-field").prop('readonly', !!data.codigo);
                     $("#field-tipo").val(data.tipo);
                     $("#field-unidad_medida").val(data.unidad_medida);
+                    var inventoriable = data.is_inventoriable !== false && data.is_inventoriable !== 0;
+                    $("#is-inventoriable-switch").prop('checked', inventoriable);
+                    $("#stock-fields-wrapper").toggle(inventoriable);
                     $("#field-stock_actual").val(data.stock_actual);
                     $("#field-stock_minimo").val(data.stock_minimo);
+                    $("#field-stock_maximo").val(data.stock_maximo);
                     $("#field-costo_unitario").val(data.costo_unitario);
-                    $("#field-proveedor_id").val(data.proveedor_id);
                     $("#field-estado").val(data.estado ? '1' : '0');
 
                     $("#add-btn").hide();
@@ -623,16 +860,32 @@
                 });
             });
 
+            // Toggle inventariable: muestra/oculta campos de stock
+            $(document).on('change', '#is-inventoriable-switch', function () {
+                $('#stock-fields-wrapper').toggle($(this).is(':checked'));
+            });
+
             // Limpiar modal al cerrar
             $("#showModal").on("hidden.bs.modal", function () {
                 $("#modalTitle").text("Agregar Insumo");
                 $("#insumoForm")[0].reset();
                 $("#id-field").val("");
-                $("#add-btn").show();
+                $("#codigo-field").prop('readonly', false);
+                $("#is-inventoriable-switch").prop('checked', true);
+                $("#stock-fields-wrapper").show();
                 $("#add-btn").show();
                 $("#edit-btn").hide();
                 $('#insumoForm').find('input, select, textarea').removeClass('is-invalid is-valid');
                 $('#insumoForm').find('.invalid-feedback').hide();
+            });
+
+            // Inicializar tooltips dentro del modal cuando se abre
+            $("#showModal").on("shown.bs.modal", function () {
+                $('#showModal [data-bs-toggle="tooltip"]').each(function () {
+                    if (!bootstrap.Tooltip.getInstance(this)) {
+                        new bootstrap.Tooltip(this);
+                    }
+                });
             });
 
             // ══════════════════════════════════════════════════════
@@ -679,23 +932,14 @@
                 }
             });
 
-            // Proveedor — obligatorio
-            $(document).on('blur', '#field-proveedor_id', function () {
-                if (!$(this).val()) {
-                    marcarInvalido($(this), 'El proveedor es obligatorio.');
-                } else {
-                    marcarValido($(this));
-                }
-            });
-
-            // Stock Actual — no negativo
+            // Stock Actual — no negativo (solo si inventariable)
             $(document).on('blur', '#field-stock_actual', function () {
+                if (!$('#is-inventoriable-switch').is(':checked')) return;
                 var val = parseFloat($(this).val());
                 if (isNaN(val) || val < 0) {
                     marcarInvalido($(this), 'El stock no puede ser negativo.');
                 } else {
                     marcarValido($(this));
-                    // Re-validar stock mínimo si ya tiene valor
                     var $min = $('#field-stock_minimo');
                     if ($min.val() !== '') {
                         var minVal = parseFloat($min.val());
@@ -710,12 +954,28 @@
 
             // Stock Mínimo — no negativo + no mayor al stock actual
             $(document).on('blur', '#field-stock_minimo', function () {
+                if (!$('#is-inventoriable-switch').is(':checked')) return;
                 var val = parseFloat($(this).val());
                 var stockActual = parseFloat($('#field-stock_actual').val());
                 if (isNaN(val) || val < 0) {
                     marcarInvalido($(this), 'El stock mínimo no puede ser negativo.');
                 } else if (!isNaN(stockActual) && val > stockActual) {
                     marcarInvalido($(this), 'El stock mínimo no puede superar el stock actual.');
+                } else {
+                    marcarValido($(this));
+                }
+            });
+
+            // Existencia Máxima — no negativa + no menor que la mínima
+            $(document).on('blur', '#field-stock_maximo', function () {
+                if (!$('#is-inventoriable-switch').is(':checked')) return;
+                var val = parseFloat($(this).val());
+                if ($(this).val() === '') { marcarValido($(this)); return; }
+                var stockMin = parseFloat($('#field-stock_minimo').val());
+                if (isNaN(val) || val < 0) {
+                    marcarInvalido($(this), 'La existencia máxima no puede ser negativa.');
+                } else if (!isNaN(stockMin) && val < stockMin) {
+                    marcarInvalido($(this), 'La existencia máxima no puede ser menor que la mínima.');
                 } else {
                     marcarValido($(this));
                 }
@@ -736,6 +996,7 @@
             // ══════════════════════════════════════════════════════
             function validarFormularioInsumo() {
                 let esValido = true;
+                let inventoriable = $('#is-inventoriable-switch').is(':checked');
 
                 let $nombre = $('#field-nombre');
                 let nombre = $nombre.val().trim();
@@ -759,28 +1020,36 @@
                     esValido = false;
                 } else { marcarValido($unidad); }
 
-                let $proveedor = $('#field-proveedor_id');
-                if (!$proveedor.val()) {
-                    marcarInvalido($proveedor, 'El proveedor es obligatorio.');
-                    esValido = false;
-                } else { marcarValido($proveedor); }
+                if (inventoriable) {
+                    let $stockActual = $('#field-stock_actual');
+                    let stockActual = parseFloat($stockActual.val());
+                    if (isNaN(stockActual) || stockActual < 0) {
+                        marcarInvalido($stockActual, 'El stock actual no puede ser negativo.');
+                        esValido = false;
+                    } else { marcarValido($stockActual); }
 
-                let $stockActual = $('#field-stock_actual');
-                let stockActual = parseFloat($stockActual.val());
-                if (isNaN(stockActual) || stockActual < 0) {
-                    marcarInvalido($stockActual, 'El stock actual no puede ser negativo.');
-                    esValido = false;
-                } else { marcarValido($stockActual); }
+                    let $stockMin = $('#field-stock_minimo');
+                    let stockMin = parseFloat($stockMin.val());
+                    if (isNaN(stockMin) || stockMin < 0) {
+                        marcarInvalido($stockMin, 'El stock mínimo no puede ser negativo.');
+                        esValido = false;
+                    } else if (!isNaN(stockActual) && stockActual >= 0 && stockMin > stockActual) {
+                        marcarInvalido($stockMin, 'El stock mínimo no puede superar el stock actual.');
+                        esValido = false;
+                    } else { marcarValido($stockMin); }
 
-                let $stockMin = $('#field-stock_minimo');
-                let stockMin = parseFloat($stockMin.val());
-                if (isNaN(stockMin) || stockMin < 0) {
-                    marcarInvalido($stockMin, 'El stock mínimo no puede ser negativo.');
-                    esValido = false;
-                } else if (!isNaN(stockActual) && stockActual >= 0 && stockMin > stockActual) {
-                    marcarInvalido($stockMin, 'El stock mínimo no puede superar el stock actual.');
-                    esValido = false;
-                } else { marcarValido($stockMin); }
+                    let $stockMax = $('#field-stock_maximo');
+                    if ($stockMax.val() !== '') {
+                        let stockMax = parseFloat($stockMax.val());
+                        if (isNaN(stockMax) || stockMax < 0) {
+                            marcarInvalido($stockMax, 'La existencia máxima no puede ser negativa.');
+                            esValido = false;
+                        } else if (!isNaN(stockMin) && stockMin >= 0 && stockMax < stockMin) {
+                            marcarInvalido($stockMax, 'La existencia máxima no puede ser menor que la mínima.');
+                            esValido = false;
+                        } else { marcarValido($stockMax); }
+                    }
+                }
 
                 let $costo = $('#field-costo_unitario');
                 let costo = parseFloat($costo.val());
@@ -791,6 +1060,22 @@
 
                 return esValido;
             }
+        });
+
+        // PDF Export Modal
+        $('#btn-generar-pdf').on('click', function () {
+            var baseUrl = '{{ route('insumos.reporte.pdf') }}';
+            var params = [];
+            var tipo  = $('#pdf-filter-tipo').val();
+            var stock = $('#pdf-filter-stock').val();
+            if (tipo)  params.push('tipo='  + encodeURIComponent(tipo));
+            if (stock) params.push('stock=' + encodeURIComponent(stock));
+            window.open(baseUrl + (params.length ? '?' + params.join('&') : ''), '_blank');
+            bootstrap.Modal.getInstance(document.getElementById('pdfExportModal'))?.hide();
+        });
+        $('#pdfExportModal').on('show.bs.modal', function () {
+            $('#pdf-filter-tipo').val('');
+            $('#pdf-filter-stock').val('');
         });
     </script>
 @endpush

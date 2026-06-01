@@ -19,7 +19,6 @@ class StoreUserRequest extends FormRequest
             'password' => ['required', 'string', 'min:8', 'confirmed', 'regex:/^(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9]).*$/'],
             'avatar'   => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             'role'     => 'required|in:Administrador,Supervisor',
-            'estado'   => 'nullable|boolean',
         ];
     }
 

@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\Insumo;
 use App\Models\OrdenProduccion;
-use App\Models\ProduccionDiaria;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -17,12 +16,14 @@ class ReportesController extends Controller
             ->groupBy('estado')
             ->get();
 
-        $produccionMensual = ProduccionDiaria::select(
-            DB::raw('YEAR(created_at) as año'),
-            DB::raw('MONTH(created_at) as mes'),
+        // Producción mensual agregada desde las órdenes (por mes de inicio)
+        $produccionMensual = OrdenProduccion::select(
+            DB::raw('YEAR(fecha_inicio) as año'),
+            DB::raw('MONTH(fecha_inicio) as mes'),
             DB::raw('SUM(cantidad_producida) as total_producido'),
             DB::raw('SUM(cantidad_defectuosa) as total_defectuoso')
         )
+            ->whereNotNull('fecha_inicio')
             ->groupBy('año', 'mes')
             ->orderBy('año', 'desc')
             ->orderBy('mes', 'desc')
@@ -34,24 +35,20 @@ class ReportesController extends Controller
 
     public function eficiencia()
     {
-        $eficienciaPorOrden = ProduccionDiaria::select(
-            'orden_id',
-            DB::raw('SUM(cantidad_producida) as total_producido'),
-            DB::raw('SUM(cantidad_defectuosa) as total_defectuoso')
-        )
-            ->with('orden:id,producto_id,cantidad_solicitada')
-            ->groupBy('orden_id')
+        // Eficiencia por orden: producido vs defectuoso (1 fila por orden)
+        // `producto.nombre` es un accessor, no columna → eager load completo
+        $eficienciaPorOrden = OrdenProduccion::with('producto')
             ->get()
-            ->map(function ($item) {
-                $eficiencia = $item->total_producido > 0
-                    ? ($item->total_producido - $item->total_defectuoso) / $item->total_producido * 100
+            ->map(function ($orden) {
+                $eficiencia = $orden->cantidad_producida > 0
+                    ? ($orden->cantidad_producida - $orden->cantidad_defectuosa) / $orden->cantidad_producida * 100
                     : 0;
                 return [
-                    'orden_id' => $item->orden_id,
-                    'producto' => $item->orden->producto->nombre ?? 'N/A',
-                    'cantidad_solicitada' => $item->orden->cantidad_solicitada ?? 0,
-                    'total_producido' => $item->total_producido,
-                    'total_defectuoso' => $item->total_defectuoso,
+                    'orden_id' => $orden->id,
+                    'producto' => $orden->producto->nombre ?? 'N/A',
+                    'cantidad_solicitada' => $orden->cantidad_solicitada ?? 0,
+                    'total_producido' => $orden->cantidad_producida,
+                    'total_defectuoso' => $orden->cantidad_defectuosa,
                     'eficiencia' => round($eficiencia, 2)
                 ];
             });
@@ -81,12 +78,14 @@ class ReportesController extends Controller
 
     public function empleados()
     {
-        $rendimientoEmpleados = ProduccionDiaria::select(
+        // Rendimiento por empleado: agregado desde las órdenes asignadas
+        $rendimientoEmpleados = OrdenProduccion::select(
             'empleado_id',
-            DB::raw('COUNT(DISTINCT orden_id) as total_ordenes'),
+            DB::raw('COUNT(*) as total_ordenes'),
             DB::raw('SUM(cantidad_producida) as total_producido'),
             DB::raw('SUM(cantidad_defectuosa) as total_defectuoso')
         )
+            ->whereNotNull('empleado_id')
             ->with('empleado.persona')
             ->groupBy('empleado_id')
             ->get()

@@ -13,16 +13,44 @@ class MovimientoInsumoController extends Controller
 {
     public function index()
     {
+        // Todos los activos: alimenta el filtro del listado (un insumo legacy
+        // no inventariable podría tener movimientos históricos que filtrar).
         $insumos = Insumo::where('estado', true)->get();
-        $proveedores = \App\Models\Proveedor::with('persona')->where('estado', true)->get();
-        return view('admin.inventario.movimientos.index', compact('insumos', 'proveedores'));
+        // Solo inventariables: alimenta el select de "registrar movimiento";
+        // los no inventariables no gestionan stock, así que no se mueven.
+        $insumosInventariables = Insumo::where('estado', true)
+            ->where('is_inventoriable', true)
+            ->get();
+        return view('admin.inventario.movimientos.index', compact('insumos', 'insumosInventariables'));
     }
 
-    public function getMovimientos()
+    public function getMovimientos(Request $request)
     {
         $movimientos = MovimientoInsumo::with(['insumo', 'creadoPor'])
             ->select('movimiento_insumo.id', 'movimiento_insumo.insumo_id', 'movimiento_insumo.tipo_movimiento', 'movimiento_insumo.cantidad', 'movimiento_insumo.stock_anterior', 'movimiento_insumo.stock_nuevo', 'movimiento_insumo.motivo', 'movimiento_insumo.created_by', 'movimiento_insumo.created_at')
             ->orderBy('movimiento_insumo.created_at', 'desc');
+
+        if ($request->filled('filter_tipo_movimiento')) {
+            $movimientos->where('movimiento_insumo.tipo_movimiento', $request->input('filter_tipo_movimiento'));
+        }
+
+        if ($request->filled('filter_insumo_id')) {
+            $movimientos->where('movimiento_insumo.insumo_id', $request->input('filter_insumo_id'));
+        }
+
+        $fechaDesde = $request->input('filter_fecha_desde');
+        $fechaHasta = $request->input('filter_fecha_hasta');
+
+        if ($fechaDesde && $fechaHasta) {
+            $movimientos->whereBetween('movimiento_insumo.created_at', [
+                $fechaDesde . ' 00:00:00',
+                $fechaHasta . ' 23:59:59',
+            ]);
+        } elseif ($fechaDesde) {
+            $movimientos->where('movimiento_insumo.created_at', '>=', $fechaDesde . ' 00:00:00');
+        } elseif ($fechaHasta) {
+            $movimientos->where('movimiento_insumo.created_at', '<=', $fechaHasta . ' 23:59:59');
+        }
 
         return DataTables::of($movimientos)
             ->addColumn('insumo_nombre', function ($movimiento) {
@@ -48,6 +76,37 @@ class MovimientoInsumoController extends Controller
             ->make(true);
     }
 
+    /**
+     * Panel de existencias dentro de /inventario/movimientos:
+     * stock mínimo, actual y máximo de cada insumo inventariable,
+     * para consultarlo sin salir a /insumos.
+     */
+    public function getExistencias(Request $request)
+    {
+        $query = Insumo::where('estado', true)
+            ->where('is_inventoriable', true)
+            ->select('id', 'nombre', 'codigo', 'tipo', 'unidad_medida', 'stock_minimo', 'stock_actual', 'stock_maximo');
+
+        if ($request->filled('filter_tipo')) {
+            $query->where('tipo', $request->input('filter_tipo'));
+        }
+
+        if ($request->input('filter_estado') === 'alerta') {
+            $query->whereRaw('stock_actual <= stock_minimo');
+        }
+
+        return DataTables::of($query)
+            ->addColumn('stock_status', function ($insumo) {
+                if ($insumo->stock_actual <= $insumo->stock_minimo) {
+                    return 'bajo';
+                } elseif ($insumo->stock_actual <= ($insumo->stock_minimo * 1.5)) {
+                    return 'medio';
+                }
+                return 'normal';
+            })
+            ->make(true);
+    }
+
     public function store(Request $request)
     {
         $request->validate([
@@ -61,6 +120,15 @@ class MovimientoInsumoController extends Controller
             DB::beginTransaction();
 
             $insumo = Insumo::findOrFail($request->insumo_id);
+
+            // Un insumo no inventariable no gestiona stock: no admite movimientos.
+            if (!$insumo->is_inventoriable) {
+                DB::rollBack();
+                return response()->json([
+                    'error' => 'Este insumo no es inventariable, por lo que no gestiona stock ni admite movimientos de inventario.'
+                ], 422);
+            }
+
             $stockAnterior = $insumo->stock_actual;
 
             // Calcular nuevo stock
@@ -112,7 +180,8 @@ class MovimientoInsumoController extends Controller
 
     public function reporteExistencia()
     {
-        $insumos = Insumo::with('proveedor.persona')->where('estado', true)->get();
+        // Insumos ya no tienen relación con proveedor (Santiago, e607f64).
+        $insumos = Insumo::where('estado', true)->get();
         return view('admin.inventario.reporte.index', compact('insumos'));
     }
 
@@ -129,9 +198,11 @@ class MovimientoInsumoController extends Controller
 
     public function alertasStock()
     {
+        // El módulo de insumos eliminó la relación con proveedor (Santiago, e607f64).
+        // Aquí solo listamos los insumos en alerta sin info de proveedor.
         $insumosConBajoStock = Insumo::where('estado', true)
+            ->where('is_inventoriable', true)
             ->whereRaw('stock_actual <= stock_minimo')
-            ->with('proveedor.persona.telefonos', 'proveedor.persona.direcciones')
             ->get();
 
         return view('admin.inventario.alertas.index', compact('insumosConBajoStock'));

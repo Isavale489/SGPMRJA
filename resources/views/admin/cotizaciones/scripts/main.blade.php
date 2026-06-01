@@ -392,13 +392,48 @@
                 $(this).val(capitalizeFirstLetter(val));
             }
         });
+
+        function debounce(func, wait) {
+            let timeout;
+            return function () {
+                const context = this;
+                const args = arguments;
+                clearTimeout(timeout);
+                timeout = setTimeout(function () {
+                    func.apply(context, args);
+                }, wait);
+            };
+        }
+
+        function updateFilterBadge() {
+            let count = 0;
+            const ordenValue = $('#filter-orden').val();
+            if ($('#filter-estado').val()) {
+                count++;
+            }
+            if ($('#filter-fecha').val()) {
+                count++;
+            }
+            if (ordenValue && ordenValue !== 'recientes') {
+                count++;
+            }
+            $('#active-filter-count').text(count).toggleClass('d-none', count === 0);
+        }
+
         var table = $('#cotizaciones-table').DataTable({
             responsive: true,
             autoWidth: false,
             dom: 'rtip', /* Ocultar buscador (f) y selector de longitud (l) para máxima limpieza */
             processing: true,
             serverSide: true,
-            ajax: "{{ route('cotizaciones.data') }}",
+            ajax: {
+                url: "{{ route('cotizaciones.data') }}",
+                data: function (d) {
+                    d.filter_estado = $('#filter-estado').val();
+                    d.filter_fecha = $('#filter-fecha').val();
+                    d.filter_orden = $('#filter-orden').val();
+                }
+            },
             columns: [
                 { data: 'id', name: 'id', title: 'Nro.', width: '5%' },
                 { data: 'cliente_nombre', name: 'cliente_nombre', width: '32%' },
@@ -477,52 +512,78 @@
                     render: function (data, type, row) {
                         var isAdmin = {{ Auth::user()->isAdmin() ? 'true' : 'false' }};
 
-                        // Botón Convertir a Pedido (solo si está Aprobada)
-                        var convertBtn = '';
+                        // Ver inline
+                        var sVer = `<button class="btn btn-sm btn-soft-info view-btn" data-id="${data}" title="Ver"><i class="ri-eye-fill"></i></button>`;
+
+                        // Items del menú ⋮
+                        var items = '';
+                        var hadItems = false;
+
+                        // Convertir a Pedido (solo si está Aprobada)
                         if (row.estado === 'Aprobada' && isAdmin) {
-                            convertBtn = `
-                                <button class="btn btn-sm btn-soft-primary convert-to-pedido-btn" data-id="${data}" title="Convertir a Pedido">
-                                    <i class="ri-exchange-line"></i>
-                                </button>
-                            `;
+                            items += `<li><button type="button" class="dropdown-item act-item act-primary convert-to-pedido-btn" data-id="${data}"><span class="act-ic"><i class="ri-exchange-line"></i></span>Convertir a Pedido</button></li>`;
+                            hadItems = true;
                         }
 
-                        // Botones Editar y Eliminar (solo si NO está Convertida ni Cancelada)
-                        var editDelete = '';
+                        // Editar y Eliminar (solo si NO está Convertida ni Cancelada ni Vencida)
                         if (isAdmin && row.estado !== 'Convertida' && row.estado !== 'Cancelada' && row.estado !== 'Vencida') {
-                            editDelete = `
-                            <button class="btn btn-sm btn-soft-success edit-btn" data-id="${data}" title="Editar">
-                                <i class="ri-pencil-fill"></i>
-                            </button>
-                            <button class="btn btn-sm btn-soft-danger remove-btn" data-id="${data}" title="Eliminar">
-                                <i class="ri-delete-bin-fill"></i>
-                            </button>`;
+                            items += `<li><button type="button" class="dropdown-item act-item act-edit edit-btn" data-id="${data}"><span class="act-ic"><i class="ri-pencil-fill"></i></span>Editar</button></li>`;
+                            items += `<li><button type="button" class="dropdown-item act-item act-del remove-btn" data-id="${data}"><span class="act-ic"><i class="ri-delete-bin-fill"></i></span>Eliminar</button></li>`;
+                            hadItems = true;
                         }
 
-                        // Layout horizontal compacto con gap-1
-                        return `
-                            <div class="d-flex gap-1 justify-content-center align-items-center flex-wrap">
-                                <button class="btn btn-sm btn-soft-info view-btn" data-id="${data}" title="Ver">
-                                    <i class="ri-eye-fill"></i>
-                                </button>
-                                ${convertBtn}
-                                ${editDelete}
-                                <a class="btn btn-sm btn-soft-secondary" href="/cotizaciones/${data}/pdf" target="_blank" title="PDF">
-                                    <i class="ri-file-pdf-line"></i>
-                                </a>
+                        // Separador antes del PDF (solo si hubo items antes)
+                        if (hadItems) {
+                            items += `<li><hr class="dropdown-divider"></li>`;
+                        }
+
+                        // PDF como enlace
+                        items += `<li><a class="dropdown-item act-item act-pdf" href="/cotizaciones/${data}/pdf" target="_blank"><span class="act-ic"><i class="ri-file-pdf-fill"></i></span>Ver / Descargar PDF</a></li>`;
+
+                        var menu = `
+                            <div class="dropdown d-inline-block">
+                              <button class="btn btn-sm btn-soft-secondary" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Más acciones"><i class="ri-more-2-fill"></i></button>
+                              <ul class="dropdown-menu dropdown-menu-end actions-menu">${items}</ul>
                             </div>
                         `;
+
+                        return `<div class="d-flex gap-1 justify-content-center align-items-center">${sVer}${menu}</div>`;
                     }
                 }
             ],
-            order: [[0, 'desc']],
+            order: [],
+            ordering: false,
             language: lenguajeData
         });
 
-        // Buscador personalizado
-        $('#custom-search-input').on('keyup', function () {
+        $('#filters-collapse-body')
+            .on('show.bs.collapse', function () {
+                $('.navy-filter-header').removeClass('is-collapsed');
+            })
+            .on('hidden.bs.collapse', function () {
+                $('.navy-filter-header').addClass('is-collapsed');
+            });
+
+        $('#custom-search-input').on('input', debounce(function () {
             table.search(this.value).draw();
+        }, 300));
+
+        $('.navy-filter-select').on('change', function () {
+            table.ajax.reload();
+            updateFilterBadge();
         });
+
+        $('#btn-clear-filters').on('click', function () {
+            $('#filter-estado').val('');
+            $('#filter-fecha').val('');
+            $('#filter-orden').val('recientes');
+            $('.navy-filter-select').trigger('change');
+            $('#custom-search-input').val('');
+            table.search('').draw();
+            updateFilterBadge();
+        });
+
+        updateFilterBadge();
 
         // Ajustar columnas cuando se redimensiona la ventana
         $(window).on('resize', function () {
@@ -1030,7 +1091,7 @@
                 // EDITAR ITEM EXISTENTE
                 var card = $(`.product-item[data-product-index="${currentProductIndex}"]`);
                 var tipoNombre = producto.tipo_producto ? producto.tipo_producto.nombre : 'Sin tipo';
-                var displayName = (producto.codigo || '') + ' - ' + tipoNombre + ' ' + producto.modelo;
+                var displayName = (producto.codigo || '') + ' - ' + tipoNombre;
 
                 // Actualizar valores visuales y ocultos
                 card.find('.producto-text-display').val(displayName);
@@ -2307,6 +2368,21 @@
                             $('#ci-rif-full-field').val(documento);
                         }
                         aplicarLayoutCliente(prefix, data.cliente.nombre, data.cliente.apellido || '');
+
+                        // Pintar la tarjeta + banner del cliente (antes quedaba el placeholder).
+                        if (typeof window.cotMostrarTarjetaCliente === 'function') {
+                            window.cotMostrarTarjetaCliente({
+                                persona_id:     data.cliente.id,
+                                tipo_documento: data.cliente.tipo_documento || prefix,
+                                documento:      documento,
+                                nombre:         data.cliente.nombre || '',
+                                apellido:       data.cliente.apellido || '',
+                                razon_social:   data.cliente.razon_social || '',
+                                telefono:       data.cliente.telefono || '',
+                                email:          data.cliente.email || '',
+                                roles:          data.cliente.roles || []
+                            }, data.cliente_id);
+                        }
                     }
                     // Formatear fechas para input date (YYYY-MM-DD)
                     var fechaCotizacion = data.fecha_cotizacion ? data.fecha_cotizacion.split('T')[0] : '';
@@ -2317,6 +2393,11 @@
                     $('#estado-field').val(data.estado);
                     $('#prioridad-field').val(data.prioridad || 'Normal');
                     $('#notas-field').val(data.notas || '');
+                    // Creador real: mostrar quién creó la cotización (no el editor)
+                    if (data.creador) {
+                        $('#cot-creador-name').text(data.creador.name || '—');
+                        if (data.creador.avatar_url) $('#cot-creador-avatar').attr('src', data.creador.avatar_url);
+                    }
                     // Cargar productos existentes
                     $('#productos-container').empty();
                     if (data.productos && data.productos.length > 0) {
@@ -2489,7 +2570,7 @@
                                                 <i class="ri-t-shirt-2-line text-white fs-5"></i>
                                             </div>
                                             <div>
-                                                <h6 class="mb-0 fw-bold" style="color: #1e3c72;">${item.producto ? (item.producto.nombre_completo || item.producto.modelo || 'Producto') : 'Sin producto'}</h6>
+                                                <h6 class="mb-0 fw-bold" style="color: #1e3c72;">${item.producto ? (item.producto.nombre_completo || item.producto.codigo || 'Producto') : 'Sin producto'}</h6>
                                                 <small class="text-muted">Producto #${index + 1}</small>
                                             </div>
                                             <div class="ms-auto">
@@ -2610,7 +2691,10 @@
                         productosBody.append('<p class="text-muted text-center py-4"><i class="ri-file-list-3-line fs-1 d-block mb-2"></i>No hay productos en esta cotización.</p>');
                     }
                     // Formatear el total
-                    $('#view-total').text(formatMoney(parseFloat(data.total || 0)));
+                    var totalUsd = parseFloat(data.total || 0);
+                    $('#view-total').text(formatMoney(totalUsd));
+                    var bsLbl = (typeof window.bsEquivalente === 'function') ? window.bsEquivalente(totalUsd) : null;
+                    $('#view-total-bs').text(bsLbl || 'Sin tasa BCV');
                     // Establecer enlace PDF
                     $('#view-pdf-btn').attr('href', '/cotizaciones/' + id + '/pdf');
                     $('#viewModal').modal('show');
@@ -2732,85 +2816,10 @@
         });
 
         // === CONVERTIR COTIZACIÓN A PEDIDO ===
+        // Redirige al wizard de pedidos pre-hidratado con los datos de la cotización
         $('#cotizaciones-table').on('click', '.convert-to-pedido-btn', function () {
             var cotizacionId = $(this).data('id');
-
-            Swal.fire({
-                title: '¿Convertir a Pedido?',
-                html: '<p>Se creará un nuevo pedido con los datos de esta cotización:</p>' +
-                    '<ul class="text-start"><li>Cliente</li><li>Productos</li><li>Precios</li></ul>' +
-                    '<small class="text-muted">Después podrá editar el pedido para agregar fecha de entrega, abono y método de pago.</small>',
-                icon: 'question',
-                showCancelButton: true,
-                confirmButtonText: '<i class="ri-exchange-line me-1"></i> Sí, convertir',
-                cancelButtonText: 'Cancelar',
-                customClass: {
-                    confirmButton: 'btn btn-success w-xs me-2',
-                    cancelButton: 'btn btn-light w-xs'
-                },
-                buttonsStyling: false,
-                showCloseButton: true
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    // Mostrar loading
-                    Swal.fire({
-                        title: 'Convirtiendo...',
-                        text: 'Creando pedido desde la cotización',
-                        allowOutsideClick: false,
-                        didOpen: () => {
-                            Swal.showLoading();
-                        }
-                    });
-
-                    // Llamar al endpoint para convertir
-                    $.ajax({
-                        url: '/cotizaciones/' + cotizacionId + '/convertir-a-pedido',
-                        method: 'POST',
-                        data: {
-                            _token: $('meta[name="csrf-token"]').attr('content')
-                        },
-                        success: function (response) {
-                            Swal.fire({
-                                icon: 'success',
-                                title: '¡Pedido Creado!',
-                                html: '<p>' + response.message + '</p>' +
-                                    '<p class="mt-2">¿Desea ir al pedido creado para completar los datos?</p>',
-                                showCancelButton: true,
-                                confirmButtonText: '<i class="ri-edit-line me-1"></i> Editar Pedido',
-                                cancelButtonText: 'Quedarme aquí',
-                                customClass: {
-                                    confirmButton: 'btn btn-primary me-2',
-                                    cancelButton: 'btn btn-light'
-                                },
-                                buttonsStyling: false
-                            }).then((result) => {
-                                // Recargar la tabla para mostrar el estado actualizado
-                                table.ajax.reload();
-
-                                if (result.isConfirmed) {
-                                    // Redirigir al módulo de pedidos
-                                    window.location.href = '/pedidos?editar=' + response.pedido_id;
-                                }
-                            });
-                        },
-                        error: function (xhr) {
-                            var errorMsg = 'No se pudo convertir la cotización.';
-                            if (xhr.responseJSON && xhr.responseJSON.error) {
-                                errorMsg = xhr.responseJSON.error;
-                            }
-                            Swal.fire({
-                                icon: 'error',
-                                title: 'Error',
-                                text: errorMsg,
-                                customClass: {
-                                    confirmButton: 'btn btn-primary'
-                                },
-                                buttonsStyling: false
-                            });
-                        }
-                    });
-                }
-            });
+            window.location.href = '/pedidos?convertir=' + cotizacionId;
         });
 
         // === AUTOCOMPLETADO UNIFICADO DE PERSONA (cliente + empleado + proveedor) ===
@@ -3436,6 +3445,12 @@
 
                 $('#cot-cliente-roles').html(buildRolesBadges(persona.roles));
 
+                // Banner persistente (pasos 2+): misma fuente de datos que la card
+                $('#cot-banner-avatar').text(iniciales).css({ background: color.bg, color: color.fg });
+                $('#cot-banner-name').text(nombre || '—');
+                $('#cot-banner-doc').text(persona.documento || '—');
+                if (typeof window.cotActualizarBannerCliente === 'function') window.cotActualizarBannerCliente();
+
                 var count = parseInt(persona.cotizaciones_count, 10);
                 if (clienteId && !isNaN(count) && count > 0) {
                     $('#cot-cliente-stat-count').text(count);
@@ -3465,6 +3480,17 @@
                 $('#cliente-email-field').val('');
                 $('#cliente-razon-social-display').val('');
                 if (typeof clienteSeleccionado !== 'undefined') clienteSeleccionado = false;
+                // Banner persistente: ocultar al limpiar el cliente
+                $('#cot-cliente-banner').attr('hidden', true).attr('aria-hidden', 'true');
+            };
+
+            // Muestra/oculta el banner según paso y cliente seleccionado.
+            // Visible solo en pasos 2+ (en el paso 1 ya está la card grande).
+            window.cotActualizarBannerCliente = function () {
+                var hasClient = !!$('#cliente-id-field').val();
+                var step = (typeof currentStep !== 'undefined') ? currentStep : 1;
+                var show = hasClient && step > 1;
+                $('#cot-cliente-banner').attr('hidden', !show).attr('aria-hidden', show ? 'false' : 'true');
             };
 
             window.cotShowLoading = function (show) {
@@ -3629,38 +3655,70 @@
                 return list;
             }
 
+            // Agrupa los productos filtrados por tipo. Un producto sin tipo
+            // queda en una clave especial "sin-tipo".
+            function groupByTipo(items) {
+                var map = {};
+                items.forEach(function (p) {
+                    var tipo = p.tipo_producto;
+                    var key = tipo ? ('t-' + tipo.id) : 'sin-tipo';
+                    if (!map[key]) {
+                        map[key] = {
+                            tipo: tipo,
+                            tipoNombre: tipo ? tipo.nombre : 'Sin tipo',
+                            productos: [],
+                            precioMin: Infinity,
+                            precioMax: 0,
+                            firstImg: null
+                        };
+                    }
+                    map[key].productos.push(p);
+                    var price = parseFloat(p.precio_base || 0);
+                    if (price < map[key].precioMin) map[key].precioMin = price;
+                    if (price > map[key].precioMax) map[key].precioMax = price;
+                    if (!map[key].firstImg && p.imagen) map[key].firstImg = p.imagen;
+                });
+                return Object.values(map).sort(function (a, b) {
+                    return String(a.tipoNombre || '').localeCompare(String(b.tipoNombre || ''));
+                });
+            }
+
             function renderGrid() {
                 var $grid = $('#cat-grid');
                 var $empty = $('#cat-grid-empty');
                 var items = getFilteredProducts();
-                $('#cat-results-count').text(items.length);
+                var grupos = groupByTipo(items);
 
-                if (!items.length) {
+                $('#cat-results-count').text(grupos.length + ' familia' + (grupos.length === 1 ? '' : 's'));
+
+                if (!grupos.length) {
                     $grid.html('');
                     $empty.removeClass('d-none');
                     return;
                 }
                 $empty.addClass('d-none');
 
-                $grid.html(items.map(function (p) {
-                    var tipoNombre = p.tipo_producto ? p.tipo_producto.nombre : 'Sin tipo';
-                    var precio = parseFloat(p.precio_base || 0);
-                    var hasImg = !!p.imagen;
-                    var inCart = catCartHas(p.id);
+                $grid.html(grupos.map(function (g) {
+                    var hasImg = !!g.firstImg;
                     var imgBlock = hasImg
-                        ? '<img src="' + escapeForHtml(p.imagen) + '" alt="" class="cat-card-img">'
+                        ? '<img src="' + escapeForHtml(g.firstImg) + '" alt="" class="cat-card-img">'
                         : '<div class="cat-card-img-placeholder"><i class="ri-t-shirt-2-line"></i></div>';
+                    var rangoPrecio = g.precioMin === g.precioMax
+                        ? formatMoney(g.precioMin)
+                        : formatMoney(g.precioMin) + ' – ' + formatMoney(g.precioMax);
+                    var nVariantes = g.productos.length;
+                    var tipoId = g.tipo ? g.tipo.id : '';
                     return (
-                        '<button type="button" class="cat-card' + (inCart ? ' is-incart' : '') + '" data-producto-id="' + p.id + '">' +
+                        '<button type="button" class="cat-card cat-card-tipo" data-tipo-id="' + tipoId + '">' +
                             '<div class="cat-card-media">' + imgBlock +
-                                '<span class="cat-card-tipo-badge">' + escapeForHtml(tipoNombre) + '</span>' +
+                                '<span class="cat-card-tipo-badge">' + escapeForHtml(g.tipoNombre) + '</span>' +
                             '</div>' +
                             '<div class="cat-card-body">' +
-                                '<p class="cat-card-codigo">' + escapeForHtml(p.codigo || '—') + '</p>' +
-                                '<h6 class="cat-card-modelo">' + escapeForHtml(p.modelo || 'Sin modelo') + '</h6>' +
+                                '<p class="cat-card-codigo"><i class="ri-stack-line me-1"></i>' + nVariantes + ' variante' + (nVariantes === 1 ? '' : 's') + '</p>' +
+                                '<h6 class="cat-card-modelo">' + escapeForHtml(g.tipoNombre) + '</h6>' +
                                 '<div class="cat-card-foot">' +
-                                    '<span class="cat-card-price">' + formatMoney(precio) + '</span>' +
-                                    '<span class="cat-card-cta">' + (inCart ? '<i class="ri-check-line"></i> Configurado' : 'Configurar <i class="ri-arrow-right-line"></i>') + '</span>' +
+                                    '<span class="cat-card-price">' + rangoPrecio + '</span>' +
+                                    '<span class="cat-card-cta">Elegir variante <i class="ri-arrow-right-line"></i></span>' +
                                 '</div>' +
                             '</div>' +
                         '</button>'
@@ -3772,20 +3830,191 @@
             });
             $(document).on('click', '#cat-clear-filters', clearFilters);
 
-            // Click en card → en Fase 2 abrimos un placeholder; Fase 3 conecta el configurador real
-            $(document).on('click', '#cat-grid .cat-card', function () {
-                var pid = parseInt(this.dataset.productoId, 10);
-                if (typeof window.cotConfiguradorAbrir === 'function') {
-                    window.cotConfiguradorAbrir(pid);
-                } else {
-                    Swal.fire({
-                        icon: 'info',
-                        title: 'Configurador en construcción',
-                        text: 'En la próxima fase podrás configurar color, tallas y bordados desde aquí.',
-                        timer: 2200,
-                        showConfirmButton: false
-                    });
+            // ============== Selector de Variante (Fase 4) ==============
+            // Click en card de tipo → abre modal con chips de tela y atributos.
+            // Al elegir combinación, se resuelve el producto via endpoint y se
+            // abre el configurador clásico.
+            var vsState = {
+                tipoId: null,
+                tipo: null,            // objeto tipo cargado vía /tipo-productos/{id}
+                productos: [],         // productos del tipo (subconjunto del catálogo)
+                telaId: null,          // tela seleccionada (insumo_id)
+                valoresPorAtributo: {} // {atributo_id: valor_id}
+            };
+
+            function getProductosDelTipo(tipoId) {
+                return getProductsList().filter(function (p) {
+                    return p.tipo_producto && p.tipo_producto.id == tipoId;
+                });
+            }
+
+            // Telas únicas usadas por productos del tipo
+            function telasDelTipo(productos) {
+                var byId = {};
+                productos.forEach(function (p) {
+                    if (p.tela && !byId[p.tela.id]) byId[p.tela.id] = p.tela;
+                });
+                return Object.values(byId).sort(function (a, b) {
+                    return String(a.nombre || '').localeCompare(String(b.nombre || ''));
+                });
+            }
+
+            function vsRenderTelas() {
+                var telas = telasDelTipo(vsState.productos);
+                var $cont = $('#vs-tela-options');
+                if (!telas.length) {
+                    $('#vs-tela-section').hide();
+                    return;
                 }
+                $('#vs-tela-section').show();
+                $cont.html(telas.map(function (t) {
+                    var checked = vsState.telaId == t.id;
+                    return '' +
+                        '<input type="radio" class="btn-check vs-tela-radio" name="vs-tela" ' +
+                            'id="vs-tela-' + t.id + '" value="' + t.id + '"' + (checked ? ' checked' : '') + '>' +
+                        '<label class="btn btn-outline-primary btn-sm" for="vs-tela-' + t.id + '">' +
+                            escapeForHtml(t.nombre) +
+                            (t.codigo ? ' <small class="text-muted">' + escapeForHtml(t.codigo) + '</small>' : '') +
+                        '</label>';
+                }).join(''));
+            }
+
+            function vsRenderAtributos() {
+                var $cont = $('#vs-atributos-section');
+                if (!vsState.tipo || !vsState.tipo.atributos || !vsState.tipo.atributos.length) {
+                    $cont.html('<p class="text-muted small mb-0">Este tipo no tiene atributos asociados.</p>');
+                    return;
+                }
+                var html = vsState.tipo.atributos.map(function (atr) {
+                    if (!atr.valores || !atr.valores.length) {
+                        return '<div class="mb-3"><label class="form-label small fw-semibold mb-2">' +
+                            escapeForHtml(atr.nombre) + '</label>' +
+                            '<p class="text-muted small fst-italic mb-0">Sin valores definidos.</p></div>';
+                    }
+                    var seleccionado = vsState.valoresPorAtributo[atr.id];
+                    var chips = atr.valores.map(function (v) {
+                        var checked = seleccionado == v.id;
+                        return '' +
+                            '<input type="radio" class="btn-check vs-atributo-radio" name="vs-atr-' + atr.id + '" ' +
+                                'id="vs-val-' + v.id + '" value="' + v.id + '" data-atr-id="' + atr.id + '"' +
+                                (checked ? ' checked' : '') + '>' +
+                            '<label class="btn btn-outline-primary btn-sm" for="vs-val-' + v.id + '">' +
+                                escapeForHtml(v.nombre) +
+                            '</label>';
+                    }).join('');
+                    return '<div class="mb-3">' +
+                        '<label class="form-label small fw-semibold mb-2">' +
+                            escapeForHtml(atr.nombre) +
+                        '</label>' +
+                        '<div class="d-flex flex-wrap gap-2">' + chips + '</div>' +
+                    '</div>';
+                }).join('');
+                $cont.html(html);
+            }
+
+            function vsResolverVariante() {
+                if (!vsState.tipoId) return;
+                var valoresIds = Object.values(vsState.valoresPorAtributo).filter(function (x) { return !!x; });
+                var nAtributos = vsState.tipo && vsState.tipo.atributos ? vsState.tipo.atributos.length : 0;
+                var requiereTela = vsState.tipo && vsState.tipo.requiere_tela;
+
+                // No resolver hasta que TODO esté seleccionado
+                var faltaTela = requiereTela && !vsState.telaId;
+                var faltanAtributos = valoresIds.length < nAtributos;
+                if (faltaTela || faltanAtributos) {
+                    $('#vs-result-found, #vs-result-missing').hide();
+                    $('#vs-confirm').prop('disabled', true).removeData('producto-id');
+                    return;
+                }
+
+                $.getJSON("{{ route('productos.resolver-variante') }}", {
+                    tipo_producto_id: vsState.tipoId,
+                    insumo_tela_id: vsState.telaId || null,
+                    'atributo_valor_ids[]': valoresIds
+                }).done(function (resp) {
+                    if (resp.found) {
+                        $('#vs-result-codigo').text(resp.producto.codigo);
+                        $('#vs-result-precio').text(formatMoney(resp.producto.precio_base));
+                        $('#vs-result-found').show();
+                        $('#vs-result-missing').hide();
+                        $('#vs-confirm').prop('disabled', false).data('producto-id', resp.producto.id);
+                    } else {
+                        $('#vs-result-found').hide();
+                        $('#vs-result-missing').show();
+                        $('#vs-confirm').prop('disabled', true).removeData('producto-id');
+                    }
+                });
+            }
+
+            function vsAbrir(tipoId, opts) {
+                opts = opts || {};
+                vsState.tipoId = tipoId;
+                vsState.productos = getProductosDelTipo(tipoId);
+                vsState.telaId = opts.telaId || null;
+                vsState.valoresPorAtributo = opts.valoresPorAtributo ? Object.assign({}, opts.valoresPorAtributo) : {};
+                vsState.editContexto = opts.editContexto || null;
+                vsState.tipo = null;
+
+                $('#vs-tipo-nombre').text(vsState.productos[0]?.tipo_producto?.nombre || 'Variante');
+                $('#vs-result-found, #vs-result-missing').hide();
+                $('#vs-confirm').prop('disabled', true).removeData('producto-id');
+
+                // Cargar info del tipo (atributos con sus valores)
+                $.getJSON("{{ url('tipo-productos') }}/" + tipoId).done(function (tipo) {
+                    vsState.tipo = tipo;
+                    vsRenderTelas();
+                    vsRenderAtributos();
+                    // Si vino con preselección, intentar resolver de inmediato
+                    if (opts.telaId || (opts.valoresPorAtributo && Object.keys(opts.valoresPorAtributo).length)) {
+                        vsResolverVariante();
+                    }
+                });
+
+                new bootstrap.Modal(document.getElementById('varianteSelectorModal')).show();
+            }
+            window.cotVarianteSelectorAbrir = vsAbrir;
+
+            // Listeners del selector
+            $(document).on('change', '.vs-tela-radio', function () {
+                vsState.telaId = parseInt(this.value);
+                vsResolverVariante();
+            });
+            $(document).on('change', '.vs-atributo-radio', function () {
+                var atrId = $(this).data('atr-id');
+                vsState.valoresPorAtributo[atrId] = parseInt(this.value);
+                vsResolverVariante();
+            });
+            $(document).on('click', '#vs-confirm', function () {
+                var pid = $(this).data('producto-id');
+                if (!pid) return;
+                var ctx = vsState.editContexto;
+                bootstrap.Modal.getInstance(document.getElementById('varianteSelectorModal'))?.hide();
+                if (typeof window.cotConfiguradorAbrir === 'function') {
+                    if (ctx) {
+                        // Cambio de variante en plena edición: reabre configurador con el nuevo
+                        // producto pero conservando color/tallas/precio que ya estaban configurados.
+                        window.cotConfiguradorAbrir(pid, {
+                            existing: {
+                                colorId: ctx.colorId,
+                                colorNombre: ctx.colorNombre,
+                                colorHex: ctx.colorHex,
+                                tallas: ctx.tallas,
+                                precioUnitario: ctx.precioUnitario
+                            },
+                            cartItemId: ctx.cartItemId,
+                            productoIdOriginal: ctx.productoIdOriginal
+                        });
+                    } else {
+                        window.cotConfiguradorAbrir(pid);
+                    }
+                }
+            });
+
+            // Click en card de tipo → abrir selector
+            $(document).on('click', '#cat-grid .cat-card-tipo', function () {
+                var tipoId = parseInt(this.dataset.tipoId, 10);
+                if (!tipoId) return;
+                vsAbrir(tipoId);
             });
 
             // Quitar item del carrito (delegado)
@@ -3835,6 +4064,7 @@
 
             var cfgState = {
                 producto: null,         // referencia al producto del catálogo
+                productoIdOriginal: null, // si edita un bloque y cambia la variante, recuerda el SKU original para reemplazo
                 colorId: null,
                 colorNombre: '',
                 colorHex: null,
@@ -3874,6 +4104,11 @@
                 // Estado inicial — si edita un item existente, carga sus datos
                 cfgState.producto = p;
                 cfgState.cartItemId = opts.cartItemId || null;
+                // Si veníamos editando un bloque de un producto distinto (cambio de variante),
+                // recordá el id original para que el patcher de guardado pueda borrar las cards correctas.
+                cfgState.productoIdOriginal = (opts.productoIdOriginal != null)
+                    ? opts.productoIdOriginal
+                    : p.id;
                 var basePrice = parseFloat(p.precio_base || 0) || 0;
                 if (opts.existing) {
                     cfgState.colorId = opts.existing.colorId || null;
@@ -3911,12 +4146,25 @@
             function renderInfo() {
                 var p = cfgState.producto;
                 if (!p) return;
-                $('#cfg-eyebrow').text((p.tipo_producto ? p.tipo_producto.nombre : 'Producto') + ' · ' + (p.codigo || '—'));
-                $('#cfg-title').text(p.modelo || 'Sin modelo');
+                var tipoNombre = p.tipo_producto ? p.tipo_producto.nombre : 'Producto';
+                $('#cfg-eyebrow').text(tipoNombre + ' · ' + (p.codigo || '—'));
+                $('#cfg-title').text(tipoNombre);
                 $('#cfg-info-codigo').text(p.codigo || '—');
-                $('#cfg-info-modelo').text(p.modelo || 'Sin modelo');
-                $('#cfg-info-tipo').text(p.tipo_producto ? p.tipo_producto.nombre : 'Sin tipo');
+                // h6 principal de la columna info: muestra el tipo de prenda
+                $('#cfg-info-modelo').text(tipoNombre);
+                // Línea pequeña: nombre completo (tipo + tela + atributos) si está disponible
+                var variantLabel = (typeof window.cotBuildVariantLabel === 'function')
+                    ? window.cotBuildVariantLabel(p) : '';
+                $('#cfg-info-tipo').text(variantLabel || ('Tipo: ' + tipoNombre));
                 $('#cfg-info-precio').text(formatMoney(parseFloat(p.precio_base || 0)));
+
+                // Mostrar botón "Cambiar variante" solo si el tipo tiene >1 producto activo
+                var tipoId = p.tipo_producto ? p.tipo_producto.id : null;
+                var prodList = (typeof products !== 'undefined' && Array.isArray(products)) ? products : [];
+                var hermanos = tipoId ? prodList.filter(function (x) {
+                    return x.tipo_producto && x.tipo_producto.id === tipoId;
+                }).length : 0;
+                $('#cfg-cambiar-variante').toggle(hermanos > 1);
 
                 var $media = $('#cfg-media-inner');
                 if (p.imagen) {
@@ -4097,6 +4345,42 @@
                 if (cfgModalInstance) cfgModalInstance.hide();
             });
 
+            // Cambiar variante: cierra el configurador y abre el selector con
+            // los valores actuales pre-seleccionados, manteniendo color/tallas
+            // ya configurados para que no se pierda el avance.
+            $(document).on('click', '#cfg-cambiar-variante', function () {
+                var p = cfgState.producto;
+                if (!p || !p.tipo_producto) return;
+
+                var preTela = p.tela ? p.tela.id : null;
+                var preValores = {};
+                if (Array.isArray(p.atributo_valores)) {
+                    p.atributo_valores.forEach(function (v) {
+                        if (v.atributo) preValores[v.atributo.id] = v.id;
+                    });
+                }
+
+                var contexto = {
+                    productoIdOriginal: cfgState.productoIdOriginal || p.id,
+                    colorId: cfgState.colorId,
+                    colorNombre: cfgState.colorNombre,
+                    colorHex: cfgState.colorHex,
+                    tallas: Object.assign({}, cfgState.tallas),
+                    precioUnitario: cfgState.precioUnitario,
+                    cartItemId: cfgState.cartItemId
+                };
+
+                if (cfgModalInstance) cfgModalInstance.hide();
+
+                if (typeof window.cotVarianteSelectorAbrir === 'function') {
+                    window.cotVarianteSelectorAbrir(p.tipo_producto.id, {
+                        telaId: preTela,
+                        valoresPorAtributo: preValores,
+                        editContexto: contexto
+                    });
+                }
+            });
+
             // Guardar (agregar al carrito)
             $(document).on('click', '#cfg-save-btn', function () {
                 if (!cfgState.colorId || totalTallas() === 0) return;
@@ -4120,6 +4404,7 @@
                 var item = {
                     id: cfgState.cartItemId || ('cit_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7)),
                     productoId: p.id,
+                    productoIdOriginal: cfgState.productoIdOriginal || p.id,
                     productoCodigo: p.codigo || '',
                     productoModelo: p.modelo || '',
                     productoTipo: p.tipo_producto ? p.tipo_producto.nombre : '',
@@ -4337,6 +4622,30 @@
                 return groups;
             }
 
+            // Construye la línea de variante (tela + atributos) a partir de un producto
+            function buildVariantLabel(producto) {
+                if (!producto) return '';
+                var partes = [];
+                if (producto.tela && producto.tela.nombre) {
+                    partes.push(producto.tela.nombre);
+                }
+                var snap = producto.atributos_snapshot;
+                if (snap && typeof snap === 'object' && !Array.isArray(snap)) {
+                    Object.keys(snap).forEach(function (atr) {
+                        partes.push(atr + ': ' + snap[atr]);
+                    });
+                } else if (Array.isArray(producto.atributo_valores) && producto.atributo_valores.length) {
+                    // Fallback si el snapshot no está poblado pero sí los valores
+                    producto.atributo_valores.forEach(function (v) {
+                        if (v.atributo && v.atributo.nombre) {
+                            partes.push(v.atributo.nombre + ': ' + v.nombre);
+                        }
+                    });
+                }
+                return partes.join(' · ');
+            }
+            window.cotBuildVariantLabel = buildVariantLabel;
+
             function refreshGroupedList() {
                 var groups = readGroupsFromContainer();
                 var $list = $('#cot-grouped-list');
@@ -4353,6 +4662,7 @@
                     var prodCodigo = g.producto && g.producto.codigo ? g.producto.codigo : '—';
                     var prodModelo = g.producto && g.producto.modelo ? g.producto.modelo : '(producto sin definir)';
                     var tipoLabel = g.producto && g.producto.tipo_producto ? g.producto.tipo_producto.nombre : '';
+                    var variantLabel = buildVariantLabel(g.producto);
                     var colorName = g.color ? g.color.nombre : (g.colorId ? '#' + g.colorId : 'Sin color');
                     var colorHex = g.color ? g.color.hex_referencial : '#cccccc';
                     var lightHex = (String(colorHex).toUpperCase() === '#FFFFFF' || String(colorHex).toUpperCase() === '#FFFDD0');
@@ -4383,6 +4693,9 @@
                                 (tipoLabel ? '<span class="cot-tipo-pill">' + escForHtml(tipoLabel) + '</span>' : '') +
                                 '<div class="cot-prod-modelo">' + escForHtml(prodModelo) + '</div>' +
                                 '<div class="cot-prod-codigo">' + escForHtml(prodCodigo) + '</div>' +
+                                (variantLabel
+                                    ? '<div class="cot-prod-variant" style="font-size:.72rem;color:#475569;margin-top:2px;"><i class="ri-shape-2-line me-1"></i>' + escForHtml(variantLabel) + '</div>'
+                                    : '') +
                             '</td>' +
                             '<td class="cot-col-color">' +
                                 '<span class="cot-color-cell">' +
@@ -4555,13 +4868,15 @@
 
                         // Es una edición de un bloque existente:
                         // 1) Eliminar las cards viejas del bloque (todas las que comparten producto+color)
-                        var prodId = lastItem.productoId;
+                        //    productoIdOriginal apunta al SKU que estaba antes del cambio de variante;
+                        //    si no hubo cambio, equivale al productoId actual.
+                        var prodIdParaBorrar = lastItem.productoIdOriginal || lastItem.productoId;
                         var colorId = lastItem.colorId;
                         $('#productos-container .product-item').each(function () {
                             var $c = $(this);
                             var pid = parseInt($c.find('.producto-id-input').val(), 10);
                             var cid = parseInt($c.find('.color-id-input').val(), 10);
-                            if (pid === prodId && cid === colorId) $c.remove();
+                            if (pid === prodIdParaBorrar && cid === colorId) $c.remove();
                         });
 
                         // 2) Insertar nuevas cards del item editado (una por talla)
@@ -4573,6 +4888,18 @@
                                 lastItem.colorId, t.tallaId, []
                             );
                         });
+
+                        // 2b) Si cambió la variante (productoId distinto al original), migrar
+                        // los bordados del groupKey viejo al nuevo para no perderlos.
+                        if (prodIdParaBorrar && prodIdParaBorrar !== lastItem.productoId &&
+                            window.cotGroupBordadosState) {
+                            var oldKey = prodIdParaBorrar + '|' + colorId;
+                            var newKey = lastItem.productoId + '|' + colorId;
+                            if (window.cotGroupBordadosState[oldKey]) {
+                                window.cotGroupBordadosState[newKey] = window.cotGroupBordadosState[oldKey];
+                                delete window.cotGroupBordadosState[oldKey];
+                            }
+                        }
 
                         // 3) Quitar el item del carrito (era una edición, no debe quedar como item nuevo)
                         window.cotCart = (window.cotCart || []).filter(function (it) {
@@ -4632,25 +4959,28 @@
                 });
             }
 
+            // Datos del usuario logueado para el chip "Creada por" en modo crear
+            window.cotCreadorDefault = { name: @json(Auth::user()->name), avatar: @json(Auth::user()->avatar_url) };
+
             function showStep(n) {
                 n = Math.max(1, Math.min(TOTAL_STEPS, n));
                 currentStep = n;
 
-                document.querySelectorAll('#showModal .cot-step-content').forEach(function (sec) {
+                document.querySelectorAll('#showModal .wiz-step-content').forEach(function (sec) {
                     var step = parseInt(sec.dataset.step, 10);
                     var active = step === n;
                     sec.classList.toggle('is-active', active);
                     sec.hidden = !active;
                 });
 
-                document.querySelectorAll('#showModal .cot-step-marker').forEach(function (mk) {
+                document.querySelectorAll('#showModal .wiz-step-marker').forEach(function (mk) {
                     var step = parseInt(mk.dataset.step, 10);
                     mk.classList.toggle('is-active', step === n);
                     mk.classList.toggle('is-complete', step < n);
                     mk.setAttribute('aria-selected', step === n ? 'true' : 'false');
                 });
 
-                document.querySelectorAll('#showModal .cot-step-line-fill').forEach(function (lf) {
+                document.querySelectorAll('#showModal .wiz-step-line-fill').forEach(function (lf) {
                     var line = parseInt(lf.dataset.line, 10);
                     lf.style.width = (line < n) ? '100%' : '0%';
                 });
@@ -4676,6 +5006,18 @@
                 }
 
                 if (n === 2) refreshKPIs();
+
+                // Banner cliente persistente: visible en pasos 2+ si hay cliente
+                var hasClient = !!$('#cliente-id-field').val();
+                var showBanner = hasClient && n > 1;
+                $('#cot-cliente-banner').attr('hidden', !showBanner).attr('aria-hidden', showBanner ? 'false' : 'true');
+
+                // Chip "Creada por": siempre visible. Crear → usuario logueado; editar → creador real (hidratado).
+                if (!isEditMode() && window.cotCreadorDefault) {
+                    $('#cot-creador-name').text(window.cotCreadorDefault.name);
+                    $('#cot-creador-avatar').attr('src', window.cotCreadorDefault.avatar);
+                }
+                $('#cot-creador-banner').removeAttr('hidden').attr('aria-hidden', 'false');
             }
 
             function nextStep() {
@@ -4806,8 +5148,11 @@
                     groups.forEach(function (g, idx) {
                         subtotal += g.totalSubtotal;
                         var prodLabel = g.producto
-                            ? ((g.producto.codigo ? g.producto.codigo + ' · ' : '') + (g.producto.modelo || ''))
+                            ? ((g.producto.codigo ? g.producto.codigo + ' · ' : '') + (g.producto.tipo_producto ? g.producto.tipo_producto.nombre : ''))
                             : '(producto sin definir)';
+                        var variantLabel = (typeof window.cotBuildVariantLabel === 'function')
+                            ? window.cotBuildVariantLabel(g.producto)
+                            : '';
                         var colorName = g.color ? g.color.nombre : (g.colorId ? '#' + g.colorId : '');
                         var tallasTxt = g.cards.map(function (c) { return c.tallaLabel + '×' + c.qty; }).join(' · ');
                         var bordadoBadge = g.llevaBordado
@@ -4822,6 +5167,7 @@
                             '<tr>' +
                                 '<td>' +
                                     '<div class="cot-resumen-row-prod">' + escHtmlW(prodLabel) + bordadoBadge + '</div>' +
+                                    (variantLabel ? '<div class="cot-resumen-row-variant" style="font-size:.72rem;color:#475569;margin:2px 0;"><i class="ri-shape-2-line me-1"></i>' + escHtmlW(variantLabel) + '</div>' : '') +
                                     '<div class="cot-resumen-row-meta">' +
                                         (colorName ? '<span>' + escHtmlW(colorName) + '</span>' : '') +
                                         '<span class="cot-resumen-row-tallas">' + escHtmlW(tallasTxt) + '</span>' +
@@ -4866,6 +5212,9 @@
                 $('#cot-resumen-subtotal').text(formatMoney(subtotal));
                 $('#cot-resumen-iva').text(formatMoney(iva));
                 $('#cot-resumen-total').text(formatMoney(total));
+                // Equivalente en Bs (tasa BCV del día, expuesta por el layout)
+                var bsLabel = (typeof window.bsEquivalente === 'function') ? window.bsEquivalente(total) : null;
+                $('#cot-resumen-total-bs').text(bsLabel || 'Sin tasa BCV');
             }
 
             // === LISTENERS =====================================================
@@ -4873,7 +5222,7 @@
             $('#btn-cot-prev').on('click', prevStep);
 
             // Click en marker del stepper: retroceder libre, avanzar con validación
-            $(document).on('click', '#showModal .cot-step-marker', function () {
+            $(document).on('click', '#showModal .wiz-step-marker', function () {
                 var target = parseInt(this.dataset.step, 10);
                 if (target === currentStep) return;
                 if (target < currentStep) { showStep(target); return; }

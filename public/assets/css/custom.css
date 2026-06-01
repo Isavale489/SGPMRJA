@@ -115,6 +115,122 @@ body:not(.swal2-toast-shown) div.swal2-container.swal2-backdrop-show {
   line-height: 1 !important;
 }
 
+/* ============================================================
+   BOTONES DE ACCIÓN — paleta corregida (colores convencionales)
+   GLOBAL: redefine solo las variables locales de los btn-soft-*,
+   por lo que cambia los botones en TODO el sistema de una vez,
+   sin afectar alertas, badges del semáforo ni text-* (que usan
+   las variables --vz-* del tema, no tocadas aquí).
+   El tema base traía danger=naranja y success=turquesa; aquí se
+   corrigen a rojo y verde reales. Mantiene el estilo "soft"
+   (fondo tenue + ícono de color; al hover se rellena).
+   ============================================================ */
+.btn-soft-danger    { --vz-btn-color:#dc2626; --vz-btn-bg:rgba(220,38,38,.12); --vz-btn-hover-bg:#dc2626; --vz-btn-hover-color:#fff; --vz-btn-active-bg:#b91c1c; --vz-btn-active-color:#fff; }
+.btn-soft-success   { --vz-btn-color:#15803d; --vz-btn-bg:rgba(22,163,74,.12); --vz-btn-hover-bg:#16a34a; --vz-btn-hover-color:#fff; --vz-btn-active-bg:#15803d; --vz-btn-active-color:#fff; }
+.btn-soft-info      { --vz-btn-color:#2563eb; --vz-btn-bg:rgba(37,99,235,.12); --vz-btn-hover-bg:#2563eb; --vz-btn-hover-color:#fff; --vz-btn-active-bg:#1d4ed8; --vz-btn-active-color:#fff; }
+.btn-soft-secondary { --vz-btn-color:#475569; --vz-btn-bg:rgba(71,85,105,.12); --vz-btn-hover-bg:#475569; --vz-btn-hover-color:#fff; --vz-btn-active-bg:#334155; --vz-btn-active-color:#fff; }
+.btn-soft-primary   { --vz-btn-color:#4f46e5; --vz-btn-bg:rgba(79,70,229,.12); --vz-btn-hover-bg:#4f46e5; --vz-btn-hover-color:#fff; --vz-btn-active-bg:#4338ca; --vz-btn-active-color:#fff; }
+.btn-soft-warning   { --vz-btn-color:#b45309; --vz-btn-bg:rgba(245,158,11,.15); --vz-btn-hover-bg:#f59e0b; --vz-btn-hover-color:#fff; --vz-btn-active-bg:#d97706; --vz-btn-active-color:#fff; }
+
+/* Dark mode: texto más claro sobre el fondo translúcido para contraste */
+[data-bs-theme="dark"] .btn-soft-danger    { --vz-btn-color:#f87171; --vz-btn-bg:rgba(239,68,68,.20); }
+[data-bs-theme="dark"] .btn-soft-success   { --vz-btn-color:#4ade80; --vz-btn-bg:rgba(34,197,94,.20); }
+[data-bs-theme="dark"] .btn-soft-info      { --vz-btn-color:#60a5fa; --vz-btn-bg:rgba(59,130,246,.20); }
+[data-bs-theme="dark"] .btn-soft-secondary { --vz-btn-color:#cbd5e1; --vz-btn-bg:rgba(148,163,184,.18); }
+[data-bs-theme="dark"] .btn-soft-primary   { --vz-btn-color:#a5b4fc; --vz-btn-bg:rgba(129,116,255,.22); }
+[data-bs-theme="dark"] .btn-soft-warning   { --vz-btn-color:#fbbf24; --vz-btn-bg:rgba(245,158,11,.22); }
+
+/* ============================================================
+   MENÚ DE ACCIONES (dropdown ⋮) — moderno y color-coded
+   Cada opción con su ícono en un chip de color; el hover tinta la
+   fila con el color de la acción para lectura visual inmediata.
+   Clase .actions-menu en el <ul>; .act-item + variante en cada item.
+   ============================================================ */
+.actions-menu {
+  min-width: 224px;
+  padding: 6px;
+  border: 1px solid rgba(15, 23, 42, .08);
+  border-radius: 14px;
+  box-shadow: 0 12px 32px -8px rgba(15, 23, 42, .28), 0 2px 8px rgba(15, 23, 42, .08);
+  animation: actionsMenuIn .14s ease-out;
+}
+@keyframes actionsMenuIn {
+  from { opacity: 0; transform: translateY(-6px) scale(.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+.actions-menu .act-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border-radius: 10px;
+  font-weight: 500;
+  font-size: .85rem;
+  color: #334155;
+  white-space: nowrap;
+  transition: background .14s ease, color .14s ease, transform .08s ease;
+}
+.actions-menu .act-item:active { transform: scale(.98); }
+.actions-menu .act-ic {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px; height: 30px;
+  border-radius: 9px;
+  font-size: 1.05rem;
+  flex-shrink: 0;
+  transition: transform .14s ease;
+}
+.actions-menu .act-item:hover .act-ic { transform: scale(1.12); }
+.actions-menu .dropdown-divider { margin: 5px 8px; opacity: .5; }
+
+/* Variantes (chip + tinte de hover por color de acción) */
+.actions-menu .act-edit    .act-ic { background: rgba(22,163,74,.14);  color: #16a34a; }
+.actions-menu .act-edit:hover,
+.actions-menu .act-edit:focus      { background: rgba(22,163,74,.10);  color: #15803d; }
+.actions-menu .act-del     .act-ic { background: rgba(220,38,38,.14);  color: #dc2626; }
+.actions-menu .act-del:hover,
+.actions-menu .act-del:focus       { background: rgba(220,38,38,.10);  color: #b91c1c; }
+.actions-menu .act-warn    .act-ic { background: rgba(245,158,11,.16); color: #d97706; }
+.actions-menu .act-warn:hover,
+.actions-menu .act-warn:focus      { background: rgba(245,158,11,.12); color: #b45309; }
+.actions-menu .act-restore .act-ic { background: rgba(37,99,235,.14);  color: #2563eb; }
+.actions-menu .act-restore:hover,
+.actions-menu .act-restore:focus   { background: rgba(37,99,235,.10);  color: #1d4ed8; }
+.actions-menu .act-pdf     .act-ic { background: rgba(71,85,105,.14);  color: #475569; }
+.actions-menu .act-pdf:hover,
+.actions-menu .act-pdf:focus       { background: rgba(71,85,105,.10);  color: #334155; }
+.actions-menu .act-primary .act-ic { background: rgba(79,70,229,.14);  color: #4f46e5; }
+.actions-menu .act-primary:hover,
+.actions-menu .act-primary:focus   { background: rgba(79,70,229,.10);  color: #4338ca; }
+
+/* Neutraliza el fondo azul que Bootstrap aplica en :active */
+.actions-menu .act-item:active { background-color: rgba(15,23,42,.05); }
+
+/* Evita que un contenedor .table-responsive recorte el menú ⋮ cuando está
+   abierto (p. ej. tabla de Insumos). Solo libera el overflow mientras hay un
+   menú visible; el resto del tiempo conserva el scroll horizontal. */
+.table-responsive:has(.actions-menu.show) { overflow: visible; }
+
+/* Dark mode */
+[data-bs-theme="dark"] .actions-menu {
+  border-color: rgba(255,255,255,.08);
+  box-shadow: 0 12px 32px -8px rgba(0,0,0,.6);
+}
+[data-bs-theme="dark"] .actions-menu .act-item { color: #cbd5e1; }
+[data-bs-theme="dark"] .actions-menu .act-edit    .act-ic { background: rgba(34,197,94,.20);   color: #4ade80; }
+[data-bs-theme="dark"] .actions-menu .act-del     .act-ic { background: rgba(239,68,68,.20);   color: #f87171; }
+[data-bs-theme="dark"] .actions-menu .act-warn    .act-ic { background: rgba(245,158,11,.22);  color: #fbbf24; }
+[data-bs-theme="dark"] .actions-menu .act-restore .act-ic { background: rgba(59,130,246,.22);  color: #60a5fa; }
+[data-bs-theme="dark"] .actions-menu .act-pdf     .act-ic { background: rgba(148,163,184,.20); color: #cbd5e1; }
+[data-bs-theme="dark"] .actions-menu .act-primary .act-ic { background: rgba(99,102,241,.24);  color: #a5b4fc; }
+[data-bs-theme="dark"] .actions-menu .act-primary:hover  { background: rgba(99,102,241,.16); }
+[data-bs-theme="dark"] .actions-menu .act-edit:hover    { background: rgba(34,197,94,.14); }
+[data-bs-theme="dark"] .actions-menu .act-del:hover     { background: rgba(239,68,68,.14); }
+[data-bs-theme="dark"] .actions-menu .act-warn:hover    { background: rgba(245,158,11,.16); }
+[data-bs-theme="dark"] .actions-menu .act-restore:hover { background: rgba(59,130,246,.16); }
+[data-bs-theme="dark"] .actions-menu .act-pdf:hover     { background: rgba(148,163,184,.14); }
+
 /* Botones de acción centrados en su celda */
 .table td:last-child {
   text-align: center;
@@ -1302,27 +1418,143 @@ header#page-topbar,
 }
 
 /* ════════════════════════════════════════════════════════════════════
-   COTIZACIÓN — WIZARD 3 PASOS  (Cliente · Productos · Resumen)
+   WIZARD UNIFICADO  (Cotizaciones · Pedidos)
    Componentes: stepper, step-content, kpis, empty-state, resumen-card,
    tabla resumen, footer del wizard. Light + dark mode.
    ════════════════════════════════════════════════════════════════════ */
 
 /* ── Stepper visual ─────────────────────────────────────────────── */
-.cot-stepper-wrapper {
+.wiz-stepper-wrapper {
     background: linear-gradient(180deg, #f6f9fd 0%, #ffffff 100%);
     padding: 18px 24px 16px;
     border-bottom: 1px solid rgba(30, 60, 114, 0.08);
+    display: flex;
+    align-items: center;
+    gap: 16px;
 }
 
-.cot-stepper {
+/* Truco de 3 columnas: dos laterales de igual ancho mantienen el stepper
+   perfectamente centrado mientras el chip del cliente ocupa el gutter derecho. */
+.wiz-stepper-side {
+    flex: 1 1 0;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+}
+.wiz-stepper-side--right { justify-content: flex-end; }
+
+/* ── Chip cliente persistente (visible en pasos 2+) ─────────────────
+   Vive en el espacio libre a la derecha del stepper. Mantiene visible
+   "para quién" es la cotización/pedido en todos los pasos.
+   Compartido por ambos wizards (#cot-cliente-banner / #ped-cliente-banner). */
+.wiz-client-banner {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    max-width: 100%;
+    min-width: 0;
+    padding: 5px 12px;
+    background: rgba(255, 255, 255, 0.65);
+    border: 1px solid rgba(30, 60, 114, 0.12);
+    border-radius: 999px;
+    box-shadow: 0 2px 8px -4px rgba(30, 60, 114, 0.25);
+    animation: wizClientBannerIn 0.25s ease;
+}
+.wiz-client-banner[hidden] { display: none; }
+
+.wiz-client-banner-label {
+    flex-shrink: 0;
+    font-size: 0.66rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #64748b;
+}
+
+.wiz-client-banner-avatar {
+    flex-shrink: 0;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.72rem;
+    background: #1e3c72;
+    color: #ffffff;
+    box-shadow: 0 2px 6px -2px rgba(30, 60, 114, 0.45);
+}
+.wiz-client-banner-avatar--img {
+    object-fit: cover;
+    background: #e2e8f0;
+}
+
+.wiz-client-banner-main {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.15;
+    min-width: 0;
+}
+.wiz-client-banner-name {
+    font-weight: 700;
+    font-size: 0.82rem;
+    color: #1e3c72;
+    line-height: 1.2;
+    word-break: break-word;
+}
+.wiz-client-banner-sub {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 3px 8px;
+    margin-top: 2px;
+}
+.wiz-client-banner-doc {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.68rem;
+    font-weight: 600;
+    color: #475569;
+}
+
+@keyframes wizClientBannerIn {
+    from { opacity: 0; transform: translateY(-4px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Variante compacta del chip de cliente (p. ej. dentro de cards) */
+.wiz-client-banner--sm {
+    padding: 3px 11px 3px 4px;
+    gap: 6px;
+}
+.wiz-client-banner--sm .wiz-client-banner-avatar {
+    width: 24px;
+    height: 24px;
+    font-size: 0.64rem;
+    box-shadow: none;
+}
+.wiz-client-banner--sm .wiz-client-banner-name {
+    font-size: 0.78rem;
+}
+
+/* Pantallas chicas: los chips bajan apilados y centrados bajo el stepper */
+@media (max-width: 991.98px) {
+    .wiz-stepper-wrapper { flex-wrap: wrap; row-gap: 10px; }
+    .wiz-stepper { flex: 1 1 100%; max-width: none; margin: 0 auto; order: 1; }
+    .wiz-stepper-side { flex: 1 1 100%; justify-content: center; }
+    .wiz-stepper-side--left { order: 2; }
+    .wiz-stepper-side--right { order: 3; }
+}
+
+.wiz-stepper {
     display: flex;
     align-items: flex-start;
+    flex: 0 1 540px;
     max-width: 540px;
-    margin: 0 auto;
     gap: 4px;
 }
 
-.cot-step-marker {
+.wiz-step-marker {
     flex: 0 0 auto;
     background: transparent;
     border: 0;
@@ -1336,9 +1568,9 @@ header#page-topbar,
     transition: color 0.2s ease;
 }
 
-.cot-step-marker:hover { color: #1e3c72; }
+.wiz-step-marker:hover { color: #1e3c72; }
 
-.cot-step-marker .cot-step-dot {
+.wiz-step-marker .wiz-step-dot {
     width: 32px;
     height: 32px;
     border-radius: 50%;
@@ -1354,7 +1586,7 @@ header#page-topbar,
     position: relative;
 }
 
-.cot-step-marker .cot-step-label {
+.wiz-step-marker .wiz-step-label {
     font-size: 0.68rem;
     text-transform: uppercase;
     letter-spacing: 0.08em;
@@ -1362,11 +1594,11 @@ header#page-topbar,
     color: inherit;
 }
 
-.cot-step-marker.is-active {
+.wiz-step-marker.is-active {
     color: #1e3c72;
 }
-.cot-step-marker.is-active .cot-step-label { color: #1e3c72; }
-.cot-step-marker.is-active .cot-step-dot {
+.wiz-step-marker.is-active .wiz-step-label { color: #1e3c72; }
+.wiz-step-marker.is-active .wiz-step-dot {
     background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
     border-color: #1e3c72;
     color: #ffffff;
@@ -1374,12 +1606,12 @@ header#page-topbar,
     transform: scale(1.05);
 }
 
-.cot-step-marker.is-complete .cot-step-dot {
+.wiz-step-marker.is-complete .wiz-step-dot {
     background: #00d9a5;
     border-color: #00d9a5;
     color: transparent;
 }
-.cot-step-marker.is-complete .cot-step-dot::after {
+.wiz-step-marker.is-complete .wiz-step-dot::after {
     content: "✓";
     position: absolute;
     inset: 0;
@@ -1390,10 +1622,10 @@ header#page-topbar,
     font-size: 1rem;
     font-weight: 700;
 }
-.cot-step-marker.is-complete { color: #006b52; }
-.cot-step-marker.is-complete .cot-step-label { color: #006b52; }
+.wiz-step-marker.is-complete { color: #006b52; }
+.wiz-step-marker.is-complete .wiz-step-label { color: #006b52; }
 
-.cot-step-line {
+.wiz-step-line {
     flex: 1 1 auto;
     height: 2px;
     background: #e2e8f0;
@@ -1403,7 +1635,7 @@ header#page-topbar,
     overflow: hidden;
 }
 
-.cot-step-line-fill {
+.wiz-step-line-fill {
     display: block;
     height: 100%;
     width: 0%;
@@ -1412,14 +1644,14 @@ header#page-topbar,
 }
 
 /* ── Wizard body & step content ─────────────────────────────────── */
-.cot-wizard-body {
+.wiz-wizard-body {
     padding: 24px 28px !important;
     min-height: 460px;
     background: #fafbfd;
 }
 
-.cot-step-content { display: none; }
-.cot-step-content.is-active {
+.wiz-step-content { display: none; }
+.wiz-step-content.is-active {
     display: block;
     animation: cotStepIn 0.32s cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -1429,8 +1661,8 @@ header#page-topbar,
     to   { opacity: 1; transform: translateX(0); }
 }
 
-.cot-step-header { margin-bottom: 22px; }
-.cot-step-tag {
+.wiz-step-header { margin-bottom: 22px; }
+.wiz-step-tag {
     display: inline-block;
     font-size: 0.66rem;
     letter-spacing: 0.18em;
@@ -1439,14 +1671,14 @@ header#page-topbar,
     font-weight: 700;
     margin-bottom: 6px;
 }
-.cot-step-title {
+.wiz-step-title {
     font-size: 1.25rem;
     font-weight: 600;
     color: #1e3c72;
     margin: 0 0 4px;
     line-height: 1.2;
 }
-.cot-step-desc {
+.wiz-step-desc {
     font-size: 0.85rem;
     color: #64748b;
     margin: 0;
@@ -1653,7 +1885,7 @@ header#page-topbar,
 [data-bs-theme="dark"] .cot-resumen-unit-note { color: #64748b; }
 
 /* ── Footer del wizard ─────────────────────────────────────────── */
-.cot-wizard-footer {
+.wiz-wizard-footer {
     background: #f8fafc !important;
     border-top: 1px solid rgba(30, 60, 114, 0.1) !important;
     display: flex;
@@ -1663,8 +1895,8 @@ header#page-topbar,
     flex-wrap: wrap;
     gap: 10px;
 }
-.cot-wizard-footer-info { color: #64748b; font-size: 0.78rem; }
-.cot-wizard-step-info {
+.wiz-wizard-footer-info { color: #64748b; font-size: 0.78rem; }
+.wiz-wizard-step-info {
     display: inline-flex;
     align-items: center;
     gap: 6px;
@@ -1676,7 +1908,7 @@ header#page-topbar,
     color: #1e3c72;
     font-variant-numeric: tabular-nums;
 }
-.cot-wizard-step-info::before {
+.wiz-wizard-step-info::before {
     content: "PASO";
     font-size: 0.65rem;
     font-weight: 600;
@@ -1684,32 +1916,41 @@ header#page-topbar,
     letter-spacing: 0.12em;
     margin-right: 2px;
 }
-.cot-wizard-footer-actions {
+.wiz-wizard-footer-actions {
     display: flex;
     gap: 8px;
     flex-wrap: wrap;
 }
 
 /* ── Dark mode — Wizard cotización ───────────────────────────── */
-[data-bs-theme="dark"] .cot-stepper-wrapper {
+[data-bs-theme="dark"] .wiz-stepper-wrapper {
     background: linear-gradient(180deg, #161b26 0%, #0f1521 100%);
     border-bottom-color: rgba(255, 255, 255, 0.06);
 }
-[data-bs-theme="dark"] .cot-step-marker { color: #64748b; }
-[data-bs-theme="dark"] .cot-step-marker:hover { color: #cbd5e1; }
-[data-bs-theme="dark"] .cot-step-marker .cot-step-dot {
+[data-bs-theme="dark"] .wiz-step-marker { color: #64748b; }
+[data-bs-theme="dark"] .wiz-step-marker:hover { color: #cbd5e1; }
+[data-bs-theme="dark"] .wiz-step-marker .wiz-step-dot {
     background: #1f2937;
     border-color: #334155;
     color: #94a3b8;
 }
-[data-bs-theme="dark"] .cot-step-marker.is-active .cot-step-label { color: #cbd5e1; }
-[data-bs-theme="dark"] .cot-step-marker.is-complete .cot-step-label { color: #34d399; }
-[data-bs-theme="dark"] .cot-step-line { background: #334155; }
+[data-bs-theme="dark"] .wiz-step-marker.is-active .wiz-step-label { color: #cbd5e1; }
+[data-bs-theme="dark"] .wiz-step-marker.is-complete .wiz-step-label { color: #34d399; }
+[data-bs-theme="dark"] .wiz-step-line { background: #334155; }
 
-[data-bs-theme="dark"] .cot-wizard-body { background: #0f1521; }
-[data-bs-theme="dark"] .cot-step-title { color: #e2e8f0; }
-[data-bs-theme="dark"] .cot-step-desc { color: #94a3b8; }
-[data-bs-theme="dark"] .cot-step-tag { color: #34d399; }
+[data-bs-theme="dark"] .wiz-client-banner {
+    background: rgba(30, 41, 59, 0.7);
+    border-color: rgba(255, 255, 255, 0.12);
+    box-shadow: 0 2px 8px -4px rgba(0, 0, 0, 0.5);
+}
+[data-bs-theme="dark"] .wiz-client-banner-label { color: #94a3b8; }
+[data-bs-theme="dark"] .wiz-client-banner-name { color: #e2e8f0; }
+[data-bs-theme="dark"] .wiz-client-banner-doc { color: #cbd5e1; }
+
+[data-bs-theme="dark"] .wiz-wizard-body { background: #0f1521; }
+[data-bs-theme="dark"] .wiz-step-title { color: #e2e8f0; }
+[data-bs-theme="dark"] .wiz-step-desc { color: #94a3b8; }
+[data-bs-theme="dark"] .wiz-step-tag { color: #34d399; }
 
 [data-bs-theme="dark"] .cot-kpi {
     background: #1f2937;
@@ -1738,17 +1979,17 @@ header#page-topbar,
     border-bottom-color: rgba(255, 255, 255, 0.05);
 }
 
-[data-bs-theme="dark"] .cot-wizard-footer {
+[data-bs-theme="dark"] .wiz-wizard-footer {
     background: #0f1521 !important;
     border-top-color: rgba(255, 255, 255, 0.06) !important;
 }
-[data-bs-theme="dark"] .cot-wizard-footer-info { color: #64748b; }
-[data-bs-theme="dark"] .cot-wizard-step-info {
+[data-bs-theme="dark"] .wiz-wizard-footer-info { color: #64748b; }
+[data-bs-theme="dark"] .wiz-wizard-step-info {
     background: #1f2937;
     border-color: rgba(255, 255, 255, 0.08);
     color: #e2e8f0;
 }
-[data-bs-theme="dark"] .cot-wizard-step-info::before { color: #64748b; }
+[data-bs-theme="dark"] .wiz-wizard-step-info::before { color: #64748b; }
 
 /* ════════════════════════════════════════════════════════════════════
    STEP 1 — UX MEJORADA
@@ -3588,16 +3829,21 @@ header#page-topbar,
 
 /* ── DataTable — anchos de columna (base en .table-operativa) ── */
 #pedidos-table th:nth-child(1) { width: 8%;  text-align: center; }
-#pedidos-table th:nth-child(2) { width: 30%; }
+#pedidos-table th:nth-child(2) { width: 40%; }
 #pedidos-table th:nth-child(3) { width: 14%; }
 #pedidos-table th:nth-child(4) { width: 12%; }
 #pedidos-table th:nth-child(5) { width: 14%; text-align: center; }
-#pedidos-table th:nth-child(6) { width: 22%; text-align: center; }
+#pedidos-table th:nth-child(6) { width: 12%; text-align: center; }
 
 #pedidos-table td:nth-child(5) {
     overflow: visible;
     text-overflow: clip;
     text-align: center;
+}
+
+/* Celda de acciones: overflow visible para que el menú ⋮ no se recorte */
+#pedidos-table td:nth-child(6) {
+    overflow: visible;
 }
 
 /* ── Header gradient para tabla de productos del modal ───────── */
@@ -4013,6 +4259,12 @@ header#page-topbar,
     transition: background-color 0.16s ease;
 }
 
+/* Header "Acciones" centrado (coincide con los botones centrados del cuerpo).
+   La columna de acciones es la última en estas tablas. */
+#insumos-table thead th:last-child,
+#productos-table thead th:last-child,
+#alertas-table thead th:last-child { text-align: center; }
+
 .table-maestro.dataTable tbody tr td {
     border-top: 1px solid rgba(30, 60, 114, 0.07);
     border-bottom: 1px solid rgba(255, 255, 255, 0.7);
@@ -4079,7 +4331,8 @@ header#page-topbar,
 .atlantico-modal .modal-footer {
     background: #f8f9fa;
     border-top: 1px solid rgba(30, 60, 114, 0.08) !important;
-    padding: 0.75rem 1rem;
+    padding: 0.85rem 1.25rem;
+    gap: 0.5rem;
 }
 
 /* Dark mode: footer blanco ilegible en dark */
@@ -4534,15 +4787,16 @@ header#page-topbar,
 .estado-Finalizado { background-color: #198754; }
 .estado-Cancelado  { background-color: #dc3545; }
 
-/* Anchos de columna #ordenes-table */
-#ordenes-table th:nth-child(1) { width: 8%;  text-align: center; }
-#ordenes-table th:nth-child(2) { width: 8%;  text-align: center; }
-#ordenes-table th:nth-child(3) { width: 12%; text-align: center; }
-#ordenes-table th:nth-child(4) { width: 18%; }
-#ordenes-table th:nth-child(5) { width: 15%; }
-#ordenes-table th:nth-child(6) { width: 14%; text-align: center; }
-#ordenes-table th:nth-child(7) { width: 25%; text-align: center; }
+/* Anchos de columna #ordenes-table (7 columnas) */
+#ordenes-table th:nth-child(1) { width: 8%;  text-align: center; } /* Nro. Orden */
+#ordenes-table th:nth-child(2) { width: 9%;  text-align: center; } /* Nro. Pedido */
+#ordenes-table th:nth-child(3) { width: 26%; }                     /* Producto / Empleado */
+#ordenes-table th:nth-child(4) { width: 10%; text-align: center; } /* Cant. Solicitada */
+#ordenes-table th:nth-child(5) { width: 18%; text-align: center; } /* Progreso */
+#ordenes-table th:nth-child(6) { width: 13%; text-align: center; } /* Estado */
+#ordenes-table th:nth-child(7) { width: 16%; text-align: center; } /* Acciones */
 
+/* Estado (6) y Acciones (última) sin recorte para badges y menú ⋮ */
 #ordenes-table td:nth-child(6),
 #ordenes-table td:last-child { overflow: visible; text-overflow: clip; text-align: center; }
 
@@ -4994,6 +5248,45 @@ header#page-topbar,
     background: rgba(14, 165, 233, 0.13) !important;
 }
 [data-bs-theme="dark"] .section-reportes.section-is-active > .menu-link i { color: #38bdf8 !important; }
+
+/* ── SIDEBAR — Hover por sección (Dark Mode) ────────────────
+   Hover sutil (~0.10) inferior a active (~0.22) para no competir.
+──────────────────────────────────────────────────────────── */
+[data-bs-theme="dark"] .navbar-menu .navbar-nav .section-maestros .nav-link:hover {
+    background: rgba(78, 122, 199, 0.12) !important;
+    color: #93c5fd !important;
+}
+[data-bs-theme="dark"] .navbar-menu .navbar-nav .section-maestros .nav-link:hover i {
+    color: #93c5fd !important;
+}
+[data-bs-theme="dark"] .navbar-menu .navbar-nav .section-maestros .nav-sm .nav-link:hover::before {
+    background-color: #93c5fd !important;
+    opacity: 1;
+}
+
+[data-bs-theme="dark"] .navbar-menu .navbar-nav .section-operativa .nav-link:hover {
+    background: rgba(16, 185, 129, 0.12) !important;
+    color: #6ee7b7 !important;
+}
+[data-bs-theme="dark"] .navbar-menu .navbar-nav .section-operativa .nav-link:hover i {
+    color: #6ee7b7 !important;
+}
+[data-bs-theme="dark"] .navbar-menu .navbar-nav .section-operativa .nav-sm .nav-link:hover::before {
+    background-color: #6ee7b7 !important;
+    opacity: 1;
+}
+
+[data-bs-theme="dark"] .navbar-menu .navbar-nav .section-reportes .nav-link:hover {
+    background: rgba(14, 165, 233, 0.12) !important;
+    color: #7dd3fc !important;
+}
+[data-bs-theme="dark"] .navbar-menu .navbar-nav .section-reportes .nav-link:hover i {
+    color: #7dd3fc !important;
+}
+[data-bs-theme="dark"] .navbar-menu .navbar-nav .section-reportes .nav-sm .nav-link:hover::before {
+    background-color: #7dd3fc !important;
+    opacity: 1;
+}
 
 [data-bs-theme="dark"] .menu-dropdown {
     background-color: #1f2229 !important;
@@ -5627,6 +5920,197 @@ header#page-topbar,
     background: #4e7ac7;
 }
 
+/* ================================================================
+   FILTROS AVANZADOS — Variante OPERATIVA (.emerald-theme)
+   Paleta: Emerald Operativo #064e3b / #10b981
+   Aplica a: Cotizaciones, Pedidos, Órdenes de Producción,
+             Producción Diaria, Movimiento de Inventario, Alertas.
+   Estrategia: overrides scoped sobre las clases estructurales
+   .navy-filter-* cuando el wrapper tiene .emerald-theme.
+   ================================================================ */
+
+/* ── Wrapper ─────────────────────────────────────────────────── */
+.advanced-filters-wrapper.emerald-theme {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.04) 0%, rgba(16, 185, 129, 0.08) 100%);
+    border: 1px solid rgba(6, 78, 59, 0.18);
+    border-left: 4px solid var(--op-accent);
+}
+
+.advanced-filters-wrapper.emerald-theme:hover {
+    box-shadow: 0 2px 12px rgba(16, 185, 129, 0.12);
+}
+
+/* ── Toggle / Header ─────────────────────────────────────────── */
+.advanced-filters-wrapper.emerald-theme .navy-filter-toggle,
+.advanced-filters-wrapper.emerald-theme .navy-filter-header {
+    background: rgba(16, 185, 129, 0.05);
+}
+
+.advanced-filters-wrapper.emerald-theme .navy-filter-toggle:hover {
+    background: rgba(16, 185, 129, 0.1);
+}
+
+.advanced-filters-wrapper.emerald-theme .navy-filter-toggle:not(.collapsed),
+.advanced-filters-wrapper.emerald-theme .navy-filter-header {
+    border-bottom: 1px solid rgba(16, 185, 129, 0.15);
+}
+
+.advanced-filters-wrapper.emerald-theme .navy-filter-header.is-collapsed {
+    border-bottom: none;
+}
+
+/* ── Chevron / Título / Labels ───────────────────────────────── */
+.advanced-filters-wrapper.emerald-theme .navy-filter-chevron,
+.advanced-filters-wrapper.emerald-theme .navy-filter-title,
+.advanced-filters-wrapper.emerald-theme .navy-filter-title i,
+.advanced-filters-wrapper.emerald-theme .navy-filter-label,
+.advanced-filters-wrapper.emerald-theme .navy-filter-btn,
+.advanced-filters-wrapper.emerald-theme .navy-filter-btn .navy-filter-chevron {
+    color: var(--op-dark);
+}
+
+/* ── Select / Input ──────────────────────────────────────────── */
+.advanced-filters-wrapper.emerald-theme .navy-filter-select,
+.advanced-filters-wrapper.emerald-theme .navy-filter-input {
+    border-color: rgba(6, 78, 59, 0.25) !important;
+}
+
+.advanced-filters-wrapper.emerald-theme .navy-filter-select:hover,
+.advanced-filters-wrapper.emerald-theme .navy-filter-input:hover {
+    border-color: rgba(6, 78, 59, 0.45) !important;
+}
+
+.advanced-filters-wrapper.emerald-theme .navy-filter-select:focus,
+.advanced-filters-wrapper.emerald-theme .navy-filter-input:focus {
+    border-color: var(--op-accent) !important;
+    box-shadow: 0 0 0 0.2rem rgba(16, 185, 129, 0.18) !important;
+}
+
+.advanced-filters-wrapper.emerald-theme .navy-filter-input-icon {
+    color: rgba(6, 78, 59, 0.45);
+}
+
+.advanced-filters-wrapper.emerald-theme .navy-filter-input:focus ~ .navy-filter-input-icon {
+    color: var(--op-dark);
+}
+
+/* ── Header unificado: divisor + search ──────────────────────── */
+.advanced-filters-wrapper.emerald-theme .navy-header-divider {
+    background: rgba(6, 78, 59, 0.2);
+}
+
+.advanced-filters-wrapper.emerald-theme .navy-header-search > i {
+    color: rgba(6, 78, 59, 0.5);
+}
+
+.advanced-filters-wrapper.emerald-theme .navy-header-search:focus-within > i {
+    color: var(--op-dark);
+}
+
+.advanced-filters-wrapper.emerald-theme .navy-filter-btn:hover {
+    background: rgba(16, 185, 129, 0.1);
+}
+
+/* ── Badge contador ──────────────────────────────────────────── */
+.advanced-filters-wrapper.emerald-theme .navy-filter-badge {
+    background: var(--op-dark);
+}
+
+/* ── Botón limpiar (btn-navy-outline en wrapper emerald) ─────── */
+.advanced-filters-wrapper.emerald-theme .btn-navy-outline {
+    color: var(--op-dark) !important;
+    border-color: rgba(6, 78, 59, 0.35) !important;
+}
+
+.advanced-filters-wrapper.emerald-theme .btn-navy-outline:hover {
+    background: var(--op-dark) !important;
+    color: #ffffff !important;
+    border-color: var(--op-dark) !important;
+    box-shadow: 0 2px 8px rgba(6, 78, 59, 0.28) !important;
+}
+
+/* ── DARK MODE — Variante Emerald ─────────────────────────────── */
+[data-bs-theme="dark"] .advanced-filters-wrapper.emerald-theme {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.06) 0%, rgba(16, 185, 129, 0.1) 100%);
+    border-color: rgba(16, 185, 129, 0.22);
+    border-left-color: var(--op-accent);
+}
+
+[data-bs-theme="dark"] .advanced-filters-wrapper.emerald-theme .navy-filter-toggle,
+[data-bs-theme="dark"] .advanced-filters-wrapper.emerald-theme .navy-filter-header {
+    background: rgba(16, 185, 129, 0.06);
+}
+
+[data-bs-theme="dark"] .advanced-filters-wrapper.emerald-theme .navy-filter-toggle:hover,
+[data-bs-theme="dark"] .advanced-filters-wrapper.emerald-theme .navy-filter-btn:hover {
+    background: rgba(16, 185, 129, 0.12);
+}
+
+[data-bs-theme="dark"] .advanced-filters-wrapper.emerald-theme .navy-filter-toggle:not(.collapsed),
+[data-bs-theme="dark"] .advanced-filters-wrapper.emerald-theme .navy-filter-header {
+    border-bottom-color: rgba(16, 185, 129, 0.18);
+}
+
+[data-bs-theme="dark"] .advanced-filters-wrapper.emerald-theme .navy-filter-header.is-collapsed {
+    border-bottom: none;
+}
+
+[data-bs-theme="dark"] .advanced-filters-wrapper.emerald-theme .navy-filter-chevron,
+[data-bs-theme="dark"] .advanced-filters-wrapper.emerald-theme .navy-filter-title,
+[data-bs-theme="dark"] .advanced-filters-wrapper.emerald-theme .navy-filter-title i,
+[data-bs-theme="dark"] .advanced-filters-wrapper.emerald-theme .navy-filter-label,
+[data-bs-theme="dark"] .advanced-filters-wrapper.emerald-theme .navy-filter-btn,
+[data-bs-theme="dark"] .advanced-filters-wrapper.emerald-theme .navy-filter-btn .navy-filter-chevron {
+    color: #6ee7b7;
+}
+
+[data-bs-theme="dark"] .advanced-filters-wrapper.emerald-theme .navy-filter-select,
+[data-bs-theme="dark"] .advanced-filters-wrapper.emerald-theme .navy-filter-input {
+    border-color: rgba(16, 185, 129, 0.3) !important;
+}
+
+[data-bs-theme="dark"] .advanced-filters-wrapper.emerald-theme .navy-filter-select:focus,
+[data-bs-theme="dark"] .advanced-filters-wrapper.emerald-theme .navy-filter-input:focus {
+    border-color: var(--op-accent) !important;
+    box-shadow: 0 0 0 0.2rem rgba(16, 185, 129, 0.22) !important;
+}
+
+[data-bs-theme="dark"] .advanced-filters-wrapper.emerald-theme .navy-filter-input-icon {
+    color: rgba(110, 231, 183, 0.45);
+}
+
+[data-bs-theme="dark"] .advanced-filters-wrapper.emerald-theme .navy-filter-input:focus ~ .navy-filter-input-icon {
+    color: #6ee7b7;
+}
+
+[data-bs-theme="dark"] .advanced-filters-wrapper.emerald-theme .navy-header-divider {
+    background: rgba(16, 185, 129, 0.28);
+}
+
+[data-bs-theme="dark"] .advanced-filters-wrapper.emerald-theme .navy-header-search > i {
+    color: rgba(110, 231, 183, 0.5);
+}
+
+[data-bs-theme="dark"] .advanced-filters-wrapper.emerald-theme .navy-header-search:focus-within > i {
+    color: #6ee7b7;
+}
+
+[data-bs-theme="dark"] .advanced-filters-wrapper.emerald-theme .navy-filter-badge {
+    background: var(--op-accent);
+    color: #052e1c;
+}
+
+[data-bs-theme="dark"] .advanced-filters-wrapper.emerald-theme .btn-navy-outline {
+    color: #6ee7b7 !important;
+    border-color: rgba(16, 185, 129, 0.42) !important;
+}
+
+[data-bs-theme="dark"] .advanced-filters-wrapper.emerald-theme .btn-navy-outline:hover {
+    background: var(--op-accent) !important;
+    color: #052e1c !important;
+    border-color: var(--op-accent) !important;
+}
+
 /* ── Botón toggle Historial — Patrón Maestro ─────────────────── */
 .btn-historial {
     display: inline-flex;
@@ -5708,3 +6192,640 @@ header#page-topbar,
     color: #bfdbfe !important;
     box-shadow: 0 3px 10px rgba(78, 122, 199, 0.15);
 }
+
+/* ================================================================
+   NOTIFICACIONES — Dropdown del header (campanita)
+   Paleta navy institucional, alineada con .atlantico-modal.
+   ================================================================ */
+.notif-dropdown-head {
+    position: relative;
+    background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+    color: #ffffff;
+    padding: 0.85rem 1rem;
+    border-radius: 0.5rem 0.5rem 0 0;
+    overflow: hidden;
+}
+
+/* Decoración sutil: dos blobs radiales tipo brillo, sin imágenes */
+.notif-dropdown-head::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+        radial-gradient(circle at 12% 12%, rgba(255, 255, 255, 0.12) 0%, transparent 38%),
+        radial-gradient(circle at 88% 80%, rgba(255, 255, 255, 0.07) 0%, transparent 42%);
+    pointer-events: none;
+}
+
+.notif-dropdown-head > * { position: relative; z-index: 1; }
+
+.notif-dropdown-head .notif-title {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    margin: 0;
+    font-size: 0.98rem;
+    font-weight: 600;
+    color: #ffffff;
+    letter-spacing: 0.2px;
+}
+
+.notif-dropdown-head .notif-title i {
+    font-size: 1.15rem;
+    color: rgba(255, 255, 255, 0.92);
+}
+
+.notif-dropdown-head .notif-subtitle {
+    margin: 0.15rem 0 0;
+    font-size: 0.72rem;
+    color: rgba(255, 255, 255, 0.7);
+    letter-spacing: 0.2px;
+}
+
+/* Botón refresh — ghost light sobre fondo navy */
+.notif-dropdown-head .btn-notif-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    background: rgba(255, 255, 255, 0.08);
+    color: #ffffff;
+    border-radius: 50%;
+    transition: all 0.18s ease;
+}
+
+.notif-dropdown-head .btn-notif-action:hover {
+    background: rgba(255, 255, 255, 0.18);
+    border-color: rgba(255, 255, 255, 0.35);
+    transform: rotate(180deg);
+}
+
+.notif-dropdown-head .btn-notif-action i {
+    font-size: 0.95rem;
+    line-height: 1;
+}
+
+/* Footer link "Ver todas" */
+.notif-footer {
+    padding: 0.55rem 0.85rem;
+    border-top: 1px solid rgba(30, 60, 114, 0.08);
+    text-align: center;
+    background: rgba(30, 60, 114, 0.025);
+    border-radius: 0 0 0.5rem 0.5rem;
+}
+
+.notif-footer a {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #1e3c72;
+    text-decoration: none;
+    letter-spacing: 0.2px;
+    transition: color 0.15s ease;
+}
+
+.notif-footer a:hover { color: #2a5298; }
+
+.notif-footer a i { font-size: 0.95rem; transition: transform 0.18s ease; }
+.notif-footer a:hover i { transform: translateX(3px); }
+
+/* ── DARK MODE ───────────────────────────────────────────────── */
+[data-bs-theme="dark"] .notif-dropdown-head {
+    background: linear-gradient(135deg, #132649 0%, #1e3c72 100%);
+}
+
+[data-bs-theme="dark"] .notif-footer {
+    border-top-color: rgba(78, 122, 199, 0.18);
+    background: rgba(78, 122, 199, 0.06);
+}
+
+[data-bs-theme="dark"] .notif-footer a { color: #93c5fd; }
+[data-bs-theme="dark"] .notif-footer a:hover { color: #bfdbfe; }
+
+/* ================================================================
+   HEADER — Pills informativos (fecha, BCV)
+   Fix: con la campanita visible queda menos espacio horizontal y
+   "Bs. 535,39" se rompía en 2 líneas, inflando los pills.
+   ================================================================ */
+.topbar-info-pill {
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.topbar-info-pill,
+.topbar-info-pill * {
+    white-space: nowrap;
+}
+
+/* Pill del usuario (nombre + rol) — evita que el nombre se parta en 2 líneas */
+.topbar-user .header-profile-user ~ * ,
+.topbar-user span {
+    white-space: nowrap;
+}
+
+/* ── Bloque central del topbar (nombre del sistema + subtítulo) ── */
+.topbar-brand-title {
+    font-size: 19px;
+    line-height: 1.25;
+    letter-spacing: 0.4px;
+    white-space: nowrap;
+    margin-bottom: 2px !important;
+}
+
+.topbar-brand-subtitle {
+    font-size: 12.5px;
+    line-height: 1.3;
+    font-weight: 500;
+    letter-spacing: 0.1px;
+    white-space: nowrap;
+    opacity: 0.78;
+}
+
+@media (max-width: 1400px) {
+    .topbar-brand-title    { font-size: 17px; }
+    .topbar-brand-subtitle { font-size: 11.5px; }
+}
+
+/* ================================================================
+   DASHBOARD — KPI cards operativos + tira de maestros
+   ================================================================ */
+.dash-kpi {
+    border-left: 4px solid transparent;
+    transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.dash-kpi:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+}
+
+.dash-kpi--warning { border-left-color: #f7b84b; }
+.dash-kpi--emerald { border-left-color: #0ab39c; }
+.dash-kpi--danger  { border-left-color: #f06548; }
+.dash-kpi--sky     { border-left-color: #299cdb; }
+
+/* Tira secundaria de maestros */
+.dash-mini a {
+    transition: transform 0.15s ease;
+    color: inherit;
+}
+
+.dash-mini a:hover {
+    transform: translateY(-2px);
+}
+
+.dash-mini + .dash-mini {
+    border-left: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+[data-bs-theme="dark"] .dash-kpi:hover {
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+}
+
+[data-bs-theme="dark"] .dash-mini + .dash-mini {
+    border-left-color: rgba(255, 255, 255, 0.06);
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   PEDIDO WIZARD — PASO 2: PRODUCTOS
+   Banner importar, tarjetas de producto, KPI total
+   ════════════════════════════════════════════════════════════════════ */
+
+/* ── Banner importar desde cotización ───────────────────────── */
+.ped-import-cot-banner {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 18px;
+    background: linear-gradient(135deg, rgba(30,60,114,0.05) 0%, rgba(0,217,165,0.05) 100%);
+    border: 1px dashed rgba(30,60,114,0.28);
+    border-radius: 10px;
+    transition: border-color 0.18s, background 0.18s;
+}
+.ped-import-cot-banner:hover {
+    border-color: rgba(0,217,165,0.5);
+    background: rgba(0,217,165,0.05);
+}
+.ped-import-cot-banner-icon {
+    width: 42px;
+    height: 42px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+    background: rgba(0,217,165,0.14);
+    color: #00b88c;
+    font-size: 1.3rem;
+    flex-shrink: 0;
+}
+.ped-import-cot-banner-title {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: #1e3c72;
+    margin-bottom: 2px;
+}
+.ped-import-cot-banner-desc {
+    font-size: 0.74rem;
+    color: #64748b;
+    margin: 0;
+}
+
+/* ── Tarjeta de producto ─────────────────────────────────────── */
+.ped-prod-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px 14px;
+    background: #ffffff;
+    border: 1px solid rgba(30,60,114,0.12);
+    border-radius: 10px;
+    transition: box-shadow 0.18s;
+}
+.ped-prod-card:hover { box-shadow: 0 4px 14px -6px rgba(30,60,114,0.18); }
+
+.ped-prod-icon {
+    width: 38px;
+    height: 38px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    background: rgba(30,60,114,0.08);
+    color: #1e3c72;
+    font-size: 1.1rem;
+    flex-shrink: 0;
+}
+.ped-prod-meta { flex: 1; min-width: 0; }
+.ped-prod-nombre {
+    font-size: 0.84rem;
+    font-weight: 700;
+    color: #1e3c72;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 3px;
+}
+.ped-prod-attrs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    align-items: center;
+}
+.ped-prod-attr {
+    font-size: 0.72rem;
+    color: #64748b;
+    background: rgba(0,0,0,0.04);
+    border-radius: 4px;
+    padding: 1px 7px;
+}
+.ped-inherited-badge {
+    font-size: 0.68rem;
+    font-weight: 700;
+    background: rgba(0,217,165,0.14);
+    color: #006b52;
+    border-radius: 4px;
+    padding: 1px 7px;
+}
+.ped-prod-subtotal {
+    font-size: 0.92rem;
+    font-weight: 700;
+    color: #1e3c72;
+    white-space: nowrap;
+    align-self: center;
+    min-width: 76px;
+    text-align: right;
+}
+.ped-prod-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex-shrink: 0;
+    align-self: center;
+}
+.ped-prod-actions .btn { padding: 3px 8px; font-size: 0.74rem; }
+
+/* ── Dark mode — Paso 2 productos ───────────────────────────── */
+[data-bs-theme="dark"] .ped-import-cot-banner {
+    background: linear-gradient(135deg, rgba(30,60,114,0.14) 0%, rgba(0,217,165,0.08) 100%);
+    border-color: rgba(0,217,165,0.22);
+}
+[data-bs-theme="dark"] .ped-import-cot-banner:hover {
+    border-color: rgba(0,217,165,0.48);
+    background: rgba(0,217,165,0.09);
+}
+[data-bs-theme="dark"] .ped-import-cot-banner-icon {
+    background: rgba(0,217,165,0.18);
+    color: #34d399;
+}
+[data-bs-theme="dark"] .ped-import-cot-banner-title { color: #e2e8f0; }
+[data-bs-theme="dark"] .ped-import-cot-banner-desc  { color: #64748b; }
+
+[data-bs-theme="dark"] .ped-prod-card {
+    background: #1f2937;
+    border-color: rgba(255,255,255,0.07);
+}
+[data-bs-theme="dark"] .ped-prod-card:hover { box-shadow: 0 4px 14px -6px rgba(0,0,0,0.45); }
+[data-bs-theme="dark"] .ped-prod-icon {
+    background: rgba(255,255,255,0.08);
+    color: #cbd5e1;
+}
+[data-bs-theme="dark"] .ped-prod-nombre   { color: #e2e8f0; }
+[data-bs-theme="dark"] .ped-prod-attr     { color: #94a3b8; background: rgba(255,255,255,0.05); }
+[data-bs-theme="dark"] .ped-inherited-badge {
+    background: rgba(0,217,165,0.18);
+    color: #34d399;
+}
+[data-bs-theme="dark"] .ped-prod-subtotal { color: #ffffff; }
+
+/* ── Modo protegido (.ped-wiz-locked): cliente + productos de solo lectura ──
+   Un pedido siempre nace de una cotización (o se está editando uno existente):
+   el cliente y los productos vienen de la cotización y no se modifican aquí.
+   Se oculta el botón "cambiar cliente". Solo fecha entrega, prioridad, estado
+   y pago son editables. La grilla de productos se renderiza sin acciones. */
+.ped-wiz-locked #ped-cliente-change-btn {
+    display: none !important;
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   PEDIDO WIZARD — PASO 3: PAGO
+   Lista aditiva de pagos: multi-transferencia / multi-pago móvil + 1 efectivo.
+   Resumen con barra de progreso + tarjetas de pago + estado vacío.
+   ════════════════════════════════════════════════════════════════════ */
+
+/* Resumen / progreso de pago */
+.ped-pay-summary {
+    border: 1px solid rgba(30,60,114,0.14);
+    border-radius: 14px;
+    padding: 16px 18px;
+    background: linear-gradient(135deg, rgba(30,60,114,0.04) 0%, rgba(0,217,165,0.05) 100%);
+    margin-bottom: 18px;
+}
+.ped-pay-figs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 28px;
+    align-items: flex-end;
+    margin-bottom: 12px;
+}
+.ped-pay-fig { display: flex; flex-direction: column; gap: 2px; }
+.ped-pay-fig-label {
+    font-size: 0.66rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #64748b;
+}
+.ped-pay-fig-value {
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: #1e3c72;
+    font-variant-numeric: tabular-nums;
+}
+.ped-pay-fig--abono .ped-pay-fig-value { color: #047857; }
+.ped-pay-fig--rest .ped-pay-fig-value  { color: #b45309; }
+
+.ped-pay-progress {
+    height: 8px;
+    border-radius: 999px;
+    background: rgba(30,60,114,0.10);
+    overflow: hidden;
+}
+.ped-pay-progress-bar {
+    height: 100%;
+    width: 0;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #1e3c72 0%, #10b981 100%);
+    transition: width 0.35s ease;
+}
+.ped-pay-summary.is-complete .ped-pay-progress-bar { background: linear-gradient(90deg, #059669 0%, #10b981 100%); }
+.ped-pay-summary.is-over .ped-pay-progress-bar     { background: linear-gradient(90deg, #b91c1c 0%, #ef4444 100%); }
+
+.ped-pay-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    margin-top: 10px;
+    font-size: 0.74rem;
+    font-weight: 700;
+    padding: 3px 12px;
+    border-radius: 999px;
+    background: rgba(30,60,114,0.08);
+    color: #475569;
+}
+.ped-pay-summary.is-partial  .ped-pay-badge { background: rgba(180,83,9,0.12); color: #b45309; }
+.ped-pay-summary.is-complete .ped-pay-badge { background: rgba(5,150,105,0.14); color: #047857; }
+.ped-pay-summary.is-over     .ped-pay-badge { background: rgba(185,28,28,0.12); color: #b91c1c; }
+
+/* Card "Métodos de pago": header con título + botones de agregar */
+.ped-pay-card-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px 14px;
+}
+.ped-pay-add-btns { display: flex; flex-wrap: wrap; gap: 8px; }
+.ped-pay-add-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border: 1px solid rgba(30,60,114,0.2);
+    background: rgba(30,60,114,0.04);
+    color: #1e3c72;
+    border-radius: 10px;
+    padding: 7px 14px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+.ped-pay-add-btn i { font-size: 1.05rem; color: #10b981; }
+.ped-pay-add-btn:hover:not(:disabled) {
+    border-color: #10b981;
+    color: #047857;
+    background: rgba(16,185,129,0.08);
+    transform: translateY(-1px);
+}
+.ped-pay-add-btn:hover:not(:disabled) i { color: #047857; }
+.ped-pay-add-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+/* Lista de pagos — filas compactas de una línea + scroll interno acotado */
+.ped-pay-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 268px;
+    overflow-y: auto;
+    padding-right: 4px;
+}
+.ped-pay-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    border: 1px solid rgba(30,60,114,0.16);
+    border-radius: 10px;
+    padding: 8px 12px;
+    background: #fff;
+    animation: wizClientBannerIn 0.2s ease;
+}
+.ped-pay-row-icon {
+    width: 30px;
+    height: 30px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    font-size: 1rem;
+    background: rgba(16,185,129,0.12);
+    color: #047857;
+}
+.ped-pay-row[data-metodo="transferencia"] .ped-pay-row-icon { background: rgba(30,60,114,0.10); color: #1e3c72; }
+.ped-pay-row[data-metodo="pago_movil"] .ped-pay-row-icon { background: rgba(8,145,178,0.12); color: #0e7490; }
+.ped-pay-row-method {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #1e3c72;
+    flex-shrink: 0;
+    min-width: 84px;
+}
+.ped-pay-row-fields { display: flex; gap: 8px; flex: 1 1 240px; min-width: 190px; }
+.ped-pay-row-fields .ped-pay-banco { flex: 1 1 45%; min-width: 0; }
+.ped-pay-row-fields .ped-pay-ref { flex: 1 1 55%; min-width: 0; }
+.ped-pay-amount { width: 140px; margin-left: auto; flex-shrink: 0; }
+.ped-pay-amount .ped-pay-monto { text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
+.ped-pay-fill {
+    flex-shrink: 0;
+    border: 1px solid rgba(30,60,114,0.2);
+    background: rgba(30,60,114,0.04);
+    color: #1e3c72;
+    font-size: 0.7rem;
+    font-weight: 600;
+    border-radius: 7px;
+    padding: 5px 9px;
+    cursor: pointer;
+    white-space: nowrap;
+}
+.ped-pay-fill:hover { background: rgba(16,185,129,0.1); color: #047857; border-color: #10b981; }
+.ped-pay-row-del {
+    flex-shrink: 0;
+    border: 0;
+    background: transparent;
+    color: #94a3b8;
+    font-size: 1.05rem;
+    width: 30px;
+    height: 30px;
+    border-radius: 7px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+.ped-pay-row-del:hover { background: rgba(220,38,38,0.1); color: #dc2626; }
+
+/* Estado del pedido (solo lectura — gobernado por producción) */
+.ped-estado-readonly {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px 14px;
+}
+.ped-estado-readonly .badge { font-size: 0.82rem; padding: 6px 14px; }
+.ped-estado-auto-hint {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.74rem;
+    color: #64748b;
+}
+.ped-estado-auto-hint i { color: #10b981; font-size: 0.95rem; }
+[data-bs-theme="dark"] .ped-estado-auto-hint { color: #94a3b8; }
+
+/* Estado vacío */
+.ped-pay-empty {
+    text-align: center;
+    padding: 26px 16px;
+    border: 1.5px dashed rgba(30,60,114,0.18);
+    border-radius: 12px;
+    color: #94a3b8;
+}
+.ped-pay-empty i { font-size: 1.8rem; display: block; margin-bottom: 8px; color: #cbd5e1; }
+.ped-pay-empty p { font-size: 0.82rem; max-width: 380px; margin: 0 auto; }
+
+/* ── Dark mode — Paso 3 pagos ──────────────────────────────── */
+[data-bs-theme="dark"] .ped-pay-summary {
+    border-color: rgba(78,122,199,0.22);
+    background: linear-gradient(135deg, rgba(30,60,114,0.22) 0%, rgba(0,217,165,0.06) 100%);
+}
+[data-bs-theme="dark"] .ped-pay-fig-label { color: #94a3b8; }
+[data-bs-theme="dark"] .ped-pay-fig-value { color: #e2e8f0; }
+[data-bs-theme="dark"] .ped-pay-fig--abono .ped-pay-fig-value { color: #6ee7b7; }
+[data-bs-theme="dark"] .ped-pay-fig--rest .ped-pay-fig-value { color: #fbbf24; }
+[data-bs-theme="dark"] .ped-pay-progress { background: rgba(255,255,255,0.1); }
+[data-bs-theme="dark"] .ped-pay-badge { background: rgba(255,255,255,0.08); color: #cbd5e1; }
+[data-bs-theme="dark"] .ped-pay-add-btn { background: #1f2937; border-color: rgba(148,163,184,0.4); color: #cbd5e1; }
+[data-bs-theme="dark"] .ped-pay-add-btn:hover:not(:disabled) { border-color: #34d399; color: #6ee7b7; background: rgba(52,211,153,0.1); }
+[data-bs-theme="dark"] .ped-pay-row { background: #1f2937; border-color: rgba(78,122,199,0.22); }
+[data-bs-theme="dark"] .ped-pay-row-method { color: #e2e8f0; }
+[data-bs-theme="dark"] .ped-pay-fill { background: rgba(255,255,255,0.06); color: #cbd5e1; border-color: rgba(148,163,184,0.3); }
+[data-bs-theme="dark"] .ped-pay-empty { border-color: rgba(78,122,199,0.25); color: #94a3b8; }
+
+/* ════════════════════════════════════════════════════════════════════
+   PEDIDO WIZARD — Banner "Datos heredados de cotización" (amber)
+   ════════════════════════════════════════════════════════════════════ */
+.ped-banner-heredado {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 16px;
+    background: rgba(245,158,11,0.10);
+    border: 1px solid rgba(245,158,11,0.35);
+    border-radius: 8px;
+    color: #92400e;
+    font-size: 0.8rem;
+    font-weight: 600;
+    margin-bottom: 14px;
+}
+.ped-banner-heredado i { font-size: 1rem; color: #f59e0b; flex-shrink: 0; }
+
+[data-bs-theme="dark"] .ped-banner-heredado {
+    background: rgba(245,158,11,0.12);
+    border-color: rgba(245,158,11,0.28);
+    color: #fcd34d;
+}
+[data-bs-theme="dark"] .ped-banner-heredado i { color: #fbbf24; }
+
+/* ================================================================
+   SELECT2 — Limitar altura del dropdown a ~5 opciones visibles
+   El select2-bootstrap-5-theme (CDN, cargado vía @stack) define
+   max-height: 15rem (240px) después de custom.css, por eso !important.
+   ================================================================ */
+.select2-container .select2-dropdown .select2-results__options,
+.select2-container--bootstrap-5 .select2-dropdown .select2-results__options {
+    max-height: 195px !important;
+    overflow-y: auto !important;
+}
+
+/* ================================================================
+   SIDEBAR — Ítem "Inicio" estado activo con color navy
+   Velzon define --vz-vertical-menu-item-active-color (#695eef) en
+   app.min.css. Sobreescribimos la variable Y el color directamente.
+   SimpleBar inyecta <div.simplebar-content> dentro de navbar-nav,
+   por lo que se usan descendant combinators (no >) en el selector.
+   ================================================================ */
+.navbar-menu .navbar-nav .nav-item:not([class*="section-"]) .menu-link.nav-link.active {
+    --vz-vertical-menu-item-active-color: #1e3c72;
+    color: #1e3c72 !important;
+    background-color: rgba(30, 60, 114, 0.12) !important;
+    border-left-color: #1e3c72 !important;
+    font-weight: 600 !important;
+}
+.navbar-menu .navbar-nav .nav-item:not([class*="section-"]) .menu-link.nav-link.active i {
+    color: #1e3c72 !important;
+}
+
+/* .btn-tbl-action eliminado: Órdenes migró al patrón estándar btn-soft (2026-05-31). */

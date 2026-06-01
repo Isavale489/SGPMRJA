@@ -68,6 +68,45 @@
         color: #0ea5e9 !important;
     }
 
+    /* ── HOVER por sección (Light Mode) ──
+       Sutil (opacidad ~0.06) para no competir con el activo (~0.12).
+       Selectores reforzados para superar la regla genérica de Velzon. */
+    .navbar-menu .navbar-nav .section-maestros .nav-link:hover {
+        background: rgba(30, 60, 114, 0.06) !important;
+        color: #1e3c72 !important;
+    }
+    .navbar-menu .navbar-nav .section-maestros .nav-link:hover i {
+        color: #1e3c72 !important;
+    }
+    .navbar-menu .navbar-nav .section-maestros .nav-sm .nav-link:hover::before {
+        background-color: #1e3c72 !important;
+        opacity: 1;
+    }
+
+    .navbar-menu .navbar-nav .section-operativa .nav-link:hover {
+        background: rgba(16, 185, 129, 0.06) !important;
+        color: #059669 !important;
+    }
+    .navbar-menu .navbar-nav .section-operativa .nav-link:hover i {
+        color: #10b981 !important;
+    }
+    .navbar-menu .navbar-nav .section-operativa .nav-sm .nav-link:hover::before {
+        background-color: #10b981 !important;
+        opacity: 1;
+    }
+
+    .navbar-menu .navbar-nav .section-reportes .nav-link:hover {
+        background: rgba(14, 165, 233, 0.06) !important;
+        color: #0369a1 !important;
+    }
+    .navbar-menu .navbar-nav .section-reportes .nav-link:hover i {
+        color: #0ea5e9 !important;
+    }
+    .navbar-menu .navbar-nav .section-reportes .nav-sm .nav-link:hover::before {
+        background-color: #0ea5e9 !important;
+        opacity: 1;
+    }
+
     /* ── Espaciado entre items y subitems ── */
     .menu-dropdown {
         margin-top: 8px;
@@ -83,6 +122,27 @@
     /* Ocultar la línea/guión de los subitems */
     .menu-dropdown .nav-link::before {
         display: none !important;
+    }
+
+    /* ── Sub-dropdown anidado (nivel 2: Productos→Atributos, RRHH→Empleados/Depto/Cargo) ── */
+    /* Chevron del toggle anidado: a la derecha (Velzon lo pone a la izquierda por defecto) */
+    .menu-dropdown .nav-sm .nav-link[data-bs-toggle="collapse"] {
+        position: relative;
+    }
+    .menu-dropdown .nav-sm .nav-link[data-bs-toggle="collapse"]::after {
+        left: auto !important;
+        right: 14px !important;
+        margin-right: 0 !important;
+        font-size: 1rem;
+    }
+    /* Indentar los items del segundo nivel para mostrar jerarquía */
+    .menu-dropdown .menu-dropdown .nav-sm .nav-link {
+        padding-left: 2.6rem !important;
+    }
+    /* Margen del submenú anidado para que respire */
+    .menu-dropdown .menu-dropdown {
+        margin-top: 2px;
+        margin-bottom: 4px;
     }
 
     /* ════════════════════════════════════════════════════════════
@@ -255,13 +315,13 @@
                         {{-- ================================== --}}
                         {{-- 2. MAESTROS --}}
                         {{-- ================================== --}}
-                        <li class="nav-item section-maestros {{ request()->is('clientes*', 'productos*', 'proveedores*', 'insumos*', 'empleados*', 'departamentos*', 'cargos*') ? 'section-is-active' : '' }}">
+                        <li class="nav-item section-maestros {{ request()->is('clientes*', 'productos*', 'atributos*', 'proveedores*', 'insumos*', 'empleados*', 'departamentos*', 'cargos*') ? 'section-is-active' : '' }}">
                             <a class="nav-link menu-link" href="#sidebarMaestros" data-bs-toggle="collapse" role="button"
-                                aria-expanded="{{ request()->is('clientes*') || request()->is('productos*') || request()->is('proveedores*') || request()->is('insumos*') || request()->is('empleados*') || request()->is('departamentos*') || request()->is('cargos*') ? 'true' : 'false' }}"
+                                aria-expanded="{{ request()->is('clientes*') || request()->is('productos*') || request()->is('atributos*') || request()->is('proveedores*') || request()->is('insumos*') || request()->is('empleados*') || request()->is('departamentos*') || request()->is('cargos*') ? 'true' : 'false' }}"
                                 aria-controls="sidebarMaestros">
                                 <i class="ri-database-2-line"></i> <span data-key="t-maestros">Gestión General</span>
                             </a>
-                            <div class="collapse menu-dropdown {{ request()->is('clientes*') || request()->is('productos*') || request()->is('proveedores*') || request()->is('insumos*') || request()->is('empleados*') || request()->is('departamentos*') || request()->is('cargos*') ? 'show' : '' }}"
+                            <div class="collapse menu-dropdown {{ request()->is('clientes*') || request()->is('productos*') || request()->is('atributos*') || request()->is('proveedores*') || request()->is('insumos*') || request()->is('empleados*') || request()->is('departamentos*') || request()->is('cargos*') ? 'show' : '' }}"
                                 id="sidebarMaestros">
                                 <ul class="nav nav-sm flex-column">
                                     <li class="nav-item">
@@ -270,12 +330,34 @@
                                             <i class="ri-user-star-line me-1"></i> Clientes
                                         </a>
                                     </li>
+
+                                    {{-- Productos con sub-dropdown (Atributos) --}}
                                     <li class="nav-item">
-                                        <a href="{{ url('productos') }}"
-                                            class="nav-link {{ request()->is('productos*') ? 'active' : '' }}">
+                                        <a href="#sidebarProductos" data-bs-toggle="collapse" role="button"
+                                            class="nav-link {{ request()->is('productos*', 'atributos*') ? 'active' : 'collapsed' }}"
+                                            aria-expanded="{{ request()->is('productos*', 'atributos*') ? 'true' : 'false' }}"
+                                            aria-controls="sidebarProductos">
                                             <i class="ri-t-shirt-line me-1"></i> Productos
                                         </a>
+                                        <div class="collapse menu-dropdown {{ request()->is('productos*', 'atributos*') ? 'show' : '' }}"
+                                            id="sidebarProductos">
+                                            <ul class="nav nav-sm flex-column">
+                                                <li class="nav-item">
+                                                    <a href="{{ url('productos') }}"
+                                                        class="nav-link {{ request()->is('productos*') ? 'active' : '' }}">
+                                                        <i class="ri-list-check-2 me-1"></i> Catálogo
+                                                    </a>
+                                                </li>
+                                                <li class="nav-item">
+                                                    <a href="{{ url('atributos') }}"
+                                                        class="nav-link {{ request()->is('atributos*') ? 'active' : '' }}">
+                                                        <i class="ri-list-settings-line me-1"></i> Atributos
+                                                    </a>
+                                                </li>
+                                            </ul>
+                                        </div>
                                     </li>
+
                                     <li class="nav-item">
                                         <a href="{{ url('proveedores') }}"
                                             class="nav-link {{ request()->is('proveedores*') ? 'active' : '' }}">
@@ -288,25 +370,38 @@
                                             <i class="ri-archive-line me-1"></i> Insumos
                                         </a>
                                     </li>
-                                    {{-- Subgrupo: Recursos Humanos --}}
-                                    <li class="nav-item menu-subtitle {{ request()->is('empleados*', 'departamentos*', 'cargos*') ? 'is-active' : '' }}"><span>Recursos Humanos</span></li>
+
+                                    {{-- Empleados con sub-dropdown (Departamentos, Cargos) --}}
                                     <li class="nav-item">
-                                        <a href="{{ url('empleados') }}"
-                                            class="nav-link {{ request()->is('empleados*') ? 'active' : '' }}">
-                                            <i class="ri-user-settings-line me-1"></i> Empleados
+                                        <a href="#sidebarEmpleados" data-bs-toggle="collapse" role="button"
+                                            class="nav-link {{ request()->is('empleados*', 'departamentos*', 'cargos*') ? 'active' : 'collapsed' }}"
+                                            aria-expanded="{{ request()->is('empleados*', 'departamentos*', 'cargos*') ? 'true' : 'false' }}"
+                                            aria-controls="sidebarEmpleados">
+                                            <i class="ri-team-line me-1"></i> Recursos Humanos
                                         </a>
-                                    </li>
-                                    <li class="nav-item menu-subitem-child">
-                                        <a href="{{ url('departamentos') }}"
-                                            class="nav-link {{ request()->is('departamentos*') ? 'active' : '' }}">
-                                            <i class="ri-building-line me-1"></i> Departamentos
-                                        </a>
-                                    </li>
-                                    <li class="nav-item menu-subitem-child">
-                                        <a href="{{ url('cargos') }}"
-                                            class="nav-link {{ request()->is('cargos*') ? 'active' : '' }}">
-                                            <i class="ri-briefcase-line me-1"></i> Cargos
-                                        </a>
+                                        <div class="collapse menu-dropdown {{ request()->is('empleados*', 'departamentos*', 'cargos*') ? 'show' : '' }}"
+                                            id="sidebarEmpleados">
+                                            <ul class="nav nav-sm flex-column">
+                                                <li class="nav-item">
+                                                    <a href="{{ url('empleados') }}"
+                                                        class="nav-link {{ request()->is('empleados*') ? 'active' : '' }}">
+                                                        <i class="ri-user-settings-line me-1"></i> Empleados
+                                                    </a>
+                                                </li>
+                                                <li class="nav-item">
+                                                    <a href="{{ url('departamentos') }}"
+                                                        class="nav-link {{ request()->is('departamentos*') ? 'active' : '' }}">
+                                                        <i class="ri-building-line me-1"></i> Departamentos
+                                                    </a>
+                                                </li>
+                                                <li class="nav-item">
+                                                    <a href="{{ url('cargos') }}"
+                                                        class="nav-link {{ request()->is('cargos*') ? 'active' : '' }}">
+                                                        <i class="ri-briefcase-line me-1"></i> Cargos
+                                                    </a>
+                                                </li>
+                                            </ul>
+                                        </div>
                                     </li>
                                 </ul>
                             </div>

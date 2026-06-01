@@ -40,15 +40,6 @@
                             <x-forms.input name="stock_minimo" label="Stock Mínimo" type="number" step="0.01" min="0" placeholder="0" required hint="Nivel para alertas de reabastecimiento" id="stock-minimo-field-insumo" />
                         </div>
                     </div>
-
-                    <!-- Proveedor -->
-                    <div class="row">
-                        <div class="col-12">
-                            <x-forms.select name="proveedor_id" label="Proveedor" required id="proveedor-id-field-insumo"
-                                :options="$proveedores->mapWithKeys(fn($p) => [$p->id => $p->nombre_completo])->toArray()"
-                                placeholder="Seleccione proveedor..." />
-                        </div>
-                    </div>
                 </div>
                 <div class="modal-footer bg-light border-0">
                     <button type="button" class="btn btn-light" data-bs-dismiss="modal">

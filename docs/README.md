@@ -32,6 +32,12 @@ Este directorio (`docs/`) es la **fuente única de verdad** para documentación 
 - `CHANGELOG_COTIZACIONES.md`: historial de cambios del módulo de cotizaciones.
 - `AUDITORIA_SGPMRJA.md`: auditoría técnica integral del sistema.
 
+### Convenciones técnicas vigentes (SDD)
+- [`conventions/README.md`](conventions/README.md): índice de convenciones técnicas (modal-system, validaciones JS, sidebar-colors, sku-format, etc.) usadas por specs/tasks SDD.
+
+### Bitácora histórica (SDD)
+- [`history/README.md`](history/README.md): snapshots de sprints y refactors cerrados.
+
 ## Convención para nuevos documentos
 
 Nombrado sugerido:

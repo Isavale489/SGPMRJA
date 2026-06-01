@@ -21,17 +21,11 @@
 
         <div class="row">
             <div class="col-lg-12">
-                <div class="card">
+                <div class="card card-transactional">
                     <div class="card-header">
                         <div class="d-flex align-items-center">
                             <h5 class="card-title mb-0 flex-grow-1">Insumos con Stock Bajo</h5>
                             <div class="flex-shrink-0 d-flex align-items-center gap-3">
-                                <!-- Buscador Personalizado -->
-                                <div class="search-box">
-                                    <input type="text" class="form-control form-control-sm" id="custom-search-input"
-                                        placeholder="Buscar insumo...">
-                                    <i class="ri-search-line search-icon"></i>
-                                </div>
                                 <a href="{{ route('inventario.movimientos.index') }}" class="btn btn-secondary">
                                     <i class="ri-arrow-go-back-line align-bottom me-1"></i> Volver
                                 </a>
@@ -39,6 +33,29 @@
                         </div>
                     </div>
                     <div class="card-body">
+                        <div class="advanced-filters-wrapper emerald-theme" id="advanced-filters">
+                            <div class="navy-filter-header is-collapsed">
+                                <div class="navy-header-search">
+                                    <i class="ri-search-line"></i>
+                                    <input type="text" class="navy-search-input" id="custom-search-input"
+                                        placeholder="Buscar insumo..." autocomplete="off">
+                                </div>
+                                <div class="navy-header-divider"></div>
+                                <button class="navy-filter-btn collapsed" type="button"
+                                    data-bs-toggle="collapse" data-bs-target="#filters-collapse-body"
+                                    aria-expanded="false" aria-controls="filters-collapse-body">
+                                    <i class="ri-filter-3-line"></i>
+                                    <span>Filtros</span>
+                                    <span class="navy-filter-badge d-none" id="active-filter-count"></span>
+                                    <i class="ri-arrow-down-s-line navy-filter-chevron"></i>
+                                </button>
+                            </div>
+                            <div class="collapse" id="filters-collapse-body">
+                                <div class="navy-filter-body d-flex justify-content-end">
+                                    <button type="button" class="btn btn-link" id="btn-clear-filters">Limpiar filtros</button>
+                                </div>
+                            </div>
+                        </div>
                         @if(count($insumosConBajoStock) > 0)
                             <div class="alert alert-warning" role="alert">
                                 <div class="d-flex">
@@ -54,7 +71,7 @@
 
                             <div class="table-responsive">
                                 <table id="alertas-table"
-                                    class="table table-bordered dt-responsive nowrap table-striped align-middle"
+                                    class="table table-bordered dt-responsive nowrap table-striped align-middle dt-transactional table-operativa"
                                     style="width:100%">
                                     <thead>
                                         <tr>
@@ -64,7 +81,6 @@
                                             <th>Stock Actual</th>
                                             <th>Stock Mínimo</th>
                                             <th>Diferencia</th>
-                                            <th>Proveedor</th>
                                             <th>Acciones</th>
                                         </tr>
                                     </thead>
@@ -83,7 +99,6 @@
                                                     {{ number_format($insumo->stock_actual - $insumo->stock_minimo, 2) }}
                                                     {{ $insumo->unidad_medida }}
                                                 </td>
-                                                <td>{{ $insumo->proveedor ? $insumo->proveedor->nombre_completo : 'No asignado' }}</td>
                                                 <td>
                                                     <div class="dropdown d-inline-block">
                                                         <button class="btn btn-soft-secondary btn-sm dropdown" type="button"
@@ -105,17 +120,6 @@
                                                                     Registrar Entrada
                                                                 </a>
                                                             </li>
-                                                            @if($insumo->proveedor)
-                                                                <li>
-                                                                    <a href="#" class="dropdown-item contact-provider"
-                                                                        data-proveedor="{{ $insumo->proveedor->nombre_completo }}"
-                                                                        data-telefono="{{ $insumo->proveedor->telefono_unificado }}"
-                                                                        data-email="{{ $insumo->proveedor->email_unificado }}">
-                                                                        <i class="ri-phone-line align-bottom me-2 text-muted"></i>
-                                                                        Contactar Proveedor
-                                                                    </a>
-                                                                </li>
-                                                            @endif
                                                         </ul>
                                                     </div>
                                                 </td>
@@ -143,54 +147,37 @@
         </div>
     </div>
 
-    <!-- Modal para mostrar información de contacto del proveedor -->
-    <div class="modal fade atlantico-modal" id="proveedorModal" tabindex="-1" aria-labelledby="proveedorModalLabel" aria-hidden="true"
-        data-bs-backdrop="static" data-bs-keyboard="false">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="proveedorModalLabel">Información de Contacto</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="text-center mb-4">
-                        <div class="avatar-lg mx-auto">
-                            <div class="avatar-title bg-light text-primary display-5 rounded-circle">
-                                <i class="ri-building-line"></i>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="text-center">
-                        <h5 id="proveedor-nombre"></h5>
-                    </div>
-                    <div class="table-responsive">
-                        <table class="table table-borderless mb-0">
-                            <tbody>
-                                <tr>
-                                    <th><i class="ri-phone-line fs-16 align-middle me-2"></i> Teléfono:</th>
-                                    <td id="proveedor-telefono"></td>
-                                </tr>
-                                <tr>
-                                    <th><i class="ri-mail-line fs-16 align-middle me-2"></i> Email:</th>
-                                    <td id="proveedor-email"></td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-                <div class="modal-footer bg-light border-0">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                        <i class="ri-close-line me-1"></i>Cerrar
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
 @endsection
 
 @section('scripts')
     <script>
         $(document).ready(function () {
+            function debounce(func, wait) {
+                let timeout;
+                return function (...args) {
+                    clearTimeout(timeout);
+                    timeout = setTimeout(() => func.apply(this, args), wait);
+                };
+            }
+
+            function updateFilterBadge() {
+                let count = 0;
+                $('.navy-filter-select').each(function () {
+                    if ($(this).val() && $(this).val() !== '') {
+                        count++;
+                    }
+                });
+                $('#active-filter-count').text(count).toggleClass('d-none', count === 0);
+            }
+
+            $('#filters-collapse-body')
+                .on('show.bs.collapse', function () {
+                    $('.navy-filter-header').removeClass('is-collapsed');
+                })
+                .on('hidden.bs.collapse', function () {
+                    $('.navy-filter-header').addClass('is-collapsed');
+                });
+
             // Inicializar DataTable
             var table = $('#alertas-table').DataTable({
                 language: lenguajeData,
@@ -202,9 +189,17 @@
             });
 
             // Buscador personalizado
-            $('#custom-search-input').on('keyup', function () {
+            $('#custom-search-input').on('input', debounce(function () {
                 table.search(this.value).draw();
+            }, 300));
+
+            $('#btn-clear-filters').on('click', function () {
+                $('#custom-search-input').val('');
+                table.search('').draw();
+                updateFilterBadge();
             });
+
+            updateFilterBadge();
 
             // Manejar clic en enlace de agregar movimiento
             $('.add-movement').on('click', function (e) {
@@ -213,20 +208,6 @@
 
                 // Redirigir a la página de movimientos y seleccionar el insumo
                 window.location.href = "{{ route('inventario.movimientos.index') }}?insumo_id=" + id + "&tipo=Entrada";
-            });
-
-            // Manejar clic en enlace de contactar proveedor
-            $('.contact-provider').on('click', function (e) {
-                e.preventDefault();
-                var proveedor = $(this).data('proveedor');
-                var telefono = $(this).data('telefono') || 'No disponible';
-                var email = $(this).data('email') || 'No disponible';
-
-                $('#proveedor-nombre').text(proveedor);
-                $('#proveedor-telefono').text(telefono);
-                $('#proveedor-email').text(email);
-
-                $('#proveedorModal').modal('show');
             });
         });
     </script>

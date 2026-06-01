@@ -27,6 +27,9 @@
                         <p class="text-muted mb-0 fs-12 d-flex align-items-center flex-wrap gap-1">
                             <span id="view-pedido-info"></span>
                             <span class="px-1 opacity-50">·</span>
+                            <i class="ri-user-star-line opacity-50"></i>
+                            <span id="view-empleado"></span>
+                            <span class="px-1 opacity-50">·</span>
                             <i class="ri-user-line opacity-50"></i>
                             <span id="view-creado-por"></span>
                             <span class="px-1 opacity-50">·</span>
@@ -38,28 +41,15 @@
 
                 <!-- KPI Strip — jerarquía tipográfica pura -->
                 <div class="row g-0 mb-3">
-                    <div class="col-4 kpi-sep pe-4">
-                        <p class="text-uppercase text-muted mb-1 kpi-label"
-                           >Solicitada</p>
-                        <p class="mb-0 fw-bold kpi-number"
-                           
-                            id="view-cantidad-solicitada"></p>
+                    <div class="col-6 kpi-sep pe-4">
+                        <p class="text-uppercase text-muted mb-1 kpi-label">Solicitada</p>
+                        <p class="mb-0 fw-bold kpi-number" id="view-cantidad-solicitada"></p>
                         <p class="text-muted mb-0 kpi-unit">unidades</p>
                     </div>
-                    <div class="col-4 kpi-sep px-4">
-                        <p class="text-uppercase text-muted mb-1 kpi-label"
-                           >Producida</p>
-                        <p class="mb-0 fw-bold kpi-number"
-                           
-                            id="view-cantidad-producida"></p>
+                    <div class="col-6 kpi-sep ps-4">
+                        <p class="text-uppercase text-muted mb-1 kpi-label">Producida</p>
+                        <p class="mb-0 fw-bold kpi-number" id="view-cantidad-producida"></p>
                         <p class="text-muted mb-0 kpi-unit">unidades</p>
-                    </div>
-                    <div class="col-4 kpi-sep ps-4">
-                        <p class="text-uppercase text-muted mb-1 kpi-label"
-                           >Costo Estimado</p>
-                        <p class="mb-0 fw-bold kpi-number kpi-number-sm"
-                            id="view-costo-estimado"></p>
-                        <p class="text-muted mb-0 kpi-unit">estimado</p>
                     </div>
                 </div>
 
@@ -97,13 +87,6 @@
                             data-bs-toggle="pill" data-bs-target="#tab-insumos" type="button" role="tab"
                             aria-selected="false">
                             <i class="ri-box-3-line me-1"></i>Insumos
-                        </button>
-                    </li>
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link" id="tab-avances-btn"
-                            data-bs-toggle="pill" data-bs-target="#tab-avances" type="button" role="tab"
-                            aria-selected="false">
-                            <i class="ri-bar-chart-grouped-line me-1"></i>Avances
                         </button>
                     </li>
                 </ul>
@@ -207,36 +190,6 @@
                         </div>
                     </div>
 
-                    <!-- ─ TAB 3: Avances ────────────────────────────── -->
-                    <div class="tab-pane fade" id="tab-avances" role="tabpanel"
-                        aria-labelledby="tab-avances-btn">
-
-                        <div class="card border-0 shadow-sm mb-0">
-                            <div class="card-body p-0">
-                                <div class="table-responsive">
-                                    <table class="table table-nowrap table-sm align-middle mb-0">
-                                        <thead class="table-light">
-                                            <tr>
-                                                <th>Fecha</th>
-                                                <th>Empleado</th>
-                                                <th class="text-center">Producido</th>
-                                                <th class="text-center">Defectuoso</th>
-                                                <th>Observaciones</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="view-avances">
-                                            <tr id="avances-empty-row">
-                                                <td colspan="5" class="text-center text-muted py-3 fs-12">
-                                                    <i class="ri-inbox-line me-1"></i>Sin registros de avance
-                                                </td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        </div>
-
-                    </div>
                 </div>
             </div>
 

@@ -14,26 +14,25 @@ class Insumo extends Model
 
     protected $fillable = [
         'nombre',
+        'codigo',
         'tipo',
         'unidad_medida',
+        'is_inventoriable',
         'costo_unitario',
         'stock_actual',
         'stock_minimo',
-        'proveedor_id',
+        'stock_maximo',
         'estado',
     ];
 
     protected $casts = [
         'estado' => 'boolean',
+        'is_inventoriable' => 'boolean',
         'costo_unitario' => 'decimal:2',
         'stock_actual' => 'decimal:2',
         'stock_minimo' => 'decimal:2',
+        'stock_maximo' => 'decimal:2',
     ];
-
-    public function proveedor()
-    {
-        return $this->belongsTo(Proveedor::class);
-    }
 
     public function ordenesProduccion()
     {
@@ -45,5 +44,14 @@ class Insumo extends Model
     public function movimientos()
     {
         return $this->hasMany(MovimientoInsumo::class);
+    }
+
+    /**
+     * Scope: solo insumos de tipo 'Tela' activos.
+     * Usado en el form de productos para definir la materia prima de la variante.
+     */
+    public function scopeTelas($query)
+    {
+        return $query->where('tipo', 'Tela')->where('estado', true);
     }
 }

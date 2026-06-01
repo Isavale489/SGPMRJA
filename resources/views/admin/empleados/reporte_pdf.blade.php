@@ -44,11 +44,11 @@
     </td>
     <td>
         <span class="label">Activos:</span>
-        <span class="value">{{ $empleados->where('estado', 1)->count() }}</span>
+        <span class="value">{{ $empleados->filter(fn($e) => !$e->trashed())->count() }}</span>
     </td>
     <td>
-        <span class="label">Inactivos:</span>
-        <span class="value">{{ $empleados->where('estado', 0)->count() }}</span>
+        <span class="label">Inhabilitados:</span>
+        <span class="value">{{ $empleados->filter(fn($e) => $e->trashed())->count() }}</span>
     </td>
 @endsection
 
@@ -77,8 +77,8 @@
                     <td class="col-depto">{{ $empleado->departamento?->nombre ?? '—' }}</td>
                     <td class="col-fecha">{{ \Carbon\Carbon::parse($empleado->fecha_ingreso)->format('d/m/Y') }}</td>
                     <td class="col-estatus">
-                        <span class="{{ $empleado->estado == 1 ? 'badge-activo' : 'badge-inactivo' }}">
-                            {{ $empleado->estado == 1 ? 'Activo' : 'Inactivo' }}
+                        <span class="{{ $empleado->trashed() ? 'badge-inactivo' : 'badge-activo' }}">
+                            {{ $empleado->trashed() ? 'Inhabilitado' : 'Activo' }}
                         </span>
                     </td>
                 </tr>

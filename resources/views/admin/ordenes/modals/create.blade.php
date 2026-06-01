@@ -1,139 +1,181 @@
-﻿<!-- Modal para agregar/editar -->
+<!-- Modal para crear/editar orden de producción -->
 <div class="modal fade atlantico-modal atlantico-modal--op" id="showModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="modalTitle">Nueva Orden de Producción</h5>
+            <div class="modal-header py-2">
+                <h5 class="modal-title mb-0" id="modalTitle">Nueva Orden de Producción</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form id="ordenForm" novalidate>
                 @csrf
-                <div class="modal-body">
+                <div class="modal-body p-3">
+                    {{-- id de la orden (modo edición) --}}
                     <input type="hidden" id="id-field" />
-                    <input type="hidden" id="pedido-id-hidden-field" name="pedido_id" />
-                    
-                    <div class="row mb-3">
-                        <div class="col-md-12">
-                            <label for="pedido-id-field" class="form-label required">Seleccionar Pedido</label><select id="pedido-id-field" name="pedido_id" class="form-control" required>
-                                <option value="">Seleccione un pedido...</option>
-                                @foreach($pedidos as $pedido)
-                                    <option value="{{ $pedido->id }}" 
-                                            data-cliente="{{ $pedido->cliente_nombre }}"
-                                            data-fecha="{{ $pedido->fecha_pedido }}"
-                                            data-entrega="{{ $pedido->fecha_entrega_estimada }}">
-                                        Pedido #{{ $pedido->id }} - {{ $pedido->cliente_nombre }} 
-                                        ({{ $pedido->productos->count() }} productos) - 
-                                        Entrega: {{ $pedido->fecha_entrega_estimada ? $pedido->fecha_entrega_estimada->format('d/m/Y') : 'No definida' }}
-                                    </option>
-                                @endforeach
-                            </select>
+                    {{-- línea del pedido que produce la orden (de aquí salen producto + cantidad en el backend) --}}
+                    <input type="hidden" id="detalle-pedido-id-field" name="detalle_pedido_id" />
+                    {{-- referencias de solo lectura (sin name → no se envían) --}}
+                    <input type="hidden" id="pedido-id-hidden-field" />
+                    <input type="hidden" id="producto-id-field" />
+
+                    {{-- ── Chips: cliente (izq.) + usuario que registra (der.) ──────── --}}
+                    <div class="d-flex justify-content-between align-items-center gap-2 flex-wrap mb-2">
+                        {{-- Cliente del pedido --}}
+                        <div class="wiz-client-banner" id="orden-cliente-banner" title="Cliente del pedido">
+                            <span class="wiz-client-banner-label">Cliente:</span>
+                            <div class="wiz-client-banner-avatar" id="orden-cliente-avatar">—</div>
+                            <div class="wiz-client-banner-main">
+                                <span class="wiz-client-banner-name" id="orden-cliente-name">—</span>
+                            </div>
+                        </div>
+                        {{-- Usuario que registra la orden --}}
+                        <div class="wiz-client-banner wiz-client-banner--creator" id="orden-creador-banner"
+                            title="Creada por"
+                            data-default-name="{{ Auth::user()->name }}"
+                            data-default-avatar="{{ Auth::user()->avatar_url }}">
+                            <span class="wiz-client-banner-label">Creada por:</span>
+                            <img class="wiz-client-banner-avatar wiz-client-banner-avatar--img" id="orden-creador-avatar"
+                                src="{{ Auth::user()->avatar_url }}" alt="" />
+                            <div class="wiz-client-banner-main">
+                                <span class="wiz-client-banner-name" id="orden-creador-name">{{ Auth::user()->name }}</span>
+                            </div>
                         </div>
                     </div>
 
-                    <!-- Información del pedido seleccionado -->
-                    <div id="pedido-info" style="display: none;">
-                        <div class="alert alert-info">
-                            <h6><i class="ri-information-line"></i> Información del Pedido</h6>
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <strong>Cliente:</strong> <span id="info-cliente"></span><br>
-                                    <strong>Fecha Pedido:</strong> <span id="info-fecha-pedido"></span>
+                    {{-- ── Hero: línea seleccionada (solo lectura, compacto) ────────── --}}
+                    <div class="cot-resumen-card mb-2" id="orden-linea-panel">
+                        <div class="cot-resumen-card-header py-2 px-3">
+                            <i class="ri-file-list-3-line"></i>
+                            <span>Línea seleccionada</span>
+                            <span class="ms-auto badge bg-light text-dark fw-normal" id="orden-linea-pedido">Pedido #—</span>
+                        </div>
+                        <div class="cot-resumen-card-body p-3">
+                            <div class="d-flex align-items-center justify-content-between gap-3 flex-wrap">
+                                <div class="flex-grow-1 min-w-0">
+                                    <div class="text-white fw-semibold mb-2" id="orden-linea-producto">—</div>
+                                    <div class="d-flex flex-wrap gap-1" id="orden-linea-meta"></div>
                                 </div>
-                                <div class="col-md-6">
-                                    <strong>Fecha Entrega:</strong> <span id="info-fecha-entrega"></span><br>
-                                    <strong>Total Productos:</strong> <span id="info-total-productos"></span>
+                                <div class="text-end">
+                                    <div class="fw-bold text-white fs-4 lh-1" id="orden-linea-cantidad">0</div>
+                                    <small class="text-white-50" style="font-size: 10.5px;">unidades</small>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Productos del pedido -->
-                    <div id="productos-pedido" style="display: none;">
-                        <div class="mb-3">
-                            <label class="form-label">Productos a Producir</label>
-                            <div id="productos-container">
-                                <!-- Se llenarán dinámicamente -->
-                            </div>
+                    {{-- ── Asignación: empleado + estado ───────────────────────── --}}
+                    <div class="card border-0 shadow-sm mb-2">
+                        <div class="card-header border-0 bg-soft-primary py-2 px-3">
+                            <h6 class="mb-0 text-atlantico-dark fs-13">
+                                <i class="ri-user-star-line me-1"></i>Asignación
+                            </h6>
                         </div>
-                    </div>
-
-                    <!-- Campos ocultos para mantener compatibilidad -->
-                    <input type="hidden" id="producto-id-field" name="producto_id" />
-                    <input type="hidden" id="cantidad-solicitada-field" name="cantidad_solicitada" />
-
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <label for="fecha-inicio-field" class="form-label required">Fecha de Inicio</label><input type="date" id="fecha-inicio-field" name="fecha_inicio" class="form-control" required />
-                        </div>
-                        <div class="col-md-6">
-                            <label for="fecha-fin-estimada-field" class="form-label required">Fecha Fin Estimada</label><input type="date" id="fecha-fin-estimada-field" name="fecha_fin_estimada" class="form-control" required />
-                        </div>
-                    </div>
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <label for="costo-estimado-field" class="form-label required">Costo Estimado</label><input type="number" id="costo-estimado-field" name="costo_estimado" class="form-control" step="0.01" min="0" required />
-                        </div>
-                        <div class="col-md-6">
-                            <label for="logo-field" class="form-label">Logo</label>
-                            <select id="logo-field" name="logo_id" class="form-select">
-                                <option value="">Sin logo</option>
-                                @foreach($logos as $logo)
-                                    <option value="{{ $logo->id }}">{{ $logo->name }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div class="col-md-6" id="estado-container" style="display: none;">
-                            <label for="estado-field" class="form-label">Estado</label>
-                            <select id="estado-field" name="estado" class="form-control">
-                                <option value="Pendiente">Pendiente</option>
-                                <option value="En Proceso">En Proceso</option>
-                                <option value="Finalizado">Finalizado</option>
-                                <option value="Cancelado">Cancelado</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label">Insumos Requeridos</label>
-                        <div id="insumos-container">
-                            <div class="row insumo-row">
+                        <div class="card-body p-3">
+                            <div class="row g-2">
                                 <div class="col-md-6">
-                                    <select name="insumos[0][id]" class="form-control insumo-select" required>
-                                        <option value="">Seleccione insumo...</option>
-                                        @foreach($insumos as $insumo)
-                                            <option value="{{ $insumo->id }}">{{ $insumo->nombre }} ({{ $insumo->unidad_medida }})</option>
+                                    <label for="empleado-id-field" class="form-label form-label-sm required mb-1">Empleado asignado</label>
+                                    <select id="empleado-id-field" name="empleado_id" class="form-select form-select-sm" required>
+                                        <option value="">Seleccione empleado...</option>
+                                        @foreach($empleados as $emp)
+                                            <option value="{{ $emp->id }}">{{ $emp->name }}</option>
                                         @endforeach
                                     </select>
+                                    <small class="text-muted d-block mt-1" style="font-size: 10.5px;">
+                                        <i class="ri-information-line"></i> Responsable de producir esta orden.
+                                    </small>
                                 </div>
-                                <div class="col-md-4">
-                                    <input type="number" name="insumos[0][cantidad_estimada]" class="form-control" placeholder="Cantidad" step="0.01" min="0.01" required />
-                                </div>
-                                <div class="col-md-2">
-                                    <button type="button" class="btn btn-danger remove-insumo"><i class="ri-delete-bin-line"></i></button>
+                                <div class="col-md-6" id="estado-container" style="display: none;">
+                                    <label for="estado-field" class="form-label form-label-sm mb-1">Estado</label>
+                                    <select id="estado-field" name="estado" class="form-select form-select-sm">
+                                        <option value="Pendiente">Pendiente</option>
+                                        <option value="En Proceso">En Proceso</option>
+                                        <option value="Finalizado">Finalizado</option>
+                                        <option value="Cancelado">Cancelado</option>
+                                    </select>
                                 </div>
                             </div>
                         </div>
-                        <div class="mt-2">
-                            <button type="button" class="btn btn-info" id="add-insumo-btn">
-                                <i class="ri-add-line"></i> Agregar Insumo
-                            </button>
+                    </div>
+
+                    {{-- ── Cronograma ─────────────────────────────────────────── --}}
+                    <div class="card border-0 shadow-sm mb-2">
+                        <div class="card-header border-0 bg-soft-primary py-2 px-3">
+                            <h6 class="mb-0 text-atlantico-dark fs-13">
+                                <i class="ri-calendar-2-line me-1"></i>Cronograma
+                            </h6>
+                        </div>
+                        <div class="card-body p-3">
+                            <div class="row g-2">
+                                <div class="col-md-6">
+                                    <label for="fecha-inicio-field" class="form-label form-label-sm required mb-1">Inicio</label>
+                                    <input type="date" id="fecha-inicio-field" name="fecha_inicio" class="form-control form-control-sm" required />
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="fecha-fin-estimada-field" class="form-label form-label-sm required mb-1">Fin estimado</label>
+                                    <input type="date" id="fecha-fin-estimada-field" name="fecha_fin_estimada" class="form-control form-control-sm" required />
+                                </div>
+                            </div>
                         </div>
                     </div>
 
-                    <div class="mb-3">
-                        <label for="notas-field" class="form-label">Notas</label>
-                        <textarea id="notas-field" name="notas" class="form-control" rows="3"></textarea>
+                    {{-- ── Insumos requeridos (grilla, como wizard productos) ─── --}}
+                    <div class="card border-0 shadow-sm mb-2">
+                        <div class="card-header border-0 bg-soft-primary py-2 px-3 d-flex align-items-center justify-content-between">
+                            <h6 class="mb-0 text-atlantico-dark fs-13">
+                                <i class="ri-tools-line me-1"></i>Insumos requeridos
+                                <span class="text-muted fw-normal ms-1" id="orden-insumos-count">(0)</span>
+                            </h6>
+                            <button type="button" class="btn btn-sm btn-soft-primary py-0 px-2" id="add-insumo-btn">
+                                <i class="ri-add-line"></i> Agregar insumo
+                            </button>
+                        </div>
+                        <div class="card-body p-0">
+                            {{-- Empty state --}}
+                            <div id="orden-insumos-empty" class="text-center py-3 text-muted">
+                                <i class="ri-tools-line d-block opacity-50 mb-1" style="font-size: 1.75rem;"></i>
+                                <p class="fs-12 mb-0">Aún no agregaste insumos. Haz click en <strong>“Agregar insumo”</strong>.</p>
+                            </div>
+
+                            {{-- Tabla agrupada (mismo estilo que el wizard de cotización) --}}
+                            <div id="orden-insumos-table-wrap" class="cot-grouped-tablewrap" hidden>
+                                <table class="cot-grouped-table">
+                                    <thead>
+                                        <tr>
+                                            <th class="cot-col-num">#</th>
+                                            <th class="cot-col-prod">Insumo</th>
+                                            <th class="cot-col-num text-end">Cantidad</th>
+                                            <th class="cot-col-acc text-center">Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="orden-insumos-tbody"></tbody>
+                                </table>
+                            </div>
+
+                            {{-- Fuente de verdad para FormData: hidden inputs sincronizados con el estado --}}
+                            <div id="insumos-container" hidden></div>
+                        </div>
+                    </div>
+
+                    {{-- ── Notas ─────────────────────────────────────────────── --}}
+                    <div class="card border-0 shadow-sm mb-0">
+                        <div class="card-header border-0 bg-soft-primary py-2 px-3">
+                            <h6 class="mb-0 text-atlantico-dark fs-13">
+                                <i class="ri-sticky-note-line me-1"></i>Notas
+                            </h6>
+                        </div>
+                        <div class="card-body p-3">
+                            <textarea id="notas-field" name="notas" class="form-control form-control-sm" rows="2" placeholder="Observaciones sobre la orden (opcional)..."></textarea>
+                        </div>
                     </div>
                 </div>
-                <div class="modal-footer bg-light border-0">
+                <div class="modal-footer bg-light border-0 py-2">
                     <div class="hstack gap-2 justify-content-end">
-                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">
+                        <button type="button" class="btn btn-sm btn-light" data-bs-dismiss="modal">
                             <i class="ri-close-line me-1"></i>Cerrar
                         </button>
-                        <button type="submit" class="btn btn-success" id="add-btn">
+                        <button type="submit" class="btn btn-sm btn-success" id="add-btn">
                             <i class="ri-add-line me-1"></i>Crear Orden
                         </button>
-                        <button type="submit" class="btn btn-success" id="edit-btn" style="display: none;">
+                        <button type="submit" class="btn btn-sm btn-success" id="edit-btn" style="display: none;">
                             <i class="ri-save-line me-1"></i>Actualizar
                         </button>
                     </div>

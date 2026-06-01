@@ -14,17 +14,11 @@
                 <input type="hidden" id="am-orden-id">
                 <input type="hidden" id="am-restante">
 
-                <div class="mb-3">
-                    <label class="form-label fw-medium">Empleado <span class="text-danger">*</span></label>
-                    <select id="am-empleado-id" class="form-select">
-                        <option value="">Seleccione un empleado...</option>
-                        @foreach($empleados as $emp)
-                            <option value="{{ $emp->id }}">{{ $emp->name }}</option>
-                        @endforeach
-                    </select>
-                </div>
+                <p class="text-muted fs-12 mb-3">
+                    <i class="ri-user-star-line me-1"></i>Registrado para el empleado asignado a esta orden.
+                </p>
 
-                <div class="row g-3 mb-3">
+                <div class="row g-3 mb-0">
                     <div class="col-6">
                         <label class="form-label fw-medium">
                             Cantidad Producida <span class="text-danger">*</span>
@@ -33,15 +27,9 @@
                         <input type="number" id="am-cantidad-producida" class="form-control" min="1" placeholder="0">
                     </div>
                     <div class="col-6">
-                        <label class="form-label fw-medium">Cantidad Defectuosa <span class="text-danger">*</span></label>
+                        <label class="form-label fw-medium">Cantidad Defectuosa</label>
                         <input type="number" id="am-cantidad-defectuosa" class="form-control" min="0" value="0">
                     </div>
-                </div>
-
-                <div class="mb-0">
-                    <label class="form-label fw-medium">Observaciones</label>
-                    <textarea id="am-observaciones" class="form-control" rows="2"
-                        placeholder="Ingrese observaciones sobre el proceso..." maxlength="500"></textarea>
                 </div>
             </div>
             <div class="modal-footer bg-light border-0">

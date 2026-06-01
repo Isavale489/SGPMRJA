@@ -54,7 +54,6 @@
                                         <th>Estado</th>
                                         <th>Costo Unitario</th>
                                         <th>Valor Total</th>
-                                        <th>Proveedor</th>
                                         <th>Acciones</th>
                                     </tr>
                                 </thead>
@@ -76,7 +75,6 @@
                                             </td>
                                             <td>$/ {{ number_format($insumo->costo_unitario, 2) }}</td>
                                             <td>$/ {{ number_format($insumo->stock_actual * $insumo->costo_unitario, 2) }}</td>
-                                            <td>{{ $insumo->proveedor ? $insumo->proveedor->nombre_completo : 'No asignado' }}</td>
                                             <td>
                                                 <div class="dropdown d-inline-block">
                                                     <button class="btn btn-soft-secondary btn-sm dropdown" type="button"

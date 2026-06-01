@@ -10,14 +10,24 @@ use Illuminate\Support\Facades\Hash;
 use Yajra\DataTables\DataTables;
 class UserController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        return view('admin.users.index');
+        $historial = $request->has('historial');
+        return view('admin.users.index', compact('historial'));
     }
 
-    public function getUsers()
+    public function getUsers(Request $request)
     {
-        $users = User::all();
+        $users = User::query();
+
+        if ($request->filled('filter_role')) {
+            $users->where('role', $request->input('filter_role'));
+        }
+
+        if ($request->filled('filter_estado')) {
+            $users->where('estado', $request->input('filter_estado'));
+        }
+
         return DataTables::of($users)
             ->editColumn('avatar', function ($user) {
                 return $user->avatar ? asset('storage/' . $user->avatar) : null;
@@ -51,7 +61,8 @@ class UserController extends Controller
         $user->email = $request->email;
         $user->password = Hash::make($request->password);
         $user->role = $request->role;
-        $user->estado = $request->estado;
+        // estado=1 (activo) por defecto; la baja se hace con Inhabilitar/Habilitar, no en el form
+        $user->estado = 1;
 
         // Manejar la subida del avatar
         if ($request->hasFile('avatar')) {
@@ -83,7 +94,7 @@ class UserController extends Controller
         $user->name = $request->name;
         $user->email = $request->email;
         $user->role = $request->role;
-        $user->estado = $request->estado;
+        // 'estado' no se edita aquí; se gobierna con Inhabilitar/Habilitar
 
         // Manejar la subida del avatar
         if ($request->hasFile('avatar')) {
@@ -101,14 +112,40 @@ class UserController extends Controller
         return response()->json(['success' => 'User updated successfully.']);
     }
 
+    /**
+     * Inhabilitar un usuario = estado=0 (bloquea su login). No se borra la
+     * cuenta para preservar referencias (created_by, auditoría). Salvaguardas:
+     * no auto-inhabilitarse y no dejar al sistema sin Administrador activo.
+     */
     public function destroy($id)
     {
         $user = User::findOrFail($id);
-        if ($user->avatar && \Storage::disk('public')->exists($user->avatar)) {
-            \Storage::disk('public')->delete($user->avatar);
+
+        if (auth()->id() === (int) $user->id) {
+            return response()->json(['message' => 'No puedes inhabilitar tu propia cuenta.'], 422);
         }
-        $user->delete();
-        return response()->json(['success' => 'User deleted successfully.']);
+
+        if ($user->isAdmin() && $user->estado) {
+            $adminsActivos = User::where('role', 'Administrador')->where('estado', 1)->count();
+            if ($adminsActivos <= 1) {
+                return response()->json(['message' => 'No puedes inhabilitar al último administrador activo.'], 422);
+            }
+        }
+
+        $user->estado = 0;
+        $user->save();
+        return response()->json(['success' => 'Usuario inhabilitado exitosamente.']);
+    }
+
+    /**
+     * Habilitar (restaurar) un usuario inhabilitado → estado=1.
+     */
+    public function restore($id)
+    {
+        $user = User::findOrFail($id);
+        $user->estado = 1;
+        $user->save();
+        return response()->json(['success' => 'Usuario habilitado exitosamente.']);
     }
 
     /**
@@ -126,6 +163,7 @@ class UserController extends Controller
             'name' => $user->name,
             'email' => $user->email,
             'role' => $user->role,
+            'estado' => $user->estado,
             'avatar' => $user->avatar ? asset('storage/' . $user->avatar) : null,
 
             'created_at' => $user->created_at->format('d/m/Y'),

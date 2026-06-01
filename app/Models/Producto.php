@@ -14,10 +14,11 @@ class Producto extends Model
 
     protected $fillable = [
         'tipo_producto_id',
+        'insumo_tela_id',
         'codigo',
         'descripcion',
-        'modelo',
         'precio_base',
+        'atributos_snapshot',
         'imagen',
         'estado',
     ];
@@ -25,6 +26,7 @@ class Producto extends Model
     protected $casts = [
         'estado' => 'boolean',
         'precio_base' => 'decimal:2',
+        'atributos_snapshot' => 'array',
     ];
 
     /**
@@ -40,13 +42,38 @@ class Producto extends Model
         return $this->belongsTo(TipoProducto::class);
     }
 
+    public function tela()
+    {
+        return $this->belongsTo(Insumo::class, 'insumo_tela_id');
+    }
+
+    public function atributoValores()
+    {
+        return $this->belongsToMany(AtributoValor::class, 'producto_atributo_valor')
+            ->withTimestamps();
+    }
+
     /**
-     * Accessor para obtener el nombre completo (tipo + modelo)
+     * Nombre legible: tipo + tela + valores de atributos.
+     * Ej: "Camisa Oxford Larga Mao". Si solo hay tipo, devuelve solo el tipo.
+     * Para evitar N+1, eager-load tela y tipoProducto en consultas que usen este atributo.
      */
     public function getNombreCompletoAttribute(): string
     {
-        $tipo = $this->tipoProducto ? $this->tipoProducto->nombre : '';
-        return trim($tipo . ' ' . $this->modelo);
+        $partes = [$this->tipoProducto?->nombre ?? ''];
+
+        if ($this->insumo_tela_id) {
+            $tela = $this->relationLoaded('tela') ? $this->tela : $this->tela()->first();
+            if ($tela) {
+                $partes[] = $tela->nombre;
+            }
+        }
+
+        if (is_array($this->atributos_snapshot)) {
+            $partes = array_merge($partes, array_values($this->atributos_snapshot));
+        }
+
+        return trim(implode(' ', array_filter($partes)));
     }
 
     /**

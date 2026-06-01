@@ -51,11 +51,11 @@
     </td>
     <td>
         <span class="label">Activos:</span>
-        <span class="value">{{ $clientes->where('estatus', 1)->count() }}</span>
+        <span class="value">{{ $clientes->filter(fn($c) => !$c->trashed())->count() }}</span>
     </td>
     <td>
-        <span class="label">Inactivos:</span>
-        <span class="value">{{ $clientes->where('estatus', 0)->count() }}</span>
+        <span class="label">Inhabilitados:</span>
+        <span class="value">{{ $clientes->filter(fn($c) => $c->trashed())->count() }}</span>
     </td>
     <td>
         <span class="label">Naturales:</span>
@@ -96,8 +96,8 @@
                     <td class="col-direccion">{{ $cliente->direccion ?? '—' }}</td>
                     <td class="col-ciudad">{{ $cliente->ciudad ?? '—' }}</td>
                     <td class="col-estatus">
-                        <span class="{{ $cliente->estatus == 1 ? 'badge-activo' : 'badge-inactivo' }}">
-                            {{ $cliente->estatus == 1 ? 'Activo' : 'Inactivo' }}
+                        <span class="{{ $cliente->trashed() ? 'badge-inactivo' : 'badge-activo' }}">
+                            {{ $cliente->trashed() ? 'Inhabilitado' : 'Activo' }}
                         </span>
                     </td>
                     <td class="col-creado">

@@ -60,6 +60,33 @@ class ProveedorController extends Controller
             });
         }
 
+        // ══════════════════════════════════════════════════════════
+        // ORDENAMIENTO — Selector "Ordenar por" del frontend
+        // Valores posibles: recientes, antiguos, nombre_asc, nombre_desc
+        // Fallback: más recientes primero (created_at DESC)
+        // ══════════════════════════════════════════════════════════
+        $orden = $request->input('filter_orden', 'recientes');
+
+        switch ($orden) {
+            case 'antiguos':
+                $query->orderBy('proveedor.created_at', 'asc');
+                break;
+            case 'nombre_asc':
+                $query->join('persona', 'proveedor.persona_id', '=', 'persona.id')
+                      ->orderBy('persona.nombre', 'asc')
+                      ->select('proveedor.*');
+                break;
+            case 'nombre_desc':
+                $query->join('persona', 'proveedor.persona_id', '=', 'persona.id')
+                      ->orderBy('persona.nombre', 'desc')
+                      ->select('proveedor.*');
+                break;
+            case 'recientes':
+            default:
+                $query->orderBy('proveedor.created_at', 'desc');
+                break;
+        }
+
         return DataTables::of($query)
             ->addColumn('nombre_display', fn($p) => $p->nombre_completo ?? 'N/A')
             ->addColumn('documento_display', fn($p) => $p->documento ?? 'N/A')
@@ -102,7 +129,6 @@ class ProveedorController extends Controller
                 'email' => 'required|email|max:100|unique:persona,email',
                 'contacto' => 'nullable|string|max:100',
                 'telefono_contacto' => 'nullable|string|max:20',
-                'estado' => 'nullable|boolean',
             ]);
 
             $this->proveedorService->crearJuridico($request->all());
@@ -112,7 +138,8 @@ class ProveedorController extends Controller
 
     public function show($id)
     {
-        $proveedor = Proveedor::with('persona.telefonos', 'persona.direcciones')->findOrFail($id);
+        // withTrashed: también se ven detalles de proveedores inhabilitados (desde el historial)
+        $proveedor = Proveedor::withTrashed()->with('persona.telefonos', 'persona.direcciones')->findOrFail($id);
         $persona = $proveedor->persona;
         $telefonoPrincipal = $persona ? $persona->telefonos->where('es_principal', true)->first() : null;
         $direccionPrincipal = $persona ? $persona->direcciones->where('es_principal', true)->first() : null;
@@ -129,6 +156,7 @@ class ProveedorController extends Controller
             'nombre_display' => $proveedor->nombre_completo,
             'documento_display' => $proveedor->documento,
             'estado' => $proveedor->estado,
+            'trashed' => $proveedor->trashed(),
             'created_at' => $proveedor->created_at->format('d/m/Y H:i:s'),
             'updated_at' => $proveedor->updated_at->format('d/m/Y H:i:s'),
         ];
@@ -178,7 +206,6 @@ class ProveedorController extends Controller
                 'email' => 'required|email|max:100|unique:persona,email,' . ($proveedor->persona_id ?? 0),
                 'contacto' => 'nullable|string|max:100',
                 'telefono_contacto' => 'nullable|string|max:20',
-                'estado' => 'nullable|boolean',
                 'ciudad' => 'nullable|string|max:100',
                 'estado_territorial' => 'nullable|string|max:50',
             ]);
@@ -206,9 +233,17 @@ class ProveedorController extends Controller
         return response()->json(['success' => 'Proveedor restaurado exitosamente.']);
     }
 
-    public function reportePdf()
+    public function reportePdf(Request $request)
     {
-        $proveedores = Proveedor::with('persona.telefonos', 'persona.direcciones')->get();
+        $query = Proveedor::with('persona.telefonos', 'persona.direcciones');
+        if ($request->filled('tipo_proveedor')) {
+            $query->where('tipo_proveedor', $request->tipo_proveedor);
+        }
+        // Estatus: 1 = activos (default), 0 = inhabilitados (trashed) — estándar de inhabilitación
+        if ($request->input('estatus') === '0') {
+            $query->onlyTrashed();
+        }
+        $proveedores = $query->get();
         $pdf = \PDF::loadView('admin.proveedores.reporte_pdf', compact('proveedores'))
             ->setPaper('a4', 'landscape');
         return $pdf->download('proveedores_' . now()->format('Y-m-d_H-i-s') . '.pdf');

@@ -16,6 +16,8 @@ class DetallePedido extends Model
     protected $fillable = [
         'pedido_id',
         'producto_id',
+        'tela_snapshot',
+        'atributos_snapshot',
         'cantidad',
         'descripcion',
         'lleva_bordado',
@@ -28,6 +30,8 @@ class DetallePedido extends Model
         'cantidad' => 'integer',
         'precio_unitario' => 'decimal:2',
         'lleva_bordado' => 'boolean',
+        'tela_snapshot' => 'array',
+        'atributos_snapshot' => 'array',
     ];
 
     protected $appends = [

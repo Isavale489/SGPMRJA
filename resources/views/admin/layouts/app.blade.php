@@ -129,8 +129,41 @@
     </div>
     <!-- END layout-wrapper -->
 
+    {{-- ── Tasa BCV global (la inyecta AppServiceProvider via View::composer('admin.*')) ── --}}
+    <script>
+        window.tasaBcv = @if(isset($tasaBcv) && $tasaBcv) {
+            valor: {{ $tasaBcv->valor }},
+            fecha: '{{ $tasaBcv->fecha_bcv->format('Y-m-d') }}',
+            fuente: @json($tasaBcv->fuente ?? '')
+        } @else null @endif;
+
+        // Helper: convierte un monto en USD a string "Bs X.XXX,XX" (formato Venezuela).
+        // Devuelve null si no hay tasa disponible — el caller decide qué mostrar.
+        window.bsEquivalente = function (usd) {
+            if (!window.tasaBcv || !window.tasaBcv.valor) return null;
+            var bs = Number(usd || 0) * Number(window.tasaBcv.valor);
+            return 'Bs ' + bs.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        };
+    </script>
+
     <!-- JAVASCRIPT -->
     <script src="{{ asset('assets/libs/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
+    <script>
+        // Solo un menú de acciones (⋮) abierto a la vez en las tablas.
+        // Listener en FASE DE CAPTURA: corre antes que cualquier otro handler de la
+        // página, así que cierra de forma fiable los demás menús de acciones abiertos
+        // sin importar qué interfiera con el auto-cierre nativo de Bootstrap.
+        document.addEventListener('click', function (e) {
+            var clickedToggle = e.target.closest('[data-bs-toggle="dropdown"]');
+            document.querySelectorAll('.dropdown-menu.actions-menu.show').forEach(function (menu) {
+                var dd = menu.closest('.dropdown');
+                var toggle = dd ? dd.querySelector('[data-bs-toggle="dropdown"]') : null;
+                if (toggle && toggle !== clickedToggle) {
+                    bootstrap.Dropdown.getOrCreateInstance(toggle).hide();
+                }
+            });
+        }, true);
+    </script>
     <script src="{{ asset('assets/libs/simplebar/simplebar.min.js') }}"></script>
     <script src="{{ asset('assets/libs/node-waves/waves.min.js') }}"></script>
     <script src="{{ asset('assets/libs/feather-icons/feather.min.js') }}"></script>
@@ -153,6 +186,11 @@
 
     <!-- App js -->
     <script src="{{ asset('assets/js/app.js') }}"></script>
+
+    <!-- Notificaciones del header (campanita) -->
+    @auth
+        <script src="{{ asset('assets/js/pages/notifications.js') }}"></script>
+    @endauth
 
     <!-- Alpine.js (necesario para x-data, x-show, x-init en perfil y otros) -->
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.5/dist/cdn.min.js"></script>
@@ -495,7 +533,7 @@
             });
 
             // Código prefijo de tipo producto - solo letras, mayúsculas automáticas, máx 5
-            $(document).on('input', '#tipo-prefijo-field, input[name="codigo_prefijo"]', function () {
+            $(document).on('input', '#tipo-prefijo-field, input[name="prefijo"]', function () {
                 this.value = this.value.replace(/[^a-zA-Z]/g, '').toUpperCase().slice(0, 5);
             });
 
@@ -632,7 +670,7 @@
             });
 
             // Validación de código prefijo (solo letras, máx 5)
-            $(document).on('blur', '#tipo-prefijo-field, input[name="codigo_prefijo"]', function () {
+            $(document).on('blur', '#tipo-prefijo-field, input[name="prefijo"]', function () {
                 let value = $(this).val().trim();
                 if (value.length === 0) {
                     marcarInvalido($(this), 'El código prefijo es obligatorio.');

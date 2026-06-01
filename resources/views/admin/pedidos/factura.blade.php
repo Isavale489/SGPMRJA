@@ -1,304 +1,225 @@
-<!DOCTYPE html>
-<html lang="es">
+@extends('layouts.pdf')
 
-<head>
-    <meta charset="UTF-8">
-    <title>Pedido #{{ $pedido->id }}</title>
-    <style>
-        body {
-            font-family: DejaVu Sans, sans-serif;
-            font-size: 12px;
-            margin: 0;
-        }
+@section('page-title', 'Pedido #' . $pedido->id)
+@section('report-title', 'Pedido N° ' . str_pad($pedido->id, 5, '0', STR_PAD_LEFT))
 
-        /* Ajuste de ancho para que no se corte en A4 (595pt ≈ 794px) */
-        .container {
-            max-width: 750px;
-            width: 100%;
-            margin: 0 auto;
-            padding-left: 0px;
-            padding-right: 30px;
-            padding-top: 10px;
-            padding-bottom: 10px;
-        }
+@section('extra-styles')
+    /* ── Bloque de datos (cliente / pedido) ── */
+    .info-block {
+        width: 100%;
+        border: none;
+        margin-bottom: 12px;
+    }
 
-        .header-table {
-            width: 100%;
-        }
+    .info-block td {
+        border: none;
+        padding: 0 14px 0 0;
+        font-size: 9.5px;
+        line-height: 1.7;
+        vertical-align: top;
+        width: 50%;
+        word-break: break-word;
+    }
 
-        .header-table td {
-            vertical-align: top;
-        }
+    .info-block .label {
+        font-weight: bold;
+        color: #1e3c72;
+    }
 
-        .logo {
-            width: 100px;
-        }
+    /* ── Anchos de columnas de la tabla de productos ── */
+    .col-cant   { width: 6%;    text-align: center; }
+    .col-concep { width: 34%; }
+    .col-color  { width: 9%;    text-align: center; }
+    .col-talla  { width: 8%;    text-align: center; }
+    .col-logo   { width: 20%; }
+    .col-cunit  { width: 11.5%; text-align: right; }
+    .col-monto  { width: 11.5%; text-align: right; }
 
-        .company-name {
-            font-size: 18px;
-            font-weight: bold;
-            text-align: center;
-        }
+    .data-table tbody td.text-center { text-align: center; }
+    .data-table tbody td.text-right  { text-align: right; }
+    .data-table tbody td small { color: #6b7280; font-size: 8px; }
 
-        .company-info {
-            text-align: center;
-            font-size: 11px;
-        }
+    /* ── Bloque de totales ── */
+    .totals-block {
+        width: 100%;
+        border: none;
+        margin-top: 10px;
+        margin-bottom: 14px;
+    }
 
-        .info-table,
-        .items-table,
-        .totals-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 8px;
-        }
+    .totals-block > tbody > tr > td {
+        border: none;
+        padding: 0;
+    }
 
-        /* Forzar mismas dimensiones */
-        .info-table,
-        .items-table {
-            table-layout: fixed;
-        }
+    .totals-inner {
+        width: 230px;
+        border: none;
+    }
 
-        /* Definir proporciones de columnas en items-table */
-        .items-table th:nth-child(1),
-        .items-table td:nth-child(1) {
-            width: 7%;
-        }
+    .totals-inner td {
+        border: none;
+        padding: 3px 8px;
+        font-size: 10px;
+    }
 
-        .items-table th:nth-child(2),
-        .items-table td:nth-child(2) {
-            width: 35%;
-        }
+    .totals-inner .t-label {
+        text-align: right;
+        color: #3d4852;
+        font-weight: 600;
+    }
 
-        /* Concepto o Descripción del Producto */
-        .items-table th:nth-child(3),
-        .items-table td:nth-child(3) {
-            width: 10%;
-        }
+    .totals-inner .t-value {
+        text-align: right;
+        width: 90px;
+    }
 
-        /* Modelo */
-        .items-table th:nth-child(4),
-        .items-table td:nth-child(4) {
-            width: 7%;
-        }
+    .totals-inner .t-grand {
+        border-top: 2px solid #1e3c72;
+        color: #1e3c72;
+        font-weight: bold;
+        font-size: 11px;
+    }
 
-        /* Color */
-        .items-table th:nth-child(5),
-        .items-table td:nth-child(5) {
-            width: 7%;
-        }
+    /* ── Nota especial ── */
+    .nota-especial {
+        clear: both;
+        background-color: #fff8e1;
+        color: #5d4037;
+        padding: 10px 12px;
+        border: 1px solid #ffe082;
+        border-left: 3px solid #ffb300;
+        margin-top: 16px;
+        font-size: 9.5px;
+        line-height: 1.6;
+    }
+@endsection
 
-        /* Talla */
-        .items-table th:nth-child(6),
-        .items-table td:nth-child(6) {
-            width: 15%;
-        }
+@section('content')
+    {{-- ═══════ Datos del cliente y del pedido ═══════ --}}
+    <table class="info-block">
+        <tr>
+            <td>
+                <span class="label">Cliente:</span> {{ $pedido->cliente_nombre_completo }}<br>
+                <span class="label">{{ str_starts_with($pedido->cliente_documento, 'V-') ? 'C.I.:' : 'RIF:' }}</span>
+                {{ $pedido->cliente_documento }}<br>
+                <span class="label">Teléfono:</span> {{ $pedido->cliente_telefono_normalizado }}<br>
+                <span class="label">Email:</span> {{ $pedido->cliente_email_normalizado }}
+            </td>
+            <td>
+                <span class="label">Fecha del Pedido:</span>
+                {{ \Carbon\Carbon::parse($pedido->fecha_pedido)->format('d/m/Y') }}<br>
+                <span class="label">Fecha Entrega Est.:</span>
+                {{ $pedido->fecha_entrega_estimada ? \Carbon\Carbon::parse($pedido->fecha_entrega_estimada)->format('d/m/Y') : '-' }}<br>
+                <span class="label">Elaborado por:</span> {{ $pedido->user->name ?? '-' }}
+            </td>
+        </tr>
+    </table>
 
-        /* Logo */
-        .items-table th:nth-child(7),
-        .items-table td:nth-child(7) {
-            width: 9%;
-        }
-
-        /* Costo Unitario */
-        .items-table th:nth-child(8),
-        .items-table td:nth-child(8) {
-            width: 10%;
-        }
-
-        /* Monto */
-        .info-table td {
-            border: 1px solid #000;
-            padding: 4px;
-            font-size: 11px;
-            word-break: break-all;
-            /* evita desbordes largos como emails */
-        }
-
-        .items-table th,
-        .items-table td {
-            border: 1px solid #000;
-            padding: 4px;
-            text-align: center;
-            font-size: 11px;
-        }
-
-        .items-table th {
-            background-color: #eaeaea;
-        }
-
-        .totals-table {
-            margin-left: auto;
-        }
-
-        /* Alinea totales a la derecha dentro del contenedor */
-        .totals-table td {
-            padding: 4px;
-            font-size: 11px;
-        }
-
-        .totals-table .label {
-            text-align: right;
-        }
-
-        .totals-table .value {
-            text-align: right;
-            width: 80px;
-        }
-
-        .note {
-            background-color: #ffff00;
-            margin-top: 12px;
-            padding: 8px;
-            font-size: 11px;
-        }
-    </style>
-</head>
-
-<body>
-    <div class="container">
-        <!-- Encabezado con logo y datos de la empresa -->
-        <div style="position: relative; min-height: 100px; margin-bottom: 8px;">
-            <img src="{{ public_path('logo.jpg') }}" alt="Logo"
-                style="width: 100px; position: absolute; left: 0; top: 0;">
-            <div style="text-align: center; padding-left: 30px;">
-                <div class="company-name" style="font-size: 18px; font-weight: bold;">Manufacturas R.J. ATLANTICO C.A.
-                </div>
-                <div class="company-info" style="font-size: 11px;">
-                    Rif: J-40391423-0 &nbsp;&nbsp; Telf.: 0414-3558537 - 0255-6640625 &nbsp;&nbsp; Email:
-                    rjatlantico@gmail.com
-                </div>
-                <div class="company-info" style="font-size: 11px;">
-                    Av. Esquina calle 35 locales 1 y 2 sector centro Acarigua - Edo. Portuguesa
-                </div>
-            </div>
-        </div>
-
-        <!-- N° de Pedido y Elaborado por -->
-        <div style="display: flex; justify-content: space-between; align-items: center; margin: 10px 0 5px 0;">
-            <div style="flex: 1; text-align: center; font-size: 15px; font-weight: bold;">N° de Pedido:
-                {{ $pedido->id }}</div>
-            <div style="flex: 1; text-align: right; font-size: 13px; font-weight: bold;">Elaborado por:
-                {{ $pedido->user->name ?? '-' }}</div>
-        </div>
-
-        <!-- Tabla de información del cliente -->
-        <table class="info-table">
+    {{-- ═══════ Tabla de productos ═══════ --}}
+    <table class="data-table">
+        <thead>
             <tr>
-                <td style="width: 100px; font-weight:bold;">Cliente:</td>
-                <td style="width: 220px;">{{ $pedido->cliente_nombre_completo }}</td>
-                <td style="width: 60px; font-weight:bold;">
-                    @if(str_starts_with($pedido->cliente_documento, 'V-'))
-                        C.I.:
-                    @else
-                        Rif:
-                    @endif
-                </td>
-                <td>{{ $pedido->cliente_documento }}</td>
-                <td style="width: 60px; font-weight:bold;">Fecha del Pedido:</td>
-                <td>{{ \Carbon\Carbon::parse($pedido->fecha_pedido)->format('d/m/Y') }}</td>
-                <td style="width: 60px; font-weight:bold;">Fecha Entrega Est.:</td>
-                <td>{{ $pedido->fecha_entrega_estimada ? \Carbon\Carbon::parse($pedido->fecha_entrega_estimada)->format('d/m/Y') : '-' }}
-                </td>
+                <th class="col-cant">Cant.</th>
+                <th class="col-concep">Concepto o Descripción del Producto</th>
+                <th class="col-color">Color</th>
+                <th class="col-talla">Talla</th>
+                <th class="col-logo">Logo</th>
+                <th class="col-cunit">Costo Unit.</th>
+                <th class="col-monto">Monto</th>
             </tr>
-            <tr>
-                <td style="font-weight:bold;">Teléfono Contacto:</td>
-                <td>{{ $pedido->cliente_telefono_normalizado }}</td>
-                <td style="font-weight:bold;">e-mail:</td>
-                <td colspan="5" style="word-break: break-all; word-wrap: break-word; max-width: 100%;">
-                    {{ $pedido->cliente_email_normalizado }}</td>
-            </tr>
-        </table>
-
-        <!-- Tabla de items -->
-        <table class="items-table">
-            <thead>
-                <tr>
-                    <th style="width: 7%;">Cant.</th>
-                    <th style="width: 35%;">Concepto o Descripción del Producto</th>
-                    <th style="width: 10%;">Modelo</th>
-                    <th style="width: 7%;">Color</th>
-                    <th style="width: 7%;">Talla</th>
-                    <th style="width: 15%;">Logo</th>
-                    <th style="width: 9%;">Costo Unitario</th>
-                    <th style="width: 10%;">Monto</th>
+        </thead>
+        <tbody>
+            @foreach($pedido->productos as $index => $detalle)
+                @php
+                    $ubicacionesTexto = $detalle->bordados->map(function ($b) {
+                        $cantidad = (int) ($b->cantidad ?? 1);
+                        return $b->nombre_aplicado . ($cantidad > 1 ? ' x' . $cantidad : '');
+                    })->implode(', ');
+                    $logosTexto = $detalle->bordados
+                        ->map(function ($b) {
+                            return trim((string) ($b->nombre_logo_aplicado ?? ''));
+                        })
+                        ->filter()
+                        ->unique()
+                        ->implode(', ');
+                    $cantidadBordados = $detalle->bordados->sum(function ($b) {
+                        return (int) ($b->cantidad ?? 1);
+                    });
+                    // Snapshot inmutable: estado del catálogo al momento del pedido
+                    $telaSnap = $detalle->tela_snapshot;
+                    $atrSnap  = $detalle->atributos_snapshot;
+                    $variantPartes = [];
+                    if (is_array($telaSnap) && !empty($telaSnap['nombre'])) {
+                        $variantPartes[] = 'Tela: ' . $telaSnap['nombre'];
+                    }
+                    if (is_array($atrSnap)) {
+                        foreach ($atrSnap as $atrNombre => $valNombre) {
+                            $variantPartes[] = $atrNombre . ': ' . $valNombre;
+                        }
+                    }
+                @endphp
+                <tr class="{{ $index % 2 === 1 ? 'zebra' : '' }}">
+                    <td class="col-cant text-center">{{ $detalle->cantidad }}</td>
+                    <td class="col-concep">
+                        {{ $detalle->producto->nombre }}
+                        @if(!empty($variantPartes))
+                            <br><small>{{ implode(' · ', $variantPartes) }}</small>
+                        @endif
+                        @if($detalle->descripcion)
+                            <br><small>{{ $detalle->descripcion }}</small>
+                        @endif
+                    </td>
+                    <td class="col-color text-center">{{ $detalle->color?->nombre ?? '-' }}</td>
+                    <td class="col-talla text-center">{{ $detalle->talla?->etiqueta ?? '-' }}</td>
+                    <td class="col-logo">
+                        @if($detalle->lleva_bordado)
+                            {{ $logosTexto ?: ($detalle->nombre_logo ?: '-') }}
+                            <br><small>Ubicación: {{ $ubicacionesTexto ?: '-' }}</small>
+                            <br><small>Cantidad: {{ $cantidadBordados ?: '-' }}</small>
+                        @else
+                            -
+                        @endif
+                    </td>
+                    <td class="col-cunit text-right">{{ number_format($detalle->precio_unitario, 2) }}</td>
+                    <td class="col-monto text-right">{{ number_format($detalle->precio_unitario * $detalle->cantidad, 2) }}</td>
                 </tr>
-            </thead>
-            <tbody>
-                @foreach($pedido->productos as $detalle)
-                    @php
-                        $ubicacionesTexto = $detalle->bordados->map(function ($b) {
-                            $cantidad = (int) ($b->cantidad ?? 1);
-                            return $b->nombre_aplicado . ($cantidad > 1 ? ' x' . $cantidad : '');
-                        })->implode(', ');
-                        $logosTexto = $detalle->bordados
-                            ->map(function ($b) {
-                                return trim((string) ($b->nombre_logo_aplicado ?? ''));
-                            })
-                            ->filter()
-                            ->unique()
-                            ->implode(', ');
-                        $cantidadBordados = $detalle->bordados->sum(function ($b) {
-                            return (int) ($b->cantidad ?? 1);
-                        });
-                    @endphp
+            @endforeach
+        </tbody>
+    </table>
+
+    {{-- ═══════ Totales ═══════ --}}
+    <table class="totals-block">
+        <tr>
+            <td>&nbsp;</td>
+            <td style="width: 230px;">
+                <table class="totals-inner">
                     <tr>
-                        <td>{{ $detalle->cantidad }}</td>
-                        <td>
-                            {{ $detalle->producto->nombre }}
-                            @if($detalle->descripcion)
-                                - {{ $detalle->descripcion }}
-                            @endif
-                        </td>
-                        <td>{{ $detalle->producto->modelo ?? '-' }}</td>
-                        <td>{{ $detalle->color?->nombre ?? '-' }}</td>
-                        <td>{{ $detalle->talla?->etiqueta ?? '-' }}</td>
-                        <td>
-                            @if($detalle->lleva_bordado)
-                                {{ $logosTexto ?: ($detalle->nombre_logo ?: '-') }}
-                                <br><small>Ubicación: {{ $ubicacionesTexto ?: '-' }}</small>
-                                <br><small>Cantidad: {{ $cantidadBordados ?: '-' }}</small>
-                            @else
-                                -
-                            @endif
-                        </td>
-                        <td>{{ number_format($detalle->precio_unitario, 2) }}</td>
-                        <td>{{ number_format($detalle->precio_unitario * $detalle->cantidad, 2) }}</td>
+                        <td class="t-label">Total:</td>
+                        <td class="t-value">{{ number_format($subtotal, 2) }}</td>
                     </tr>
-                @endforeach
-            </tbody>
-        </table>
+                    <tr>
+                        <td class="t-label">Descuento:</td>
+                        <td class="t-value">{{ number_format($descuento, 2) }}</td>
+                    </tr>
+                    <tr>
+                        <td class="t-label">IVA (16%):</td>
+                        <td class="t-value">{{ number_format($iva, 2) }}</td>
+                    </tr>
+                    <tr>
+                        <td class="t-label t-grand">Total a Pagar:</td>
+                        <td class="t-value t-grand">{{ number_format($totalPagar, 2) }}</td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
 
-        <!-- Totales -->
-        <table class="totals-table" align="right" style="margin-top: 6px; width: 300px;">
-            <tr>
-                <td class="label">Total</td>
-                <td class="value">{{ number_format($subtotal, 2) }}</td>
-            </tr>
-            <tr>
-                <td class="label">Descuento</td>
-                <td class="value">{{ number_format($descuento, 2) }}</td>
-            </tr>
-            <tr>
-                <td class="label">IVA (16%)</td>
-                <td class="value">{{ number_format($iva, 2) }}</td>
-            </tr>
-            <tr>
-                <td class="label" style="font-weight:bold;">Total a Pagar</td>
-                <td class="value" style="font-weight:bold;">{{ number_format($totalPagar, 2) }}</td>
-            </tr>
-        </table>
-
-        <div style="clear: both;"></div>
-
-        <!-- Nota -->
-        <div class="note">
-            Tiempo de Ejecución del Trabajo 30 días hábiles<br>
-            70% del costo total para la formalización del pedido, 30% a la entrega<br>
-            El plazo de entrega comienza a transcurrir una vez realizado el pago<br>
-            <strong>No se modifican pedidos ya formalizados (ni tallas ni cantidades)</strong>
-        </div>
+    {{-- ═══════ Nota especial ═══════ --}}
+    <div class="nota-especial">
+        <b>Tiempo de Ejecución del Trabajo:</b> 30 días hábiles.<br>
+        70% del costo total para la formalización del pedido, 30% a la entrega.<br>
+        El plazo de entrega comienza a transcurrir una vez realizado el pago.<br>
+        <b>No se modifican pedidos ya formalizados (ni tallas ni cantidades).</b>
     </div>
-</body>
-
-</html>
+@endsection

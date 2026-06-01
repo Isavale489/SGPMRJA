@@ -7,6 +7,14 @@
     <link href="https://cdn.datatables.net/responsive/2.2.9/css/responsive.bootstrap.min.css" rel="stylesheet"
         type="text/css" />
     <link href="https://cdn.datatables.net/buttons/2.2.2/css/buttons.dataTables.min.css" rel="stylesheet" type="text/css" />
+    {{-- Grid responsivo para filtros: 1 col mobile → 4 cols desktop --}}
+    <style>
+        @media (min-width: 768px) {
+            .navy-filter-grid {
+                grid-template-columns: repeat(4, 1fr) !important;
+            }
+        }
+    </style>
 @endpush
 
 @section('content')
@@ -50,15 +58,15 @@
                                     data-bs-target="#showModal">
                                     <i class="ri-add-line align-bottom me-1"></i> Agregar Cliente
                                 </button>
-                                <a href="{{ route('clientes.reporte.pdf') }}" class="btn btn-danger" target="_blank">
+                                <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#pdfExportModal">
                                     <i class="ri-file-pdf-fill align-bottom me-1"></i> Exportar PDF
-                                </a>
+                                </button>
                             </div>
                             @else
                             <div class="d-flex gap-2">
-                                <a href="{{ route('clientes.reporte.pdf') }}" class="btn btn-danger" target="_blank">
+                                <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#pdfExportModal">
                                     <i class="ri-file-pdf-fill align-bottom me-1"></i> Exportar PDF
-                                </a>
+                                </button>
                             </div>
                             @endif
                         </div>
@@ -89,7 +97,11 @@
                                 data-bs-toggle="collapse" data-bs-target="#filters-collapse-body"
                                 aria-expanded="false" aria-controls="filters-collapse-body">
                                 <i class="ri-filter-3-line"></i>
-                                <span>Filtros</span>
+                                <span class="position-relative">
+                                    Filtros
+                                    <span class="d-none position-absolute" id="filter-dot-indicator"
+                                        style="top: -3px; right: -10px; width: 8px; height: 8px; background: #ef4444; border-radius: 50%; border: 2px solid #1b2e4b; display: inline-block;"></span>
+                                </span>
                                 <span class="navy-filter-badge d-none" id="active-filter-count"></span>
                                 <i class="ri-arrow-down-s-line navy-filter-chevron"></i>
                             </button>
@@ -97,9 +109,9 @@
                         {{-- Body: colapsable, oculto por defecto --}}
                         <div class="collapse" id="filters-collapse-body">
                             <div class="navy-filter-body">
-                                <div class="row g-2 align-items-end">
+                                <div style="display: grid; grid-template-columns: 1fr; gap: 0.75rem;" class="navy-filter-grid">
                                     {{-- Filtro 1: Tipo de Cliente --}}
-                                    <div class="col-lg-4 col-md-6">
+                                    <div>
                                         <label class="navy-filter-label" for="filter-tipo-cliente">
                                             <i class="ri-user-settings-line"></i> Tipo de Cliente
                                         </label>
@@ -110,8 +122,8 @@
                                             <option value="gubernamental">Gubernamental</option>
                                         </select>
                                     </div>
-                                    {{-- Filtro 2: Estatus (Activo = normal, Inactivo = trashed / SoftDelete) --}}
-                                    <div class="col-lg-4 col-md-6">
+                                    {{-- Filtro 2: Estatus --}}
+                                    <div>
                                         <label class="navy-filter-label" for="filter-estatus">
                                             <i class="ri-shield-check-line"></i> Estatus
                                         </label>
@@ -122,7 +134,7 @@
                                         </select>
                                     </div>
                                     {{-- Filtro 3: Estado Territorial (Venezuela) --}}
-                                    <div class="col-lg-4 col-md-6">
+                                    <div>
                                         <label class="navy-filter-label" for="filter-estado-territorial">
                                             <i class="ri-map-pin-line"></i> Estado
                                         </label>
@@ -154,11 +166,26 @@
                                             <option value="Zulia">Zulia</option>
                                         </select>
                                     </div>
+                                    {{-- Filtro 4: Ordenar por --}}
+                                    <div>
+                                        <label class="navy-filter-label" for="filter-orden">
+                                            <i class="ri-sort-asc"></i> Ordenar por
+                                        </label>
+                                        <select class="form-select navy-filter-select" id="filter-orden">
+                                            <option value="recientes">Más recientes primero</option>
+                                            <option value="antiguos">Más antiguos primero</option>
+                                            <option value="nombre_asc">Nombre (A-Z)</option>
+                                            <option value="nombre_desc">Nombre (Z-A)</option>
+                                        </select>
+                                    </div>
                                 </div>
-                                {{-- Botón limpiar: dentro del body colapsable --}}
+                                {{-- Botón limpiar: estilo ghost con icono de escoba --}}
                                 <div class="d-flex justify-content-end mt-2">
-                                    <button type="button" class="btn btn-navy-outline btn-sm" id="btn-clear-filters">
-                                        <i class="ri-refresh-line me-1"></i>Limpiar filtros
+                                    <button type="button" class="btn btn-sm" id="btn-clear-filters"
+                                        style="background: transparent; color: #8a9bb5; border: none; font-size: 0.8rem; transition: all 0.2s ease;"
+                                        onmouseover="this.style.color='#ef4444'; this.style.textDecoration='underline';"
+                                        onmouseout="this.style.color='#8a9bb5'; this.style.textDecoration='none';">
+                                        <i class='bx bx-broom' style="margin-right: 4px; font-size: 1rem; vertical-align: middle;"></i>Limpiar filtros
                                     </button>
                                 </div>
                             </div>
@@ -577,11 +604,15 @@
 
                     <div class="modal-form-section mb-0">
                         <div class="modal-form-section-title"><i class="ri-shield-check-line"></i>Estatus</div>
-                        <div class="form-check form-switch form-switch-success">
-                            <input type="hidden" name="estatus" value="0" />
-                            <input class="form-check-input" type="checkbox" role="switch" id="estatus-field"
-                                name="estatus" value="1" checked />
-                            <label class="form-check-label" for="estatus-field" id="estatus-label">Activo</label>
+                        {{-- Estatus: solo lectura. Lo gobierna Inhabilitar/Restaurar, no es editable aquí. --}}
+                        <input type="text" class="form-control bg-light" id="estatus-display"
+                            value="Activo" readonly tabindex="-1">
+                        <div class="d-flex align-items-start gap-2 mt-2 p-2 rounded-3 bg-info-subtle border border-info-subtle">
+                            <i class="ri-information-line text-info fs-5 lh-1 mt-1"></i>
+                            <small class="text-info-emphasis mb-0 lh-sm">
+                                Se asigna automáticamente: un cliente nuevo o restaurado queda <strong>Activo</strong>.
+                                Para darlo de baja usa <strong>Inhabilitar</strong> (pasa a Inactivo y al historial).
+                            </small>
                         </div>
                     </div>
 
@@ -597,6 +628,48 @@
                     </div>
                 </div>
             </form>
+        </div>
+    </div>
+
+    {{-- Modal: Exportar PDF con filtros --}}
+    <div class="modal fade atlantico-modal" id="pdfExportModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" style="max-width: 360px;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="ri-file-pdf-line me-2"></i>Exportar PDF
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <p class="text-muted small mb-3">Filtra qué clientes incluir en el reporte.</p>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold" for="pdf-filter-estado">Estado</label>
+                        <select class="form-select" id="pdf-filter-estado">
+                            <option value="">Todos los estados</option>
+                            <option value="1">Solo Activos</option>
+                            <option value="0">Solo Inactivos</option>
+                        </select>
+                    </div>
+                    <div class="mb-0">
+                        <label class="form-label fw-semibold" for="pdf-filter-tipo">Tipo de Cliente</label>
+                        <select class="form-select" id="pdf-filter-tipo">
+                            <option value="">Todos los tipos</option>
+                            <option value="natural">Natural</option>
+                            <option value="juridico">Jurídico</option>
+                            <option value="gubernamental">Gubernamental</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light border-0">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">
+                        <i class="ri-close-line me-1"></i>Cancelar
+                    </button>
+                    <button type="button" class="btn btn-danger" id="btn-generar-pdf">
+                        <i class="ri-file-pdf-fill me-1"></i>Generar PDF
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 @endsection
@@ -932,28 +1005,21 @@
                 headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') }
             });
             function generateButtons(clienteId, isTrashed) {
-                // Si el registro está inhabilitado (trashed), mostrar botón "Ver" + "Restaurar"
+                var sVer = '<button class="btn btn-sm btn-soft-info view-item-btn" data-id="' + clienteId + '" title="Ver"><i class="ri-eye-fill"></i></button>';
+                var items;
                 if (isTrashed) {
-                    return '<div class="d-flex gap-1 justify-content-center">' +
-                        '<button class="btn btn-sm btn-soft-secondary view-item-btn" data-id="' + clienteId + '" title="Ver" style="padding:0.2rem 0.45rem;">' +
-                        '<i class="ri-eye-fill" style="font-size:13px;"></i>' +
-                        '</button>' +
-                        '<button class="btn btn-sm btn-soft-success restore-item-btn" data-id="' + clienteId + '" title="Restaurar" style="padding:0.2rem 0.45rem;">' +
-                        '<i class="ri-arrow-go-back-line" style="font-size:13px;"></i>' +
-                        '</button>' +
-                        '</div>';
+                    items = '<li><button type="button" class="dropdown-item act-item act-restore restore-item-btn" data-id="' + clienteId + '"><span class="act-ic"><i class="ri-arrow-go-back-line"></i></span>Restaurar</button></li>';
+                } else {
+                    items =
+                        '<li><button type="button" class="dropdown-item act-item act-edit edit-item-btn" data-id="' + clienteId + '"><span class="act-ic"><i class="ri-pencil-fill"></i></span>Editar</button></li>' +
+                        '<li><button type="button" class="dropdown-item act-item act-del remove-item-btn" data-id="' + clienteId + '"><span class="act-ic"><i class="ri-forbid-line"></i></span>Inhabilitar</button></li>';
                 }
-                return '<div class="d-flex gap-1 justify-content-center">' +
-                    '<button class="btn btn-sm btn-soft-secondary view-item-btn" data-id="' + clienteId + '" title="Ver" style="padding:0.2rem 0.45rem;">' +
-                    '<i class="ri-eye-fill" style="font-size:13px;"></i>' +
-                    '</button>' +
-                    '<button class="btn btn-sm btn-soft-success edit-item-btn" data-id="' + clienteId + '" title="Editar" style="padding:0.2rem 0.45rem;">' +
-                    '<i class="ri-pencil-fill" style="font-size:13px;"></i>' +
-                    '</button>' +
-                    '<button class="btn btn-sm btn-soft-danger remove-item-btn" data-id="' + clienteId + '" title="Inhabilitar" style="padding:0.2rem 0.45rem;">' +
-                    '<i class="ri-forbid-line" style="font-size:13px;"></i>' +
-                    '</button>' +
+                var menu =
+                    '<div class="dropdown d-inline-block">' +
+                        '<button class="btn btn-sm btn-soft-secondary" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Más acciones"><i class="ri-more-2-fill"></i></button>' +
+                        '<ul class="dropdown-menu dropdown-menu-end actions-menu">' + items + '</ul>' +
                     '</div>';
+                return '<div class="d-flex gap-1 justify-content-center align-items-center">' + sVer + menu + '</div>';
             }
 
             function formatDate(dateStr) {
@@ -986,6 +1052,7 @@
                         d.filter_tipo_cliente        = $('#filter-tipo-cliente').val();
                         d.filter_estatus             = $('#filter-estatus').val();
                         d.filter_estado_territorial  = $('#filter-estado-territorial').val();
+                        d.filter_orden               = $('#filter-orden').val();
                     }
                 },
                 columns: [
@@ -1017,7 +1084,7 @@
                     },
                     { data: null, orderable: false, render: function (data, type, row) { return generateButtons(row.id, row.trashed); } }
                 ],
-                order: [[0, 'asc']],
+                order: [],
                 dom: 'rtip',
                 buttons: [
                     { extend: 'copy', exportOptions: { columns: [0, 1, 2, 3, 4] } },
@@ -1031,17 +1098,21 @@
             // Header unificado: búsqueda global + panel colapsable
             // ══════════════════════════════════════════════════════
 
-            // ── Badge: actualizar contador de filtros activos ──
+            // ── Badge: actualizar contador de filtros activos + punto rojo ──
             function updateFilterBadge() {
                 var count = 0;
                 if ($('#filter-tipo-cliente').val() !== '')                          count++;
                 if ($('#filter-estatus').val() !== '1')                              count++;
                 if ($('#filter-estado-territorial').val() !== '')                    count++;
+                if ($('#filter-orden').val() !== 'recientes')                        count++;
                 var $badge = $('#active-filter-count');
+                var $dot   = $('#filter-dot-indicator');
                 if (count > 0) {
                     $badge.text(count).removeClass('d-none');
+                    $dot.removeClass('d-none');
                 } else {
                     $badge.addClass('d-none');
+                    $dot.addClass('d-none');
                 }
             }
 
@@ -1075,14 +1146,17 @@
                 updateFilterBadge();
             @endif
 
-            // ── Botón limpiar: resetea búsqueda + filtros ──
+            // ── Botón limpiar: resetea búsqueda + filtros + orden ──
             $('#btn-clear-filters').on('click', function () {
                 $('#filter-tipo-cliente').val('');
-                $('#filter-estatus').val('');
+                $('#filter-estatus').val('1');
                 $('#filter-estado-territorial').val('');
+                $('#filter-orden').val('recientes');
                 $('#custom-search-input').val('');
-                table.search('').ajax.reload();
                 updateFilterBadge();
+                table.search('').ajax.reload(function () {
+                    updateFilterBadge();
+                });
             });
 
 
@@ -1104,6 +1178,7 @@
                 $("#documento-prefix-field").prop('disabled', false).removeClass('campo-protegido');
                 $("#documento-number-field").val("");
                 $("#documento-number-field").prop('disabled', false).removeClass('campo-protegido');
+                $("#estatus-display").val("Activo");
                 // Reset teléfono
                 $("#telefono-prefix-field").val("0424");
                 $("#telefono-number-field").val("");
@@ -1132,15 +1207,6 @@
             }
             $("#create-btn").click(function () { resetForm(); });
             $("#showModal").on('hidden.bs.modal', function () { resetForm(); });
-
-            // Listener para actualizar label del checkbox de estatus
-            $("#estatus-field").on('change', function () {
-                if ($(this).is(':checked')) {
-                    $("#estatus-label").text('Activo');
-                } else {
-                    $("#estatus-label").text('Inactivo');
-                }
-            });
 
             // Dropdown dependiente: Poblar municipios cuando cambia el estado
             $("#estado_territorial-field").on('change', function () {
@@ -1309,7 +1375,7 @@
                     $("#view-direccion").text(data.direccion || 'N/A');
                     $("#view-estado-territorial").text(data.estado_territorial || 'N/A');
                     $("#view-ciudad").text(data.ciudad || 'N/A');
-                    $("#view-estatus").html(data.estatus == 1 ? '<span class="badge bg-success">Activo</span>' : '<span class="badge bg-danger">Inactivo</span>');
+                    $("#view-estatus").html(data.trashed ? '<span class="badge bg-danger">Inhabilitado</span>' : '<span class="badge bg-success">Activo</span>');
                     $("#view-created").text(formatDate(data.created_at));
                 });
             });
@@ -1367,14 +1433,8 @@
 
                     // Ahora seleccionar el municipio guardado
                     $("#ciudad-field").val(data.ciudad || '');
-                    // Manejar checkbox de estatus
-                    if (data.estatus == 1) {
-                        $("#estatus-field").prop('checked', true);
-                        $("#estatus-label").text('Activo');
-                    } else {
-                        $("#estatus-field").prop('checked', false);
-                        $("#estatus-label").text('Inactivo');
-                    }
+                    // Estatus: display de solo lectura (siempre Activo al editar, los inhabilitados no se editan)
+                    $("#estatus-display").val(data.trashed ? 'Inhabilitado' : 'Activo');
                     $("#showModal").modal("show");
                 });
             });
@@ -1489,6 +1549,23 @@
                 $('#clienteForm').find('.invalid-feedback').hide();
             });
             $("#edit-btn").on("click", function () { $("#clienteForm").submit(); });
+        });
+
+        // PDF Export Modal
+        $('#btn-generar-pdf').on('click', function () {
+            var baseUrl = '{{ route('clientes.reporte.pdf') }}';
+            var params = [];
+            var estado = $('#pdf-filter-estado').val();
+            var tipo   = $('#pdf-filter-tipo').val();
+            if (estado !== '') params.push('estado=' + encodeURIComponent(estado));
+            if (tipo   !== '') params.push('tipo_cliente=' + encodeURIComponent(tipo));
+            var url = baseUrl + (params.length ? '?' + params.join('&') : '');
+            window.open(url, '_blank');
+            bootstrap.Modal.getInstance(document.getElementById('pdfExportModal'))?.hide();
+        });
+        $('#pdfExportModal').on('show.bs.modal', function () {
+            $('#pdf-filter-estado').val('');
+            $('#pdf-filter-tipo').val('');
         });
     </script>
 @endpush

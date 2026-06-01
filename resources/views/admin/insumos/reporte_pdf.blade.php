@@ -5,37 +5,37 @@
 
 @section('extra-styles')
     .col-nombre-insumo {
-        width: 18%;
+        width: 22%;
         font-weight: 600;
     }
 
     .col-tipo {
-        width: 10%;
+        width: 11%;
     }
 
     .col-unidad {
-        width: 8%;
+        width: 10%;
         text-align: center;
     }
 
     .col-costo {
-        width: 10%;
+        width: 12%;
         text-align: right;
     }
 
-    .col-stock {
-        width: 9%;
-        text-align: center;
-    }
-
     .col-stock-min {
-        width: 9%;
+        width: 11%;
         text-align: center;
     }
 
-    .col-proveedor {
-        width: 18%;
-        font-size: 8px;
+    .col-stock {
+        width: 11%;
+        text-align: center;
+    }
+
+    .col-stock-max {
+        width: 11%;
+        text-align: center;
     }
 
     .col-estatus {
@@ -79,9 +79,9 @@
                 <th class="col-tipo">Tipo</th>
                 <th class="col-unidad">Unidad</th>
                 <th class="col-costo">Costo Unit.</th>
-                <th class="col-stock">Stock Actual</th>
-                <th class="col-stock-min">Stock Mín.</th>
-                <th class="col-proveedor">Proveedor</th>
+                <th class="col-stock-min">Existencia Mín.</th>
+                <th class="col-stock">Existencia Actual</th>
+                <th class="col-stock-max">Existencia Máx.</th>
                 <th class="col-estatus">Estado</th>
             </tr>
         </thead>
@@ -93,6 +93,7 @@
                     <td class="col-tipo">{{ $insumo->tipo }}</td>
                     <td class="col-unidad">{{ $insumo->unidad_medida }}</td>
                     <td class="col-costo">{{ number_format($insumo->costo_unitario, 2) }}</td>
+                    <td class="col-stock-min">{{ $insumo->stock_minimo }}</td>
                     <td class="col-stock">
                         @if($insumo->stock_actual <= $insumo->stock_minimo)
                             <span class="stock-bajo">{{ $insumo->stock_actual }}</span>
@@ -102,8 +103,7 @@
                             <span class="stock-normal">{{ $insumo->stock_actual }}</span>
                         @endif
                     </td>
-                    <td class="col-stock-min">{{ $insumo->stock_minimo }}</td>
-                    <td class="col-proveedor">{{ $insumo->proveedor ? $insumo->proveedor->nombre_completo : 'Sin proveedor' }}</td>
+                    <td class="col-stock-max">{{ $insumo->stock_maximo }}</td>
                     <td class="col-estatus">
                         <span class="{{ $insumo->estado ? 'badge-activo' : 'badge-inactivo' }}">
                             {{ $insumo->estado ? 'Activo' : 'Inactivo' }}

@@ -35,22 +35,77 @@
                     <div class="d-flex align-items-center">
                         <h5 class="card-title mb-0 flex-grow-1">Listado de Usuarios</h5>
                         <div class="flex-shrink-0 d-flex align-items-center gap-3">
-                            <!-- Buscador Personalizado -->
-                            <div class="search-box">
-                                <input type="text" class="form-control form-control-sm" id="custom-search-input"
-                                    placeholder="Buscar usuario...">
-                                <i class="ri-search-line search-icon"></i>
-                            </div>
+                            <!-- Toggle Historial -->
+                            @if($historial)
+                                <a href="{{ route('users.index') }}" class="btn-historial btn-historial-volver">
+                                    <i class="ri-arrow-left-line"></i> Solo Activos
+                                </a>
+                            @else
+                                <a href="{{ route('users.index', ['historial' => true]) }}"
+                                    class="btn-historial btn-historial-ver">
+                                    <i class="ri-time-line"></i> Ver Historial
+                                </a>
+                            @endif
                             <div class="d-flex gap-2">
-                                <button type="button" class="btn btn-success add-btn" data-bs-toggle="modal" id="create-btn"
-                                    data-bs-target="#showModal">
-                                    <i class="ri-add-line align-bottom me-1"></i> Agregar Usuario
-                                </button>
+                                @if(!$historial)
+                                    <button type="button" class="btn btn-success add-btn" data-bs-toggle="modal" id="create-btn"
+                                        data-bs-target="#showModal">
+                                        <i class="ri-add-line align-bottom me-1"></i> Agregar Usuario
+                                    </button>
+                                @endif
                             </div>
                         </div>
                     </div>
                 </div>
                 <div class="card-body">
+                    <div class="advanced-filters-wrapper navy-theme" id="advanced-filters">
+                        <div class="navy-filter-header is-collapsed">
+                            <div class="navy-header-search">
+                                <i class="ri-search-line"></i>
+                                <input type="text" class="navy-search-input" id="custom-search-input"
+                                    placeholder="Buscar usuario..." autocomplete="off">
+                            </div>
+                            <div class="navy-header-divider"></div>
+                            <button class="navy-filter-btn collapsed" type="button"
+                                data-bs-toggle="collapse" data-bs-target="#filters-collapse-body"
+                                aria-expanded="false" aria-controls="filters-collapse-body">
+                                <i class="ri-filter-3-line"></i>
+                                <span>Filtros</span>
+                                <span class="navy-filter-badge d-none" id="active-filter-count"></span>
+                                <i class="ri-arrow-down-s-line navy-filter-chevron"></i>
+                            </button>
+                        </div>
+                        <div class="collapse" id="filters-collapse-body">
+                            <div class="navy-filter-body">
+                                <div class="row g-3">
+                                    <div class="col-12 col-md-6">
+                                        <label class="navy-filter-label" for="filter-role">
+                                            <i class="ri-shield-user-line"></i> Rol
+                                        </label>
+                                        <select class="form-select navy-filter-select" id="filter-role">
+                                            <option value="">Todos los roles</option>
+                                            <option value="Administrador">Administrador</option>
+                                            <option value="Supervisor">Supervisor</option>
+                                            <option value="Usuario">Usuario</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-12 col-md-6">
+                                        <label class="navy-filter-label" for="filter-estado">
+                                            <i class="ri-shield-check-line"></i> Estado
+                                        </label>
+                                        <select class="form-select navy-filter-select" id="filter-estado">
+                                            <option value="">Todos los estados</option>
+                                            <option value="1" selected>Activo</option>
+                                            <option value="0">Inactivo</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="d-flex justify-content-end mt-2">
+                                    <button type="button" class="btn btn-link" id="btn-clear-filters">Limpiar filtros</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                     <table id="users-table" class="table table-bordered table-striped table-sm align-middle table-operativa table-maestro">
                         <thead>
                             <tr>
@@ -206,9 +261,19 @@
                                         placeholder="Seleccione un rol" />
                                 </div>
                                 <div class="col-md-6">
-                                    <x-forms.select name="estado" label="Estado" :options="['1' => 'Activo', '0' => 'Inactivo']"
-                                        placeholder="" value="1" />
+                                    {{-- Estado: solo lectura. Lo gobierna Inhabilitar/Habilitar (controla el acceso al login). --}}
+                                    <label class="form-label">Estado</label>
+                                    <input type="text" class="form-control bg-light" id="estado-display"
+                                        value="Activo" readonly tabindex="-1">
                                 </div>
+                            </div>
+                            <div class="d-flex align-items-start gap-2 mb-3 p-2 rounded-3 bg-info-subtle border border-info-subtle">
+                                <i class="ri-information-line text-info fs-5 lh-1 mt-1"></i>
+                                <small class="text-info-emphasis mb-0 lh-sm">
+                                    El estado controla el acceso al sistema. Un usuario nuevo queda <strong>Activo</strong>.
+                                    Para bloquear su ingreso usa <strong>Inhabilitar</strong> (no podrá iniciar sesión y pasa al historial);
+                                    <strong>Habilitar</strong> lo reactiva.
+                                </small>
                             </div>
 
                             <div class="row mb-0">
@@ -323,34 +388,73 @@
                 }
             });
 
-            function generateButtons(userId, recoveryLocked, isSelf, userName, userEmail) {
-                var unlockBtn = '';
-                if (recoveryLocked) {
-                    unlockBtn =
-                        '<button class="btn btn-sm btn-soft-warning unlock-recovery-btn" data-id="' + userId + '" title="Desbloquear recuperación" style="padding:0.2rem 0.45rem;">' +
-                        '<i class="ri-lock-unlock-line" style="font-size:13px;"></i>' +
-                        '</button>';
+            function debounce(func, wait) {
+                let timeout;
+                return function (...args) {
+                    clearTimeout(timeout);
+                    timeout = setTimeout(() => func.apply(this, args), wait);
+                };
+            }
+
+            function updateFilterBadge() {
+                let count = 0;
+                $('.navy-filter-select').each(function () {
+                    var v = $(this).val();
+                    // filter-estado='1' (Activo) es el default → no cuenta como filtro activo
+                    if (this.id === 'filter-estado') {
+                        if (v && v !== '1') count++;
+                    } else if (v && v !== '') {
+                        count++;
+                    }
+                });
+                $('#active-filter-count').text(count).toggleClass('d-none', count === 0);
+            }
+
+            $('#filters-collapse-body')
+                .on('show.bs.collapse', function () {
+                    $('.navy-filter-header').removeClass('is-collapsed');
+                })
+                .on('hidden.bs.collapse', function () {
+                    $('.navy-filter-header').addClass('is-collapsed');
+                });
+
+            function generateButtons(userId, recoveryLocked, isSelf, userName, userEmail, estado) {
+                var sVer =
+                    '<button class="btn btn-sm btn-soft-info view-item-btn" data-id="' + userId + '" title="Ver"><i class="ri-eye-fill"></i></button>';
+
+                var items = '';
+
+                if (estado != 1) {
+                    // Inhabilitado → menú con solo Habilitar
+                    items +=
+                        '<li><button type="button" class="dropdown-item act-item act-restore restore-item-btn" data-id="' + userId + '"><span class="act-ic"><i class="ri-arrow-go-back-line"></i></span>Habilitar</button></li>';
+                } else {
+                    // Activo → Editar + [desbloquear] + [resetear pass] + [separador + Inhabilitar]
+                    items +=
+                        '<li><button type="button" class="dropdown-item act-item act-edit edit-item-btn" data-id="' + userId + '"><span class="act-ic"><i class="ri-pencil-fill"></i></span>Editar</button></li>';
+
+                    if (recoveryLocked) {
+                        items +=
+                            '<li><button type="button" class="dropdown-item act-item act-warn unlock-recovery-btn" data-id="' + userId + '"><span class="act-ic"><i class="ri-lock-unlock-line"></i></span>Desbloquear recuperación</button></li>';
+                    }
+
+                    if (!isSelf) {
+                        items +=
+                            '<li><button type="button" class="dropdown-item act-item act-primary reset-password-btn" data-id="' + userId + '" data-name="' + (userName || '') + '" data-email="' + (userEmail || '') + '"><span class="act-ic"><i class="ri-key-2-line"></i></span>Resetear contraseña</button></li>';
+                        // No permitir auto-inhabilitarse desde la UI (el backend también lo bloquea)
+                        items +=
+                            '<li><hr class="dropdown-divider"></li>' +
+                            '<li><button type="button" class="dropdown-item act-item act-del remove-item-btn" data-id="' + userId + '"><span class="act-ic"><i class="ri-forbid-line"></i></span>Inhabilitar</button></li>';
+                    }
                 }
-                var resetPwBtn = '';
-                if (!isSelf) {
-                    resetPwBtn =
-                        '<button class="btn btn-sm btn-soft-info reset-password-btn" data-id="' + userId + '" data-name="' + (userName || '') + '" data-email="' + (userEmail || '') + '" title="Resetear contraseña" style="padding:0.2rem 0.45rem;">' +
-                        '<i class="ri-key-2-line" style="font-size:13px;"></i>' +
-                        '</button>';
-                }
-                return '<div class="d-flex gap-1 justify-content-center">' +
-                    '<button class="btn btn-sm btn-soft-secondary view-item-btn" data-id="' + userId + '" title="Ver" style="padding:0.2rem 0.45rem;">' +
-                    '<i class="ri-eye-fill" style="font-size:13px;"></i>' +
-                    '</button>' +
-                    '<button class="btn btn-sm btn-soft-success edit-item-btn" data-id="' + userId + '" title="Editar" style="padding:0.2rem 0.45rem;">' +
-                    '<i class="ri-pencil-fill" style="font-size:13px;"></i>' +
-                    '</button>' +
-                    unlockBtn +
-                    resetPwBtn +
-                    '<button class="btn btn-sm btn-soft-danger remove-item-btn" data-id="' + userId + '" title="Eliminar" style="padding:0.2rem 0.45rem;">' +
-                    '<i class="ri-delete-bin-fill" style="font-size:13px;"></i>' +
-                    '</button>' +
+
+                var menu =
+                    '<div class="dropdown d-inline-block">' +
+                    '<button class="btn btn-sm btn-soft-secondary" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Más acciones"><i class="ri-more-2-fill"></i></button>' +
+                    '<ul class="dropdown-menu dropdown-menu-end actions-menu">' + items + '</ul>' +
                     '</div>';
+
+                return '<div class="d-flex gap-1 justify-content-center align-items-center">' + sVer + menu + '</div>';
             }
 
             var currentUserId = {{ auth()->id() ?? 'null' }};
@@ -361,9 +465,14 @@
             }
 
             var table = $('#users-table').DataTable({
+                processing: true,
+                serverSide: true,
                 ajax: {
                     url: "{{ route('users.data') }}",
-                    dataSrc: 'data'
+                    data: function (d) {
+                        d.filter_role = $('#filter-role').val();
+                        d.filter_estado = $('#filter-estado').val();
+                    }
                 },
                 columns: [
                     {
@@ -411,7 +520,7 @@
                         orderable: false,
                         searchable: false,
                         render: function (data, type, row) {
-                            return generateButtons(row.id, row.recovery_locked, row.id === currentUserId, row.name, row.email);
+                            return generateButtons(row.id, row.recovery_locked, row.id === currentUserId, row.name, row.email, row.estado);
                         }
                     }
                 ],
@@ -424,9 +533,32 @@
             });
 
             // Buscador personalizado
-            $('#custom-search-input').on('keyup', function () {
+            $('#custom-search-input').on('input', debounce(function () {
                 table.search(this.value).draw();
+            }, 300));
+
+            $('.navy-filter-select').on('change', function () {
+                table.ajax.reload(null, true);
+                updateFilterBadge();
             });
+
+            $('#btn-clear-filters').on('click', function () {
+                $('.navy-filter-select').val('');
+                $('#filter-estado').val('1'); // default: solo activos (los inhabilitados van al historial)
+                $('#custom-search-input').val('');
+                table.search('').draw();
+                table.ajax.reload(null, true);
+                updateFilterBadge();
+            });
+
+            updateFilterBadge();
+
+            // ── Si se llegó por toggle historial (?historial=true) → mostrar inhabilitados ──
+            @if($historial)
+                $('#filter-estado').val('0');
+                table.ajax.reload(null, true);
+                updateFilterBadge();
+            @endif
 
             function validarFormularioUsuario() {
                 let esValido = true;
@@ -501,6 +633,7 @@
                 $('#modalTitle').text('Agregar Usuario');
                 $('#userForm')[0].reset();
                 $('#userForm input[type="hidden"]').val('');
+                $('#estado-display').val('Activo');
                 $('#avatar-preview').hide().find('img').attr('src', '');
                 $('#add-btn').show();
                 $('#edit-btn').hide();
@@ -639,6 +772,7 @@
                     $("#field-name").val(data.name);
                     $("#field-email").val(data.email);
                     $("#field-role").val(data.role);
+                    $("#estado-display").val(data.estado == 1 ? 'Activo' : 'Inhabilitado');
 
                     // Mostrar las imágenes existentes si las hay
                     if (data.avatar) {
@@ -771,11 +905,11 @@
             $(document).on("click", ".remove-item-btn", function () {
                 var id = $(this).data("id");
                 Swal.fire({
-                    title: '¿Estás seguro?',
-                    text: "¡No podrás revertir esto!",
+                    title: '¿Inhabilitar usuario?',
+                    text: "No podrá iniciar sesión y pasará al historial. Puedes habilitarlo de nuevo cuando quieras.",
                     icon: 'warning',
                     showCancelButton: true,
-                    confirmButtonText: 'Sí, eliminar',
+                    confirmButtonText: 'Sí, inhabilitar',
                     cancelButtonText: 'Cancelar',
                     customClass: {
                         confirmButton: 'btn btn-primary w-xs me-2',
@@ -792,15 +926,11 @@
                                 table.ajax.reload();
                                 Swal.fire({
                                     icon: 'success',
-                                    title: '¡Eliminado!',
-                                    text: response.message,
-                                    customClass: {
-                                        confirmButton: 'btn btn-primary w-xs me-2',
-                                        cancelButton: 'btn btn-danger w-xs'
-                                    },
+                                    title: '¡Inhabilitado!',
+                                    text: response.success,
                                     buttonsStyling: false,
-                                    showCloseButton: true,
-                                    timer: 2000
+                                    showConfirmButton: false,
+                                    timer: 1800
                                 });
                             },
                             error: function (xhr) {
@@ -818,6 +948,51 @@
                             }
                         });
                     }
+                });
+            });
+
+            // ══════════════════════════════════════════════════════
+            // HABILITAR (Restaurar) — estándar de inhabilitación por estado
+            // ══════════════════════════════════════════════════════
+            $(document).on("click", ".restore-item-btn", function () {
+                var id = $(this).data("id");
+                Swal.fire({
+                    title: '¿Habilitar usuario?',
+                    text: "El usuario volverá a estar activo y podrá iniciar sesión.",
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonText: 'Sí, habilitar',
+                    cancelButtonText: 'Cancelar',
+                    customClass: {
+                        confirmButton: 'btn btn-success w-xs me-2',
+                        cancelButton: 'btn btn-light w-xs'
+                    },
+                    buttonsStyling: false,
+                    showCloseButton: true
+                }).then(function (result) {
+                    if (!result.isConfirmed) return;
+                    $.ajax({
+                        url: "{{ url('users') }}/" + id + "/restore",
+                        type: "POST",
+                        success: function (response) {
+                            table.ajax.reload();
+                            Swal.fire({
+                                icon: 'success',
+                                title: '¡Habilitado!',
+                                text: response.success,
+                                buttonsStyling: false,
+                                showConfirmButton: false,
+                                timer: 1800
+                            });
+                        },
+                        error: function (xhr) {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error',
+                                text: xhr.responseJSON?.message || 'No se pudo habilitar el usuario.'
+                            });
+                        }
+                    });
                 });
             });
 

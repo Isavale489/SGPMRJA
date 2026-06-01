@@ -102,7 +102,9 @@ class ClienteService
             $cliente = Cliente::create([
                 'persona_id' => $persona->id,
                 'tipo_cliente' => $data['tipo_cliente'],
-                'estatus' => $data['estatus'],
+                // 'estatus' ya no se edita: activo=1 por defecto. La inhabilitación se
+                // maneja con SoftDeletes (deleted_at), igual que Empleados/Proveedores.
+                'estatus' => $data['estatus'] ?? 1,
             ]);
 
             $clienteId = $cliente->id;
@@ -165,7 +167,7 @@ class ClienteService
             // Actualizar cliente
             $cliente->update([
                 'tipo_cliente' => $data['tipo_cliente'],
-                'estatus' => $data['estatus'],
+                // 'estatus' ya no se edita aquí; la baja se hace con SoftDeletes
             ]);
         });
     }

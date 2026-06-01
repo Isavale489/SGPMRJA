@@ -59,19 +59,7 @@
                     </div>
                     <div class="card-body">
                         <div class="row g-3">
-                            <div class="col-md-4">
-                                <div class="d-flex align-items-center">
-                                    <div class="info-icon-circle me-2 inv-icon-circle-navy">
-                                        <i class="ri-price-tag-3-line"></i>
-                                    </div>
-                                    <div>
-                                        <small class="text-muted d-block">Proveedor</small>
-                                        <span
-                                            class="fw-semibold">{{ $insumo->proveedor ? $insumo->proveedor->nombre_completo : 'No asignado' }}</span>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
+                            <div class="col-md-6">
                                 <div class="d-flex align-items-center">
                                     <div class="info-icon-circle me-2 inv-icon-circle-green">
                                         <i class="ri-money-dollar-circle-line"></i>
@@ -82,7 +70,7 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-md-6">
                                 <div class="d-flex align-items-center">
                                     <div class="info-icon-circle me-2 inv-icon-circle-red">
                                         <i class="ri-alert-line"></i>

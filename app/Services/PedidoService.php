@@ -15,7 +15,8 @@ use Illuminate\Support\Facades\Log;
 class PedidoService
 {
     public function __construct(
-        private BordadoPricingService $bordadoPricingService
+        private BordadoPricingService $bordadoPricingService,
+        private ProductoService $productoService
     ) {
     }
 
@@ -76,7 +77,8 @@ class PedidoService
                 'cliente_id' => $data['cliente_id'],
                 'fecha_pedido' => $data['fecha_pedido'],
                 'fecha_entrega_estimada' => $data['fecha_entrega_estimada'] ?? null,
-                'estado' => $data['estado'],
+                // 'estado' NO se toca aquí: lo gobierna producción (recalcularEstado)
+                // y Cancelar/Reactivar (manual). Ver PedidoController.
                 'total' => $total_pedido,
                 'prioridad' => $data['prioridad'],
             ]);
@@ -84,6 +86,9 @@ class PedidoService
             $this->syncPagos($pedido, $data['pagos'] ?? []);
             $this->crearDetalles($pedido, $data['productos']);
         });
+
+        // El estado refleja la realidad de producción (no el formulario)
+        $pedido->recalcularEstado();
 
         Log::info('Pedido actualizado', [
             'pedido_id' => $pedido->id,
@@ -123,17 +128,20 @@ class PedidoService
     private function crearDetalles(Pedido $pedido, array $productos): void
     {
         foreach ($productos as $item) {
-            $producto = Producto::find($item['producto_id']);
+            $producto = Producto::with('tela')->find($item['producto_id']);
             $precioBase = isset($item['precio_unitario'])
                 ? (float) $item['precio_unitario']
                 : (float) ($producto->precio_base ?? 0);
 
             $bordados = $this->bordadoPricingService->normalizeBordados($item);
             $precioUnitarioFinal = $this->bordadoPricingService->calcularPrecioUnitarioFinal($precioBase, $bordados);
+            $snapshots = $this->productoService->buildSnapshotsParaDetalle($producto);
 
             $detalle = DetallePedido::create([
                 'pedido_id' => $pedido->id,
                 'producto_id' => $item['producto_id'],
+                'tela_snapshot' => $snapshots['tela_snapshot'],
+                'atributos_snapshot' => $snapshots['atributos_snapshot'],
                 'cantidad' => $item['cantidad'],
                 'descripcion' => $item['descripcion'] ?? null,
                 'lleva_bordado' => $item['lleva_bordado'] ?? false,

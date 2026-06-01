@@ -4,8 +4,8 @@ use App\Http\Controllers\DetalleOrdenInsumoController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\InsumoController;
 use App\Http\Controllers\MovimientoInsumoController;
+use App\Http\Controllers\NotificacionController;
 use App\Http\Controllers\OrdenProduccionController;
-use App\Http\Controllers\ProduccionDiariaController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProductoController;
 use App\Http\Controllers\ProveedorController;
@@ -42,7 +42,7 @@ Route::get('/portfolio', [PagesController::class, 'portfolio'])->name('portfolio
 // ============================================
 // RUTAS PROTEGIDAS (Requieren autenticación)
 // ============================================
-Route::middleware(['auth', 'throttle:60,1', 'recovery.questions.required'])->group(function () {
+Route::middleware(['auth', 'throttle:60,1', 'active.user', 'recovery.questions.required'])->group(function () {
 
     // Dashboard - Acceso para todos los usuarios autenticados
     Route::get('/dashboard', [HomeController::class, 'index'])->name('dashboard');
@@ -60,6 +60,7 @@ Route::middleware(['auth', 'throttle:60,1', 'recovery.questions.required'])->gro
     Route::middleware('role:Administrador')->group(function () {
         // Usuarios
         Route::resource('users', UserController::class);
+        Route::post('users/{id}/restore', [UserController::class, 'restore'])->name('users.restore');
         Route::get('users-data', [UserController::class, 'getUsers'])->name('users.data');
         Route::get('users-check-email', [UserController::class, 'checkEmail'])->name('users.check-email');
         Route::post('users/{id}/unlock-recovery', [UserController::class, 'unlockRecovery'])->name('users.unlock-recovery');
@@ -80,6 +81,7 @@ Route::middleware(['auth', 'throttle:60,1', 'recovery.questions.required'])->gro
 
         // Empleados
         Route::resource('empleados', EmpleadoController::class);
+        Route::post('empleados/{id}/restore', [EmpleadoController::class, 'restore'])->name('empleados.restore');
         Route::get('empleados-data', [EmpleadoController::class, 'getEmpleados'])->name('empleados.data');
         Route::get('empleados-check-documento', [EmpleadoController::class, 'checkDocumento'])->name('empleados.check-documento');
         Route::get('empleados-check-email', [EmpleadoController::class, 'checkEmail'])->name('empleados.check-email');
@@ -109,6 +111,8 @@ Route::middleware(['auth', 'throttle:60,1', 'recovery.questions.required'])->gro
         Route::post('pedidos', [PedidoController::class, 'store'])->name('pedidos.store');
         Route::get('pedidos/create', [PedidoController::class, 'create'])->name('pedidos.create');
         Route::put('pedidos/{pedido}', [PedidoController::class, 'update'])->name('pedidos.update');
+        Route::patch('pedidos/{pedido}/cancelar', [PedidoController::class, 'cancelar'])->name('pedidos.cancelar');
+        Route::patch('pedidos/{pedido}/reactivar', [PedidoController::class, 'reactivar'])->name('pedidos.reactivar');
         Route::delete('pedidos/{pedido}', [PedidoController::class, 'destroy'])->name('pedidos.destroy');
         Route::get('pedidos/{pedido}/edit', [PedidoController::class, 'edit'])->name('pedidos.edit');
 
@@ -178,6 +182,9 @@ Route::middleware(['auth', 'throttle:60,1', 'recovery.questions.required'])->gro
         Route::get('productos-data', [ProductoController::class, 'getProductos'])->name('productos.data');
         Route::get('productos/reporte/pdf', [ProductoController::class, 'reportePdf'])->name('productos.reporte.pdf');
         Route::post('productos/{id}/restore', [ProductoController::class, 'restore'])->name('productos.restore');
+        Route::get('productos-sugerir-precio', [ProductoController::class, 'sugerirPrecio'])->name('productos.sugerir-precio');
+        Route::get('productos-preview-codigo', [ProductoController::class, 'previewCodigo'])->name('productos.preview-codigo');
+        Route::get('productos-resolver-variante', [ProductoController::class, 'resolverVariante'])->name('productos.resolver-variante');
 
         // Tipos de Producto
         Route::get('tipo-productos', [App\Http\Controllers\TipoProductoController::class, 'index'])->name('tipo-productos.index');
@@ -186,9 +193,24 @@ Route::middleware(['auth', 'throttle:60,1', 'recovery.questions.required'])->gro
         Route::put('tipo-productos/{tipoProducto}', [App\Http\Controllers\TipoProductoController::class, 'update'])->name('tipo-productos.update');
         Route::delete('tipo-productos/{tipoProducto}', [App\Http\Controllers\TipoProductoController::class, 'destroy'])->name('tipo-productos.destroy');
         Route::patch('tipo-productos/{id}/restore', [App\Http\Controllers\TipoProductoController::class, 'restore'])->name('tipo-productos.restore');
-        Route::get('tipo-productos/{tipoProducto}/proximo-codigo', [App\Http\Controllers\TipoProductoController::class, 'proximoCodigo'])->name('tipo-productos.proximo-codigo');
         Route::get('tipo-productos-check-nombre', [App\Http\Controllers\TipoProductoController::class, 'checkNombre'])->name('tipo-productos.check-nombre');
         Route::get('tipo-productos-check-codigo', [App\Http\Controllers\TipoProductoController::class, 'checkCodigoPrefijo'])->name('tipo-productos.check-codigo');
+
+        // Atributos de confección (catálogo maestro)
+        Route::get('atributos', [App\Http\Controllers\AtributoController::class, 'index'])->name('atributos.index');
+        Route::post('atributos', [App\Http\Controllers\AtributoController::class, 'store'])->name('atributos.store');
+        Route::get('atributos/{atributo}', [App\Http\Controllers\AtributoController::class, 'show'])->name('atributos.show');
+        Route::put('atributos/{atributo}', [App\Http\Controllers\AtributoController::class, 'update'])->name('atributos.update');
+        Route::delete('atributos/{atributo}', [App\Http\Controllers\AtributoController::class, 'destroy'])->name('atributos.destroy');
+        Route::get('atributos-check-nombre', [App\Http\Controllers\AtributoController::class, 'checkNombre'])->name('atributos.check-nombre');
+        Route::get('atributos-check-codigo', [App\Http\Controllers\AtributoController::class, 'checkCodigo'])->name('atributos.check-codigo');
+
+        // Valores de cada atributo (anidado)
+        Route::get('atributos/{atributo}/valores', [App\Http\Controllers\AtributoValorController::class, 'index'])->name('atributos.valores.index');
+        Route::post('atributos/{atributo}/valores', [App\Http\Controllers\AtributoValorController::class, 'store'])->name('atributos.valores.store');
+        Route::put('atributos/{atributo}/valores/{valor}', [App\Http\Controllers\AtributoValorController::class, 'update'])->name('atributos.valores.update');
+        Route::delete('atributos/{atributo}/valores/{valor}', [App\Http\Controllers\AtributoValorController::class, 'destroy'])->name('atributos.valores.destroy');
+        Route::put('atributos/{atributo}/valores-reorder', [App\Http\Controllers\AtributoValorController::class, 'reorder'])->name('atributos.valores.reorder');
 
         // Insumos
         Route::resource('insumos', InsumoController::class);
@@ -197,9 +219,13 @@ Route::middleware(['auth', 'throttle:60,1', 'recovery.questions.required'])->gro
         Route::get('insumos/check-nombre', [InsumoController::class, 'checkNombre'])->name('insumos.check-nombre');
 
         // Órdenes de Producción
-        Route::resource('ordenes', OrdenProduccionController::class);
+        // (rutas específicas ANTES del resource para que no colisionen con ordenes/{orden})
+        Route::get('ordenes/pedidos-disponibles', [OrdenProduccionController::class, 'pedidosDisponibles'])->name('ordenes.pedidos-disponibles');
+        Route::get('ordenes/por-empleado/{empleado}', [OrdenProduccionController::class, 'ordenesPorEmpleado'])->name('ordenes.por-empleado');
         Route::get('ordenes-data', [OrdenProduccionController::class, 'getOrdenes'])->name('ordenes.data');
-        Route::get('pedidos/{pedido}/data-for-orden', [OrdenProduccionController::class, 'getPedidoData'])->name('pedidos.data-for-orden');
+        Route::post('ordenes/batch', [OrdenProduccionController::class, 'storeBatch'])->name('ordenes.batch');
+        Route::post('ordenes/{orden}/avance', [OrdenProduccionController::class, 'registrarAvance'])->name('ordenes.avance');
+        Route::resource('ordenes', OrdenProduccionController::class);
 
         // Control de Insumos por Orden
         Route::get('ordenes/{orden}/insumos', [DetalleOrdenInsumoController::class, 'index'])->name('ordenes.insumos.index');
@@ -208,22 +234,18 @@ Route::middleware(['auth', 'throttle:60,1', 'recovery.questions.required'])->gro
         Route::put('ordenes/insumos/{id}', [DetalleOrdenInsumoController::class, 'update'])->name('ordenes.insumos.update');
         Route::delete('ordenes/insumos/{id}', [DetalleOrdenInsumoController::class, 'destroy'])->name('ordenes.insumos.destroy');
 
-        // Producción Diaria
-        Route::get('produccion/diaria', [ProduccionDiariaController::class, 'index'])->name('produccion.diaria.index');
-        Route::get('produccion/diaria/data', [ProduccionDiariaController::class, 'getRegistros'])->name('produccion.diaria.data');
-        Route::post('produccion/diaria', [ProduccionDiariaController::class, 'store'])->name('produccion.diaria.store');
-        Route::get('produccion/diaria/{id}', [ProduccionDiariaController::class, 'show'])->name('produccion.diaria.show');
-        Route::put('produccion/diaria/{id}', [ProduccionDiariaController::class, 'update'])->name('produccion.diaria.update');
-        Route::delete('produccion/diaria/{id}', [ProduccionDiariaController::class, 'destroy'])->name('produccion.diaria.destroy');
-
         // Inventario
         Route::get('inventario/movimientos', [MovimientoInsumoController::class, 'index'])->name('inventario.movimientos.index');
         Route::get('inventario/movimientos/data', [MovimientoInsumoController::class, 'getMovimientos'])->name('inventario.movimientos.data');
+        Route::get('inventario/existencias-data', [MovimientoInsumoController::class, 'getExistencias'])->name('inventario.existencias.data');
         Route::post('inventario/movimientos', [MovimientoInsumoController::class, 'store'])->name('inventario.movimientos.store');
         Route::get('inventario/movimientos/{id}', [MovimientoInsumoController::class, 'show'])->name('inventario.movimientos.show');
         Route::get('inventario/reporte', [MovimientoInsumoController::class, 'reporteExistencia'])->name('inventario.reporte');
         Route::get('inventario/alertas', [MovimientoInsumoController::class, 'alertasStock'])->name('inventario.alertas');
         Route::get('inventario/movimientos/historial/{id}', [MovimientoInsumoController::class, 'historialInsumo'])->name('inventario.movimientos.historial');
+
+        // Notificaciones (campanita del header)
+        Route::get('notificaciones/sistema', [NotificacionController::class, 'sistema'])->name('notificaciones.sistema');
 
         // Reportes
         Route::prefix('reportes')->group(function () {

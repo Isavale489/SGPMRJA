@@ -16,6 +16,8 @@ class DetalleCotizacion extends Model
     protected $fillable = [
         'cotizacion_id',
         'producto_id',
+        'tela_snapshot',
+        'atributos_snapshot',
         'cantidad',
         'descripcion',
         'lleva_bordado',
@@ -28,6 +30,8 @@ class DetalleCotizacion extends Model
         'lleva_bordado' => 'boolean',
         'cantidad' => 'integer',
         'precio_unitario' => 'decimal:2',
+        'tela_snapshot' => 'array',
+        'atributos_snapshot' => 'array',
     ];
 
     protected $appends = [

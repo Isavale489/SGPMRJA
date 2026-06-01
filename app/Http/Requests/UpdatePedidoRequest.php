@@ -28,6 +28,7 @@ class UpdatePedidoRequest extends FormRequest
             'productos' => 'required|array|min:1',
             'productos.*.producto_id' => 'required|exists:producto,id',
             'productos.*.cantidad' => 'required|integer|min:1',
+            'productos.*.precio_unitario' => 'nullable|numeric|min:0',
             'productos.*.descripcion' => 'nullable|string|max:500',
             'productos.*.lleva_bordado' => 'nullable|boolean',
             'productos.*.bordados' => 'nullable|array|required_if:productos.*.lleva_bordado,true|min:1',

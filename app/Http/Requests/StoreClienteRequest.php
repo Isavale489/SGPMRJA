@@ -24,7 +24,7 @@ class StoreClienteRequest extends FormRequest
             'nombre' => 'required|string|min:2|max:100|regex:/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/',
             'apellido' => 'nullable|string|max:100|regex:/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]*$/',
             'tipo_cliente' => 'required|in:natural,juridico',
-            'email' => 'nullable|string|email:rfc,dns|max:255',
+            'email' => 'nullable|string|email:rfc|max:255',
             'telefono' => 'required|string|regex:/^[0-9]{4}-[0-9]{7}$/',
             'documento' => [
                 'required',
@@ -50,7 +50,6 @@ class StoreClienteRequest extends FormRequest
             'direccion' => 'nullable|string|max:500',
             'estado_territorial' => 'nullable|string|max:50',
             'ciudad' => 'nullable|string|max:100',
-            'estatus' => 'required|in:0,1',
         ];
     }
 
@@ -73,8 +72,6 @@ class StoreClienteRequest extends FormRequest
             'direccion.max' => 'La dirección no puede exceder los 500 caracteres.',
             'estado_territorial.max' => 'El estado territorial no puede exceder los 50 caracteres.',
             'ciudad.max' => 'La ciudad no puede exceder los 100 caracteres.',
-            'estatus.required' => 'Debe seleccionar el estatus del cliente.',
-            'estatus.in' => 'El estatus debe ser Activo o Inactivo.',
         ];
     }
 }

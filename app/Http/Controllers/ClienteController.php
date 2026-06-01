@@ -74,6 +74,33 @@ class ClienteController extends Controller
             });
         }
 
+        // ══════════════════════════════════════════════════════════
+        // ORDENAMIENTO — Selector "Ordenar por" del frontend
+        // Valores posibles: recientes, antiguos, nombre_asc, nombre_desc
+        // Fallback: más recientes primero (created_at DESC)
+        // ══════════════════════════════════════════════════════════
+        $orden = $request->input('filter_orden', 'recientes');
+
+        switch ($orden) {
+            case 'antiguos':
+                $query->orderBy('cliente.created_at', 'asc');
+                break;
+            case 'nombre_asc':
+                $query->join('persona', 'cliente.persona_id', '=', 'persona.id')
+                      ->orderBy('persona.nombre', 'asc')
+                      ->select('cliente.*');
+                break;
+            case 'nombre_desc':
+                $query->join('persona', 'cliente.persona_id', '=', 'persona.id')
+                      ->orderBy('persona.nombre', 'desc')
+                      ->select('cliente.*');
+                break;
+            case 'recientes':
+            default:
+                $query->orderBy('cliente.created_at', 'desc');
+                break;
+        }
+
         return DataTables::of($query)
             ->addColumn('nombre', fn($c) => $c->nombre ?? 'N/A')
             ->addColumn('apellido', fn($c) => $c->apellido ?? '')
@@ -191,7 +218,8 @@ class ClienteController extends Controller
 
     public function show($id)
     {
-        $cliente = Cliente::with(['persona.telefonos', 'persona.direcciones'])->findOrFail($id);
+        // withTrashed: también se ven detalles de clientes inhabilitados (desde el historial)
+        $cliente = Cliente::withTrashed()->with(['persona.telefonos', 'persona.direcciones'])->findOrFail($id);
         return response()->json([
             'id' => $cliente->id,
             'nombre' => $cliente->nombre ?? 'N/A',
@@ -204,6 +232,7 @@ class ClienteController extends Controller
             'estado_territorial' => $cliente->estado_territorial,
             'ciudad' => $cliente->ciudad,
             'estatus' => $cliente->estatus,
+            'trashed' => $cliente->trashed(),
             'created_at' => $cliente->created_at ? $cliente->created_at->format('d/m/Y H:i:s') : null,
             'updated_at' => $cliente->updated_at ? $cliente->updated_at->format('d/m/Y H:i:s') : null
         ]);
@@ -280,9 +309,17 @@ class ClienteController extends Controller
     /**
      * Exportar reporte de clientes en PDF
      */
-    public function exportarPDF()
+    public function exportarPDF(Request $request)
     {
-        $clientes = Cliente::with('persona')->get();
+        $query = Cliente::with('persona');
+        // Estatus: 1 = activos (default), 0 = inhabilitados (trashed) — estándar de inhabilitación
+        if ($request->input('estado') === '0') {
+            $query->onlyTrashed();
+        }
+        if ($request->filled('tipo_cliente')) {
+            $query->where('tipo_cliente', $request->tipo_cliente);
+        }
+        $clientes = $query->get();
         $pdf = Pdf::loadView('admin.clientes.reporte_pdf', compact('clientes'))->setPaper('a4', 'landscape');
         return $pdf->download('reporte_clientes_' . now()->format('Ymd_His') . '.pdf');
     }

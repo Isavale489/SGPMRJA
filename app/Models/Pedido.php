@@ -78,6 +78,92 @@ class Pedido extends Model
         return $this->belongsTo(Cotizacion::class);
     }
 
+    /**
+     * Órdenes de producción del pedido (1 por línea de producto).
+     */
+    public function ordenes()
+    {
+        return $this->hasMany(OrdenProduccion::class);
+    }
+
+    /**
+     * Progreso de producción del pedido (0..100), agregado desde sus órdenes.
+     *
+     * El pedido es "apto" para tantas órdenes como líneas de producto tiene.
+     * Cada línea aporta 1/N: una orden completa de una línea = +100/N. Las
+     * líneas sin orden aún aportan 0. Promedio sobre el total de líneas.
+     */
+    public function getProgresoProduccionAttribute(): float
+    {
+        $totalLineas = $this->relationLoaded('productos')
+            ? $this->productos->count()
+            : $this->productos()->count();
+
+        if ($totalLineas === 0) {
+            return 0.0;
+        }
+
+        $ordenes = $this->relationLoaded('ordenes')
+            ? $this->ordenes
+            : $this->ordenes()->get();
+
+        $suma = $ordenes->sum(fn ($orden) => $orden->progreso); // fracción 0..1 por orden
+
+        return round(min(1.0, $suma / $totalLineas) * 100, 1);
+    }
+
+    /**
+     * Recalcula el estado del pedido a partir de sus órdenes de producción.
+     *
+     * Reglas:
+     *   - Cancelado es terminal/manual: nunca se auto-recalcula.
+     *   - Sin órdenes activas (o todas canceladas) → Pendiente.
+     *   - Todas las líneas con orden Finalizada → Completado.
+     *   - Al menos una orden En Proceso o Finalizada → Procesando.
+     *   - Solo órdenes Pendientes → Pendiente.
+     *
+     * El estado deja de ser manual (salvo Cancelar/Reactivar): refleja la
+     * realidad de producción. Ver docs y PedidoController::cancelar/reactivar.
+     */
+    public function recalcularEstado(): void
+    {
+        if ($this->estado === 'Cancelado') {
+            return; // terminal y manual
+        }
+
+        $totalLineas = $this->productos()->count();
+        $activas = $this->ordenes()->get()->where('estado', '!=', 'Cancelado');
+
+        if ($totalLineas === 0 || $activas->isEmpty()) {
+            $nuevo = 'Pendiente';
+        } else {
+            $finalizadas = $activas->where('estado', 'Finalizado')->count();
+            $enMarcha    = $activas->whereIn('estado', ['En Proceso', 'Finalizado'])->count();
+
+            if ($finalizadas >= $totalLineas) {
+                $nuevo = 'Completado';
+            } elseif ($enMarcha > 0) {
+                $nuevo = 'Procesando';
+            } else {
+                $nuevo = 'Pendiente';
+            }
+        }
+
+        if ($this->estado !== $nuevo) {
+            $this->update(['estado' => $nuevo]);
+        }
+    }
+
+    /**
+     * ¿El pedido ya tiene producción iniciada? (al menos una orden no cancelada).
+     * Si la tiene, editar/eliminar el pedido recrearía sus líneas y dejaría
+     * huérfanas las órdenes que las referencian, por eso se bloquea.
+     */
+    public function tieneProduccionActiva(): bool
+    {
+        return $this->ordenes()->where('estado', '!=', 'Cancelado')->exists();
+    }
+
     // ============================================
     // ACCESSORS para obtener datos del cliente
     // ============================================

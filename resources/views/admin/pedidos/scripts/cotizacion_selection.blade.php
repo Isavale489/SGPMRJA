@@ -1,7 +1,8 @@
 <script>
     // ============================================
     // FUNCIONALIDAD DE SELECCIÓN DE COTIZACIONES
-    // (Flujo unificado: usa convertirAPedido atómico)
+    // pedWizardImportMode=true → importar en paso 2
+    // pedWizardImportMode=false → abrir wizard completo (TASK-015)
     // ============================================
 
     let cotizacionesDisponibles = [];
@@ -113,106 +114,29 @@
         renderCotizaciones(filtradas);
     });
 
-    // Handler para seleccionar cotización — usa conversión atómica
+    // Handler para seleccionar cotización — importar o conversión atómica
     $(document).on('click', '.seleccionar-cotizacion-btn', function () {
         const card = $(this).closest('.cotizacion-card');
         const cotizacionId = card.data('cotizacion-id');
 
-        // Encontrar datos de la cotización seleccionada
-        const cotData = cotizacionesDisponibles.find(c => c.id == cotizacionId);
-        const clienteNombre = cotData ? cotData.cliente_nombre : 'el cliente';
-        const totalDisplay = cotData ? cotData.total : '0.00';
-
-        // Cerrar modal de selección
-        $('#seleccionarCotizacionModal').modal('hide');
-
-        // Confirmar conversión
-        setTimeout(function () {
-            Swal.fire({
-                title: '¿Convertir a Pedido?',
-                html: '<p>Se creará un nuevo pedido con los datos de la <strong>Cotización #' + cotizacionId + '</strong>:</p>' +
-                    '<div class="text-start mt-3 mb-3">' +
-                    '<div class="d-flex align-items-center mb-2"><i class="ri-user-line me-2 text-primary"></i><span><strong>Cliente:</strong> ' + clienteNombre + '</span></div>' +
-                    '<div class="d-flex align-items-center mb-2"><i class="ri-money-dollar-circle-line me-2 text-success"></i><span><strong>Total:</strong> $' + totalDisplay + '</span></div>' +
-                    '</div>' +
-                    '<small class="text-muted">Después podrá editar el pedido para agregar fecha de entrega, abono y método de pago.</small>',
-                icon: 'question',
-                showCancelButton: true,
-                confirmButtonText: '<i class="ri-exchange-line me-1"></i> Sí, convertir',
-                cancelButtonText: 'Cancelar',
-                customClass: {
-                    confirmButton: 'btn btn-success w-xs me-2',
-                    cancelButton: 'btn btn-light w-xs'
-                },
-                buttonsStyling: false,
-                showCloseButton: true
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    convertirCotizacionAPedido(cotizacionId);
+        // Modo importar: hidratar paso 2 del wizard en lugar de convertir
+        if (window.pedWizardImportMode) {
+            window.pedWizardImportMode = false;
+            $('#seleccionarCotizacionModal').modal('hide');
+            setTimeout(function () {
+                if (typeof window.pedHidratarDesde === 'function') {
+                    window.pedHidratarDesde(cotizacionId);
                 }
-            });
+            }, 300);
+            return;
+        }
+
+        // Abrir wizard de pedidos pre-hidratado con los datos de esta cotización
+        $('#seleccionarCotizacionModal').modal('hide');
+        setTimeout(function () {
+            if (typeof window.pedAbrirDesdeCotizacion === 'function') {
+                window.pedAbrirDesdeCotizacion(cotizacionId);
+            }
         }, 300);
     });
-
-    // Función que llama al endpoint atómico de conversión
-    function convertirCotizacionAPedido(cotizacionId) {
-        // Mostrar loading
-        Swal.fire({
-            title: 'Convirtiendo...',
-            text: 'Creando pedido desde la cotización',
-            allowOutsideClick: false,
-            didOpen: () => {
-                Swal.showLoading();
-            }
-        });
-
-        $.ajax({
-            url: '/cotizaciones/' + cotizacionId + '/convertir-a-pedido',
-            method: 'POST',
-            data: {
-                _token: $('meta[name="csrf-token"]').attr('content')
-            },
-            success: function (response) {
-                Swal.fire({
-                    icon: 'success',
-                    title: '¡Pedido Creado!',
-                    html: '<p>' + response.message + '</p>' +
-                        '<p class="mt-2">¿Desea ir al pedido creado para completar los datos?</p>',
-                    showCancelButton: true,
-                    confirmButtonText: '<i class="ri-edit-line me-1"></i> Editar Pedido',
-                    cancelButtonText: 'Quedarme aquí',
-                    customClass: {
-                        confirmButton: 'btn btn-primary me-2',
-                        cancelButton: 'btn btn-light'
-                    },
-                    buttonsStyling: false
-                }).then((result) => {
-                    // Recargar la tabla de pedidos
-                    if (typeof table !== 'undefined') {
-                        table.ajax.reload();
-                    }
-
-                    if (result.isConfirmed) {
-                        // Redirigir al módulo de pedidos para editar
-                        window.location.href = '/pedidos?editar=' + response.pedido_id;
-                    }
-                });
-            },
-            error: function (xhr) {
-                var errorMsg = 'No se pudo convertir la cotización.';
-                if (xhr.responseJSON && xhr.responseJSON.error) {
-                    errorMsg = xhr.responseJSON.error;
-                }
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error',
-                    text: errorMsg,
-                    customClass: {
-                        confirmButton: 'btn btn-primary'
-                    },
-                    buttonsStyling: false
-                });
-            }
-        });
-    }
 </script>

@@ -46,103 +46,136 @@
         </div>
     @endif
 
-    <!-- Widgets de Maestros -->
+    {{-- ═══════ KPIs OPERATIVOS (accionables) ═══════ --}}
     <div class="row">
-        <!-- Total Clientes -->
-        <div class="col-xl-3 col-md-6">
-            <div class="card card-animate">
-                <div class="card-body">
-                    <div class="d-flex align-items-center">
-                        <div class="flex-grow-1">
-                            <p class="text-uppercase fw-medium text-muted mb-0">Total Clientes</p>
-                            <h4 class="fs-22 fw-semibold mb-0">{{ $totalClientes }}</h4>
-                        </div>
-                        <div class="avatar-sm flex-shrink-0">
-                            <span class="avatar-title bg-soft-primary rounded fs-3">
-                                <i class="ri-user-star-line text-primary"></i>
-                            </span>
+        <!-- Pedidos por entregar (7 días) -->
+        <div class="col-xl-4 col-md-6">
+            <a href="{{ url('pedidos') }}" class="text-decoration-none">
+                <div class="card card-animate dash-kpi dash-kpi--warning">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div class="flex-grow-1">
+                                <p class="text-uppercase fw-medium text-muted mb-2">Entregas esta semana</p>
+                                <h3 class="fs-22 fw-bold mb-0">{{ $pedidosPorEntregar }}</h3>
+                                <span class="text-muted fs-12">pedidos por entregar (7 días)</span>
+                            </div>
+                            <div class="avatar-sm flex-shrink-0">
+                                <span class="avatar-title rounded fs-3 bg-warning-subtle text-warning">
+                                    <i class="ri-truck-line"></i>
+                                </span>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
+            </a>
         </div>
-        <!-- Total Productos -->
-        <div class="col-xl-3 col-md-6">
-            <div class="card card-animate">
-                <div class="card-body">
-                    <div class="d-flex align-items-center">
-                        <div class="flex-grow-1">
-                            <p class="text-uppercase fw-medium text-muted mb-0">Total Productos</p>
-                            <h4 class="fs-22 fw-semibold mb-0">{{ $totalProductos }}</h4>
-                        </div>
-                        <div class="avatar-sm flex-shrink-0">
-                            <span class="avatar-title bg-soft-success rounded fs-3">
-                                <i class="ri-t-shirt-line text-success"></i>
-                            </span>
+        <!-- Insumos con stock bajo -->
+        <div class="col-xl-4 col-md-6">
+            <a href="{{ route('inventario.alertas') }}" class="text-decoration-none">
+                <div class="card card-animate dash-kpi dash-kpi--danger">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div class="flex-grow-1">
+                                <p class="text-uppercase fw-medium text-muted mb-2">Insumos en alerta</p>
+                                <h3 class="fs-22 fw-bold mb-0">{{ $insumosStockBajo }}</h3>
+                                <span class="text-muted fs-12">stock bajo o agotado</span>
+                            </div>
+                            <div class="avatar-sm flex-shrink-0">
+                                <span class="avatar-title rounded fs-3 bg-danger-subtle text-danger">
+                                    <i class="ri-alert-line"></i>
+                                </span>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
+            </a>
         </div>
-        <!-- Total Empleados -->
-        <div class="col-xl-3 col-md-6">
-            <div class="card card-animate">
-                <div class="card-body">
-                    <div class="d-flex align-items-center">
-                        <div class="flex-grow-1">
-                            <p class="text-uppercase fw-medium text-muted mb-0">Total Empleados</p>
-                            <h4 class="fs-22 fw-semibold mb-0">{{ $totalEmpleados }}</h4>
-                        </div>
-                        <div class="avatar-sm flex-shrink-0">
-                            <span class="avatar-title bg-soft-info rounded fs-3">
-                                <i class="ri-user-settings-line text-info"></i>
-                            </span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <!-- Total Proveedores -->
-        <div class="col-xl-3 col-md-6">
-            <div class="card card-animate">
-                <div class="card-body">
-                    <div class="d-flex align-items-center">
-                        <div class="flex-grow-1">
-                            <p class="text-uppercase fw-medium text-muted mb-0">Total Proveedores</p>
-                            <h4 class="fs-22 fw-semibold mb-0">{{ $totalProveedores }}</h4>
-                        </div>
-                        <div class="avatar-sm flex-shrink-0">
-                            <span class="avatar-title bg-soft-warning rounded fs-3">
-                                <i class="ri-truck-line text-warning"></i>
-                            </span>
+        <!-- Cotizaciones por vencer -->
+        <div class="col-xl-4 col-md-6">
+            <a href="{{ url('cotizaciones') }}" class="text-decoration-none">
+                <div class="card card-animate dash-kpi dash-kpi--sky">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div class="flex-grow-1">
+                                <p class="text-uppercase fw-medium text-muted mb-2">Cotizaciones por vencer</p>
+                                <h3 class="fs-22 fw-bold mb-0">{{ $cotizacionesPorVencer }}</h3>
+                                <span class="text-muted fs-12">validez en ≤ 7 días</span>
+                            </div>
+                            <div class="avatar-sm flex-shrink-0">
+                                <span class="avatar-title rounded fs-3 bg-info-subtle text-info">
+                                    <i class="ri-file-list-3-line"></i>
+                                </span>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
+            </a>
         </div>
     </div>
 
-    <!-- Gráficos ApexCharts -->
+    {{-- ═══════ GRÁFICOS ═══════ --}}
     <div class="row">
         <!-- Estado de Pedidos -->
-        <div class="col-xl-6">
+        <div class="col-xl-5">
             <div class="card">
-                <div class="card-header">
+                <div class="card-header d-flex align-items-center justify-content-between">
                     <h4 class="card-title mb-0">Estado de Pedidos</h4>
+                    <a href="{{ url('pedidos') }}" class="text-muted fs-13">Ver todos <i class="ri-arrow-right-line"></i></a>
                 </div>
                 <div class="card-body">
                     <div id="estadoPedidosChart"></div>
                 </div>
             </div>
         </div>
-        <!-- Personal por Departamento -->
-        <div class="col-xl-6">
+        <!-- Tendencia: Pedidos por Mes -->
+        <div class="col-xl-7">
             <div class="card">
-                <div class="card-header">
-                    <h4 class="card-title mb-0">Personal por Departamento</h4>
+                <div class="card-header d-flex align-items-center justify-content-between">
+                    <h4 class="card-title mb-0">Pedidos por Mes</h4>
+                    <span class="text-muted fs-13">Últimos 6 meses</span>
                 </div>
                 <div class="card-body">
-                    <div id="personalDeptoChart"></div>
+                    <div id="tendenciaPedidosChart"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- ═══════ MAESTROS (resumen secundario) ═══════ --}}
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body py-3">
+                    <div class="row text-center">
+                        <div class="col-6 col-md-3 dash-mini">
+                            <a href="{{ url('clientes') }}" class="text-decoration-none d-block">
+                                <i class="ri-user-star-line text-primary fs-4"></i>
+                                <div class="fs-20 fw-bold text-body">{{ $totalClientes }}</div>
+                                <small class="text-muted text-uppercase">Clientes</small>
+                            </a>
+                        </div>
+                        <div class="col-6 col-md-3 dash-mini">
+                            <a href="{{ url('productos') }}" class="text-decoration-none d-block">
+                                <i class="ri-t-shirt-line text-success fs-4"></i>
+                                <div class="fs-20 fw-bold text-body">{{ $totalProductos }}</div>
+                                <small class="text-muted text-uppercase">Productos</small>
+                            </a>
+                        </div>
+                        <div class="col-6 col-md-3 dash-mini">
+                            <a href="{{ url('empleados') }}" class="text-decoration-none d-block">
+                                <i class="ri-user-settings-line text-info fs-4"></i>
+                                <div class="fs-20 fw-bold text-body">{{ $totalEmpleados }}</div>
+                                <small class="text-muted text-uppercase">Empleados</small>
+                            </a>
+                        </div>
+                        <div class="col-6 col-md-3 dash-mini">
+                            <a href="{{ url('proveedores') }}" class="text-decoration-none d-block">
+                                <i class="ri-truck-line text-warning fs-4"></i>
+                                <div class="fs-20 fw-bold text-body">{{ $totalProveedores }}</div>
+                                <small class="text-muted text-uppercase">Proveedores</small>
+                            </a>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -160,27 +193,22 @@
             const pedidosValues = @json($pedidosValues);
             const totalPedidos = {{ $totalPedidos }};
 
-            const empleadosLabels = @json($empleadosLabels);
-            const empleadosValues = @json($empleadosValues);
-            const totalEmpleados = {{ $totalEmpleadosChart }};
+            const tendenciaLabels = @json($tendenciaLabels);
+            const tendenciaPedidos = @json($tendenciaPedidos);
+            const tendenciaMontos = @json($tendenciaMontos);
 
             // ==========================================
             // GRÁFICO 1: ESTADO DE PEDIDOS (DONUT)
             // ==========================================
             const pedidosContainer = document.querySelector("#estadoPedidosChart");
-            
+
             if (totalPedidos > 0 && pedidosContainer) {
                 var pedidosOptions = {
                     series: pedidosValues,
-                    chart: {
-                        type: 'donut',
-                        height: 350
-                    },
+                    chart: { type: 'donut', height: 350 },
                     labels: pedidosLabels,
                     colors: ['#3577f1', '#f7b84b', '#0ab39c', '#f06548'],
-                    legend: {
-                        position: 'bottom'
-                    },
+                    legend: { position: 'bottom' },
                     plotOptions: {
                         pie: {
                             donut: {
@@ -206,15 +234,11 @@
                     },
                     responsive: [{
                         breakpoint: 480,
-                        options: {
-                            chart: { height: 280 },
-                            legend: { position: 'bottom' }
-                        }
+                        options: { chart: { height: 280 }, legend: { position: 'bottom' } }
                     }]
                 };
                 new ApexCharts(pedidosContainer, pedidosOptions).render();
             } else if (pedidosContainer) {
-                // Mensaje Elegante: No hay datos
                 pedidosContainer.innerHTML = `
                     <div class="text-center py-5">
                         <div class="avatar-md mx-auto mb-3">
@@ -229,69 +253,59 @@
             }
 
             // ==========================================
-            // GRÁFICO 2: PERSONAL POR DEPARTAMENTO (BAR)
+            // GRÁFICO 2: TENDENCIA — PEDIDOS POR MES (AREA)
             // ==========================================
-            const personalContainer = document.querySelector("#personalDeptoChart");
+            const tendenciaContainer = document.querySelector("#tendenciaPedidosChart");
+            const totalTendencia = tendenciaPedidos.reduce((a, b) => a + b, 0);
 
-            if (totalEmpleados > 0 && personalContainer) {
-                var deptoOptions = {
-                    series: [{
-                        name: 'Empleados',
-                        data: empleadosValues
-                    }],
+            if (totalTendencia > 0 && tendenciaContainer) {
+                var tendenciaOptions = {
+                    series: [{ name: 'Pedidos', data: tendenciaPedidos }],
                     chart: {
-                        type: 'bar',
+                        type: 'area',
                         height: 350,
                         toolbar: { show: false }
                     },
-                    plotOptions: {
-                        bar: {
-                            borderRadius: 4,
-                            horizontal: true,
-                            barHeight: '50%',
-                            distributed: true
-                        }
+                    colors: ['#0ab39c'],
+                    dataLabels: { enabled: false },
+                    stroke: { curve: 'smooth', width: 3 },
+                    fill: {
+                        type: 'gradient',
+                        gradient: { shadeIntensity: 1, opacityFrom: 0.35, opacityTo: 0.05, stops: [0, 90, 100] }
                     },
-                    colors: ['#3577f1', '#0ab39c', '#f7b84b', '#f06548', '#299cdb', '#405189', '#66d1d1'],
-                    dataLabels: {
-                        enabled: true,
-                        style: {
-                            fontSize: '13px',
-                            fontWeight: 600
-                        }
-                    },
+                    markers: { size: 4, hover: { size: 6 } },
                     xaxis: {
-                        categories: empleadosLabels,
-                        labels: {
-                            style: { fontSize: '12px' }
-                        }
+                        categories: tendenciaLabels,
+                        labels: { style: { fontSize: '12px' } }
                     },
                     yaxis: {
-                        labels: {
-                            style: { fontSize: '13px' }
-                        }
+                        labels: { formatter: function(val) { return Math.round(val); } }
                     },
-                    legend: { show: false },
+                    grid: { borderColor: '#e9ebec', strokeDashArray: 4 },
                     tooltip: {
-                        y: {
-                            formatter: function(val) {
-                                return val + ' empleado(s)';
-                            }
+                        custom: function({ series, seriesIndex, dataPointIndex, w }) {
+                            const pedidos = series[seriesIndex][dataPointIndex];
+                            const monto = tendenciaMontos[dataPointIndex] ?? 0;
+                            const mes = w.globals.labels[dataPointIndex];
+                            return '<div class="px-2 py-1">' +
+                                   '<div class="fw-semibold mb-1">' + mes + '</div>' +
+                                   '<div>Pedidos: <b>' + pedidos + '</b></div>' +
+                                   '<div>Monto: <b>$ ' + monto.toLocaleString('es-VE', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + '</b></div>' +
+                                   '</div>';
                         }
                     }
                 };
-                new ApexCharts(personalContainer, deptoOptions).render();
-            } else if (personalContainer) {
-                // Mensaje Elegante: No hay datos
-                personalContainer.innerHTML = `
+                new ApexCharts(tendenciaContainer, tendenciaOptions).render();
+            } else if (tendenciaContainer) {
+                tendenciaContainer.innerHTML = `
                     <div class="text-center py-5">
                         <div class="avatar-md mx-auto mb-3">
                             <div class="avatar-title bg-soft-light rounded-circle text-muted fs-1">
-                                <i class="ri-user-unfollow-line"></i>
+                                <i class="ri-line-chart-line"></i>
                             </div>
                         </div>
-                        <h5 class="text-muted">No hay datos suficientes</h5>
-                        <p class="text-muted mb-0">Asigne departamentos a los empleados para ver estadísticas.</p>
+                        <h5 class="text-muted">Sin pedidos recientes</h5>
+                        <p class="text-muted mb-0">La tendencia aparecerá cuando se registren pedidos.</p>
                     </div>
                 `;
             }
