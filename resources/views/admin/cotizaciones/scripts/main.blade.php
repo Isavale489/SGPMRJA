@@ -1099,12 +1099,8 @@
                 var tipoNombre = producto.tipo_producto ? producto.tipo_producto.nombre : 'Sin tipo';
                 var displayName = (producto.codigo || '') + ' - ' + tipoNombre;
 
-                // Actualizar valores visuales y ocultos
-                card.find('.producto-text-display').val(displayName);
-                card.find('.producto-text-display').css('font-weight', '600').css('color', '#212529');
-                // Sincronizar también el dropdown si existe en la tarjeta
+                // Actualizar el dropdown con el producto seleccionado
                 card.find('.producto-dropdown').val(producto.id);
-
                 card.find('.producto-id-input').val(producto.id);
                 card.find('.precio-unitario-input').val(producto.precio_base);
 
@@ -2397,6 +2393,8 @@
                     $('#prioridad-field').val(data.prioridad || 'Normal');
                     $('#notas-field').val(data.notas || '');
                     $('#condiciones-field').val(data.condiciones_terminos || '');
+                    // Actualizar banner de fecha (val() programático no dispara change)
+                    refreshBannerFecha();
                     // Creador real: mostrar quién creó la cotización (no el editor)
                     if (data.creador) {
                         $('#cot-creador-name').text(data.creador.name || '—');
