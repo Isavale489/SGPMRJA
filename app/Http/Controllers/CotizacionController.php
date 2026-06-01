@@ -239,6 +239,8 @@ class CotizacionController extends Controller
                 'email' => $cotizacion->cliente->email,
                 'telefono' => $cotizacion->cliente->telefono,
                 'documento' => $cotizacion->cliente->documento,
+                'tipo_documento' => optional($cotizacion->cliente->persona)->tipo_documento,
+                'razon_social' => optional($cotizacion->cliente->persona)->razon_social,
                 'direccion' => $cotizacion->cliente->direccion,
                 'ciudad' => $cotizacion->cliente->ciudad,
                 'eliminado' => $cotizacion->cliente->deleted_at ? true : false,

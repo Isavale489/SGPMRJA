@@ -2368,6 +2368,21 @@
                             $('#ci-rif-full-field').val(documento);
                         }
                         aplicarLayoutCliente(prefix, data.cliente.nombre, data.cliente.apellido || '');
+
+                        // Pintar la tarjeta + banner del cliente (antes quedaba el placeholder).
+                        if (typeof window.cotMostrarTarjetaCliente === 'function') {
+                            window.cotMostrarTarjetaCliente({
+                                persona_id:     data.cliente.id,
+                                tipo_documento: data.cliente.tipo_documento || prefix,
+                                documento:      documento,
+                                nombre:         data.cliente.nombre || '',
+                                apellido:       data.cliente.apellido || '',
+                                razon_social:   data.cliente.razon_social || '',
+                                telefono:       data.cliente.telefono || '',
+                                email:          data.cliente.email || '',
+                                roles:          data.cliente.roles || []
+                            }, data.cliente_id);
+                        }
                     }
                     // Formatear fechas para input date (YYYY-MM-DD)
                     var fechaCotizacion = data.fecha_cotizacion ? data.fecha_cotizacion.split('T')[0] : '';
