@@ -139,26 +139,64 @@
             <div class="col-lg-12">
                 <div class="card card-reportes">
                     <div class="card-header">
-                        <div class="d-flex align-items-center flex-wrap gap-2">
-                            <h5 class="card-title mb-0 flex-grow-1">
-                                <i class="ri-stack-line align-bottom me-1"></i>Existencias de Insumos
-                            </h5>
-                            <select class="form-select form-select-sm" id="exist-filter-tipo" style="width:auto;">
-                                <option value="">Todos los tipos</option>
-                                <option value="Tela">Tela</option>
-                                <option value="Hilo">Hilo</option>
-                                <option value="Boton">Botón</option>
-                                <option value="Cierre">Cierre</option>
-                                <option value="Etiqueta">Etiqueta</option>
-                            </select>
-                            <div class="form-check form-switch mb-0">
-                                <input class="form-check-input" type="checkbox" id="exist-filter-alerta">
-                                <label class="form-check-label" for="exist-filter-alerta">Solo en alerta</label>
-                            </div>
-                        </div>
+                        <h5 class="card-title mb-1">
+                            <i class="ri-stack-line align-bottom me-1"></i>Existencias de Insumos
+                        </h5>
                         <small class="text-muted">Stock mínimo, actual y máximo de cada insumo. Se actualiza al registrar un movimiento.</small>
                     </div>
                     <div class="card-body">
+                        {{-- Búsqueda + filtros unificados — Patrón Maestro S-07 --}}
+                        <div class="advanced-filters-wrapper navy-theme" id="exist-advanced-filters">
+                            <div class="navy-filter-header is-collapsed">
+                                <div class="navy-header-search">
+                                    <i class="ri-search-line"></i>
+                                    <input type="text" class="navy-search-input" id="exist-search-input"
+                                        placeholder="Buscar insumo..." autocomplete="off">
+                                </div>
+                                <div class="navy-header-divider"></div>
+                                <button class="navy-filter-btn collapsed" type="button"
+                                    data-bs-toggle="collapse" data-bs-target="#exist-filters-collapse"
+                                    aria-expanded="false" aria-controls="exist-filters-collapse">
+                                    <i class="ri-filter-3-line"></i>
+                                    <span>Filtros</span>
+                                    <span class="navy-filter-badge d-none" id="exist-active-filter-count"></span>
+                                    <i class="ri-arrow-down-s-line navy-filter-chevron"></i>
+                                </button>
+                            </div>
+                            <div class="collapse" id="exist-filters-collapse">
+                                <div class="navy-filter-body">
+                                    <div class="row g-3">
+                                        <div class="col-12 col-md-4">
+                                            <label class="navy-filter-label" for="exist-filter-tipo">
+                                                <i class="ri-price-tag-3-line"></i> Tipo de Insumo
+                                            </label>
+                                            <select class="form-select navy-filter-select" id="exist-filter-tipo">
+                                                <option value="">Todos</option>
+                                                <option value="Tela">Tela</option>
+                                                <option value="Hilo">Hilo</option>
+                                                <option value="Boton">Botón</option>
+                                                <option value="Cierre">Cierre</option>
+                                                <option value="Etiqueta">Etiqueta</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-12 col-md-4">
+                                            <label class="navy-filter-label" for="exist-filter-alerta">
+                                                <i class="ri-alarm-warning-line"></i> Disponibilidad
+                                            </label>
+                                            <select class="form-select navy-filter-select" id="exist-filter-alerta">
+                                                <option value="">Todas</option>
+                                                <option value="alerta">Solo en alerta (stock bajo)</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="d-flex justify-content-end mt-2">
+                                        <button type="button" class="btn btn-link" id="exist-btn-clear-filters">Limpiar filtros</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {{-- FIN FILTROS --}}
+
                         <div class="table-responsive">
                             <table id="existencias-table" class="table table-bordered table-striped table-sm align-middle dt-reportes table-operativa">
                                 <thead>

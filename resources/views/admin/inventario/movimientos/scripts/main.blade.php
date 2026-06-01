@@ -10,7 +10,7 @@
 
         function updateFilterBadge() {
             let count = 0;
-            $('.navy-filter-select').each(function () {
+            $('#advanced-filters .navy-filter-select').each(function () {
                 if ($(this).val() && $(this).val() !== '') {
                     count++;
                 }
@@ -20,10 +20,10 @@
 
         $('#filters-collapse-body')
             .on('show.bs.collapse', function () {
-                $('.navy-filter-header').removeClass('is-collapsed');
+                $('#advanced-filters .navy-filter-header').removeClass('is-collapsed');
             })
             .on('hidden.bs.collapse', function () {
-                $('.navy-filter-header').addClass('is-collapsed');
+                $('#advanced-filters .navy-filter-header').addClass('is-collapsed');
             });
 
         // Inicializar DataTable
@@ -104,7 +104,7 @@
                 url: "{{ route('inventario.existencias.data') }}",
                 data: function (d) {
                     d.filter_tipo   = $('#exist-filter-tipo').val();
-                    d.filter_estado = $('#exist-filter-alerta').is(':checked') ? 'alerta' : '';
+                    d.filter_estado = $('#exist-filter-alerta').val();
                 }
             },
             columns: [
@@ -140,27 +140,58 @@
             ],
             order: [],
             pageLength: 5,
-            dom: 'frtip',
+            dom: 'rtip',
             language: lenguajeData,
             responsive: true
         });
 
-        $('#exist-filter-tipo, #exist-filter-alerta').on('change', function () {
+        // ── Búsqueda + filtros unificados (estándar navy-filter) para Existencias ──
+        function existUpdateBadge() {
+            let count = 0;
+            $('#exist-advanced-filters .navy-filter-select').each(function () {
+                if ($(this).val() && $(this).val() !== '') count++;
+            });
+            $('#exist-active-filter-count').text(count).toggleClass('d-none', count === 0);
+        }
+
+        $('#exist-filters-collapse')
+            .on('show.bs.collapse', function () {
+                $('#exist-advanced-filters .navy-filter-header').removeClass('is-collapsed');
+            })
+            .on('hidden.bs.collapse', function () {
+                $('#exist-advanced-filters .navy-filter-header').addClass('is-collapsed');
+            });
+
+        $('#exist-search-input').on('input', debounce(function () {
+            existenciasTable.search(this.value).draw();
+        }, 300));
+
+        $('#exist-advanced-filters .navy-filter-select').on('change', function () {
             existenciasTable.ajax.reload();
+            existUpdateBadge();
         });
+
+        $('#exist-btn-clear-filters').on('click', function () {
+            $('#exist-advanced-filters .navy-filter-select').val('');
+            $('#exist-search-input').val('');
+            existenciasTable.search('').ajax.reload();
+            existUpdateBadge();
+        });
+
+        existUpdateBadge();
 
         // Buscador personalizado
         $('#custom-search-input').on('input', debounce(function () {
             table.search(this.value).draw();
         }, 300));
 
-        $('.navy-filter-select').on('change', function () {
+        $('#advanced-filters .navy-filter-select').on('change', function () {
             table.ajax.reload(null, true);
             updateFilterBadge();
         });
 
         $('#btn-clear-filters').on('click', function () {
-            $('.navy-filter-select').val('');
+            $('#advanced-filters .navy-filter-select').val('');
             $('#custom-search-input').val('');
             table.search('').draw();
             table.ajax.reload(null, true);
