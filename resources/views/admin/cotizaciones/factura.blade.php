@@ -181,6 +181,12 @@
             <td>&nbsp;</td>
             <td style="width: 230px;">
                 <table class="totals-inner">
+                    @if($cotizacion->tasa_cambio_valor)
+                    <tr>
+                        <td class="t-label" style="font-size:8.5px; color:#555;">Tasa BCV (USD→Bs):</td>
+                        <td class="t-value" style="font-size:8.5px; color:#555;">Bs {{ number_format($cotizacion->tasa_cambio_valor, 4) }}</td>
+                    </tr>
+                    @endif
                     <tr>
                         <td class="t-label">Subtotal:</td>
                         <td class="t-value">{{ number_format($subtotal, 2) }}</td>
@@ -197,16 +203,32 @@
                         <td class="t-label t-grand">Total a Pagar:</td>
                         <td class="t-value t-grand">{{ number_format($totalPagar, 2) }}</td>
                     </tr>
+                    @if($cotizacion->tasa_cambio_valor)
+                    <tr>
+                        <td class="t-label" style="font-size:8.5px; color:#555;">Equivalente Bs:</td>
+                        <td class="t-value" style="font-size:8.5px; color:#555;">
+                            Bs {{ number_format($totalPagar * $cotizacion->tasa_cambio_valor, 2) }}
+                        </td>
+                    </tr>
+                    @endif
                 </table>
             </td>
         </tr>
     </table>
 
-    {{-- ═══════ Nota especial ═══════ --}}
+    {{-- ═══════ Condiciones y Términos ═══════ --}}
+    @if($cotizacion->condiciones_terminos)
+    <div class="nota-especial" style="background:#f0f4ff; border-color:#3b5bdb; border-left-color:#1d3557; color:#1d3557;">
+        <b>Condiciones y Términos:</b><br>
+        {!! nl2br(e($cotizacion->condiciones_terminos)) !!}
+    </div>
+    @else
+    {{-- Texto por defecto si no hay condiciones personalizadas --}}
     <div class="nota-especial">
         <b>Tiempo de Ejecución del Trabajo:</b> 30 días hábiles.<br>
         70% del costo total para la formalización del pedido, 30% a la entrega.<br>
         El plazo de entrega comienza a transcurrir una vez realizado el pago.<br>
         <b>No se modifican pedidos ya formalizados (ni tallas ni cantidades).</b>
     </div>
+    @endif
 @endsection

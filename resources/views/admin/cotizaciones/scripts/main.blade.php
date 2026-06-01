@@ -525,6 +525,12 @@
                             hadItems = true;
                         }
 
+                        // Reactivar (solo si está Vencida)
+                        if (isAdmin && row.estado === 'Vencida') {
+                            items += `<li><button type="button" class="dropdown-item act-item act-primary reactivar-btn" data-id="${data}"><span class="act-ic"><i class="ri-refresh-line"></i></span>Reactivar cotización</button></li>`;
+                            hadItems = true;
+                        }
+
                         // Editar y Eliminar (solo si NO está Convertida ni Cancelada ni Vencida)
                         if (isAdmin && row.estado !== 'Convertida' && row.estado !== 'Cancelada' && row.estado !== 'Vencida') {
                             items += `<li><button type="button" class="dropdown-item act-item act-edit edit-btn" data-id="${data}"><span class="act-ic"><i class="ri-pencil-fill"></i></span>Editar</button></li>`;
@@ -1093,10 +1099,8 @@
                 var tipoNombre = producto.tipo_producto ? producto.tipo_producto.nombre : 'Sin tipo';
                 var displayName = (producto.codigo || '') + ' - ' + tipoNombre;
 
-                // Actualizar valores visuales y ocultos
-                card.find('.producto-text-display').val(displayName);
-                card.find('.producto-text-display').css('font-weight', '600').css('color', '#212529');
-
+                // Actualizar el dropdown con el producto seleccionado
+                card.find('.producto-dropdown').val(producto.id);
                 card.find('.producto-id-input').val(producto.id);
                 card.find('.precio-unitario-input').val(producto.precio_base);
 
@@ -1854,23 +1858,17 @@
                 <!-- Card Body -->
                 <div class="card-body p-3">
 
-                    <!-- Fila 1: Buscador de producto -->
-                    <div class="d-flex gap-2 align-items-center mb-2">
-                        <div class="input-group input-group-sm flex-grow-1">
-                            <input type="text"
-                                class="form-control form-control-sm producto-text-display"
-                                value="${productoId ? productoDisplay : ''}"
-                                placeholder="Clic para buscar producto..."
-                                readonly autocomplete="off"
-                                style="background-color: #fff;" />
-                            <button type="button"
-                                class="btn btn-sm btn-atlantico-brand producto-selector-trigger"
-                                data-bs-toggle="tooltip" data-bs-placement="top"
-                                title="Buscar">
-                                <i class="ri-search-line" style="color:#fff;"></i>
-                            </button>
-                        </div>
-                        <input type="hidden" name="productos[${productItemIndex}][producto_id]" class="producto-id-input" value="${productoId}" required />
+                    <!-- Fila 1: Selector de producto (dropdown) -->
+                    <div class="mb-2">
+                        <label class="form-label mb-1 small fw-medium" style="color:#495057;">
+                            <i class="ri-shopping-bag-line me-1"></i>Producto
+                        </label>
+                        <select name="productos[${productItemIndex}][producto_id]"
+                            class="form-select form-select-sm producto-id-input producto-dropdown"
+                            required>
+                            <option value="">— Seleccionar producto —</option>
+                            ${products.map(p => `<option value="${p.id}" data-precio="${p.precio_base}" ${p.id == productoId ? 'selected' : ''}>${p.codigo ? p.codigo + ' · ' : ''}${p.nombre_completo || p.nombre}</option>`).join('')}
+                        </select>
                     </div>
 
                     <!-- Fila 2: Color + Talla + Cantidad + Precio Unitario -->
@@ -2129,20 +2127,21 @@
         }
         // Recalcular total cuando cambia la cantidad o el precio negociado
         $('#productos-container').on('change keyup', '.cantidad-input, .precio-unitario-input', calculateCotizacionTotals);
-        $('#productos-container').on('change', '.product-select', function () {
+        $('#productos-container').on('change', '.product-select, .producto-dropdown', function () {
             var selectedOption = $(this).find('option:selected');
             var precio = selectedOption.data('precio');
-            var spanPrecio = $(this).closest('.product-item').find('.precio-producto-span');
-
-            $(this).closest('.card').find('.precio-unitario-input').val(precio);
+            var $item = $(this).closest('.product-item');
+            var spanPrecio = $item.find('.precio-producto-span');
 
             if (precio) {
+                $item.find('.precio-unitario-input').val(precio);
                 spanPrecio.text(formatMoney(parseFloat(precio)));
             } else {
                 spanPrecio.text('');
             }
 
             calculateCotizacionTotals();
+            refreshKPIs();
         });
         $('#abono-field').on('change keyup', updateCotizacionRemaining);
         // Reset al abrir el modal en modo creación (wizard 3 pasos)
@@ -2393,6 +2392,9 @@
                     $('#estado-field').val(data.estado);
                     $('#prioridad-field').val(data.prioridad || 'Normal');
                     $('#notas-field').val(data.notas || '');
+                    $('#condiciones-field').val(data.condiciones_terminos || '');
+                    // Actualizar banner de fecha (val() programático no dispara change)
+                    refreshBannerFecha();
                     // Creador real: mostrar quién creó la cotización (no el editor)
                     if (data.creador) {
                         $('#cot-creador-name').text(data.creador.name || '—');
@@ -2755,6 +2757,41 @@
                                 buttonsStyling: false,
                                 showCloseButton: true
                             })
+                        }
+                    });
+                }
+            });
+        });
+
+        // === REACTIVAR COTIZACIÓN VENCIDA ===
+        $('#cotizaciones-table').on('click', '.reactivar-btn', function () {
+            var id = $(this).data('id');
+            Swal.fire({
+                title: '¿Reactivar cotización?',
+                text: 'La cotización volverá a estado Pendiente con 15 días de validez desde hoy.',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Sí, reactivar',
+                cancelButtonText: 'Cancelar',
+                customClass: {
+                    confirmButton: 'btn btn-primary w-xs me-2',
+                    cancelButton: 'btn btn-light w-xs'
+                },
+                buttonsStyling: false,
+                showCloseButton: true
+            }).then(function (result) {
+                if (result.isConfirmed) {
+                    $.ajax({
+                        url: '/cotizaciones/' + id + '/reactivar',
+                        method: 'POST',
+                        data: { _token: $('meta[name="csrf-token"]').attr('content') },
+                        success: function (response) {
+                            Swal.fire({ icon: 'success', title: '¡Reactivada!', text: response.success, showConfirmButton: false, timer: 1800 });
+                            table.ajax.reload();
+                        },
+                        error: function (xhr) {
+                            var msg = (xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'No se pudo reactivar.';
+                            Swal.fire({ icon: 'error', title: 'Error', text: msg, showCloseButton: true });
                         }
                     });
                 }
@@ -5187,7 +5224,10 @@
                         var s = readLineState($c);
                         var rowSubtotal = s.qty * s.unit;
                         subtotal += rowSubtotal;
-                        var prodName = $c.find('.producto-text-display').val() || 'Producto sin definir';
+                        var $prodSel = $c.find('.producto-dropdown');
+                        var prodName = $prodSel.length
+                            ? ($prodSel.find('option:selected').text() || 'Producto sin definir')
+                            : ($c.find('.producto-text-display').val() || 'Producto sin definir');
                         var colorName = $c.find('.color-display').val() || '';
                         var tallaName = $c.find('.talla-input-display').val() || '';
                         var bits = [colorName, tallaName].filter(Boolean).join(' · ');
@@ -5212,7 +5252,12 @@
                 $('#cot-resumen-subtotal').text(formatMoney(subtotal));
                 $('#cot-resumen-iva').text(formatMoney(iva));
                 $('#cot-resumen-total').text(formatMoney(total));
-                // Equivalente en Bs (tasa BCV del día, expuesta por el layout)
+                // Tasa BCV del día y equivalente en Bs
+                if (window.tasaBcv && window.tasaBcv.valor) {
+                    $('#cot-resumen-tasa').text('Bs ' + parseFloat(window.tasaBcv.valor).toLocaleString('es-VE', { minimumFractionDigits: 4, maximumFractionDigits: 4 }));
+                } else {
+                    $('#cot-resumen-tasa').text('No disponible');
+                }
                 var bsLabel = (typeof window.bsEquivalente === 'function') ? window.bsEquivalente(total) : null;
                 $('#cot-resumen-total-bs').text(bsLabel || 'Sin tasa BCV');
             }
@@ -5247,8 +5292,35 @@
                 setTimeout(refreshKPIs, 600);
             });
 
+            // Actualiza la hora visible en el banner del creador
+            function refreshBannerHora() {
+                var now = new Date();
+                var hh = String(now.getHours()).padStart(2, '0');
+                var mm = String(now.getMinutes()).padStart(2, '0');
+                $('#cot-banner-hora').text(hh + ':' + mm);
+            }
+
+            // Actualiza la fecha visible en el banner del cliente
+            function refreshBannerFecha() {
+                var raw = $('#fecha-cotizacion-field').val();
+                if (raw) {
+                    var parts = raw.split('-');
+                    $('#cot-banner-fecha-val').text(parts[2] + '/' + parts[1] + '/' + parts[0]);
+                } else {
+                    $('#cot-banner-fecha-val').text('—');
+                }
+            }
+
+            // Sincronizar banner-fecha al cambiar el input de fecha
+            $(document).on('change', '#fecha-cotizacion-field', refreshBannerFecha);
+
             // Reset al abrir el modal
-            $('#showModal').on('show.bs.modal', function () { showStep(1); refreshKPIs(); });
+            $('#showModal').on('show.bs.modal', function () {
+                refreshBannerHora();
+                refreshBannerFecha();
+                showStep(1);
+                refreshKPIs();
+            });
             $('#showModal').on('shown.bs.modal', function () { showStep(currentStep); });
             $('#showModal').on('hidden.bs.modal', function () { currentStep = 1; });
 

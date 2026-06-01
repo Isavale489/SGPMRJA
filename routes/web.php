@@ -155,6 +155,7 @@ Route::middleware(['auth', 'throttle:60,1', 'active.user', 'recovery.questions.r
         Route::put('cotizaciones/{cotizacion}/estado', [CotizacionController::class, 'updateEstado'])->name('cotizaciones.updateEstado');
         Route::get('cotizaciones/{cotizacion}/datos-para-pedido', [CotizacionController::class, 'getDatosParaPedido'])->name('cotizaciones.datosParaPedido');
         Route::post('cotizaciones/{cotizacion}/convertir-a-pedido', [CotizacionController::class, 'convertirAPedido'])->name('cotizaciones.convertirAPedido');
+        Route::post('cotizaciones/{cotizacion}/reactivar', [CotizacionController::class, 'reactivar'])->name('cotizaciones.reactivar');
 
         // Proveedores (lectura)
         Route::get('proveedores', [ProveedorController::class, 'index'])->name('proveedores.index');

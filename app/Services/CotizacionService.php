@@ -9,6 +9,7 @@ use App\Models\DetallePedido;
 use App\Models\DetallePedidoBordado;
 use App\Models\Pedido;
 use App\Models\Producto;
+use App\Models\TasaCambio;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -30,13 +31,16 @@ class CotizacionService
             $total = $this->calcularTotal($data['productos']);
 
             $cotizacion = Cotizacion::create([
-                'cliente_id' => $data['cliente_id'],
-                'fecha_cotizacion' => $data['fecha_cotizacion'],
-                'fecha_validez' => $data['fecha_validez'] ?? null,
-                'estado' => 'Pendiente',
-                'total' => $total,
-                'notas' => $data['notas'] ?? null,
-                'user_id' => Auth::id(),
+                'cliente_id'          => $data['cliente_id'],
+                'fecha_cotizacion'    => $data['fecha_cotizacion'],
+                'fecha_validez'       => $data['fecha_validez']
+                    ?? \Carbon\Carbon::parse($data['fecha_cotizacion'])->addDays(15)->toDateString(),
+                'estado'              => 'Pendiente',
+                'total'               => $total,
+                'tasa_cambio_valor'   => TasaCambio::obtenerValorUsd(),
+                'notas'               => $data['notas'] ?? null,
+                'condiciones_terminos' => $data['condiciones_terminos'] ?? null,
+                'user_id'             => Auth::id(),
             ]);
 
             $this->crearDetalles($cotizacion, $data['productos']);
@@ -66,12 +70,14 @@ class CotizacionService
             $total = $this->calcularTotal($data['productos']);
 
             $cotizacion->update([
-                'cliente_id' => $data['cliente_id'],
-                'fecha_cotizacion' => $data['fecha_cotizacion'],
-                'fecha_validez' => $data['fecha_validez'] ?? null,
-                'estado' => $data['estado'],
-                'total' => $total,
-                'notas' => $data['notas'] ?? null,
+                'cliente_id'           => $data['cliente_id'],
+                'fecha_cotizacion'     => $data['fecha_cotizacion'],
+                'fecha_validez'        => $data['fecha_validez'] ?? null,
+                'estado'               => $data['estado'],
+                'total'                => $total,
+                'tasa_cambio_valor'    => TasaCambio::obtenerValorUsd(),
+                'notas'                => $data['notas'] ?? null,
+                'condiciones_terminos' => $data['condiciones_terminos'] ?? null,
                 // NO se sobrescribe user_id: queda fijo como el creador original.
             ]);
 
@@ -82,6 +88,28 @@ class CotizacionService
             'cotizacion_id' => $cotizacion->id,
             'total' => $cotizacion->total,
             'user_id' => Auth::id(),
+        ]);
+    }
+
+    /**
+     * Reactivar una cotización vencida, reseteando su validez a 15 días desde hoy.
+     */
+    public function reactivar(Cotizacion $cotizacion): void
+    {
+        if ($cotizacion->estado !== 'Vencida') {
+            throw new \InvalidArgumentException('Solo se pueden reactivar cotizaciones en estado Vencida.');
+        }
+
+        $cotizacion->update([
+            'estado'              => 'Pendiente',
+            'fecha_validez'       => now()->addDays(15)->toDateString(),
+            'tasa_cambio_valor'   => TasaCambio::obtenerValorUsd(),
+        ]);
+
+        Log::info('Cotización reactivada', [
+            'cotizacion_id'    => $cotizacion->id,
+            'nueva_fecha_validez' => $cotizacion->fecha_validez,
+            'user_id'          => Auth::id(),
         ]);
     }
 
