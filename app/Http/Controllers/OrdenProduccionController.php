@@ -294,12 +294,19 @@ class OrdenProduccionController extends Controller
             'ordenes.*.insumos.*.cantidad_estimada' => 'required|numeric|min:0.01',
         ]);
 
-        // Todas las líneas deben pertenecer al mismo pedido_id (anti-tampering)
+        // Detectar duplicados dentro del mismo batch (mismo detalle_pedido_id dos veces)
         $detalleIds = collect($validated['ordenes'])->pluck('detalle_pedido_id');
+        if ($detalleIds->count() !== $detalleIds->unique()->count()) {
+            return response()->json([
+                'message' => 'El batch contiene líneas duplicadas. Cada línea del pedido debe aparecer una sola vez.'
+            ], 422);
+        }
+
+        // Todas las líneas deben pertenecer al mismo pedido_id (anti-tampering)
         $detalles = DetallePedido::whereIn('id', $detalleIds)
             ->where('pedido_id', $validated['pedido_id'])
             ->get()->keyBy('id');
-        if ($detalles->count() !== $detalleIds->unique()->count()) {
+        if ($detalles->count() !== $detalleIds->count()) {
             return response()->json([
                 'message' => 'Una o más líneas no pertenecen al pedido indicado.'
             ], 422);
@@ -320,17 +327,18 @@ class OrdenProduccionController extends Controller
             foreach ($validated['ordenes'] as $o) {
                 $detalle = $detalles[$o['detalle_pedido_id']];
                 $orden = OrdenProduccion::create([
-                    'pedido_id' => $detalle->pedido_id,
-                    'detalle_pedido_id' => $detalle->id,
-                    'producto_id' => $detalle->producto_id,
-                    'empleado_id' => $o['empleado_id'],
+                    'pedido_id'           => $detalle->pedido_id,
+                    'detalle_pedido_id'   => $detalle->id,
+                    'producto_id'         => $detalle->producto_id,
+                    'empleado_id'         => $o['empleado_id'],
                     'cantidad_solicitada' => $detalle->cantidad,
-                    'cantidad_producida' => 0,
-                    'fecha_inicio' => $o['fecha_inicio'],
-                    'fecha_fin_estimada' => $o['fecha_fin_estimada'],
-                    'estado' => 'Pendiente',
-                    'notas' => $o['notas'] ?? null,
-                    'created_by' => Auth::id(),
+                    'cantidad_producida'  => 0,
+                    'cantidad_defectuosa' => 0,
+                    'fecha_inicio'        => $o['fecha_inicio'],
+                    'fecha_fin_estimada'  => $o['fecha_fin_estimada'],
+                    'estado'              => 'Pendiente',
+                    'notas'               => $o['notas'] ?? null,
+                    'created_by'          => Auth::id(),
                 ]);
                 foreach ($o['insumos'] as $ins) {
                     $orden->insumos()->attach($ins['id'], [

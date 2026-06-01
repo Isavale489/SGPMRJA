@@ -531,7 +531,10 @@
                     lleva_bordado: l.lleva_bordado,
                     bordados_count: l.bordados_count,
                     cantidad: l.cantidad,
-                    insumos: Array.isArray(l.insumos_default) ? l.insumos_default.slice() : [],
+                    // Deep copy para evitar referencias compartidas entre filas
+                    insumos: Array.isArray(l.insumos_default)
+                        ? l.insumos_default.map(function (i) { return Object.assign({}, i); })
+                        : [],
                     // editables
                     empleado_id: '',
                     fecha_inicio: hoyISO(),
@@ -617,8 +620,18 @@
         $(document).on('click', '#batch-submit-btn', function () {
             batchSyncFilasDesdeDom();
 
-            // Validación cliente: empleado + fechas + costo + fin > inicio
+            // Validación cliente: duplicados, empleado, fechas, insumos
             const errores = [];
+
+            // Detectar detalle_id duplicado dentro del batch
+            const detalleIdsSeen = new Set();
+            batchState.filas.forEach(function (f) {
+                if (detalleIdsSeen.has(f.detalle_id)) {
+                    errores.push('Línea de pedido #' + f.detalle_id + ' aparece duplicada. Recarga e intenta de nuevo.');
+                }
+                detalleIdsSeen.add(f.detalle_id);
+            });
+
             batchState.filas.forEach(function (f, idx) {
                 if (!f.empleado_id)                    errores.push('Fila ' + (idx + 1) + ': empleado requerido');
                 if (!f.fecha_inicio)                   errores.push('Fila ' + (idx + 1) + ': fecha inicio requerida');
