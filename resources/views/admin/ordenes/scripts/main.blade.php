@@ -187,6 +187,7 @@
         let pedidosOrdenData = [];
 
         $(document).on('shown.bs.modal', '#seleccionarPedidoModal', function () {
+            pedordResetFiltros();
             cargarPedidosDisponibles();
         });
 
@@ -205,9 +206,7 @@
                 success: function (data) {
                     $loading.hide();
                     pedidosOrdenData = data || [];
-                    if (!pedidosOrdenData.length) { $empty.show(); return; }
-                    renderPedidosOrden(pedidosOrdenData);
-                    $cont.show();
+                    aplicarFiltrosPedidos();
                 },
                 error: function () {
                     $loading.hide();
@@ -316,17 +315,87 @@
             actualizarBotonBatch($(this).data('pedido-id'));
         });
 
-        // Búsqueda
-        $('#buscarPedidoOrden').on('keyup', function () {
-            const term = $(this).val().toLowerCase();
-            if (!term) { renderPedidosOrden(pedidosOrdenData); return; }
-            const filtradas = pedidosOrdenData.filter(function (p) {
-                return (p.cliente_nombre || '').toLowerCase().includes(term) ||
-                    (p.cliente_documento || '').toLowerCase().includes(term) ||
-                    String(p.id).includes(term);
+        // ══════════════════════════════════════════════════════
+        // BÚSQUEDA + FILTROS AVANZADOS (selección de pedidos a producir)
+        // ══════════════════════════════════════════════════════
+        function parseDMY(s) { // "dd/mm/yyyy" -> "yyyy-mm-dd" para comparar
+            if (!s) return '';
+            const m = String(s).split('/');
+            return m.length === 3 ? (m[2] + '-' + m[1] + '-' + m[0]) : '';
+        }
+
+        function pedordUpdateBadge() {
+            let count = 0;
+            if ($('#pedord-filter-estado').val())    count++;
+            if ($('#pedord-filter-cobertura').val()) count++;
+            if ($('#pedord-filter-desde').val())     count++;
+            if ($('#pedord-filter-hasta').val())     count++;
+            if (($('#pedord-filter-orden').val() || 'recientes') !== 'recientes') count++;
+            $('#pedord-filter-count').text(count).toggleClass('d-none', count === 0);
+        }
+
+        function pedordResetFiltros() {
+            $('#pedord-search').val('');
+            $('#pedord-filter-estado').val('');
+            $('#pedord-filter-cobertura').val('');
+            $('#pedord-filter-desde').val('');
+            $('#pedord-filter-hasta').val('');
+            $('#pedord-filter-orden').val('recientes');
+            pedordUpdateBadge();
+        }
+
+        function aplicarFiltrosPedidos() {
+            const $cont  = $('#pedidos-orden-container');
+            const $empty = $('#pedidos-orden-empty');
+            const term      = ($('#pedord-search').val() || '').toLowerCase().trim();
+            const estado    = $('#pedord-filter-estado').val();
+            const cobertura = $('#pedord-filter-cobertura').val();
+            const desde     = $('#pedord-filter-desde').val();
+            const hasta     = $('#pedord-filter-hasta').val();
+            const orden     = $('#pedord-filter-orden').val();
+
+            let arr = pedidosOrdenData.filter(function (p) {
+                if (term) {
+                    const hit = (p.cliente_nombre || '').toLowerCase().includes(term) ||
+                        (p.cliente_documento || '').toLowerCase().includes(term) ||
+                        String(p.id).includes(term);
+                    if (!hit) return false;
+                }
+                if (estado && p.estado !== estado) return false;
+                if (cobertura === 'pendientes' && !(p.lineas_pendientes > 0)) return false;
+                if (cobertura === 'cubiertos'  && p.lineas_pendientes !== 0)  return false;
+                if (desde || hasta) {
+                    const fp = parseDMY(p.fecha_pedido);
+                    if (desde && (!fp || fp < desde)) return false;
+                    if (hasta && (!fp || fp > hasta)) return false;
+                }
+                return true;
             });
-            renderPedidosOrden(filtradas);
-        });
+
+            if (orden === 'entrega') {
+                arr = arr.slice().sort(function (a, b) {
+                    const ea = a.fecha_entrega || '9999-12-31';
+                    const eb = b.fecha_entrega || '9999-12-31';
+                    return ea < eb ? -1 : (ea > eb ? 1 : 0);
+                });
+            } else if (orden === 'pendientes') {
+                arr = arr.slice().sort(function (a, b) { return (b.lineas_pendientes || 0) - (a.lineas_pendientes || 0); });
+            }
+
+            renderPedidosOrden(arr);
+            $cont.toggle(arr.length > 0);
+            $empty.toggle(arr.length === 0);
+            pedordUpdateBadge();
+        }
+
+        // Header colapsable de filtros (clase is-collapsed)
+        $('#pedord-filters-collapse')
+            .on('show.bs.collapse',   function () { $('#pedord-advanced-filters .navy-filter-header').removeClass('is-collapsed'); })
+            .on('hidden.bs.collapse', function () { $('#pedord-advanced-filters .navy-filter-header').addClass('is-collapsed'); });
+
+        $('#pedord-search').on('keyup', debounce(aplicarFiltrosPedidos, 250));
+        $('#pedord-advanced-filters .navy-filter-select').on('change', aplicarFiltrosPedidos);
+        $('#pedord-clear-filters').on('click', function () { pedordResetFiltros(); aplicarFiltrosPedidos(); });
 
         // Click "Crear N órdenes" → 1 línea: modal single; 2+ líneas: modal batch
         $(document).on('click', '.crear-batch-btn', function () {
@@ -908,14 +977,14 @@
         });
 
         $('#filters-collapse-body')
-            .on('show.bs.collapse', function () { $('.navy-filter-header').removeClass('is-collapsed'); })
-            .on('hidden.bs.collapse', function () { $('.navy-filter-header').addClass('is-collapsed'); });
+            .on('show.bs.collapse', function () { $('#advanced-filters .navy-filter-header').removeClass('is-collapsed'); })
+            .on('hidden.bs.collapse', function () { $('#advanced-filters .navy-filter-header').addClass('is-collapsed'); });
 
         $('#custom-search-input').on('input', debounce(function () {
             table.search(this.value).draw();
         }, 300));
 
-        $('.navy-filter-select').on('change', function () {
+        $('#advanced-filters .navy-filter-select').on('change', function () {
             table.ajax.reload();
             updateFilterBadge();
         });
@@ -925,7 +994,7 @@
             $('#filter-fecha-desde').val('');
             $('#filter-fecha-hasta').val('');
             $('#filter-orden').val('recientes');
-            $('.navy-filter-select').trigger('change');
+            $('#advanced-filters .navy-filter-select').trigger('change');
             $('#custom-search-input').val('');
             table.search('').draw();
             updateFilterBadge();
