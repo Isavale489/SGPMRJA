@@ -32,7 +32,8 @@ class CotizacionService
             $cotizacion = Cotizacion::create([
                 'cliente_id' => $data['cliente_id'],
                 'fecha_cotizacion' => $data['fecha_cotizacion'],
-                'fecha_validez' => $data['fecha_validez'] ?? null,
+                'fecha_validez' => $data['fecha_validez']
+                    ?? \Carbon\Carbon::parse($data['fecha_cotizacion'])->addDays(15)->toDateString(),
                 'estado' => 'Pendiente',
                 'total' => $total,
                 'notas' => $data['notas'] ?? null,
