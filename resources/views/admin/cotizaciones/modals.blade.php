@@ -574,13 +574,28 @@
                                         </h6>
                                     </div>
                                     <div class="card-body">
+                                        <label class="form-label fw-semibold small text-muted mb-1">
+                                            <i class="ri-sticky-note-line me-1"></i>Notas internas
+                                        </label>
                                         <textarea id="notas-field" name="notas" class="form-control"
-                                            rows="5"
-                                            placeholder="Condiciones generales, observaciones, términos especiales..."
-                                            style="resize: vertical; min-height: 110px;"></textarea>
-                                        <small class="text-muted d-block mt-1">
+                                            rows="3"
+                                            placeholder="Observaciones internas sobre la cotización..."
+                                            style="resize: vertical; min-height: 70px;"></textarea>
+                                        <small class="text-muted d-block mt-1 mb-3">
                                             <i class="ri-information-line me-1"></i>Opcional · máx. 2000 caracteres
                                         </small>
+
+                                        <label class="form-label fw-semibold small text-muted mb-1">
+                                            <i class="ri-file-shield-2-line me-1"></i>Condiciones y Términos
+                                        </label>
+                                        <textarea id="condiciones-field" name="condiciones_terminos" class="form-control"
+                                            rows="4"
+                                            placeholder="Cláusulas legales, condiciones de pago, tiempo de entrega, garantías..."
+                                            style="resize: vertical; min-height: 90px;"></textarea>
+                                        <small class="text-muted d-block mt-1">
+                                            <i class="ri-information-line me-1"></i>Se incluirá en el PDF de la cotización
+                                        </small>
+
                                         {{-- Wrapper legacy preservado para compatibilidad de IDs --}}
                                         <div id="notasCollapseBody" class="d-none"></div>
                                     </div>
@@ -623,6 +638,12 @@
                                         <span>Resumen final</span>
                                     </div>
                                     <div class="cot-resumen-card-body">
+                                        <div class="cot-resumen-row" style="opacity: 0.8; font-size: 0.75rem; margin-bottom: 6px;">
+                                            <span class="cot-resumen-row-label">
+                                                <i class="ri-bank-line me-1"></i>Tasa BCV (USD/VES)
+                                            </span>
+                                            <span class="cot-resumen-row-value" id="cot-resumen-tasa">Bs 0,0000</span>
+                                        </div>
                                         <div class="cot-resumen-row">
                                             <span class="cot-resumen-row-label">Subtotal</span>
                                             <span class="cot-resumen-row-value" id="cot-resumen-subtotal">$0,00</span>
