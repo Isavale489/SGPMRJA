@@ -767,10 +767,11 @@
                 method: 'GET',
                 success: function (resp) {
                     $load.hide();
-                    $('#mo-total').text(resp.resumen.total);
-                    $('#mo-pendientes').text(resp.resumen.pendientes);
-                    $('#mo-en-proceso').text(resp.resumen.en_proceso);
-                    $('#mo-finalizadas').text(resp.resumen.finalizadas);
+                    const r = resp.resumen;
+                    $('#mo-total').text(r.total);
+                    $('#mo-pendientes').text(r.pendientes);
+                    $('#mo-en-proceso').text(r.en_proceso);
+                    $('#mo-finalizadas').text(r.finalizadas);
                     $resumen.css('display', 'flex');
 
                     if (!resp.ordenes.length) { $empty.show(); return; }

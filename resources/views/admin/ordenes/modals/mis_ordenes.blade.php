@@ -6,7 +6,7 @@
             <div class="modal-header">
                 <div>
                     <h5 class="modal-title mb-0">Mis Órdenes</h5>
-                    <p class="text-white-50 mb-0 fs-12">Órdenes de producción asignadas a cada empleado</p>
+                    <p class="mb-0 fs-12" style="color: rgba(255,255,255,.85);">Órdenes de producción asignadas a cada empleado</p>
                 </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
@@ -24,12 +24,20 @@
                     </select>
                 </div>
 
-                {{-- Resumen --}}
+                {{-- Resumen — pills por estado --}}
                 <div id="mis-ordenes-resumen" class="d-flex flex-wrap gap-2 mb-3" style="display: none;">
-                    <span class="badge bg-secondary-subtle text-secondary"><i class="ri-stack-line me-1"></i>Total: <span id="mo-total">0</span></span>
-                    <span class="badge bg-warning-subtle text-warning"><i class="ri-time-line me-1"></i>Pendientes: <span id="mo-pendientes">0</span></span>
-                    <span class="badge bg-info-subtle text-info"><i class="ri-loader-2-line me-1"></i>En proceso: <span id="mo-en-proceso">0</span></span>
-                    <span class="badge bg-success-subtle text-success"><i class="ri-check-double-line me-1"></i>Finalizadas: <span id="mo-finalizadas">0</span></span>
+                    <span class="badge rounded-pill d-inline-flex align-items-center px-3 py-2" style="background:rgba(71,85,105,.10); color:#475569;">
+                        <i class="ri-stack-line me-1"></i>Total <strong class="ms-1 fs-13" id="mo-total">0</strong>
+                    </span>
+                    <span class="badge rounded-pill d-inline-flex align-items-center px-3 py-2" style="background:rgba(245,158,11,.14); color:#d97706;">
+                        <i class="ri-time-line me-1"></i>Pendientes <strong class="ms-1 fs-13" id="mo-pendientes">0</strong>
+                    </span>
+                    <span class="badge rounded-pill d-inline-flex align-items-center px-3 py-2" style="background:rgba(37,99,235,.12); color:#2563eb;">
+                        <i class="ri-loader-4-line me-1"></i>En proceso <strong class="ms-1 fs-13" id="mo-en-proceso">0</strong>
+                    </span>
+                    <span class="badge rounded-pill d-inline-flex align-items-center px-3 py-2" style="background:rgba(22,163,74,.12); color:#16a34a;">
+                        <i class="ri-check-double-line me-1"></i>Finalizadas <strong class="ms-1 fs-13" id="mo-finalizadas">0</strong>
+                    </span>
                 </div>
 
                 {{-- Lista de órdenes --}}

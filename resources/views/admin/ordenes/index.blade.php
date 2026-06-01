@@ -36,7 +36,7 @@
                     <div class="d-flex align-items-center">
                         <h5 class="card-title mb-0 flex-grow-1">Órdenes de Producción</h5>
                         <div class="flex-shrink-0 d-flex align-items-center gap-2">
-                            <button type="button" class="btn btn-outline-success" id="mis-ordenes-btn"
+                            <button type="button" class="btn btn-soft-info" id="mis-ordenes-btn"
                                 data-bs-toggle="modal" data-bs-target="#misOrdenesModal">
                                 <i class="ri-user-follow-line align-bottom me-1"></i> Mis Órdenes
                             </button>
