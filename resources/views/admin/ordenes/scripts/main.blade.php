@@ -86,6 +86,23 @@
             const date = new Date(dateString);
             return date.toISOString().split('T')[0];
         };
+        // Fin estimado sugerido: entrega del pedido − 2 días, pero NUNCA antes del
+        // inicio (si la entrega ya pasó, usa inicio + 3 días como margen razonable).
+        function finEstimadoDefault(fechaEntrega, inicioISO) {
+            const inicio = inicioISO || hoyISO();
+            let fin = '';
+            if (fechaEntrega) {
+                const fe = new Date(fechaEntrega);
+                fe.setDate(fe.getDate() - 2);
+                fin = fe.toISOString().split('T')[0];
+            }
+            if (!fin || fin <= inicio) {
+                const d = new Date(inicio);
+                d.setDate(d.getDate() + 3);
+                fin = d.toISOString().split('T')[0];
+            }
+            return fin;
+        }
 
         // ── Insumos: estado + grilla + nested modal ──────────────────
         // Estado en memoria. Render → tabla visible + hidden inputs en #insumos-container
@@ -402,15 +419,9 @@
             // Empleado
             $('#empleado-id-field').val('');
 
-            // Fechas sugeridas
+            // Fechas sugeridas (el fin nunca queda antes del inicio)
             $('#fecha-inicio-field').val(hoyISO());
-            if (pedido.fecha_entrega) {
-                const fe = new Date(pedido.fecha_entrega);
-                fe.setDate(fe.getDate() - 2); // 2 días antes de la entrega
-                $('#fecha-fin-estimada-field').val(fe.toISOString().split('T')[0]);
-            } else {
-                $('#fecha-fin-estimada-field').val('');
-            }
+            $('#fecha-fin-estimada-field').val(finEstimadoDefault(pedido.fecha_entrega, hoyISO()));
 
             // Insumos: prefill desde el template del tipo_producto (si tiene)
             resetInsumos();
@@ -455,11 +466,7 @@
                     // editables
                     empleado_id: '',
                     fecha_inicio: hoyISO(),
-                    fecha_fin_estimada: pedido.fecha_entrega ? (function () {
-                        const fe = new Date(pedido.fecha_entrega);
-                        fe.setDate(fe.getDate() - 2);
-                        return fe.toISOString().split('T')[0];
-                    })() : '',
+                    fecha_fin_estimada: finEstimadoDefault(pedido.fecha_entrega, hoyISO()),
                 };
             });
 
@@ -497,9 +504,11 @@
                     '<td><select class="form-select form-select-sm batch-empleado">' + empleadosOpts + '</select></td>' +
                     '<td><input type="date" class="form-control form-control-sm batch-inicio" value="' + (f.fecha_inicio || '') + '"></td>' +
                     '<td><input type="date" class="form-control form-control-sm batch-fin" value="' + (f.fecha_fin_estimada || '') + '"></td>' +
-                    '<td class="text-center"><span class="badge bg-info-subtle text-info" title="Insumos prellenados desde el template del tipo">' +
-                        '<i class="ri-tools-line"></i> ' + (f.insumos ? f.insumos.length : 0) +
-                    '</span></td>' +
+                    '<td class="text-center">' +
+                        '<button type="button" class="btn btn-sm btn-soft-info batch-ins-btn" data-idx="' + idx + '" title="Editar insumos de esta línea">' +
+                            '<i class="ri-tools-line me-1"></i>' + (f.insumos ? f.insumos.length : 0) +
+                        '</button>' +
+                    '</td>' +
                 '</tr>';
             }).join(''));
 
@@ -548,7 +557,7 @@
                 if (f.fecha_inicio && f.fecha_fin_estimada && f.fecha_fin_estimada <= f.fecha_inicio)
                     errores.push('Fila ' + (idx + 1) + ': la fecha fin debe ser posterior al inicio');
                 if (!f.insumos || !f.insumos.length)
-                    errores.push('Fila ' + (idx + 1) + ': sin insumos (configura el template del tipo)');
+                    errores.push('Fila ' + (idx + 1) + ': sin insumos (agrégalos con el botón de la columna Ins.)');
             });
             if (errores.length) {
                 Swal.fire({ icon: 'warning', title: 'Revisa los datos', html: errores.join('<br>') });
@@ -596,6 +605,77 @@
                     Swal.fire({ icon: 'error', title: 'Error', text: msg });
                 }
             });
+        });
+
+        // ── Editor de insumos por línea (batch) ─────────────────────
+        let batchInsTemp = [];        // insumos en edición (copia temporal)
+        let batchInsRowIdx = null;    // fila del batch que se está editando
+
+        function batchRenderInsTemp() {
+            const $tbody = $('#batch-ins-tbody');
+            const $empty = $('#batch-ins-empty');
+            const $wrap  = $('#batch-ins-tablewrap');
+            if (!batchInsTemp.length) {
+                $tbody.empty(); $wrap.attr('hidden', true); $empty.show(); return;
+            }
+            $empty.hide(); $wrap.removeAttr('hidden');
+            $tbody.html(batchInsTemp.map(function (it, i) {
+                return '<tr>' +
+                    '<td class="cot-col-prod"><div class="fw-semibold">' + escHtml(it.nombre) + '</div>' +
+                        (it.unidad ? '<small class="text-muted">' + escHtml(it.unidad) + '</small>' : '') + '</td>' +
+                    '<td class="cot-col-num text-end fw-semibold">' + parseFloat(it.cantidad).toFixed(2) + '</td>' +
+                    '<td class="cot-col-acc text-center"><button type="button" class="btn btn-sm btn-soft-danger batch-ins-del" data-i="' + i + '" title="Quitar"><i class="ri-delete-bin-line"></i></button></td>' +
+                '</tr>';
+            }).join(''));
+        }
+
+        // Abrir el editor de insumos para una línea
+        $(document).on('click', '.batch-ins-btn', function () {
+            const idx = parseInt($(this).data('idx'), 10);
+            if (!batchState.filas[idx]) return;
+            // No perder lo editado (empleado/fechas) al re-renderear luego
+            batchSyncFilasDesdeDom();
+            batchInsRowIdx = idx;
+            batchInsTemp = (batchState.filas[idx].insumos || []).map(function (i) {
+                return { id: i.id, nombre: i.nombre, unidad: i.unidad || '', cantidad: i.cantidad };
+            });
+            $('#batch-ins-prod').text(batchState.filas[idx].producto_nombre || ('Línea ' + (idx + 1)));
+            $('#batch-ins-select').val('');
+            $('#batch-ins-cant').val('');
+            batchRenderInsTemp();
+            $('#batchInsumosModal').modal('show');
+        });
+
+        // Agregar (o actualizar cantidad si ya existe) un insumo a la lista temporal
+        $(document).on('click', '#batch-ins-add', function () {
+            const $opt = $('#batch-ins-select option:selected');
+            const id   = $('#batch-ins-select').val();
+            const cant = parseFloat($('#batch-ins-cant').val());
+            if (!id) { Swal.fire({ icon: 'warning', title: 'Selecciona un insumo', toast: true, position: 'top-end', showConfirmButton: false, timer: 1400 }); return; }
+            if (isNaN(cant) || cant <= 0) { Swal.fire({ icon: 'warning', title: 'Cantidad inválida', toast: true, position: 'top-end', showConfirmButton: false, timer: 1400 }); return; }
+            const ex = batchInsTemp.find(function (i) { return String(i.id) === String(id); });
+            if (ex) {
+                ex.cantidad = cant;
+            } else {
+                batchInsTemp.push({ id: parseInt(id, 10), nombre: $opt.data('nombre'), unidad: $opt.data('unidad') || '', cantidad: cant });
+            }
+            $('#batch-ins-select').val('');
+            $('#batch-ins-cant').val('');
+            batchRenderInsTemp();
+        });
+
+        // Quitar un insumo de la lista temporal
+        $(document).on('click', '.batch-ins-del', function () {
+            batchInsTemp.splice(parseInt($(this).data('i'), 10), 1);
+            batchRenderInsTemp();
+        });
+
+        // Guardar → vuelca la lista a la fila del batch y refresca el contador
+        $(document).on('click', '#batch-ins-save', function () {
+            if (batchInsRowIdx == null) return;
+            batchState.filas[batchInsRowIdx].insumos = batchInsTemp.slice();
+            $('#batchInsumosModal').modal('hide');
+            batchRenderFilas();
         });
 
         // Reset al cerrar

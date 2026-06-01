@@ -1,12 +1,10 @@
-<!-- Modal nested — Agregar insumo a la orden (utilitario nivel 2) -->
-<div class="modal fade" id="insumoAddModal" tabindex="-1" aria-hidden="true">
+<!-- Modal nested — Agregar insumo a la orden (estilo atlántico navy) -->
+<div class="modal fade atlantico-modal" id="insumoAddModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
-            <div class="modal-header utility-modal-header">
-                <h6 class="modal-title text-white mb-0">
-                    <i class="ri-add-line me-1"></i><span id="insumoAddModal-title">Agregar insumo</span>
-                </h6>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            <div class="modal-header py-2">
+                <h5 class="modal-title mb-0"><span id="insumoAddModal-title">Agregar insumo</span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
             </div>
             <div class="modal-body p-3">
                 <input type="hidden" id="insumo-add-edit-idx" value="" />

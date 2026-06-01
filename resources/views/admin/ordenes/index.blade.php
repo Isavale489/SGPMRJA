@@ -132,6 +132,7 @@
     @include('admin.ordenes.modals.seleccionar_pedido')
     @include('admin.ordenes.modals.mis_ordenes')
     @include('admin.ordenes.modals.batch')
+    @include('admin.ordenes.modals.batch_insumos')
     @include('admin.ordenes.modals.create')
     @include('admin.ordenes.modals.insumo_add')
     @include('admin.ordenes.modals.view')
