@@ -525,6 +525,12 @@
                             hadItems = true;
                         }
 
+                        // Reactivar (solo si está Vencida)
+                        if (isAdmin && row.estado === 'Vencida') {
+                            items += `<li><button type="button" class="dropdown-item act-item act-primary reactivar-btn" data-id="${data}"><span class="act-ic"><i class="ri-refresh-line"></i></span>Reactivar cotización</button></li>`;
+                            hadItems = true;
+                        }
+
                         // Editar y Eliminar (solo si NO está Convertida ni Cancelada ni Vencida)
                         if (isAdmin && row.estado !== 'Convertida' && row.estado !== 'Cancelada' && row.estado !== 'Vencida') {
                             items += `<li><button type="button" class="dropdown-item act-item act-edit edit-btn" data-id="${data}"><span class="act-ic"><i class="ri-pencil-fill"></i></span>Editar</button></li>`;
@@ -2393,6 +2399,7 @@
                     $('#estado-field').val(data.estado);
                     $('#prioridad-field').val(data.prioridad || 'Normal');
                     $('#notas-field').val(data.notas || '');
+                    $('#condiciones-field').val(data.condiciones_terminos || '');
                     // Creador real: mostrar quién creó la cotización (no el editor)
                     if (data.creador) {
                         $('#cot-creador-name').text(data.creador.name || '—');
@@ -2755,6 +2762,41 @@
                                 buttonsStyling: false,
                                 showCloseButton: true
                             })
+                        }
+                    });
+                }
+            });
+        });
+
+        // === REACTIVAR COTIZACIÓN VENCIDA ===
+        $('#cotizaciones-table').on('click', '.reactivar-btn', function () {
+            var id = $(this).data('id');
+            Swal.fire({
+                title: '¿Reactivar cotización?',
+                text: 'La cotización volverá a estado Pendiente con 15 días de validez desde hoy.',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Sí, reactivar',
+                cancelButtonText: 'Cancelar',
+                customClass: {
+                    confirmButton: 'btn btn-primary w-xs me-2',
+                    cancelButton: 'btn btn-light w-xs'
+                },
+                buttonsStyling: false,
+                showCloseButton: true
+            }).then(function (result) {
+                if (result.isConfirmed) {
+                    $.ajax({
+                        url: '/cotizaciones/' + id + '/reactivar',
+                        method: 'POST',
+                        data: { _token: $('meta[name="csrf-token"]').attr('content') },
+                        success: function (response) {
+                            Swal.fire({ icon: 'success', title: '¡Reactivada!', text: response.success, showConfirmButton: false, timer: 1800 });
+                            table.ajax.reload();
+                        },
+                        error: function (xhr) {
+                            var msg = (xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'No se pudo reactivar.';
+                            Swal.fire({ icon: 'error', title: 'Error', text: msg, showCloseButton: true });
                         }
                     });
                 }
@@ -5212,7 +5254,12 @@
                 $('#cot-resumen-subtotal').text(formatMoney(subtotal));
                 $('#cot-resumen-iva').text(formatMoney(iva));
                 $('#cot-resumen-total').text(formatMoney(total));
-                // Equivalente en Bs (tasa BCV del día, expuesta por el layout)
+                // Tasa BCV del día y equivalente en Bs
+                if (window.tasaBcv && window.tasaBcv.valor) {
+                    $('#cot-resumen-tasa').text('Bs ' + parseFloat(window.tasaBcv.valor).toLocaleString('es-VE', { minimumFractionDigits: 4, maximumFractionDigits: 4 }));
+                } else {
+                    $('#cot-resumen-tasa').text('No disponible');
+                }
                 var bsLabel = (typeof window.bsEquivalente === 'function') ? window.bsEquivalente(total) : null;
                 $('#cot-resumen-total-bs').text(bsLabel || 'Sin tasa BCV');
             }
