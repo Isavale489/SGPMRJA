@@ -233,6 +233,9 @@
                             <span class="wiz-client-banner-name" id="cot-banner-name">—</span>
                             <div class="wiz-client-banner-sub">
                                 <span class="wiz-client-banner-doc" id="cot-banner-doc">—</span>
+                                <span class="wiz-client-banner-doc ms-2" id="cot-banner-fecha" style="opacity:.8;">
+                                    <i class="ri-calendar-line me-1"></i><span id="cot-banner-fecha-val">—</span>
+                                </span>
                             </div>
                         </div>
                     </div>
@@ -262,6 +265,11 @@
                             id="cot-creador-avatar" src="{{ Auth::user()->avatar_url }}" alt="" />
                         <div class="wiz-client-banner-main">
                             <span class="wiz-client-banner-name" id="cot-creador-name">{{ Auth::user()->name }}</span>
+                            <div class="wiz-client-banner-sub">
+                                <span style="font-size:0.7rem; opacity:.8;">
+                                    <i class="ri-time-line me-1"></i><span id="cot-banner-hora">—</span>
+                                </span>
+                            </div>
                         </div>
                     </div>
                 </div>

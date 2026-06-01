@@ -5294,8 +5294,35 @@
                 setTimeout(refreshKPIs, 600);
             });
 
+            // Actualiza la hora visible en el banner del creador
+            function refreshBannerHora() {
+                var now = new Date();
+                var hh = String(now.getHours()).padStart(2, '0');
+                var mm = String(now.getMinutes()).padStart(2, '0');
+                $('#cot-banner-hora').text(hh + ':' + mm);
+            }
+
+            // Actualiza la fecha visible en el banner del cliente
+            function refreshBannerFecha() {
+                var raw = $('#fecha-cotizacion-field').val();
+                if (raw) {
+                    var parts = raw.split('-');
+                    $('#cot-banner-fecha-val').text(parts[2] + '/' + parts[1] + '/' + parts[0]);
+                } else {
+                    $('#cot-banner-fecha-val').text('—');
+                }
+            }
+
+            // Sincronizar banner-fecha al cambiar el input de fecha
+            $(document).on('change', '#fecha-cotizacion-field', refreshBannerFecha);
+
             // Reset al abrir el modal
-            $('#showModal').on('show.bs.modal', function () { showStep(1); refreshKPIs(); });
+            $('#showModal').on('show.bs.modal', function () {
+                refreshBannerHora();
+                refreshBannerFecha();
+                showStep(1);
+                refreshKPIs();
+            });
             $('#showModal').on('shown.bs.modal', function () { showStep(currentStep); });
             $('#showModal').on('hidden.bs.modal', function () { currentStep = 1; });
 
