@@ -1,23 +1,24 @@
 <script>
 $(document).ready(function () {
 
-    var rowCount  = 0;
-    var INSUMOS   = window.INSUMOS_DATA || [];
+    var rowCount = 0;
+    var INSUMOS  = window.INSUMOS_DATA || [];
 
     // ── Select2 en proveedor ────────────────────────────────────────────────
-    $('#proveedor_id').select2({
+    $('#c-proveedor').select2({
         theme: 'bootstrap-5',
         placeholder: 'Seleccione un proveedor...',
-        width: '100%'
+        width: '100%',
+        dropdownParent: $('#createCompraModal')
     });
 
     // ── Mostrar / ocultar fecha de vencimiento ──────────────────────────────
-    $('#tipo_pago').on('change', function () {
+    $('#c-tipo-pago').on('change', function () {
         if ($(this).val() === 'credito') {
-            $('#vencimiento-wrapper').show();
+            $('#c-vencimiento-wrap').show();
         } else {
-            $('#vencimiento-wrapper').hide();
-            $('#fecha_vencimiento').val('');
+            $('#c-vencimiento-wrap').hide();
+            $('#c-vencimiento').val('');
         }
     });
 
@@ -42,86 +43,99 @@ $(document).ready(function () {
 
     function recalcular() {
         var subtotal = 0;
-
-        $('#items-tbody tr').each(function () {
-            var cantidad = parseFloat($(this).find('.cantidad-input').val()) || 0;
-            var costo    = parseFloat($(this).find('.costo-input').val())    || 0;
+        $('#c-items-tbody tr').each(function () {
+            var cantidad = parseFloat($(this).find('.c-cantidad').val()) || 0;
+            var costo    = parseFloat($(this).find('.c-costo').val())    || 0;
             var sub      = cantidad * costo;
-            $(this).find('.subtotal-cell').text(fmt(sub));
+            $(this).find('.c-subtotal').text(fmt(sub));
             subtotal += sub;
         });
-
-        var ivaPct = parseFloat($('#iva_porcentaje').val()) || 0;
+        var ivaPct = parseFloat($('#c-iva').val()) || 0;
         var iva    = subtotal * ivaPct / 100;
-        var total  = subtotal + iva;
-
-        $('#resumen-subtotal').text(fmt(subtotal));
-        $('#resumen-iva').text(fmt(iva));
-        $('#resumen-total').text(fmt(total));
-        $('#resumen-iva-pct').text(ivaPct);
+        $('#c-resumen-subtotal').text(fmt(subtotal));
+        $('#c-resumen-iva').text(fmt(iva));
+        $('#c-resumen-total').text(fmt(subtotal + iva));
+        $('#c-resumen-iva-pct').text(ivaPct);
     }
 
     function renumber() {
-        $('#items-tbody tr').each(function (i) {
-            $(this).find('.row-num').text(i + 1);
+        $('#c-items-tbody tr').each(function (i) {
+            $(this).find('.c-row-num').text(i + 1);
         });
     }
 
     function updateEmpty() {
-        var count = $('#items-tbody tr').length;
-        $('#items-count').text('(' + count + ')');
+        var count = $('#c-items-tbody tr').length;
+        $('#c-items-count').text('(' + count + ')');
         if (count === 0) {
-            $('#items-empty').show();
-            $('#items-table-wrap').attr('hidden', true);
+            $('#c-items-empty').show();
+            $('#c-items-table-wrap').attr('hidden', true);
         } else {
-            $('#items-empty').hide();
-            $('#items-table-wrap').removeAttr('hidden');
+            $('#c-items-empty').hide();
+            $('#c-items-table-wrap').removeAttr('hidden');
         }
     }
 
-    // ── Agregar fila ────────────────────────────────────────────────────────
-    $('#add-item-btn').on('click', function () {
-        var idx  = rowCount++;
-        var num  = $('#items-tbody tr').length + 1;
+    function resetModal() {
+        rowCount = 0;
+        $('#compraForm')[0].reset();
+        $('#c-proveedor').val('').trigger('change');
+        $('#c-tipo-pago').val('contado').trigger('change');
+        $('#c-fecha').val('{{ date("Y-m-d") }}');
+        $('#c-iva').val(16);
+        $('#c-items-tbody').empty();
+        updateEmpty();
+        recalcular();
+        $('#c-submit-btn').removeAttr('disabled').html('<i class="ri-save-line me-1"></i>Registrar Compra');
+    }
 
-        var row = '<tr id="item-row-' + idx + '">'
-            + '<td class="row-num text-center text-muted cot-col-num">' + num + '</td>'
-            + '<td style="min-width:180px;">'
-            +   '<select class="form-select form-select-sm insumo-select" id="insumo-sel-' + idx + '">'
+    // ── Limpiar modal al cerrar ─────────────────────────────────────────────
+    $('#createCompraModal').on('hidden.bs.modal', function () {
+        resetModal();
+    });
+
+    // ── Agregar fila ────────────────────────────────────────────────────────
+    $('#c-add-item-btn').on('click', function () {
+        var idx = rowCount++;
+        var num = $('#c-items-tbody tr').length + 1;
+
+        var row = '<tr id="c-row-' + idx + '">'
+            + '<td class="c-row-num text-center text-muted cot-col-num">' + num + '</td>'
+            + '<td style="min-width:160px;">'
+            +   '<select class="form-select form-select-sm c-insumo" id="c-ins-' + idx + '">'
             +     buildInsumoOptions('')
             +   '</select>'
             + '</td>'
             + '<td class="text-center">'
-            +   '<input type="number" class="form-control form-control-sm cantidad-input text-center"'
-            +   ' min="0.01" step="0.01" placeholder="0.00" style="max-width:90px;margin:0 auto;">'
+            +   '<input type="number" class="form-control form-control-sm c-cantidad text-center"'
+            +   ' min="0.01" step="0.01" placeholder="0.00" style="max-width:86px;margin:0 auto;">'
             + '</td>'
             + '<td class="text-center">'
-            +   '<input type="number" class="form-control form-control-sm costo-input text-end"'
-            +   ' min="0.01" step="0.01" placeholder="0.00" style="max-width:105px;margin:0 auto;">'
+            +   '<input type="number" class="form-control form-control-sm c-costo text-end"'
+            +   ' min="0.01" step="0.01" placeholder="0.00" style="max-width:100px;margin:0 auto;">'
             + '</td>'
-            + '<td class="text-end fw-semibold subtotal-cell pe-2">0.00</td>'
+            + '<td class="text-end fw-semibold c-subtotal pe-2">0.00</td>'
             + '<td class="text-center">'
-            +   '<button type="button" class="btn btn-sm btn-soft-danger py-0 px-1 remove-item-btn"'
+            +   '<button type="button" class="btn btn-sm btn-soft-danger py-0 px-1 c-remove-btn"'
             +   ' data-row="' + idx + '"><i class="ri-delete-bin-6-line"></i></button>'
             + '</td>'
             + '</tr>';
 
-        $('#items-tbody').append(row);
+        $('#c-items-tbody').append(row);
         updateEmpty();
 
-        // Auto-rellenar costo al seleccionar insumo
-        $('#insumo-sel-' + idx).on('change', function () {
-            var opt   = $(this).find('option:selected');
+        $('#c-ins-' + idx).on('change', function () {
+            var opt = $(this).find('option:selected');
             var costo = opt.data('costo');
             if (costo) {
-                $(this).closest('tr').find('.costo-input').val(fmt(costo));
+                $(this).closest('tr').find('.c-costo').val(fmt(costo));
             }
             recalcular();
         });
     });
 
     // ── Eliminar fila ───────────────────────────────────────────────────────
-    $(document).on('click', '.remove-item-btn', function () {
+    $(document).on('click', '.c-remove-btn', function () {
         $(this).closest('tr').remove();
         renumber();
         updateEmpty();
@@ -129,19 +143,18 @@ $(document).ready(function () {
     });
 
     // ── Recalcular al editar ────────────────────────────────────────────────
-    $(document).on('input', '.cantidad-input, .costo-input', recalcular);
-    $('#iva_porcentaje').on('input', recalcular);
+    $(document).on('input', '.c-cantidad, .c-costo', recalcular);
+    $('#c-iva').on('input', recalcular);
 
-    // ── Envío del formulario ────────────────────────────────────────────────
+    // ── Envío ───────────────────────────────────────────────────────────────
     $('#compraForm').on('submit', function (e) {
         e.preventDefault();
 
-        // Validaciones básicas
-        if (!$('#proveedor_id').val()) {
+        if (!$('#c-proveedor').val()) {
             Swal.fire({ title: 'Campo requerido', text: 'Seleccione un proveedor.', icon: 'warning', confirmButtonText: 'Entendido' });
             return;
         }
-        if (!$('#fecha_compra').val()) {
+        if (!$('#c-fecha').val()) {
             Swal.fire({ title: 'Campo requerido', text: 'Ingrese la fecha de compra.', icon: 'warning', confirmButtonText: 'Entendido' });
             return;
         }
@@ -149,10 +162,10 @@ $(document).ready(function () {
         var items  = [];
         var hasErr = false;
 
-        $('#items-tbody tr').each(function () {
-            var insumoId = $(this).find('.insumo-select').val();
-            var cantidad = $(this).find('.cantidad-input').val();
-            var costo    = $(this).find('.costo-input').val();
+        $('#c-items-tbody tr').each(function () {
+            var insumoId = $(this).find('.c-insumo').val();
+            var cantidad = $(this).find('.c-cantidad').val();
+            var costo    = $(this).find('.c-costo').val();
 
             if (!insumoId || !cantidad || parseFloat(cantidad) <= 0 || !costo || parseFloat(costo) <= 0) {
                 hasErr = true;
@@ -166,45 +179,52 @@ $(document).ready(function () {
             return;
         }
         if (hasErr) {
-            Swal.fire({ title: 'Datos incompletos', text: 'Complete todos los campos de cada ítem (insumo, cantidad y costo).', icon: 'warning', confirmButtonText: 'Entendido' });
+            Swal.fire({ title: 'Datos incompletos', text: 'Complete todos los campos de cada ítem.', icon: 'warning', confirmButtonText: 'Entendido' });
             return;
         }
 
         var payload = {
-            proveedor_id:      $('#proveedor_id').val(),
-            numero_factura:    $('#numero_factura').val() || null,
-            fecha_compra:      $('#fecha_compra').val(),
-            fecha_vencimiento: $('#fecha_vencimiento').val() || null,
-            tipo_pago:         $('#tipo_pago').val(),
-            iva_porcentaje:    $('#iva_porcentaje').val(),
-            observaciones:     $('#observaciones').val() || null,
+            proveedor_id:      $('#c-proveedor').val(),
+            numero_factura:    $('#c-factura').val() || null,
+            fecha_compra:      $('#c-fecha').val(),
+            fecha_vencimiento: $('#c-vencimiento').val() || null,
+            tipo_pago:         $('#c-tipo-pago').val(),
+            iva_porcentaje:    $('#c-iva').val(),
+            observaciones:     $('#c-observaciones').val() || null,
             items:             items
         };
 
-        var $btn = $('#submit-btn');
+        var $btn = $('#c-submit-btn');
         $btn.attr('disabled', true).html('<i class="ri-loader-4-line me-1"></i>Registrando...');
 
         $.ajax({
-            url:         window.ROUTES.store,
+            url:         "{{ route('compras.store') }}",
             method:      'POST',
             contentType: 'application/json',
             headers:     { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
             data:        JSON.stringify(payload),
             success: function (response) {
                 if (response.success) {
+                    $('#createCompraModal').modal('hide');
+                    // Recarga la tabla antes de mostrar el alert para que aparezca el nuevo registro
+                    if (typeof table !== 'undefined') table.ajax.reload(null, false);
+
                     Swal.fire({
                         title: '¡Registrada!',
                         text:  response.message,
                         icon:  'success',
-                        confirmButtonText: 'Ver compra'
-                    }).then(function () {
-                        window.location.href = window.ROUTES.show + response.compra_id;
+                        showCancelButton: true,
+                        confirmButtonText: 'Ver detalle',
+                        cancelButtonText:  'Continuar'
+                    }).then(function (result) {
+                        if (result.isConfirmed) {
+                            window.location.href = "{{ url('compras') }}/" + response.compra_id;
+                        }
                     });
                 }
             },
             error: function (xhr) {
                 $btn.removeAttr('disabled').html('<i class="ri-save-line me-1"></i>Registrar Compra');
-
                 var json = xhr.responseJSON;
                 var msg  = 'Ocurrió un error al registrar la compra.';
                 if (json && json.errors) {

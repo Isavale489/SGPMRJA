@@ -34,9 +34,10 @@
                         <div class="d-flex align-items-center">
                             <h5 class="card-title mb-0 flex-grow-1">Registro de Compras</h5>
                             <div class="flex-shrink-0">
-                                <a href="{{ route('compras.create') }}" class="btn btn-success">
+                                <button type="button" class="btn btn-success"
+                                    data-bs-toggle="modal" data-bs-target="#createCompraModal">
                                     <i class="ri-add-line align-bottom me-1"></i> Nueva Compra
-                                </a>
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -122,6 +123,13 @@
             </div>
         </div>
     </div>
+
+    @include('admin.compras.modals.create')
+
+    {{-- Datos de insumos para el JS del modal --}}
+    <script>
+        window.INSUMOS_DATA = @json($insumos);
+    </script>
 @endsection
 
 @push('scripts')
@@ -132,4 +140,5 @@
     <script src="https://cdn.datatables.net/buttons/2.2.2/js/dataTables.buttons.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     @include('admin.compras.scripts.main')
+    @include('admin.compras.scripts.create')
 @endpush
