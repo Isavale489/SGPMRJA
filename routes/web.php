@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\CompraController;
 use App\Http\Controllers\DetalleOrdenInsumoController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\InsumoController;
@@ -234,6 +235,14 @@ Route::middleware(['auth', 'throttle:60,1', 'active.user', 'recovery.questions.r
         Route::post('ordenes/{orden}/insumos', [DetalleOrdenInsumoController::class, 'store'])->name('ordenes.insumos.store');
         Route::put('ordenes/insumos/{id}', [DetalleOrdenInsumoController::class, 'update'])->name('ordenes.insumos.update');
         Route::delete('ordenes/insumos/{id}', [DetalleOrdenInsumoController::class, 'destroy'])->name('ordenes.insumos.destroy');
+
+        // Compras
+        Route::get('compras', [CompraController::class, 'index'])->name('compras.index');
+        Route::get('compras/create', [CompraController::class, 'create'])->name('compras.create');
+        Route::post('compras', [CompraController::class, 'store'])->name('compras.store');
+        Route::get('compras/data', [CompraController::class, 'getCompras'])->name('compras.data');
+        Route::get('compras/{compra}', [CompraController::class, 'show'])->name('compras.show');
+        Route::patch('compras/{compra}/anular', [CompraController::class, 'anular'])->name('compras.anular');
 
         // Inventario
         Route::get('inventario/movimientos', [MovimientoInsumoController::class, 'index'])->name('inventario.movimientos.index');
