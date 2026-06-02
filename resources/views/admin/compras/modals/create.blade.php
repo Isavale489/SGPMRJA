@@ -148,15 +148,13 @@
 
                 </div>{{-- /modal-body --}}
 
-                <div class="modal-footer bg-light border-0 py-2">
-                    <div class="hstack gap-2 justify-content-end">
-                        <button type="button" class="btn btn-sm btn-light" data-bs-dismiss="modal">
-                            <i class="ri-close-line me-1"></i>Cancelar
-                        </button>
-                        <button type="submit" class="btn btn-sm btn-success" id="c-submit-btn">
-                            <i class="ri-save-line me-1"></i>Registrar Compra
-                        </button>
-                    </div>
+                <div class="modal-footer py-3 px-4">
+                    <button type="button" class="btn btn-sm btn-light" data-bs-dismiss="modal">
+                        <i class="ri-close-line me-1"></i>Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-sm btn-success" id="c-submit-btn">
+                        <i class="ri-save-line me-1"></i>Registrar Compra
+                    </button>
                 </div>
             </form>
 
