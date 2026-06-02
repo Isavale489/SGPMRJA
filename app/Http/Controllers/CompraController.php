@@ -18,24 +18,17 @@ class CompraController extends Controller
 
     public function index()
     {
-        $proveedores = Proveedor::with('persona')->where('estado', 1)->get();
+        $proveedores = Proveedor::with('persona')
+            ->withCount(['compras as compras_count' => fn($q) => $q->where('estado', '!=', 'anulada')])
+            ->withMax(['compras as ultima_compra' => fn($q) => $q->where('estado', '!=', 'anulada')], 'fecha_compra')
+            ->where('estado', 1)
+            ->get();
         $insumos     = Insumo::where('estado', 1)
                              ->where('is_inventoriable', 1)
                              ->orderBy('nombre')
                              ->get(['id', 'nombre', 'codigo', 'tipo', 'unidad_medida', 'costo_unitario']);
 
         return view('admin.compras.index', compact('proveedores', 'insumos'));
-    }
-
-    public function create()
-    {
-        $proveedores = Proveedor::with('persona')->where('estado', 1)->get();
-        $insumos     = Insumo::where('estado', 1)
-                             ->where('is_inventoriable', 1)
-                             ->orderBy('nombre')
-                             ->get(['id', 'nombre', 'codigo', 'tipo', 'unidad_medida', 'costo_unitario']);
-
-        return view('admin.compras.create', compact('proveedores', 'insumos'));
     }
 
     public function store(StoreCompraRequest $request)

@@ -238,7 +238,6 @@ Route::middleware(['auth', 'throttle:60,1', 'active.user', 'recovery.questions.r
 
         // Compras
         Route::get('compras', [CompraController::class, 'index'])->name('compras.index');
-        Route::get('compras/create', [CompraController::class, 'create'])->name('compras.create');
         Route::post('compras', [CompraController::class, 'store'])->name('compras.store');
         Route::get('compras/data', [CompraController::class, 'getCompras'])->name('compras.data');
         Route::get('compras/{compra}', [CompraController::class, 'show'])->name('compras.show');

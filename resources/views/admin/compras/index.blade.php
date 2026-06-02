@@ -126,9 +126,22 @@
 
     @include('admin.compras.modals.create')
 
-    {{-- Datos de insumos para el JS del modal --}}
+    {{-- Datos de insumos + proveedores para el JS del modal --}}
     <script>
         window.INSUMOS_DATA = @json($insumos);
+        window.PROVEEDORES_DATA = {
+            @foreach ($proveedores as $p)
+                "{{ $p->id }}": {
+                    nombre:  @json($p->nombre_completo),
+                    doc:     @json($p->documento ?? ''),
+                    tel:     @json($p->telefono_unificado ?? ''),
+                    email:   @json($p->email_unificado ?? ''),
+                    tipo:    @json($p->tipo_proveedor ?? ''),
+                    compras: {{ (int) ($p->compras_count ?? 0) }},
+                    ultima:  @json($p->ultima_compra ?? '')
+                },
+            @endforeach
+        };
     </script>
 @endsection
 
