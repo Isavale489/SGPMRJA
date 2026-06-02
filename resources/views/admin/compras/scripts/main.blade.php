@@ -26,7 +26,7 @@ $(document).ready(function () {
         });
 
     // ── DataTable ───────────────────────────────────────────────────────────
-    var table = $('#compras-table').DataTable({
+    window.comprasTable = $('#compras-table').DataTable({
         processing: true,
         serverSide: true,
         ajax: {
@@ -88,18 +88,18 @@ $(document).ready(function () {
 
     // ── Filtros y búsqueda ──────────────────────────────────────────────────
     $('#custom-search-input').on('input', debounce(function () {
-        table.search(this.value).draw();
+        window.comprasTable.search(this.value).draw();
     }, 300));
 
     $('#advanced-filters .navy-filter-select').on('change', function () {
-        table.ajax.reload(null, true);
+        window.comprasTable.ajax.reload(null, true);
         updateFilterBadge();
     });
 
     $('#btn-clear-filters').on('click', function () {
         $('#advanced-filters .navy-filter-select').val('');
         $('#custom-search-input').val('');
-        table.search('').ajax.reload(null, true);
+        window.comprasTable.search('').ajax.reload(null, true);
         updateFilterBadge();
     });
 
@@ -126,7 +126,7 @@ $(document).ready(function () {
                 method: 'POST',
                 data: { _method: 'PATCH', _token: '{{ csrf_token() }}' },
                 success: function (response) {
-                    table.ajax.reload(null, false);
+                    window.comprasTable.ajax.reload(null, false);
                     Swal.fire({
                         title: 'Anulada',
                         text: response.message,

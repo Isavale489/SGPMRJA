@@ -1,6 +1,6 @@
 <div class="modal fade atlantico-modal atlantico-modal--op" id="createCompraModal" tabindex="-1" aria-hidden="true"
     data-bs-backdrop="static" data-bs-keyboard="false">
-    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-xl">
+    <div class="modal-dialog modal-dialog-centered modal-xl">
         <div class="modal-content">
             <div class="modal-header py-2">
                 <h5 class="modal-title mb-0">
@@ -11,7 +11,8 @@
 
             <form id="compraForm" novalidate>
                 @csrf
-                <div class="modal-body p-3">
+                {{-- modal-body con scroll propio — evita conflicto con modal-footer --}}
+                <div class="modal-body p-3" style="max-height: 72vh; overflow-y: auto;">
 
                     {{-- ── Proveedor y Factura ──────────────────────────── --}}
                     <div class="card border-0 shadow-sm mb-2">
@@ -51,7 +52,7 @@
                                     </select>
                                 </div>
                                 <div class="col-md-4" id="c-vencimiento-wrap" style="display:none;">
-                                    <label class="form-label form-label-sm mb-1" for="c-vencimiento">Vencimiento</label>
+                                    <label class="form-label form-label-sm mb-1 required" id="c-vencimiento-label" for="c-vencimiento">Vencimiento</label>
                                     <input type="date" id="c-vencimiento" name="fecha_vencimiento"
                                         class="form-control form-control-sm">
                                 </div>
@@ -148,7 +149,7 @@
 
                 </div>{{-- /modal-body --}}
 
-                <div class="modal-footer py-3 px-4">
+                <div class="modal-footer">
                     <button type="button" class="btn btn-sm btn-light" data-bs-dismiss="modal">
                         <i class="ri-close-line me-1"></i>Cancelar
                     </button>

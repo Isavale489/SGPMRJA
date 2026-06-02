@@ -9,6 +9,7 @@ use App\Models\Proveedor;
 use App\Services\CompraService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Yajra\DataTables\Facades\DataTables;
 
 class CompraController extends Controller
@@ -48,9 +49,10 @@ class CompraController extends Controller
                 'compra_id' => $compra->id,
             ]);
         } catch (\Exception $e) {
+            Log::error('CompraController@store: ' . $e->getMessage(), ['user' => Auth::id()]);
             return response()->json([
                 'success' => false,
-                'message' => 'Error al registrar la compra: ' . $e->getMessage(),
+                'message' => 'Ocurrió un error interno al registrar la compra. Intente nuevamente.',
             ], 500);
         }
     }
@@ -73,6 +75,10 @@ class CompraController extends Controller
 
         if ($request->filled('filter_estado')) {
             $query->where('estado', $request->filter_estado);
+        }
+
+        if ($request->filled('filter_tipo_pago')) {
+            $query->where('tipo_pago', $request->filter_tipo_pago);
         }
 
         if ($request->filled('filter_fecha_desde')) {

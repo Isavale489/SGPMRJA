@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Validator;
 
 class StoreCompraRequest extends FormRequest
 {
@@ -17,7 +18,7 @@ class StoreCompraRequest extends FormRequest
             'proveedor_id'                => ['required', 'integer', 'exists:proveedor,id'],
             'numero_factura'              => ['nullable', 'string', 'max:30'],
             'fecha_compra'                => ['required', 'date'],
-            'fecha_vencimiento'           => ['nullable', 'date', 'after_or_equal:fecha_compra'],
+            'fecha_vencimiento'           => ['nullable', 'date', 'after_or_equal:fecha_compra', 'required_if:tipo_pago,credito'],
             'tipo_pago'                   => ['required', 'in:contado,credito'],
             'iva_porcentaje'              => ['required', 'numeric', 'min:0', 'max:100'],
             'observaciones'               => ['nullable', 'string', 'max:500'],
@@ -28,6 +29,17 @@ class StoreCompraRequest extends FormRequest
         ];
     }
 
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $v) {
+            $items = $this->input('items', []);
+            $ids   = array_column($items, 'insumo_id');
+            if (count($ids) !== count(array_unique($ids))) {
+                $v->errors()->add('items', 'No se puede incluir el mismo insumo más de una vez en la misma compra.');
+            }
+        });
+    }
+
     public function messages(): array
     {
         return [
@@ -35,6 +47,7 @@ class StoreCompraRequest extends FormRequest
             'proveedor_id.exists'              => 'El proveedor seleccionado no existe.',
             'fecha_compra.required'            => 'La fecha de compra es obligatoria.',
             'fecha_vencimiento.after_or_equal' => 'La fecha de vencimiento no puede ser anterior a la fecha de compra.',
+            'fecha_vencimiento.required_if'    => 'La fecha de vencimiento es obligatoria para pagos a crédito.',
             'tipo_pago.required'               => 'Seleccione el tipo de pago.',
             'tipo_pago.in'                     => 'El tipo de pago debe ser contado o crédito.',
             'iva_porcentaje.required'           => 'Indique el porcentaje de IVA.',

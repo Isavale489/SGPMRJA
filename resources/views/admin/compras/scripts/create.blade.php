@@ -12,13 +12,14 @@ $(document).ready(function () {
         dropdownParent: $('#createCompraModal')
     });
 
-    // ── Mostrar / ocultar fecha de vencimiento ──────────────────────────────
+    // ── Mostrar / ocultar fecha de vencimiento (requerida en crédito) ─────────
     $('#c-tipo-pago').on('change', function () {
         if ($(this).val() === 'credito') {
             $('#c-vencimiento-wrap').show();
+            $('#c-vencimiento').attr('required', true);
         } else {
             $('#c-vencimiento-wrap').hide();
-            $('#c-vencimiento').val('');
+            $('#c-vencimiento').val('').removeAttr('required');
         }
     });
 
@@ -158,9 +159,14 @@ $(document).ready(function () {
             Swal.fire({ title: 'Campo requerido', text: 'Ingrese la fecha de compra.', icon: 'warning', confirmButtonText: 'Entendido' });
             return;
         }
+        if ($('#c-tipo-pago').val() === 'credito' && !$('#c-vencimiento').val()) {
+            Swal.fire({ title: 'Campo requerido', text: 'Ingrese la fecha de vencimiento para pagos a crédito.', icon: 'warning', confirmButtonText: 'Entendido' });
+            return;
+        }
 
-        var items  = [];
-        var hasErr = false;
+        var items     = [];
+        var hasErr    = false;
+        var insumoIds = [];
 
         $('#c-items-tbody tr').each(function () {
             var insumoId = $(this).find('.c-insumo').val();
@@ -171,6 +177,11 @@ $(document).ready(function () {
                 hasErr = true;
                 return false;
             }
+            if (insumoIds.indexOf(insumoId) !== -1) {
+                hasErr = 'dup';
+                return false;
+            }
+            insumoIds.push(insumoId);
             items.push({ insumo_id: insumoId, cantidad: cantidad, costo_unitario: costo });
         });
 
@@ -178,8 +189,12 @@ $(document).ready(function () {
             Swal.fire({ title: 'Sin ítems', text: 'Agregue al menos un insumo a la compra.', icon: 'warning', confirmButtonText: 'Entendido' });
             return;
         }
+        if (hasErr === 'dup') {
+            Swal.fire({ title: 'Insumo duplicado', text: 'Hay insumos repetidos en la lista. Cada insumo puede aparecer una sola vez.', icon: 'warning', confirmButtonText: 'Entendido' });
+            return;
+        }
         if (hasErr) {
-            Swal.fire({ title: 'Datos incompletos', text: 'Complete todos los campos de cada ítem.', icon: 'warning', confirmButtonText: 'Entendido' });
+            Swal.fire({ title: 'Datos incompletos', text: 'Complete todos los campos de cada ítem (insumo, cantidad y costo).', icon: 'warning', confirmButtonText: 'Entendido' });
             return;
         }
 
@@ -207,7 +222,7 @@ $(document).ready(function () {
                 if (response.success) {
                     $('#createCompraModal').modal('hide');
                     // Recarga la tabla antes de mostrar el alert para que aparezca el nuevo registro
-                    if (typeof table !== 'undefined') table.ajax.reload(null, false);
+                    if (window.comprasTable) window.comprasTable.ajax.reload(null, false);
 
                     Swal.fire({
                         title: '¡Registrada!',
