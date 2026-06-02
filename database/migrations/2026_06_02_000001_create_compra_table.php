@@ -11,7 +11,7 @@ return new class extends Migration
         Schema::create('compra', function (Blueprint $table) {
             $table->id();
             $table->foreignId('proveedor_id')->constrained('proveedor')->restrictOnDelete();
-            $table->foreignId('user_id')->constrained('users')->restrictOnDelete();
+            $table->foreignId('user_id')->constrained('user')->restrictOnDelete();
             $table->string('numero_factura', 30)->nullable();
             $table->date('fecha_compra');
             $table->date('fecha_vencimiento')->nullable();
