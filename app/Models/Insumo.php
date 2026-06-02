@@ -46,6 +46,11 @@ class Insumo extends Model
         return $this->hasMany(MovimientoInsumo::class);
     }
 
+    public function compraDetalles()
+    {
+        return $this->hasMany(CompraDetalle::class);
+    }
+
     /**
      * Scope: solo insumos de tipo 'Tela' activos.
      * Usado en el form de productos para definir la materia prima de la variante.

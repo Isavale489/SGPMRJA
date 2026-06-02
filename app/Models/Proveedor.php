@@ -40,6 +40,11 @@ class Proveedor extends Model
         return $this->hasMany(Insumo::class);
     }
 
+    public function compras()
+    {
+        return $this->hasMany(Compra::class);
+    }
+
     // ============================================
     // ACCESSORS para datos unificados
     // ============================================
