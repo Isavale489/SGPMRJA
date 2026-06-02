@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 01-06-2026 a las 22:51:51
+-- Tiempo de generación: 02-06-2026 a las 20:39:11
 -- Versión del servidor: 10.4.32-MariaDB
 -- Versión de PHP: 8.2.12
 
@@ -307,6 +307,47 @@ INSERT INTO `color` (`id`, `nombre`, `hex_referencial`, `grupo`, `activo`, `crea
 (30, 'Fucsia', '#C71585', 'Especiales', 1, '2026-02-23 18:14:33', '2026-02-23 18:14:33', NULL),
 (31, 'Morado', '#6C3483', 'Especiales', 1, '2026-02-23 18:14:33', '2026-02-23 18:14:33', NULL),
 (32, 'Dorado', '#D4A017', 'Especiales', 1, '2026-02-23 18:14:33', '2026-02-23 18:14:33', NULL);
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `compra`
+--
+
+CREATE TABLE `compra` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `proveedor_id` bigint(20) UNSIGNED NOT NULL,
+  `user_id` bigint(20) UNSIGNED NOT NULL,
+  `numero_factura` varchar(30) DEFAULT NULL,
+  `fecha_compra` date NOT NULL,
+  `fecha_vencimiento` date DEFAULT NULL,
+  `tipo_pago` enum('contado','credito') NOT NULL DEFAULT 'contado',
+  `subtotal` decimal(10,2) NOT NULL DEFAULT 0.00,
+  `iva` decimal(10,2) NOT NULL DEFAULT 0.00,
+  `total` decimal(10,2) NOT NULL DEFAULT 0.00,
+  `observaciones` text DEFAULT NULL,
+  `estado` enum('borrador','recibida','anulada') NOT NULL DEFAULT 'recibida',
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `compra_detalle`
+--
+
+CREATE TABLE `compra_detalle` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `compra_id` bigint(20) UNSIGNED NOT NULL,
+  `insumo_id` bigint(20) UNSIGNED NOT NULL,
+  `cantidad` decimal(10,2) NOT NULL,
+  `costo_unitario` decimal(10,2) NOT NULL,
+  `subtotal` decimal(10,2) NOT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -1239,7 +1280,9 @@ INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES
 (114, '2026_05_28_194636_add_consumo_tela_por_unidad_to_tipo_producto', 62),
 (115, '2026_05_29_110403_drop_costo_estimado_from_orden_produccion', 63),
 (116, '2026_05_31_000000_add_stock_maximo_to_insumo_table', 64),
-(117, '2026_06_01_142640_add_tasa_y_condiciones_to_cotizacion_table', 65);
+(117, '2026_06_01_142640_add_tasa_y_condiciones_to_cotizacion_table', 65),
+(118, '2026_06_02_000001_create_compra_table', 66),
+(119, '2026_06_02_000002_create_compra_detalle_table', 66);
 
 -- --------------------------------------------------------
 
@@ -1904,7 +1947,8 @@ INSERT INTO `tasa_cambio` (`id`, `moneda`, `valor`, `fecha_bcv`, `fuente`, `crea
 (50, 'USD', 540.0431, '2026-05-27', 'BCV (DolarAPI)', '2026-05-27 05:01:16', '2026-05-27 05:01:16'),
 (51, 'USD', 544.5794, '2026-05-28', 'BCV (DolarAPI)', '2026-05-28 04:13:27', '2026-05-28 04:13:27'),
 (52, 'USD', 549.3716, '2026-05-29', 'BCV (DolarAPI)', '2026-05-29 14:28:13', '2026-05-29 14:28:13'),
-(53, 'USD', 554.4258, '2026-06-01', 'BCV (DolarAPI)', '2026-06-01 17:11:23', '2026-06-01 17:11:23');
+(53, 'USD', 554.4258, '2026-06-01', 'BCV (DolarAPI)', '2026-06-01 17:11:23', '2026-06-01 17:11:23'),
+(54, 'USD', 557.9741, '2026-06-02', 'BCV (DolarAPI)', '2026-06-02 15:13:27', '2026-06-02 15:13:27');
 
 -- --------------------------------------------------------
 
@@ -2111,7 +2155,7 @@ CREATE TABLE `user` (
 --
 
 INSERT INTO `user` (`id`, `persona_id`, `name`, `email`, `role`, `email_verified_at`, `password`, `avatar`, `estado`, `recovery_locked_until`, `recovery_failed_attempts`, `recovery_must_reset_questions`, `password_reset_by_admin`, `remember_token`, `created_at`, `updated_at`, `deleted_at`) VALUES
-(1, 1, 'Emmanuel Jesus', 'admin@gmail.com', 'Administrador', NULL, '$2y$12$eq5H9CQvR.2WeRggx.y92Ot93ftz0Ml0rrPRGhmxGMsfEwq0/zahm', 'avatars/69a05e0f7203f.png', 1, NULL, 0, 0, 0, 'l1Uqd8vkYNzLSiPhvyE1cNIMn5EgDltmz6Z42ZMusu8UMvVopRZwf4y2YlSa', '2025-12-04 18:58:27', '2026-05-29 21:29:36', NULL),
+(1, 1, 'Emmanuel Jesus', 'admin@gmail.com', 'Administrador', NULL, '$2y$12$jNY7MYv/rRrJw6BUV8cZHeA/6cH8..T03WCSR4vx6J8iQLRFreWYe', 'avatars/69a05e0f7203f.png', 1, NULL, 0, 0, 0, 'l1Uqd8vkYNzLSiPhvyE1cNIMn5EgDltmz6Z42ZMusu8UMvVopRZwf4y2YlSa', '2025-12-04 18:58:27', '2026-06-02 17:43:36', NULL),
 (2, 2, 'Supervisor', 'supervisor@gmail.com', 'Supervisor', NULL, '$2y$12$WZ9jnte4F/DkVPbh64iBKOt91FLUDEDRzmYtJYvc6.iwwLhn3wef6', NULL, 1, NULL, 0, 0, 0, NULL, '2025-12-04 18:58:28', '2026-05-29 21:46:51', NULL),
 (5, NULL, 'Vanessa Diaz', 'vanessalopez090551@gmail.com', 'Administrador', NULL, '$2y$12$d0G/88tSU7qJKgmtlYP.ZO95ss9hgFYK8lZF6N9tsRQAsmlansFHC', 'avatars/69a060ce9e755.png', 1, NULL, 0, 0, 0, 'Egbv2pBcVPvjVa8jdqGym2kvHdikOyAWaF03sHTyIAY1ZE28cT8ARZkfl6GR', '2026-01-15 00:05:33', '2026-05-29 21:49:26', NULL),
 (7, NULL, 'Jesus Rodriguez', 'emman6321@gmail.com', 'Administrador', NULL, '$2y$12$b9CFjlKZfvn41Ap747aBLOrvO7JJncegQIKYLyfrS8jTeguVdvdhG', 'avatars/69a8a14e140ef.jpg', 1, NULL, 0, 0, 0, 'AHOzbMvABOGqOTlP1NhJLh2l3BE9EexFlSEhzVcgXRUEIdj2x0JtrU2btHog', '2026-03-04 21:17:02', '2026-05-29 21:50:19', NULL),
@@ -2200,6 +2244,22 @@ ALTER TABLE `cliente`
 ALTER TABLE `color`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `colores_nombre_unique` (`nombre`);
+
+--
+-- Indices de la tabla `compra`
+--
+ALTER TABLE `compra`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `compra_proveedor_id_foreign` (`proveedor_id`),
+  ADD KEY `compra_user_id_foreign` (`user_id`);
+
+--
+-- Indices de la tabla `compra_detalle`
+--
+ALTER TABLE `compra_detalle`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `compra_detalle_compra_id_foreign` (`compra_id`),
+  ADD KEY `compra_detalle_insumo_id_foreign` (`insumo_id`);
 
 --
 -- Indices de la tabla `cotizacion`
@@ -2535,6 +2595,18 @@ ALTER TABLE `color`
   MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=33;
 
 --
+-- AUTO_INCREMENT de la tabla `compra`
+--
+ALTER TABLE `compra`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT de la tabla `compra_detalle`
+--
+ALTER TABLE `compra_detalle`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT de la tabla `cotizacion`
 --
 ALTER TABLE `cotizacion`
@@ -2616,7 +2688,7 @@ ALTER TABLE `logo`
 -- AUTO_INCREMENT de la tabla `migrations`
 --
 ALTER TABLE `migrations`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=118;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=120;
 
 --
 -- AUTO_INCREMENT de la tabla `movimiento_insumo`
@@ -2694,7 +2766,7 @@ ALTER TABLE `talla`
 -- AUTO_INCREMENT de la tabla `tasa_cambio`
 --
 ALTER TABLE `tasa_cambio`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=54;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=55;
 
 --
 -- AUTO_INCREMENT de la tabla `telefono`
@@ -2753,6 +2825,20 @@ ALTER TABLE `cargo`
 --
 ALTER TABLE `cliente`
   ADD CONSTRAINT `cliente_persona_id_foreign` FOREIGN KEY (`persona_id`) REFERENCES `persona` (`id`);
+
+--
+-- Filtros para la tabla `compra`
+--
+ALTER TABLE `compra`
+  ADD CONSTRAINT `compra_proveedor_id_foreign` FOREIGN KEY (`proveedor_id`) REFERENCES `proveedor` (`id`),
+  ADD CONSTRAINT `compra_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `user` (`id`);
+
+--
+-- Filtros para la tabla `compra_detalle`
+--
+ALTER TABLE `compra_detalle`
+  ADD CONSTRAINT `compra_detalle_compra_id_foreign` FOREIGN KEY (`compra_id`) REFERENCES `compra` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `compra_detalle_insumo_id_foreign` FOREIGN KEY (`insumo_id`) REFERENCES `insumo` (`id`);
 
 --
 -- Filtros para la tabla `cotizacion`
