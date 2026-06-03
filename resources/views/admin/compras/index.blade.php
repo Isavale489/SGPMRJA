@@ -33,7 +33,11 @@
                     <div class="card-header">
                         <div class="d-flex align-items-center">
                             <h5 class="card-title mb-0 flex-grow-1">Registro de Compras</h5>
-                            <div class="flex-shrink-0">
+                            <div class="flex-shrink-0 d-flex align-items-center gap-2">
+                                <button type="button" class="btn btn-danger"
+                                    data-bs-toggle="modal" data-bs-target="#pdfExportModal">
+                                    <i class="ri-file-pdf-line align-bottom me-1"></i> Exportar PDF
+                                </button>
                                 <button type="button" class="btn btn-success"
                                     data-bs-toggle="modal" data-bs-target="#createCompraModal">
                                     <i class="ri-add-line align-bottom me-1"></i> Nueva Compra
@@ -126,6 +130,65 @@
 
     @include('admin.compras.modals.create')
 
+    {{-- Modal: Exportar PDF con filtros --}}
+    <div class="modal fade atlantico-modal atlantico-modal--op" id="pdfExportModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" style="max-width: 420px;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="ri-file-pdf-line me-2"></i>Exportar PDF</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <p class="text-muted small mb-3">Filtra qué compras incluir en el reporte. Deja los campos vacíos para incluir todas.</p>
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label fw-semibold" for="pdf-proveedor">Proveedor</label>
+                            <select class="form-select" id="pdf-proveedor">
+                                <option value="">Todos los proveedores</option>
+                                @foreach ($proveedores as $proveedor)
+                                    <option value="{{ $proveedor->id }}">{{ $proveedor->nombre_completo }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label fw-semibold" for="pdf-estado">Estado</label>
+                            <select class="form-select" id="pdf-estado">
+                                <option value="">Todos</option>
+                                <option value="recibida">Recibida</option>
+                                <option value="borrador">Borrador</option>
+                                <option value="anulada">Anulada</option>
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label fw-semibold" for="pdf-tipo-pago">Tipo de Pago</label>
+                            <select class="form-select" id="pdf-tipo-pago">
+                                <option value="">Todos</option>
+                                <option value="contado">Contado</option>
+                                <option value="credito">Crédito</option>
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label fw-semibold" for="pdf-fecha-desde">Fecha Desde</label>
+                            <input type="date" class="form-control" id="pdf-fecha-desde">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label fw-semibold" for="pdf-fecha-hasta">Fecha Hasta</label>
+                            <input type="date" class="form-control" id="pdf-fecha-hasta">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light border-0">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">
+                        <i class="ri-close-line me-1"></i>Cancelar
+                    </button>
+                    <button type="button" class="btn btn-danger" id="btn-generar-pdf">
+                        <i class="ri-file-pdf-fill me-1"></i>Generar PDF
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     {{-- Datos de insumos + proveedores para el JS del modal --}}
     <script>
         window.INSUMOS_DATA = @json($insumos);
@@ -154,4 +217,26 @@
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     @include('admin.compras.scripts.main')
     @include('admin.compras.scripts.create')
+    <script>
+        // Exportar PDF con filtros — Compras
+        $('#btn-generar-pdf').on('click', function () {
+            var baseUrl = '{{ route('compras.reporte.pdf') }}';
+            var params  = [];
+            var prov    = $('#pdf-proveedor').val();
+            var estado  = $('#pdf-estado').val();
+            var pago    = $('#pdf-tipo-pago').val();
+            var desde   = $('#pdf-fecha-desde').val();
+            var hasta   = $('#pdf-fecha-hasta').val();
+            if (prov)   params.push('proveedor_id=' + encodeURIComponent(prov));
+            if (estado) params.push('estado='       + encodeURIComponent(estado));
+            if (pago)   params.push('tipo_pago='     + encodeURIComponent(pago));
+            if (desde)  params.push('fecha_desde='   + encodeURIComponent(desde));
+            if (hasta)  params.push('fecha_hasta='   + encodeURIComponent(hasta));
+            window.open(baseUrl + (params.length ? '?' + params.join('&') : ''), '_blank');
+            bootstrap.Modal.getInstance(document.getElementById('pdfExportModal'))?.hide();
+        });
+        $('#pdfExportModal').on('show.bs.modal', function () {
+            $('#pdf-proveedor, #pdf-estado, #pdf-tipo-pago, #pdf-fecha-desde, #pdf-fecha-hasta').val('');
+        });
+    </script>
 @endpush

@@ -240,6 +240,8 @@ Route::middleware(['auth', 'throttle:60,1', 'active.user', 'recovery.questions.r
         Route::get('compras', [CompraController::class, 'index'])->name('compras.index');
         Route::post('compras', [CompraController::class, 'store'])->name('compras.store');
         Route::get('compras/data', [CompraController::class, 'getCompras'])->name('compras.data');
+        Route::get('compras/reporte/pdf', [CompraController::class, 'reportePdf'])->name('compras.reporte.pdf');
+        Route::get('compras/{compra}/pdf', [CompraController::class, 'compraPdf'])->name('compras.pdf');
         Route::get('compras/{compra}', [CompraController::class, 'show'])->name('compras.show');
         Route::patch('compras/{compra}/anular', [CompraController::class, 'anular'])->name('compras.anular');
 

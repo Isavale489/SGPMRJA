@@ -235,6 +235,9 @@
                             </div>
                         </div>
                         <div class="d-grid gap-2">
+                            <a href="{{ route('compras.pdf', $compra->id) }}" class="btn btn-success btn-sm" target="_blank">
+                                <i class="ri-file-pdf-2-line me-1"></i>Descargar PDF
+                            </a>
                             <a href="{{ route('compras.index') }}" class="btn btn-light btn-sm">
                                 <i class="ri-arrow-left-line me-1"></i>Volver al listado
                             </a>

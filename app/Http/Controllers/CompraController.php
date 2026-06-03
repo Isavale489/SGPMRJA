@@ -10,6 +10,7 @@ use App\Services\CompraService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use PDF;
 use Yajra\DataTables\Facades\DataTables;
 
 class CompraController extends Controller
@@ -55,6 +56,44 @@ class CompraController extends Controller
         $compra->load(['proveedor.persona', 'detalles.insumo', 'registradoPor']);
 
         return view('admin.compras.show', compact('compra'));
+    }
+
+    public function reportePdf(Request $request)
+    {
+        $query = Compra::with(['proveedor.persona', 'registradoPor:id,name']);
+
+        if ($request->filled('estado')) {
+            $query->where('estado', $request->estado);
+        }
+        if ($request->filled('tipo_pago')) {
+            $query->where('tipo_pago', $request->tipo_pago);
+        }
+        if ($request->filled('proveedor_id')) {
+            $query->where('proveedor_id', $request->proveedor_id);
+        }
+        if ($request->filled('fecha_desde')) {
+            $query->whereDate('fecha_compra', '>=', $request->fecha_desde);
+        }
+        if ($request->filled('fecha_hasta')) {
+            $query->whereDate('fecha_compra', '<=', $request->fecha_hasta);
+        }
+
+        $compras = $query->orderByDesc('fecha_compra')->orderByDesc('id')->get();
+
+        $pdf = PDF::loadView('admin.compras.reporte_pdf', compact('compras'))
+            ->setPaper('a4', 'portrait');
+
+        return $pdf->download('reporte_compras_' . now()->format('Ymd_His') . '.pdf');
+    }
+
+    public function compraPdf(Compra $compra)
+    {
+        $compra->load(['proveedor.persona', 'detalles.insumo', 'registradoPor:id,name']);
+
+        $pdf = PDF::loadView('admin.compras.comprobante', compact('compra'))
+            ->setPaper('a4', 'portrait');
+
+        return $pdf->download('compra_' . str_pad($compra->id, 5, '0', STR_PAD_LEFT) . '.pdf');
     }
 
     public function getCompras(Request $request)
