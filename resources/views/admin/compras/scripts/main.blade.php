@@ -106,8 +106,7 @@ $(document).ready(function () {
     updateFilterBadge();
 
     // ── Ver detalle ─────────────────────────────────────────────────────────
-    $(document).on('click', '.ver-btn', function () {
-        var compraId = $(this).data('id');
+    function verDetalleCompra(compraId) {
         var badgeMap = { recibida: 'success', borrador: 'warning', anulada: 'danger' };
 
         $.ajax({
@@ -201,6 +200,10 @@ $(document).ready(function () {
                 Swal.fire({ title: 'Error', text: 'No se pudo cargar el detalle de la compra.', icon: 'error', confirmButtonText: 'Entendido' });
             }
         });
+    }
+
+    $(document).on('click', '.ver-btn', function () {
+        verDetalleCompra($(this).data('id'));
     });
 
     // ── Procesar borrador ────────────────────────────────────────────────────
@@ -272,7 +275,7 @@ $(document).ready(function () {
                         cancelButtonText: 'Continuar'
                     }).then(function (r) {
                         if (r.isConfirmed) {
-                            window.location.href = '{{ url("compras") }}/' + response.compra_id;
+                            verDetalleCompra(response.compra_id);
                         }
                     });
                 },
