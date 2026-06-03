@@ -125,7 +125,7 @@ class CompraController extends Controller
             return response()->json(['success' => false, 'message' => 'Solo se pueden editar borradores.'], 422);
         }
 
-        $compra->load('detalles.insumo');
+        $compra->load(['detalles.insumo', 'proveedor.persona']);
 
         return response()->json([
             'id'                => $compra->id,
@@ -138,6 +138,16 @@ class CompraController extends Controller
             'iva_porcentaje'    => $compra->subtotal > 0
                 ? round(($compra->iva / $compra->subtotal) * 100)
                 : 16,
+            'proveedor_data'    => [
+                'id'     => $compra->proveedor_id,
+                'nombre' => $compra->proveedor?->nombre_completo ?? '—',
+                'doc'    => $compra->proveedor?->documento ?? '',
+                'tel'    => $compra->proveedor?->telefono_unificado ?? '',
+                'email'  => $compra->proveedor?->email_unificado ?? '',
+                'tipo'   => $compra->proveedor?->tipo_proveedor ?? '',
+                'compras' => 0,
+                'ultima'  => null,
+            ],
             'items'             => $compra->detalles->map(fn($d) => [
                 'insumo_id'      => $d->insumo_id,
                 'nombre'         => $d->insumo?->nombre,
