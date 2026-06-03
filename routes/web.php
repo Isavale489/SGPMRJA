@@ -126,6 +126,7 @@ Route::middleware(['auth', 'throttle:60,1', 'active.user', 'recovery.questions.r
 
         // Proveedores (escritura)
         Route::post('proveedores', [ProveedorController::class, 'store'])->name('proveedores.store');
+        Route::post('proveedores/from-persona/{persona}', [ProveedorController::class, 'createFromPersona'])->name('proveedores.from-persona');
         Route::get('proveedores/create', [ProveedorController::class, 'create'])->name('proveedores.create');
         Route::put('proveedores/{proveedor}', [ProveedorController::class, 'update'])->name('proveedores.update');
         Route::delete('proveedores/{proveedor}', [ProveedorController::class, 'destroy'])->name('proveedores.destroy');

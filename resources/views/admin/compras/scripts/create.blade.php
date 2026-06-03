@@ -4,13 +4,7 @@ $(document).ready(function () {
     var rowCount = 0;
     var INSUMOS  = window.INSUMOS_DATA || [];
 
-    // ── Select2 en proveedor ────────────────────────────────────────────────
-    $('#c-proveedor').select2({
-        theme: 'bootstrap-5',
-        placeholder: 'Seleccione un proveedor...',
-        width: '100%',
-        dropdownParent: $('#createCompraModal')
-    });
+    // (El proveedor ahora se elige por búsqueda de documento — ver IIFE abajo)
 
     // ── Mostrar / ocultar fecha de vencimiento (requerida en crédito) ─────────
     $('#c-tipo-pago').on('change', function () {
@@ -162,25 +156,25 @@ $(document).ready(function () {
         var currentStep = 1;
 
         // ── Render del proveedor: card de datos (paso 1) + chip persistente ──
-        var PROVEEDORES = window.PROVEEDORES_DATA || {};
+        // selectedProv: objeto { id, nombre, doc, tel, email, tipo, compras, ultima }
+        var selectedProv = null;
 
         function iniciales(name) {
-            return name.split(/\s+/).slice(0, 2).map(function (w) { return w.charAt(0); }).join('').toUpperCase();
+            return String(name || '').split(/\s+/).slice(0, 2).map(function (w) { return w.charAt(0); }).join('').toUpperCase();
         }
 
         function renderProveedorSeleccionado() {
-            var id = $('#c-proveedor').val();
+            var data = selectedProv;
 
             // Sin proveedor → empty state, sin card, sin chip
-            if (!id) {
+            if (!data || !data.id) {
                 $('#c-prov-empty').show();
                 $('#c-prov-card').attr('hidden', true).hide();
                 $('#c-prov-banner').attr('hidden', true).attr('aria-hidden', 'true');
                 return;
             }
 
-            var data = PROVEEDORES[id] || {};
-            var name = data.nombre || $('#c-proveedor').find('option:selected').text().trim();
+            var name = data.nombre || '—';
             var doc  = data.doc || '';
             var tel  = data.tel || '';
             var mail = data.email || '';
@@ -217,6 +211,34 @@ $(document).ready(function () {
             $('#c-prov-banner-avatar').text(ini);
             $('#c-prov-banner-name').text(name);
             $('#c-prov-banner-doc').text(doc || '—');
+            bannerVisibilidad(currentStep);
+
+            $('#c-prov-autocomplete').empty().hide();
+        }
+
+        // ── Aplica un proveedor seleccionado (búsqueda, from-persona o creación) ─
+        function aplicarProveedor(prov) {
+            selectedProv = {
+                id:      prov.id,
+                nombre:  prov.nombre || '—',
+                doc:     prov.doc || '',
+                tel:     prov.tel || '',
+                email:   prov.email || '',
+                tipo:    prov.tipo || '',
+                compras: parseInt(prov.compras, 10) || 0,
+                ultima:  prov.ultima || null
+            };
+            $('#c-proveedor').val(prov.id);
+            $('#c-prov-doc-number').val('');
+            renderProveedorSeleccionado();
+        }
+
+        // ── Limpia la selección y vuelve al estado de búsqueda ──────────────────
+        function clearProveedor() {
+            selectedProv = null;
+            $('#c-proveedor').val('');
+            $('#c-prov-autocomplete').empty().hide();
+            renderProveedorSeleccionado();
         }
 
         function bannerVisibilidad(n) {
@@ -230,8 +252,7 @@ $(document).ready(function () {
 
         // ── Recap del paso 3 ─────────────────────────────────────────────────
         function renderRecap() {
-            var provName = $('#c-proveedor').find('option:selected').text().trim();
-            $('#c-recap-proveedor').text($('#c-proveedor').val() ? provName : '—');
+            $('#c-recap-proveedor').text(selectedProv ? selectedProv.nombre : '—');
             $('#c-recap-factura').text($('#c-factura').val() || 'S/N');
             var fecha = $('#c-fecha').val();
             if (fecha) {
@@ -360,14 +381,151 @@ $(document).ready(function () {
             showStep(target);
         });
 
-        // Mantener card, chip y recap sincronizados con el proveedor
-        $('#c-proveedor').on('change', renderProveedorSeleccionado);
+        // ════════════════════════════════════════════════════════════════════
+        //  BÚSQUEDA DE PROVEEDOR POR DOCUMENTO (patrón cliente de cotizaciones)
+        // ════════════════════════════════════════════════════════════════════
+        var provSearchTimeout = null;
+        var CSRF = $('meta[name="csrf-token"]').attr('content');
+
+        function provShowLoading(show) {
+            if (show) {
+                $('#c-prov-loading').removeAttr('hidden');
+                $('#c-prov-empty').hide();
+            } else {
+                $('#c-prov-loading').attr('hidden', true);
+                if (!selectedProv) $('#c-prov-empty').show();
+            }
+        }
+
+        function renderProvAutocomplete(personas) {
+            var html = '';
+            if (personas && personas.length > 0) {
+                personas.forEach(function (p, idx) {
+                    var isJuridico = p.tipo_documento === 'J-' || p.tipo_documento === 'G-';
+                    var nombre = isJuridico && p.razon_social
+                        ? p.razon_social
+                        : (p.apellido ? p.nombre + ' ' + p.apellido : p.nombre);
+                    var badge = p.proveedor_id
+                        ? '<span class="badge bg-success">Proveedor</span>'
+                        : '<span class="badge bg-secondary">No es proveedor aún</span>';
+                    html += '<button type="button" class="list-group-item list-group-item-action c-prov-ac-item" data-idx="' + idx + '">'
+                        +   '<div class="d-flex justify-content-between align-items-center flex-wrap gap-1">'
+                        +     '<div>'
+                        +       '<span class="fw-semibold">' + (p.documento || 'Sin documento') + '</span>'
+                        +       '<span class="text-muted"> — ' + nombre + '</span>'
+                        +       '<small class="text-muted d-block">' + (p.email || 'Sin email') + '</small>'
+                        +     '</div>'
+                        +     '<div>' + badge + '</div>'
+                        +   '</div>'
+                        + '</button>';
+                });
+                $('#c-prov-autocomplete').data('personas', personas);
+            } else {
+                html = '<div class="list-group-item disabled">No se encontraron registros. Podés crear un proveedor nuevo abajo.</div>';
+                $('#c-prov-autocomplete').removeData('personas');
+            }
+            $('#c-prov-autocomplete').html(html).show();
+        }
+
+        $('#c-prov-doc-number').on('input', function () {
+            var number = $(this).val().trim();
+            clearTimeout(provSearchTimeout);
+            if (number.length < 6) {
+                $('#c-prov-autocomplete').empty().hide();
+                provShowLoading(false);
+                return;
+            }
+            if (!selectedProv) provShowLoading(true);
+            provSearchTimeout = setTimeout(function () {
+                $.ajax({
+                    url: '/personas-search',
+                    data: { q: number },
+                    complete: function () { provShowLoading(false); },
+                    success: function (personas) { renderProvAutocomplete(personas); }
+                });
+            }, 300);
+        });
+
+        // Selección de una persona de la lista
+        $(document).on('click', '.c-prov-ac-item', function () {
+            var idx = $(this).data('idx');
+            var personas = $('#c-prov-autocomplete').data('personas') || [];
+            var p = personas[idx];
+            if (!p) return;
+
+            var isJuridico = p.tipo_documento === 'J-' || p.tipo_documento === 'G-';
+            var nombre = isJuridico && p.razon_social
+                ? p.razon_social
+                : (p.apellido ? p.nombre + ' ' + p.apellido : p.nombre);
+
+            // Caso 1: ya es proveedor → aplicar directo
+            if (p.proveedor_id) {
+                aplicarProveedor({
+                    id:      p.proveedor_id,
+                    nombre:  nombre,
+                    doc:     p.documento || '',
+                    tel:     p.telefono || '',
+                    email:   p.email || '',
+                    tipo:    p.proveedor_tipo || '',
+                    compras: p.compras_count || 0,
+                    ultima:  p.compras_last_date || null
+                });
+                return;
+            }
+
+            // Caso 2: existe pero no es proveedor → confirmar conversión
+            Swal.fire({
+                title: '¿Crear proveedor con datos existentes?',
+                html: '<strong>' + nombre.trim() + '</strong> ya está registrado en el sistema pero aún no es proveedor.<br><br>¿Deseás crear el proveedor reutilizando estos datos?',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: '<i class="ri-check-line me-1"></i>Sí, crear proveedor',
+                cancelButtonText: 'Cancelar',
+                customClass: { confirmButton: 'btn btn-success w-xs me-2', cancelButton: 'btn btn-light w-xs' },
+                buttonsStyling: false
+            }).then(function (r) {
+                if (!r.isConfirmed) return;
+                $.ajax({
+                    url: '/proveedores/from-persona/' + p.persona_id,
+                    method: 'POST',
+                    headers: { 'X-CSRF-TOKEN': CSRF },
+                    success: function (resp) {
+                        if (resp.success && resp.proveedor) {
+                            aplicarProveedor(resp.proveedor);
+                            Swal.fire({ icon: 'success', title: resp.reused ? '¡Listo!' : 'Proveedor creado', text: resp.message, showConfirmButton: false, timer: 1600 });
+                        } else {
+                            Swal.fire({ icon: 'error', title: 'Error', text: resp.message || 'No se pudo crear el proveedor.' });
+                        }
+                    },
+                    error: function (xhr) {
+                        Swal.fire({ icon: 'error', title: 'Error', text: (xhr.responseJSON && xhr.responseJSON.message) || 'Error al crear el proveedor.' });
+                    }
+                });
+            });
+        });
+
+        // Ocultar lista al hacer click fuera
+        $(document).on('click', function (e) {
+            if (!$(e.target).closest('#c-prov-doc-number, #c-prov-doc-prefix, #c-prov-autocomplete').length) {
+                $('#c-prov-autocomplete').empty().hide();
+            }
+        });
+
+        // Botón "Cambiar" → volver a búsqueda
+        $('#c-prov-change-btn').on('click', function () {
+            clearProveedor();
+            $('#c-prov-doc-number').val('').trigger('focus');
+        });
 
         // ── Reset al cerrar el modal ─────────────────────────────────────────
         function resetModal() {
             rowCount = 0;
             $('#compraForm')[0].reset();
-            $('#c-proveedor').val('').trigger('change.select2');
+            selectedProv = null;
+            $('#c-proveedor').val('');
+            $('#c-prov-doc-number').val('');
+            $('#c-prov-doc-prefix').val('J-');
+            $('#c-prov-autocomplete').empty().hide();
             syncPagoSeg('contado');
             $('#c-tipo-pago').val('contado').trigger('change');
             $('#c-fecha').val('{{ date("Y-m-d") }}');
@@ -444,6 +602,122 @@ $(document).ready(function () {
                     } else if (json && json.message) {
                         msg = json.message;
                     }
+                    Swal.fire({ title: 'Error', html: msg, icon: 'error', confirmButtonText: 'Entendido' });
+                }
+            });
+        });
+
+        // ════════════════════════════════════════════════════════════════════
+        //  MINI-MODAL: crear proveedor nuevo inline (réplica del maestro)
+        // ════════════════════════════════════════════════════════════════════
+
+        // Poblar los <select> de Estado desde municipios-venezuela.js (una sola vez)
+        (function poblarEstados() {
+            if (typeof municipiosVenezuela === 'undefined') return;
+            var estados = Object.keys(municipiosVenezuela).sort(function (a, b) {
+                return a.localeCompare(b, 'es');
+            });
+            var opts = estados.map(function (e) { return '<option value="' + e + '">' + e + '</option>'; }).join('');
+            $('.cpr-estado-select').each(function () {
+                $(this).append(opts);
+            });
+        })();
+
+        // Cascada Estado → Municipio (ambos bloques, vía data-ciudad-target)
+        $('.cpr-estado-select').on('change', function () {
+            var $ciudad = $($(this).data('ciudad-target'));
+            $ciudad.empty();
+            if (typeof getMunicipios !== 'function' || !this.value) {
+                $ciudad.append('<option value="">Primero seleccione un estado</option>');
+                return;
+            }
+            $ciudad.append('<option value="">Seleccione municipio</option>');
+            getMunicipios(this.value).forEach(function (m) {
+                $ciudad.append('<option value="' + m + '">' + m + '</option>');
+            });
+        });
+
+        // Toggle Jurídico / Natural según el select de tipo
+        function cprToggleCampos() {
+            var tipo = $('#cpr-tipo-proveedor-field').val();
+            var esJur = tipo === 'juridico';
+            $('#cpr-campos-juridico, .cpr-tipo-juridico').toggle(esJur);
+            $('#cpr-campos-natural, .cpr-tipo-natural').toggle(!esJur);
+        }
+        $('#cpr-tipo-proveedor-field').on('change', cprToggleCampos);
+
+        // Abrir el mini-modal, prellenando el documento escrito en el buscador
+        $('#c-prov-create-btn').on('click', function () {
+            $('#cprForm')[0].reset();
+            $('#cpr-ciudad-jur-field, #cpr-ciudad-field').empty()
+                .append('<option value="">Primero seleccione un estado</option>');
+
+            var prefix = $('#c-prov-doc-prefix').val();
+            var number = $('#c-prov-doc-number').val().trim();
+            if (prefix === 'V-' || prefix === 'E-') {
+                $('#cpr-tipo-proveedor-field').val('natural');
+                $('#cpr-tipo-documento-field').val(prefix);
+                $('#cpr-documento-identidad-field').val(number);
+            } else {
+                $('#cpr-tipo-proveedor-field').val('juridico');
+                $('#cpr-rif-prefix-field').val(prefix === 'G-' ? 'G-' : 'J-');
+                $('#cpr-rif-number-field').val(number);
+            }
+            cprToggleCampos();
+            $('#c-prov-autocomplete').empty().hide();
+            $('#crearProveedorRapidoModal').modal('show');
+        });
+
+        $('#cprForm').on('submit', function (e) {
+            e.preventDefault();
+            var tipo = $('#cpr-tipo-proveedor-field').val();
+            var payload = { _token: CSRF, tipo_proveedor: tipo };
+
+            if (tipo === 'juridico') {
+                payload.rif               = $('#cpr-rif-prefix-field').val() + $('#cpr-rif-number-field').val().trim();
+                payload.razon_social      = $('#cpr-razon-social-field').val().trim();
+                payload.direccion         = $('#cpr-direccion-jur-field').val().trim();
+                payload.telefono          = $('#cpr-telefono-jur-prefix-field').val() + '-' + $('#cpr-telefono-jur-number-field').val().trim();
+                payload.email             = $('#cpr-email-jur-field').val().trim();
+                payload.contacto          = $('#cpr-contacto-field').val().trim() || null;
+                payload.telefono_contacto = $('#cpr-telefono-contacto-number-field').val().trim()
+                    ? $('#cpr-telefono-contacto-prefix-field').val() + '-' + $('#cpr-telefono-contacto-number-field').val().trim()
+                    : null;
+                payload.estado_territorial = $('#cpr-estado-territorial-jur-field').val();
+                payload.ciudad             = $('#cpr-ciudad-jur-field').val();
+            } else {
+                payload.tipo_documento      = $('#cpr-tipo-documento-field').val();
+                payload.documento_identidad = $('#cpr-documento-identidad-field').val().trim();
+                payload.nombre              = $('#cpr-nombre-field').val().trim();
+                payload.apellido            = $('#cpr-apellido-field').val().trim();
+                payload.direccion           = $('#cpr-direccion-nat-field').val().trim();
+                payload.telefono            = $('#cpr-telefono-nat-prefix-field').val() + '-' + $('#cpr-telefono-nat-number-field').val().trim();
+                payload.email               = $('#cpr-email-nat-field').val().trim();
+                payload.estado_territorial  = $('#cpr-estado-territorial-field').val();
+                payload.ciudad              = $('#cpr-ciudad-field').val();
+            }
+
+            var $btn = $('#cpr-submit-btn');
+            $btn.attr('disabled', true).html('<i class="ri-loader-4-line me-1"></i>Guardando...');
+
+            $.ajax({
+                url:    "{{ route('proveedores.store') }}",
+                method: 'POST',
+                data:   payload,
+                success: function (resp) {
+                    $btn.removeAttr('disabled').html('<i class="ri-save-line me-1"></i>Guardar y seleccionar');
+                    $('#crearProveedorRapidoModal').modal('hide');
+                    if (resp.proveedor) {
+                        aplicarProveedor(resp.proveedor);
+                    }
+                    Swal.fire({ icon: 'success', title: 'Proveedor creado', text: resp.success || 'Proveedor creado correctamente.', showConfirmButton: false, timer: 1600 });
+                },
+                error: function (xhr) {
+                    $btn.removeAttr('disabled').html('<i class="ri-save-line me-1"></i>Guardar y seleccionar');
+                    var json = xhr.responseJSON;
+                    var msg = 'No se pudo crear el proveedor.';
+                    if (json && json.errors) { msg = Object.values(json.errors).flat().join('<br>'); }
+                    else if (json && json.message) { msg = json.message; }
                     Swal.fire({ title: 'Error', html: msg, icon: 'error', confirmButtonText: 'Entendido' });
                 }
             });

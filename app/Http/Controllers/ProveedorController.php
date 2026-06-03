@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Proveedor;
 use App\Models\Persona;
 use App\Services\ProveedorService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Yajra\DataTables\DataTables;
@@ -117,8 +118,11 @@ class ProveedorController extends Controller
                 'estado_territorial' => 'nullable|string|max:50',
             ]);
 
-            $this->proveedorService->crearNatural($request->all());
-            return response()->json(['success' => 'Proveedor natural creado exitosamente.']);
+            $proveedor = $this->proveedorService->crearNatural($request->all());
+            return response()->json([
+                'success'   => 'Proveedor natural creado exitosamente.',
+                'proveedor' => $this->proveedorPayload($proveedor),
+            ]);
         } else {
             $request->validate([
                 'tipo_proveedor' => 'required|in:natural,juridico',
@@ -131,9 +135,101 @@ class ProveedorController extends Controller
                 'telefono_contacto' => 'nullable|string|max:20',
             ]);
 
-            $this->proveedorService->crearJuridico($request->all());
-            return response()->json(['success' => 'Proveedor jurídico creado exitosamente.']);
+            $proveedor = $this->proveedorService->crearJuridico($request->all());
+            return response()->json([
+                'success'   => 'Proveedor jurídico creado exitosamente.',
+                'proveedor' => $this->proveedorPayload($proveedor),
+            ]);
         }
+    }
+
+    /**
+     * Crea un proveedor reutilizando una persona ya existente en el sistema
+     * (cliente, empleado u otro rol). Idempotente: si la persona ya es
+     * proveedor activo lo devuelve; si está inhabilitado lo reactiva.
+     * Mismo patrón que ClienteController@createFromPersona.
+     */
+    public function createFromPersona(int $personaId): JsonResponse
+    {
+        $persona = Persona::find($personaId);
+
+        if (!$persona) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Persona no encontrada.',
+            ], 404);
+        }
+
+        // Ya es proveedor activo → devolverlo
+        $proveedorExistente = Proveedor::where('persona_id', $persona->id)
+            ->where('estado', 1)
+            ->first();
+
+        if ($proveedorExistente) {
+            return response()->json([
+                'success'   => true,
+                'message'   => 'La persona ya estaba registrada como proveedor activo.',
+                'reused'    => true,
+                'proveedor' => $this->proveedorPayload($proveedorExistente),
+            ]);
+        }
+
+        // Existe pero inhabilitado (estado 0 o trashed) → reactivar
+        $proveedorInactivo = Proveedor::withTrashed()
+            ->where('persona_id', $persona->id)
+            ->first();
+
+        if ($proveedorInactivo) {
+            if ($proveedorInactivo->trashed()) {
+                $proveedorInactivo->restore();
+            }
+            $proveedorInactivo->update(['estado' => 1]);
+
+            return response()->json([
+                'success'   => true,
+                'message'   => 'Proveedor reactivado correctamente.',
+                'reused'    => true,
+                'proveedor' => $this->proveedorPayload($proveedorInactivo),
+            ]);
+        }
+
+        // Crear nuevo proveedor sobre la persona existente.
+        // J-/G- → jurídico; V-/E-/sin prefijo → natural.
+        $tipoProveedor = in_array($persona->tipo_documento, ['J-', 'G-'], true)
+            ? 'juridico'
+            : 'natural';
+
+        $proveedor = Proveedor::create([
+            'persona_id'     => $persona->id,
+            'tipo_proveedor' => $tipoProveedor,
+            'estado'         => 1,
+        ]);
+
+        return response()->json([
+            'success'   => true,
+            'message'   => 'Proveedor creado a partir de la persona registrada.',
+            'reused'    => false,
+            'proveedor' => $this->proveedorPayload($proveedor),
+        ]);
+    }
+
+    /**
+     * Serializa un proveedor para el autocomplete/card del wizard de compras.
+     */
+    private function proveedorPayload(Proveedor $proveedor): array
+    {
+        $proveedor->loadMissing('persona');
+
+        return [
+            'id'      => $proveedor->id,
+            'nombre'  => $proveedor->nombre_completo,
+            'doc'     => $proveedor->documento ?? '',
+            'tel'     => $proveedor->telefono_unificado ?? '',
+            'email'   => $proveedor->email_unificado ?? '',
+            'tipo'    => $proveedor->tipo_proveedor ?? '',
+            'compras' => 0,
+            'ultima'  => null,
+        ];
     }
 
     public function show($id)

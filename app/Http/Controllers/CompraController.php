@@ -19,9 +19,9 @@ class CompraController extends Controller
 
     public function index()
     {
+        // Solo para el <select> de filtro del listado; el wizard elige el
+        // proveedor por búsqueda de documento (no precarga el catálogo).
         $proveedores = Proveedor::with('persona')
-            ->withCount(['compras as compras_count' => fn($q) => $q->where('estado', '!=', 'anulada')])
-            ->withMax(['compras as ultima_compra' => fn($q) => $q->where('estado', '!=', 'anulada')], 'fecha_compra')
             ->where('estado', 1)
             ->get();
         $insumos = Insumo::where('estado', 1)

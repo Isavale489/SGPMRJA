@@ -7,8 +7,6 @@
     <link href="https://cdn.datatables.net/1.11.5/css/dataTables.bootstrap5.min.css" rel="stylesheet" type="text/css" />
     <link href="https://cdn.datatables.net/responsive/2.2.9/css/responsive.bootstrap.min.css" rel="stylesheet" type="text/css" />
     <link href="https://cdn.datatables.net/buttons/2.2.2/css/buttons.dataTables.min.css" rel="stylesheet" type="text/css" />
-    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-    <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
 @endpush
 
 @section('content')
@@ -189,32 +187,19 @@
         </div>
     </div>
 
-    {{-- Datos de insumos + proveedores para el JS del modal --}}
+    {{-- Datos de insumos para el JS del modal (el proveedor se elige por búsqueda) --}}
     <script>
         window.INSUMOS_DATA = @json($insumos);
-        window.PROVEEDORES_DATA = {
-            @foreach ($proveedores as $p)
-                "{{ $p->id }}": {
-                    nombre:  @json($p->nombre_completo),
-                    doc:     @json($p->documento ?? ''),
-                    tel:     @json($p->telefono_unificado ?? ''),
-                    email:   @json($p->email_unificado ?? ''),
-                    tipo:    @json($p->tipo_proveedor ?? ''),
-                    compras: {{ (int) ($p->compras_count ?? 0) }},
-                    ultima:  @json($p->ultima_compra ?? '')
-                },
-            @endforeach
-        };
     </script>
 @endsection
 
 @push('scripts')
     <script src="{{ URL::asset('/assets/libs/sweetalert2/sweetalert2.min.js') }}"></script>
+    <script src="{{ asset('assets/js/municipios-venezuela.js') }}"></script>
     <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/1.11.5/js/dataTables.bootstrap5.min.js"></script>
     <script src="https://cdn.datatables.net/responsive/2.2.9/js/dataTables.responsive.min.js"></script>
     <script src="https://cdn.datatables.net/buttons/2.2.2/js/dataTables.buttons.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     @include('admin.compras.scripts.main')
     @include('admin.compras.scripts.create')
     <script>

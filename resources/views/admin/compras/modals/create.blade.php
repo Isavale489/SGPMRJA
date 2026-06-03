@@ -94,26 +94,51 @@
                                         </h6>
                                     </div>
                                     <div class="card-body">
-                                        <label class="form-label small fw-semibold mb-1" for="c-proveedor">
-                                            <i class="ri-building-line me-1 text-muted"></i>Proveedor <span class="text-danger">*</span>
+                                        <label class="form-label small fw-semibold mb-1" for="c-prov-doc-number">
+                                            <i class="ri-building-line me-1 text-muted"></i>Documento del proveedor <span class="text-danger">*</span>
                                         </label>
-                                        <select id="c-proveedor" name="proveedor_id" class="form-select" required>
-                                            <option value="">Seleccione un proveedor...</option>
-                                            @foreach ($proveedores as $proveedor)
-                                                <option value="{{ $proveedor->id }}"
-                                                    data-doc="{{ $proveedor->documento ?? '' }}">
-                                                    {{ $proveedor->nombre_completo }}
-                                                </option>
-                                            @endforeach
-                                        </select>
+                                        {{-- Buscador de documento con icono de lupa --}}
+                                        <div class="position-relative cot-search-doc-wrap">
+                                            <div class="input-group cot-search-doc-group">
+                                                <span class="input-group-text cot-search-doc-icon">
+                                                    <i class="ri-search-2-line"></i>
+                                                </span>
+                                                <select class="form-select" id="c-prov-doc-prefix" style="max-width: 70px;">
+                                                    <option value="V-">V-</option>
+                                                    <option value="J-" selected>J-</option>
+                                                    <option value="E-">E-</option>
+                                                    <option value="G-">G-</option>
+                                                </select>
+                                                <input type="text" id="c-prov-doc-number" class="form-control"
+                                                    placeholder="Escribí el documento para buscar..." autocomplete="off">
+                                            </div>
+                                            <div id="c-prov-autocomplete" class="list-group position-absolute w-100"
+                                                style="z-index: 1090; top: 100%;"></div>
+                                        </div>
+
+                                        {{-- Campo real enviado al backend --}}
+                                        <input type="hidden" id="c-proveedor" name="proveedor_id" required>
 
                                         {{-- Empty state — sin proveedor seleccionado --}}
                                         <div class="cot-cliente-empty" id="c-prov-empty">
                                             <div class="cot-cliente-empty-icon"><i class="ri-store-2-line"></i></div>
-                                            <p class="cot-cliente-empty-title">Sin proveedor seleccionado</p>
+                                            <p class="cot-cliente-empty-title">Buscá el proveedor o creá uno nuevo</p>
                                             <p class="cot-cliente-empty-desc">
-                                                Elige un proveedor arriba para ver sus datos de contacto.
+                                                Escribí el documento arriba para buscar entre clientes, empleados y proveedores existentes.
                                             </p>
+                                            <button type="button" class="btn btn-outline-success cot-btn-create-cliente"
+                                                id="c-prov-create-btn">
+                                                <i class="ri-add-line me-1"></i>Crear proveedor nuevo
+                                            </button>
+                                        </div>
+
+                                        {{-- Loading state — skeleton mientras busca --}}
+                                        <div class="cot-cliente-loading" id="c-prov-loading" hidden>
+                                            <div class="cot-skeleton cot-skeleton-circle"></div>
+                                            <div class="flex-grow-1">
+                                                <div class="cot-skeleton cot-skeleton-line cot-skeleton-line-md"></div>
+                                                <div class="cot-skeleton cot-skeleton-line cot-skeleton-line-sm"></div>
+                                            </div>
                                         </div>
 
                                         {{-- Card del proveedor seleccionado --}}
@@ -152,6 +177,10 @@
                                                     </span>
                                                 </div>
                                             </div>
+                                            <button type="button" class="btn btn-link btn-sm cot-cliente-change-btn"
+                                                id="c-prov-change-btn" title="Cambiar proveedor">
+                                                <i class="ri-refresh-line me-1"></i>Cambiar
+                                            </button>
                                         </div>
                                     </div>
                                 </div>
@@ -401,6 +430,232 @@
                 </div>
             </form>
 
+        </div>
+    </div>
+</div>
+
+{{-- ═══════════════════════════════════════════════════════════════════════════
+     MINI-MODAL: Crear proveedor nuevo (inline, "extensión" del maestro Proveedores)
+     Réplica fiel del modal #showModal de admin/proveedores/index.blade.php.
+     Prefijo de IDs: cpr-  ·  navy (atlantico-modal) porque pertenece al maestro.
+═══════════════════════════════════════════════════════════════════════════ --}}
+<div class="modal fade atlantico-modal" id="crearProveedorRapidoModal" tabindex="-1" aria-hidden="true"
+    data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-light p-3">
+                <h5 class="modal-title">Agregar Proveedor</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="cprForm" novalidate>
+                <div class="modal-body">
+
+                    <div class="modal-form-section">
+                        <div class="modal-form-section-title"><i class="ri-fingerprint-line"></i>Identificación</div>
+                        <div class="row mb-0">
+                            <div class="col-md-6 cpr-tipo-juridico">
+                                <x-forms.input name="rif_number" label="RIF" id="cpr-rif-number-field"
+                                    placeholder="Ej: 123456789" maxlength="9" required prependRaw="true">
+                                    <x-slot:prepend>
+                                        <select class="form-select" id="cpr-rif-prefix-field" style="max-width: 80px;">
+                                            <option value="J-">J-</option>
+                                            <option value="G-">G-</option>
+                                        </select>
+                                    </x-slot:prepend>
+                                </x-forms.input>
+                            </div>
+                            <div class="col-md-6 cpr-tipo-natural" style="display: none;">
+                                <x-forms.input name="documento_identidad_number" label="Documento de Identidad"
+                                    id="cpr-documento-identidad-field" maxlength="8" placeholder="Ej: 12345678" required
+                                    prependRaw="true">
+                                    <x-slot:prepend>
+                                        <select class="form-select" id="cpr-tipo-documento-field" style="max-width: 80px;">
+                                            <option value="V-">V-</option>
+                                            <option value="E-">E-</option>
+                                        </select>
+                                    </x-slot:prepend>
+                                </x-forms.input>
+                            </div>
+                            <div class="col-md-6">
+                                <x-forms.select name="tipo_proveedor" label="Tipo de Proveedor" required
+                                    id="cpr-tipo-proveedor-field"
+                                    :options="['juridico' => 'Jurídico (Empresa)', 'natural' => 'Natural (Persona)']"
+                                    placeholder="" />
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- ── CAMPOS JURÍDICO ── --}}
+                    <div id="cpr-campos-juridico">
+                        <div class="modal-form-section">
+                            <div class="modal-form-section-title"><i class="ri-building-line"></i>Datos Empresariales</div>
+                            <div class="row mb-0">
+                                <div class="col-md-6 mb-3">
+                                    <x-forms.input name="razon_social" label="Razón Social" maxlength="200"
+                                        placeholder="Nombre de la empresa" id="cpr-razon-social-field" />
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <x-forms.input name="direccion_jur" label="Dirección" maxlength="500"
+                                        placeholder="Dirección de la empresa" id="cpr-direccion-jur-field" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="modal-form-section">
+                            <div class="modal-form-section-title"><i class="ri-contacts-book-line"></i>Contacto</div>
+                            <div class="row mb-0">
+                                <div class="col-md-6 mb-3">
+                                    <x-forms.input name="telefono_jur_number" label="Teléfono"
+                                        id="cpr-telefono-jur-number-field" maxlength="7" placeholder="1234567" required
+                                        prependRaw="true">
+                                        <x-slot:prepend>
+                                            <select class="form-select" id="cpr-telefono-jur-prefix-field"
+                                                style="max-width: 100px; min-width: 100px;">
+                                                <option value="0212">0212</option>
+                                                <option value="0251">0251</option>
+                                                <option value="0241">0241</option>
+                                                <option value="0255">0255</option>
+                                                <option value="0412">0412</option>
+                                                <option value="0414">0414</option>
+                                                <option value="0424" selected>0424</option>
+                                                <option value="0416">0416</option>
+                                                <option value="0426">0426</option>
+                                            </select>
+                                        </x-slot:prepend>
+                                    </x-forms.input>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <x-forms.input name="email_jur" label="Email" type="email"
+                                        placeholder="correo@empresa.com" id="cpr-email-jur-field" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="modal-form-section">
+                            <div class="modal-form-section-title"><i class="ri-user-follow-line"></i>Contacto Secundario</div>
+                            <div class="row mb-0">
+                                <div class="col-md-6 mb-3">
+                                    <x-forms.input name="contacto" label="Persona de Contacto" maxlength="100"
+                                        placeholder="Nombre del contacto" id="cpr-contacto-field" />
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <x-forms.input name="telefono_contacto_number" label="Teléfono de Contacto"
+                                        id="cpr-telefono-contacto-number-field" maxlength="7" placeholder="1234567"
+                                        prependRaw="true">
+                                        <x-slot:prepend>
+                                            <select class="form-select" id="cpr-telefono-contacto-prefix-field"
+                                                style="max-width: 100px; min-width: 100px;">
+                                                <option value="0412">0412</option>
+                                                <option value="0414">0414</option>
+                                                <option value="0424" selected>0424</option>
+                                                <option value="0416">0416</option>
+                                                <option value="0426">0426</option>
+                                            </select>
+                                        </x-slot:prepend>
+                                    </x-forms.input>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="modal-form-section">
+                            <div class="modal-form-section-title"><i class="ri-map-pin-2-line"></i>Ubicación</div>
+                            <div class="row mb-0">
+                                <div class="col-md-6 mb-3">
+                                    <label for="cpr-estado-territorial-jur-field" class="form-label">Estado</label>
+                                    <select id="cpr-estado-territorial-jur-field" class="form-select cpr-estado-select"
+                                        data-ciudad-target="#cpr-ciudad-jur-field">
+                                        <option value="">Seleccione estado</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="cpr-ciudad-jur-field" class="form-label">Municipio</label>
+                                    <select id="cpr-ciudad-jur-field" class="form-select">
+                                        <option value="">Primero seleccione un estado</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- ── CAMPOS NATURAL ── --}}
+                    <div id="cpr-campos-natural" style="display: none;">
+                        <div class="modal-form-section">
+                            <div class="modal-form-section-title"><i class="ri-user-3-line"></i>Datos Personales</div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <x-forms.input name="nombre" label="Nombre" maxlength="100" placeholder="Nombre"
+                                        id="cpr-nombre-field" />
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <x-forms.input name="apellido" label="Apellido" maxlength="100"
+                                        placeholder="Apellido" id="cpr-apellido-field" />
+                                </div>
+                            </div>
+                            <div class="mb-0">
+                                <x-forms.input name="direccion_nat" label="Dirección" maxlength="255"
+                                    placeholder="Dirección completa" id="cpr-direccion-nat-field" />
+                            </div>
+                        </div>
+
+                        <div class="modal-form-section">
+                            <div class="modal-form-section-title"><i class="ri-contacts-book-line"></i>Contacto</div>
+                            <div class="row mb-0">
+                                <div class="col-md-6 mb-3">
+                                    <x-forms.input name="telefono_nat_number" label="Teléfono"
+                                        id="cpr-telefono-nat-number-field" maxlength="7" placeholder="1234567" required
+                                        prependRaw="true">
+                                        <x-slot:prepend>
+                                            <select class="form-select" id="cpr-telefono-nat-prefix-field"
+                                                style="max-width: 100px; min-width: 100px;">
+                                                <option value="0412">0412</option>
+                                                <option value="0422">0422</option>
+                                                <option value="0414">0414</option>
+                                                <option value="0424" selected>0424</option>
+                                                <option value="0416">0416</option>
+                                                <option value="0426">0426</option>
+                                            </select>
+                                        </x-slot:prepend>
+                                    </x-forms.input>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <x-forms.input name="email_nat" label="Email" type="email"
+                                        placeholder="correo@email.com" id="cpr-email-nat-field" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="modal-form-section mb-0">
+                            <div class="modal-form-section-title"><i class="ri-map-pin-2-line"></i>Ubicación</div>
+                            <div class="row mb-0">
+                                <div class="col-md-6 mb-3">
+                                    <label for="cpr-estado-territorial-field" class="form-label">Estado</label>
+                                    <select id="cpr-estado-territorial-field" class="form-select cpr-estado-select"
+                                        data-ciudad-target="#cpr-ciudad-field">
+                                        <option value="">Seleccione estado</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="cpr-ciudad-field" class="form-label">Municipio</label>
+                                    <select id="cpr-ciudad-field" class="form-select">
+                                        <option value="">Primero seleccione un estado</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+                <div class="modal-footer bg-light border-0">
+                    <div class="hstack gap-2 justify-content-end">
+                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">
+                            <i class="ri-close-line me-1"></i>Cerrar
+                        </button>
+                        <button type="submit" class="btn btn-success" id="cpr-submit-btn">
+                            <i class="ri-save-line me-1"></i>Guardar y seleccionar
+                        </button>
+                    </div>
+                </div>
+            </form>
         </div>
     </div>
 </div>
