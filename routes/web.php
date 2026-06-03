@@ -173,6 +173,13 @@ Route::middleware(['auth', 'throttle:60,1', 'active.user', 'recovery.questions.r
 
         // Colores
         Route::get('colores-data', [ColorController::class, 'getColores'])->name('colores.data');
+        Route::get('colores-check-nombre', [ColorController::class, 'checkNombre'])->name('colores.check-nombre');
+        Route::get('colores', [ColorController::class, 'index'])->name('colores.index');
+        Route::post('colores', [ColorController::class, 'store'])->name('colores.store');
+        Route::get('colores/{color}', [ColorController::class, 'show'])->name('colores.show');
+        Route::put('colores/{color}', [ColorController::class, 'update'])->name('colores.update');
+        Route::delete('colores/{color}', [ColorController::class, 'destroy'])->name('colores.destroy');
+        Route::patch('colores/{id}/restore', [ColorController::class, 'restore'])->name('colores.restore');
 
         // Tallas
         Route::get('tallas-data', [TallaController::class, 'getTallas'])->name('tallas.data');
