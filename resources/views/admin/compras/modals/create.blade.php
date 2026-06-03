@@ -4,7 +4,8 @@
      Prefijo de IDs: c-  ·  shell atlantico-modal--op (transaccional, emerald)
      ════════════════════════════════════════════════════════════════════ --}}
 <div class="modal fade atlantico-modal atlantico-modal--op wiz-modal" id="createCompraModal" tabindex="-1"
-    aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false"
+    data-guard-id-field="c-edit-id">
     <div class="modal-dialog modal-dialog-centered modal-xl">
         <div class="modal-content">
             <div class="modal-header">
