@@ -1300,6 +1300,19 @@
             return (st[key] && Array.isArray(st[key].bordados)) ? st[key].bordados : [];
         }
 
+        // Bordados efectivos de una card: prioriza cotGroupBordadosState (fuente de verdad,
+        // key prodId|colorId); si no hay, usa el data() de la card. Lo usan la grilla y el total.
+        function getEffectiveBordadosForCard($card) {
+            var prodId = $card.find('.producto-id-input').val();
+            var colorId = $card.find('.color-id-input').val() || '';
+            var stKey = (prodId || '') + '|' + (colorId || '');
+            var st = (window.cotGroupBordadosState && window.cotGroupBordadosState[stKey] &&
+                Array.isArray(window.cotGroupBordadosState[stKey].bordados))
+                ? window.cotGroupBordadosState[stKey].bordados : null;
+            if (st && st.length) return st;
+            return getCardBordados($card);
+        }
+
         function setGroupBordados(key, bordados) {
             window.cotGroupBordadosState = window.cotGroupBordadosState || {};
             window.cotGroupBordadosState[key] = { bordados: bordados };
@@ -1636,7 +1649,8 @@
         }
 
         function aplicarBordadosDesdeModal() {
-            if (!currentBordadoCard) return;
+            // Permitir aplicar tanto desde una card concreta como desde un grupo de la grilla
+            if (!currentBordadoCard && !currentBordadoGroupKey) return;
 
             var bordados = [];
             var erroresLogo = [];
@@ -1714,7 +1728,8 @@
                 actualizarResumenBordadosEnCard(currentBordadoCard);
             }
             calculateCotizacionTotals();
-            if (typeof refreshGroupedList === 'function') refreshGroupedList();
+            // refreshGroupedList vive en otro IIFE; se accede vía window.cotRefreshGroupedList
+            if (typeof window.cotRefreshGroupedList === 'function') window.cotRefreshGroupedList();
 
             if (ubicacionModal) ubicacionModal.hide();
         }
@@ -2108,8 +2123,10 @@
                 var $card = $(this);
                 let quantity = parseFloat($card.find('.cantidad-input').val()) || 0;
                 let basePrice = parseFloat($card.find('.precio-unitario-input').val()) || 0;
-                let llevaBordado = parseInt($card.find('.lleva-bordado-value').val() || 0, 10) === 1;
-                let recargoBordado = llevaBordado ? calcularRecargoUnitarioBordadoDesdeLista(getCardBordados($card)) : 0;
+                let bordEff = getEffectiveBordadosForCard($card);
+                let llevaBordado = bordEff.length > 0 ||
+                    parseInt($card.find('.lleva-bordado-value').val() || 0, 10) === 1;
+                let recargoBordado = bordEff.length ? calcularRecargoUnitarioBordadoDesdeLista(bordEff) : 0;
                 let finalUnitPrice = basePrice + recargoBordado;
 
                 actualizarPanelResumenMonetario($card, recargoBordado, finalUnitPrice, llevaBordado);
@@ -4600,8 +4617,10 @@
                     var $card = $(this);
                     var prodId = $card.find('.producto-id-input').val();
                     var colorId = $card.find('.color-id-input').val() || '';
-                    var bordados = (typeof getCardBordados === 'function') ? getCardBordados($card) : [];
-                    var llevaBordado = parseInt($card.find('.lleva-bordado-value').val() || 0, 10) === 1;
+                    // Fuente de verdad de bordados: cotGroupBordadosState; fallback al data() de la card.
+                    var bordados = getEffectiveBordadosForCard($card);
+                    var llevaBordado = (bordados.length > 0) ||
+                        (parseInt($card.find('.lleva-bordado-value').val() || 0, 10) === 1);
                     var bKey = llevaBordado ? bordadosKey(bordados) : 'sb';
                     var key = (prodId || 'x') + '|' + (colorId || 'x') + '|' + bKey;
 
@@ -4688,9 +4707,13 @@
                 var rowsHtml = groups.map(function (g, idx) {
                     var prodCodigo = g.producto && g.producto.codigo ? g.producto.codigo : '—';
                     var tipoLabel = g.producto && g.producto.tipo_producto ? g.producto.tipo_producto.nombre : '';
-                    var prodModelo = (g.producto && g.producto.modelo && String(g.producto.modelo).trim())
-                        ? g.producto.modelo
-                        : (tipoLabel || '(producto sin definir)');
+                    // Si hay modelo propio: pill de familia + modelo como título.
+                    // Si no: el título es la familia (sin pill redundante).
+                    var hasModelo = !!(g.producto && g.producto.modelo && String(g.producto.modelo).trim());
+                    var prodTitulo = hasModelo ? g.producto.modelo : (tipoLabel || '(producto sin definir)');
+                    var prodPill = (hasModelo && tipoLabel)
+                        ? '<span class="cot-tipo-pill">' + escForHtml(tipoLabel) + '</span>'
+                        : '';
                     var variantLabel = buildVariantLabel(g.producto);
                     var colorName = g.color ? g.color.nombre : (g.colorId ? '#' + g.colorId : 'Sin color');
                     var colorHex = g.color ? g.color.hex_referencial : '#cccccc';
@@ -4703,11 +4726,22 @@
                                '</span>';
                     }).join('');
 
-                    var bordadoLine = g.llevaBordado
-                        ? ('<div class="cot-grouped-bordado-line"><i class="ri-scissors-cut-line"></i> ' +
-                                g.bordados.length + ' bordado' + (g.bordados.length === 1 ? '' : 's') +
-                                ' · +' + formatMoney(g.unitWithBordado - g.unitBase) + '/u</div>')
-                        : '';
+                    var bordadoCount = g.bordados ? g.bordados.length : 0;
+                    var bordadoRecargo = (g.unitWithBordado || 0) - (g.unitBase || 0);
+                    var bordadoLine;
+                    if (bordadoCount > 0) {
+                        bordadoLine = '<div class="cot-grouped-bordado-line cot-grouped-bordado-line--ok">' +
+                            '<i class="ri-scissors-cut-line"></i>' +
+                            bordadoCount + ' bordado' + (bordadoCount === 1 ? '' : 's') +
+                            (bordadoRecargo > 0 ? ' · +' + formatMoney(bordadoRecargo) + '/u' : '') +
+                            '</div>';
+                    } else if (g.llevaBordado) {
+                        bordadoLine = '<div class="cot-grouped-bordado-line cot-grouped-bordado-line--pending">' +
+                            '<i class="ri-error-warning-line"></i>Bordado sin configurar</div>';
+                    } else {
+                        bordadoLine = '<div class="cot-grouped-bordado-line cot-grouped-bordado-line--none">' +
+                            '<i class="ri-subtract-line"></i>Sin bordado</div>';
+                    }
 
                     var indices = g.cards.map(function (c) { return c.productIndex; }).join(',');
                     var unitDisplay = formatMoney(g.unitWithBordado);
@@ -4719,11 +4753,11 @@
                         '<tr class="cot-grouped-row" data-group-key="' + escForHtml(g.key) + '" data-product-id="' + escForHtml(g.productoId) + '" data-color-id="' + escForHtml(g.colorId) + '" data-card-indices="' + escForHtml(indices) + '">' +
                             '<td class="cot-col-num">' + (idx + 1) + '</td>' +
                             '<td class="cot-col-prod">' +
-                                (tipoLabel ? '<span class="cot-tipo-pill">' + escForHtml(tipoLabel) + '</span>' : '') +
-                                '<div class="cot-prod-modelo">' + escForHtml(prodModelo) + '</div>' +
-                                '<div class="cot-prod-codigo">' + escForHtml(prodCodigo) + '</div>' +
+                                prodPill +
+                                '<div class="cot-prod-modelo">' + escForHtml(prodTitulo) + '</div>' +
+                                '<div class="cot-prod-codigo"><i class="ri-barcode-line"></i>' + escForHtml(prodCodigo) + '</div>' +
                                 (variantLabel
-                                    ? '<div class="cot-prod-variant" style="font-size:.72rem;color:#475569;margin-top:2px;"><i class="ri-shape-2-line me-1"></i>' + escForHtml(variantLabel) + '</div>'
+                                    ? '<div class="cot-prod-variant"><i class="ri-shape-2-line"></i>' + escForHtml(variantLabel) + '</div>'
                                     : '') +
                             '</td>' +
                             '<td class="cot-col-color">' +

@@ -3269,17 +3269,33 @@ header#page-topbar,
     margin-bottom: 4px;
 }
 .cot-prod-modelo {
-    font-weight: 600;
+    font-weight: 700;
+    font-size: 0.95rem;
     color: #1e3c72;
     line-height: 1.25;
 }
 .cot-prod-codigo {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
     font-family: monospace;
-    font-size: 0.7rem;
+    font-size: 0.72rem;
     color: #94a3b8;
     font-weight: 600;
-    margin-top: 1px;
+    margin-top: 2px;
 }
+.cot-prod-codigo i { font-size: 0.85rem; }
+.cot-prod-variant {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.76rem;
+    color: #475569;
+    margin-top: 4px;
+}
+.cot-prod-variant i { color: #94a3b8; font-size: 0.9rem; flex-shrink: 0; }
+[data-bs-theme="dark"] .cot-prod-variant { color: #94a3b8; }
+[data-bs-theme="dark"] .cot-prod-variant i { color: #64748b; }
 
 .cot-grouped-table .cot-col-color { width: 130px; }
 .cot-color-cell {
@@ -3326,16 +3342,21 @@ header#page-topbar,
 
 .cot-grouped-bordado-line {
     margin-top: 5px;
-    font-size: 0.7rem;
-    color: #006b52;
+    font-size: 0.72rem;
     display: inline-flex;
     align-items: center;
-    gap: 3px;
-    background: rgba(0, 217, 165, 0.1);
-    padding: 2px 8px;
-    border-radius: 4px;
+    gap: 4px;
+    padding: 3px 9px;
+    border-radius: 999px;
     font-weight: 600;
 }
+.cot-grouped-bordado-line i { font-size: 0.9rem; }
+.cot-grouped-bordado-line--ok      { background: rgba(0, 217, 165, 0.12); color: #006b52; }
+.cot-grouped-bordado-line--pending { background: rgba(245, 158, 11, 0.15); color: #92400e; }
+.cot-grouped-bordado-line--none    { background: rgba(100, 116, 139, 0.10); color: #64748b; }
+[data-bs-theme="dark"] .cot-grouped-bordado-line--ok      { background: rgba(16, 185, 129, 0.18); color: #6ee7b7; }
+[data-bs-theme="dark"] .cot-grouped-bordado-line--pending { background: rgba(245, 158, 11, 0.20); color: #fcd34d; }
+[data-bs-theme="dark"] .cot-grouped-bordado-line--none    { background: rgba(148, 163, 184, 0.15); color: #94a3b8; }
 
 .cot-cell-num {
     text-align: right;
@@ -3429,10 +3450,6 @@ header#page-topbar,
     color: #cbd5e1;
 }
 [data-bs-theme="dark"] .cot-chip-x { color: #64748b; }
-[data-bs-theme="dark"] .cot-grouped-bordado-line {
-    background: rgba(0, 217, 165, 0.15);
-    color: #34d399;
-}
 [data-bs-theme="dark"] .cot-grouped-table tbody td.cot-cell-num,
 [data-bs-theme="dark"] .cot-grouped-table tbody td.cot-col-num { color: #e2e8f0; }
 [data-bs-theme="dark"] .cot-cell-subtotal { color: #34d399 !important; }
