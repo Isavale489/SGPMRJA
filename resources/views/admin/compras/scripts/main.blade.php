@@ -106,7 +106,7 @@ $(document).ready(function () {
     updateFilterBadge();
 
     // ── Ver detalle ─────────────────────────────────────────────────────────
-    function verDetalleCompra(compraId) {
+    window.verDetalleCompra = function verDetalleCompra(compraId) {
         var badgeMap = { recibida: 'success', borrador: 'warning', anulada: 'danger' };
 
         $.ajax({

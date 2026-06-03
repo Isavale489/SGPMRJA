@@ -637,8 +637,8 @@ $(document).ready(function () {
                                 confirmButtonText: 'Ver detalle',
                                 cancelButtonText:  'Continuar'
                             }).then(function (result) {
-                                if (result.isConfirmed) {
-                                    window.location.href = "{{ url('compras') }}/" + response.compra_id;
+                                if (result.isConfirmed && window.verDetalleCompra) {
+                                    window.verDetalleCompra(response.compra_id);
                                 }
                             });
                         }
