@@ -244,6 +244,7 @@ Route::middleware(['auth', 'throttle:60,1', 'active.user', 'recovery.questions.r
         Route::get('compras/data', [CompraController::class, 'getCompras'])->name('compras.data');
         Route::get('compras/reporte/pdf', [CompraController::class, 'reportePdf'])->name('compras.reporte.pdf');
         Route::get('compras/{compra}/editar-datos', [CompraController::class, 'getParaEditar'])->name('compras.editar-datos');
+        Route::get('compras/{compra}/detalle', [CompraController::class, 'getDetalle'])->name('compras.detalle');
         Route::get('compras/{compra}/pdf', [CompraController::class, 'compraPdf'])->name('compras.pdf');
         Route::get('compras/{compra}', [CompraController::class, 'show'])->name('compras.show');
         Route::patch('compras/{compra}/procesar', [CompraController::class, 'procesar'])->name('compras.procesar');
