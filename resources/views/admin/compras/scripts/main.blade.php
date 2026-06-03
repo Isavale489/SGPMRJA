@@ -105,6 +105,107 @@ $(document).ready(function () {
 
     updateFilterBadge();
 
+    // ── Procesar borrador ────────────────────────────────────────────────────
+    $(document).on('click', '.procesar-btn', function () {
+        var compraId = $(this).data('id');
+
+        Swal.fire({
+            title: '¿Procesar esta compra?',
+            text: 'Se registrará la entrada de stock para todos los insumos incluidos.',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#198754',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Sí, procesar',
+            cancelButtonText: 'Cancelar'
+        }).then(function (result) {
+            if (!result.isConfirmed) return;
+
+            $.ajax({
+                url: '/compras/' + compraId + '/procesar',
+                method: 'POST',
+                data: { _method: 'PATCH', _token: '{{ csrf_token() }}' },
+                success: function (response) {
+                    window.comprasTable.ajax.reload(null, false);
+                    Swal.fire({
+                        title: 'Procesada',
+                        text: response.message,
+                        icon: 'success',
+                        timer: 2500,
+                        showConfirmButton: false
+                    });
+                },
+                error: function (xhr) {
+                    var msg = xhr.responseJSON?.message ?? 'Error al procesar la compra.';
+                    Swal.fire({ title: 'Error', text: msg, icon: 'error', confirmButtonText: 'Entendido' });
+                }
+            });
+        });
+    });
+
+    // ── Clonar compra anulada ────────────────────────────────────────────────
+    $(document).on('click', '.clonar-btn', function () {
+        var compraId = $(this).data('id');
+
+        Swal.fire({
+            title: '¿Clonar esta compra?',
+            text: 'Se creará un nuevo borrador con los mismos datos. Podrás editarlo y procesarlo cuando estés listo.',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#0d6efd',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Sí, clonar',
+            cancelButtonText: 'Cancelar'
+        }).then(function (result) {
+            if (!result.isConfirmed) return;
+
+            $.ajax({
+                url: '/compras/' + compraId + '/clonar',
+                method: 'POST',
+                data: { _token: '{{ csrf_token() }}' },
+                success: function (response) {
+                    window.comprasTable.ajax.reload(null, false);
+                    Swal.fire({
+                        title: '¡Clonada!',
+                        text: response.message,
+                        icon: 'success',
+                        showCancelButton: true,
+                        confirmButtonText: 'Ver borrador',
+                        cancelButtonText: 'Continuar'
+                    }).then(function (r) {
+                        if (r.isConfirmed) {
+                            window.location.href = '{{ url("compras") }}/' + response.compra_id;
+                        }
+                    });
+                },
+                error: function (xhr) {
+                    var msg = xhr.responseJSON?.message ?? 'Error al clonar la compra.';
+                    Swal.fire({ title: 'Error', text: msg, icon: 'error', confirmButtonText: 'Entendido' });
+                }
+            });
+        });
+    });
+
+    // ── Editar borrador ──────────────────────────────────────────────────────
+    $(document).on('click', '.editar-btn', function () {
+        var compraId = $(this).data('id');
+
+        $.ajax({
+            url: '/compras/' + compraId + '/editar-datos',
+            method: 'GET',
+            success: function (data) {
+                $('#createCompraModal').one('shown.bs.modal', function () {
+                    window.compraWizard.populate(data);
+                });
+                $('#createCompraModal').modal('show');
+            },
+            error: function (xhr) {
+                var msg = xhr.responseJSON?.message ?? 'Error al cargar los datos de la compra.';
+                Swal.fire({ title: 'Error', text: msg, icon: 'error', confirmButtonText: 'Entendido' });
+            }
+        });
+    });
+
     // ── Anular desde el listado ─────────────────────────────────────────────
     $(document).on('click', '.anular-btn', function () {
         var compraId = $(this).data('id');

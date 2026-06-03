@@ -108,7 +108,7 @@
                         <table id="compras-table" class="table table-bordered table-striped align-middle dt-transactional table-operativa">
                             <thead>
                                 <tr>
-                                    <th>ID</th>
+                                    <th>Nro.</th>
                                     <th>Proveedor</th>
                                     <th>N° Factura</th>
                                     <th>Fecha</th>
