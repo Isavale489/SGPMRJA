@@ -479,32 +479,14 @@
                                     </div>
                                 </div>
 
-                                {{-- Card Estado (solo edición) --}}
-                                <div class="card border-0 shadow-sm" id="estado-field-wrapper" style="display: none;">
-                                    <div class="card-header border-0 bg-soft-secondary">
-                                        <h6 class="mb-0 text-atlantico-green">
-                                            <i class="ri-flag-line me-2"></i>Estado de la cotización
-                                        </h6>
-                                    </div>
-                                    <div class="card-body py-3">
-                                        <div class="cot-estado-chips" role="radiogroup" aria-label="Estado">
-                                            <button type="button" class="cot-estado-chip cot-estado-chip--pendiente is-active"
-                                                data-value="Pendiente" role="radio" aria-checked="true">Pendiente</button>
-                                            <button type="button" class="cot-estado-chip cot-estado-chip--aprobada"
-                                                data-value="Aprobada" role="radio" aria-checked="false">Aprobada</button>
-                                            <button type="button" class="cot-estado-chip cot-estado-chip--cancelada"
-                                                data-value="Cancelada" role="radio" aria-checked="false">Cancelada</button>
-                                        </div>
-                                        <select id="estado-field" name="estado" class="d-none" tabindex="-1">
-                                            <option value="Pendiente">Pendiente</option>
-                                            <option value="Aprobada">Aprobada</option>
-                                            <option value="Cancelada">Cancelada</option>
-                                        </select>
-                                        <small class="text-muted d-block mt-2">
-                                            <i class="ri-information-line me-1"></i>"Vencida" se asigna automáticamente al pasar la fecha.
-                                        </small>
-                                    </div>
-                                </div>
+                                {{-- Estado oculto — solo lectura, se envía con el form pero no es editable --}}
+                                <select id="estado-field" name="estado" class="d-none" tabindex="-1">
+                                    <option value="Pendiente">Pendiente</option>
+                                    <option value="Aprobada">Aprobada</option>
+                                    <option value="Cancelada">Cancelada</option>
+                                    <option value="Vencida">Vencida</option>
+                                    <option value="Convertida">Convertida</option>
+                                </select>
                             </div>
                         </div>
                     </section>

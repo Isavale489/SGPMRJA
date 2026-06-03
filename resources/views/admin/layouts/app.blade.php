@@ -187,6 +187,10 @@
     <!-- App js -->
     <script src="{{ asset('assets/js/app.js') }}"></script>
 
+    <!-- SweetAlert2 — global para todos los módulos y para AtlanticoGuard -->
+    <link href="{{ asset('assets/libs/sweetalert2/sweetalert2.min.css') }}" rel="stylesheet" type="text/css" />
+    <script src="{{ asset('assets/libs/sweetalert2/sweetalert2.min.js') }}"></script>
+
     <!-- Notificaciones del header (campanita) -->
     @auth
         <script src="{{ asset('assets/js/pages/notifications.js') }}"></script>
@@ -800,6 +804,99 @@
                     $('body').addClass('modal-open');
                 }
             });
+        });
+    </script>
+    {{-- Guard de cambios sin guardar — auto-detecta todos los .atlantico-modal con <form> --}}
+    <script>
+        const AtlanticoGuard = (function () {
+            'use strict';
+
+            function init() {
+                $('.atlantico-modal').each(function () {
+                    var $modal     = $(this);
+                    var $form      = $modal.find('form').first();
+                    if (!$form.length) return;
+
+                    var isDirty    = false;
+                    var forceClose = false;
+
+                    // Resetear al abrir el modal
+                    $modal.on('shown.bs.modal', function () {
+                        isDirty = false;
+                    });
+
+                    // Cualquier interacción del usuario en un campo activa el flag
+                    $modal.on('input.guard change.guard',
+                        'input:not([type="hidden"]), select, textarea',
+                        function () { isDirty = true; }
+                    );
+
+                    // Al enviar el form (submit via jQuery o nativo) → limpiar flag
+                    // para que el cierre post-guardado no dispare el guard
+                    $form.on('submit.guard', function () {
+                        isDirty = false;
+                    });
+
+                    // Módulos que guardan via click (no form submit, ej. pedidos con e.preventDefault)
+                    // usan data-guard-save-btn="btn-id" para indicar su botón de guardado
+                    var saveBtnId = $modal.data('guardSaveBtn');
+                    if (saveBtnId) {
+                        $(document).on('click.guard-' + saveBtnId, '#' + saveBtnId, function () {
+                            isDirty = false;
+                        });
+                    }
+
+                    $modal.on('hide.bs.modal', function (e) {
+                        if (forceClose) {
+                            forceClose = false;
+                            return;
+                        }
+
+                        // Solo activar si: el usuario hizo cambios Y hay un registro existente
+                        // data-guard-id-field permite que cada modal declare su campo ID (default: id-field)
+                        var idField = $modal.data('guardIdField') || 'id-field';
+                        var editandoExistente = !!$form.find('#' + idField).val();
+                        if (!isDirty || !editandoExistente) return;
+
+                        e.preventDefault();
+
+                        Swal.fire({
+                            title: '¿Tienes cambios sin guardar?',
+                            text: 'Si cierras ahora, perderás los cambios realizados.',
+                            icon: 'warning',
+                            showCancelButton: true,
+                            showDenyButton:   true,
+                            confirmButtonColor: '#1e3c72',
+                            denyButtonColor:    '#e74c3c',
+                            cancelButtonColor:  '#6c757d',
+                            confirmButtonText:  'Guardar',
+                            denyButtonText:     'Descartar',
+                            cancelButtonText:   'Seguir editando',
+                            reverseButtons: true
+                        }).then(function (result) {
+                            if (result.isConfirmed) {
+                                // Si el módulo declara un botón de guardado custom (ej. pedidos),
+                                // lo clickeamos directamente en vez de hacer trigger('submit')
+                                var customSave = $modal.data('guardSaveBtn');
+                                if (customSave) {
+                                    $('#' + customSave).trigger('click');
+                                } else {
+                                    $form.trigger('submit');
+                                }
+                            } else if (result.isDenied) {
+                                forceClose = true;
+                                $modal.modal('hide');
+                            }
+                        });
+                    });
+                });
+            }
+
+            return { init: init };
+        })();
+
+        $(document).ready(function () {
+            AtlanticoGuard.init();
         });
     </script>
     @stack('scripts')

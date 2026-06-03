@@ -2154,7 +2154,7 @@
             $('#cliente-id-field').val('').prop('disabled', false).removeClass('campo-protegido');
             $('#fecha-cotizacion-field').val('').prop('readonly', false).removeClass('campo-protegido');
             $('#prioridad-field').val('Normal');
-            $('#estado-field-wrapper').hide();
+
             $('#productos-container').empty();
             window.cotCart = [];
             window.cotGroupBordadosState = {};
@@ -2343,7 +2343,7 @@
             $('#id-field').val(id);
             $('#add-btn').hide();
             $('#edit-btn').show();
-            $('#estado-field-wrapper').show();
+
             $('#productos-container').empty();
             window.cotCart = [];
             window.cotGroupBordadosState = {};
@@ -3562,20 +3562,7 @@
                 $('.cot-priority-chip[data-value="' + val + '"]').addClass('is-active').attr('aria-checked', 'true');
             });
 
-            // === Chips de estado =============================================
-            $(document).on('click', '.cot-estado-chip', function () {
-                var $b = $(this);
-                var val = $b.data('value');
-                $('.cot-estado-chip').removeClass('is-active').attr('aria-checked', 'false');
-                $b.addClass('is-active').attr('aria-checked', 'true');
-                $('#estado-field').val(val).trigger('change');
-            });
-            $(document).on('change', '#estado-field', function () {
-                var val = $(this).val();
-                if (!val) return;
-                $('.cot-estado-chip').removeClass('is-active').attr('aria-checked', 'false');
-                $('.cot-estado-chip[data-value="' + val + '"]').addClass('is-active').attr('aria-checked', 'true');
-            });
+
 
             // === Atajos de fecha (validez) ==================================
             $(document).on('click', '.cot-date-chip', function () {

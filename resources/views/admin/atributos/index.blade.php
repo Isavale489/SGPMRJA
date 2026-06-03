@@ -115,7 +115,7 @@
     </div>
 
     {{-- Modal: Crear / Editar Atributo --}}
-    <div class="modal fade atlantico-modal" id="atributoModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal fade atlantico-modal" id="atributoModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false" data-guard-id-field="atr-id">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
@@ -166,7 +166,7 @@
     </div>
 
     {{-- Modal: Crear / Editar Valor --}}
-    <div class="modal fade atlantico-modal" id="valorModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal fade atlantico-modal" id="valorModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false" data-guard-id-field="val-id">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">

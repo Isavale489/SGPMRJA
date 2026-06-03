@@ -4,7 +4,7 @@
      Lógica JS en: pedidos/scripts/main.blade.php (TASK-011+)
      ═══════════════════════════════════════════════════════════════════ --}}
 <div class="modal fade atlantico-modal atlantico-modal--op wiz-modal" id="showModal" tabindex="-1"
-    aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false" data-guard-id-field="ped-wiz-id-field" data-guard-save-btn="ped-wiz-edit-btn">
     <div class="modal-dialog modal-dialog-centered modal-xl modal-fullscreen-sm-down">
         <div class="modal-content">
 
