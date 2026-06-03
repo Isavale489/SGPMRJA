@@ -4321,6 +4321,119 @@
                 refreshSummary();
             });
 
+            // ════════════════════════════════════════════════════════════════
+            //  CREAR COLOR INLINE (extensión del maestro Colores)
+            //  Solo se monta si el botón existe (gated por rol en Blade).
+            // ════════════════════════════════════════════════════════════════
+            (function () {
+                if (!document.getElementById('cfg-add-color-btn')) return;
+                var CC_HEX_RE = /^#[0-9A-Fa-f]{6}$/;
+                var ccModal = new bootstrap.Modal(document.getElementById('crearColorRapidoModal'));
+
+                function ccSetHex(hex) {
+                    hex = (hex || '').toUpperCase();
+                    $('#cc-hex-text').val(hex);
+                    if (CC_HEX_RE.test(hex)) {
+                        $('#cc-hex').val(hex);
+                        $('#cc-preview-dot').css('background', hex);
+                    }
+                }
+                function ccGetGrupo() {
+                    var sel = $('#cc-grupo').val();
+                    if (sel === '__new__') return $('#cc-grupo-nuevo').val().trim();
+                    return sel || '';
+                }
+                function ccPoblarGrupos() {
+                    var grupos = [];
+                    (coloresArray || []).forEach(function (c) {
+                        if (c.grupo && grupos.indexOf(c.grupo) === -1) grupos.push(c.grupo);
+                    });
+                    grupos.sort(function (a, b) { return a.localeCompare(b, 'es'); });
+                    var opts = '<option value="">Sin grupo</option>';
+                    grupos.forEach(function (g) {
+                        opts += '<option value="' + escForHtml(g) + '">' + escForHtml(g) + '</option>';
+                    });
+                    opts += '<option value="__new__">➕ Nuevo grupo…</option>';
+                    $('#cc-grupo').html(opts);
+                }
+                function ccReset() {
+                    $('#ccForm')[0].reset();
+                    $('#cc-nombre, #cc-hex-text').removeClass('is-invalid is-valid');
+                    $('#cc-nombre-error, #cc-hex-error').hide();
+                    $('#cc-grupo-nuevo').addClass('d-none').val('');
+                    ccPoblarGrupos();
+                    ccSetHex('#1B3A5C');
+                    $('#cc-preview-name').text('Nombre del color');
+                }
+
+                $('#cc-hex').on('input', function () { ccSetHex(this.value); });
+                $('#cc-hex-text').on('input', function () { ccSetHex(this.value); });
+                $('#cc-nombre').on('input', function () {
+                    $('#cc-preview-name').text($(this).val().trim() || 'Nombre del color');
+                });
+                $('#cc-grupo').on('change', function () {
+                    var nuevo = this.value === '__new__';
+                    $('#cc-grupo-nuevo').toggleClass('d-none', !nuevo);
+                    if (nuevo) $('#cc-grupo-nuevo').val('').focus();
+                });
+
+                $('#cfg-add-color-btn').on('click', function () {
+                    ccReset();
+                    // Prefijar el grupo con el contexto actual si el color elegido tenía uno
+                    ccModal.show();
+                });
+
+                $('#ccForm').on('submit', function (e) {
+                    e.preventDefault();
+                    var nombre = $('#cc-nombre').val().trim();
+                    var hex = $('#cc-hex-text').val().trim().toUpperCase();
+                    var ok = true;
+                    if (nombre.length < 2) {
+                        $('#cc-nombre').removeClass('is-valid').addClass('is-invalid');
+                        $('#cc-nombre-error').text('El nombre debe tener al menos 2 caracteres.').show();
+                        ok = false;
+                    } else { $('#cc-nombre').removeClass('is-invalid'); $('#cc-nombre-error').hide(); }
+                    if (!CC_HEX_RE.test(hex)) {
+                        $('#cc-hex-text').removeClass('is-valid').addClass('is-invalid');
+                        $('#cc-hex-error').text('El HEX debe tener el formato #RRGGBB.').show();
+                        ok = false;
+                    } else { $('#cc-hex-text').removeClass('is-invalid'); $('#cc-hex-error').hide(); }
+                    if (!ok) return;
+
+                    var $btn = $('#cc-submit-btn'), original = $btn.html();
+                    $btn.prop('disabled', true).html('<i class="ri-loader-4-line ri-spin me-1"></i>Guardando...');
+
+                    $.ajax({
+                        url: "{{ route('colores.store') }}",
+                        method: 'POST',
+                        data: { nombre: nombre, grupo: ccGetGrupo(), hex_referencial: hex, _token: '{{ csrf_token() }}' },
+                        success: function (resp) {
+                            ccModal.hide();
+                            var nuevo = resp.color;
+                            if (nuevo) {
+                                coloresArray.push(nuevo);
+                                // Auto-seleccionar el color recién creado
+                                cfgState.colorId = nuevo.id;
+                                cfgState.colorNombre = nuevo.nombre;
+                                cfgState.colorHex = nuevo.hex_referencial;
+                                renderColorGrid();
+                                refreshSummary();
+                            }
+                            Swal.fire({ icon: 'success', title: 'Color creado', text: resp.message, showConfirmButton: false, timer: 1500 });
+                        },
+                        error: function (xhr) {
+                            var errs = xhr.responseJSON && xhr.responseJSON.errors || {};
+                            if (errs.nombre) { $('#cc-nombre').removeClass('is-valid').addClass('is-invalid'); $('#cc-nombre-error').text(errs.nombre[0]).show(); }
+                            if (errs.hex_referencial) { $('#cc-hex-text').removeClass('is-valid').addClass('is-invalid'); $('#cc-hex-error').text(errs.hex_referencial[0]).show(); }
+                            if (!errs.nombre && !errs.hex_referencial) {
+                                Swal.fire({ icon: 'error', title: 'Error', text: (xhr.responseJSON && xhr.responseJSON.message) || 'No se pudo crear el color.' });
+                            }
+                        },
+                        complete: function () { $btn.prop('disabled', false).html(original); }
+                    });
+                });
+            })();
+
             // Cambio en cantidad por talla
             $(document).on('input', '#cfg-tallas-grid .cfg-talla-cell-input', function () {
                 var tid = parseInt($(this).data('talla-id'), 10);

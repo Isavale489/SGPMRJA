@@ -937,6 +937,11 @@
                                     <h6 class="cfg-section-title">Color</h6>
                                     <p class="cfg-section-desc">Selecciona el color para esta configuración.</p>
                                 </div>
+                                @if(Auth::user()->hasRole(['Administrador', 'Supervisor']))
+                                    <button type="button" class="cfg-newcolor-btn" id="cfg-add-color-btn">
+                                        <i class="ri-palette-line"></i><span>Nuevo color</span>
+                                    </button>
+                                @endif
                                 <span class="cfg-color-selected" id="cfg-color-selected">Sin seleccionar</span>
                             </header>
                             <div class="cfg-color-grid" id="cfg-color-grid">
@@ -1317,5 +1322,69 @@
         </div>
     </div>
 </div>
+
+@if(Auth::user()->hasRole(['Administrador', 'Supervisor']))
+{{-- ═══════════════════════════════════════════════════════════════════════════
+     MINI-MODAL: Crear color nuevo (inline, extensión del maestro Colores)
+     Prefijo de IDs: cc-  ·  navy (atlantico-modal) porque pertenece al maestro.
+═══════════════════════════════════════════════════════════════════════════ --}}
+<div class="modal fade atlantico-modal" id="crearColorRapidoModal" tabindex="-1" aria-hidden="true"
+    data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-light p-3">
+                <h5 class="modal-title">Nuevo Color</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="ccForm" autocomplete="off" novalidate>
+                <div class="modal-body p-4">
+
+                    {{-- Preview en vivo --}}
+                    <div class="d-flex align-items-center gap-2 p-3 mb-4 rounded-3 bg-light">
+                        <span id="cc-preview-dot"
+                            style="display:inline-block;width:26px;height:26px;border-radius:50%;background:#1B3A5C;border:1px solid rgba(0,0,0,.15);"></span>
+                        <span class="fw-semibold" id="cc-preview-name">Nombre del color</span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="cc-nombre" class="form-label">Nombre <span class="text-danger">*</span></label>
+                        <input type="text" id="cc-nombre" class="form-control" placeholder="Ej: Azul Marino" maxlength="100" required />
+                        <div id="cc-nombre-error" class="invalid-feedback"></div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="cc-grupo" class="form-label">Grupo</label>
+                        <select id="cc-grupo" class="form-select">
+                            <option value="">Sin grupo</option>
+                            <option value="__new__">➕ Nuevo grupo…</option>
+                        </select>
+                        <input type="text" id="cc-grupo-nuevo" class="form-control mt-2 d-none"
+                            placeholder="Nombre del nuevo grupo" maxlength="100" />
+                    </div>
+
+                    <div class="mb-0">
+                        <label for="cc-hex" class="form-label">Color HEX referencial <span class="text-danger">*</span></label>
+                        <div class="d-flex align-items-center gap-2">
+                            <input type="color" id="cc-hex" value="#1B3A5C" class="form-control form-control-color" style="max-width:56px;" />
+                            <input type="text" id="cc-hex-text" class="form-control" maxlength="7"
+                                placeholder="#1B3A5C" style="max-width:140px;text-transform:uppercase;font-family:monospace;" />
+                        </div>
+                        <div id="cc-hex-error" class="invalid-feedback" style="display:none;"></div>
+                        <small class="text-muted d-block mt-1">Referencia visual del color. Se agrega al catálogo y queda seleccionado.</small>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light border-0">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">
+                        <i class="ri-close-line me-1"></i>Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-success" id="cc-submit-btn">
+                        <i class="ri-save-line me-1"></i>Guardar y seleccionar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+@endif
 
 @include('admin.partials.catalog_modals')
