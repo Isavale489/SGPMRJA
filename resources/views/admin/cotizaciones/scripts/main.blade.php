@@ -2392,7 +2392,6 @@
                     $('#estado-field').val(data.estado);
                     $('#prioridad-field').val(data.prioridad || 'Normal');
                     $('#notas-field').val(data.notas || '');
-                    $('#condiciones-field').val(data.condiciones_terminos || '');
                     // Actualizar banner de fecha (val() programático no dispara change)
                     if (window.cotWizard && window.cotWizard.refreshBannerFecha) window.cotWizard.refreshBannerFecha();
                     // Creador real: mostrar quién creó la cotización (no el editor)

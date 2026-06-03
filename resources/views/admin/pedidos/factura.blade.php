@@ -215,11 +215,18 @@
         </tr>
     </table>
 
-    {{-- ═══════ Nota especial ═══════ --}}
+    {{-- ═══════ Términos y condiciones estándar (alineados con el wizard) ═══════ --}}
     <div class="nota-especial">
-        <b>Tiempo de Ejecución del Trabajo:</b> 30 días hábiles.<br>
-        70% del costo total para la formalización del pedido, 30% a la entrega.<br>
-        El plazo de entrega comienza a transcurrir una vez realizado el pago.<br>
-        <b>No se modifican pedidos ya formalizados (ni tallas ni cantidades).</b>
+        <b>Condiciones para Pedidos:</b><br>
+        &bull; <b>Formalización:</b> abono del 70% del costo total para iniciar la producción.<br>
+        &bull; <b>Tiempo de ejecución:</b> 30 días hábiles desde la confirmación del pago inicial.<br>
+        &bull; <b>Saldo restante:</b> el 30% se cancela al momento de la entrega.<br>
+        &bull; <b>Modificaciones:</b> una vez formalizado el pedido no se aceptan cambios en tallas, cantidades ni diseño.<br>
+        &bull; <b>Entrega:</b> el plazo comienza a contarse desde el abono del 70% inicial.<br>
+        <br>
+        <b>Servicio de bordado:</b><br>
+        &bull; Prendas externas: deben estar limpias y en buen estado.<br>
+        &bull; El cliente aprueba diseño, ubicación y tamaño antes de iniciar; luego no hay cambios.<br>
+        &bull; Anticipo del 50% para programar y 50% a la entrega; tiempo estimado de 7 a 10 días hábiles.
     </div>
 @endsection
