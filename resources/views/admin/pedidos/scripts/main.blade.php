@@ -883,25 +883,39 @@ $(document).ready(function () {
                 g.tallas.push({ label: it.talla_label || 'Única', qty: it.cantidad || 0 });
                 if (it.bordados && it.bordados.length) {
                     g.llevaBordado = true;
-                    g.bordadosCount += it.bordados.length;
+                    // Bordados por unidad (las tallas del mismo producto+color comparten config)
+                    if (!g.bordadosUnit) {
+                        g.bordadosUnit = it.bordados;
+                        g.bordadosCount = it.bordados.length;
+                    }
                 }
             });
 
             var rows = groups.map(function (g, idx) {
                 var info = pedProdInfo(g.producto_id);
-                var tipoPill = info.tipo ? '<span class="cot-tipo-pill">' + pedEscHtml(info.tipo) + '</span>' : '';
-                var nombreLine = '<div class="cot-prod-modelo">' + pedEscHtml(info.nombre || g.nombre) + '</div>';
-                var codigoLine = info.codigo ? '<div class="cot-prod-codigo">' + pedEscHtml(info.codigo) + '</div>' : '';
+                // Si hay nombre propio: pill de familia + nombre como título. Si no: la familia es el título (sin pill redundante).
+                var hasNombre = !!(info.nombre && String(info.nombre).trim());
+                var titulo = hasNombre ? info.nombre : (info.tipo || g.nombre || '(producto sin definir)');
+                var tipoPill = (hasNombre && info.tipo) ? '<span class="cot-tipo-pill">' + pedEscHtml(info.tipo) + '</span>' : '';
+                var nombreLine = '<div class="cot-prod-modelo">' + pedEscHtml(titulo) + '</div>';
+                var codigoLine = info.codigo ? '<div class="cot-prod-codigo"><i class="ri-barcode-line"></i>' + pedEscHtml(info.codigo) + '</div>' : '';
                 var hex = g.color_id ? (pedColoresHex[g.color_id] || '') : '';
                 var colorDot = '<span class="cot-color-dot" style="background:' + (hex || '#e2e8f0') + ';border-color:#cbd5e1;"></span>';
                 var tallasChips = g.tallas.map(function (t) {
                     return '<span class="cot-chip cot-chip-talla">' + pedEscHtml(t.label) +
                            '<span class="cot-chip-x">×</span><strong>' + t.qty + '</strong></span>';
                 }).join('');
-                var bordadoLine = g.llevaBordado
-                    ? '<div class="cot-grouped-bordado-line"><i class="ri-scissors-cut-line"></i> ' +
-                      g.bordadosCount + ' bordado' + (g.bordadosCount === 1 ? '' : 's') + '</div>'
-                    : '';
+                var bordadoLine;
+                if (g.bordadosCount > 0) {
+                    var recargoUnit = (typeof pedRecargoBordado === 'function') ? pedRecargoBordado(g.bordadosUnit || []) : 0;
+                    bordadoLine = '<div class="cot-grouped-bordado-line cot-grouped-bordado-line--ok">' +
+                        '<i class="ri-scissors-cut-line"></i>' +
+                        g.bordadosCount + ' bordado' + (g.bordadosCount === 1 ? '' : 's') +
+                        (recargoUnit > 0 ? ' · +' + pedFmt(recargoUnit) + '/u' : '') + '</div>';
+                } else {
+                    bordadoLine = '<div class="cot-grouped-bordado-line cot-grouped-bordado-line--none">' +
+                        '<i class="ri-subtract-line"></i>Sin bordado</div>';
+                }
                 return '<tr class="cot-grouped-row">' +
                     '<td class="cot-col-num">' + (idx + 1) + '</td>' +
                     '<td class="cot-col-prod">' + tipoPill + nombreLine + codigoLine + '</td>' +
