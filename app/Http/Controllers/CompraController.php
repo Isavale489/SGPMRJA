@@ -157,7 +157,7 @@ class CompraController extends Controller
 
     public function getCompras(Request $request)
     {
-        $query = Compra::with(['proveedor.persona', 'registradoPor'])
+        $query = Compra::with(['proveedor.persona', 'registradoPor', 'anuladoPor'])
             ->select('compra.*');
 
         if ($request->filled('filter_proveedor_id')) {
@@ -181,9 +181,21 @@ class CompraController extends Controller
             ->addColumn('registrado_por', fn($c) => $c->registradoPor?->name ?? 'Sistema')
             ->addColumn('fecha_formateada', fn($c) => $c->fecha_compra?->format('d/m/Y') ?? '')
             ->addColumn('estado_badge', function ($c) {
-                $map = ['recibida' => 'success', 'borrador' => 'warning', 'anulada' => 'danger'];
+                $map   = ['recibida' => 'success', 'borrador' => 'warning', 'anulada' => 'danger'];
                 $color = $map[$c->estado] ?? 'secondary';
-                return '<span class="badge bg-' . $color . '">' . ucfirst($c->estado) . '</span>';
+                $html  = '<span class="badge bg-' . $color . '">' . ucfirst($c->estado) . '</span>';
+
+                if ($c->estado === 'anulada' && $c->anuladoPor) {
+                    $nombre = e($c->anuladoPor->name);
+                    $fecha  = $c->fecha_anulacion?->format('d/m/Y H:i') ?? '';
+                    $html  .= '<div class="small text-muted mt-1">Anulada por: ' . $nombre;
+                    if ($fecha) {
+                        $html .= '<br><span class="text-muted">' . $fecha . '</span>';
+                    }
+                    $html .= '</div>';
+                }
+
+                return $html;
             })
             ->addColumn('actions', function ($c) {
                 $btn = '<div class="d-flex gap-2 justify-content-center">';
