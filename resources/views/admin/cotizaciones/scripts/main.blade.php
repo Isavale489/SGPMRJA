@@ -3792,10 +3792,14 @@
                     if (!p) return '';
                     var sub = parseFloat(it.subtotal || 0);
                     total += sub;
+                    // El modelo suele venir vacío; mostrar la familia (tipo) como en las tarjetas, luego código
+                    var nombreProd = (p.modelo && String(p.modelo).trim())
+                        ? p.modelo
+                        : ((p.tipo_producto && p.tipo_producto.nombre) ? p.tipo_producto.nombre : (p.codigo || '—'));
                     return (
                         '<div class="cat-cart-item">' +
                             '<div class="cat-cart-item-info">' +
-                                '<p class="cat-cart-item-name">' + escapeForHtml(p.modelo || '—') + '</p>' +
+                                '<p class="cat-cart-item-name">' + escapeForHtml(nombreProd) + '</p>' +
                                 '<p class="cat-cart-item-meta">' + escapeForHtml(it.summary || '') + '</p>' +
                             '</div>' +
                             '<div class="cat-cart-item-actions">' +
@@ -4696,8 +4700,10 @@
 
                 var rowsHtml = groups.map(function (g, idx) {
                     var prodCodigo = g.producto && g.producto.codigo ? g.producto.codigo : '—';
-                    var prodModelo = g.producto && g.producto.modelo ? g.producto.modelo : '(producto sin definir)';
                     var tipoLabel = g.producto && g.producto.tipo_producto ? g.producto.tipo_producto.nombre : '';
+                    var prodModelo = (g.producto && g.producto.modelo && String(g.producto.modelo).trim())
+                        ? g.producto.modelo
+                        : (tipoLabel || '(producto sin definir)');
                     var variantLabel = buildVariantLabel(g.producto);
                     var colorName = g.color ? g.color.nombre : (g.colorId ? '#' + g.colorId : 'Sin color');
                     var colorHex = g.color ? g.color.hex_referencial : '#cccccc';

@@ -2995,8 +2995,8 @@ header#page-topbar,
 }
 .cat-cart-item-info { min-width: 0; }
 .cat-cart-item-name {
-    font-size: 0.82rem;
-    font-weight: 600;
+    font-size: 1rem;
+    font-weight: 700;
     color: #1e3c72;
     margin: 0;
     overflow: hidden;
@@ -3004,9 +3004,10 @@ header#page-topbar,
     white-space: nowrap;
 }
 .cat-cart-item-meta {
-    font-size: 0.7rem;
-    color: #64748b;
-    margin: 0;
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: #475569;
+    margin: 2px 0 0;
 }
 .cat-cart-item-actions {
     display: flex;
@@ -3016,7 +3017,7 @@ header#page-topbar,
     border-top: 1px dashed rgba(30, 60, 114, 0.1);
 }
 .cat-cart-item-price {
-    font-size: 0.85rem;
+    font-size: 0.95rem;
     font-weight: 700;
     color: #1e3c72;
     font-variant-numeric: tabular-nums;
