@@ -8,7 +8,7 @@
     <div class="modal-dialog modal-dialog-centered modal-xl">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">
+                <h5 class="modal-title" id="compraModalTitle">
                     <i class="ri-shopping-bag-3-line me-1"></i>Nueva Compra
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -72,6 +72,7 @@
 
             <form id="compraForm" novalidate>
                 @csrf
+                <input type="hidden" id="c-edit-id" value="">
 
                 <div class="modal-body p-0 wiz-wizard-body">
 

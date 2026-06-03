@@ -239,11 +239,15 @@ Route::middleware(['auth', 'throttle:60,1', 'active.user', 'recovery.questions.r
         // Compras
         Route::get('compras', [CompraController::class, 'index'])->name('compras.index');
         Route::post('compras', [CompraController::class, 'store'])->name('compras.store');
+        Route::put('compras/{compra}', [CompraController::class, 'update'])->name('compras.update');
         Route::get('compras/data', [CompraController::class, 'getCompras'])->name('compras.data');
         Route::get('compras/reporte/pdf', [CompraController::class, 'reportePdf'])->name('compras.reporte.pdf');
+        Route::get('compras/{compra}/editar-datos', [CompraController::class, 'getParaEditar'])->name('compras.editar-datos');
         Route::get('compras/{compra}/pdf', [CompraController::class, 'compraPdf'])->name('compras.pdf');
         Route::get('compras/{compra}', [CompraController::class, 'show'])->name('compras.show');
+        Route::patch('compras/{compra}/procesar', [CompraController::class, 'procesar'])->name('compras.procesar');
         Route::patch('compras/{compra}/anular', [CompraController::class, 'anular'])->name('compras.anular');
+        Route::post('compras/{compra}/clonar', [CompraController::class, 'clonar'])->name('compras.clonar');
 
         // Inventario
         Route::get('inventario/movimientos', [MovimientoInsumoController::class, 'index'])->name('inventario.movimientos.index');

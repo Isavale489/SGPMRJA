@@ -34,13 +34,13 @@
                         <div class="d-flex align-items-center">
                             <h5 class="card-title mb-0 flex-grow-1">Registro de Compras</h5>
                             <div class="flex-shrink-0 d-flex align-items-center gap-2">
-                                <button type="button" class="btn btn-danger"
-                                    data-bs-toggle="modal" data-bs-target="#pdfExportModal">
-                                    <i class="ri-file-pdf-line align-bottom me-1"></i> Exportar PDF
-                                </button>
                                 <button type="button" class="btn btn-success"
                                     data-bs-toggle="modal" data-bs-target="#createCompraModal">
                                     <i class="ri-add-line align-bottom me-1"></i> Nueva Compra
+                                </button>
+                                <button type="button" class="btn btn-danger"
+                                    data-bs-toggle="modal" data-bs-target="#pdfExportModal">
+                                    <i class="ri-file-pdf-line align-bottom me-1"></i> Exportar PDF
                                 </button>
                             </div>
                         </div>
