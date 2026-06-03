@@ -1423,6 +1423,112 @@ header#page-topbar,
    tabla resumen, footer del wizard. Light + dark mode.
    ════════════════════════════════════════════════════════════════════ */
 
+/* ── Píldora de fecha + hora — moderna, con badges emerald y punto en vivo.
+      Reutilizable; se ubica en el footer junto al contador de pasos.
+      Variante --sm para footers compactos. Compartida por cotizaciones,
+      pedidos y órdenes de producción. */
+.wiz-body-datetime {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 5px 7px;
+    background: linear-gradient(135deg, #ffffff 0%, #f6f9fd 100%);
+    border: 1px solid rgba(30, 60, 114, 0.12);
+    border-radius: 12px;
+    box-shadow: 0 6px 16px -9px rgba(15, 35, 70, 0.30);
+    white-space: nowrap;
+}
+.wiz-body-dt-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 3px 9px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #1e3c72;
+    letter-spacing: 0.01em;
+}
+.wiz-body-dt-item i {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 7px;
+    font-size: 0.95rem;
+    background: rgba(16, 185, 129, 0.13);
+    color: #059669;
+    flex-shrink: 0;
+}
+.wiz-body-dt-divider {
+    width: 1px;
+    height: 22px;
+    background: rgba(30, 60, 114, 0.12);
+}
+.wiz-body-dt-live {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #10b981;
+    flex-shrink: 0;
+    margin-left: 1px;
+    animation: wizLivePulse 1.8s ease-out infinite;
+}
+@keyframes wizLivePulse {
+    0%   { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.55); }
+    70%  { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+    .wiz-body-dt-live { animation: none; }
+}
+
+[data-bs-theme="dark"] .wiz-body-datetime {
+    background: linear-gradient(135deg, #1a2233 0%, #141b29 100%);
+    border-color: #2a3447;
+    box-shadow: 0 6px 16px -9px rgba(0, 0, 0, 0.55);
+}
+[data-bs-theme="dark"] .wiz-body-dt-item { color: #e2e8f0; }
+[data-bs-theme="dark"] .wiz-body-dt-item i {
+    background: rgba(16, 185, 129, 0.18);
+    color: #34d399;
+}
+[data-bs-theme="dark"] .wiz-body-dt-divider { background: #2a3447; }
+
+/* Variante compacta para el footer (junto al contador de pasos) */
+.wiz-body-datetime--sm { padding: 3px 5px; border-radius: 10px; }
+.wiz-body-datetime--sm .wiz-body-dt-item { padding: 2px 7px; font-size: 0.74rem; gap: 6px; }
+.wiz-body-datetime--sm .wiz-body-dt-item i { width: 20px; height: 20px; font-size: 0.85rem; border-radius: 6px; }
+.wiz-body-datetime--sm .wiz-body-dt-divider { height: 18px; }
+
+/* La píldora de fecha/hora vive en el header del modal, pegada a la X.
+   El .btn-close de Bootstrap trae margin-left:auto; con el ms-auto de la
+   píldora habría dos auto-márgenes (la centra). El slot empuja a la derecha
+   y anula el auto del botón cerrar para que la píldora quede junto a la X. */
+.modal-header .wiz-dt-slot { margin-left: auto; }
+.modal-header .wiz-dt-slot ~ .btn-close { margin-left: 0 !important; }
+
+.modal-header .wiz-body-datetime {
+    background: rgba(255, 255, 255, 0.16);
+    border-color: rgba(255, 255, 255, 0.28);
+    box-shadow: none;
+    backdrop-filter: blur(2px);
+}
+.modal-header .wiz-body-dt-item { color: #ffffff; }
+.modal-header .wiz-body-dt-item i {
+    background: rgba(255, 255, 255, 0.22);
+    color: #ffffff;
+}
+.modal-header .wiz-body-dt-divider { background: rgba(255, 255, 255, 0.28); }
+.modal-header .wiz-body-dt-live {
+    background: #6ee7b7;
+    box-shadow: 0 0 0 0 rgba(110, 231, 183, 0.7);
+}
+
+@media (max-width: 575.98px) {
+    .wiz-body-datetime { display: none; }
+}
+
 /* ── Stepper visual ─────────────────────────────────────────────── */
 .wiz-stepper-wrapper {
     background: linear-gradient(180deg, #f6f9fd 0%, #ffffff 100%);
@@ -1648,6 +1754,7 @@ header#page-topbar,
     padding: 24px 28px !important;
     min-height: 460px;
     background: #fafbfd;
+    position: relative;
 }
 
 .wiz-step-content { display: none; }

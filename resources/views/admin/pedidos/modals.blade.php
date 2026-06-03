@@ -10,6 +10,9 @@
 
             <div class="modal-header">
                 <h5 class="modal-title" id="modalTitle">Nuevo Pedido</h5>
+                <div class="wiz-dt-slot me-2">
+                    @include('admin.partials.wizard-datetime-bar', ['prefix' => 'ped', 'modalId' => 'showModal', 'sm' => true])
+                </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
             </div>
 

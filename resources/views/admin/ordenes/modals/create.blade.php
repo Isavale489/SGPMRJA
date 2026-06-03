@@ -4,6 +4,9 @@
         <div class="modal-content">
             <div class="modal-header py-2">
                 <h5 class="modal-title mb-0" id="modalTitle">Nueva Orden de Producción</h5>
+                <div class="wiz-dt-slot me-2">
+                    @include('admin.partials.wizard-datetime-bar', ['prefix' => 'ord', 'modalId' => 'showModal', 'sm' => true])
+                </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form id="ordenForm" novalidate>

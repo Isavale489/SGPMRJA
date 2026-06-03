@@ -2394,7 +2394,7 @@
                     $('#notas-field').val(data.notas || '');
                     $('#condiciones-field').val(data.condiciones_terminos || '');
                     // Actualizar banner de fecha (val() programático no dispara change)
-                    refreshBannerFecha();
+                    if (window.cotWizard && window.cotWizard.refreshBannerFecha) window.cotWizard.refreshBannerFecha();
                     // Creador real: mostrar quién creó la cotización (no el editor)
                     if (data.creador) {
                         $('#cot-creador-name').text(data.creador.name || '—');
@@ -5292,27 +5292,35 @@
                 setTimeout(refreshKPIs, 600);
             });
 
-            // Actualiza la hora visible en el banner del creador
+            // Actualiza la hora visible (formato 12h con am/pm)
             function refreshBannerHora() {
                 var now = new Date();
-                var hh = String(now.getHours()).padStart(2, '0');
+                var h = now.getHours();
+                var ampm = h >= 12 ? 'p.m.' : 'a.m.';
+                h = h % 12; if (h === 0) h = 12;
                 var mm = String(now.getMinutes()).padStart(2, '0');
-                $('#cot-banner-hora').text(hh + ':' + mm);
+                $('#cot-banner-hora').text(h + ':' + mm + ' ' + ampm);
             }
 
-            // Actualiza la fecha visible en el banner del cliente
+            // Actualiza la fecha visible: usa la fecha de emisión si está, si no, hoy
             function refreshBannerFecha() {
                 var raw = $('#fecha-cotizacion-field').val();
                 if (raw) {
                     var parts = raw.split('-');
                     $('#cot-banner-fecha-val').text(parts[2] + '/' + parts[1] + '/' + parts[0]);
                 } else {
-                    $('#cot-banner-fecha-val').text('—');
+                    var now = new Date();
+                    var dd = String(now.getDate()).padStart(2, '0');
+                    var mo = String(now.getMonth() + 1).padStart(2, '0');
+                    $('#cot-banner-fecha-val').text(dd + '/' + mo + '/' + now.getFullYear());
                 }
             }
 
             // Sincronizar banner-fecha al cambiar el input de fecha
             $(document).on('change', '#fecha-cotizacion-field', refreshBannerFecha);
+
+            // Reloj en vivo: actualiza la hora mientras el modal está abierto
+            var horaInterval = null;
 
             // Reset al abrir el modal
             $('#showModal').on('show.bs.modal', function () {
@@ -5320,14 +5328,21 @@
                 refreshBannerFecha();
                 showStep(1);
                 refreshKPIs();
+                clearInterval(horaInterval);
+                horaInterval = setInterval(refreshBannerHora, 1000);
             });
             $('#showModal').on('shown.bs.modal', function () { showStep(currentStep); });
-            $('#showModal').on('hidden.bs.modal', function () { currentStep = 1; });
+            $('#showModal').on('hidden.bs.modal', function () {
+                currentStep = 1;
+                clearInterval(horaInterval);
+                horaInterval = null;
+            });
 
             // API global por si otras funciones quieren usarlo
             window.cotWizard = {
                 show: showStep, next: nextStep, prev: prevStep,
-                refreshKPIs: refreshKPIs, refreshResumen: refreshResumen
+                refreshKPIs: refreshKPIs, refreshResumen: refreshResumen,
+                refreshBannerFecha: refreshBannerFecha
             };
         })();
     });

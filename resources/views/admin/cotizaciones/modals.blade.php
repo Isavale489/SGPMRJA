@@ -218,6 +218,20 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="modalTitle">Nueva Cotización</h5>
+                <div class="wiz-dt-slot me-2">
+                    <div class="wiz-body-datetime wiz-body-datetime--sm" title="Fecha y hora">
+                        <span class="wiz-body-dt-item">
+                            <i class="ri-calendar-event-line"></i>
+                            <span class="wiz-body-dt-text" id="cot-banner-fecha-val">—</span>
+                        </span>
+                        <span class="wiz-body-dt-divider"></span>
+                        <span class="wiz-body-dt-item">
+                            <i class="ri-time-line"></i>
+                            <span class="wiz-body-dt-text" id="cot-banner-hora">—</span>
+                            <span class="wiz-body-dt-live" aria-hidden="true" title="En vivo"></span>
+                        </span>
+                    </div>
+                </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
 
@@ -233,9 +247,6 @@
                             <span class="wiz-client-banner-name" id="cot-banner-name">—</span>
                             <div class="wiz-client-banner-sub">
                                 <span class="wiz-client-banner-doc" id="cot-banner-doc">—</span>
-                                <span class="wiz-client-banner-doc ms-2" id="cot-banner-fecha" style="opacity:.8;">
-                                    <i class="ri-calendar-line me-1"></i><span id="cot-banner-fecha-val">—</span>
-                                </span>
                             </div>
                         </div>
                     </div>
@@ -265,11 +276,6 @@
                             id="cot-creador-avatar" src="{{ Auth::user()->avatar_url }}" alt="" />
                         <div class="wiz-client-banner-main">
                             <span class="wiz-client-banner-name" id="cot-creador-name">{{ Auth::user()->name }}</span>
-                            <div class="wiz-client-banner-sub">
-                                <span style="font-size:0.7rem; opacity:.8;">
-                                    <i class="ri-time-line me-1"></i><span id="cot-banner-hora">—</span>
-                                </span>
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -682,7 +688,7 @@
                 <div class="modal-footer wiz-wizard-footer">
                     <div class="wiz-wizard-footer-info">
                         <span class="wiz-wizard-step-info">
-                            <span id="cot-step-current">1</span> de 3
+                            Paso <span id="cot-step-current">1</span> de 3
                         </span>
                     </div>
                     <div class="wiz-wizard-footer-actions">
