@@ -1877,6 +1877,45 @@ header#page-topbar,
     box-shadow: 0 16px 32px -16px rgba(30, 60, 114, 0.55);
     overflow: hidden;
 }
+
+/* ── Acordeón informativo de Términos y Condiciones (paso 3 cotización) ── */
+.cot-terminos-accordion { --bs-accordion-border-color: rgba(30, 60, 114, 0.10); }
+.cot-terminos-accordion .accordion-item {
+    border-color: rgba(30, 60, 114, 0.10);
+    background: transparent;
+}
+.cot-terminos-accordion .accordion-button {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: #1e3c72;
+    padding: 10px 12px;
+}
+.cot-terminos-accordion .accordion-button:not(.collapsed) {
+    background: rgba(16, 185, 129, 0.08);
+    color: #064e3b;
+    box-shadow: none;
+}
+.cot-terminos-accordion .accordion-button:focus { box-shadow: none; }
+.cot-terminos-accordion .accordion-button::after { width: 1rem; height: 1rem; background-size: 1rem; }
+.cot-terminos-accordion .accordion-body {
+    font-size: 0.8rem;
+    line-height: 1.5;
+    padding: 10px 14px;
+    color: #475569;
+}
+.cot-terminos-accordion .accordion-body ul { margin: 0; padding-left: 18px; }
+.cot-terminos-accordion .accordion-body li { margin-bottom: 7px; }
+.cot-terminos-accordion .accordion-body li:last-child { margin-bottom: 0; }
+.cot-terminos-accordion .accordion-body strong { color: #1e3c72; }
+
+[data-bs-theme="dark"] .cot-terminos-accordion .accordion-item { background: transparent; border-color: #2a3447; }
+[data-bs-theme="dark"] .cot-terminos-accordion .accordion-button { color: #e2e8f0; background: transparent; }
+[data-bs-theme="dark"] .cot-terminos-accordion .accordion-button:not(.collapsed) {
+    background: rgba(16, 185, 129, 0.14);
+    color: #6ee7b7;
+}
+[data-bs-theme="dark"] .cot-terminos-accordion .accordion-body { color: #94a3b8; }
+[data-bs-theme="dark"] .cot-terminos-accordion .accordion-body strong { color: #cbd5e1; }
 .cot-resumen-card-header {
     padding: 14px 20px;
     background: rgba(0, 0, 0, 0.18);
@@ -1921,6 +1960,13 @@ header#page-topbar,
     font-weight: 800;
     color: #ffffff;
 }
+
+/* Variante compacta del resumen final — cede alto al acordeón de T&C */
+.cot-resumen-card--compact .cot-resumen-card-header { padding: 9px 16px; }
+.cot-resumen-card--compact .cot-resumen-card-body { padding: 12px 16px 14px; }
+.cot-resumen-card--compact .cot-resumen-row { padding: 4px 0; font-size: 0.85rem; }
+.cot-resumen-card--compact .cot-resumen-divider { margin: 4px 0; }
+.cot-resumen-card--compact .cot-resumen-row--total .cot-resumen-row-value { font-size: 1.4rem; }
 
 .cot-resumen-tabla-wrap { max-height: 220px; overflow-y: auto; }
 .cot-resumen-tabla thead th {
@@ -2949,8 +2995,8 @@ header#page-topbar,
 }
 .cat-cart-item-info { min-width: 0; }
 .cat-cart-item-name {
-    font-size: 0.82rem;
-    font-weight: 600;
+    font-size: 1rem;
+    font-weight: 700;
     color: #1e3c72;
     margin: 0;
     overflow: hidden;
@@ -2958,9 +3004,10 @@ header#page-topbar,
     white-space: nowrap;
 }
 .cat-cart-item-meta {
-    font-size: 0.7rem;
-    color: #64748b;
-    margin: 0;
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: #475569;
+    margin: 2px 0 0;
 }
 .cat-cart-item-actions {
     display: flex;
@@ -2970,7 +3017,7 @@ header#page-topbar,
     border-top: 1px dashed rgba(30, 60, 114, 0.1);
 }
 .cat-cart-item-price {
-    font-size: 0.85rem;
+    font-size: 0.95rem;
     font-weight: 700;
     color: #1e3c72;
     font-variant-numeric: tabular-nums;

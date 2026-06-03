@@ -516,6 +516,11 @@
                                 </div>
                             </div>
 
+                            {{-- Card: Términos y Condiciones (informativo, se incluyen en el PDF) --}}
+                            <div class="col-12">
+                                @include('admin.partials.terminos-accordion', ['prefix' => 'ped'])
+                            </div>
+
                         </div>
                     </section>
 
