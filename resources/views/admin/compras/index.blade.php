@@ -127,6 +127,7 @@
     </div>
 
     @include('admin.compras.modals.create')
+    @include('admin.compras.modals.view')
 
     {{-- Modal: Exportar PDF con filtros --}}
     <div class="modal fade atlantico-modal atlantico-modal--op" id="pdfExportModal" tabindex="-1" aria-hidden="true">
