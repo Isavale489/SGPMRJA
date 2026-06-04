@@ -291,7 +291,6 @@
                     {{-- ═════════════════════════ PASO 1 — CLIENTE ═════════════════════════ --}}
                     <section class="wiz-step-content is-active" id="cot-step-1" data-step="1">
                         <div class="wiz-step-header">
-                            <span class="wiz-step-tag">Paso 1 de 3</span>
                             <h4 class="wiz-step-title">Cliente y datos generales</h4>
                             <p class="wiz-step-desc">Busca el cliente por su documento o créalo en línea, luego define las fechas y la prioridad.</p>
                         </div>
@@ -497,7 +496,6 @@
                         <div class="wiz-step-header">
                             <div class="d-flex align-items-end justify-content-between flex-wrap gap-3">
                                 <div>
-                                    <span class="wiz-step-tag">Paso 2 de 3</span>
                                     <h4 class="wiz-step-title">Productos de la cotización</h4>
                                     <p class="wiz-step-desc">Explora el catálogo y configura cada prenda con sus colores, tallas y bordados.</p>
                                 </div>
@@ -557,7 +555,6 @@
                     {{-- ═════════════════════════ PASO 3 — RESUMEN ═════════════════════════ --}}
                     <section class="wiz-step-content" id="cot-step-3" data-step="3" hidden>
                         <div class="wiz-step-header">
-                            <span class="wiz-step-tag">Paso 3 de 3</span>
                             <h4 class="wiz-step-title">Resumen y notas</h4>
                             <p class="wiz-step-desc">Revisa el desglose, agrega condiciones y finaliza.</p>
                         </div>

@@ -82,7 +82,6 @@
                     {{-- ════════════════════════ PASO 1 — CLIENTE ════════════════════════ --}}
                     <section class="wiz-step-content is-active" id="ped-wiz-step-1" data-step="1">
                         <div class="wiz-step-header">
-                            <span class="wiz-step-tag">Paso 1 de 4</span>
                             <h4 class="wiz-step-title">Cliente y datos del pedido</h4>
                             <p class="wiz-step-desc">Busca el cliente por su documento, define las fechas y la prioridad del pedido.</p>
                         </div>
@@ -294,7 +293,6 @@
                     {{-- ════════════════════════ PASO 2 — PRODUCTOS ════════════════════════ --}}
                     <section class="wiz-step-content" id="ped-wiz-step-2" data-step="2" hidden>
                         <div class="wiz-step-header">
-                            <span class="wiz-step-tag">Paso 2 de 4</span>
                             <h4 class="wiz-step-title">Productos del pedido</h4>
                             <p class="wiz-step-desc">Definidos en la cotización de origen — solo lectura. Para cambiarlos, edita la cotización.</p>
                         </div>
@@ -337,7 +335,6 @@
                     {{-- ════════════════════════ PASO 3 — PAGO ════════════════════════ --}}
                     <section class="wiz-step-content" id="ped-wiz-step-3" data-step="3" hidden>
                         <div class="wiz-step-header">
-                            <span class="wiz-step-tag">Paso 3 de 4</span>
                             <h4 class="wiz-step-title">Pago</h4>
                             <p class="wiz-step-desc">Registra uno o varios pagos para abonar al pedido. Podés combinar métodos y registrar pagos parciales; también podés continuar sin abono.</p>
                         </div>
@@ -426,7 +423,6 @@
                     {{-- ════════════════════════ PASO 4 — RESUMEN ════════════════════════ --}}
                     <section class="wiz-step-content" id="ped-wiz-step-4" data-step="4" hidden>
                         <div class="wiz-step-header">
-                            <span class="wiz-step-tag">Paso 4 de 4</span>
                             <h4 class="wiz-step-title">Resumen del pedido</h4>
                             <p class="wiz-step-desc">Revisa toda la información antes de guardar el pedido.</p>
                         </div>

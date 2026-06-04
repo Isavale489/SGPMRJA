@@ -80,7 +80,6 @@
                     {{-- ═══════════════════ PASO 1 — PROVEEDOR Y FACTURA ═══════════════════ --}}
                     <section class="wiz-step-content is-active" id="c-step-1" data-step="1">
                         <div class="wiz-step-header">
-                            <span class="wiz-step-tag">Paso 1 de 3</span>
                             <h4 class="wiz-step-title">Proveedor y datos de factura</h4>
                             <p class="wiz-step-desc">Selecciona el proveedor y registra los datos del comprobante de compra.</p>
                         </div>
@@ -253,7 +252,6 @@
                     <section class="wiz-step-content" id="c-step-2" data-step="2" hidden>
                         <div class="wiz-step-header d-flex align-items-end justify-content-between flex-wrap gap-2">
                             <div>
-                                <span class="wiz-step-tag">Paso 2 de 3</span>
                                 <h4 class="wiz-step-title">Ítems de la compra</h4>
                                 <p class="wiz-step-desc mb-0">Agrega los insumos adquiridos con su cantidad y costo unitario.</p>
                             </div>
@@ -312,7 +310,6 @@
                     {{-- ═══════════════════════ PASO 3 — RESUMEN ══════════════════════════ --}}
                     <section class="wiz-step-content" id="c-step-3" data-step="3" hidden>
                         <div class="wiz-step-header">
-                            <span class="wiz-step-tag">Paso 3 de 3</span>
                             <h4 class="wiz-step-title">Resumen y observaciones</h4>
                             <p class="wiz-step-desc">Revisa el desglose, ajusta el IVA y agrega notas antes de registrar.</p>
                         </div>

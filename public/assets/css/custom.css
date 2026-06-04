@@ -1769,15 +1769,6 @@ header#page-topbar,
 }
 
 .wiz-step-header { margin-bottom: 22px; }
-.wiz-step-tag {
-    display: inline-block;
-    font-size: 0.66rem;
-    letter-spacing: 0.18em;
-    text-transform: uppercase;
-    color: #00b88c;
-    font-weight: 700;
-    margin-bottom: 6px;
-}
 .wiz-step-title {
     font-size: 1.25rem;
     font-weight: 600;
@@ -2103,7 +2094,6 @@ header#page-topbar,
 [data-bs-theme="dark"] .wiz-wizard-body { background: #0f1521; }
 [data-bs-theme="dark"] .wiz-step-title { color: #e2e8f0; }
 [data-bs-theme="dark"] .wiz-step-desc { color: #94a3b8; }
-[data-bs-theme="dark"] .wiz-step-tag { color: #34d399; }
 
 [data-bs-theme="dark"] .cot-kpi {
     background: #1f2937;
