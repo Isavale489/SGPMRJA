@@ -523,6 +523,7 @@ $(document).ready(function () {
             $('#compraForm')[0].reset();
             selectedProv = null;
             $('#c-proveedor').val('');
+            $('#c-edit-id').val('');
             $('#c-prov-doc-number').val('');
             $('#c-prov-doc-prefix').val('J-');
             $('#c-prov-autocomplete').empty().hide();
@@ -534,7 +535,48 @@ $(document).ready(function () {
             updateEmpty();
             recalcular();
             renderProveedorSeleccionado();
+            $('#compraModalTitle').html('<i class="ri-shopping-bag-3-line me-1"></i>Nueva Compra');
             $('#c-submit-btn').removeAttr('disabled').html('<i class="ri-save-line me-1"></i>Registrar Compra');
+        }
+
+        // ── Poblar wizard en modo edición ────────────────────────────────────
+        function populate(data) {
+            $('#c-edit-id').val(data.id);
+            $('#compraModalTitle').html('<i class="ri-pencil-line me-1"></i>Editar Borrador #' + data.id);
+            $('#c-submit-btn').html('<i class="ri-save-line me-1"></i>Actualizar Compra');
+
+            if (data.proveedor_data && data.proveedor_data.id) {
+                aplicarProveedor(data.proveedor_data);
+            }
+
+            $('#c-factura').val(data.numero_factura || '');
+            $('#c-fecha').val(data.fecha_compra || '');
+            $('#c-iva').val(data.iva_porcentaje || 16);
+            $('#c-observaciones').val(data.observaciones || '');
+
+            var pago = data.tipo_pago || 'contado';
+            syncPagoSeg(pago);
+            $('#c-tipo-pago').val(pago).trigger('change');
+            if (pago === 'credito' && data.fecha_vencimiento) {
+                $('#c-vencimiento').val(data.fecha_vencimiento);
+            }
+
+            $('#c-items-tbody').empty();
+            rowCount = 0;
+            if (data.items && data.items.length) {
+                data.items.forEach(function (item) {
+                    addItemRow();
+                    var $row = $('#c-items-tbody tr:last');
+                    var $sel = $row.find('.c-insumo');
+                    $sel.val(item.insumo_id);
+                    var unid = $sel.find('option:selected').data('unidad') || '';
+                    $row.find('.c-unit-addon').text(unid ? String(unid).substring(0, 4) : '—');
+                    $row.find('.c-cantidad').val(parseFloat(item.cantidad));
+                    $row.find('.c-costo').val(parseFloat(item.costo_unitario).toFixed(2));
+                });
+                updateEmpty();
+                recalcular();
+            }
         }
 
         // Estado inicial: fija display:none inline en la card (vence al display:flex)
@@ -554,6 +596,9 @@ $(document).ready(function () {
             var items = collectItems();
             if (items === false) { showStep(2); return; }
 
+            var editId = $('#c-edit-id').val();
+            var isEdit = !!editId;
+
             var payload = {
                 proveedor_id:      $('#c-proveedor').val(),
                 numero_factura:    $('#c-factura').val() || null,
@@ -566,11 +611,13 @@ $(document).ready(function () {
             };
 
             var $btn = $('#c-submit-btn');
-            $btn.attr('disabled', true).html('<i class="ri-loader-4-line me-1"></i>Registrando...');
+            $btn.attr('disabled', true).html(
+                '<i class="ri-loader-4-line me-1"></i>' + (isEdit ? 'Actualizando...' : 'Registrando...')
+            );
 
             $.ajax({
-                url:         "{{ route('compras.store') }}",
-                method:      'POST',
+                url:         isEdit ? '/compras/' + editId : "{{ route('compras.store') }}",
+                method:      isEdit ? 'PUT' : 'POST',
                 contentType: 'application/json',
                 headers:     { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
                 data:        JSON.stringify(payload),
@@ -579,24 +626,30 @@ $(document).ready(function () {
                         $('#createCompraModal').modal('hide');
                         if (window.comprasTable) window.comprasTable.ajax.reload(null, false);
 
-                        Swal.fire({
-                            title: '¡Registrada!',
-                            text:  response.message,
-                            icon:  'success',
-                            showCancelButton: true,
-                            confirmButtonText: 'Ver detalle',
-                            cancelButtonText:  'Continuar'
-                        }).then(function (result) {
-                            if (result.isConfirmed) {
-                                window.location.href = "{{ url('compras') }}/" + response.compra_id;
-                            }
-                        });
+                        if (isEdit) {
+                            Swal.fire({ title: '¡Actualizada!', text: response.message, icon: 'success', timer: 2000, showConfirmButton: false });
+                        } else {
+                            Swal.fire({
+                                title: '¡Registrada!',
+                                text:  response.message,
+                                icon:  'success',
+                                showCancelButton: true,
+                                confirmButtonText: 'Ver detalle',
+                                cancelButtonText:  'Continuar'
+                            }).then(function (result) {
+                                if (result.isConfirmed && window.verDetalleCompra) {
+                                    window.verDetalleCompra(response.compra_id);
+                                }
+                            });
+                        }
                     }
                 },
                 error: function (xhr) {
-                    $btn.removeAttr('disabled').html('<i class="ri-save-line me-1"></i>Registrar Compra');
+                    $btn.removeAttr('disabled').html(
+                        '<i class="ri-save-line me-1"></i>' + (isEdit ? 'Actualizar Compra' : 'Registrar Compra')
+                    );
                     var json = xhr.responseJSON;
-                    var msg  = 'Ocurrió un error al registrar la compra.';
+                    var msg  = 'Ocurrió un error al ' + (isEdit ? 'actualizar' : 'registrar') + ' la compra.';
                     if (json && json.errors) {
                         msg = Object.values(json.errors).flat().join('<br>');
                     } else if (json && json.message) {
@@ -723,8 +776,95 @@ $(document).ready(function () {
             });
         });
 
+        // ════════════════════════════════════════════════════════════════════
+        //  MODAL DE BÚSQUEDA DE PROVEEDOR (lupa del paso 1)
+        // ════════════════════════════════════════════════════════════════════
+        (function () {
+            var bspTimeout = null;
+
+            function bspRender(proveedores) {
+                var $tbody = $('#bsp-tbody');
+                var $empty = $('#bsp-empty');
+                var $label = $('#bsp-count-label');
+                $tbody.empty();
+
+                if (!proveedores || proveedores.length === 0) {
+                    $empty.removeClass('d-none');
+                    $label.text('');
+                    return;
+                }
+
+                $empty.addClass('d-none');
+                $label.text(proveedores.length + ' proveedor(es) encontrado(s)');
+
+                proveedores.forEach(function (p) {
+                    var tipoBadge = p.tipo === 'juridico'
+                        ? '<span class="badge bg-soft-primary text-primary">Jurídico</span>'
+                        : '<span class="badge bg-soft-success text-success">Natural</span>';
+
+                    var $tr = $('<tr style="cursor:pointer;">')
+                        .html(
+                            '<td class="fw-semibold">' + p.nombre + '</td>'
+                            + '<td class="font-monospace small">' + (p.doc || '—') + '</td>'
+                            + '<td>' + tipoBadge + '</td>'
+                            + '<td class="text-muted small">' + (p.tel || '—') + '</td>'
+                            + '<td class="text-center"><span class="badge bg-light text-dark">' + p.compras + '</span></td>'
+                        )
+                        .on('click', function () {
+                            aplicarProveedor(p);
+                            $('#buscarProveedorModal').modal('hide');
+                            $('#bsp-input').val('');
+                        });
+                    $tbody.append($tr);
+                });
+            }
+
+            function bspSearch(q) {
+                $('#bsp-loading').removeClass('d-none');
+                $('#bsp-empty').addClass('d-none');
+                $.ajax({
+                    url: '{{ route("proveedores.search") }}',
+                    data: { q: q },
+                    success: function (data) {
+                        $('#bsp-loading').addClass('d-none');
+                        bspRender(data);
+                    },
+                    error: function () {
+                        $('#bsp-loading').addClass('d-none');
+                    }
+                });
+            }
+
+            // Abrir el modal hijo vía JS (no data-bs-toggle) para no cerrar el padre
+            // — ver docs/conventions/nested-modals.md
+            $('#c-prov-browse-btn').on('click', function () {
+                $('#buscarProveedorModal').modal('show');
+            });
+
+            $('#buscarProveedorModal').on('shown.bs.modal', function () {
+                $('#bsp-input').trigger('focus');
+                if ($('#bsp-tbody tr').length === 0) {
+                    bspSearch('');
+                }
+            }).on('hidden.bs.modal', function () {
+                clearTimeout(bspTimeout);
+            });
+
+            $('#bsp-input').on('input', function () {
+                clearTimeout(bspTimeout);
+                bspTimeout = setTimeout(function () {
+                    bspSearch($('#bsp-input').val().trim());
+                }, 300);
+            });
+
+            $('#bsp-clear-btn').on('click', function () {
+                $('#bsp-input').val('').trigger('focus');
+                bspSearch('');
+            });
+        })();
+
         // Exponer API mínima por consistencia con otros wizards
-        window.compraWizard = { show: showStep, next: nextStep, prev: prevStep };
+        window.compraWizard = { show: showStep, next: nextStep, prev: prevStep, populate: populate };
     })();
 });
 </script>

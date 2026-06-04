@@ -125,7 +125,7 @@ class CompraController extends Controller
             return response()->json(['success' => false, 'message' => 'Solo se pueden editar borradores.'], 422);
         }
 
-        $compra->load('detalles.insumo');
+        $compra->load(['detalles.insumo', 'proveedor.persona']);
 
         return response()->json([
             'id'                => $compra->id,
@@ -138,6 +138,16 @@ class CompraController extends Controller
             'iva_porcentaje'    => $compra->subtotal > 0
                 ? round(($compra->iva / $compra->subtotal) * 100)
                 : 16,
+            'proveedor_data'    => [
+                'id'     => $compra->proveedor_id,
+                'nombre' => $compra->proveedor?->nombre_completo ?? '—',
+                'doc'    => $compra->proveedor?->documento ?? '',
+                'tel'    => $compra->proveedor?->telefono_unificado ?? '',
+                'email'  => $compra->proveedor?->email_unificado ?? '',
+                'tipo'   => $compra->proveedor?->tipo_proveedor ?? '',
+                'compras' => 0,
+                'ultima'  => null,
+            ],
             'items'             => $compra->detalles->map(fn($d) => [
                 'insumo_id'      => $d->insumo_id,
                 'nombre'         => $d->insumo?->nombre,
@@ -155,6 +165,55 @@ class CompraController extends Controller
         return view('admin.compras.show', compact('compra'));
     }
 
+    public function getDetalle(Compra $compra)
+    {
+        $compra->load(['proveedor.persona', 'detalles.insumo', 'registradoPor']);
+
+        $provName = $compra->proveedor?->nombre_completo ?? '—';
+        $provIni  = collect(explode(' ', trim($provName)))
+            ->filter()->take(2)
+            ->map(fn($w) => mb_strtoupper(mb_substr($w, 0, 1)))
+            ->implode('') ?: '—';
+
+        return response()->json([
+            'id'               => $compra->id,
+            'estado'           => $compra->estado,
+            'numero_factura'   => $compra->numero_factura ?? 'S/N',
+            'fecha_compra'     => $compra->fecha_compra?->format('d/m/Y') ?? '—',
+            'fecha_vencimiento'=> $compra->fecha_vencimiento?->format('d/m/Y'),
+            'tipo_pago'        => $compra->tipo_pago,
+            'observaciones'    => $compra->observaciones,
+            'subtotal'         => number_format($compra->subtotal, 2),
+            'iva'              => number_format($compra->iva, 2),
+            'total'            => number_format($compra->total, 2),
+            'created_at'       => $compra->created_at?->format('d/m/Y H:i') ?? '—',
+            'proveedor'        => [
+                'nombre' => $provName,
+                'ini'    => $provIni,
+                'tipo'   => match ($compra->proveedor?->tipo_proveedor) {
+                    'natural'  => 'Natural',
+                    'juridico' => 'Jurídico',
+                    default    => 'Proveedor',
+                },
+                'doc'   => $compra->proveedor?->documento ?? '',
+                'tel'   => $compra->proveedor?->telefono_unificado ?? '',
+                'email' => $compra->proveedor?->email_unificado ?? '',
+            ],
+            'registrado_por' => [
+                'name'       => $compra->registradoPor?->name ?? 'Sistema',
+                'avatar_url' => $compra->registradoPor?->avatar_url ?? '',
+            ],
+            'items' => $compra->detalles->map(fn($d) => [
+                'nombre'         => $d->insumo?->nombre ?? 'N/A',
+                'tipo'           => $d->insumo?->tipo ?? '—',
+                'unidad'         => $d->insumo?->unidad_medida ?? '—',
+                'cantidad'       => number_format($d->cantidad, 2),
+                'costo_unitario' => number_format($d->costo_unitario, 2),
+                'subtotal'       => number_format($d->subtotal, 2),
+            ]),
+        ]);
+    }
+
     public function getCompras(Request $request)
     {
         $query = Compra::with(['proveedor.persona', 'registradoPor', 'anuladoPor'])
@@ -164,7 +223,11 @@ class CompraController extends Controller
             $query->where('proveedor_id', $request->filter_proveedor_id);
         }
         if ($request->filled('filter_estado')) {
-            $query->where('estado', $request->filter_estado);
+            if ($request->filter_estado === 'activas') {
+                $query->whereIn('estado', ['borrador', 'recibida']);
+            } else {
+                $query->where('estado', $request->filter_estado);
+            }
         }
         if ($request->filled('filter_tipo_pago')) {
             $query->where('tipo_pago', $request->filter_tipo_pago);
@@ -199,7 +262,7 @@ class CompraController extends Controller
             })
             ->addColumn('actions', function ($c) {
                 $btn = '<div class="d-flex gap-2 justify-content-center">';
-                $btn .= '<a href="' . route('compras.show', $c->id) . '" class="btn btn-sm btn-soft-info" title="Ver detalle"><i class="ri-eye-fill"></i></a>';
+                $btn .= '<button class="btn btn-sm btn-soft-info ver-btn" data-id="' . $c->id . '" title="Ver detalle"><i class="ri-eye-fill"></i></button>';
 
                 if ($c->estado === 'borrador') {
                     $btn .= '<button class="btn btn-sm btn-soft-warning editar-btn" data-id="' . $c->id . '" title="Editar borrador"><i class="ri-pencil-fill"></i></button>';
@@ -211,7 +274,11 @@ class CompraController extends Controller
                 }
 
                 if ($c->estado === 'anulada') {
-                    $btn .= '<button class="btn btn-sm btn-soft-secondary clonar-btn" data-id="' . $c->id . '" title="Clonar como nuevo borrador"><i class="ri-file-copy-line"></i></button>';
+                    if ($c->clonada) {
+                        $btn .= '<button class="btn btn-sm btn-soft-secondary" disabled title="Esta compra ya fue clonada"><i class="ri-file-copy-line"></i></button>';
+                    } else {
+                        $btn .= '<button class="btn btn-sm btn-soft-secondary clonar-btn" data-id="' . $c->id . '" title="Clonar como nuevo borrador"><i class="ri-file-copy-line"></i></button>';
+                    }
                 }
 
                 $btn .= '</div>';

@@ -4,7 +4,8 @@
      Prefijo de IDs: c-  ·  shell atlantico-modal--op (transaccional, emerald)
      ════════════════════════════════════════════════════════════════════ --}}
 <div class="modal fade atlantico-modal atlantico-modal--op wiz-modal" id="createCompraModal" tabindex="-1"
-    aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false"
+    data-guard-id-field="c-edit-id">
     <div class="modal-dialog modal-dialog-centered modal-xl">
         <div class="modal-content">
             <div class="modal-header">
@@ -100,9 +101,10 @@
                                         {{-- Buscador de documento con icono de lupa --}}
                                         <div class="position-relative cot-search-doc-wrap">
                                             <div class="input-group cot-search-doc-group">
-                                                <span class="input-group-text cot-search-doc-icon">
+                                                <button type="button" class="input-group-text cot-search-doc-icon"
+                                                    id="c-prov-browse-btn" title="Buscar en listado de proveedores">
                                                     <i class="ri-search-2-line"></i>
-                                                </span>
+                                                </button>
                                                 <select class="form-select" id="c-prov-doc-prefix" style="max-width: 70px;">
                                                     <option value="V-">V-</option>
                                                     <option value="J-" selected>J-</option>
@@ -433,6 +435,8 @@
         </div>
     </div>
 </div>
+
+@include('admin.compras.modals.buscar-proveedor')
 
 {{-- ═══════════════════════════════════════════════════════════════════════════
      MINI-MODAL: Crear proveedor nuevo (inline, "extensión" del maestro Proveedores)

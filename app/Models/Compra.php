@@ -26,6 +26,7 @@ class Compra extends Model
         'estado',
         'anulado_por_id',
         'fecha_anulacion',
+        'clonada',
     ];
 
     protected $casts = [
@@ -35,6 +36,7 @@ class Compra extends Model
         'iva'               => 'decimal:2',
         'total'             => 'decimal:2',
         'fecha_anulacion'   => 'datetime',
+        'clonada'           => 'boolean',
     ];
 
     public function proveedor()

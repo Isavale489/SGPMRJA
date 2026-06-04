@@ -153,6 +153,10 @@ class CompraService
             throw new \RuntimeException('Solo se pueden clonar compras anuladas.');
         }
 
+        if ($compra->clonada) {
+            throw new \RuntimeException('Esta compra ya fue clonada anteriormente y no puede volver a clonarse.');
+        }
+
         return DB::transaction(function () use ($compra, $userId) {
             $compra->load('detalles');
 
@@ -179,6 +183,8 @@ class CompraService
                     'subtotal'       => $detalle->subtotal,
                 ]);
             }
+
+            $compra->update(['clonada' => true]);
 
             return $nueva;
         });

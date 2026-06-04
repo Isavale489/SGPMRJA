@@ -69,7 +69,8 @@
                                                 <i class="ri-shield-check-line"></i> Estado
                                             </label>
                                             <select class="form-select navy-filter-select" id="filter-estado">
-                                                <option value="">Todos</option>
+                                                <option value="activas" selected>Activas</option>
+                                                <option value="">Todas</option>
                                                 <option value="recibida">Recibida</option>
                                                 <option value="borrador">Borrador</option>
                                                 <option value="anulada">Anulada</option>
@@ -108,7 +109,7 @@
                         <table id="compras-table" class="table table-bordered table-striped align-middle dt-transactional table-operativa">
                             <thead>
                                 <tr>
-                                    <th>ID</th>
+                                    <th>Nro.</th>
                                     <th>Proveedor</th>
                                     <th>N° Factura</th>
                                     <th>Fecha</th>
@@ -127,6 +128,7 @@
     </div>
 
     @include('admin.compras.modals.create')
+    @include('admin.compras.modals.view')
 
     {{-- Modal: Exportar PDF con filtros --}}
     <div class="modal fade atlantico-modal atlantico-modal--op" id="pdfExportModal" tabindex="-1" aria-hidden="true">

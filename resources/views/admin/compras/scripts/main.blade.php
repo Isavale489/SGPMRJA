@@ -97,13 +97,218 @@ $(document).ready(function () {
     });
 
     $('#btn-clear-filters').on('click', function () {
-        $('#advanced-filters .navy-filter-select').val('');
+        $('#filter-estado').val('activas');
+        $('#filter-tipo-pago').val('');
+        $('#filter-fecha-desde').val('');
+        $('#filter-fecha-hasta').val('');
         $('#custom-search-input').val('');
         window.comprasTable.search('').ajax.reload(null, true);
         updateFilterBadge();
     });
 
     updateFilterBadge();
+
+    // ── Ver detalle ─────────────────────────────────────────────────────────
+    window.verDetalleCompra = function verDetalleCompra(compraId) {
+        var badgeMap = { recibida: 'success', borrador: 'warning', anulada: 'danger' };
+
+        $.ajax({
+            url: '/compras/' + compraId + '/detalle',
+            method: 'GET',
+            success: function (d) {
+                // Header y hero
+                $('#cv-titulo').html('<i class="ri-shopping-bag-3-line me-1"></i>Compra #' + d.id);
+                $('#cv-hero-titulo').text('Compra #' + d.id);
+                var badgeColor = badgeMap[d.estado] || 'secondary';
+                $('#cv-estado-badge').attr('class', 'badge bg-' + badgeColor).text(
+                    d.estado.charAt(0).toUpperCase() + d.estado.slice(1)
+                );
+                $('#cv-hero-proveedor').text(d.proveedor.nombre);
+                $('#cv-hero-fecha').text(d.fecha_compra);
+                $('#cv-total').text(d.total);
+
+                // Proveedor card
+                $('#cv-prov-ini').text(d.proveedor.ini);
+                $('#cv-prov-nombre').text(d.proveedor.nombre);
+                $('#cv-prov-tipo').text(d.proveedor.tipo);
+                $('#cv-prov-doc').text(d.proveedor.doc || 'Sin documento');
+                if (d.proveedor.tel) {
+                    $('#cv-prov-tel').text(d.proveedor.tel);
+                    $('#cv-prov-tel-wrap').show();
+                } else {
+                    $('#cv-prov-tel-wrap').hide();
+                }
+                if (d.proveedor.email) {
+                    $('#cv-prov-email').text(d.proveedor.email);
+                    $('#cv-prov-email-wrap').show();
+                } else {
+                    $('#cv-prov-email-wrap').hide();
+                }
+
+                // Comprobante
+                $('#cv-factura').text(d.numero_factura);
+                $('#cv-fecha').text(d.fecha_compra);
+
+                var pagoHtml = d.tipo_pago === 'credito'
+                    ? '<span class="badge bg-soft-primary text-primary"><i class="ri-calendar-schedule-line me-1"></i>Crédito</span>'
+                    : '<span class="badge bg-soft-success text-success"><i class="ri-money-dollar-circle-line me-1"></i>Contado</span>';
+                $('#cv-tipo-pago').html(pagoHtml);
+
+                if (d.fecha_vencimiento) {
+                    $('#cv-vencimiento').text(d.fecha_vencimiento);
+                    $('#cv-vencimiento-wrap').removeClass('d-none');
+                } else {
+                    $('#cv-vencimiento-wrap').addClass('d-none');
+                }
+
+                if (d.observaciones) {
+                    $('#cv-observaciones').text(d.observaciones);
+                    $('#cv-obs-wrap').removeClass('d-none');
+                } else {
+                    $('#cv-obs-wrap').addClass('d-none');
+                }
+
+                // Items
+                var itemsHtml = '';
+                (d.items || []).forEach(function (item, i) {
+                    itemsHtml += '<tr>'
+                        + '<td class="text-center cot-col-num">' + (i + 1) + '</td>'
+                        + '<td class="fw-semibold">' + item.nombre + '</td>'
+                        + '<td class="text-center"><span class="cot-tipo-pill">' + item.tipo + '</span></td>'
+                        + '<td class="text-center text-muted">' + item.unidad + '</td>'
+                        + '<td class="text-end">' + item.cantidad + '</td>'
+                        + '<td class="text-end">' + item.costo_unitario + '</td>'
+                        + '<td class="text-end fw-semibold">' + item.subtotal + '</td>'
+                        + '</tr>';
+                });
+                $('#cv-items-tbody').html(itemsHtml);
+                $('#cv-items-count').text('(' + (d.items || []).length + ')');
+
+                // Registro
+                $('#cv-reg-avatar').attr('src', d.registrado_por.avatar_url);
+                $('#cv-reg-nombre').text(d.registrado_por.name);
+                $('#cv-reg-fecha').text(d.created_at);
+
+                // Totales
+                $('#cv-subtotal').text(d.subtotal);
+                $('#cv-iva').text(d.iva);
+                $('#cv-total-ticket').text(d.total);
+
+                // PDF
+                $('#cv-pdf-btn').attr('href', '/compras/' + d.id + '/pdf');
+
+                $('#viewCompraModal').modal('show');
+            },
+            error: function () {
+                Swal.fire({ title: 'Error', text: 'No se pudo cargar el detalle de la compra.', icon: 'error', confirmButtonText: 'Entendido' });
+            }
+        });
+    }
+
+    $(document).on('click', '.ver-btn', function () {
+        verDetalleCompra($(this).data('id'));
+    });
+
+    // ── Procesar borrador ────────────────────────────────────────────────────
+    $(document).on('click', '.procesar-btn', function () {
+        var compraId = $(this).data('id');
+
+        Swal.fire({
+            title: '¿Procesar esta compra?',
+            text: 'Se registrará la entrada de stock para todos los insumos incluidos.',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#198754',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Sí, procesar',
+            cancelButtonText: 'Cancelar'
+        }).then(function (result) {
+            if (!result.isConfirmed) return;
+
+            $.ajax({
+                url: '/compras/' + compraId + '/procesar',
+                method: 'POST',
+                data: { _method: 'PATCH', _token: '{{ csrf_token() }}' },
+                success: function (response) {
+                    window.comprasTable.ajax.reload(null, false);
+                    Swal.fire({
+                        title: 'Procesada',
+                        text: response.message,
+                        icon: 'success',
+                        timer: 2500,
+                        showConfirmButton: false
+                    });
+                },
+                error: function (xhr) {
+                    var msg = xhr.responseJSON?.message ?? 'Error al procesar la compra.';
+                    Swal.fire({ title: 'Error', text: msg, icon: 'error', confirmButtonText: 'Entendido' });
+                }
+            });
+        });
+    });
+
+    // ── Clonar compra anulada ────────────────────────────────────────────────
+    $(document).on('click', '.clonar-btn', function () {
+        var compraId = $(this).data('id');
+
+        Swal.fire({
+            title: '¿Clonar esta compra?',
+            text: 'Se creará un nuevo borrador con los mismos datos. Podrás editarlo y procesarlo cuando estés listo.',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#0d6efd',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Sí, clonar',
+            cancelButtonText: 'Cancelar'
+        }).then(function (result) {
+            if (!result.isConfirmed) return;
+
+            $.ajax({
+                url: '/compras/' + compraId + '/clonar',
+                method: 'POST',
+                data: { _token: '{{ csrf_token() }}' },
+                success: function (response) {
+                    window.comprasTable.ajax.reload(null, false);
+                    Swal.fire({
+                        title: '¡Clonada!',
+                        text: response.message,
+                        icon: 'success',
+                        showCancelButton: true,
+                        confirmButtonText: 'Ver borrador',
+                        cancelButtonText: 'Continuar'
+                    }).then(function (r) {
+                        if (r.isConfirmed) {
+                            verDetalleCompra(response.compra_id);
+                        }
+                    });
+                },
+                error: function (xhr) {
+                    var msg = xhr.responseJSON?.message ?? 'Error al clonar la compra.';
+                    Swal.fire({ title: 'Error', text: msg, icon: 'error', confirmButtonText: 'Entendido' });
+                }
+            });
+        });
+    });
+
+    // ── Editar borrador ──────────────────────────────────────────────────────
+    $(document).on('click', '.editar-btn', function () {
+        var compraId = $(this).data('id');
+
+        $.ajax({
+            url: '/compras/' + compraId + '/editar-datos',
+            method: 'GET',
+            success: function (data) {
+                $('#createCompraModal').one('shown.bs.modal', function () {
+                    window.compraWizard.populate(data);
+                });
+                $('#createCompraModal').modal('show');
+            },
+            error: function (xhr) {
+                var msg = xhr.responseJSON?.message ?? 'Error al cargar los datos de la compra.';
+                Swal.fire({ title: 'Error', text: msg, icon: 'error', confirmButtonText: 'Entendido' });
+            }
+        });
+    });
 
     // ── Anular desde el listado ─────────────────────────────────────────────
     $(document).on('click', '.anular-btn', function () {
