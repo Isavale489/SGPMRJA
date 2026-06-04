@@ -312,9 +312,10 @@
                                         </label>
                                         <div class="position-relative cot-search-doc-wrap">
                                             <div class="input-group cot-search-doc-group">
-                                                <span class="input-group-text cot-search-doc-icon">
+                                                <button type="button" class="input-group-text cot-search-doc-icon"
+                                                    id="cot-cliente-browse-btn" title="Buscar en listado de clientes">
                                                     <i class="ri-search-2-line"></i>
-                                                </span>
+                                                </button>
                                                 <select class="form-select" id="ci-rif-prefix-field"
                                                     name="rif_prefix" style="max-width: 70px;">
                                                     <option value="V-">V-</option>
@@ -1314,6 +1315,70 @@
                     <i class="ri-close-line me-1"></i>Cancelar
                 </button>
             </div>
+        </div>
+    </div>
+</div>
+
+{{-- Modal de búsqueda de cliente — nivel 2 (anidado dentro del wizard de cotización)
+     Se abre desde la lupa del paso 1. Prefijo de IDs: bcl- (buscar-cliente).
+     Abierto vía JS (.modal('show')), nunca con data-bs-toggle — ver docs/conventions/nested-modals.md
+--}}
+<div class="modal fade" id="buscarClienteModal" tabindex="-1" aria-hidden="true"
+    data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+
+            <div class="modal-header utility-modal-header">
+                <h5 class="modal-title">
+                    <i class="ri-search-line me-2"></i>Buscar Cliente
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body p-3">
+                {{-- Buscador --}}
+                <div class="input-group mb-3">
+                    <span class="input-group-text"><i class="ri-search-2-line"></i></span>
+                    <input type="text" id="bcl-input" class="form-control"
+                        placeholder="Buscar por nombre, apellido o documento..." autocomplete="off">
+                    <button type="button" class="btn btn-light" id="bcl-clear-btn" title="Limpiar">
+                        <i class="ri-close-line"></i>
+                    </button>
+                </div>
+
+                {{-- Loading --}}
+                <div id="bcl-loading" class="text-center py-4 d-none">
+                    <div class="spinner-border spinner-border-sm text-primary me-2"></div>
+                    <span class="text-muted small">Buscando...</span>
+                </div>
+
+                {{-- Resultados --}}
+                <div id="bcl-results-wrap" style="max-height: 420px; overflow-y: auto;">
+                    <table class="table table-hover table-sm align-middle mb-0">
+                        <thead class="table-light sticky-top">
+                            <tr>
+                                <th style="width:34%">Nombre</th>
+                                <th style="width:22%">Documento</th>
+                                <th style="width:12%">Tipo</th>
+                                <th style="width:32%">Teléfono</th>
+                            </tr>
+                        </thead>
+                        <tbody id="bcl-tbody"></tbody>
+                    </table>
+                    <div id="bcl-empty" class="text-center py-5 text-muted d-none">
+                        <i class="ri-user-search-line d-block opacity-40 mb-2" style="font-size:2rem;"></i>
+                        <p class="mb-0 small">No se encontraron clientes.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer bg-light border-0 py-2">
+                <small class="text-muted me-auto" id="bcl-count-label"></small>
+                <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal">
+                    <i class="ri-close-line me-1"></i>Cancelar
+                </button>
+            </div>
+
         </div>
     </div>
 </div>

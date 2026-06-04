@@ -3066,6 +3066,93 @@
             }
         });
 
+        // ════════════════════════════════════════════════════════════════════
+        //  MODAL DE BÚSQUEDA DE CLIENTE (lupa del paso 1)
+        //  Abierto vía JS (no data-bs-toggle) para no cerrar el wizard padre.
+        // ════════════════════════════════════════════════════════════════════
+        (function () {
+            var bclTimeout = null;
+
+            function bclRender(clientes) {
+                var $tbody = $('#bcl-tbody');
+                var $empty = $('#bcl-empty');
+                $tbody.empty();
+
+                if (!clientes || clientes.length === 0) {
+                    $empty.removeClass('d-none');
+                    $('#bcl-count-label').text('');
+                    return;
+                }
+
+                $empty.addClass('d-none');
+                $('#bcl-count-label').text(clientes.length + ' cliente(s) encontrado(s)');
+
+                clientes.forEach(function (c) {
+                    var doc = c.documento || '';
+                    var esJuridico = /^[JG]-/.test(doc);
+                    var tipoBadge = esJuridico
+                        ? '<span class="badge bg-soft-primary text-primary">Jurídico</span>'
+                        : '<span class="badge bg-soft-success text-success">Natural</span>';
+                    var nombre = (c.apellido ? c.nombre + ' ' + c.apellido : c.nombre) || '—';
+
+                    $('<tr style="cursor:pointer;">')
+                        .html(
+                            '<td class="fw-semibold">' + nombre + '</td>'
+                            + '<td class="font-monospace small">' + (doc || '—') + '</td>'
+                            + '<td>' + tipoBadge + '</td>'
+                            + '<td class="text-muted small">' + (c.telefono || '—') + '</td>'
+                        )
+                        .on('click', function () {
+                            aplicarPersonaACotizacion(c, c.id);
+                            $('#buscarClienteModal').modal('hide');
+                            $('#bcl-input').val('');
+                        })
+                        .appendTo($tbody);
+                });
+            }
+
+            function bclSearch(q) {
+                $('#bcl-loading').removeClass('d-none');
+                $('#bcl-empty').addClass('d-none');
+                $.ajax({
+                    url: '{{ route("clientes.search") }}',
+                    data: { q: q },
+                    success: function (data) {
+                        $('#bcl-loading').addClass('d-none');
+                        bclRender(data);
+                    },
+                    error: function () {
+                        $('#bcl-loading').addClass('d-none');
+                    }
+                });
+            }
+
+            $('#cot-cliente-browse-btn').on('click', function () {
+                $('#buscarClienteModal').modal('show');
+            });
+
+            $('#buscarClienteModal').on('shown.bs.modal', function () {
+                $('#bcl-input').trigger('focus');
+                if ($('#bcl-tbody tr').length === 0) {
+                    bclSearch('');
+                }
+            }).on('hidden.bs.modal', function () {
+                clearTimeout(bclTimeout);
+            });
+
+            $('#bcl-input').on('input', function () {
+                clearTimeout(bclTimeout);
+                bclTimeout = setTimeout(function () {
+                    bclSearch($('#bcl-input').val().trim());
+                }, 300);
+            });
+
+            $('#bcl-clear-btn').on('click', function () {
+                $('#bcl-input').val('').trigger('focus');
+                bclSearch('');
+            });
+        })();
+
         // --- MODAL AGREGAR CLIENTE DESDE COTIZACIÓN ---
 
         // Validación en tiempo real para nombre (solo letras y espacios)
