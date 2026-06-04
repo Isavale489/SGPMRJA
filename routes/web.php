@@ -166,6 +166,7 @@ Route::middleware(['auth', 'throttle:60,1', 'active.user', 'recovery.questions.r
         Route::get('proveedores-check-documento', [ProveedorController::class, 'checkDocumento'])->name('proveedores.check-documento');
         Route::get('proveedores-check-email', [ProveedorController::class, 'checkEmail'])->name('proveedores.check-email');
         Route::get('proveedores/reporte/pdf', [ProveedorController::class, 'reportePdf'])->name('proveedores.reporte.pdf');
+        Route::get('proveedores/search', [ProveedorController::class, 'search'])->name('proveedores.search');
         Route::get('proveedores/{proveedor}', [ProveedorController::class, 'show'])->name('proveedores.show');
 
         // Logos

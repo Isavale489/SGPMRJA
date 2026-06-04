@@ -22,6 +22,37 @@ class ProveedorController extends Controller
         return view('admin.proveedores.index', compact('historial'));
     }
 
+    public function search(Request $request)
+    {
+        $q = trim($request->input('q', ''));
+
+        $query = Proveedor::with(['persona.telefonos'])
+            ->where('estado', 1)
+            ->withCount('compras')
+            ->withMax('compras', 'fecha_compra');
+
+        if ($q) {
+            $query->whereHas('persona', function ($sub) use ($q) {
+                $sub->where('nombre', 'like', "%{$q}%")
+                    ->orWhere('apellido', 'like', "%{$q}%")
+                    ->orWhere('documento_identidad', 'like', "%{$q}%");
+            });
+        }
+
+        return response()->json(
+            $query->orderByDesc('id')->limit(50)->get()->map(fn($p) => [
+                'id'     => $p->id,
+                'nombre' => $p->nombre_completo ?? '—',
+                'doc'    => $p->documento ?? '',
+                'tel'    => $p->telefono_unificado ?? '',
+                'email'  => $p->email_unificado ?? '',
+                'tipo'   => $p->tipo_proveedor,
+                'compras' => $p->compras_count ?? 0,
+                'ultima'  => $p->compras_max_fecha_compra,
+            ])
+        );
+    }
+
     public function getProveedores(Request $request)
     {
         // ── Base query con relaciones ──
