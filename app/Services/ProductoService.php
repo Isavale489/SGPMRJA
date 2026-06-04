@@ -202,7 +202,7 @@ class ProductoService
      * en cada renglón de cotización/pedido para preservar el estado del
      * catálogo en el momento exacto del registro.
      *
-     * @return array{tela_snapshot: ?array, atributos_snapshot: ?array}
+     * @return array{tela_snapshot: ?array, atributos_snapshot: ?array, sku: ?string}
      */
     public function buildSnapshotsParaDetalle(Producto $producto): array
     {
@@ -225,6 +225,7 @@ class ProductoService
         return [
             'tela_snapshot'      => $telaSnapshot,
             'atributos_snapshot' => $producto->atributos_snapshot ?: null,
+            'sku'                => $producto->codigo,
         ];
     }
 

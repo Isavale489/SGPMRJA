@@ -160,8 +160,10 @@ class CotizacionService
                 $detallePedido = DetallePedido::create([
                     'pedido_id' => $pedido->id,
                     'producto_id' => $detalle->producto_id,
+                    'tipo_producto_id' => $detalle->tipo_producto_id,
                     'tela_snapshot' => $detalle->tela_snapshot,
                     'atributos_snapshot' => $detalle->atributos_snapshot,
+                    'sku_snapshot' => $detalle->sku_snapshot,
                     'cantidad' => $detalle->cantidad,
                     'precio_unitario' => $detalle->precio_unitario,
                     'descripcion' => $detalle->descripcion,
@@ -227,7 +229,7 @@ class CotizacionService
      *     calculan snapshots/precio al vuelo sin requerir una fila `producto`.
      *
      * @return array{producto_id: ?int, tipo_producto_id: ?int, precio_base: float,
-     *               tela_snapshot: ?array, atributos_snapshot: ?array}
+     *               tela_snapshot: ?array, atributos_snapshot: ?array, sku_snapshot: ?string}
      */
     private function resolverVarianteLinea(array $item): array
     {
@@ -241,6 +243,7 @@ class CotizacionService
                 'precio_base'        => (float) ($producto->precio_base ?? 0),
                 'tela_snapshot'      => $snapshots['tela_snapshot'],
                 'atributos_snapshot' => $snapshots['atributos_snapshot'],
+                'sku_snapshot'       => $snapshots['sku'],
             ];
         }
 
@@ -254,6 +257,7 @@ class CotizacionService
             'precio_base'        => (float) $snap['precio_sugerido'],
             'tela_snapshot'      => $snap['tela_snapshot'],
             'atributos_snapshot' => $snap['atributos_snapshot'],
+            'sku_snapshot'       => $snap['sku'],
         ];
     }
 
@@ -276,6 +280,7 @@ class CotizacionService
                 'tipo_producto_id' => $base['tipo_producto_id'],
                 'tela_snapshot' => $base['tela_snapshot'],
                 'atributos_snapshot' => $base['atributos_snapshot'],
+                'sku_snapshot' => $base['sku_snapshot'],
                 'cantidad' => $item['cantidad'],
                 'descripcion' => $item['descripcion'] ?? null,
                 'lleva_bordado' => $item['lleva_bordado'] ?? false,

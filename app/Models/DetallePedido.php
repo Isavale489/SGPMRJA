@@ -19,6 +19,7 @@ class DetallePedido extends Model
         'tipo_producto_id',
         'tela_snapshot',
         'atributos_snapshot',
+        'sku_snapshot',
         'cantidad',
         'descripcion',
         'lleva_bordado',

@@ -69,8 +69,13 @@ Backend de cotización: aceptar y persistir líneas configuradas dinámicamente 
   (no descuenta stock, regla intacta).
 
 **Desviaciones del spec**:
-1. La persistencia del SKU en el snapshot (decisión §8) NO se implementó: no existe columna para el
-   SKU y embeberlo en `atributos_snapshot` rompería su forma (los PDFs la iteran). El SKU es
-   **recomputable** desde tipo+tela+atributos (todo guardado). Si se quiere un SKU congelado, es un
-   follow-up de 1 columna (`sku_snapshot`) — pendiente de decisión de Emmanuel.
-2. Telas se integró sin endpoints separados (ver TASK-022).
+1. Telas se integró sin endpoints separados (ver TASK-022).
+
+**Addendum (SKU persistido — solicitado por Emmanuel, "implementación lo más sólida posible"):**
+Migración `2026_06_03_220200_add_sku_snapshot_to_detalles.php` agrega columna `sku_snapshot`
+(string 100) en `detalle_cotizacion` y `detalle_pedido`. `buildSnapshotsParaDetalle` ahora
+devuelve `sku` (= `producto.codigo`); `resolverVarianteLinea` devuelve `sku_snapshot` en ambos
+caminos; `crearDetalles` lo persiste. Además `convertirAPedido` ahora copia `tipo_producto_id` +
+`sku_snapshot` (solapamiento menor con TASK-025; necesario para que la conversión de una cotización
+dinámica no quede incompleta). QA end-to-end (rollback): cotización dinámica → `sku_snapshot`
+`FRN-PIQ-C-CLA-001`; conversión a pedido copia el mismo SKU + `tipo_producto_id`, `producto_id` NULL.
