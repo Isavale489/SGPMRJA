@@ -2,11 +2,11 @@
 
 **Feature**: FEAT-003 — variantes-dinamicas
 **Spec**: `sdd/specs/variantes-dinamicas.spec.md`
-**Status**: pending
+**Status**: done
 **Priority**: medium
 **Esfuerzo estimado**: S
 **Depends-on**: TASK-019, TASK-020, TASK-021, TASK-022, TASK-023, TASK-024, TASK-025, TASK-026, TASK-027
-**Assigned-to**: unassigned
+**Assigned-to**: emmanuel
 
 ---
 
@@ -50,4 +50,18 @@ docs/conventions/README.md — índice de convenciones
 1. Leer ambos docs contra el código mergeado; verificar que no contradigan el comportamiento real.
 
 ## Nota de Completitud
-*(Llenar al terminar)*
+
+**Completado por**: emmanuel
+**Fecha**: 2026-06-03
+**Commits**: (en rama `feat/variantes-dinamicas`)
+**Notas**:
+- `docs/conventions/product-variants.md`: modelo de datos actualizado (tipo_producto como unidad de
+  catálogo, `tipo_producto_tela`, `producto_id` nullable + `tipo_producto_id` + `sku_snapshot` en
+  detalles, orden con producto_id nullable). Nueva sección **"FEAT-003 — Variantes dinámicas"** con
+  las 7 decisiones clave, reglas que se mantienen y la limitación conocida (edición dinámica).
+  Actualizadas las secciones de snapshots y del wizard.
+- `docs/conventions/sku-format.md`: `resolver-variante` documentado con `dynamic:true/false`; nueva
+  sección "SKU en variantes dinámicas" (calculado + congelado en `sku_snapshot` + recomputable; nota
+  del secuencial referencial).
+
+**Desviaciones del spec**: ninguna. Docs alineadas con el código mergeado en TASK-019..027.
