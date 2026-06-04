@@ -288,22 +288,63 @@ class ProductoController extends Controller
             return $idsActuales == $valoresIds;
         });
 
-        if (!$match) {
+        // Caso compat: la combinación ya existe como Producto concreto (legacy).
+        if ($match) {
             return response()->json([
-                'found' => false,
-                'message' => 'No existe una variante con esa combinación. Crea primero el producto en /productos.',
+                'found'   => true,
+                'dynamic' => false,
+                'producto' => [
+                    'id'           => $match->id,
+                    'codigo'       => $match->codigo,
+                    'precio_base'  => (float) $match->precio_base,
+                    'imagen'       => $match->imagen ? asset($match->imagen) : null,
+                    'tipo_nombre'  => $match->tipoProducto?->nombre,
+                    'tela_nombre'  => $match->tela?->nombre,
+                ],
             ]);
         }
 
+        // Caso dinámico (FEAT-003): no existe Producto → se calcula la variante
+        // al vuelo (SKU + precio + snapshots) sin persistir nada.
+        $tipo = TipoProducto::find($tipoId);
+        $tela = $telaId ? Insumo::find($telaId) : null;
+
+        if ($tipo->requiere_tela && !$tela) {
+            return response()->json([
+                'found'   => false,
+                'message' => 'Este tipo de producto requiere una tela.',
+            ]);
+        }
+
+        // La tela elegida debe estar permitida para el tipo (tipo_producto_tela).
+        if ($tela && !$tipo->telas()->wherePivot('insumo_id', $tela->id)->exists()) {
+            return response()->json([
+                'found'   => false,
+                'message' => 'La tela seleccionada no está habilitada para este tipo de producto.',
+            ]);
+        }
+
+        $snap = $this->productoService->buildSnapshotsDesdeTipo($tipo, $tela, $valoresIds);
+
         return response()->json([
-            'found' => true,
+            'found'    => true,
+            'dynamic'  => true,
             'producto' => [
-                'id'           => $match->id,
-                'codigo'       => $match->codigo,
-                'precio_base'  => (float) $match->precio_base,
-                'imagen'       => $match->imagen ? asset($match->imagen) : null,
-                'tipo_nombre'  => $match->tipoProducto?->nombre,
-                'tela_nombre'  => $match->tela?->nombre,
+                'id'           => null,
+                'codigo'       => $snap['sku'],
+                'precio_base'  => $snap['precio_sugerido'],
+                'imagen'       => null,
+                'tipo_nombre'  => $tipo->nombre,
+                'tela_nombre'  => $tela?->nombre,
+            ],
+            'variante' => [
+                'tipo_producto_id'   => $tipo->id,
+                'insumo_tela_id'     => $tela?->id,
+                'atributo_valor_ids' => $valoresIds,
+                'tela_snapshot'      => $snap['tela_snapshot'],
+                'atributos_snapshot' => $snap['atributos_snapshot'],
+                'sku'                => $snap['sku'],
+                'precio_sugerido'    => $snap['precio_sugerido'],
             ],
         ]);
     }
