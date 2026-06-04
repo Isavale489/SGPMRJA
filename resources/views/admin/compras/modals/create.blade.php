@@ -101,9 +101,11 @@
                                         {{-- Buscador de documento con icono de lupa --}}
                                         <div class="position-relative cot-search-doc-wrap">
                                             <div class="input-group cot-search-doc-group">
-                                                <span class="input-group-text cot-search-doc-icon">
+                                                <button type="button" class="input-group-text cot-search-doc-icon"
+                                                    id="c-prov-browse-btn" title="Buscar en listado de proveedores"
+                                                    data-bs-toggle="modal" data-bs-target="#buscarProveedorModal">
                                                     <i class="ri-search-2-line"></i>
-                                                </span>
+                                                </button>
                                                 <select class="form-select" id="c-prov-doc-prefix" style="max-width: 70px;">
                                                     <option value="V-">V-</option>
                                                     <option value="J-" selected>J-</option>
@@ -434,6 +436,8 @@
         </div>
     </div>
 </div>
+
+@include('admin.compras.modals.buscar-proveedor')
 
 {{-- ═══════════════════════════════════════════════════════════════════════════
      MINI-MODAL: Crear proveedor nuevo (inline, "extensión" del maestro Proveedores)

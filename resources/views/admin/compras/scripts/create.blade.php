@@ -776,6 +776,87 @@ $(document).ready(function () {
             });
         });
 
+        // ════════════════════════════════════════════════════════════════════
+        //  MODAL DE BÚSQUEDA DE PROVEEDOR (lupa del paso 1)
+        // ════════════════════════════════════════════════════════════════════
+        (function () {
+            var bspTimeout = null;
+
+            function bspRender(proveedores) {
+                var $tbody = $('#bsp-tbody');
+                var $empty = $('#bsp-empty');
+                var $label = $('#bsp-count-label');
+                $tbody.empty();
+
+                if (!proveedores || proveedores.length === 0) {
+                    $empty.removeClass('d-none');
+                    $label.text('');
+                    return;
+                }
+
+                $empty.addClass('d-none');
+                $label.text(proveedores.length + ' proveedor(es) encontrado(s)');
+
+                proveedores.forEach(function (p) {
+                    var tipoBadge = p.tipo === 'juridico'
+                        ? '<span class="badge bg-soft-primary text-primary">Jurídico</span>'
+                        : '<span class="badge bg-soft-success text-success">Natural</span>';
+
+                    var $tr = $('<tr style="cursor:pointer;">')
+                        .html(
+                            '<td class="fw-semibold">' + p.nombre + '</td>'
+                            + '<td class="font-monospace small">' + (p.doc || '—') + '</td>'
+                            + '<td>' + tipoBadge + '</td>'
+                            + '<td class="text-muted small">' + (p.tel || '—') + '</td>'
+                            + '<td class="text-center"><span class="badge bg-light text-dark">' + p.compras + '</span></td>'
+                        )
+                        .on('click', function () {
+                            aplicarProveedor(p);
+                            $('#buscarProveedorModal').modal('hide');
+                            $('#bsp-input').val('');
+                        });
+                    $tbody.append($tr);
+                });
+            }
+
+            function bspSearch(q) {
+                $('#bsp-loading').removeClass('d-none');
+                $('#bsp-empty').addClass('d-none');
+                $.ajax({
+                    url: '{{ route("proveedores.search") }}',
+                    data: { q: q },
+                    success: function (data) {
+                        $('#bsp-loading').addClass('d-none');
+                        bspRender(data);
+                    },
+                    error: function () {
+                        $('#bsp-loading').addClass('d-none');
+                    }
+                });
+            }
+
+            $('#buscarProveedorModal').on('shown.bs.modal', function () {
+                $('#bsp-input').trigger('focus');
+                if ($('#bsp-tbody tr').length === 0) {
+                    bspSearch('');
+                }
+            }).on('hidden.bs.modal', function () {
+                clearTimeout(bspTimeout);
+            });
+
+            $('#bsp-input').on('input', function () {
+                clearTimeout(bspTimeout);
+                bspTimeout = setTimeout(function () {
+                    bspSearch($('#bsp-input').val().trim());
+                }, 300);
+            });
+
+            $('#bsp-clear-btn').on('click', function () {
+                $('#bsp-input').val('').trigger('focus');
+                bspSearch('');
+            });
+        })();
+
         // Exponer API mínima por consistencia con otros wizards
         window.compraWizard = { show: showStep, next: nextStep, prev: prevStep, populate: populate };
     })();
