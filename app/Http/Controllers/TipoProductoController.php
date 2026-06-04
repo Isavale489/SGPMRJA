@@ -13,7 +13,7 @@ class TipoProductoController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $query = TipoProducto::withCount(['productos', 'atributos'])->orderBy('nombre');
+        $query = TipoProducto::withCount(['productos', 'atributos', 'telas'])->orderBy('nombre');
 
         if ($request->boolean('historial')) {
             $query->onlyTrashed();

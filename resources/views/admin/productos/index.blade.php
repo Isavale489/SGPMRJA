@@ -40,7 +40,7 @@
             <div class="card card-maestros">
                 <div class="card-header">
                     <div class="d-flex align-items-center">
-                        <h5 class="card-title mb-0 flex-grow-1">Listado de Productos</h5>
+                        <h5 class="card-title mb-0 flex-grow-1">SKUs / Productos individuales</h5>
                         <div class="flex-shrink-0 d-flex align-items-center gap-3">
                             <!-- Toggle Historial -->
                             @if($historial)
@@ -77,6 +77,21 @@
                     </div>
                 </div>
                 <div class="card-body">
+                    {{-- FEAT-003: el catálogo se define por Tipo de Producto (sus telas y
+                         atributos). Las combinaciones se configuran al vuelo en la cotización
+                         y NO generan filas acá. Esta tabla lista los SKUs individuales
+                         (productos legacy o creados explícitamente). --}}
+                    <div class="alert alert-info d-flex align-items-start gap-2 py-2 px-3 mb-3" role="alert">
+                        <i class="ri-information-line fs-5 lh-1 mt-1"></i>
+                        <div class="small">
+                            El <strong>catálogo</strong> se gestiona por <strong>Tipo de Producto</strong>
+                            (telas y atributos permitidos) desde
+                            <button type="button" class="btn btn-link btn-sm p-0 align-baseline"
+                                data-bs-toggle="modal" data-bs-target="#tiposModal">Gestionar Tipos</button>.
+                            Las variantes (tela + atributos) se eligen dinámicamente al cotizar, sin crear
+                            un producto por combinación. Abajo se listan los <strong>SKUs individuales</strong>.
+                        </div>
+                    </div>
                     {{-- ============================================================
                          FILTROS — Patrón Maestro S-07 (Colapsable)
                          Filtros server-side: ajax.reload() con param filter_tipo_producto_id.
