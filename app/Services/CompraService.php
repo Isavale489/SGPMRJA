@@ -149,6 +149,14 @@ class CompraService
             throw new \RuntimeException('Solo se pueden clonar compras anuladas.');
         }
 
+        $existeClon = Compra::where('origen_compra_id', $compra->id)
+            ->where('estado', 'borrador')
+            ->exists();
+
+        if ($existeClon) {
+            throw new \RuntimeException('Ya existe un borrador activo clonado de esta compra. Procésalo o elimínalo antes de crear otro.');
+        }
+
         return DB::transaction(function () use ($compra, $userId) {
             $compra->load('detalles');
 
@@ -164,6 +172,7 @@ class CompraService
                 'total'             => $compra->total,
                 'observaciones'     => 'Clonada de Compra #' . $compra->id . ($compra->observaciones ? '. ' . $compra->observaciones : ''),
                 'estado'            => 'borrador',
+                'origen_compra_id'  => $compra->id,
             ]);
 
             foreach ($compra->detalles as $detalle) {

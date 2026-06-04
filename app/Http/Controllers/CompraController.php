@@ -217,6 +217,9 @@ class CompraController extends Controller
     public function getCompras(Request $request)
     {
         $query = Compra::with(['proveedor.persona', 'registradoPor'])
+            ->withCount([
+                'clones as tiene_clon_activo' => fn($q) => $q->where('estado', 'borrador'),
+            ])
             ->select('compra.*');
 
         if ($request->filled('filter_proveedor_id')) {
@@ -258,7 +261,11 @@ class CompraController extends Controller
                 }
 
                 if ($c->estado === 'anulada') {
-                    $btn .= '<button class="btn btn-sm btn-soft-secondary clonar-btn" data-id="' . $c->id . '" title="Clonar como nuevo borrador"><i class="ri-file-copy-line"></i></button>';
+                    if ($c->tiene_clon_activo) {
+                        $btn .= '<button class="btn btn-sm btn-soft-secondary" disabled title="Ya existe un borrador activo clonado de esta compra"><i class="ri-file-copy-line"></i></button>';
+                    } else {
+                        $btn .= '<button class="btn btn-sm btn-soft-secondary clonar-btn" data-id="' . $c->id . '" title="Clonar como nuevo borrador"><i class="ri-file-copy-line"></i></button>';
+                    }
                 }
 
                 $btn .= '</div>';
