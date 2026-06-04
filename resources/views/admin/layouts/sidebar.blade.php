@@ -315,13 +315,13 @@
                         {{-- ================================== --}}
                         {{-- 2. MAESTROS --}}
                         {{-- ================================== --}}
-                        <li class="nav-item section-maestros {{ request()->is('clientes*', 'productos*', 'atributos*', 'proveedores*', 'insumos*', 'empleados*', 'departamentos*', 'cargos*') ? 'section-is-active' : '' }}">
+                        <li class="nav-item section-maestros {{ request()->is('clientes*', 'productos*', 'atributos*', 'colores*', 'proveedores*', 'insumos*', 'empleados*', 'departamentos*', 'cargos*') ? 'section-is-active' : '' }}">
                             <a class="nav-link menu-link" href="#sidebarMaestros" data-bs-toggle="collapse" role="button"
-                                aria-expanded="{{ request()->is('clientes*') || request()->is('productos*') || request()->is('atributos*') || request()->is('proveedores*') || request()->is('insumos*') || request()->is('empleados*') || request()->is('departamentos*') || request()->is('cargos*') ? 'true' : 'false' }}"
+                                aria-expanded="{{ request()->is('clientes*') || request()->is('productos*') || request()->is('atributos*') || request()->is('colores*') || request()->is('proveedores*') || request()->is('insumos*') || request()->is('empleados*') || request()->is('departamentos*') || request()->is('cargos*') ? 'true' : 'false' }}"
                                 aria-controls="sidebarMaestros">
                                 <i class="ri-database-2-line"></i> <span data-key="t-maestros">Gestión General</span>
                             </a>
-                            <div class="collapse menu-dropdown {{ request()->is('clientes*') || request()->is('productos*') || request()->is('atributos*') || request()->is('proveedores*') || request()->is('insumos*') || request()->is('empleados*') || request()->is('departamentos*') || request()->is('cargos*') ? 'show' : '' }}"
+                            <div class="collapse menu-dropdown {{ request()->is('clientes*') || request()->is('productos*') || request()->is('atributos*') || request()->is('colores*') || request()->is('proveedores*') || request()->is('insumos*') || request()->is('empleados*') || request()->is('departamentos*') || request()->is('cargos*') ? 'show' : '' }}"
                                 id="sidebarMaestros">
                                 <ul class="nav nav-sm flex-column">
                                     <li class="nav-item">
@@ -334,12 +334,12 @@
                                     {{-- Productos con sub-dropdown (Atributos) --}}
                                     <li class="nav-item">
                                         <a href="#sidebarProductos" data-bs-toggle="collapse" role="button"
-                                            class="nav-link {{ request()->is('productos*', 'atributos*') ? 'active' : 'collapsed' }}"
-                                            aria-expanded="{{ request()->is('productos*', 'atributos*') ? 'true' : 'false' }}"
+                                            class="nav-link {{ request()->is('productos*', 'atributos*', 'colores*') ? 'active' : 'collapsed' }}"
+                                            aria-expanded="{{ request()->is('productos*', 'atributos*', 'colores*') ? 'true' : 'false' }}"
                                             aria-controls="sidebarProductos">
                                             <i class="ri-t-shirt-line me-1"></i> Productos
                                         </a>
-                                        <div class="collapse menu-dropdown {{ request()->is('productos*', 'atributos*') ? 'show' : '' }}"
+                                        <div class="collapse menu-dropdown {{ request()->is('productos*', 'atributos*', 'colores*') ? 'show' : '' }}"
                                             id="sidebarProductos">
                                             <ul class="nav nav-sm flex-column">
                                                 <li class="nav-item">
@@ -352,6 +352,12 @@
                                                     <a href="{{ url('atributos') }}"
                                                         class="nav-link {{ request()->is('atributos*') ? 'active' : '' }}">
                                                         <i class="ri-list-settings-line me-1"></i> Atributos
+                                                    </a>
+                                                </li>
+                                                <li class="nav-item">
+                                                    <a href="{{ url('colores') }}"
+                                                        class="nav-link {{ request()->is('colores*') ? 'active' : '' }}">
+                                                        <i class="ri-palette-line me-1"></i> Colores
                                                     </a>
                                                 </li>
                                             </ul>
