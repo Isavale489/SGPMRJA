@@ -102,8 +102,7 @@
                                         <div class="position-relative cot-search-doc-wrap">
                                             <div class="input-group cot-search-doc-group">
                                                 <button type="button" class="input-group-text cot-search-doc-icon"
-                                                    id="c-prov-browse-btn" title="Buscar en listado de proveedores"
-                                                    data-bs-toggle="modal" data-bs-target="#buscarProveedorModal">
+                                                    id="c-prov-browse-btn" title="Buscar en listado de proveedores">
                                                     <i class="ri-search-2-line"></i>
                                                 </button>
                                                 <select class="form-select" id="c-prov-doc-prefix" style="max-width: 70px;">

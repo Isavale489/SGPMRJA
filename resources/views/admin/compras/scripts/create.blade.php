@@ -835,6 +835,12 @@ $(document).ready(function () {
                 });
             }
 
+            // Abrir el modal hijo vía JS (no data-bs-toggle) para no cerrar el padre
+            // — ver docs/conventions/nested-modals.md
+            $('#c-prov-browse-btn').on('click', function () {
+                $('#buscarProveedorModal').modal('show');
+            });
+
             $('#buscarProveedorModal').on('shown.bs.modal', function () {
                 $('#bsp-input').trigger('focus');
                 if ($('#bsp-tbody tr').length === 0) {
