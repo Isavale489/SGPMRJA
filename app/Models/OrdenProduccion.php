@@ -60,6 +60,43 @@ class OrdenProduccion extends Model
     }
 
     /**
+     * Nombre legible de lo que se fabrica (FEAT-003):
+     *  - Legacy: nombre del Producto concreto.
+     *  - Dinámico (producto_id NULL): se arma desde el snapshot de la línea
+     *    (tipo + tela + atributos); fallback al SKU congelado.
+     * Para evitar N+1, eager-load `producto` y `detallePedido.tipoProducto`.
+     */
+    public function getNombreProductoAttribute(): string
+    {
+        if ($this->producto) {
+            return $this->producto->nombre;
+        }
+
+        $d = $this->detallePedido;
+        if ($d) {
+            $partes = [];
+            if ($d->tipoProducto) {
+                $partes[] = $d->tipoProducto->nombre;
+            }
+            if (is_array($d->tela_snapshot) && !empty($d->tela_snapshot['nombre'])) {
+                $partes[] = $d->tela_snapshot['nombre'];
+            }
+            if (is_array($d->atributos_snapshot)) {
+                $partes = array_merge($partes, array_values($d->atributos_snapshot));
+            }
+            $nombre = trim(implode(' ', $partes));
+            if ($nombre !== '') {
+                return $nombre;
+            }
+            if (!empty($d->sku_snapshot)) {
+                return $d->sku_snapshot;
+            }
+        }
+
+        return 'Producto #' . ($this->producto_id ?? $this->id);
+    }
+
+    /**
      * Fracción de avance de la orden (0..1) = producida / solicitada.
      */
     public function getProgresoAttribute(): float
