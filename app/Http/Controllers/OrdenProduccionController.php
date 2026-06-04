@@ -33,7 +33,7 @@ class OrdenProduccionController extends Controller
 
     public function getOrdenes(Request $request)
     {
-        $ordenes = OrdenProduccion::with(['producto.tipoProducto', 'empleado.persona', 'creadoPor:id,name', 'pedido.cliente.persona'])
+        $ordenes = OrdenProduccion::with(['producto.tipoProducto', 'detallePedido.tipoProducto', 'empleado.persona', 'creadoPor:id,name', 'pedido.cliente.persona'])
             ->select('orden_produccion.*');
 
         if ($request->filled('filter_estado')) {
@@ -71,7 +71,7 @@ class OrdenProduccionController extends Controller
                 return '<div class="fw-medium text-center text-muted">Orden Manual</div>';
             })
             ->addColumn('producto_info', function ($orden) {
-                $producto = $orden->producto ? $orden->producto->nombre : 'N/A';
+                $producto = $orden->nombre_producto;
                 $empleado = $orden->empleado && $orden->empleado->persona
                     ? $orden->empleado->persona->nombre_completo
                     : null;
@@ -110,6 +110,7 @@ class OrdenProduccionController extends Controller
                 'cliente.persona',
                 'productos.producto.tipoProducto.insumosDefault',
                 'productos.producto.tela',
+                'productos.tipoProducto.insumosDefault', // líneas dinámicas (sin producto)
                 'productos.color',
                 'productos.talla',
                 'productos.bordados',
@@ -126,9 +127,11 @@ class OrdenProduccionController extends Controller
 
         $data = $pedidos->map(function ($pedido) use ($detallesConOrden) {
             $lineas = $pedido->productos->map(function ($d) use ($detallesConOrden) {
+                // Tipo: legacy desde el producto; dinámico desde la relación directa.
+                $tipo = $d->producto ? $d->producto->tipoProducto : $d->tipoProducto;
+
                 // Insumos por defecto del tipo de producto (template para la orden).
                 // Cantidad pivote = consumo por unidad → multiplicar por las unidades de la línea.
-                $tipo = optional($d->producto)->tipoProducto;
                 $insumosDefault = $tipo
                     ? $tipo->insumosDefault->map(fn($i) => [
                         'id'        => $i->id,
@@ -138,23 +141,39 @@ class OrdenProduccionController extends Controller
                     ])->values()
                     : collect();
 
-                // Auto-prefill de la tela del producto (variante-específica):
-                // si el tipo requiere tela y define consumo por unidad, agregamos la tela
-                // del producto con cantidad = consumo × unidades de la línea.
-                $tela = optional($d->producto)->tela;
-                if ($tipo && $tipo->requiere_tela && $tipo->consumo_tela_por_unidad > 0 && $tela) {
+                // Tela de la variante: legacy desde producto->tela; dinámico desde tela_snapshot.
+                $telaId = $telaNombre = $telaUnidad = null;
+                if ($d->producto && $d->producto->tela) {
+                    $telaId = $d->producto->tela->id;
+                    $telaNombre = $d->producto->tela->nombre;
+                    $telaUnidad = $d->producto->tela->unidad_medida;
+                } elseif (is_array($d->tela_snapshot) && !empty($d->tela_snapshot['id'])) {
+                    $telaId = $d->tela_snapshot['id'];
+                    $telaNombre = $d->tela_snapshot['nombre'] ?? 'Tela';
+                    $telaUnidad = $d->tela_snapshot['unidad_medida'] ?? '';
+                }
+
+                // Auto-prefill de la tela: si el tipo requiere tela y define consumo por
+                // unidad, se agrega con cantidad = consumo × unidades de la línea.
+                if ($tipo && $tipo->requiere_tela && $tipo->consumo_tela_por_unidad > 0 && $telaId) {
                     $insumosDefault->prepend([
-                        'id'        => $tela->id,
-                        'nombre'    => $tela->nombre,
-                        'unidad'    => $tela->unidad_medida,
+                        'id'        => $telaId,
+                        'nombre'    => $telaNombre,
+                        'unidad'    => $telaUnidad,
                         'cantidad'  => round((float) $tipo->consumo_tela_por_unidad * $d->cantidad, 2),
                     ]);
                 }
 
+                // Nombre legible de la línea (legacy o dinámico desde snapshot).
+                $productoNombre = $d->producto
+                    ? $d->producto->nombre
+                    : (trim(($tipo->nombre ?? '') . ' ' . ($telaNombre ?? ''))
+                        ?: ($d->sku_snapshot ?? ('Producto #' . $d->id)));
+
                 return [
                     'detalle_id'      => $d->id,
                     'producto_id'     => $d->producto_id,
-                    'producto_nombre' => $d->producto->nombre ?? ('Producto #' . $d->producto_id),
+                    'producto_nombre' => $productoNombre,
                     'cantidad'        => $d->cantidad,
                     'color'           => $d->color->nombre ?? null,
                     'talla'           => $d->talla ? ($d->talla->etiqueta ?: $d->talla->nombre) : null,
@@ -192,7 +211,7 @@ class OrdenProduccionController extends Controller
     {
         $empleado = Empleado::with('persona')->findOrFail($empleadoId);
 
-        $ordenes = OrdenProduccion::with(['producto', 'pedido'])
+        $ordenes = OrdenProduccion::with(['producto', 'detallePedido.tipoProducto', 'pedido'])
             ->where('empleado_id', $empleadoId)
             ->orderByRaw("FIELD(estado,'En Proceso','Pendiente','Finalizado','Cancelado')")
             ->orderBy('fecha_fin_estimada')
@@ -200,7 +219,7 @@ class OrdenProduccionController extends Controller
             ->map(fn($o) => [
                 'id'                  => $o->id,
                 'pedido_id'           => $o->pedido_id,
-                'producto'            => optional($o->producto)->nombre ?? ('Producto #' . $o->producto_id),
+                'producto'            => $o->nombre_producto,
                 'cantidad_solicitada' => $o->cantidad_solicitada,
                 'cantidad_producida'  => $o->cantidad_producida,
                 'cantidad_defectuosa' => $o->cantidad_defectuosa,
@@ -363,12 +382,16 @@ class OrdenProduccionController extends Controller
         $orden = OrdenProduccion::with([
                 'producto.tipoProducto',
                 'empleado.persona',
+                'detallePedido.tipoProducto',
                 'detallePedido.bordados.logo',
                 'detallePedido.color',
                 'detallePedido.talla',
                 'insumos',
                 'creadoPor:id,name',
             ])->findOrFail($id);
+
+        // Expone el nombre legible (legacy o dinámico desde snapshot) al front.
+        $orden->append('nombre_producto');
 
         return response()->json($orden);
     }

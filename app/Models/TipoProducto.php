@@ -55,4 +55,16 @@ class TipoProducto extends Model
             ->withPivot('cantidad_estimada')
             ->withTimestamps();
     }
+
+    /**
+     * Telas permitidas para este tipo de producto (FEAT-003).
+     * Pivot: tipo_producto_tela. Son insumos con tipo='Tela'.
+     * Alimenta el selector de variante de la cotización sin requerir
+     * una fila `producto` por combinación.
+     */
+    public function telas()
+    {
+        return $this->belongsToMany(Insumo::class, 'tipo_producto_tela')
+            ->withTimestamps();
+    }
 }

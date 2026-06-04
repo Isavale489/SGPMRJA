@@ -2,11 +2,11 @@
 
 **Feature**: FEAT-003 — variantes-dinamicas
 **Spec**: `sdd/specs/variantes-dinamicas.spec.md`
-**Status**: pending
+**Status**: done
 **Priority**: high
 **Esfuerzo estimado**: S
 **Depends-on**: none
-**Assigned-to**: unassigned
+**Assigned-to**: emmanuel
 
 ---
 
@@ -53,4 +53,16 @@ Permite que una línea de cotización/pedido se autodescriba por snapshots sin r
 2. Tinker: crear un detalle con `producto_id=null, tipo_producto_id=<id>` → persiste; `->tipoProducto` resuelve.
 
 ## Nota de Completitud
-*(Llenar al terminar)*
+
+**Completado por**: emmanuel
+**Fecha**: 2026-06-03
+**Commits**: (en rama `feat/variantes-dinamicas`)
+**Notas**: Migración `2026_06_03_220100_detalle_nullable_producto_add_tipo.php`. `producto_id` →
+nullable en `detalle_cotizacion` y `detalle_pedido` vía `ALTER TABLE … MODIFY` (MariaDB permite
+cambiar nullability sin soltar la FK; se evita `->change()` por la FK existente). Añadida columna
+`tipo_producto_id` (nullable, FK a `tipo_producto`, `nullOnDelete`). Modelos: `tipo_producto_id`
+en fillable + relación `tipoProducto()` en ambos. Verificado: ambos `producto_id` nullable=YES,
+`tipo_producto_id` presente, y creación de `DetalleCotizacion` con `producto_id=null` +
+`tipo_producto_id` funcionando con la relación (QA con rollback). Líneas legacy intactas.
+
+**Desviaciones del spec**: ninguna (la migración base no especificaba método; se usó MODIFY por la FK).

@@ -40,7 +40,7 @@
             <div class="card card-maestros">
                 <div class="card-header">
                     <div class="d-flex align-items-center">
-                        <h5 class="card-title mb-0 flex-grow-1">Listado de Productos</h5>
+                        <h5 class="card-title mb-0 flex-grow-1">SKUs / Productos individuales</h5>
                         <div class="flex-shrink-0 d-flex align-items-center gap-3">
                             <!-- Toggle Historial -->
                             @if($historial)
@@ -77,6 +77,21 @@
                     </div>
                 </div>
                 <div class="card-body">
+                    {{-- FEAT-003: el catálogo se define por Tipo de Producto (sus telas y
+                         atributos). Las combinaciones se configuran al vuelo en la cotización
+                         y NO generan filas acá. Esta tabla lista los SKUs individuales
+                         (productos legacy o creados explícitamente). --}}
+                    <div class="alert alert-info d-flex align-items-start gap-2 py-2 px-3 mb-3" role="alert">
+                        <i class="ri-information-line fs-5 lh-1 mt-1"></i>
+                        <div class="small">
+                            El <strong>catálogo</strong> se gestiona por <strong>Tipo de Producto</strong>
+                            (telas y atributos permitidos) desde
+                            <button type="button" class="btn btn-link btn-sm p-0 align-baseline"
+                                data-bs-toggle="modal" data-bs-target="#tiposModal">Gestionar Tipos</button>.
+                            Las variantes (tela + atributos) se eligen dinámicamente al cotizar, sin crear
+                            un producto por combinación. Abajo se listan los <strong>SKUs individuales</strong>.
+                        </div>
+                    </div>
                     {{-- ============================================================
                          FILTROS — Patrón Maestro S-07 (Colapsable)
                          Filtros server-side: ajax.reload() con param filter_tipo_producto_id.
@@ -559,6 +574,31 @@
                                         Al crear la orden se prellena con (consumo × cantidad), usando la tela específica del producto.
                                     </small>
                                 </div>
+                            </div>
+
+                            {{-- Telas permitidas para este tipo (FEAT-003) — visible si requiere tela --}}
+                            <div class="mt-3" id="tipo-telas-section">
+                                <label class="form-label mb-1"><i class="ri-shirt-line me-1"></i>Telas permitidas</label>
+                                <p class="text-muted small mb-2">
+                                    Marca las telas en las que se puede confeccionar este tipo. Son las que ofrecerá el
+                                    selector de variante en la cotización (no hace falta crear un producto por combinación).
+                                </p>
+                                <div class="row g-1" id="tipo-telas-list">
+                                    @foreach($telasDisponibles as $tela)
+                                        <div class="col-md-6">
+                                            <div class="form-check">
+                                                <input class="form-check-input tipo-tela-check" type="checkbox"
+                                                    value="{{ $tela->id }}" id="tipo-tela-{{ $tela->id }}">
+                                                <label class="form-check-label" for="tipo-tela-{{ $tela->id }}">
+                                                    {{ $tela->nombre }}@if($tela->codigo) <span class="text-muted">[{{ $tela->codigo }}]</span>@endif
+                                                </label>
+                                            </div>
+                                        </div>
+                                    @endforeach
+                                </div>
+                                @if($telasDisponibles->isEmpty())
+                                    <div class="text-muted small"><i class="ri-information-line me-1"></i>No hay telas registradas (insumos tipo Tela).</div>
+                                @endif
                             </div>
                         </div>
 
@@ -1789,9 +1829,11 @@
                 tipoInsumosState[idx].cantidad = parseFloat($(this).val()) || '';
             });
 
-            // Toggle visibilidad del campo consumo_tela según requiere_tela
+            // Toggle visibilidad de consumo_tela y telas permitidas según requiere_tela
             function aplicarTipoConsumoTelaVisibility() {
-                $('#tipo-consumo-tela-row').toggle($('#tipo-requiere-tela').is(':checked'));
+                var on = $('#tipo-requiere-tela').is(':checked');
+                $('#tipo-consumo-tela-row').toggle(on);
+                $('#tipo-telas-section').toggle(on);
             }
             $(document).on('change', '#tipo-requiere-tela', aplicarTipoConsumoTelaVisibility);
 
@@ -1817,6 +1859,7 @@
                 $('#tipo-precio-confeccion').val('');
                 $('#tipo-requiere-tela').prop('checked', true);
                 $('#tipo-consumo-tela').val('');
+                $('.tipo-tela-check').prop('checked', false);
                 aplicarTipoConsumoTelaVisibility();
                 $('#tipo-atributos-list').html('');
                 tipoInsumosState = [];
@@ -1840,6 +1883,13 @@
                     $("#tipo-precio-confeccion").val(tipo.precio_confeccion || 0);
                     $("#tipo-requiere-tela").prop('checked', !!tipo.requiere_tela);
                     $("#tipo-consumo-tela").val(tipo.consumo_tela_por_unidad || 0);
+
+                    // Telas permitidas del tipo (FEAT-003)
+                    var telaIds = (tipo.telas || []).map(function (t) { return String(t.id); });
+                    $('.tipo-tela-check').each(function () {
+                        $(this).prop('checked', telaIds.indexOf(String(this.value)) !== -1);
+                    });
+
                     aplicarTipoConsumoTelaVisibility();
                     $("#tipoModalTitle").html('<i class="ri-pencil-line me-2"></i>Editar Tipo de Producto');
 
@@ -2011,7 +2061,11 @@
                         atributos: recolectarAtributosSeleccionados(),
                         insumos_default: tipoInsumosState.map(function (it) {
                             return { id: it.id, cantidad_estimada: it.cantidad };
-                        })
+                        }),
+                        // Telas permitidas (FEAT-003) — solo si requiere tela
+                        telas: $("#tipo-requiere-tela").is(':checked')
+                            ? $('.tipo-tela-check:checked').map(function () { return this.value; }).get()
+                            : []
                     },
                     headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
                     success: function (response) {

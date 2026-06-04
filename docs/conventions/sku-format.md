@@ -35,7 +35,21 @@ Ejemplos vivos:
 
 - `GET /productos-preview-codigo` → devuelve el próximo SKU para una combinación tipo + tela + valores (usado por el form de productos para mostrar el SKU en vivo antes de guardar).
 - `GET /productos-sugerir-precio` → devuelve `tela.costo_unitario + tipo.precio_confeccion`.
-- `GET /productos-resolver-variante` → resuelve el `producto.id` exacto para una combinación (usado por el wizard de cotizaciones).
+- `GET /productos-resolver-variante` → resuelve una combinación tipo+tela+valores. Si existe un
+  Producto, devuelve `dynamic:false` con su `id` (legacy). Si no, **calcula la variante**
+  (`dynamic:true`) con SKU + precio + snapshots **sin crear un Producto** (FEAT-003). Usado por el
+  wizard de cotizaciones/pedidos.
+
+## SKU en variantes dinámicas (FEAT-003)
+
+Tras FEAT-003 la mayoría de las ventas NO crean una fila `producto` (el catálogo es el Tipo). El SKU:
+
+- Se **calcula** con el mismo `generarCodigo()` desde tipo + tela + valores (`buildSnapshotsDesdeTipo`).
+- Se **congela** en `detalle_cotizacion.sku_snapshot` / `detalle_pedido.sku_snapshot` al crear la
+  línea, para trazabilidad estable en PDFs/órdenes aunque cambien los códigos del catálogo.
+- Sigue siendo **recomputable** desde tipo+tela+atributos (todo guardado en la línea).
+- El secuencial `NNN` se cuenta sobre la tabla `producto`; en variantes dinámicas (sin filas nuevas)
+  suele quedar en `-001`. Es un SKU **referencial** de la línea, no un id único de catálogo.
 
 ## Cómo aplicar el patrón a futuros catálogos
 

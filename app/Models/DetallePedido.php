@@ -16,8 +16,10 @@ class DetallePedido extends Model
     protected $fillable = [
         'pedido_id',
         'producto_id',
+        'tipo_producto_id',
         'tela_snapshot',
         'atributos_snapshot',
+        'sku_snapshot',
         'cantidad',
         'descripcion',
         'lleva_bordado',
@@ -57,6 +59,11 @@ class DetallePedido extends Model
     public function producto()
     {
         return $this->belongsTo(Producto::class);
+    }
+
+    public function tipoProducto()
+    {
+        return $this->belongsTo(TipoProducto::class);
     }
 
     public function insumos()
