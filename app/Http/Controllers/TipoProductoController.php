@@ -41,6 +41,8 @@ class TipoProductoController extends Controller
             'insumos_default' => 'nullable|array',
             'insumos_default.*.id' => 'required_with:insumos_default|integer|exists:insumo,id',
             'insumos_default.*.cantidad_estimada' => 'required_with:insumos_default|numeric|min:0.01',
+            'telas' => 'nullable|array',
+            'telas.*' => 'integer|exists:insumo,id',
         ], [
             'nombre.required' => 'El nombre es obligatorio',
             'nombre.unique' => 'Ya existe un tipo con este nombre',
@@ -61,11 +63,12 @@ class TipoProductoController extends Controller
 
         $this->syncAtributos($tipo, $request->input('atributos', []));
         $this->syncInsumosDefault($tipo, $request->input('insumos_default', []));
+        $this->syncTelas($tipo, $request->input('telas', []));
 
         return response()->json([
             'success' => true,
             'message' => 'Tipo de producto creado correctamente',
-            'tipo' => $tipo->load(['atributos', 'insumosDefault']),
+            'tipo' => $tipo->load(['atributos', 'insumosDefault', 'telas']),
         ]);
     }
 
@@ -80,6 +83,7 @@ class TipoProductoController extends Controller
             },
             'atributos.valores',
             'insumosDefault',
+            'telas',
         ]);
 
         return response()->json($tipoProducto);
@@ -116,11 +120,12 @@ class TipoProductoController extends Controller
 
         $this->syncAtributos($tipoProducto, $request->input('atributos', []));
         $this->syncInsumosDefault($tipoProducto, $request->input('insumos_default', []));
+        $this->syncTelas($tipoProducto, $request->input('telas', []));
 
         return response()->json([
             'success' => true,
             'message' => 'Tipo de producto actualizado correctamente',
-            'tipo' => $tipoProducto->load(['atributos', 'insumosDefault']),
+            'tipo' => $tipoProducto->load(['atributos', 'insumosDefault', 'telas']),
         ]);
     }
 
@@ -155,6 +160,15 @@ class TipoProductoController extends Controller
         }
 
         $tipo->insumosDefault()->sync($sync);
+    }
+
+    /**
+     * Sincroniza las telas permitidas del tipo (FEAT-003).
+     * @param array<int> $telaIds  IDs de insumo con tipo='Tela'
+     */
+    private function syncTelas(TipoProducto $tipo, array $telaIds): void
+    {
+        $tipo->telas()->sync(array_map('intval', $telaIds));
     }
 
     /**
