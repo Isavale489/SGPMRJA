@@ -599,16 +599,16 @@
                             {{-- Estado Laboral: solo lectura. Lo gobierna Inhabilitar/Restaurar, no es editable aquí. --}}
                             <div class="row mb-0">
                                 <div class="col-md-6">
-                                    <label class="form-label">Estado Laboral</label>
-                                    <input type="text" class="form-control bg-light" id="field-estado-display"
-                                        value="Activo" readonly tabindex="-1">
-                                    <div class="d-flex align-items-start gap-2 mt-2 p-2 rounded-3 bg-info-subtle border border-info-subtle">
-                                        <i class="ri-information-line text-info fs-5 lh-1 mt-1"></i>
-                                        <small class="text-info-emphasis mb-0 lh-sm">
-                                            Se asigna automáticamente: un empleado nuevo o restaurado queda <strong>Activo</strong>.
-                                            Para darlo de baja usa <strong>Inhabilitar</strong> (pasa a Inactivo y al historial).
-                                        </small>
+                                    <label class="form-label d-inline-flex align-items-center mb-0">Estado Laboral</label>
+                                    {{-- Switch de solo lectura: activado = Activo. Lo gobierna Inhabilitar/Restaurar, no es editable aquí. --}}
+                                    <div class="form-check form-switch estatus-switch ms-2" title="Solo lectura — se gestiona con Inhabilitar / Restaurar">
+                                        <input class="form-check-input" type="checkbox" role="switch" id="field-estado-display" checked disabled>
+                                        <label class="form-check-label" for="field-estado-display" id="field-estado-display-label">Activo</label>
+                                        <i class="ri-lock-line estatus-lock" aria-hidden="true"></i>
                                     </div>
+                                    <small class="text-muted d-block mt-1 lh-sm">
+                                        El estatus se gestiona mediante las acciones <strong>Inhabilitar</strong> y <strong>Restaurar</strong>.
+                                    </small>
                                 </div>
                             </div>
                         </div>
@@ -943,6 +943,12 @@
                 return '<span title="' + value + '" style="cursor:default;">' + value + '</span>';
             }
 
+            // Switch de solo lectura del Estado Laboral (activado = Activo).
+            function setEstatusSwitch(activo) {
+                $("#field-estado-display").prop('checked', !!activo);
+                $("#field-estado-display-label").text(activo ? 'Activo' : 'Inhabilitado');
+            }
+
             function formatDate(dateStr) {
                 if (!dateStr) return 'N/A';
                 if (typeof dateStr === 'string') {
@@ -1101,7 +1107,7 @@
                 $("#field-codigo_empleado").val("");
                 $("#tipo-documento-field").val("V-").prop('disabled', false).removeClass('campo-protegido');
                 $("#field-documento_identidad").prop('disabled', false).removeClass('campo-protegido');
-                $("#field-estado-display").val("Activo");
+                setEstatusSwitch(true);
                 // Resetear teléfono
                 $("#telefono-prefix-field").val("0424");
                 $("#telefono-number-field").val("");
@@ -1320,7 +1326,7 @@
                     $("#field-genero").val(data.persona.genero);
                     $("#field-codigo_empleado").val(data.codigo_empleado);
                     $("#field-fecha_ingreso").val(data.fecha_ingreso);
-                    $("#field-estado-display").val(data.trashed ? 'Inhabilitado' : 'Activo');
+                    setEstatusSwitch(!data.trashed);
 
                     // Departamento → cargo en cascada
                     var $deptoSel = $('#field-departamento_id');

@@ -707,16 +707,15 @@
 
                         <div class="modal-form-section mb-0">
                             <div class="modal-form-section-title"><i class="ri-shield-check-line"></i>Estatus</div>
-                            {{-- Estatus: solo lectura. Lo gobierna Inhabilitar/Restaurar, no es editable aquí. --}}
-                            <input type="text" class="form-control bg-light" id="estado-display"
-                                value="Activo" readonly tabindex="-1">
-                            <div class="d-flex align-items-start gap-2 mt-2 p-2 rounded-3 bg-info-subtle border border-info-subtle">
-                                <i class="ri-information-line text-info fs-5 lh-1 mt-1"></i>
-                                <small class="text-info-emphasis mb-0 lh-sm">
-                                    Se asigna automáticamente: un proveedor nuevo o restaurado queda <strong>Activo</strong>.
-                                    Para darlo de baja usa <strong>Inhabilitar</strong> (pasa a Inactivo y al historial).
-                                </small>
+                            {{-- Switch de solo lectura: activado = Activo. Lo gobierna Inhabilitar/Restaurar, no es editable aquí. --}}
+                            <div class="form-check form-switch estatus-switch ms-2" title="Solo lectura — se gestiona con Inhabilitar / Restaurar">
+                                <input class="form-check-input" type="checkbox" role="switch" id="estado-display" checked disabled>
+                                <label class="form-check-label" for="estado-display" id="estado-display-label">Activo</label>
+                                <i class="ri-lock-line estatus-lock" aria-hidden="true"></i>
                             </div>
+                            <small class="text-muted d-block mt-1 lh-sm">
+                                El estatus se gestiona mediante las acciones <strong>Inhabilitar</strong> y <strong>Restaurar</strong>.
+                            </small>
                         </div>
 
                     </div>
@@ -812,6 +811,12 @@
             // Los selectores incluyen tanto los bloques grandes (#campos-juridico/#campos-natural)
             // como los wrappers del RIF/Documento dentro de la sección Identificación
             // (.js-tipo-juridico/.js-tipo-natural).
+            // Switch de solo lectura del Estatus (activado = Activo).
+            function setEstatusSwitch(activo) {
+                $("#estado-display").prop('checked', !!activo);
+                $("#estado-display-label").text(activo ? 'Activo' : 'Inhabilitado');
+            }
+
             function toggleCampos() {
                 var tipo = $('#tipo-proveedor-field').val();
                 var $jur = $('#campos-juridico, .js-tipo-juridico');
@@ -1056,7 +1061,7 @@
                     $("#modalTitle").text("Editar Proveedor");
                     $("#id-field").val(data.id);
                     $("#tipo-proveedor-field").val(data.tipo_proveedor || 'juridico');
-                    $("#estado-display").val(data.trashed ? 'Inhabilitado' : 'Activo');
+                    setEstatusSwitch(!data.trashed);
 
                     toggleCampos();
 
@@ -1363,7 +1368,7 @@
                 $("#proveedorForm")[0].reset();
                 $("#id-field").val("");
                 $("#tipo-proveedor-field").val("juridico");
-                $("#estado-display").val("Activo");
+                setEstatusSwitch(true);
                 toggleCampos();
                 $("#add-btn").show().prop('disabled', false);
                 $("#edit-btn").hide();

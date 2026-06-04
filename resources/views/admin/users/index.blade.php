@@ -261,10 +261,13 @@
                                         placeholder="Seleccione un rol" />
                                 </div>
                                 <div class="col-md-6">
-                                    {{-- Estado: solo lectura. Lo gobierna Inhabilitar/Habilitar (controla el acceso al login). --}}
-                                    <label class="form-label">Estado</label>
-                                    <input type="text" class="form-control bg-light" id="estado-display"
-                                        value="Activo" readonly tabindex="-1">
+                                    {{-- Estado: switch de solo lectura. Lo gobierna Inhabilitar/Habilitar (controla el acceso al login). --}}
+                                    <label class="form-label d-block">Estado</label>
+                                    <div class="form-check form-switch estatus-switch" title="Solo lectura — se gestiona con Inhabilitar / Habilitar">
+                                        <input class="form-check-input" type="checkbox" role="switch" id="estado-display" checked disabled>
+                                        <label class="form-check-label" for="estado-display" id="estado-display-label">Activo</label>
+                                        <i class="ri-lock-line estatus-lock" aria-hidden="true"></i>
+                                    </div>
                                 </div>
                             </div>
                             <div class="d-flex align-items-start gap-2 mb-3 p-2 rounded-3 bg-info-subtle border border-info-subtle">
@@ -629,11 +632,17 @@
                 return esValido;
             }
 
+            // Switch de solo lectura del Estado (activado = Activo).
+            function setEstatusSwitch(activo) {
+                $("#estado-display").prop('checked', !!activo);
+                $("#estado-display-label").text(activo ? 'Activo' : 'Inhabilitado');
+            }
+
             function resetForm() {
                 $('#modalTitle').text('Agregar Usuario');
                 $('#userForm')[0].reset();
                 $('#userForm input[type="hidden"]').val('');
-                $('#estado-display').val('Activo');
+                setEstatusSwitch(true);
                 $('#avatar-preview').hide().find('img').attr('src', '');
                 $('#add-btn').show();
                 $('#edit-btn').hide();
@@ -772,7 +781,7 @@
                     $("#field-name").val(data.name);
                     $("#field-email").val(data.email);
                     $("#field-role").val(data.role);
-                    $("#estado-display").val(data.estado == 1 ? 'Activo' : 'Inhabilitado');
+                    setEstatusSwitch(data.estado == 1);
 
                     // Mostrar las imágenes existentes si las hay
                     if (data.avatar) {

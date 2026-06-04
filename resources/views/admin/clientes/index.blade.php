@@ -604,16 +604,15 @@
 
                     <div class="modal-form-section mb-0">
                         <div class="modal-form-section-title"><i class="ri-shield-check-line"></i>Estatus</div>
-                        {{-- Estatus: solo lectura. Lo gobierna Inhabilitar/Restaurar, no es editable aquí. --}}
-                        <input type="text" class="form-control bg-light" id="estatus-display"
-                            value="Activo" readonly tabindex="-1">
-                        <div class="d-flex align-items-start gap-2 mt-2 p-2 rounded-3 bg-info-subtle border border-info-subtle">
-                            <i class="ri-information-line text-info fs-5 lh-1 mt-1"></i>
-                            <small class="text-info-emphasis mb-0 lh-sm">
-                                Se asigna automáticamente: un cliente nuevo o restaurado queda <strong>Activo</strong>.
-                                Para darlo de baja usa <strong>Inhabilitar</strong> (pasa a Inactivo y al historial).
-                            </small>
+                        {{-- Switch de solo lectura: activado = Activo. Lo gobierna Inhabilitar/Restaurar, no es editable aquí. --}}
+                        <div class="form-check form-switch estatus-switch ms-2" title="Solo lectura — se gestiona con Inhabilitar / Restaurar">
+                            <input class="form-check-input" type="checkbox" role="switch" id="estatus-display" checked disabled>
+                            <label class="form-check-label" for="estatus-display" id="estatus-display-label">Activo</label>
+                            <i class="ri-lock-line estatus-lock" aria-hidden="true"></i>
                         </div>
+                        <small class="text-muted d-block mt-1 lh-sm">
+                            El estatus se gestiona mediante las acciones <strong>Inhabilitar</strong> y <strong>Restaurar</strong>.
+                        </small>
                     </div>
 
                 </div>
@@ -1022,6 +1021,11 @@
                 return '<div class="d-flex gap-1 justify-content-center align-items-center">' + sVer + menu + '</div>';
             }
 
+            function setEstatusPill(activo) {
+                $("#estatus-display").prop('checked', !!activo);
+                $("#estatus-display-label").text(activo ? 'Activo' : 'Inhabilitado');
+            }
+
             function formatDate(dateStr) {
                 if (!dateStr) return 'N/A';
 
@@ -1178,7 +1182,7 @@
                 $("#documento-prefix-field").prop('disabled', false).removeClass('campo-protegido');
                 $("#documento-number-field").val("");
                 $("#documento-number-field").prop('disabled', false).removeClass('campo-protegido');
-                $("#estatus-display").val("Activo");
+                setEstatusPill(true);
                 // Reset teléfono
                 $("#telefono-prefix-field").val("0424");
                 $("#telefono-number-field").val("");
@@ -1434,7 +1438,7 @@
                     // Ahora seleccionar el municipio guardado
                     $("#ciudad-field").val(data.ciudad || '');
                     // Estatus: display de solo lectura (siempre Activo al editar, los inhabilitados no se editan)
-                    $("#estatus-display").val(data.trashed ? 'Inhabilitado' : 'Activo');
+                    setEstatusPill(!data.trashed);
                     $("#showModal").modal("show");
                 });
             });
