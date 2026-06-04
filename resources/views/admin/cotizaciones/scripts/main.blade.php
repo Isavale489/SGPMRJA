@@ -1841,14 +1841,44 @@
             var tallaLabel = getTallaLabel(tallaId);
             var llevaBordadoActivo = (llevaBordado === true || llevaBordado === 1 || llevaBordado === '1');
 
+            var pDyn = null; // producto virtual (variante dinámica) si aplica
             if (productoId) {
                 var p = products.find(prod => prod.id == productoId);
                 if (p) {
                     var tipoNombre = p.tipo_producto ? p.tipo_producto.nombre : 'Sin tipo';
-                    productoDisplay = (p.codigo || '') + ' - ' + tipoNombre + ' ' + p.modelo;
+                    productoDisplay = (p.codigo || '') + ' - ' + tipoNombre + ' ' + (p.modelo || '');
                     precioUnitario = precioUnitario || p.precio_base;
                     textClass = 'text-dark fw-semibold';
+                    if (p._dynamic) pDyn = p;
                 }
+            }
+
+            // Campo de producto: select normal (legacy) o, para variante dinámica,
+            // display de solo lectura + hidden de tipo/tela/atributos para el submit.
+            var escAttr = function (s) {
+                return String(s == null ? '' : s)
+                    .replace(/&/g, '&amp;').replace(/"/g, '&quot;')
+                    .replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            };
+            var productoFieldHtml;
+            if (pDyn) {
+                var vd = pDyn._variante;
+                productoFieldHtml =
+                    `<input type="text" class="form-control form-control-sm" value="${escAttr((pDyn.codigo || '') + ' · ' + (pDyn.nombre_completo || ''))}" readonly title="Variante configurada">` +
+                    `<input type="hidden" class="producto-id-input" value="${escAttr(productoId)}">` +
+                    `<input type="hidden" name="productos[${productItemIndex}][tipo_producto_id]" value="${vd.tipo_producto_id}">` +
+                    (vd.insumo_tela_id ? `<input type="hidden" name="productos[${productItemIndex}][insumo_tela_id]" value="${vd.insumo_tela_id}">` : '') +
+                    (vd.atributo_valor_ids || []).map(function (vid) {
+                        return `<input type="hidden" name="productos[${productItemIndex}][atributo_valor_ids][]" value="${vid}">`;
+                    }).join('');
+            } else {
+                productoFieldHtml =
+                    `<select name="productos[${productItemIndex}][producto_id]"
+                            class="form-select form-select-sm producto-id-input producto-dropdown"
+                            required>
+                            <option value="">— Seleccionar producto —</option>
+                            ${products.filter(prod => !prod._dynamic).map(prod => `<option value="${prod.id}" data-precio="${prod.precio_base}" ${prod.id == productoId ? 'selected' : ''}>${prod.codigo ? prod.codigo + ' · ' : ''}${prod.nombre_completo || prod.nombre}</option>`).join('')}
+                        </select>`;
             }
 
             var itemHtml = `
@@ -1878,12 +1908,7 @@
                         <label class="form-label mb-1 small fw-medium" style="color:#495057;">
                             <i class="ri-shopping-bag-line me-1"></i>Producto
                         </label>
-                        <select name="productos[${productItemIndex}][producto_id]"
-                            class="form-select form-select-sm producto-id-input producto-dropdown"
-                            required>
-                            <option value="">— Seleccionar producto —</option>
-                            ${products.map(p => `<option value="${p.id}" data-precio="${p.precio_base}" ${p.id == productoId ? 'selected' : ''}>${p.codigo ? p.codigo + ' · ' : ''}${p.nombre_completo || p.nombre}</option>`).join('')}
-                        </select>
+                        ${productoFieldHtml}
                     </div>
 
                     <!-- Fila 2: Color + Talla + Cantidad + Precio Unitario -->
@@ -3674,6 +3699,7 @@
                 var list = getProductsList().slice();
                 var q = (catState.search || '').toLowerCase().trim();
                 list = list.filter(function (p) {
+                    if (p._dynamic) return false; // los productos virtuales no van al catálogo
                     if (q) {
                         var hay = ((p.codigo || '') + ' ' + (p.modelo || '') + ' ' +
                                    (p.tipo_producto ? p.tipo_producto.nombre : '')).toLowerCase();
@@ -3892,19 +3918,17 @@
                 });
             }
 
-            // Telas únicas usadas por productos del tipo
-            function telasDelTipo(productos) {
-                var byId = {};
-                productos.forEach(function (p) {
-                    if (p.tela && !byId[p.tela.id]) byId[p.tela.id] = p.tela;
-                });
-                return Object.values(byId).sort(function (a, b) {
+            // Telas permitidas del tipo (FEAT-003): vienen de tipo_producto_tela,
+            // ya no se deducen de los productos existentes.
+            function telasDelTipo() {
+                var telas = (vsState.tipo && Array.isArray(vsState.tipo.telas)) ? vsState.tipo.telas.slice() : [];
+                return telas.sort(function (a, b) {
                     return String(a.nombre || '').localeCompare(String(b.nombre || ''));
                 });
             }
 
             function vsRenderTelas() {
-                var telas = telasDelTipo(vsState.productos);
+                var telas = telasDelTipo();
                 var $cont = $('#vs-tela-options');
                 if (!telas.length) {
                     $('#vs-tela-section').hide();
@@ -3967,7 +3991,7 @@
                 var faltanAtributos = valoresIds.length < nAtributos;
                 if (faltaTela || faltanAtributos) {
                     $('#vs-result-found, #vs-result-missing').hide();
-                    $('#vs-confirm').prop('disabled', true).removeData('producto-id');
+                    $('#vs-confirm').prop('disabled', true).removeData('producto-id').removeData('variante');
                     return;
                 }
 
@@ -3981,13 +4005,66 @@
                         $('#vs-result-precio').text(formatMoney(resp.producto.precio_base));
                         $('#vs-result-found').show();
                         $('#vs-result-missing').hide();
-                        $('#vs-confirm').prop('disabled', false).data('producto-id', resp.producto.id);
+                        if (resp.dynamic) {
+                            // Variante calculada al vuelo (no existe como Producto):
+                            // se confirma registrando un producto virtual en memoria.
+                            $('#vs-confirm').prop('disabled', false)
+                                .removeData('producto-id').data('variante', resp);
+                        } else {
+                            $('#vs-confirm').prop('disabled', false)
+                                .removeData('variante').data('producto-id', resp.producto.id);
+                        }
                     } else {
                         $('#vs-result-found').hide();
                         $('#vs-result-missing').show();
-                        $('#vs-confirm').prop('disabled', true).removeData('producto-id');
+                        $('#vs-confirm').prop('disabled', true).removeData('producto-id').removeData('variante');
                     }
                 });
+            }
+
+            // Registra un "producto virtual" en memoria a partir de la respuesta
+            // dinámica del resolver, para que el resto del pipeline (configurador,
+            // carrito, tabla agrupada) lo trate como un producto normal por id.
+            // En el submit, addProductItem emite tipo_producto_id/tela/atributos.
+            var cotVirtualSeq = 0;
+            function cotRegistrarProductoVirtual(resp) {
+                var v = resp.variante, pr = resp.producto, tipo = vsState.tipo || {};
+                var existente = getProductsList().find(function (p) {
+                    return p._dynamic && p.codigo === v.sku;
+                });
+                if (existente) return existente.id;
+
+                var atributoValores = [];
+                (tipo.atributos || []).forEach(function (atr) {
+                    var vid = vsState.valoresPorAtributo[atr.id];
+                    if (!vid) return;
+                    var val = (atr.valores || []).find(function (x) { return x.id == vid; });
+                    if (val) atributoValores.push({ id: val.id, atributo_id: atr.id, nombre: val.nombre, codigo: val.codigo });
+                });
+
+                var nombreCompleto = [pr.tipo_nombre, pr.tela_nombre]
+                    .concat(atributoValores.map(function (x) { return x.nombre; }))
+                    .filter(Boolean).join(' ');
+
+                var virtual = {
+                    id: 'v' + (++cotVirtualSeq),
+                    _dynamic: true,
+                    _variante: {
+                        tipo_producto_id: v.tipo_producto_id,
+                        insumo_tela_id: v.insumo_tela_id || null,
+                        atributo_valor_ids: v.atributo_valor_ids || []
+                    },
+                    codigo: v.sku,
+                    precio_base: pr.precio_base,
+                    nombre: pr.tipo_nombre || 'Variante',
+                    nombre_completo: nombreCompleto,
+                    modelo: '',
+                    tipo_producto: { id: v.tipo_producto_id, nombre: pr.tipo_nombre },
+                    tela: v.tela_snapshot ? { id: v.tela_snapshot.id, nombre: v.tela_snapshot.nombre, codigo: v.tela_snapshot.codigo } : null,
+                    atributo_valores: atributoValores
+                };
+                products.push(virtual);
+                return virtual.id;
             }
 
             function vsAbrir(tipoId, opts) {
@@ -4006,6 +4083,7 @@
                 // Cargar info del tipo (atributos con sus valores)
                 $.getJSON("{{ url('tipo-productos') }}/" + tipoId).done(function (tipo) {
                     vsState.tipo = tipo;
+                    if (tipo && tipo.nombre) $('#vs-tipo-nombre').text(tipo.nombre);
                     vsRenderTelas();
                     vsRenderAtributos();
                     // Si vino con preselección, intentar resolver de inmediato
@@ -4030,6 +4108,10 @@
             });
             $(document).on('click', '#vs-confirm', function () {
                 var pid = $(this).data('producto-id');
+                var variante = $(this).data('variante');
+                if (!pid && variante) {
+                    pid = cotRegistrarProductoVirtual(variante);
+                }
                 if (!pid) return;
                 var ctx = vsState.editContexto;
                 bootstrap.Modal.getInstance(document.getElementById('varianteSelectorModal'))?.hide();
