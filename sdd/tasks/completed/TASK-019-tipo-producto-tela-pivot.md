@@ -2,11 +2,11 @@
 
 **Feature**: FEAT-003 — variantes-dinamicas
 **Spec**: `sdd/specs/variantes-dinamicas.spec.md`
-**Status**: pending
+**Status**: done
 **Priority**: high
 **Esfuerzo estimado**: S
 **Depends-on**: none
-**Assigned-to**: unassigned
+**Assigned-to**: emmanuel
 
 ---
 
@@ -53,4 +53,14 @@ Base de datos del refactor. Define **qué telas puede usar cada tipo de producto
 2. Tinker: `\$t = TipoProducto::first(); \$t->telas()->sync([id_tela]); \$t->telas;` → devuelve la tela.
 
 ## Nota de Completitud
-*(Llenar al terminar)*
+
+**Completado por**: emmanuel
+**Fecha**: 2026-06-03
+**Commits**: (en rama `feat/TASK-019-tipo-producto-tela-pivot`)
+**Notas**: Creada migración `2026_06_03_220000_create_tipo_producto_tela_table.php` (pivot
+`tipo_producto_tela` con FKs cascadeOnDelete + único `tipo_producto_tela_unique`), calcando
+`tipo_producto_insumo` sin `cantidad_estimada`. Añadida relación `TipoProducto::telas()`
+(BelongsToMany a `Insumo` vía `tipo_producto_tela`, withTimestamps). Verificado: migración
+limpia, columnas correctas, `$tipo->telas()->sync()` y `$tipo->telas` funcionan (QA con rollback).
+
+**Desviaciones del spec**: ninguna.
