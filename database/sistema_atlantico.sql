@@ -705,7 +705,7 @@ CREATE TABLE `failed_jobs` (
   `queue` text NOT NULL,
   `payload` longtext NOT NULL,
   `exception` longtext NOT NULL,
-  `failed_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `failed_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `failed_jobs_uuid_unique` (`uuid`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -1231,7 +1231,7 @@ CREATE TABLE `recovery_attempt` (
   `user_agent` varchar(500) DEFAULT NULL,
   `tipo` enum('email','preguntas') NOT NULL,
   `resultado` enum('exito','fallo','bloqueado') NOT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `recovery_attempt_user_id_index` (`user_id`),
   KEY `recovery_attempt_email_index` (`email`),
