@@ -7,9 +7,11 @@ use App\Models\DetalleCotizacion;
 use App\Models\DetalleCotizacionBordado;
 use App\Models\DetallePedido;
 use App\Models\DetallePedidoBordado;
+use App\Models\Insumo;
 use App\Models\Pedido;
 use App\Models\Producto;
 use App\Models\TasaCambio;
+use App\Models\TipoProducto;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -205,10 +207,10 @@ class CotizacionService
     {
         $total = 0;
         foreach ($productos as $item) {
-            $producto = Producto::find($item['producto_id']);
+            $base = $this->resolverVarianteLinea($item);
             $precioBase = isset($item['precio_unitario'])
                 ? (float) $item['precio_unitario']
-                : (float) ($producto->precio_base ?? 0);
+                : $base['precio_base'];
 
             $bordados = $this->bordadoPricingService->normalizeBordados($item);
             $precioUnitarioFinal = $this->bordadoPricingService->calcularPrecioUnitarioFinal($precioBase, $bordados);
@@ -219,24 +221,61 @@ class CotizacionService
     }
 
     /**
+     * Resuelve la base de una línea de producto, soportando dos casos (FEAT-003):
+     *   - Legacy: la línea trae `producto_id` → se usa el Producto y sus snapshots.
+     *   - Dinámico: la línea trae `tipo_producto_id` (+ tela + atributos) → se
+     *     calculan snapshots/precio al vuelo sin requerir una fila `producto`.
+     *
+     * @return array{producto_id: ?int, tipo_producto_id: ?int, precio_base: float,
+     *               tela_snapshot: ?array, atributos_snapshot: ?array}
+     */
+    private function resolverVarianteLinea(array $item): array
+    {
+        if (!empty($item['producto_id'])) {
+            $producto = Producto::with('tela')->find($item['producto_id']);
+            $snapshots = $this->productoService->buildSnapshotsParaDetalle($producto);
+
+            return [
+                'producto_id'        => (int) $item['producto_id'],
+                'tipo_producto_id'   => $producto?->tipo_producto_id,
+                'precio_base'        => (float) ($producto->precio_base ?? 0),
+                'tela_snapshot'      => $snapshots['tela_snapshot'],
+                'atributos_snapshot' => $snapshots['atributos_snapshot'],
+            ];
+        }
+
+        $tipo = TipoProducto::find($item['tipo_producto_id']);
+        $tela = !empty($item['insumo_tela_id']) ? Insumo::find($item['insumo_tela_id']) : null;
+        $snap = $this->productoService->buildSnapshotsDesdeTipo($tipo, $tela, $item['atributo_valor_ids'] ?? []);
+
+        return [
+            'producto_id'        => null,
+            'tipo_producto_id'   => $tipo->id,
+            'precio_base'        => (float) $snap['precio_sugerido'],
+            'tela_snapshot'      => $snap['tela_snapshot'],
+            'atributos_snapshot' => $snap['atributos_snapshot'],
+        ];
+    }
+
+    /**
      * Crear los detalles de cotización (líneas de producto).
      */
     private function crearDetalles(Cotizacion $cotizacion, array $productos): void
     {
         foreach ($productos as $item) {
-            $producto = Producto::with('tela')->find($item['producto_id']);
+            $base = $this->resolverVarianteLinea($item);
             $precioBase = isset($item['precio_unitario'])
                 ? (float) $item['precio_unitario']
-                : (float) ($producto->precio_base ?? 0);
+                : $base['precio_base'];
             $bordados = $this->bordadoPricingService->normalizeBordados($item);
             $precioUnitarioFinal = $this->bordadoPricingService->calcularPrecioUnitarioFinal($precioBase, $bordados);
-            $snapshots = $this->productoService->buildSnapshotsParaDetalle($producto);
 
             $detalle = DetalleCotizacion::create([
                 'cotizacion_id' => $cotizacion->id,
-                'producto_id' => $item['producto_id'],
-                'tela_snapshot' => $snapshots['tela_snapshot'],
-                'atributos_snapshot' => $snapshots['atributos_snapshot'],
+                'producto_id' => $base['producto_id'],
+                'tipo_producto_id' => $base['tipo_producto_id'],
+                'tela_snapshot' => $base['tela_snapshot'],
+                'atributos_snapshot' => $base['atributos_snapshot'],
                 'cantidad' => $item['cantidad'],
                 'descripcion' => $item['descripcion'] ?? null,
                 'lleva_bordado' => $item['lleva_bordado'] ?? false,

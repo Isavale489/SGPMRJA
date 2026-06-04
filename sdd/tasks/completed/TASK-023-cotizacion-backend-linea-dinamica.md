@@ -2,11 +2,11 @@
 
 **Feature**: FEAT-003 — variantes-dinamicas
 **Spec**: `sdd/specs/variantes-dinamicas.spec.md`
-**Status**: pending
+**Status**: done
 **Priority**: high
 **Esfuerzo estimado**: M
 **Depends-on**: TASK-020, TASK-021
-**Assigned-to**: unassigned
+**Assigned-to**: emmanuel
 
 ---
 
@@ -52,4 +52,25 @@ Backend de cotización: aceptar y persistir líneas configuradas dinámicamente 
 2. Verificar stock sin cambios.
 
 ## Nota de Completitud
-*(Llenar al terminar)*
+
+**Completado por**: emmanuel
+**Fecha**: 2026-06-03
+**Commits**: (en rama `feat/variantes-dinamicas`)
+**Notas**:
+- `CotizacionController` store + update: `producto_id` ahora `nullable|required_without:tipo_producto_id`;
+  nuevos campos `tipo_producto_id` (required_without producto_id), `insumo_tela_id`, `atributo_valor_ids[]`.
+  Mensajes `required_without` agregados. Verificado: required_without valida **por fila**.
+- `CotizacionService`: nuevo helper `resolverVarianteLinea($item)` que resuelve legacy
+  (`producto_id` → `buildSnapshotsParaDetalle`) o dinámico (`tipo_producto_id`+tela+atributos →
+  `buildSnapshotsDesdeTipo`). `calcularTotal` y `crearDetalles` lo usan; el detalle guarda
+  `tipo_producto_id` + snapshots. Imports `TipoProducto`/`Insumo` agregados.
+- QA (rollback, con Auth::login): cotización dinámica → detalle con `producto_id=NULL`,
+  `tipo_producto_id` correcto, snapshots correctos, total 174 (=58×3). **MovimientoInsumo 37→37**
+  (no descuenta stock, regla intacta).
+
+**Desviaciones del spec**:
+1. La persistencia del SKU en el snapshot (decisión §8) NO se implementó: no existe columna para el
+   SKU y embeberlo en `atributos_snapshot` rompería su forma (los PDFs la iteran). El SKU es
+   **recomputable** desde tipo+tela+atributos (todo guardado). Si se quiere un SKU congelado, es un
+   follow-up de 1 columna (`sku_snapshot`) — pendiente de decisión de Emmanuel.
+2. Telas se integró sin endpoints separados (ver TASK-022).
