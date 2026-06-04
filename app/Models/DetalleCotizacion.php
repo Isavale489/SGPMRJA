@@ -16,6 +16,7 @@ class DetalleCotizacion extends Model
     protected $fillable = [
         'cotizacion_id',
         'producto_id',
+        'tipo_producto_id',
         'tela_snapshot',
         'atributos_snapshot',
         'cantidad',
@@ -57,6 +58,11 @@ class DetalleCotizacion extends Model
     public function producto()
     {
         return $this->belongsTo(Producto::class);
+    }
+
+    public function tipoProducto()
+    {
+        return $this->belongsTo(TipoProducto::class);
     }
 
     public function bordados()
