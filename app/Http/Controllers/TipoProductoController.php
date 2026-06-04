@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\TipoProducto;
+use App\Models\Insumo;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 
@@ -13,7 +14,7 @@ class TipoProductoController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $query = TipoProducto::withCount(['productos', 'atributos'])->orderBy('nombre');
+        $query = TipoProducto::withCount(['productos', 'atributos', 'telas'])->orderBy('nombre');
 
         if ($request->boolean('historial')) {
             $query->onlyTrashed();
@@ -41,6 +42,8 @@ class TipoProductoController extends Controller
             'insumos_default' => 'nullable|array',
             'insumos_default.*.id' => 'required_with:insumos_default|integer|exists:insumo,id',
             'insumos_default.*.cantidad_estimada' => 'required_with:insumos_default|numeric|min:0.01',
+            'telas' => 'nullable|array',
+            'telas.*' => 'integer|exists:insumo,id',
         ], [
             'nombre.required' => 'El nombre es obligatorio',
             'nombre.unique' => 'Ya existe un tipo con este nombre',
@@ -61,11 +64,12 @@ class TipoProductoController extends Controller
 
         $this->syncAtributos($tipo, $request->input('atributos', []));
         $this->syncInsumosDefault($tipo, $request->input('insumos_default', []));
+        $this->syncTelas($tipo, $request->input('telas', []));
 
         return response()->json([
             'success' => true,
             'message' => 'Tipo de producto creado correctamente',
-            'tipo' => $tipo->load(['atributos', 'insumosDefault']),
+            'tipo' => $tipo->load(['atributos', 'insumosDefault', 'telas']),
         ]);
     }
 
@@ -80,6 +84,7 @@ class TipoProductoController extends Controller
             },
             'atributos.valores',
             'insumosDefault',
+            'telas',
         ]);
 
         return response()->json($tipoProducto);
@@ -116,11 +121,12 @@ class TipoProductoController extends Controller
 
         $this->syncAtributos($tipoProducto, $request->input('atributos', []));
         $this->syncInsumosDefault($tipoProducto, $request->input('insumos_default', []));
+        $this->syncTelas($tipoProducto, $request->input('telas', []));
 
         return response()->json([
             'success' => true,
             'message' => 'Tipo de producto actualizado correctamente',
-            'tipo' => $tipoProducto->load(['atributos', 'insumosDefault']),
+            'tipo' => $tipoProducto->load(['atributos', 'insumosDefault', 'telas']),
         ]);
     }
 
@@ -155,6 +161,68 @@ class TipoProductoController extends Controller
         }
 
         $tipo->insumosDefault()->sync($sync);
+    }
+
+    /**
+     * Sincroniza las telas permitidas del tipo (FEAT-003).
+     * @param array<int> $telaIds  IDs de insumo con tipo='Tela'
+     */
+    private function syncTelas(TipoProducto $tipo, array $telaIds): void
+    {
+        $tipo->telas()->sync(array_map('intval', $telaIds));
+    }
+
+    /**
+     * Crea una tela (Insumo tipo='Tela') inline desde el selector de variante
+     * de la cotización y la asigna a este tipo (FEAT-003). Réplica del alta de
+     * insumo del maestro, con tipo fijado en 'Tela'.
+     */
+    public function storeTela(Request $request, TipoProducto $tipoProducto): JsonResponse
+    {
+        $request->validate([
+            'nombre'           => 'required|string|max:100',
+            'codigo'           => 'nullable|string|min:2|max:8|regex:/^[A-Z0-9]+$/|unique:insumo,codigo',
+            'unidad_medida'    => 'required|in:Metro,Kg,Gramo,Unidad,Rollo,Cono,Docena',
+            'is_inventoriable' => 'nullable|boolean',
+            'costo_unitario'   => 'required|numeric|min:0.01',
+            'stock_actual'     => 'nullable|numeric|min:0',
+            'stock_minimo'     => 'nullable|numeric|min:0',
+            'stock_maximo'     => 'nullable|numeric|min:0|gte:stock_minimo',
+            'estado'           => 'nullable|boolean',
+        ], [
+            'codigo.regex'     => 'El código solo admite letras mayúsculas y números.',
+            'codigo.unique'    => 'Ya existe un insumo con este código.',
+            'stock_maximo.gte' => 'La existencia máxima no puede ser menor que la mínima.',
+        ]);
+
+        $inventoriable = $request->boolean('is_inventoriable', true);
+
+        $insumo = Insumo::create([
+            'nombre'           => $request->nombre,
+            'codigo'           => $request->filled('codigo') ? strtoupper(trim($request->codigo)) : null,
+            'tipo'             => 'Tela',
+            'unidad_medida'    => $request->unidad_medida,
+            'is_inventoriable' => $inventoriable,
+            'costo_unitario'   => $request->costo_unitario,
+            'stock_actual'     => $inventoriable ? $request->input('stock_actual', 0) : 0,
+            'stock_minimo'     => $inventoriable ? $request->input('stock_minimo', 0) : 0,
+            'stock_maximo'     => $inventoriable ? $request->input('stock_maximo', 0) : 0,
+            'estado'           => $request->boolean('estado', true),
+        ]);
+
+        $tipoProducto->telas()->syncWithoutDetaching([$insumo->id]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Tela creada y asignada al tipo.',
+            'tela'    => [
+                'id'             => $insumo->id,
+                'nombre'         => $insumo->nombre,
+                'codigo'         => $insumo->codigo,
+                'costo_unitario' => (float) $insumo->costo_unitario,
+                'unidad_medida'  => $insumo->unidad_medida,
+            ],
+        ]);
     }
 
     /**

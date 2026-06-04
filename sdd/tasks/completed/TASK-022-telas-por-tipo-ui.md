@@ -2,11 +2,11 @@
 
 **Feature**: FEAT-003 — variantes-dinamicas
 **Spec**: `sdd/specs/variantes-dinamicas.spec.md`
-**Status**: pending
+**Status**: done
 **Priority**: high
 **Esfuerzo estimado**: M
 **Depends-on**: TASK-019
-**Assigned-to**: unassigned
+**Assigned-to**: emmanuel
 
 ---
 
@@ -53,4 +53,20 @@ Donde el usuario "le registra más telas a un tipo de producto" — cómodamente
 2. Reabrir → siguen marcadas. Verificar fila en `tipo_producto_tela`.
 
 ## Nota de Completitud
-*(Llenar al terminar)*
+
+**Completado por**: emmanuel
+**Fecha**: 2026-06-03
+**Commits**: (en rama `feat/variantes-dinamicas`)
+**Notas**: Telas integradas al editor de Tipo de Producto siguiendo el patrón existente de
+`syncAtributos`/`syncInsumosDefault` (en vez de endpoints separados):
+- `TipoProductoController`: validación `telas` (array de insumo_id), `syncTelas()` llamado en
+  store/update, `telas` cargada en show() y en las respuestas.
+- `productos/index.blade.php`: sección "Telas permitidas" con checkboxes desde `$telasDisponibles`
+  dentro del bloque de tela; se muestra/oculta junto a `requiere_tela`; preload al editar
+  (tilda `tipo.telas`); reset al cerrar; submit envía `telas[]` solo si requiere tela.
+QA (rollback): store con 2 telas → respuesta con 2; show devuelve "Pique, Jersey"; update a 1 tela
+sincroniza a 1. Blade compila, lint OK.
+
+**Desviaciones del spec**: en lugar de crear rutas/métodos `telas.index`/`telas.sync` separados, se
+integró en store/update/show (consistente con cómo el controller ya maneja atributos e insumos
+default). No se tocó `routes/web.php`. Mejora la cohesión y evita endpoints redundantes.

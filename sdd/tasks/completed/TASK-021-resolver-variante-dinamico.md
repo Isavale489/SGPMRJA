@@ -2,11 +2,11 @@
 
 **Feature**: FEAT-003 — variantes-dinamicas
 **Spec**: `sdd/specs/variantes-dinamicas.spec.md`
-**Status**: pending
+**Status**: done
 **Priority**: high
 **Esfuerzo estimado**: M
 **Depends-on**: TASK-019
-**Assigned-to**: unassigned
+**Assigned-to**: emmanuel
 
 ---
 
@@ -56,4 +56,19 @@ Núcleo del refactor: resolver una combinación (tipo + tela + atributos) **sin 
 1. Tinker/HTTP: `GET productos-resolver-variante?tipo_producto_id=<franela>&insumo_tela_id=<algodon>&atributo_valor_ids[]=<manga>` con una combinación que NO existe como producto → respuesta con sku + precio_sugerido + snapshots.
 
 ## Nota de Completitud
-*(Llenar al terminar)*
+
+**Completado por**: emmanuel
+**Fecha**: 2026-06-03
+**Commits**: (en rama `feat/variantes-dinamicas`)
+**Notas**: `ProductoService::buildSnapshotsDesdeTipo(TipoProducto, ?Insumo, array): array` →
+devuelve `tela_snapshot` (misma forma que `buildSnapshotsParaDetalle`), `atributos_snapshot`,
+`sku` (`generarCodigo`) y `precio_sugerido` (`sugerirPrecio`), sin tocar BD.
+`ProductoController::resolverVariante` ahora: si hay Producto match → `dynamic:false` (compat
+legacy, sin cambios de comportamiento); si no → calcula la variante (`dynamic:true`) con SKU +
+precio + snapshots + bloque `variante`. Validaciones del camino dinámico: `requiere_tela` sin
+tela y tela fuera de `tipo_producto_tela` → `found:false` con mensaje. QA (rollback): combinación
+nueva con tela permitida → SKU `FRN-PIQ-L-CLA-001`, precio 58 (=50+8), snapshots correctos;
+tela no permitida y sin tela → mensajes correctos.
+
+**Desviaciones del spec**: ninguna. Se añadió `dynamic:true/false` al payload para que el JS
+(TASK-024) distinga el camino; el bloque `producto` mantiene su forma para compat.

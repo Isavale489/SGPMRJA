@@ -838,9 +838,16 @@
 
                 {{-- Sección Tela --}}
                 <div class="mb-3" id="vs-tela-section">
-                    <label class="form-label small fw-semibold mb-2">
-                        <i class="ri-shirt-line me-1"></i>Tela
-                    </label>
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <label class="form-label small fw-semibold mb-0">
+                            <i class="ri-shirt-line me-1"></i>Tela
+                        </label>
+                        @if(Auth::user()->hasRole(['Administrador', 'Supervisor']))
+                            <button type="button" class="cfg-newcolor-btn" id="vs-add-tela-btn">
+                                <i class="ri-add-line"></i><span>Nueva tela</span>
+                            </button>
+                        @endif
+                    </div>
                     <div id="vs-tela-options" class="d-flex flex-wrap gap-2">
                         {{-- Render dinámico --}}
                     </div>
@@ -1453,3 +1460,116 @@
 @endif
 
 @include('admin.partials.catalog_modals')
+
+@if(Auth::user()->hasRole(['Administrador', 'Supervisor']))
+{{-- ═══════════════════════════════════════════════════════════════════════════
+     MINI-MODAL: Crear tela inline (Insumo tipo='Tela') desde el selector de variante.
+     Réplica del form de Insumo del maestro (tipo fijo en Tela). Al guardar, la tela
+     se crea y se asigna al tipo de producto actual (tipo_producto_tela). Prefijo: ct-
+═══════════════════════════════════════════════════════════════════════════ --}}
+<div class="modal fade atlantico-modal" id="crearTelaRapidaModal" tabindex="-1" aria-hidden="true"
+    data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-light p-3">
+                <h5 class="modal-title"><i class="ri-shirt-line me-2"></i>Agregar Tela</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="ctForm" autocomplete="off" novalidate>
+                <div class="modal-body">
+
+                    <div class="modal-form-section">
+                        <div class="modal-form-section-title"><i class="ri-box-3-line"></i>Datos de la Tela</div>
+                        <div class="row mb-0">
+                            <div class="col-md-5">
+                                <label for="ct-nombre" class="form-label">Nombre <span class="text-danger">*</span></label>
+                                <input type="text" id="ct-nombre" class="form-control" maxlength="100" />
+                                <div id="ct-nombre-error" class="invalid-feedback"></div>
+                            </div>
+                            <div class="col-md-3">
+                                <label for="ct-codigo" class="form-label">
+                                    Código
+                                    <i class="ri-information-line text-muted" data-bs-toggle="tooltip"
+                                       title="2-8 caracteres (mayúsculas/números). Forma parte del código del producto (SKU)."
+                                       style="cursor: help;"></i>
+                                </label>
+                                <input type="text" id="ct-codigo" class="form-control text-uppercase" maxlength="8"
+                                    placeholder="Ej: LIN" style="font-family: monospace;" />
+                                <div id="ct-codigo-error" class="invalid-feedback"></div>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Tipo</label>
+                                <input type="text" class="form-control bg-light" value="Tela" readonly tabindex="-1">
+                            </div>
+                        </div>
+                        <div class="row mb-0">
+                            <div class="col-md-12">
+                                <label for="ct-unidad" class="form-label">Unidad de Medida <span class="text-danger">*</span></label>
+                                <select id="ct-unidad" class="form-select">
+                                    <option value="Metro">Metro (m)</option>
+                                    <option value="Kg">Kilogramo (Kg)</option>
+                                    <option value="Gramo">Gramo (g)</option>
+                                    <option value="Unidad">Unidad (Und)</option>
+                                    <option value="Rollo">Rollo</option>
+                                    <option value="Cono">Cono</option>
+                                    <option value="Docena">Docena</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="modal-form-section mb-0">
+                        <div class="modal-form-section-title"><i class="ri-bar-chart-grouped-line"></i>Control de Inventario y Costo</div>
+                        <div class="mb-3">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="ct-inventariable" value="1" checked>
+                                <label class="form-check-label" for="ct-inventariable">
+                                    Inventariable <small class="text-muted">(gestionar stock)</small>
+                                </label>
+                            </div>
+                        </div>
+                        <div id="ct-stock-wrapper">
+                            <div class="row mb-0">
+                                <div class="col-md-4">
+                                    <label for="ct-stock-min" class="form-label">Existencia Mínima</label>
+                                    <input type="number" id="ct-stock-min" class="form-control" step="0.01" min="0" />
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="ct-stock-actual" class="form-label">Existencia Actual</label>
+                                    <input type="number" id="ct-stock-actual" class="form-control" step="0.01" min="0" value="0" />
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="ct-stock-max" class="form-label">Existencia Máxima</label>
+                                    <input type="number" id="ct-stock-max" class="form-control" step="0.01" min="0" />
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row mb-0">
+                            <div class="col-md-6">
+                                <label for="ct-costo" class="form-label">Costo Unitario <span class="text-danger">*</span></label>
+                                <input type="number" id="ct-costo" class="form-control" step="0.01" min="0" />
+                                <div id="ct-costo-error" class="invalid-feedback"></div>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="ct-estado" class="form-label">Estado <span class="text-danger">*</span></label>
+                                <select id="ct-estado" class="form-select">
+                                    <option value="1" selected>Activo</option>
+                                    <option value="0">Inactivo</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light border-0">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">
+                        <i class="ri-close-line me-1"></i>Cerrar
+                    </button>
+                    <button type="submit" class="btn btn-success" id="ct-submit-btn">
+                        <i class="ri-save-line me-1"></i>Guardar y seleccionar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+@endif
