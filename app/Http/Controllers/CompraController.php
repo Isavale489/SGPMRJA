@@ -217,16 +217,17 @@ class CompraController extends Controller
     public function getCompras(Request $request)
     {
         $query = Compra::with(['proveedor.persona', 'registradoPor'])
-            ->withCount([
-                'clones as tiene_clon_activo' => fn($q) => $q->where('estado', 'borrador'),
-            ])
             ->select('compra.*');
 
         if ($request->filled('filter_proveedor_id')) {
             $query->where('proveedor_id', $request->filter_proveedor_id);
         }
         if ($request->filled('filter_estado')) {
-            $query->where('estado', $request->filter_estado);
+            if ($request->filter_estado === 'activas') {
+                $query->whereIn('estado', ['borrador', 'recibida']);
+            } else {
+                $query->where('estado', $request->filter_estado);
+            }
         }
         if ($request->filled('filter_tipo_pago')) {
             $query->where('tipo_pago', $request->filter_tipo_pago);
@@ -261,8 +262,8 @@ class CompraController extends Controller
                 }
 
                 if ($c->estado === 'anulada') {
-                    if ($c->tiene_clon_activo) {
-                        $btn .= '<button class="btn btn-sm btn-soft-secondary" disabled title="Ya existe un borrador activo clonado de esta compra"><i class="ri-file-copy-line"></i></button>';
+                    if ($c->clonada) {
+                        $btn .= '<button class="btn btn-sm btn-soft-secondary" disabled title="Esta compra ya fue clonada"><i class="ri-file-copy-line"></i></button>';
                     } else {
                         $btn .= '<button class="btn btn-sm btn-soft-secondary clonar-btn" data-id="' . $c->id . '" title="Clonar como nuevo borrador"><i class="ri-file-copy-line"></i></button>';
                     }

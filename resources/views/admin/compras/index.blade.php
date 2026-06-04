@@ -69,7 +69,8 @@
                                                 <i class="ri-shield-check-line"></i> Estado
                                             </label>
                                             <select class="form-select navy-filter-select" id="filter-estado">
-                                                <option value="">Todos</option>
+                                                <option value="activas" selected>Activas</option>
+                                                <option value="">Todas</option>
                                                 <option value="recibida">Recibida</option>
                                                 <option value="borrador">Borrador</option>
                                                 <option value="anulada">Anulada</option>

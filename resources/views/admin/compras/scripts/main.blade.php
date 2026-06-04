@@ -97,7 +97,10 @@ $(document).ready(function () {
     });
 
     $('#btn-clear-filters').on('click', function () {
-        $('#advanced-filters .navy-filter-select').val('');
+        $('#filter-estado').val('activas');
+        $('#filter-tipo-pago').val('');
+        $('#filter-fecha-desde').val('');
+        $('#filter-fecha-hasta').val('');
         $('#custom-search-input').val('');
         window.comprasTable.search('').ajax.reload(null, true);
         updateFilterBadge();
