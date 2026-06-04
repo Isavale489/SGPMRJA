@@ -2,11 +2,11 @@
 
 **Feature**: FEAT-003 — variantes-dinamicas
 **Spec**: `sdd/specs/variantes-dinamicas.spec.md`
-**Status**: pending
+**Status**: done
 **Priority**: high
 **Esfuerzo estimado**: M
 **Depends-on**: TASK-020, TASK-021
-**Assigned-to**: unassigned
+**Assigned-to**: emmanuel
 
 ---
 
@@ -51,4 +51,21 @@ Equivalente a TASK-023 pero para Pedidos. Un pedido nace de una cotización apro
 1. Cotización dinámica aprobada → convertir a pedido → revisar `detalle_pedido`: snapshots/sku copiados, producto_id NULL.
 
 ## Nota de Completitud
-*(Llenar al terminar)*
+
+**Completado por**: emmanuel
+**Fecha**: 2026-06-03
+**Commits**: (en rama `feat/variantes-dinamicas`)
+**Notas**:
+- `StorePedidoRequest` + `UpdatePedidoRequest`: `producto_id` →
+  `nullable|required_without:tipo_producto_id`; nuevos `tipo_producto_id`, `insumo_tela_id`,
+  `atributo_valor_ids[]`.
+- `PedidoService`: helper `resolverVarianteLinea()` (idéntico al de cotización) usado por
+  `calcularTotal` y `crearDetalles`; el detalle guarda `tipo_producto_id` + snapshots + `sku_snapshot`.
+  Imports `TipoProducto`/`Insumo`.
+- La **conversión cotización→pedido** (`CotizacionService::convertirAPedido`) ya copiaba
+  `tipo_producto_id` + `sku_snapshot` (hecho en el addendum de TASK-023).
+- QA (rollback): pedido directo dinámico → total 232 (=58×4), `producto_id` NULL, `tipo_producto_id`,
+  `sku_snapshot` `FRN-PIQ-C-CLA-001`; **MovimientoInsumo 37→37** (no descuenta stock).
+
+**Desviaciones del spec**: ninguna. El frontend del wizard de pedidos hereda el mismo enfoque que
+cotización (TASK-024); su QA en navegador queda para el QA final junto con edición dinámica.
