@@ -24,6 +24,8 @@ class Compra extends Model
         'total',
         'observaciones',
         'estado',
+        'anulado_por_id',
+        'fecha_anulacion',
     ];
 
     protected $casts = [
@@ -32,6 +34,7 @@ class Compra extends Model
         'subtotal'          => 'decimal:2',
         'iva'               => 'decimal:2',
         'total'             => 'decimal:2',
+        'fecha_anulacion'   => 'datetime',
     ];
 
     public function proveedor()
@@ -47,5 +50,10 @@ class Compra extends Model
     public function registradoPor()
     {
         return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function anuladoPor()
+    {
+        return $this->belongsTo(User::class, 'anulado_por_id');
     }
 }

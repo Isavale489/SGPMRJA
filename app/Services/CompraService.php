@@ -136,7 +136,11 @@ class CompraService
                 ]);
             }
 
-            $compra->update(['estado' => 'anulada']);
+            $compra->update([
+                'estado'          => 'anulada',
+                'anulado_por_id'  => $userId,
+                'fecha_anulacion' => now(),
+            ]);
         });
     }
 
