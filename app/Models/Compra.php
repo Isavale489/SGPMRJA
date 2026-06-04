@@ -24,6 +24,7 @@ class Compra extends Model
         'total',
         'observaciones',
         'estado',
+        'origen_compra_id',
     ];
 
     protected $casts = [
@@ -47,5 +48,15 @@ class Compra extends Model
     public function registradoPor()
     {
         return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function origenCompra()
+    {
+        return $this->belongsTo(Compra::class, 'origen_compra_id');
+    }
+
+    public function clones()
+    {
+        return $this->hasMany(Compra::class, 'origen_compra_id');
     }
 }
