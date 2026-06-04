@@ -17,8 +17,12 @@ class CompraController extends Controller
 {
     public function __construct(private CompraService $service) {}
 
-    public function index()
+    public function index(Request $request)
     {
+        // Vista "anuladas": la píldora del header alterna entre el listado de
+        // compras activas (borrador + recibida) y las anuladas.
+        $verAnuladas = $request->boolean('anuladas');
+
         // Solo para el <select> de filtro del listado; el wizard elige el
         // proveedor por búsqueda de documento (no precarga el catálogo).
         $proveedores = Proveedor::with('persona')
@@ -29,7 +33,7 @@ class CompraController extends Controller
             ->orderBy('nombre')
             ->get(['id', 'nombre', 'codigo', 'tipo', 'unidad_medida', 'costo_unitario']);
 
-        return view('admin.compras.index', compact('proveedores', 'insumos'));
+        return view('admin.compras.index', compact('proveedores', 'insumos', 'verAnuladas'));
     }
 
     public function store(StoreCompraRequest $request)
@@ -116,6 +120,23 @@ class CompraController extends Controller
         } catch (\Exception $e) {
             Log::error('CompraController@clonar: ' . $e->getMessage(), ['user' => Auth::id()]);
             return response()->json(['success' => false, 'message' => 'Error al clonar la compra.'], 500);
+        }
+    }
+
+    public function destroy(Compra $compra)
+    {
+        try {
+            $this->service->eliminar($compra);
+
+            return response()->json([
+                'success' => true,
+                'message' => "Borrador #{$compra->id} eliminado correctamente.",
+            ]);
+        } catch (\RuntimeException $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
+        } catch (\Exception $e) {
+            Log::error('CompraController@destroy: ' . $e->getMessage(), ['user' => Auth::id()]);
+            return response()->json(['success' => false, 'message' => 'Error al eliminar la compra.'], 500);
         }
     }
 
@@ -222,12 +243,15 @@ class CompraController extends Controller
         if ($request->filled('filter_proveedor_id')) {
             $query->where('proveedor_id', $request->filter_proveedor_id);
         }
-        if ($request->filled('filter_estado')) {
-            if ($request->filter_estado === 'activas') {
-                $query->whereIn('estado', ['borrador', 'recibida']);
-            } else {
-                $query->where('estado', $request->filter_estado);
-            }
+
+        // Vista "anuladas" (píldora del header) vs vista de activas (default).
+        if ($request->boolean('ver_anuladas')) {
+            $query->where('estado', 'anulada');
+        } elseif (in_array($request->filter_estado, ['recibida', 'borrador'], true)) {
+            // Sub-filtro opcional dentro de las activas.
+            $query->where('estado', $request->filter_estado);
+        } else {
+            $query->whereIn('estado', ['borrador', 'recibida']);
         }
         if ($request->filled('filter_tipo_pago')) {
             $query->where('tipo_pago', $request->filter_tipo_pago);
@@ -267,6 +291,7 @@ class CompraController extends Controller
                 if ($c->estado === 'borrador') {
                     $btn .= '<button class="btn btn-sm btn-soft-warning editar-btn" data-id="' . $c->id . '" title="Editar borrador"><i class="ri-pencil-fill"></i></button>';
                     $btn .= '<button class="btn btn-sm btn-soft-success procesar-btn" data-id="' . $c->id . '" title="Procesar — actualiza stock"><i class="ri-check-double-line"></i></button>';
+                    $btn .= '<button class="btn btn-sm btn-soft-danger eliminar-compra-btn" data-id="' . $c->id . '" title="Eliminar borrador"><i class="ri-delete-bin-line"></i></button>';
                 }
 
                 if ($c->estado === 'recibida') {

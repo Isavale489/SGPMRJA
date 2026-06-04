@@ -32,8 +32,9 @@ $(document).ready(function () {
         ajax: {
             url: "{{ route('compras.data') }}",
             data: function (d) {
-                d.filter_estado     = $('#filter-estado').val();
-                d.filter_tipo_pago  = $('#filter-tipo-pago').val();
+                d.ver_anuladas       = window.VER_ANULADAS ? 1 : 0;
+                d.filter_estado      = $('#filter-estado').val();
+                d.filter_tipo_pago   = $('#filter-tipo-pago').val();
                 d.filter_fecha_desde = $('#filter-fecha-desde').val();
                 d.filter_fecha_hasta = $('#filter-fecha-hasta').val();
             }
@@ -97,7 +98,7 @@ $(document).ready(function () {
     });
 
     $('#btn-clear-filters').on('click', function () {
-        $('#filter-estado').val('activas');
+        $('#filter-estado').val('');   // 'Activas (todas)'
         $('#filter-tipo-pago').val('');
         $('#filter-fecha-desde').val('');
         $('#filter-fecha-hasta').val('');
@@ -307,6 +308,44 @@ $(document).ready(function () {
                 var msg = xhr.responseJSON?.message ?? 'Error al cargar los datos de la compra.';
                 Swal.fire({ title: 'Error', text: msg, icon: 'error', confirmButtonText: 'Entendido' });
             }
+        });
+    });
+
+    // ── Eliminar borrador (borrado físico) ───────────────────────────────────
+    $(document).on('click', '.eliminar-compra-btn', function () {
+        var compraId = $(this).data('id');
+
+        Swal.fire({
+            title: '¿Eliminar este borrador?',
+            text: 'El borrador se eliminará definitivamente. Esta acción no se puede deshacer.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Sí, eliminar',
+            cancelButtonText: 'Cancelar'
+        }).then(function (result) {
+            if (!result.isConfirmed) return;
+
+            $.ajax({
+                url: '/compras/' + compraId,
+                method: 'POST',
+                data: { _method: 'DELETE', _token: '{{ csrf_token() }}' },
+                success: function (response) {
+                    window.comprasTable.ajax.reload(null, false);
+                    Swal.fire({
+                        title: 'Eliminado',
+                        text: response.message,
+                        icon: 'success',
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
+                },
+                error: function (xhr) {
+                    var msg = xhr.responseJSON?.message ?? 'Error al eliminar el borrador.';
+                    Swal.fire({ title: 'Error', text: msg, icon: 'error', confirmButtonText: 'Entendido' });
+                }
+            });
         });
     });
 

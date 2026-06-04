@@ -190,6 +190,22 @@ class CompraService
         });
     }
 
+    /**
+     * Elimina físicamente un borrador (nunca generó stock; arrastra sus
+     * detalles por cascade). Solo aplica a borradores.
+     */
+    public function eliminar(Compra $compra): void
+    {
+        if ($compra->estado !== 'borrador') {
+            throw new \RuntimeException('Solo se pueden eliminar compras en estado borrador.');
+        }
+
+        DB::transaction(function () use ($compra) {
+            $compra->detalles()->delete();
+            $compra->forceDelete();
+        });
+    }
+
     // ── Helpers privados ─────────────────────────────────────────────────────
 
     private function calcularTotales(array $items, float $ivaPorcentaje): array

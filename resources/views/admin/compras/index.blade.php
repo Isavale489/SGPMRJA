@@ -30,16 +30,38 @@
                 <div class="card card-transactional">
                     <div class="card-header">
                         <div class="d-flex align-items-center">
-                            <h5 class="card-title mb-0 flex-grow-1">Registro de Compras</h5>
-                            <div class="flex-shrink-0 d-flex align-items-center gap-2">
-                                <button type="button" class="btn btn-success"
-                                    data-bs-toggle="modal" data-bs-target="#createCompraModal">
-                                    <i class="ri-add-line align-bottom me-1"></i> Nueva Compra
-                                </button>
-                                <button type="button" class="btn btn-danger"
-                                    data-bs-toggle="modal" data-bs-target="#pdfExportModal">
-                                    <i class="ri-file-pdf-line align-bottom me-1"></i> Exportar PDF
-                                </button>
+                            <h5 class="card-title mb-0 flex-grow-1">
+                                {{ $verAnuladas ? 'Compras Anuladas' : 'Registro de Compras' }}
+                            </h5>
+                            <div class="flex-shrink-0 d-flex align-items-center gap-3">
+                                {{-- Píldora: alternar entre activas y anuladas --}}
+                                @if ($verAnuladas)
+                                    <a href="{{ route('compras.index') }}" class="btn-historial btn-historial-volver">
+                                        <i class="ri-arrow-left-line"></i> Volver a activas
+                                    </a>
+                                @else
+                                    <a href="{{ route('compras.index', ['anuladas' => true]) }}" class="btn-historial btn-historial-ver">
+                                        <i class="ri-close-circle-line"></i> Ver anuladas
+                                    </a>
+                                @endif
+
+                                @unless ($verAnuladas)
+                                    <div class="d-flex gap-2">
+                                        <button type="button" class="btn btn-success"
+                                            data-bs-toggle="modal" data-bs-target="#createCompraModal">
+                                            <i class="ri-add-line align-bottom me-1"></i> Nueva Compra
+                                        </button>
+                                        <button type="button" class="btn btn-danger"
+                                            data-bs-toggle="modal" data-bs-target="#pdfExportModal">
+                                            <i class="ri-file-pdf-line align-bottom me-1"></i> Exportar PDF
+                                        </button>
+                                    </div>
+                                @else
+                                    <button type="button" class="btn btn-danger"
+                                        data-bs-toggle="modal" data-bs-target="#pdfExportModal">
+                                        <i class="ri-file-pdf-line align-bottom me-1"></i> Exportar PDF
+                                    </button>
+                                @endunless
                             </div>
                         </div>
                     </div>
@@ -64,18 +86,18 @@
                             <div class="collapse" id="filters-collapse-body">
                                 <div class="navy-filter-body">
                                     <div class="row g-3">
+                                        @unless ($verAnuladas)
                                         <div class="col-12 col-md-3">
                                             <label class="navy-filter-label" for="filter-estado">
                                                 <i class="ri-shield-check-line"></i> Estado
                                             </label>
                                             <select class="form-select navy-filter-select" id="filter-estado">
-                                                <option value="activas" selected>Activas</option>
-                                                <option value="">Todas</option>
+                                                <option value="" selected>Activas (todas)</option>
                                                 <option value="recibida">Recibida</option>
                                                 <option value="borrador">Borrador</option>
-                                                <option value="anulada">Anulada</option>
                                             </select>
                                         </div>
+                                        @endunless
                                         <div class="col-12 col-md-3">
                                             <label class="navy-filter-label" for="filter-tipo-pago">
                                                 <i class="ri-bank-card-line"></i> Tipo de Pago
@@ -192,6 +214,7 @@
     {{-- Datos de insumos para el JS del modal (el proveedor se elige por búsqueda) --}}
     <script>
         window.INSUMOS_DATA = @json($insumos);
+        window.VER_ANULADAS = @json($verAnuladas);
     </script>
 @endsection
 

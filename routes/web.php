@@ -258,6 +258,7 @@ Route::middleware(['auth', 'throttle:60,1', 'active.user', 'recovery.questions.r
         Route::patch('compras/{compra}/procesar', [CompraController::class, 'procesar'])->name('compras.procesar');
         Route::patch('compras/{compra}/anular', [CompraController::class, 'anular'])->name('compras.anular');
         Route::post('compras/{compra}/clonar', [CompraController::class, 'clonar'])->name('compras.clonar');
+        Route::delete('compras/{compra}', [CompraController::class, 'destroy'])->name('compras.destroy');
 
         // Inventario
         Route::get('inventario/movimientos', [MovimientoInsumoController::class, 'index'])->name('inventario.movimientos.index');
