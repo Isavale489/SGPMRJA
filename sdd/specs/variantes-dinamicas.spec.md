@@ -8,7 +8,7 @@ base_branch: enmanuel
 **Feature ID**: FEAT-003
 **Fecha**: 2026-06-03
 **Autor**: Emmanuel Arroyo
-**Status**: draft
+**Status**: approved
 **Versión objetivo**: por definir
 
 ---
@@ -333,16 +333,23 @@ resources/views/admin/cotizaciones/scripts/main.blade.php
 
 ---
 
-## 8. Preguntas abiertas
+## 8. Preguntas abiertas — RESUELTAS (2026-06-03, Emmanuel)
 
-- [ ] **(CRÍTICA) ¿Cómo identifica la Orden de Producción qué fabricar sin `producto_id`?**
-      Opción 1: `orden_produccion` referencia `detalle_pedido_id` y lee su snapshot.
-      Opción 2: `orden_produccion.producto_id` nullable + `tipo_producto_id` + snapshots propios.
-      *Owner: Emmanuel*
-- [ ] ¿El SKU calculado se persiste en el snapshot del detalle para trazabilidad/PDF? (recomendado: sí). *Owner: Emmanuel*
-- [ ] ¿Se hace backfill de los 9 productos legacy hacia el nuevo modelo, o conviven indefinidamente? *Owner: Emmanuel*
-- [ ] ¿La DataTable de Productos elimina del todo la vista de combinaciones o deja un "ver SKUs" secundario? *Owner: Emmanuel*
-- [ ] ¿`insumosDefault` (`tipo_producto_insumo`, BOM de la orden) debe incluir la tela elegida automáticamente al producir? *Owner: Emmanuel*
+- [x] **(CRÍTICA) ¿Cómo identifica la Orden de Producción qué fabricar sin `producto_id`?**
+      → **Opción 1.** La orden **ya tiene** `detalle_pedido_id` + relación `detallePedido()`
+      (redesign 2026-05-27). Producción lee tipo+tela+atributos del **snapshot de la línea**.
+      `orden_produccion.producto_id` pasa a **nullable/legacy** (no se borra). Bajo riesgo.
+- [x] **¿El SKU calculado se persiste en el snapshot del detalle?** → **Sí.** Al crear la línea,
+      guardar el SKU (`ProductoService::generarCodigo()`) en el snapshot para trazabilidad estable
+      en PDF/orden, independiente del catálogo vivo.
+- [x] **¿Backfill de los 9 productos legacy?** → **No; conviven.** Líneas con `producto_id` leen
+      del producto; líneas nuevas leen del snapshot. La lectura tolera ambos casos.
+- [x] **¿La DataTable de Productos elimina las combinaciones?** → **Solo tipos** en la vista
+      principal. Productos legacy accesibles en vista secundaria opcional ("SKUs generados") para
+      auditoría; no se generan nuevas filas por combinación.
+- [x] **¿La orden consume la tela elegida del stock al producir?** → **Sí.** Descontar
+      `tela = tipo.consumo_tela_por_unidad × cantidad` vía `MovimientoInsumo` (como ya hace
+      producción), leyendo la tela del snapshot.
 
 ---
 
@@ -351,3 +358,4 @@ resources/views/admin/cotizaciones/scripts/main.blade.php
 | Versión | Fecha | Autor | Cambio |
 |---|---|---|---|
 | 0.1 | 2026-06-03 | Emmanuel Arroyo | Borrador inicial (refactor completo — camino A) |
+| 0.2 | 2026-06-03 | Emmanuel Arroyo | Preguntas §8 resueltas; status → approved |
