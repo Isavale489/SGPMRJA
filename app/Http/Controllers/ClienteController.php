@@ -243,15 +243,20 @@ class ClienteController extends Controller
      */
     public function searchAjax(Request $request)
     {
-        $query = $request->input('q');
+        $query = trim((string) $request->input('q'));
         $escaped = str_replace(['%', '_'], ['\\%', '\\_'], $query);
+
         $clientes = Cliente::with(['persona.telefonos', 'persona.direcciones'])
-            ->whereHas('persona', function ($q) use ($escaped) {
-                // Buscar por documento_identidad (solo el número, sin prefijo)
-                $q->where('documento_identidad', 'LIKE', "%{$escaped}%");
+            ->when($query !== '', function ($q) use ($escaped) {
+                $q->whereHas('persona', function ($sub) use ($escaped) {
+                    $sub->where('documento_identidad', 'LIKE', "%{$escaped}%")
+                        ->orWhere('nombre', 'LIKE', "%{$escaped}%")
+                        ->orWhere('apellido', 'LIKE', "%{$escaped}%");
+                });
             })
             ->where('estatus', 1)
-            ->limit(10)
+            ->orderByDesc('id')
+            ->limit(50)
             ->get();
 
         // Formatear respuesta usando accessors del modelo Cliente
