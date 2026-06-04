@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\TipoProducto;
+use App\Models\Insumo;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 
@@ -169,6 +170,59 @@ class TipoProductoController extends Controller
     private function syncTelas(TipoProducto $tipo, array $telaIds): void
     {
         $tipo->telas()->sync(array_map('intval', $telaIds));
+    }
+
+    /**
+     * Crea una tela (Insumo tipo='Tela') inline desde el selector de variante
+     * de la cotización y la asigna a este tipo (FEAT-003). Réplica del alta de
+     * insumo del maestro, con tipo fijado en 'Tela'.
+     */
+    public function storeTela(Request $request, TipoProducto $tipoProducto): JsonResponse
+    {
+        $request->validate([
+            'nombre'           => 'required|string|max:100',
+            'codigo'           => 'nullable|string|min:2|max:8|regex:/^[A-Z0-9]+$/|unique:insumo,codigo',
+            'unidad_medida'    => 'required|in:Metro,Kg,Gramo,Unidad,Rollo,Cono,Docena',
+            'is_inventoriable' => 'nullable|boolean',
+            'costo_unitario'   => 'required|numeric|min:0.01',
+            'stock_actual'     => 'nullable|numeric|min:0',
+            'stock_minimo'     => 'nullable|numeric|min:0',
+            'stock_maximo'     => 'nullable|numeric|min:0|gte:stock_minimo',
+            'estado'           => 'nullable|boolean',
+        ], [
+            'codigo.regex'     => 'El código solo admite letras mayúsculas y números.',
+            'codigo.unique'    => 'Ya existe un insumo con este código.',
+            'stock_maximo.gte' => 'La existencia máxima no puede ser menor que la mínima.',
+        ]);
+
+        $inventoriable = $request->boolean('is_inventoriable', true);
+
+        $insumo = Insumo::create([
+            'nombre'           => $request->nombre,
+            'codigo'           => $request->filled('codigo') ? strtoupper(trim($request->codigo)) : null,
+            'tipo'             => 'Tela',
+            'unidad_medida'    => $request->unidad_medida,
+            'is_inventoriable' => $inventoriable,
+            'costo_unitario'   => $request->costo_unitario,
+            'stock_actual'     => $inventoriable ? $request->input('stock_actual', 0) : 0,
+            'stock_minimo'     => $inventoriable ? $request->input('stock_minimo', 0) : 0,
+            'stock_maximo'     => $inventoriable ? $request->input('stock_maximo', 0) : 0,
+            'estado'           => $request->boolean('estado', true),
+        ]);
+
+        $tipoProducto->telas()->syncWithoutDetaching([$insumo->id]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Tela creada y asignada al tipo.',
+            'tela'    => [
+                'id'             => $insumo->id,
+                'nombre'         => $insumo->nombre,
+                'codigo'         => $insumo->codigo,
+                'costo_unitario' => (float) $insumo->costo_unitario,
+                'unidad_medida'  => $insumo->unidad_medida,
+            ],
+        ]);
     }
 
     /**

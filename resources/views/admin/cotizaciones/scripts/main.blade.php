@@ -4096,6 +4096,92 @@
             }
             window.cotVarianteSelectorAbrir = vsAbrir;
 
+            // ════════════════════════════════════════════════════════════════
+            //  CREAR TELA INLINE (Insumo tipo='Tela') desde el selector
+            //  Solo se monta si el botón existe (gated por rol en Blade).
+            // ════════════════════════════════════════════════════════════════
+            (function () {
+                if (!document.getElementById('vs-add-tela-btn')) return;
+                var ctModal = new bootstrap.Modal(document.getElementById('crearTelaRapidaModal'));
+                var CT_CSRF = $('meta[name="csrf-token"]').attr('content');
+
+                function ctReset() {
+                    $('#ctForm')[0].reset();
+                    $('#ct-inventariable').prop('checked', true);
+                    $('#ct-stock-wrapper').show();
+                    $('#ct-nombre, #ct-codigo, #ct-costo').removeClass('is-invalid');
+                    $('#ct-nombre-error, #ct-codigo-error, #ct-costo-error').hide();
+                }
+
+                $('#ct-inventariable').on('change', function () {
+                    $('#ct-stock-wrapper').toggle(this.checked);
+                });
+
+                $('#vs-add-tela-btn').on('click', function () {
+                    if (!vsState.tipoId) return;
+                    ctReset();
+                    ctModal.show();
+                });
+
+                $('#ctForm').on('submit', function (e) {
+                    e.preventDefault();
+                    var nombre = $('#ct-nombre').val().trim();
+                    var costo = $('#ct-costo').val();
+                    var ok = true;
+                    if (!nombre) { $('#ct-nombre').addClass('is-invalid'); $('#ct-nombre-error').text('El nombre es obligatorio.').show(); ok = false; }
+                    else { $('#ct-nombre').removeClass('is-invalid'); $('#ct-nombre-error').hide(); }
+                    if (!costo || parseFloat(costo) <= 0) { $('#ct-costo').addClass('is-invalid'); $('#ct-costo-error').text('El costo debe ser mayor a 0.').show(); ok = false; }
+                    else { $('#ct-costo').removeClass('is-invalid'); $('#ct-costo-error').hide(); }
+                    if (!ok) return;
+
+                    var inv = $('#ct-inventariable').is(':checked');
+                    var payload = {
+                        _token: CT_CSRF,
+                        nombre: nombre,
+                        codigo: $('#ct-codigo').val().trim().toUpperCase() || null,
+                        unidad_medida: $('#ct-unidad').val(),
+                        is_inventoriable: inv ? 1 : 0,
+                        costo_unitario: costo,
+                        estado: $('#ct-estado').val(),
+                    };
+                    if (inv) {
+                        payload.stock_minimo = $('#ct-stock-min').val() || 0;
+                        payload.stock_actual = $('#ct-stock-actual').val() || 0;
+                        payload.stock_maximo = $('#ct-stock-max').val() || 0;
+                    }
+
+                    var $btn = $('#ct-submit-btn'), original = $btn.html();
+                    $btn.prop('disabled', true).html('<i class="ri-loader-4-line ri-spin me-1"></i>Guardando...');
+
+                    $.ajax({
+                        url: "{{ url('tipo-productos') }}/" + vsState.tipoId + "/telas",
+                        method: 'POST',
+                        data: payload,
+                        success: function (resp) {
+                            ctModal.hide();
+                            if (resp.tela && vsState.tipo) {
+                                vsState.tipo.telas = vsState.tipo.telas || [];
+                                vsState.tipo.telas.push(resp.tela);
+                                vsState.telaId = resp.tela.id;      // auto-seleccionar la nueva tela
+                                vsRenderTelas();
+                                vsResolverVariante();
+                            }
+                            Swal.fire({ icon: 'success', title: 'Tela creada', text: resp.message, showConfirmButton: false, timer: 1600 });
+                        },
+                        error: function (xhr) {
+                            var errs = xhr.responseJSON && xhr.responseJSON.errors || {};
+                            if (errs.codigo) { $('#ct-codigo').addClass('is-invalid'); $('#ct-codigo-error').text(errs.codigo[0]).show(); }
+                            if (errs.nombre) { $('#ct-nombre').addClass('is-invalid'); $('#ct-nombre-error').text(errs.nombre[0]).show(); }
+                            if (errs.costo_unitario) { $('#ct-costo').addClass('is-invalid'); $('#ct-costo-error').text(errs.costo_unitario[0]).show(); }
+                            if (!errs.codigo && !errs.nombre && !errs.costo_unitario) {
+                                Swal.fire({ icon: 'error', title: 'Error', text: (xhr.responseJSON && xhr.responseJSON.message) || 'No se pudo crear la tela.' });
+                            }
+                        },
+                        complete: function () { $btn.prop('disabled', false).html(original); }
+                    });
+                });
+            })();
+
             // Listeners del selector
             $(document).on('change', '.vs-tela-radio', function () {
                 vsState.telaId = parseInt(this.value);
