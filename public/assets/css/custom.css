@@ -7025,20 +7025,34 @@ header#page-topbar,
 /* ════════════════════════════════════════════════════════════════════
    PEDIDO WIZARD — Banner "Datos heredados de cotización" (amber)
    ════════════════════════════════════════════════════════════════════ */
+/* Chip compacto "heredado de cotización" — vive en el gutter derecho
+   del encabezado del paso, no roba alto vertical. */
 .ped-banner-heredado {
-    display: flex;
+    display: inline-flex;
     align-items: center;
-    gap: 10px;
-    padding: 10px 16px;
+    gap: 6px;
+    padding: 5px 12px;
     background: rgba(245,158,11,0.10);
     border: 1px solid rgba(245,158,11,0.35);
-    border-radius: 8px;
+    border-radius: 999px;
     color: #92400e;
-    font-size: 0.8rem;
+    font-size: 0.74rem;
     font-weight: 600;
-    margin-bottom: 14px;
+    line-height: 1.2;
+    white-space: nowrap;
 }
-.ped-banner-heredado i { font-size: 1rem; color: #f59e0b; flex-shrink: 0; }
+.ped-banner-heredado i { font-size: 0.95rem; color: #f59e0b; flex-shrink: 0; }
+
+/* Encabezado de paso con chip lateral a la derecha */
+.wiz-step-header--with-aside {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+.wiz-step-header--with-aside .wiz-step-header-main { flex: 1 1 auto; min-width: 0; }
+.wiz-step-header--with-aside .ped-banner-heredado { flex: 0 0 auto; margin-top: 2px; }
 
 [data-bs-theme="dark"] .ped-banner-heredado {
     background: rgba(245,158,11,0.12);

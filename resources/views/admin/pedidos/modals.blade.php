@@ -81,18 +81,17 @@
 
                     {{-- ════════════════════════ PASO 1 — CLIENTE ════════════════════════ --}}
                     <section class="wiz-step-content is-active" id="ped-wiz-step-1" data-step="1">
-                        <div class="wiz-step-header">
-                            <h4 class="wiz-step-title">Cliente y datos del pedido</h4>
-                            <p class="wiz-step-desc">Busca el cliente por su documento, define las fechas y la prioridad del pedido.</p>
-                        </div>
-
-                        {{-- Banner: datos heredados de cotización (oculto por defecto) --}}
-                        <div class="ped-banner-heredado d-none" id="ped-banner-heredado-p1">
-                            <i class="ri-file-transfer-line"></i>
-                            <span>Datos heredados de cotización
-                                <strong class="ped-banner-cot-num">#—</strong>
-                                — Puedes revisar y ajustar antes de guardar.
-                            </span>
+                        <div class="wiz-step-header wiz-step-header--with-aside">
+                            <div class="wiz-step-header-main">
+                                <h4 class="wiz-step-title">Cliente y datos del pedido</h4>
+                                <p class="wiz-step-desc">Busca el cliente por su documento, define las fechas y la prioridad del pedido.</p>
+                            </div>
+                            {{-- Chip: datos heredados de cotización (oculto por defecto) --}}
+                            <div class="ped-banner-heredado d-none" id="ped-banner-heredado-p1"
+                                title="Datos heredados de la cotización — puedes revisar y ajustar antes de guardar.">
+                                <i class="ri-file-transfer-line"></i>
+                                <span>Heredado de cotización <strong class="ped-banner-cot-num">#—</strong></span>
+                            </div>
                         </div>
 
                         <div class="row g-3">
@@ -292,18 +291,17 @@
 
                     {{-- ════════════════════════ PASO 2 — PRODUCTOS ════════════════════════ --}}
                     <section class="wiz-step-content" id="ped-wiz-step-2" data-step="2" hidden>
-                        <div class="wiz-step-header">
-                            <h4 class="wiz-step-title">Productos del pedido</h4>
-                            <p class="wiz-step-desc">Definidos en la cotización de origen — solo lectura. Para cambiarlos, edita la cotización.</p>
-                        </div>
-
-                        {{-- Banner: productos heredados de cotización (solo lectura) --}}
-                        <div class="ped-banner-heredado d-none" id="ped-banner-heredado-p2">
-                            <i class="ri-file-transfer-line"></i>
-                            <span>Productos heredados de cotización
-                                <strong class="ped-banner-cot-num">#—</strong>
-                                — definidos en la cotización (solo lectura).
-                            </span>
+                        <div class="wiz-step-header wiz-step-header--with-aside">
+                            <div class="wiz-step-header-main">
+                                <h4 class="wiz-step-title">Productos del pedido</h4>
+                                <p class="wiz-step-desc">Definidos en la cotización de origen — solo lectura. Para cambiarlos, edita la cotización.</p>
+                            </div>
+                            {{-- Chip: productos heredados de cotización (solo lectura) --}}
+                            <div class="ped-banner-heredado d-none" id="ped-banner-heredado-p2"
+                                title="Productos definidos en la cotización de origen — solo lectura.">
+                                <i class="ri-file-transfer-line"></i>
+                                <span>Heredado de cotización <strong class="ped-banner-cot-num">#—</strong></span>
+                            </div>
                         </div>
 
                         {{-- KPI bar — líneas + total --}}
