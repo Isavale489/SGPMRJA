@@ -281,88 +281,130 @@
             if (!productos || !productos.length) {
                 $empty.removeAttr('hidden');
                 $('#view-ped-kpi-lineas').text(0);
+                $('#view-ped-kpi-unidades').text(0);
                 $('#view-ped-kpi-total').text('$0.00');
                 return;
             }
             $empty.attr('hidden', '');
 
-            var groups = {}, groupOrder = [], totalGlobal = 0;
+            var tasa = parseFloat(tasaPedido) || 0;
+
+            // Agrupar por producto_id + color_id
+            var groups = {}, groupOrder = [];
             productos.forEach(function (item) {
                 var key = (item.producto ? item.producto.id : 'x') + '_' + (item.color_id || 'nc');
-                if (!groups[key]) { groups[key] = { ref: item, items: [] }; groupOrder.push(key); }
+                if (!groups[key]) {
+                    groups[key] = { ref: item, items: [], precio_unitario: item.precio_unitario };
+                    groupOrder.push(key);
+                }
                 groups[key].items.push(item);
-                totalGlobal += item.cantidad * parseFloat(item.precio_unitario);
             });
 
-            $('#view-ped-kpi-lineas').text(productos.length);
-            $('#view-ped-kpi-total').text('$' + totalGlobal.toFixed(2));
+            // KPIs
+            var grandTotal   = productos.reduce(function (a, it) { return a + parseFloat(it.precio_unitario) * parseInt(it.cantidad); }, 0);
+            var grandUnits   = productos.reduce(function (a, it) { return a + parseInt(it.cantidad); }, 0);
+            $('#view-ped-kpi-lineas').text(groupOrder.length);
+            $('#view-ped-kpi-unidades').text(grandUnits);
+            $('#view-ped-kpi-total').text('$' + grandTotal.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ','));
 
-            var tasa = parseFloat(tasaPedido) || 0;
-            var html = '<div class="cot-grouped-tablewrap"><table class="cot-grouped-table"><tbody>';
+            var rows = groupOrder.map(function (key, idx) {
+                var g        = groups[key];
+                var items    = g.items;
+                var prod     = g.ref.producto || {};
+                var colorId  = g.ref.color_id;
+                var colorObj = (colorId && coloresCatalogo[colorId]) ? coloresCatalogo[colorId] : {};
+                var colorNom = colorObj.nombre || '—';
+                var colorHex = colorObj.hex || '#94a3b8';
+                var precioU  = parseFloat(g.precio_unitario);
+                var totalQty = items.reduce(function (a, it) { return a + parseInt(it.cantidad); }, 0);
+                var subtotal = items.reduce(function (a, it) { return a + parseFloat(it.precio_unitario) * parseInt(it.cantidad); }, 0);
+                var llevaBordado = items.some(function (it) { return it.lleva_bordado; });
 
-            groupOrder.forEach(function (key) {
-                var grp = groups[key];
-                var first = grp.ref;
-                var prod  = first.producto || {};
-                var prodNombre = prod.codigo
-                    ? prod.codigo + ' — ' + (prod.tipo_producto ? prod.tipo_producto.nombre : '')
-                    : (prod.nombre || 'Producto');
-                var colorNombre = getColorNombre(first.color_id);
-                var subtotalGrp = grp.items.reduce(function (a, it) { return a + it.cantidad * parseFloat(it.precio_unitario); }, 0);
+                // Chips de talla (patrón cotizaciones)
+                var tallasHtml = items.map(function (it) {
+                    var lbl = getTallaLabel(it.talla_id) || 'S/T';
+                    return '<span class="cot-chip cot-chip-talla">' + lbl + '<span class="cot-chip-x">×</span>' + it.cantidad + '</span>';
+                }).join('');
 
-                // Chips de talla
-                var tallasHtml = '';
-                grp.items.forEach(function (it) {
-                    var tLbl = it.talla_id ? getTallaLabel(it.talla_id) : null;
-                    var tStr = (tLbl && tLbl !== 'N/A') ? tLbl : '—';
-                    tallasHtml += '<span class="cot-chip cot-chip-talla" title="$' + (it.cantidad * parseFloat(it.precio_unitario)).toFixed(2) + '">' +
-                        '<span class="cot-chip-talla__size">' + tStr + '</span>' +
-                        '<span class="cot-chip-talla__qty">×' + it.cantidad + '</span>' +
-                        '<span class="cot-chip-talla__price">$' + parseFloat(it.precio_unitario).toFixed(2) + '</span>' +
-                        '</span>';
-                });
+                // Detalle bordados compacto en la columna producto
+                var bordadosDetalle = '';
+                if (llevaBordado) {
+                    var blines = [];
+                    items.forEach(function (it) {
+                        if (it.bordados && it.bordados.length) {
+                            it.bordados.forEach(function (b) {
+                                var bNom = (b.logo ? b.logo.name : null) || b.nombre_logo_aplicado || 'Logo';
+                                blines.push(bNom + ' → ' + (b.nombre_aplicado || '—') + ' ×' + (b.cantidad || 1));
+                            });
+                        }
+                    });
+                    if (blines.length) {
+                        bordadosDetalle = '<div class="cot-prod-variant text-truncate" title="' + blines.join(' | ') + '">' +
+                            '<i class="ri-scissors-cut-line me-1"></i>' + blines[0] +
+                            (blines.length > 1 ? ' +' + (blines.length - 1) : '') + '</div>';
+                    }
+                }
 
-                // Bordados + equivalente Bs (tasa heredada de cotización de origen)
-                var bordadosHtml = '';
-                grp.items.forEach(function (it) {
-                    if (!it.lleva_bordado) return;
-                    var bList = Array.isArray(it.bordados) ? it.bordados : [];
-                    var recargo = bList.reduce(function (s, b) {
+                // Estado bordado + precio BCV en línea inferior de tallas
+                var bordadoLineClass = llevaBordado ? 'cot-grouped-bordado-line--ok' : 'cot-grouped-bordado-line--none';
+                var bordadoText      = llevaBordado ? 'Con bordado' : 'Sin bordado';
+                var recargo = items.reduce(function (a, it) {
+                    if (!it.bordados || !it.bordados.length) return a;
+                    var recU = it.bordados.reduce(function (s, b) {
                         return s + (parseFloat(b.precio_aplicado) || 0) * Math.max(1, parseInt(b.cantidad || 1, 10));
                     }, 0);
-                    var bsBordado   = (recargo && typeof window.bsEquivalente === 'function') ? window.bsEquivalente(recargo, tasa) : null;
-                    var tasaFmtStr  = (typeof window.bsTasaFmt === 'function') ? window.bsTasaFmt(tasa) : null;
-                    var bsExtra     = recargo ? ' · $' + recargo.toFixed(2) + (bsBordado ? ' · ' + bsBordado : '') + (tasaFmtStr ? ' (Tasa ' + tasaFmtStr + ')' : '') : '';
-
-                    if (bList.length) {
-                        bList.forEach(function (b) {
-                            var logo = (b.logo ? b.logo.name : null) || b.nombre_logo_aplicado || 'Sin logo';
-                            var ubic = b.nombre_aplicado || 'Sin ubicación';
-                            var cant = Math.max(1, parseInt(b.cantidad || 1, 10));
-                            bordadosHtml += '<div class="cot-grouped-bordado-line"><i class="ri-scissors-cut-line me-1"></i>' + logo + ' → ' + ubic + ' ×' + cant + bsExtra + '</div>';
-                        });
-                    } else {
-                        bordadosHtml += '<div class="cot-grouped-bordado-line"><i class="ri-scissors-cut-line me-1"></i>Bordado → ' + (it.ubicacion_logo || 'Sin ubicación') + ' ×' + (it.cantidad_logo || 1) + bsExtra + '</div>';
-                    }
-                });
-
-                var colorHtml = colorNombre
-                    ? '<span class="fw-semibold fs-13">' + colorNombre + '</span>'
-                    : '<span class="badge bg-soft-warning text-atlantico-dark" style="font-size:.68rem;">Sin color</span>';
-
-                html += '<tr class="cot-grouped-row">';
-                html += '<td class="cot-col-prod"><span class="cot-prod-name">' + prodNombre + '</span></td>';
-                html += '<td class="cot-col-color">' + colorHtml + '</td>';
-                html += '<td class="cot-col-tallas">' + tallasHtml + '</td>';
-                html += '<td class="cot-col-subtotal"><span class="cot-subtotal-val">$' + subtotalGrp.toFixed(2) + '</span></td>';
-                html += '</tr>';
-                if (bordadosHtml) {
-                    html += '<tr><td colspan="4" class="cot-grouped-bordado-row">' + bordadosHtml + '</td></tr>';
+                    return a + recU * parseInt(it.cantidad);
+                }, 0);
+                var bordadoBsExtra = '';
+                if (llevaBordado && recargo > 0) {
+                    var bsB = (typeof window.bsEquivalente === 'function') ? window.bsEquivalente(recargo, tasa) : null;
+                    bordadoBsExtra = ' · $' + recargo.toFixed(2) + (bsB ? ' · ' + bsB : '');
                 }
-            });
 
-            html += '</tbody></table></div>';
-            $cont.html(html);
+                var prodNombre = prod.nombre_completo || prod.nombre ||
+                    (prod.tipo_producto ? prod.tipo_producto.nombre : '') || 'Producto';
+                var prodCodigo = prod.codigo || '';
+
+                return '<tr class="cot-grouped-row">' +
+                    '<td class="cot-col-num">' + (idx + 1) + '</td>' +
+                    '<td class="cot-col-prod">' +
+                        '<div class="cot-prod-modelo">' + prodNombre + '</div>' +
+                        (prodCodigo ? '<div class="cot-prod-codigo"><i class="ri-barcode-line me-1"></i>' + prodCodigo + '</div>' : '') +
+                        bordadosDetalle +
+                    '</td>' +
+                    '<td class="cot-col-color">' +
+                        '<span class="cot-color-cell">' +
+                            '<span class="cot-color-dot" style="background:' + colorHex + '"></span>' +
+                            colorNom +
+                        '</span>' +
+                    '</td>' +
+                    '<td class="cot-col-tallas">' +
+                        '<div class="cot-tallas-wrap">' + tallasHtml + '</div>' +
+                        '<div class="cot-grouped-bordado-line ' + bordadoLineClass + '">' +
+                            '<i class="ri-scissors-cut-line"></i>' + bordadoText + bordadoBsExtra +
+                        '</div>' +
+                    '</td>' +
+                    '<td class="cot-col-num cot-cell-num"><strong>' + totalQty + '</strong></td>' +
+                    '<td class="cot-cell-num">$' + precioU.toFixed(2) + '</td>' +
+                    '<td class="cot-cell-num cot-cell-subtotal">$' + subtotal.toFixed(2) + '</td>' +
+                    '</tr>';
+            }).join('');
+
+            $cont.html(
+                '<div class="cot-grouped-tablewrap">' +
+                '<table class="cot-grouped-table">' +
+                '<thead><tr>' +
+                    '<th class="cot-col-num">#</th>' +
+                    '<th class="cot-col-prod">Producto</th>' +
+                    '<th class="cot-col-color">Color</th>' +
+                    '<th class="cot-col-tallas">Tallas</th>' +
+                    '<th class="cot-col-num cot-cell-num">Cant.</th>' +
+                    '<th class="cot-cell-num">P/U</th>' +
+                    '<th class="cot-cell-num">Subtotal</th>' +
+                '</tr></thead>' +
+                '<tbody>' + rows + '</tbody>' +
+                '</table></div>'
+            );
         }
 
         // === Ver → viewModal (read-only) ====================================

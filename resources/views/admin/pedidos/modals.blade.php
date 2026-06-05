@@ -739,6 +739,10 @@
                             <span class="cot-kpi-label">Líneas</span>
                             <span class="cot-kpi-value" id="view-ped-kpi-lineas">0</span>
                         </div>
+                        <div class="cot-kpi">
+                            <span class="cot-kpi-label">Unidades</span>
+                            <span class="cot-kpi-value" id="view-ped-kpi-unidades">0</span>
+                        </div>
                         <div class="cot-kpi cot-kpi--total">
                             <span class="cot-kpi-label">Total</span>
                             <span class="cot-kpi-value" id="view-ped-kpi-total">$0.00</span>
