@@ -241,6 +241,130 @@
                 'El estado volverá a calcularse según el avance de producción.', 'Sí, reactivar');
         });
 
+        // ── Navegación wizard viewModal pedidos (solo lectura, 3 pasos) ──────
+        (function () {
+            var VIEW_PED_STEPS = 3;
+            var viewPedStep = 1;
+
+            function viewPedShowStep(n) {
+                viewPedStep = n;
+                $('#viewModal .wiz-step-content').each(function () {
+                    var s = parseInt($(this).data('step'));
+                    if (s === n) { $(this).addClass('is-active').removeAttr('hidden'); }
+                    else         { $(this).removeClass('is-active').attr('hidden', ''); }
+                });
+                $('#viewModal .wiz-step-marker').each(function () {
+                    var s = parseInt($(this).data('step'));
+                    $(this).toggleClass('is-active', s === n).toggleClass('is-done', s < n);
+                });
+                $('#viewModal .wiz-step-line-fill').each(function () {
+                    var l = parseInt($(this).data('line'));
+                    $(this).toggleClass('is-filled', l < n);
+                });
+                $('#btn-view-ped-prev').toggle(n > 1);
+                $('#btn-view-ped-next').toggle(n < VIEW_PED_STEPS);
+            }
+
+            $('#viewModal').on('show.bs.modal', function () { viewPedShowStep(1); });
+            $(document).on('click', '#btn-view-ped-next',  function () { if (viewPedStep < VIEW_PED_STEPS) viewPedShowStep(viewPedStep + 1); });
+            $(document).on('click', '#btn-view-ped-prev',  function () { if (viewPedStep > 1)             viewPedShowStep(viewPedStep - 1); });
+            $(document).on('click', '#viewModal .wiz-step-marker', function () { viewPedShowStep(parseInt($(this).data('step'))); });
+        }());
+
+        // ── Grilla de productos del pedido (solo lectura, cot-grouped-table) ─
+        // tasaPedido: tasa heredada de la cotización de origen (para bordado en Bs)
+        function viewPedRenderGrilla(productos, tasaPedido) {
+            var $cont  = $('#view-productos-container');
+            var $empty = $('#view-ped-productos-empty');
+            $cont.empty();
+
+            if (!productos || !productos.length) {
+                $empty.removeAttr('hidden');
+                $('#view-ped-kpi-lineas').text(0);
+                $('#view-ped-kpi-total').text('$0.00');
+                return;
+            }
+            $empty.attr('hidden', '');
+
+            var groups = {}, groupOrder = [], totalGlobal = 0;
+            productos.forEach(function (item) {
+                var key = (item.producto ? item.producto.id : 'x') + '_' + (item.color_id || 'nc');
+                if (!groups[key]) { groups[key] = { ref: item, items: [] }; groupOrder.push(key); }
+                groups[key].items.push(item);
+                totalGlobal += item.cantidad * parseFloat(item.precio_unitario);
+            });
+
+            $('#view-ped-kpi-lineas').text(productos.length);
+            $('#view-ped-kpi-total').text('$' + totalGlobal.toFixed(2));
+
+            var tasa = parseFloat(tasaPedido) || 0;
+            var html = '<div class="cot-grouped-tablewrap"><table class="cot-grouped-table"><tbody>';
+
+            groupOrder.forEach(function (key) {
+                var grp = groups[key];
+                var first = grp.ref;
+                var prod  = first.producto || {};
+                var prodNombre = prod.codigo
+                    ? prod.codigo + ' — ' + (prod.tipo_producto ? prod.tipo_producto.nombre : '')
+                    : (prod.nombre || 'Producto');
+                var colorNombre = getColorNombre(first.color_id);
+                var subtotalGrp = grp.items.reduce(function (a, it) { return a + it.cantidad * parseFloat(it.precio_unitario); }, 0);
+
+                // Chips de talla
+                var tallasHtml = '';
+                grp.items.forEach(function (it) {
+                    var tLbl = it.talla_id ? getTallaLabel(it.talla_id) : null;
+                    var tStr = (tLbl && tLbl !== 'N/A') ? tLbl : '—';
+                    tallasHtml += '<span class="cot-chip cot-chip-talla" title="$' + (it.cantidad * parseFloat(it.precio_unitario)).toFixed(2) + '">' +
+                        '<span class="cot-chip-talla__size">' + tStr + '</span>' +
+                        '<span class="cot-chip-talla__qty">×' + it.cantidad + '</span>' +
+                        '<span class="cot-chip-talla__price">$' + parseFloat(it.precio_unitario).toFixed(2) + '</span>' +
+                        '</span>';
+                });
+
+                // Bordados + equivalente Bs (tasa heredada de cotización de origen)
+                var bordadosHtml = '';
+                grp.items.forEach(function (it) {
+                    if (!it.lleva_bordado) return;
+                    var bList = Array.isArray(it.bordados) ? it.bordados : [];
+                    var recargo = bList.reduce(function (s, b) {
+                        return s + (parseFloat(b.precio_aplicado) || 0) * Math.max(1, parseInt(b.cantidad || 1, 10));
+                    }, 0);
+                    var bsBordado   = (recargo && typeof window.bsEquivalente === 'function') ? window.bsEquivalente(recargo, tasa) : null;
+                    var tasaFmtStr  = (typeof window.bsTasaFmt === 'function') ? window.bsTasaFmt(tasa) : null;
+                    var bsExtra     = recargo ? ' · $' + recargo.toFixed(2) + (bsBordado ? ' · ' + bsBordado : '') + (tasaFmtStr ? ' (Tasa ' + tasaFmtStr + ')' : '') : '';
+
+                    if (bList.length) {
+                        bList.forEach(function (b) {
+                            var logo = (b.logo ? b.logo.name : null) || b.nombre_logo_aplicado || 'Sin logo';
+                            var ubic = b.nombre_aplicado || 'Sin ubicación';
+                            var cant = Math.max(1, parseInt(b.cantidad || 1, 10));
+                            bordadosHtml += '<div class="cot-grouped-bordado-line"><i class="ri-scissors-cut-line me-1"></i>' + logo + ' → ' + ubic + ' ×' + cant + bsExtra + '</div>';
+                        });
+                    } else {
+                        bordadosHtml += '<div class="cot-grouped-bordado-line"><i class="ri-scissors-cut-line me-1"></i>Bordado → ' + (it.ubicacion_logo || 'Sin ubicación') + ' ×' + (it.cantidad_logo || 1) + bsExtra + '</div>';
+                    }
+                });
+
+                var colorHtml = colorNombre
+                    ? '<span class="fw-semibold fs-13">' + colorNombre + '</span>'
+                    : '<span class="badge bg-soft-warning text-atlantico-dark" style="font-size:.68rem;">Sin color</span>';
+
+                html += '<tr class="cot-grouped-row">';
+                html += '<td class="cot-col-prod"><span class="cot-prod-name">' + prodNombre + '</span></td>';
+                html += '<td class="cot-col-color">' + colorHtml + '</td>';
+                html += '<td class="cot-col-tallas">' + tallasHtml + '</td>';
+                html += '<td class="cot-col-subtotal"><span class="cot-subtotal-val">$' + subtotalGrp.toFixed(2) + '</span></td>';
+                html += '</tr>';
+                if (bordadosHtml) {
+                    html += '<tr><td colspan="4" class="cot-grouped-bordado-row">' + bordadosHtml + '</td></tr>';
+                }
+            });
+
+            html += '</tbody></table></div>';
+            $cont.html(html);
+        }
+
         // === Ver → viewModal (read-only) ====================================
         $('#pedidos-table').on('click', '.view-btn', function () {
             var id = $(this).data('id');
@@ -341,170 +465,16 @@
                     }
                     $('#view-prioridad').html(`<span class="badge ${prioridadBadgeClass}">${data.prioridad || 'N/A'}</span>`);
 
-                    // Llenar productos del pedido en la vista
-                    var productosBody = $('#view-productos-container');
-                    productosBody.empty();
-                    if (data.productos && data.productos.length > 0) {
-                        data.productos.forEach(function (item, index) {
-                            var subtotal = item.cantidad * item.precio_unitario;
-                            var colorDisplay = getColorNombre(item.color_id);
-                            var colorHtml = colorDisplay
-                                ? `<span class="fw-semibold" style="font-size: 0.85rem;">${colorDisplay}</span>`
-                                : `<span class="badge bg-soft-warning text-atlantico-dark" style="font-size:0.68rem;">Sin color</span>`;
-                            var tallaLabel = getTallaLabel(item.talla_id);
-                            var tallaHtml = (item.talla_id && tallaLabel !== 'N/A')
-                                ? `<span class="fw-semibold" style="font-size: 0.85rem;">${tallaLabel}</span>`
-                                : `<span class="badge bg-soft-primary text-atlantico-dark" style="font-size:0.68rem;">Sin talla</span>`;
-                            productosBody.append(`
-                                <div class="card border-0 shadow-sm mb-3" style="border-left: 4px solid #00d9a5 !important;">
-                                    <div class="card-body p-3">
-                                        <!-- Header del Producto -->
-                                        <div class="d-flex align-items-center mb-3">
-                                            <div class="rounded-circle me-3 d-flex align-items-center justify-content-center"
-                                                style="width: 45px; height: 45px; background: #1e3c72;">
-                                                <i class="ri-shopping-bag-line text-white fs-5"></i>
-                                            </div>
-                                            <div>
-                                                <h6 class="mb-0 fw-bold" style="color: #1e3c72;">${item.producto.codigo || ''} - ${item.producto.tipo_producto ? item.producto.tipo_producto.nombre : 'Sin tipo'}</h6>
-                                                <small class="text-muted">Producto #${index + 1}</small>
-                                            </div>
-                                            <div class="ms-auto">
-                                                <span class="badge" style="background: #00d9a5; font-size: 0.9rem;">
-                                                    $${subtotal.toFixed(2)}
-                                                </span>
-                                            </div>
-                                        </div>
-
-                                        <!-- Detalles del Producto -->
-                                        <div class="row g-2 mb-3">
-                                            <div class="col-6 col-md-3">
-                                                <div class="d-flex align-items-center">
-                                                    <div class="rounded-circle me-2 d-flex align-items-center justify-content-center"
-                                                        style="width: 28px; height: 28px; background: rgba(30, 60, 114, 0.15);">
-                                                        <i class="ri-stack-line" style="color: #1e3c72; font-size: 0.85rem;"></i>
-                                                    </div>
-                                                    <div>
-                                                        <small class="text-muted d-block" style="font-size: 0.7rem;">Cantidad</small>
-                                                        <span class="fw-semibold" style="font-size: 0.85rem;">${item.cantidad}</span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div class="col-6 col-md-3">
-                                                <div class="d-flex align-items-center">
-                                                    <div class="rounded-circle me-2 d-flex align-items-center justify-content-center"
-                                                        style="width: 28px; height: 28px; background: rgba(30, 60, 114, 0.15);">
-                                                        <i class="ri-palette-line" style="color: #1e3c72; font-size: 0.85rem;"></i>
-                                                    </div>
-                                                    <div>
-                                                        <small class="text-muted d-block" style="font-size: 0.7rem;">Color</small>
-                                                        ${colorHtml}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div class="col-6 col-md-3">
-                                                <div class="d-flex align-items-center">
-                                                    <div class="rounded-circle me-2 d-flex align-items-center justify-content-center"
-                                                        style="width: 28px; height: 28px; background: rgba(30, 60, 114, 0.15);">
-                                                        <i class="ri-t-shirt-line" style="color: #1e3c72; font-size: 0.85rem;"></i>
-                                                    </div>
-                                                    <div>
-                                                        <small class="text-muted d-block" style="font-size: 0.7rem;">Talla</small>
-                                                        ${tallaHtml}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div class="col-6 col-md-3">
-                                                <div class="d-flex align-items-center">
-                                                    <div class="rounded-circle me-2 d-flex align-items-center justify-content-center"
-                                                        style="width: 28px; height: 28px; background: rgba(30, 60, 114, 0.15);">
-                                                        <i class="ri-money-dollar-circle-line" style="color: #1e3c72; font-size: 0.85rem;"></i>
-                                                    </div>
-                                                    <div>
-                                                        <small class="text-muted d-block" style="font-size: 0.7rem;">P. Unitario</small>
-                                                        <span class="fw-semibold" style="font-size: 0.85rem;">$${parseFloat(item.precio_unitario).toFixed(2)}</span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <!-- Bordado/Logo si aplica -->
-                                        ${item.lleva_bordado ? (() => {
-                                    const bordados = Array.isArray(item.bordados) ? item.bordados : [];
-                                    const bordadosHtml = bordados.length
-                                        ? bordados.map((bordado) => {
-                                            const nombreAplicado = bordado.nombre_aplicado || 'Ubicación';
-                                            const logoAplicado = (bordado.logo ? bordado.logo.name : null) || bordado.nombre_logo_aplicado || 'Sin logo';
-                                            const cantidadAplicada = Math.max(1, parseInt(bordado.cantidad || 1, 10));
-                                            return `
-                                                        <div class="pb-1 mb-1" style="border-bottom:1px dashed rgba(30,60,114,0.2);">
-                                                        <span class="fw-semibold" style="font-size:0.84rem;color:#1e3c72;">${logoAplicado} → ${nombreAplicado} x${cantidadAplicada}</span>
-                                                </div>
-                                            `;
-                                        }).join('')
-                                        : `<div class="pb-1" style="border-bottom:1px dashed rgba(30,60,114,0.2);"><span class="fw-semibold" style="font-size:0.84rem;color:#1e3c72;">Sin logo → ${item.ubicacion_logo || 'Sin ubicación'} x${item.cantidad_logo || 1}</span></div>`;
-
-                                    const recargoBordado = bordados.reduce(function (s, b) {
-                                        return s + (parseFloat(b.precio_aplicado) || 0) * Math.max(1, parseInt(b.cantidad || 1, 10));
-                                    }, 0);
-                                    const tasaPedido = parseFloat(data.tasa_cambio_valor) || 0;
-                                    const bsBordadoTxt = (recargoBordado && typeof window.bsEquivalente === 'function') ? window.bsEquivalente(recargoBordado, tasaPedido) : null;
-                                    const tasaPedidoTxt = (typeof window.bsTasaFmt === 'function') ? window.bsTasaFmt(tasaPedido) : null;
-                                    const bordadoBsHtml = recargoBordado
-                                        ? `<div class="d-flex justify-content-between align-items-center mt-2 pt-2" style="border-top:1px dashed rgba(30,60,114,0.25);">
-                                                <span class="text-muted" style="font-size:0.72rem;"><i class="ri-exchange-dollar-line me-1"></i>Servicio de bordado (unit.)${tasaPedidoTxt ? ' · Tasa ' + tasaPedidoTxt : ''}</span>
-                                                <span class="fw-semibold" style="font-size:0.82rem;color:#1e3c72;">$${recargoBordado.toFixed(2)}${bsBordadoTxt ? ' · ' + bsBordadoTxt : ''}</span>
-                                           </div>`
-                                        : '';
-
-                                    return `
-                                                        <div class="rounded p-2 mb-3" style="background: rgba(30, 60, 114, 0.08);">
-                                                            <div class="d-flex align-items-center mb-2">
-                                                                <i class="ri-scissors-cut-line me-2" style="color: #1e3c72;"></i>
-                                                                <span class="fw-semibold" style="color: #1e3c72; font-size: 0.85rem;">Logos</span>
-                                                            </div>
-                                                            ${bordadosHtml}
-                                                            ${bordadoBsHtml}
-                                                        </div>
-                                                    `;
-                                })() : ''}
-
-                                        <!-- Descripción -->
-                                        ${item.descripcion ? `
-                                            <div class="rounded p-2 mb-3" style="background: rgba(30, 60, 114, 0.05);">
-                                                <div class="d-flex align-items-start">
-                                                    <i class="ri-file-text-line me-2 mt-1" style="color: #1e3c72;"></i>
-                                                    <div>
-                                                        <small class="text-muted d-block">Descripción</small>
-                                                        <span style="font-size: 0.85rem;">${item.descripcion}</span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            ` : ''}
-
-                                        <!-- Insumos -->
-                                        ${item.insumos && item.insumos.length > 0 ? `
-                                            <div class="rounded p-2" style="background: rgba(46, 204, 113, 0.08);">
-                                                <div class="d-flex align-items-center mb-2">
-                                                    <i class="ri-tools-line me-2" style="color: #2ecc71;"></i>
-                                                    <span class="fw-semibold" style="color: #2ecc71; font-size: 0.85rem;">Insumos Requeridos</span>
-                                                </div>
-                                                <div class="d-flex flex-wrap gap-2">
-                                                    ${item.insumos.map(insumo => `
-                                                        <span class="badge" style="background: rgba(46, 204, 113, 0.2); color: #1e3c72;">
-                                                            ${insumo.nombre}
-                                                            <span class="badge bg-primary ms-1">${parseFloat(insumo.pivot.cantidad_estimada).toFixed(2)} ${insumo.unidad_medida}</span>
-                                                        </span>
-                                                    `).join('')}
-                                                </div>
-                                            </div>
-                                            ` : ''}
-                                    </div>
-                                </div>
-                                `);
-                        });
-                    } else {
-                        productosBody.append('<p class="text-muted text-center py-4"><i class="ri-shopping-bag-line fs-1 d-block mb-2"></i>No hay productos en este pedido.</p>');
+                    // Tasa BCV heredada — paso 3
+                    var tasaHeredada = parseFloat(data.tasa_cambio_valor) || 0;
+                    if (tasaHeredada > 0 && typeof window.bsTasaFmt === 'function') {
+                        $('#view-ped-tasa').text(window.bsTasaFmt(tasaHeredada));
+                    } else if (window.tasaBcv && window.tasaBcv.valor) {
+                        $('#view-ped-tasa').text(window.bsTasaFmt ? window.bsTasaFmt() : 'Bs ' + parseFloat(window.tasaBcv.valor).toLocaleString('es-VE', { minimumFractionDigits: 4, maximumFractionDigits: 4 }));
                     }
+
+                    // Grilla de productos — paso 2
+                    viewPedRenderGrilla(data.productos, data.tasa_cambio_valor);
 
                     $('#viewModal').modal('show');
                 },
