@@ -138,11 +138,25 @@
         } @else null @endif;
 
         // Helper: convierte un monto en USD a string "Bs X.XXX,XX" (formato Venezuela).
+        // Acepta una tasa específica (rateOverride) para respetar la tasa guardada en el
+        // documento (cotización/pedido); si no se pasa, usa la tasa BCV vigente global.
         // Devuelve null si no hay tasa disponible — el caller decide qué mostrar.
-        window.bsEquivalente = function (usd) {
-            if (!window.tasaBcv || !window.tasaBcv.valor) return null;
-            var bs = Number(usd || 0) * Number(window.tasaBcv.valor);
+        window.bsEquivalente = function (usd, rateOverride) {
+            var rate = (rateOverride != null && Number(rateOverride) > 0)
+                ? Number(rateOverride)
+                : ((window.tasaBcv && window.tasaBcv.valor) ? Number(window.tasaBcv.valor) : null);
+            if (!rate) return null;
+            var bs = Number(usd || 0) * rate;
             return 'Bs ' + bs.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        };
+
+        // Helper: formatea una tasa de cambio como "Bs X.XXX,XXXX" (4 decimales).
+        window.bsTasaFmt = function (rateOverride) {
+            var rate = (rateOverride != null && Number(rateOverride) > 0)
+                ? Number(rateOverride)
+                : ((window.tasaBcv && window.tasaBcv.valor) ? Number(window.tasaBcv.valor) : null);
+            if (!rate) return null;
+            return 'Bs ' + rate.toLocaleString('es-VE', { minimumFractionDigits: 4, maximumFractionDigits: 4 });
         };
     </script>
 

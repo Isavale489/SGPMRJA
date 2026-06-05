@@ -175,6 +175,20 @@
         </tbody>
     </table>
 
+    {{-- Costo total del servicio de bordado (recargo unitario × cantidad de prendas).
+         Ya está incluido en el precio unitario; se desglosa para reflejarlo en Bs. --}}
+    @php
+        $totalBordadoUsd = $cotizacion->productos->sum(function ($d) {
+            if (!$d->lleva_bordado) {
+                return 0;
+            }
+            $recargoUnit = $d->bordados->sum(function ($b) {
+                return (float) $b->precio_aplicado * (int) ($b->cantidad ?? 1);
+            });
+            return $recargoUnit * (int) $d->cantidad;
+        });
+    @endphp
+
     {{-- ═══════ Totales ═══════ --}}
     <table class="totals-block">
         <tr>
@@ -191,6 +205,18 @@
                         <td class="t-label">Subtotal:</td>
                         <td class="t-value">{{ number_format($subtotal, 2) }}</td>
                     </tr>
+                    @if($totalBordadoUsd > 0)
+                    <tr>
+                        <td class="t-label" style="color:#1e3c72;">Servicio de bordado:</td>
+                        <td class="t-value" style="color:#1e3c72;">{{ number_format($totalBordadoUsd, 2) }}</td>
+                    </tr>
+                    @if($cotizacion->tasa_cambio_valor)
+                    <tr>
+                        <td class="t-label" style="font-size:8.5px; color:#555;">Servicio de bordado (Bs):</td>
+                        <td class="t-value" style="font-size:8.5px; color:#555;">Bs {{ number_format($totalBordadoUsd * $cotizacion->tasa_cambio_valor, 2) }}</td>
+                    </tr>
+                    @endif
+                    @endif
                     <tr>
                         <td class="t-label">Descuento:</td>
                         <td class="t-value">{{ number_format($descuento, 2) }}</td>

@@ -283,6 +283,14 @@
                     <span class="small text-muted">Recargo unitario</span>
                     <span class="fw-bold bordado-oc-recargo-value" id="resumenRecargoBordadoModal">$0.00</span>
                 </div>
+                {{-- Equivalente en Bolívares (VES) del servicio de bordado --}}
+                <div class="d-flex justify-content-between align-items-center mt-1">
+                    <span class="text-muted" style="font-size:0.72rem;">
+                        <i class="ri-exchange-dollar-line me-1"></i>Equivalente Bs
+                        <span id="resumenRecargoBordadoTasa" class="ms-1" style="opacity:0.75;"></span>
+                    </span>
+                    <span class="fw-semibold" style="font-size:0.8rem;color:#1e3c72;" id="resumenRecargoBordadoModalBs">Bs 0,00</span>
+                </div>
             </div>
             <div class="d-flex gap-2">
                 <button type="button" class="btn btn-sm btn-light flex-fill" data-bs-dismiss="offcanvas">

@@ -188,16 +188,48 @@
         </tbody>
     </table>
 
+    {{-- Tasa BCV heredada de la cotización de origen + costo del servicio de bordado --}}
+    @php
+        $tasaPedido = optional($pedido->cotizacion)->tasa_cambio_valor;
+        $totalBordadoUsd = $pedido->productos->sum(function ($d) {
+            if (!$d->lleva_bordado) {
+                return 0;
+            }
+            $recargoUnit = $d->bordados->sum(function ($b) {
+                return (float) $b->precio_aplicado * (int) ($b->cantidad ?? 1);
+            });
+            return $recargoUnit * (int) $d->cantidad;
+        });
+    @endphp
+
     {{-- ═══════ Totales ═══════ --}}
     <table class="totals-block">
         <tr>
             <td>&nbsp;</td>
             <td style="width: 230px;">
                 <table class="totals-inner">
+                    @if($tasaPedido)
+                    <tr>
+                        <td class="t-label" style="font-size:8.5px; color:#555;">Tasa BCV (USD→Bs):</td>
+                        <td class="t-value" style="font-size:8.5px; color:#555;">Bs {{ number_format($tasaPedido, 4) }}</td>
+                    </tr>
+                    @endif
                     <tr>
                         <td class="t-label">Total:</td>
                         <td class="t-value">{{ number_format($subtotal, 2) }}</td>
                     </tr>
+                    @if($totalBordadoUsd > 0)
+                    <tr>
+                        <td class="t-label" style="color:#1e3c72;">Servicio de bordado:</td>
+                        <td class="t-value" style="color:#1e3c72;">{{ number_format($totalBordadoUsd, 2) }}</td>
+                    </tr>
+                    @if($tasaPedido)
+                    <tr>
+                        <td class="t-label" style="font-size:8.5px; color:#555;">Servicio de bordado (Bs):</td>
+                        <td class="t-value" style="font-size:8.5px; color:#555;">Bs {{ number_format($totalBordadoUsd * $tasaPedido, 2) }}</td>
+                    </tr>
+                    @endif
+                    @endif
                     <tr>
                         <td class="t-label">Descuento:</td>
                         <td class="t-value">{{ number_format($descuento, 2) }}</td>
@@ -210,6 +242,12 @@
                         <td class="t-label t-grand">Total a Pagar:</td>
                         <td class="t-value t-grand">{{ number_format($totalPagar, 2) }}</td>
                     </tr>
+                    @if($tasaPedido)
+                    <tr>
+                        <td class="t-label" style="font-size:8.5px; color:#555;">Equivalente Bs:</td>
+                        <td class="t-value" style="font-size:8.5px; color:#555;">Bs {{ number_format($totalPagar * $tasaPedido, 2) }}</td>
+                    </tr>
+                    @endif
                 </table>
             </td>
         </tr>

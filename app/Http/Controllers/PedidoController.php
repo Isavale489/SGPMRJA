@@ -161,11 +161,14 @@ class PedidoController extends Controller
             'productos.bordados.logo:id,name',
             'pagos.banco:id,nombre',
             'cliente.persona.telefonos',
-            'cliente.persona.direcciones'
+            'cliente.persona.direcciones',
+            'cotizacion:id,tasa_cambio_valor'
         ])->findOrFail($id);
 
         // Agregar datos normalizados del cliente al response
         $data = $pedido->toArray();
+        // Tasa BCV heredada de la cotización de origen (para reflejar el bordado en Bs)
+        $data['tasa_cambio_valor'] = optional($pedido->cotizacion)->tasa_cambio_valor;
         $data['cliente_nombre_completo'] = $pedido->cliente_nombre_completo;
         $data['cliente_email_normalizado'] = $pedido->cliente_email_normalizado;
         $data['cliente_telefono_normalizado'] = $pedido->cliente_telefono_normalizado;
@@ -289,7 +292,7 @@ class PedidoController extends Controller
     public function pedidoPdf(Pedido $pedido)
     {
         // Cargar relaciones necesarias
-        $pedido->load(['user:id,name', 'productos.producto', 'productos.bordados.logo:id,name', 'cliente', 'cliente.persona']);
+        $pedido->load(['user:id,name', 'productos.producto', 'productos.bordados.logo:id,name', 'cliente', 'cliente.persona', 'cotizacion:id,tasa_cambio_valor']);
 
         // Cálculos financieros
         $ivaTasa = 0.16; // 16 %

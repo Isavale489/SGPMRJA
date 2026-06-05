@@ -1646,6 +1646,12 @@
 
             $('#resumenRecargoBordadoModal').text(formatMoney(recargo));
             $('#bordado-oc-active-count').text(activeCount);
+
+            // Equivalente en Bolívares (VES) del servicio de bordado — tasa BCV vigente
+            var bsBordado = (typeof window.bsEquivalente === 'function') ? window.bsEquivalente(recargo) : null;
+            $('#resumenRecargoBordadoModalBs').text(bsBordado || 'Sin tasa BCV');
+            var tasaFmt = (typeof window.bsTasaFmt === 'function') ? window.bsTasaFmt() : null;
+            $('#resumenRecargoBordadoTasa').text(tasaFmt ? '· Tasa ' + tasaFmt : '');
         }
 
         function aplicarBordadosDesdeModal() {
@@ -2563,7 +2569,7 @@
         }());
 
         // ── Render grilla de productos (solo lectura) ─────────────────
-        function viewRenderProductosGrilla(productos) {
+        function viewRenderProductosGrilla(productos, tasaCotizacion) {
             var $cont  = $('#view-productos-container');
             var $empty = $('#view-productos-empty');
             $cont.empty();
@@ -2632,6 +2638,17 @@
 
                 var bordadoLineClass = llevaBordado ? 'cot-grouped-bordado-line--ok' : 'cot-grouped-bordado-line--none';
                 var bordadoText      = llevaBordado ? 'Con bordado' : 'Sin bordado';
+                // Servicio de bordado: precio del recargo + equivalente en Bs (tasa guardada de la cotización)
+                var recargoBordadoGrupo = items.reduce(function (a, it) {
+                    if (!it.bordados || !it.bordados.length) return a;
+                    var recU = it.bordados.reduce(function (s, b) { return s + (parseFloat(b.precio_aplicado) || 0) * Math.max(1, parseInt(b.cantidad || 1, 10)); }, 0);
+                    return a + recU * parseInt(it.cantidad);
+                }, 0);
+                var bordadoBsExtra = '';
+                if (llevaBordado && recargoBordadoGrupo > 0) {
+                    var bsB = (typeof window.bsEquivalente === 'function') ? window.bsEquivalente(recargoBordadoGrupo, tasaCotizacion) : null;
+                    bordadoBsExtra = ' · $' + recargoBordadoGrupo.toFixed(2) + (bsB ? ' · ' + bsB : '');
+                }
                 var prodNombre = prod.nombre_completo || prod.nombre || prod.codigo || 'Producto';
                 var prodCodigo = prod.codigo || '';
                 var precioU    = parseFloat(g.precio_unitario);
@@ -2652,7 +2669,7 @@
                     '<td class="cot-col-tallas">' +
                         '<div class="cot-tallas-wrap">' + tallasHtml + '</div>' +
                         '<div class="cot-grouped-bordado-line ' + bordadoLineClass + '">' +
-                            '<i class="ri-scissors-cut-line"></i>' + bordadoText +
+                            '<i class="ri-scissors-cut-line"></i>' + bordadoText + bordadoBsExtra +
                         '</div>' +
                     '</td>' +
                     '<td class="cot-col-num cot-cell-num"><strong>' + totalQty + '</strong></td>' +
@@ -2721,7 +2738,7 @@
                     $('#view-usuario-creador').text(data.user ? data.user.name : '');
 
                     // Paso 2 — Productos (grilla)
-                    viewRenderProductosGrilla(data.productos);
+                    viewRenderProductosGrilla(data.productos, data.tasa_cambio_valor);
 
                     // Paso 3 — Resumen
                     var subtotalUsd = (data.productos || []).reduce(function (acc, it) {

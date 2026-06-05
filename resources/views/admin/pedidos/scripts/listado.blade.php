@@ -443,6 +443,19 @@
                                         }).join('')
                                         : `<div class="pb-1" style="border-bottom:1px dashed rgba(30,60,114,0.2);"><span class="fw-semibold" style="font-size:0.84rem;color:#1e3c72;">Sin logo → ${item.ubicacion_logo || 'Sin ubicación'} x${item.cantidad_logo || 1}</span></div>`;
 
+                                    const recargoBordado = bordados.reduce(function (s, b) {
+                                        return s + (parseFloat(b.precio_aplicado) || 0) * Math.max(1, parseInt(b.cantidad || 1, 10));
+                                    }, 0);
+                                    const tasaPedido = parseFloat(data.tasa_cambio_valor) || 0;
+                                    const bsBordadoTxt = (recargoBordado && typeof window.bsEquivalente === 'function') ? window.bsEquivalente(recargoBordado, tasaPedido) : null;
+                                    const tasaPedidoTxt = (typeof window.bsTasaFmt === 'function') ? window.bsTasaFmt(tasaPedido) : null;
+                                    const bordadoBsHtml = recargoBordado
+                                        ? `<div class="d-flex justify-content-between align-items-center mt-2 pt-2" style="border-top:1px dashed rgba(30,60,114,0.25);">
+                                                <span class="text-muted" style="font-size:0.72rem;"><i class="ri-exchange-dollar-line me-1"></i>Servicio de bordado (unit.)${tasaPedidoTxt ? ' · Tasa ' + tasaPedidoTxt : ''}</span>
+                                                <span class="fw-semibold" style="font-size:0.82rem;color:#1e3c72;">$${recargoBordado.toFixed(2)}${bsBordadoTxt ? ' · ' + bsBordadoTxt : ''}</span>
+                                           </div>`
+                                        : '';
+
                                     return `
                                                         <div class="rounded p-2 mb-3" style="background: rgba(30, 60, 114, 0.08);">
                                                             <div class="d-flex align-items-center mb-2">
@@ -450,6 +463,7 @@
                                                                 <span class="fw-semibold" style="color: #1e3c72; font-size: 0.85rem;">Logos</span>
                                                             </div>
                                                             ${bordadosHtml}
+                                                            ${bordadoBsHtml}
                                                         </div>
                                                     `;
                                 })() : ''}
