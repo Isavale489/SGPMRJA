@@ -2530,216 +2530,218 @@
         });
 
         // Botón de ver detalles
+        // ── Wizard de solo lectura — navegación ──────────────────────────
+        (function () {
+            var VIEW_TOTAL_STEPS = 3;
+            var viewCurrentStep  = 1;
+
+            function viewShowStep(n) {
+                viewCurrentStep = n;
+                $('#viewModal .wiz-step-content').each(function () {
+                    var s = parseInt($(this).data('step'));
+                    $(this).toggleClass('is-active', s === n);
+                    s === n ? $(this).removeAttr('hidden') : $(this).attr('hidden', '');
+                });
+                $('#viewModal .wiz-step-marker').each(function () {
+                    var s = parseInt($(this).data('step'));
+                    $(this).toggleClass('is-active', s === n).toggleClass('is-done', s < n);
+                    $(this).attr('aria-selected', s === n ? 'true' : 'false');
+                });
+                $('#viewModal .wiz-step-line-fill').each(function () {
+                    $(this).toggleClass('is-filled', parseInt($(this).data('line')) < n);
+                });
+                $('#btn-view-prev').toggle(n > 1);
+                $('#btn-view-next').toggle(n < VIEW_TOTAL_STEPS);
+            }
+
+            window.viewCotShowStep = viewShowStep;
+
+            $('#viewModal').on('show.bs.modal', function () { viewShowStep(1); });
+            $(document).on('click', '#btn-view-next',  function () { if (viewCurrentStep < VIEW_TOTAL_STEPS) viewShowStep(viewCurrentStep + 1); });
+            $(document).on('click', '#btn-view-prev',  function () { if (viewCurrentStep > 1) viewShowStep(viewCurrentStep - 1); });
+            $(document).on('click', '#viewModal .wiz-step-marker', function () { viewShowStep(parseInt($(this).data('step'))); });
+        }());
+
+        // ── Render grilla de productos (solo lectura) ─────────────────
+        function viewRenderProductosGrilla(productos) {
+            var $cont  = $('#view-productos-container');
+            var $empty = $('#view-productos-empty');
+            $cont.empty();
+
+            if (!productos || !productos.length) {
+                $empty.removeAttr('hidden');
+                $('#view-kpi-lineas').text('0');
+                $('#view-kpi-total').text('$0.00');
+                return;
+            }
+            $empty.attr('hidden', '');
+
+            // Agrupar por producto_id + color_id
+            var groups = {}, groupOrder = [];
+            productos.forEach(function (item) {
+                var key = (item.producto_id || 'x') + '_' + (item.color_id || 'x');
+                if (!groups[key]) {
+                    groups[key] = { key: key, items: [], producto: item.producto, color_id: item.color_id, precio_unitario: item.precio_unitario };
+                    groupOrder.push(key);
+                }
+                groups[key].items.push(item);
+            });
+
+            // KPIs
+            var grandTotal = productos.reduce(function (acc, it) {
+                return acc + parseFloat(it.precio_unitario) * parseInt(it.cantidad);
+            }, 0);
+            $('#view-kpi-lineas').text(groupOrder.length);
+            $('#view-kpi-total').text('$' + grandTotal.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ','));
+
+            // Filas de la tabla
+            var rows = groupOrder.map(function (key, idx) {
+                var g       = groups[key];
+                var items   = g.items;
+                var prod    = g.producto || {};
+                var colorObj = getColorById(g.color_id) || {};
+                var colorNom = colorObj.nombre || '—';
+                var colorHex = colorObj.hex || colorObj.color_hex || '#94a3b8';
+
+                var tallasHtml = items.map(function (it) {
+                    var lbl = getTallaLabel(it.talla_id) || 'S/T';
+                    return '<span class="cot-chip cot-chip-talla">' + lbl + '<span class="cot-chip-x">×</span>' + it.cantidad + '</span>';
+                }).join('');
+
+                var totalQty = items.reduce(function (a, it) { return a + parseInt(it.cantidad); }, 0);
+                var subtotal = items.reduce(function (a, it) { return a + parseFloat(it.precio_unitario) * parseInt(it.cantidad); }, 0);
+                var llevaBordado = items.some(function (it) { return it.lleva_bordado; });
+
+                // Detalle de bordados para tooltip/línea extra
+                var bordadosDetalle = '';
+                if (llevaBordado) {
+                    var blines = [];
+                    items.forEach(function (it) {
+                        if (it.bordados && it.bordados.length) {
+                            it.bordados.forEach(function (b) {
+                                var bNom = (b.logo ? b.logo.name : null) || b.nombre_logo_aplicado || 'Logo';
+                                blines.push(bNom + ' → ' + (b.nombre_aplicado || '—') + ' ×' + (b.cantidad || 1));
+                            });
+                        }
+                    });
+                    if (blines.length) {
+                        bordadosDetalle = '<div class="cot-prod-variant text-truncate" title="' + blines.join(' | ') + '">' +
+                            '<i class="ri-scissors-cut-line me-1"></i>' + blines[0] + (blines.length > 1 ? ' +' + (blines.length - 1) : '') + '</div>';
+                    }
+                }
+
+                var bordadoLineClass = llevaBordado ? 'cot-grouped-bordado-line--ok' : 'cot-grouped-bordado-line--none';
+                var bordadoText      = llevaBordado ? 'Con bordado' : 'Sin bordado';
+                var prodNombre = prod.nombre_completo || prod.nombre || prod.codigo || 'Producto';
+                var prodCodigo = prod.codigo || '';
+                var precioU    = parseFloat(g.precio_unitario);
+
+                return '<tr class="cot-grouped-row">' +
+                    '<td class="cot-col-num">' + (idx + 1) + '</td>' +
+                    '<td class="cot-col-prod">' +
+                        '<div class="cot-prod-modelo">' + prodNombre + '</div>' +
+                        (prodCodigo ? '<div class="cot-prod-codigo"><i class="ri-barcode-line me-1"></i>' + prodCodigo + '</div>' : '') +
+                        bordadosDetalle +
+                    '</td>' +
+                    '<td class="cot-col-color">' +
+                        '<span class="cot-color-cell">' +
+                            '<span class="cot-color-dot" style="background:' + colorHex + '"></span>' +
+                            colorNom +
+                        '</span>' +
+                    '</td>' +
+                    '<td class="cot-col-tallas">' +
+                        '<div class="cot-tallas-wrap">' + tallasHtml + '</div>' +
+                        '<div class="cot-grouped-bordado-line ' + bordadoLineClass + '">' +
+                            '<i class="ri-scissors-cut-line"></i>' + bordadoText +
+                        '</div>' +
+                    '</td>' +
+                    '<td class="cot-col-num cot-cell-num"><strong>' + totalQty + '</strong></td>' +
+                    '<td class="cot-cell-num">$' + precioU.toFixed(2) + '</td>' +
+                    '<td class="cot-cell-num cot-cell-subtotal">$' + subtotal.toFixed(2) + '</td>' +
+                    '</tr>';
+            }).join('');
+
+            $cont.html(
+                '<div class="cot-grouped-tablewrap">' +
+                '<table class="cot-grouped-table">' +
+                '<thead><tr>' +
+                    '<th class="cot-col-num">#</th>' +
+                    '<th class="cot-col-prod">Producto</th>' +
+                    '<th class="cot-col-color">Color</th>' +
+                    '<th class="cot-col-tallas">Tallas y cantidades</th>' +
+                    '<th class="cot-col-num">Unid.</th>' +
+                    '<th class="cot-cell-num">Precio U.</th>' +
+                    '<th class="cot-cell-num">Subtotal</th>' +
+                '</tr></thead>' +
+                '<tbody>' + rows + '</tbody>' +
+                '</table></div>'
+            );
+        }
+
+        // ── Click en botón "Ver" ──────────────────────────────────────
         $('#cotizaciones-table').on('click', '.view-btn', function () {
             var id = $(this).data('id');
             $.ajax({
                 url: '/cotizaciones/' + id,
                 method: 'GET',
                 success: function (data) {
-                    // Obtener datos del cliente desde la relación
+                    // Paso 1 — Cliente
                     if (data.cliente) {
-                        // Mostrar nombre con badge si cliente fue eliminado
                         var nombreHtml = data.cliente.nombre || 'N/A';
                         if (data.cliente.eliminado) {
                             nombreHtml += ' <span class="badge bg-danger ms-1" title="Este cliente fue eliminado">Eliminado</span>';
                         }
                         $('#view-cliente-nombre').html(nombreHtml);
-
-                        // Si cliente eliminado, mostrar datos con estilo atenuado
-                        var mutedClass = data.cliente.eliminado ? 'text-muted' : '';
-                        $('#view-cliente-apellido').html(data.cliente.eliminado
-                            ? '<span class="text-muted">' + (data.cliente.apellido || '') + '</span>'
-                            : (data.cliente.apellido || ''));
-                        $('#view-cliente-email').html(data.cliente.eliminado
-                            ? '<span class="text-muted">' + (data.cliente.email || 'N/A') + '</span>'
-                            : (data.cliente.email || 'N/A'));
-                        $('#view-cliente-telefono').html(data.cliente.eliminado
-                            ? '<span class="text-muted">' + (data.cliente.telefono || 'N/A') + '</span>'
-                            : (data.cliente.telefono || 'N/A'));
-                        $('#view-ci-rif').html(data.cliente.eliminado
-                            ? '<span class="text-muted">' + (data.cliente.documento || 'N/A') + '</span>'
-                            : (data.cliente.documento || 'N/A'));
+                        var muted = data.cliente.eliminado;
+                        function vm(v) { return muted ? '<span class="text-muted">' + (v || '') + '</span>' : (v || 'N/A'); }
+                        $('#view-cliente-apellido').html(vm(data.cliente.apellido));
+                        $('#view-cliente-email').html(vm(data.cliente.email));
+                        $('#view-cliente-telefono').html(vm(data.cliente.telefono));
+                        $('#view-ci-rif').html(vm(data.cliente.documento));
                     } else {
                         $('#view-cliente-nombre').html('<span class="text-danger">Cliente no encontrado</span>');
-                        $('#view-cliente-apellido').text('');
-                        $('#view-cliente-email').text('N/A');
-                        $('#view-cliente-telefono').text('N/A');
-                        $('#view-ci-rif').text('N/A');
+                        $('#view-cliente-apellido, #view-cliente-email, #view-cliente-telefono, #view-ci-rif').text('N/A');
                     }
-                    // Función para formatear fechas YYYY-MM-DD o ISO a dd/mm/yyyy
+
                     function formatDate(dateStr) {
                         if (!dateStr) return 'N/A';
-                        var date = new Date(dateStr);
-                        if (isNaN(date.getTime())) return dateStr;
-                        var day = String(date.getDate()).padStart(2, '0');
-                        var month = String(date.getMonth() + 1).padStart(2, '0');
-                        var year = date.getFullYear();
-                        return day + '/' + month + '/' + year;
+                        var d = new Date(dateStr);
+                        if (isNaN(d.getTime())) return dateStr;
+                        return String(d.getDate()).padStart(2,'0') + '/' +
+                               String(d.getMonth()+1).padStart(2,'0') + '/' + d.getFullYear();
                     }
                     $('#view-fecha-cotizacion').text(formatDate(data.fecha_cotizacion));
                     $('#view-fecha-validez').text(formatDate(data.fecha_validez));
-                    // Mostrar estado con diseño unificado (usando clases CSS globales)
-                    var estadoClasses = {
-                        'Pendiente': 'status-pendiente',
-                        'Aprobada': 'status-aprobada',
-                        'Convertida': 'badge-soft-info',
-                        'Cancelada': 'status-cancelado',
-                        'Vencida': 'status-cancelado'
-                    };
-                    var estadoIcons = {
-                        'Pendiente': 'ri-time-line',
-                        'Aprobada': 'ri-check-double-line',
-                        'Convertida': 'ri-exchange-line',
-                        'Cancelada': 'ri-close-circle-line',
-                        'Vencida': 'ri-alarm-warning-line'
-                    };
+
+                    var estadoClasses = { 'Pendiente':'status-pendiente','Aprobada':'status-aprobada','Convertida':'badge-soft-info','Cancelada':'status-cancelado','Vencida':'status-cancelado' };
+                    var estadoIcons   = { 'Pendiente':'ri-time-line','Aprobada':'ri-check-double-line','Convertida':'ri-exchange-line','Cancelada':'ri-close-circle-line','Vencida':'ri-alarm-warning-line' };
                     var badgeClass = estadoClasses[data.estado] || '';
-                    var icon = estadoIcons[data.estado] || 'ri-question-line';
+                    var icon       = estadoIcons[data.estado]   || 'ri-question-line';
                     $('#view-estado').html('<span class="badge badge-status ' + badgeClass + ' rounded-pill"><i class="' + icon + ' me-1"></i>' + data.estado + '</span>');
                     $('#view-usuario-creador').text(data.user ? data.user.name : '');
-                    // Mostrar productos de la cotización con el mismo diseño que pedidos
-                    var productosBody = $('#view-productos-container');
-                    productosBody.empty();
-                    if (data.productos && data.productos.length > 0) {
-                        data.productos.forEach(function (item, index) {
-                            var subtotal = item.cantidad * item.precio_unitario;
-                            productosBody.append(`
-                                <div class="card border-0 shadow-sm mb-3" style="border-left: 4px solid #00d9a5 !important;">
-                                    <div class="card-body p-3">
-                                        <!-- Header del Producto -->
-                                        <div class="d-flex align-items-center mb-3">
-                                            <div class="rounded-circle me-3 d-flex align-items-center justify-content-center"
-                                                style="width: 45px; height: 45px; background: #1e3c72;">
-                                                <i class="ri-t-shirt-2-line text-white fs-5"></i>
-                                            </div>
-                                            <div>
-                                                <h6 class="mb-0 fw-bold" style="color: #1e3c72;">${item.producto ? (item.producto.nombre_completo || item.producto.codigo || 'Producto') : 'Sin producto'}</h6>
-                                                <small class="text-muted">Producto #${index + 1}</small>
-                                            </div>
-                                            <div class="ms-auto">
-                                                <span class="badge" style="background: #00d9a5; font-size: 0.9rem;">
-                                                    $${subtotal.toFixed(2)}
-                                                </span>
-                                            </div>
-                                        </div>
-                                        
-                                        <!-- Detalles del Producto -->
-                                        <div class="row g-2 mb-3">
-                                            <div class="col-6 col-md-3">
-                                                <div class="d-flex align-items-center">
-                                                    <div class="rounded-circle me-2 d-flex align-items-center justify-content-center"
-                                                        style="width: 28px; height: 28px; background: rgba(30, 60, 114, 0.15);">
-                                                        <i class="ri-stack-line" style="color: #1e3c72; font-size: 0.85rem;"></i>
-                                                    </div>
-                                                    <div>
-                                                        <small class="text-muted d-block" style="font-size: 0.7rem;">Cantidad</small>
-                                                        <span class="fw-semibold" style="font-size: 0.85rem;">${item.cantidad}</span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div class="col-6 col-md-3">
-                                                <div class="d-flex align-items-center">
-                                                    <div class="rounded-circle me-2 d-flex align-items-center justify-content-center"
-                                                        style="width: 28px; height: 28px; background: rgba(30, 60, 114, 0.15);">
-                                                        <i class="ri-t-shirt-line" style="color: #1e3c72; font-size: 0.85rem;"></i>
-                                                    </div>
-                                                    <div>
-                                                        <small class="text-muted d-block" style="font-size: 0.7rem;">Talla</small>
-                                                        <span class="fw-semibold" style="font-size: 0.85rem;">${getTallaLabel(item.talla_id) || 'N/A'}</span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div class="col-6 col-md-3">
-                                                <div class="d-flex align-items-center">
-                                                    <div class="rounded-circle me-2 d-flex align-items-center justify-content-center"
-                                                        style="width: 28px; height: 28px; background: rgba(30, 60, 114, 0.15);">
-                                                        <i class="ri-palette-line" style="color: #1e3c72; font-size: 0.85rem;"></i>
-                                                    </div>
-                                                    <div>
-                                                        <small class="text-muted d-block" style="font-size: 0.7rem;">Color</small>
-                                                        <span class="fw-semibold" style="font-size: 0.85rem;">${(getColorById(item.color_id) || {}).nombre || 'N/A'}</span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div class="col-6 col-md-3">
-                                                <div class="d-flex align-items-center">
-                                                    <div class="rounded-circle me-2 d-flex align-items-center justify-content-center"
-                                                        style="width: 28px; height: 28px; background: rgba(30, 60, 114, 0.15);">
-                                                        <i class="ri-money-dollar-circle-line" style="color: #1e3c72; font-size: 0.85rem;"></i>
-                                                    </div>
-                                                    <div>
-                                                        <small class="text-muted d-block" style="font-size: 0.7rem;">P. Unitario</small>
-                                                        <span class="fw-semibold" style="font-size: 0.85rem;">$${parseFloat(item.precio_unitario).toFixed(2)}</span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div class="col-6 col-md-3">
-                                                <div class="d-flex align-items-center">
-                                                    <div class="rounded-circle me-2 d-flex align-items-center justify-content-center"
-                                                        style="width: 28px; height: 28px; background: rgba(30, 60, 114, 0.15);">
-                                                        <i class="ri-scissors-cut-line" style="color: #1e3c72; font-size: 0.85rem;"></i>
-                                                    </div>
-                                                    <div>
-                                                        <small class="text-muted d-block" style="font-size: 0.7rem;">Bordado</small>
-                                                        <span class="badge ${item.lleva_bordado ? 'bg-success' : 'bg-secondary'}" style="font-size: 0.75rem;">${item.lleva_bordado ? 'Sí' : 'No'}</span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        
-                                        <!-- Logos si aplica -->
-                                        ${item.lleva_bordado ? `
-                                        <div class="rounded p-2 mb-3" style="background: rgba(30, 60, 114, 0.08);">
-                                            <div class="d-flex align-items-center mb-2">
-                                                <i class="ri-scissors-cut-line me-2" style="color: #1e3c72;"></i>
-                                                <span class="fw-semibold" style="color: #1e3c72; font-size: 0.85rem;">Logos</span>
-                                            </div>
-                                            <div class="row g-2">
-                                                <div class="col-12">
-                                                    <small class="text-muted d-block" style="font-size: 0.72rem;">Aplicaciones</small>
-                                                    <div class="d-flex flex-column" style="font-size: 0.85rem;">${(item.bordados && item.bordados.length)
-                                                        ? item.bordados.map(function (b) {
-                                                            return '<div class="pb-1 mb-1" style="border-bottom:1px dashed rgba(30,60,114,0.2);">' +
-                                                                '<span class="fw-semibold">' +
-                                                                    ((b.logo ? b.logo.name : null) || b.nombre_logo_aplicado || 'Logo') +
-                                                                    ' → ' + (b.nombre_aplicado || 'Ubicación') +
-                                                                    ' x' + (b.cantidad || 1) +
-                                                                '</span>' +
-                                                                '</div>';
-                                                        }).join('')
-                                                        : '<span class="text-muted">Sin bordados configurados</span>'
-                                                    }</div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        ` : ''}
-                                        
-                                        <!-- Descripción -->
-                                        ${item.descripcion ? `
-                                        <div class="rounded p-2" style="background: rgba(30, 60, 114, 0.05);">
-                                            <div class="d-flex align-items-start">
-                                                <i class="ri-file-text-line me-2 mt-1" style="color: #1e3c72;"></i>
-                                                <div>
-                                                    <small class="text-muted d-block">Descripción</small>
-                                                    <span style="font-size: 0.85rem;">${item.descripcion}</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        ` : ''}
-                                    </div>
-                                </div>
-                            `);
-                        });
-                    } else {
-                        productosBody.append('<p class="text-muted text-center py-4"><i class="ri-file-list-3-line fs-1 d-block mb-2"></i>No hay productos en esta cotización.</p>');
-                    }
-                    // Formatear el total
-                    var totalUsd = parseFloat(data.total || 0);
+
+                    // Paso 2 — Productos (grilla)
+                    viewRenderProductosGrilla(data.productos);
+
+                    // Paso 3 — Resumen
+                    var subtotalUsd = (data.productos || []).reduce(function (acc, it) {
+                        return acc + parseFloat(it.precio_unitario) * parseInt(it.cantidad);
+                    }, 0);
+                    var ivaUsd   = subtotalUsd * 0.16;
+                    var totalUsd = subtotalUsd + ivaUsd;
+                    $('#view-resumen-subtotal').text(formatMoney(subtotalUsd));
+                    $('#view-resumen-iva').text(formatMoney(ivaUsd));
                     $('#view-total').text(formatMoney(totalUsd));
                     var bsLbl = (typeof window.bsEquivalente === 'function') ? window.bsEquivalente(totalUsd) : null;
                     $('#view-total-bs').text(bsLbl || 'Sin tasa BCV');
-                    // Establecer enlace PDF
+                    if (window.tasaBcv && window.tasaBcv.valor) {
+                        $('#view-resumen-tasa').text('Bs ' + parseFloat(window.tasaBcv.valor)
+                            .toLocaleString('es-VE', { minimumFractionDigits: 4, maximumFractionDigits: 4 }));
+                    }
+
+                    // PDF
                     $('#view-pdf-btn').attr('href', '/cotizaciones/' + id + '/pdf');
+
                     $('#viewModal').modal('show');
                 }
             });
