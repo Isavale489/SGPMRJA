@@ -1264,23 +1264,31 @@
                 $('#view-logo').html(disenoHtml);
 
                 // Insumos
+                var insumos = data.insumos || [];
                 $('#view-insumos').empty();
-                (data.insumos || []).forEach(insumo => {
-                    let pct = (insumo.pivot.cantidad_utilizada / insumo.pivot.cantidad_estimada * 100).toFixed(2);
-                    $('#view-insumos').append(`
-                        <tr>
-                            <td><h6 class="fs-13 mb-0">${escHtml(insumo.nombre)}</h6></td>
-                            <td class="text-center">${insumo.pivot.cantidad_estimada} ${insumo.unidad_medida}</td>
-                            <td class="text-center">${insumo.pivot.cantidad_utilizada} ${insumo.unidad_medida}</td>
-                            <td>
-                                <div class="progress animated-progress custom-progress progress-sm">
-                                    <div class="progress-bar bg-success" role="progressbar" style="width: ${pct}%"
-                                        aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100"></div>
-                                </div>
-                                <div class="text-muted fs-11 mt-1 text-center">${pct}%</div>
-                            </td>
-                        </tr>`);
-                });
+                if (insumos.length === 0) {
+                    $('#view-insumos-tablewrap').hide();
+                    $('#view-insumos-empty').show();
+                } else {
+                    $('#view-insumos-tablewrap').show();
+                    $('#view-insumos-empty').hide();
+                    insumos.forEach(insumo => {
+                        let pct = (insumo.pivot.cantidad_utilizada / insumo.pivot.cantidad_estimada * 100).toFixed(2);
+                        $('#view-insumos').append(`
+                            <tr>
+                                <td><h6 class="fs-13 mb-0">${escHtml(insumo.nombre)}</h6></td>
+                                <td class="text-center">${insumo.pivot.cantidad_estimada} ${insumo.unidad_medida}</td>
+                                <td class="text-center">${insumo.pivot.cantidad_utilizada} ${insumo.unidad_medida}</td>
+                                <td>
+                                    <div class="progress animated-progress custom-progress progress-sm">
+                                        <div class="progress-bar bg-success" role="progressbar" style="width: ${pct}%"
+                                            aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100"></div>
+                                    </div>
+                                    <div class="text-muted fs-11 mt-1 text-center">${pct}%</div>
+                                </td>
+                            </tr>`);
+                    });
+                }
 
                 $('#view-notas').text(data.notas || 'Sin notas adicionales.');
                 const formatDateTime = (dateString) => {
@@ -1290,7 +1298,7 @@
                 };
                 $('#view-created').text(formatDateTime(data.created_at));
 
-                new bootstrap.Tab(document.getElementById('tab-detalles-btn')).show();
+                viewOrdShowStep(1);
                 $('#viewModal').modal('show');
             });
         });
@@ -1395,8 +1403,49 @@
         });
 
         $('#viewModal').on('hidden.bs.modal', function () {
-            new bootstrap.Tab(document.getElementById('tab-detalles-btn')).show();
+            viewOrdShowStep(1);
         });
+
+        // ══════════════════════════════════════════════════════
+        // Wizard navegación — viewModal (read-only)
+        // ══════════════════════════════════════════════════════
+        (function () {
+            var TOTAL = 3;
+            var currentStep = 1;
+
+            window.viewOrdShowStep = function (step) {
+                currentStep = step;
+                // Contenido de pasos
+                $('#viewModal .wiz-step-content').removeClass('is-active');
+                $('#viewModal .wiz-step-content[data-step="' + step + '"]').addClass('is-active');
+                // Markers
+                $('#viewModal .wiz-step-marker').removeClass('is-active is-complete');
+                $('#viewModal .wiz-step-marker').each(function () {
+                    var s = parseInt($(this).data('step'));
+                    if (s < step) $(this).addClass('is-complete');
+                    else if (s === step) $(this).addClass('is-active');
+                });
+                // Line fills
+                for (var i = 1; i < TOTAL; i++) {
+                    $('#viewModal .wiz-step-line-fill[data-line="' + i + '"]')
+                        .css('width', i < step ? '100%' : '0%');
+                }
+                // Botones
+                $('#btn-view-ord-prev').toggle(step > 1);
+                $('#btn-view-ord-next').toggle(step < TOTAL);
+                $('#btn-view-ord-close').toggle(step === TOTAL);
+            };
+
+            $(document).on('click', '#btn-view-ord-next', function () {
+                if (currentStep < TOTAL) viewOrdShowStep(currentStep + 1);
+            });
+            $(document).on('click', '#btn-view-ord-prev', function () {
+                if (currentStep > 1) viewOrdShowStep(currentStep - 1);
+            });
+            $('#viewModal').on('click', '.wiz-step-marker', function () {
+                viewOrdShowStep(parseInt($(this).data('step')));
+            });
+        }());
 
         // ══════════════════════════════════════════════════════
         // Reset del form al cerrar

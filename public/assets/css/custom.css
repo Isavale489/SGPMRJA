@@ -5056,6 +5056,8 @@ header#page-topbar,
 #viewModal .modal-dialog  { max-width: 900px; }
 #viewModal .modal-content,
 #viewModal .modal-body    { background: #f6f7f9; }
+/* Wizard: el wiz-wizard-body base usa 460px (cotizaciones), reducir para ordenes */
+#viewModal .wiz-wizard-body { min-height: 340px; }
 
 /* Placa blanca: header, KPI zone y footer */
 .view-plate { background: #fff; border-bottom: 1px solid #e9ecef; }
