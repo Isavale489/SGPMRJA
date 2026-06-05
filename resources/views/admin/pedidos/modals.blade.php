@@ -517,9 +517,22 @@
                                         <span>Total Pedido</span>
                                     </div>
                                     <div class="cot-resumen-card-body">
+                                        <div class="cot-resumen-row">
+                                            <span class="cot-resumen-row-label">
+                                                <i class="ri-bank-line me-1" style="font-size:.9rem;opacity:.7"></i>Tasa BCV (USD/VES)
+                                            </span>
+                                            <span class="cot-resumen-row-value fs-13" id="ped-res-tasa-hero">—</span>
+                                        </div>
+                                        <div class="cot-resumen-divider"></div>
                                         <div class="cot-resumen-row cot-resumen-row--total">
                                             <span class="cot-resumen-row-label">Estimado</span>
                                             <span class="cot-resumen-row-value" id="ped-res-total-hero">$0.00</span>
+                                        </div>
+                                        <div class="cot-resumen-row">
+                                            <span class="cot-resumen-row-label">
+                                                <i class="ri-exchange-dollar-line me-1" style="font-size:.9rem;opacity:.7"></i>Equivalente Bs
+                                            </span>
+                                            <span class="cot-resumen-row-value fs-13" id="ped-res-total-bs-hero">—</span>
                                         </div>
                                         <div class="cot-resumen-divider"></div>
                                         <div class="cot-resumen-row">

@@ -1474,6 +1474,14 @@ $(document).ready(function () {
             $('#ped-res-abono-hero').text(pedFmtRes(abono));
             $('#ped-res-restante-hero').text(pedFmtRes(restante));
 
+            // Tasa BCV y equivalente en Bs
+            if (window.tasaBcv && window.tasaBcv.valor) {
+                $('#ped-res-tasa-hero').text('Bs ' + parseFloat(window.tasaBcv.valor)
+                    .toLocaleString('es-VE', { minimumFractionDigits: 4, maximumFractionDigits: 4 }));
+            }
+            var bsLbl = (typeof window.bsEquivalente === 'function') ? window.bsEquivalente(total) : null;
+            $('#ped-res-total-bs-hero').text(bsLbl || 'Sin tasa BCV');
+
             // KPI figures
             var kpis = '<div class="d-flex gap-2 mb-3 flex-wrap">' +
                 '<div class="flex-fill text-center px-2 py-2 rounded bg-light">' +
