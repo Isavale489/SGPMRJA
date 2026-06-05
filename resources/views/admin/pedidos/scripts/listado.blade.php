@@ -463,31 +463,51 @@
                     $('#view-restante').text('$' + restante.toFixed(2));
 
                     // Mostrar pagos normalizados desde data.pagos
-                    let metodosPago = [];
-                    let detallesPagoHtml = '';
-                    const metodoLabels = { efectivo: 'Efectivo', transferencia: 'Transferencia', pago_movil: 'Pago Móvil' };
-                    const metodoIcons = { efectivo: 'ri-money-dollar-circle-line', transferencia: 'ri-bank-card-line', pago_movil: 'ri-smartphone-line' };
-                    const metodoClasses = { efectivo: 'efectivo', transferencia: 'transferencia', pago_movil: 'pago-movil' };
+                    var $pagosEl = $('#view-pagos-list');
+                    $pagosEl.empty();
+
+                    var metodoLabels = { efectivo: 'Efectivo', transferencia: 'Transferencia', pago_movil: 'Pago Móvil' };
+                    var metodoIcons  = { efectivo: 'ri-money-dollar-circle-line', transferencia: 'ri-bank-card-line', pago_movil: 'ri-smartphone-line' };
+                    var metodoBoxCls = { efectivo: 'emp-icon-box--green', transferencia: 'emp-icon-box--navy', pago_movil: 'emp-icon-box--teal' };
+                    var metodoIcoCls = { efectivo: 'emp-icon--green', transferencia: 'emp-icon--navy', pago_movil: 'emp-icon--teal' };
 
                     if (data.pagos && data.pagos.length > 0) {
+                        var cardsHtml = '';
                         data.pagos.forEach(function (pago) {
-                            var label = metodoLabels[pago.metodo] || pago.metodo;
-                            var icon = metodoIcons[pago.metodo] || 'ri-money-dollar-circle-line';
-                            var cls = metodoClasses[pago.metodo] || 'none';
-                            metodosPago.push('<span class="metodo-pago-pill metodo-pago-pill--' + cls + '"><i class="' + icon + '"></i>' + label + ' $' + parseFloat(pago.monto).toFixed(2) + '</span>');
+                            var label  = metodoLabels[pago.metodo]  || pago.metodo;
+                            var icon   = metodoIcons[pago.metodo]   || 'ri-money-dollar-circle-line';
+                            var boxCls = metodoBoxCls[pago.metodo]  || 'emp-icon-box--navy';
+                            var icoCls = metodoIcoCls[pago.metodo]  || 'emp-icon--navy';
+                            var monto  = parseFloat(pago.monto).toFixed(2);
 
+                            var extraHtml = '';
                             if (pago.metodo !== 'efectivo') {
                                 var bancoNombre = pago.banco ? pago.banco.nombre : 'Sin banco';
-                                var referencia = pago.referencia || 'Sin referencia';
-                                detallesPagoHtml += '<div class="mt-1"><small class="text-muted">' + label + ':</small> Banco: <strong>' + bancoNombre + '</strong> — Ref: <strong>' + referencia + '</strong></div>';
+                                var referencia  = pago.referencia || 'Sin referencia';
+                                extraHtml =
+                                    '<div class="fs-12 text-muted d-flex flex-wrap gap-3 mt-1">' +
+                                        '<span><i class="ri-bank-line me-1"></i>' + bancoNombre + '</span>' +
+                                        '<span><i class="ri-hashtag me-1"></i>' + referencia + '</span>' +
+                                    '</div>';
                             }
+
+                            cardsHtml +=
+                                '<div class="d-flex align-items-start gap-2 px-3 py-2 border-bottom">' +
+                                    '<div class="emp-icon-box ' + boxCls + ' rounded-circle flex-shrink-0 d-flex align-items-center justify-content-center mt-1">' +
+                                        '<i class="' + icon + ' ' + icoCls + '"></i>' +
+                                    '</div>' +
+                                    '<div class="flex-grow-1">' +
+                                        '<div class="d-flex justify-content-between align-items-center">' +
+                                            '<span class="fw-semibold fs-13 text-atlantico-dark">' + label + '</span>' +
+                                            '<span class="fw-bold fs-13 text-atlantico-dark">$' + monto + '</span>' +
+                                        '</div>' +
+                                        extraHtml +
+                                    '</div>' +
+                                '</div>';
                         });
-                    }
-                    $('#view-metodo-pago').html(metodosPago.join('') || '<span class="metodo-pago-pill metodo-pago-pill--none">Sin método</span>');
-                    $('#view-bloque-transferencia-container').hide();
-                    $('#view-bloque-pago-movil-container').hide();
-                    if (detallesPagoHtml) {
-                        $('#view-bloque-transferencia-container').html(detallesPagoHtml).show();
+                        $pagosEl.html(cardsHtml);
+                    } else {
+                        $pagosEl.html('<p class="text-muted fs-12 mb-0">Sin pagos registrados.</p>');
                     }
 
                     // Mostrar prioridad con badge

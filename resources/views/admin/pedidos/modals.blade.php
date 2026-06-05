@@ -802,10 +802,10 @@
                                         <i class="ri-wallet-line me-1"></i>Métodos de Pago
                                     </h6>
                                 </div>
-                                <div class="card-body p-3">
-                                    <div class="d-flex flex-wrap gap-1 mb-2" id="view-metodo-pago">-</div>
-                                    <div id="view-bloque-transferencia-container" style="display:none;"></div>
-                                    <div id="view-bloque-pago-movil-container" style="display:none;"></div>
+                                <div class="card-body p-0">
+                                    <div id="view-pagos-list" class="p-3">
+                                        <p class="text-muted fs-12 mb-0">Sin pagos registrados.</p>
+                                    </div>
                                 </div>
                             </div>
                         </div>
