@@ -429,12 +429,12 @@
                             {{-- Card: Cliente --}}
                             <div class="col-md-6">
                                 <div class="card border-0 shadow-sm h-100">
-                                    <div class="card-header border-0 bg-soft-primary">
-                                        <h6 class="mb-0 text-atlantico-dark">
-                                            <i class="ri-user-3-line me-2"></i>Cliente
+                                    <div class="card-header border-0 bg-soft-primary py-2 px-3">
+                                        <h6 class="mb-0 text-atlantico-dark fs-13">
+                                            <i class="ri-user-star-line me-1"></i>Cliente
                                         </h6>
                                     </div>
-                                    <div class="card-body" id="ped-res-cliente-bloque">
+                                    <div class="card-body p-3" id="ped-res-cliente-bloque">
                                         <p class="text-muted small mb-0">—</p>
                                     </div>
                                 </div>
@@ -443,12 +443,12 @@
                             {{-- Card: Datos del pedido --}}
                             <div class="col-md-6">
                                 <div class="card border-0 shadow-sm h-100">
-                                    <div class="card-header border-0 bg-soft-primary">
-                                        <h6 class="mb-0 text-atlantico-dark">
-                                            <i class="ri-calendar-event-line me-2"></i>Datos del pedido
+                                    <div class="card-header border-0 bg-soft-primary py-2 px-3">
+                                        <h6 class="mb-0 text-atlantico-dark fs-13">
+                                            <i class="ri-calendar-todo-line me-1"></i>Datos del pedido
                                         </h6>
                                     </div>
-                                    <div class="card-body" id="ped-res-datos-bloque">
+                                    <div class="card-body p-3" id="ped-res-datos-bloque">
                                         <p class="text-muted small mb-0">—</p>
                                     </div>
                                 </div>
@@ -457,10 +457,9 @@
                             {{-- Card: Productos --}}
                             <div class="col-12">
                                 <div class="card border-0 shadow-sm">
-                                    <div class="card-header border-0 bg-soft-primary">
-                                        <h6 class="mb-0 text-atlantico-dark">
-                                            <i class="ri-shopping-bag-3-line me-2"></i>
-                                            Productos
+                                    <div class="card-header border-0 bg-soft-primary py-2 px-3">
+                                        <h6 class="mb-0 text-atlantico-dark fs-13">
+                                            <i class="ri-shopping-bag-3-line me-1"></i>Productos
                                             (<span id="ped-res-lineas">0</span>&nbsp;línea(s))
                                         </h6>
                                     </div>
@@ -469,12 +468,12 @@
                                             <table class="table table-sm table-hover mb-0">
                                                 <thead class="table-light">
                                                     <tr>
-                                                        <th>Producto</th>
+                                                        <th class="ps-3">Producto</th>
                                                         <th class="text-center">Cant.</th>
                                                         <th>Talla</th>
                                                         <th>Color</th>
                                                         <th class="text-end">P. Unit.</th>
-                                                        <th class="text-end">Subtotal</th>
+                                                        <th class="text-end pe-3">Subtotal</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody id="ped-res-productos-tbody">
@@ -486,8 +485,8 @@
                                                 </tbody>
                                                 <tfoot>
                                                     <tr class="table-primary">
-                                                        <td colspan="5" class="text-end fw-bold small">Total estimado</td>
-                                                        <td class="text-end fw-bold" id="ped-res-total">$0.00</td>
+                                                        <td colspan="5" class="text-end fw-bold small ps-3">Total estimado</td>
+                                                        <td class="text-end fw-bold pe-3" id="ped-res-total">$0.00</td>
                                                     </tr>
                                                 </tfoot>
                                             </table>
@@ -497,15 +496,40 @@
                             </div>
 
                             {{-- Card: Pago --}}
-                            <div class="col-12">
-                                <div class="card border-0 shadow-sm">
-                                    <div class="card-header border-0 bg-soft-primary">
-                                        <h6 class="mb-0 text-atlantico-dark">
-                                            <i class="ri-wallet-line me-2"></i>Pago
+                            <div class="col-lg-8">
+                                <div class="card border-0 shadow-sm h-100">
+                                    <div class="card-header border-0 bg-soft-primary py-2 px-3">
+                                        <h6 class="mb-0 text-atlantico-dark fs-13">
+                                            <i class="ri-wallet-line me-1"></i>Pago
                                         </h6>
                                     </div>
-                                    <div class="card-body" id="ped-res-pago-bloque">
+                                    <div class="card-body p-3" id="ped-res-pago-bloque">
                                         <p class="text-muted small mb-0">—</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {{-- Hero: total pedido --}}
+                            <div class="col-lg-4 d-flex">
+                                <div class="cot-resumen-card cot-resumen-card--compact w-100">
+                                    <div class="cot-resumen-card-header">
+                                        <i class="ri-money-dollar-circle-line"></i>
+                                        <span>Total Pedido</span>
+                                    </div>
+                                    <div class="cot-resumen-card-body">
+                                        <div class="cot-resumen-row cot-resumen-row--total">
+                                            <span class="cot-resumen-row-label">Estimado</span>
+                                            <span class="cot-resumen-row-value" id="ped-res-total-hero">$0.00</span>
+                                        </div>
+                                        <div class="cot-resumen-divider"></div>
+                                        <div class="cot-resumen-row">
+                                            <span class="cot-resumen-row-label">Abonado</span>
+                                            <span class="cot-resumen-row-value" id="ped-res-abono-hero">$0.00</span>
+                                        </div>
+                                        <div class="cot-resumen-row">
+                                            <span class="cot-resumen-row-label">Restante</span>
+                                            <span class="cot-resumen-row-value" id="ped-res-restante-hero">$0.00</span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>

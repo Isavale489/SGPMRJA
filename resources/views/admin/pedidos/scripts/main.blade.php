@@ -1385,25 +1385,44 @@ $(document).ready(function () {
             var doc    = $('#ped-cliente-doc-display').text().trim() || '—';
             var tel    = $('#ped-cliente-tel-wrap').is(':visible') ? $('#ped-cliente-tel-display').text().trim() : '';
             var email  = $('#ped-cliente-email-wrap').is(':visible') ? $('#ped-cliente-email-display').text().trim() : '';
-            var html   = '<dl class="row g-0 mb-0 small">' +
-                '<dt class="col-5 text-muted">Nombre</dt><dd class="col-7 fw-semibold mb-1">' + nombre + '</dd>' +
-                '<dt class="col-5 text-muted">Documento</dt><dd class="col-7 mb-1">' + doc + '</dd>' +
-                (tel   ? '<dt class="col-5 text-muted">Teléfono</dt><dd class="col-7 mb-1">' + tel + '</dd>' : '') +
-                (email ? '<dt class="col-5 text-muted">Email</dt><dd class="col-7 mb-0">' + email + '</dd>' : '') +
-                '</dl>';
+            function icoItem(ico, bg, col, label, val) {
+                return '<div class="col-6 d-flex align-items-start mb-2">' +
+                    '<div class="emp-icon-box emp-icon-box--' + bg + ' rounded-circle me-2 flex-shrink-0 d-flex align-items-center justify-content-center">' +
+                    '<i class="' + ico + ' emp-icon--' + col + '"></i></div>' +
+                    '<div class="min-w-0"><small class="text-muted d-block fs-12">' + label + '</small>' +
+                    '<span class="fw-semibold fs-13 text-break">' + val + '</span></div></div>';
+            }
+            var html = '<div class="row g-0">' +
+                icoItem('ri-user-line',      'navy',  'navy',  'Nombre',    nombre) +
+                icoItem('ri-bank-card-line', 'green', 'green', 'Documento', doc) +
+                (tel   ? icoItem('ri-phone-line', 'teal', 'teal', 'Teléfono', tel)   : '') +
+                (email ? icoItem('ri-mail-line',  'navy', 'navy', 'Email',    email) : '') +
+                '</div>';
             $('#ped-res-cliente-bloque').html(html);
         }
 
         // Renderizar bloque datos del pedido
         function pedRenderResDatos() {
-            var fecha    = $('#ped-fecha-pedido-field').val() || '—';
-            var entrega  = $('#ped-fecha-entrega-field').val() || 'No especificada';
+            var fecha     = $('#ped-fecha-pedido-field').val() || '—';
+            var entrega   = $('#ped-fecha-entrega-field').val() || 'No especificada';
             var prioridad = $('#ped-prioridad-field').val() || 'Normal';
-            var html = '<dl class="row g-0 mb-0 small">' +
-                '<dt class="col-6 text-muted">Fecha pedido</dt><dd class="col-6 fw-semibold mb-1">' + fecha + '</dd>' +
-                '<dt class="col-6 text-muted">Entrega estimada</dt><dd class="col-6 mb-1">' + entrega + '</dd>' +
-                '<dt class="col-6 text-muted">Prioridad</dt><dd class="col-6 mb-0">' + prioridad + '</dd>' +
-                '</dl>';
+            var prioBg    = { Normal: 'bg-success', Alta: 'bg-warning', Urgente: 'bg-danger' };
+            var prioBadge = '<span class="badge ' + (prioBg[prioridad] || 'bg-secondary') + '">' + prioridad + '</span>';
+            function icoItem(ico, bg, col, label, val) {
+                return '<div class="col-6 d-flex align-items-start mb-2">' +
+                    '<div class="emp-icon-box emp-icon-box--' + bg + ' rounded-circle me-2 flex-shrink-0 d-flex align-items-center justify-content-center">' +
+                    '<i class="' + ico + ' emp-icon--' + col + '"></i></div>' +
+                    '<div><small class="text-muted d-block fs-12">' + label + '</small>' +
+                    '<span class="fw-semibold fs-13">' + val + '</span></div></div>';
+            }
+            var html = '<div class="row g-0">' +
+                icoItem('ri-calendar-line',       'navy', 'navy', 'Fecha pedido',     fecha) +
+                icoItem('ri-calendar-check-line', 'navy', 'navy', 'Entrega estimada', entrega) +
+                '<div class="col-6 d-flex align-items-start mb-2">' +
+                '<div class="emp-icon-box emp-icon-box--navy rounded-circle me-2 flex-shrink-0 d-flex align-items-center justify-content-center">' +
+                '<i class="ri-flag-line emp-icon--navy"></i></div>' +
+                '<div><small class="text-muted d-block fs-12">Prioridad</small>' + prioBadge + '</div></div>' +
+                '</div>';
             $('#ped-res-datos-bloque').html(html);
         }
 
@@ -1437,36 +1456,71 @@ $(document).ready(function () {
 
         // Renderizar bloque pago (multi-método)
         function pedRenderResPago() {
+            var METODO_ICONS = {
+                efectivo:      'ri-money-dollar-circle-line',
+                transferencia: 'ri-bank-card-2-line',
+                pago_movil:    'ri-smartphone-line'
+            };
             var pagos    = ((window.pedPagoState && window.pedPagoState.pagos) || [])
                 .filter(function (p) { return p.monto > 0; });
             var abono    = pagos.reduce(function (a, p) { return a + p.monto; }, 0);
             var total    = (window.pedProdState && window.pedProdState.total) || 0;
             var restante = total - abono;
+            var pct      = total > 0 ? Math.min(100, (abono / total) * 100) : 0;
+            var pctInt   = Math.round(pct);
 
-            var resumen = '<dl class="row g-0 mb-2 small">' +
-                '<dt class="col-6 text-muted">Total</dt><dd class="col-6 text-end mb-1">' + pedFmtRes(total) + '</dd>' +
-                '<dt class="col-6 text-muted">Abono</dt><dd class="col-6 text-end fw-semibold mb-1">' + pedFmtRes(abono) + '</dd>' +
-                '<dt class="col-6 text-muted">Restante</dt><dd class="col-6 text-end fw-semibold text-atlantico-dark mb-0">' + pedFmtRes(restante) + '</dd>' +
-                '</dl>';
+            // Actualiza hero card
+            $('#ped-res-total-hero').text(pedFmtRes(total));
+            $('#ped-res-abono-hero').text(pedFmtRes(abono));
+            $('#ped-res-restante-hero').text(pedFmtRes(restante));
 
+            // KPI figures
+            var kpis = '<div class="d-flex gap-2 mb-3 flex-wrap">' +
+                '<div class="flex-fill text-center px-2 py-2 rounded bg-light">' +
+                '<small class="text-muted d-block fs-12 mb-1">Total</small>' +
+                '<span class="fw-bold text-dark fs-13">' + pedFmtRes(total) + '</span></div>' +
+                '<div class="flex-fill text-center px-2 py-2 rounded" style="background:rgba(22,163,74,.08)">' +
+                '<small class="text-muted d-block fs-12 mb-1">Abonado</small>' +
+                '<span class="fw-bold text-success fs-13">' + pedFmtRes(abono) + '</span></div>' +
+                '<div class="flex-fill text-center px-2 py-2 rounded" style="background:rgba(30,60,114,.07)">' +
+                '<small class="text-muted d-block fs-12 mb-1">Restante</small>' +
+                '<span class="fw-bold text-atlantico-dark fs-13">' + pedFmtRes(restante) + '</span></div>' +
+                '</div>';
+
+            // Progress bar
+            var barColor = pct >= 100 ? '#16a34a' : pct > 0 ? '#1e3c72' : '#e2e8f0';
+            var progress = '<div class="mb-3">' +
+                '<div class="d-flex justify-content-between mb-1">' +
+                '<small class="text-muted fs-12">Progreso del pago</small>' +
+                '<small class="fw-semibold fs-12">' + pctInt + '%</small></div>' +
+                '<div class="progress" style="height:6px;border-radius:3px;">' +
+                '<div class="progress-bar" style="width:' + pctInt + '%;background:' + barColor + ';border-radius:3px;" role="progressbar"></div>' +
+                '</div></div>';
+
+            // Methods
             var metodosHtml;
             if (!pagos.length) {
-                metodosHtml = '<p class="text-muted small mb-0"><i class="ri-information-line me-1"></i>Sin pagos registrados (se paga después).</p>';
+                metodosHtml = '<div class="text-center py-2">' +
+                    '<i class="ri-wallet-3-line text-muted fs-5 d-block mb-1"></i>' +
+                    '<p class="text-muted small mb-0">Sin pagos registrados — se salda después.</p></div>';
             } else {
-                metodosHtml = pagos.map(function (p) {
+                metodosHtml = '<div class="vstack gap-1">' +
+                pagos.map(function (p) {
                     var label = METODO_LABELS[p.metodo] || p.metodo;
+                    var icon  = METODO_ICONS[p.metodo] || 'ri-money-dollar-circle-line';
                     var extra = '';
-                    if (p.metodo === 'transferencia' || p.metodo === 'pago_movil') {
-                        var bancoNombre = p.banco_nombre || '—';
-                        extra = '<small class="text-muted d-block">' + bancoNombre + ' · Ref: ' + (p.referencia || '—') + '</small>';
+                    if ((p.metodo === 'transferencia' || p.metodo === 'pago_movil') && (p.banco_nombre || p.referencia)) {
+                        extra = '<small class="text-muted d-block fs-12">' + (p.banco_nombre || '—') + ' · Ref: ' + (p.referencia || '—') + '</small>';
                     }
-                    return '<div class="d-flex justify-content-between align-items-start py-1 border-top">' +
-                        '<div><span class="fw-semibold">' + label + '</span>' + extra + '</div>' +
-                        '<span class="fw-semibold ms-2">' + pedFmtRes(p.monto) + '</span>' +
+                    return '<div class="d-flex align-items-center justify-content-between py-2 px-2 rounded" style="background:rgba(30,60,114,.05)">' +
+                        '<div class="d-flex align-items-center gap-2">' +
+                        '<i class="' + icon + ' text-atlantico-dark fs-5"></i>' +
+                        '<div><span class="fw-semibold fs-13">' + label + '</span>' + extra + '</div></div>' +
+                        '<span class="fw-bold fs-13 text-atlantico-dark">' + pedFmtRes(p.monto) + '</span>' +
                         '</div>';
-                }).join('');
+                }).join('') + '</div>';
             }
-            $('#ped-res-pago-bloque').html(resumen + metodosHtml);
+            $('#ped-res-pago-bloque').html(kpis + progress + metodosHtml);
         }
 
         // Render completo del resumen

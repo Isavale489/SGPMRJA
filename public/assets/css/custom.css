@@ -7226,3 +7226,6 @@ header#page-topbar,
 [data-bs-theme="dark"] .c-unit-addon { color: #94a3b8; }
 
 /* .btn-tbl-action eliminado: Órdenes migró al patrón estándar btn-soft (2026-05-31). */
+
+/* Utilidad de ancho mínimo 0 — evita desbordamiento de texto en flex items */
+.min-w-0 { min-width: 0; }
