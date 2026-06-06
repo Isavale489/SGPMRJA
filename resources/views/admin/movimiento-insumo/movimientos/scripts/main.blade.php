@@ -31,7 +31,7 @@
             processing: true,
             serverSide: true,
             ajax: {
-                url: "{{ route('inventario.movimientos.data') }}",
+                url: "{{ route('movimiento-insumo.data') }}",
                 data: function (d) {
                     d.filter_tipo_movimiento = $('#filter-tipo').val();
                     d.filter_insumo_id = $('#filter-insumo').val();
@@ -101,7 +101,7 @@
             serverSide: true,
             autoWidth: false,
             ajax: {
-                url: "{{ route('inventario.existencias.data') }}",
+                url: "{{ route('movimiento-insumo.existencias.data') }}",
                 data: function (d) {
                     d.filter_tipo   = $('#exist-filter-tipo').val();
                     d.filter_estado = $('#exist-filter-alerta').val();
@@ -258,7 +258,7 @@
 
             // Enviar datos
             $.ajax({
-                url: "{{ route('inventario.movimientos.store') }}",
+                url: "{{ route('movimiento-insumo.store') }}",
                 method: 'POST',
                 data: {
                     _token: "{{ csrf_token() }}",
@@ -300,7 +300,7 @@
             var id = $(this).data('id');
 
             $.ajax({
-                url: "/inventario/movimientos/" + id,
+                url: "/movimiento-insumo/" + id,
                 method: 'GET',
                 success: function (response) {
                     try {

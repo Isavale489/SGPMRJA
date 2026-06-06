@@ -3,7 +3,7 @@
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header p-3">
-                <h5 class="modal-title" id="createModalLabel">Registrar Movimiento de Inventario</h5>
+                <h5 class="modal-title" id="createModalLabel">Registrar Movimiento de Insumo</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form id="createForm">

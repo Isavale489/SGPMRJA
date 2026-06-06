@@ -1,17 +1,17 @@
 @extends('admin.layouts.app')
 
-@section('title', 'Reporte de Inventario')
+@section('title', 'Reporte de Insumos')
 
 @section('content')
     <div class="container-fluid">
         <div class="row">
             <div class="col-12">
                 <div class="page-title-box d-sm-flex align-items-center justify-content-between">
-                    <h4 class="mb-sm-0">Reporte de Inventario</h4>
+                    <h4 class="mb-sm-0">Reporte de Insumos</h4>
 
                     <div class="page-title-right">
                         <ol class="breadcrumb m-0">
-                            <li class="breadcrumb-item"><a href="javascript: void(0);">Inventario</a></li>
+                            <li class="breadcrumb-item"><a href="javascript: void(0);">Insumos</a></li>
                             <li class="breadcrumb-item active">Reporte</li>
                         </ol>
                     </div>
@@ -24,7 +24,7 @@
                 <div class="card">
                     <div class="card-header">
                         <div class="d-flex align-items-center">
-                            <h5 class="card-title mb-0 flex-grow-1">Estado Actual del Inventario</h5>
+                            <h5 class="card-title mb-0 flex-grow-1">Estado Actual de Insumos</h5>
                             <div class="flex-shrink-0 d-flex align-items-center gap-3">
                                 <!-- Buscador Personalizado -->
                                 <div class="search-box">
@@ -32,7 +32,7 @@
                                         placeholder="Buscar en el reporte...">
                                     <i class="ri-search-line search-icon"></i>
                                 </div>
-                                <a href="{{ route('inventario.movimientos.index') }}" class="btn btn-secondary">
+                                <a href="{{ route('movimiento-insumo.index') }}" class="btn btn-secondary">
                                     <i class="ri-arrow-go-back-line align-bottom me-1"></i> Volver
                                 </a>
                             </div>
@@ -40,7 +40,7 @@
                     </div>
                     <div class="card-body">
                         <div class="table-responsive">
-                            <table id="inventario-table"
+                            <table id="insumos-table"
                                 class="table table-bordered dt-responsive nowrap table-striped align-middle"
                                 style="width:100%">
                                 <thead>
@@ -83,7 +83,7 @@
                                                     </button>
                                                     <ul class="dropdown-menu dropdown-menu-end">
                                                         <li>
-                                                            <a href="{{ route('inventario.movimientos.historial', $insumo->id) }}"
+                                                            <a href="{{ route('movimiento-insumo.historial', $insumo->id) }}"
                                                                 class="dropdown-item">
                                                                 <i class="ri-history-line align-bottom me-2 text-muted"></i> Ver
                                                                 Historial
@@ -97,7 +97,7 @@
                                 </tbody>
                                 <tfoot>
                                     <tr>
-                                        <th colspan="8" class="text-end">Valor Total del Inventario:</th>
+                                        <th colspan="8" class="text-end">Valor Total de Insumos:</th>
                                         <th>$/
                                             {{ number_format($insumos->sum(function ($insumo) {
         return $insumo->stock_actual * $insumo->costo_unitario; }), 2) }}
@@ -118,7 +118,7 @@
     <script>
         $(document).ready(function () {
             // Inicializar DataTable
-            var table = $('#inventario-table').DataTable({
+            var table = $('#insumos-table').DataTable({
                 language: lenguajeData,
                 responsive: true,
                 dom: 'Brtip',

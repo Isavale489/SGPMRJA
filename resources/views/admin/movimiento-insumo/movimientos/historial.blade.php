@@ -15,7 +15,7 @@
 
                     <div class="page-title-right">
                         <ol class="breadcrumb m-0">
-                            <li class="breadcrumb-item"><a href="{{ route('inventario.reporte') }}">Inventario</a></li>
+                            <li class="breadcrumb-item"><a href="{{ route('movimiento-insumo.reporte') }}">Insumos</a></li>
                             <li class="breadcrumb-item active">Historial</li>
                         </ol>
                     </div>
@@ -38,7 +38,7 @@
                                     <span class="text-white-50">{{ $insumo->tipo }} | {{ $insumo->unidad_medida }}</span>
                                 </div>
                             </div>
-                            <a href="{{ route('inventario.reporte') }}" class="btn btn-light">
+                            <a href="{{ route('movimiento-insumo.reporte') }}" class="btn btn-light">
                                 <i class="ri-arrow-go-back-line me-1"></i>Volver
                             </a>
                         </div>

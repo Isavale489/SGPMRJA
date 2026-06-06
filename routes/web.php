@@ -261,15 +261,15 @@ Route::middleware(['auth', 'throttle:60,1', 'active.user', 'recovery.questions.r
         Route::post('compras/{compra}/clonar', [CompraController::class, 'clonar'])->name('compras.clonar');
         Route::delete('compras/{compra}', [CompraController::class, 'destroy'])->name('compras.destroy');
 
-        // Inventario
-        Route::get('inventario/movimientos', [MovimientoInsumoController::class, 'index'])->name('inventario.movimientos.index');
-        Route::get('inventario/movimientos/data', [MovimientoInsumoController::class, 'getMovimientos'])->name('inventario.movimientos.data');
-        Route::get('inventario/existencias-data', [MovimientoInsumoController::class, 'getExistencias'])->name('inventario.existencias.data');
-        Route::post('inventario/movimientos', [MovimientoInsumoController::class, 'store'])->name('inventario.movimientos.store');
-        Route::get('inventario/movimientos/{id}', [MovimientoInsumoController::class, 'show'])->name('inventario.movimientos.show');
-        Route::get('inventario/reporte', [MovimientoInsumoController::class, 'reporteExistencia'])->name('inventario.reporte');
-        Route::get('inventario/alertas', [MovimientoInsumoController::class, 'alertasStock'])->name('inventario.alertas');
-        Route::get('inventario/movimientos/historial/{id}', [MovimientoInsumoController::class, 'historialInsumo'])->name('inventario.movimientos.historial');
+        // Movimientos de Insumo (rutas literales antes del comodín {id})
+        Route::get('movimiento-insumo', [MovimientoInsumoController::class, 'index'])->name('movimiento-insumo.index');
+        Route::get('movimiento-insumo/data', [MovimientoInsumoController::class, 'getMovimientos'])->name('movimiento-insumo.data');
+        Route::get('movimiento-insumo/existencias-data', [MovimientoInsumoController::class, 'getExistencias'])->name('movimiento-insumo.existencias.data');
+        Route::get('movimiento-insumo/reporte', [MovimientoInsumoController::class, 'reporteExistencia'])->name('movimiento-insumo.reporte');
+        Route::get('movimiento-insumo/alertas', [MovimientoInsumoController::class, 'alertasStock'])->name('movimiento-insumo.alertas');
+        Route::get('movimiento-insumo/historial/{id}', [MovimientoInsumoController::class, 'historialInsumo'])->name('movimiento-insumo.historial');
+        Route::post('movimiento-insumo', [MovimientoInsumoController::class, 'store'])->name('movimiento-insumo.store');
+        Route::get('movimiento-insumo/{id}', [MovimientoInsumoController::class, 'show'])->name('movimiento-insumo.show');
 
         // Notificaciones (campanita del header)
         Route::get('notificaciones/sistema', [NotificacionController::class, 'sistema'])->name('notificaciones.sistema');

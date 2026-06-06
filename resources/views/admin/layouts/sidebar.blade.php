@@ -416,13 +416,13 @@
                         {{-- ================================== --}}
                         {{-- 3. TRANSACCIONES --}}
                         {{-- ================================== --}}
-                        <li class="nav-item section-operativa {{ request()->is('cotizaciones*', 'pedidos*', 'ordenes*', 'calidad*', 'inventario*', 'compras*', 'garantias*') ? 'section-is-active' : '' }}">
+                        <li class="nav-item section-operativa {{ request()->is('cotizaciones*', 'pedidos*', 'ordenes*', 'calidad*', 'movimiento-insumo*', 'compras*', 'garantias*') ? 'section-is-active' : '' }}">
                             <a class="nav-link menu-link" href="#sidebarTransacciones" data-bs-toggle="collapse" role="button"
-                                aria-expanded="{{ request()->is('cotizaciones*') || request()->is('pedidos*') || request()->is('ordenes*') || request()->is('calidad*') || request()->is('inventario*') || request()->is('compras*') || request()->is('garantias*') ? 'true' : 'false' }}"
+                                aria-expanded="{{ request()->is('cotizaciones*') || request()->is('pedidos*') || request()->is('ordenes*') || request()->is('calidad*') || request()->is('movimiento-insumo*') || request()->is('compras*') || request()->is('garantias*') ? 'true' : 'false' }}"
                                 aria-controls="sidebarTransacciones">
                                 <i class="ri-exchange-funds-line"></i> <span data-key="t-transacciones">Gestión Operativa</span>
                             </a>
-                            <div class="collapse menu-dropdown {{ request()->is('cotizaciones*') || request()->is('pedidos*') || request()->is('ordenes*') || request()->is('calidad*') || request()->is('inventario*') || request()->is('compras*') || request()->is('garantias*') ? 'show' : '' }}"
+                            <div class="collapse menu-dropdown {{ request()->is('cotizaciones*') || request()->is('pedidos*') || request()->is('ordenes*') || request()->is('calidad*') || request()->is('movimiento-insumo*') || request()->is('compras*') || request()->is('garantias*') ? 'show' : '' }}"
                                 id="sidebarTransacciones">
                                 <ul class="nav nav-sm flex-column">
                                     <li class="nav-item">
@@ -450,17 +450,31 @@
                                             <i class="ri-shield-check-line me-1"></i> Control de Calidad
                                         </a>
                                     </li>
+                                    {{-- Movimientos con sub-dropdown (Insumos, Compras) --}}
                                     <li class="nav-item">
-                                        <a href="{{ route('inventario.movimientos.index') }}"
-                                            class="nav-link {{ request()->is('inventario/movimientos*') ? 'active' : '' }}">
-                                            <i class="ri-arrow-left-right-line me-1"></i> Movimiento de Inventario
+                                        <a href="#sidebarMovimientos" data-bs-toggle="collapse" role="button"
+                                            class="nav-link {{ request()->is('movimiento-insumo*', 'compras*') ? 'active' : 'collapsed' }}"
+                                            aria-expanded="{{ request()->is('movimiento-insumo*', 'compras*') ? 'true' : 'false' }}"
+                                            aria-controls="sidebarMovimientos">
+                                            <i class="ri-arrow-left-right-line me-1"></i> Movimientos
                                         </a>
-                                    </li>
-                                    <li class="nav-item">
-                                        <a href="{{ route('compras.index') }}"
-                                            class="nav-link {{ request()->is('compras*') ? 'active' : '' }}">
-                                            <i class="ri-shopping-bag-line me-1"></i> Compras
-                                        </a>
+                                        <div class="collapse menu-dropdown {{ request()->is('movimiento-insumo*', 'compras*') ? 'show' : '' }}"
+                                            id="sidebarMovimientos">
+                                            <ul class="nav nav-sm flex-column">
+                                                <li class="nav-item">
+                                                    <a href="{{ route('movimiento-insumo.index') }}"
+                                                        class="nav-link {{ request()->is('movimiento-insumo*') ? 'active' : '' }}">
+                                                        <i class="ri-archive-2-line me-1"></i> Insumos
+                                                    </a>
+                                                </li>
+                                                <li class="nav-item">
+                                                    <a href="{{ route('compras.index') }}"
+                                                        class="nav-link {{ request()->is('compras*') ? 'active' : '' }}">
+                                                        <i class="ri-shopping-bag-line me-1"></i> Compras
+                                                    </a>
+                                                </li>
+                                            </ul>
+                                        </div>
                                     </li>
                                     <li class="nav-item">
                                         {{-- TODO: Crear ruta y controlador para Garantías --}}

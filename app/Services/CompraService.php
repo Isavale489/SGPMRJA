@@ -12,7 +12,7 @@ class CompraService
 {
     /**
      * Crea la compra en estado 'borrador'.
-     * No genera movimientos de inventario — eso ocurre en procesar().
+     * No genera movimientos de insumo — eso ocurre en procesar().
      */
     public function registrar(array $data, int $userId): Compra
     {
@@ -41,7 +41,7 @@ class CompraService
 
     /**
      * Actualiza cabecera y detalles de una compra en estado 'borrador'.
-     * No genera movimientos de inventario.
+     * No genera movimientos de insumo.
      */
     public function actualizar(Compra $compra, array $data): void
     {
@@ -70,7 +70,7 @@ class CompraService
     }
 
     /**
-     * Procesa un borrador: cambia estado a 'recibida' y genera movimientos de inventario.
+     * Procesa un borrador: cambia estado a 'recibida' y genera movimientos de insumo.
      */
     public function procesar(Compra $compra, int $userId): void
     {

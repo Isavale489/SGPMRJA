@@ -1,6 +1,6 @@
 @extends('admin.layouts.app')
 
-@section('title', 'Control de Inventario')
+@section('title', 'Control de Insumos')
 @push('styles')
     <!-- Sweet Alert css-->
     <link href="{{ URL::asset('assets/libs/sweetalert2/sweetalert2.min.css') }}" rel="stylesheet" type="text/css" />
@@ -16,7 +16,7 @@
         <div class="row">
             <div class="col-12">
                 <div class="page-title-box d-sm-flex align-items-center justify-content-between">
-                    <h4 class="mb-sm-0">Control de Inventario</h4>
+                    <h4 class="mb-sm-0">Control de Insumos</h4>
 
                     <div class="page-title-right">
                         <ol class="breadcrumb m-0">
@@ -33,18 +33,18 @@
                 <div class="card card-transactional">
                     <div class="card-header">
                         <div class="d-flex align-items-center">
-                            <h5 class="card-title mb-0 flex-grow-1">Movimientos de Inventario</h5>
+                            <h5 class="card-title mb-0 flex-grow-1">Movimientos de Insumos</h5>
                             <div class="flex-shrink-0 d-flex align-items-center gap-3">
                                 <div class="d-flex gap-2">
                                     <button type="button" class="btn btn-success" data-bs-toggle="modal"
                                         data-bs-target="#createModal">
                                         <i class="ri-add-line align-bottom me-1"></i> Registrar Movimiento
                                     </button>
-                                    <a href="{{ route('inventario.alertas') }}" class="btn btn-warning">
+                                    <a href="{{ route('movimiento-insumo.alertas') }}" class="btn btn-warning">
                                         <i class="ri-alert-line align-bottom me-1"></i> Alertas de Stock
                                     </a>
-                                    <a href="{{ route('inventario.reporte') }}" class="btn btn-danger">
-                                        <i class="ri-file-list-3-line align-bottom me-1"></i> Reporte de Inventario
+                                    <a href="{{ route('movimiento-insumo.reporte') }}" class="btn btn-danger">
+                                        <i class="ri-file-list-3-line align-bottom me-1"></i> Reporte de Insumos
                                     </a>
                                 </div>
                             </div>
@@ -218,9 +218,9 @@
         </div>
     </div>
 
-    @include('admin.inventario.movimientos.modals.create')
-    @include('admin.inventario.movimientos.modals.view')
-    @include('admin.inventario.movimientos.modals.create_insumo')
+    @include('admin.movimiento-insumo.movimientos.modals.create')
+    @include('admin.movimiento-insumo.movimientos.modals.view')
+    @include('admin.movimiento-insumo.movimientos.modals.create_insumo')
 
 @endsection
 
@@ -235,5 +235,5 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.1.3/jszip.min.js"></script>
-    @include('admin.inventario.movimientos.scripts.main')
+    @include('admin.movimiento-insumo.movimientos.scripts.main')
 @endpush

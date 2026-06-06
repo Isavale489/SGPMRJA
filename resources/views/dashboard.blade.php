@@ -71,7 +71,7 @@
         </div>
         <!-- Insumos con stock bajo -->
         <div class="col-xl-4 col-md-6">
-            <a href="{{ route('inventario.alertas') }}" class="text-decoration-none">
+            <a href="{{ route('movimiento-insumo.alertas') }}" class="text-decoration-none">
                 <div class="card card-animate dash-kpi dash-kpi--danger">
                     <div class="card-body">
                         <div class="d-flex align-items-center">

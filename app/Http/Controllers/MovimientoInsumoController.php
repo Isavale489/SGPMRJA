@@ -21,7 +21,7 @@ class MovimientoInsumoController extends Controller
         $insumosInventariables = Insumo::where('estado', true)
             ->where('is_inventoriable', true)
             ->get();
-        return view('admin.inventario.movimientos.index', compact('insumos', 'insumosInventariables'));
+        return view('admin.movimiento-insumo.movimientos.index', compact('insumos', 'insumosInventariables'));
     }
 
     public function getMovimientos(Request $request)
@@ -77,7 +77,7 @@ class MovimientoInsumoController extends Controller
     }
 
     /**
-     * Panel de existencias dentro de /inventario/movimientos:
+     * Panel de existencias dentro de /movimiento-insumo:
      * stock mínimo, actual y máximo de cada insumo inventariable,
      * para consultarlo sin salir a /insumos.
      */
@@ -125,7 +125,7 @@ class MovimientoInsumoController extends Controller
             if (!$insumo->is_inventoriable) {
                 DB::rollBack();
                 return response()->json([
-                    'error' => 'Este insumo no es inventariable, por lo que no gestiona stock ni admite movimientos de inventario.'
+                    'error' => 'Este insumo no es inventariable, por lo que no gestiona stock ni admite movimientos de insumo.'
                 ], 422);
             }
 
@@ -162,12 +162,12 @@ class MovimientoInsumoController extends Controller
             DB::commit();
 
             return response()->json([
-                'success' => 'Movimiento de inventario registrado exitosamente'
+                'success' => 'Movimiento de insumo registrado exitosamente'
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([
-                'error' => 'Error al registrar el movimiento de inventario: ' . $e->getMessage()
+                'error' => 'Error al registrar el movimiento de insumo: ' . $e->getMessage()
             ], 500);
         }
     }
@@ -182,7 +182,7 @@ class MovimientoInsumoController extends Controller
     {
         // Insumos ya no tienen relación con proveedor (Santiago, e607f64).
         $insumos = Insumo::where('estado', true)->get();
-        return view('admin.inventario.reporte.index', compact('insumos'));
+        return view('admin.movimiento-insumo.reporte.index', compact('insumos'));
     }
 
     public function historialInsumo($id)
@@ -193,7 +193,7 @@ class MovimientoInsumoController extends Controller
             ->orderBy('created_at', 'desc')
             ->get();
 
-        return view('admin.inventario.movimientos.historial', compact('insumo', 'movimientos'));
+        return view('admin.movimiento-insumo.movimientos.historial', compact('insumo', 'movimientos'));
     }
 
     public function alertasStock()
@@ -205,6 +205,6 @@ class MovimientoInsumoController extends Controller
             ->whereRaw('stock_actual <= stock_minimo')
             ->get();
 
-        return view('admin.inventario.alertas.index', compact('insumosConBajoStock'));
+        return view('admin.movimiento-insumo.alertas.index', compact('insumosConBajoStock'));
     }
 }

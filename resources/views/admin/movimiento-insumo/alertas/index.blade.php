@@ -11,7 +11,7 @@
 
                     <div class="page-title-right">
                         <ol class="breadcrumb m-0">
-                            <li class="breadcrumb-item"><a href="javascript: void(0);">Inventario</a></li>
+                            <li class="breadcrumb-item"><a href="javascript: void(0);">Insumos</a></li>
                             <li class="breadcrumb-item active">Alertas</li>
                         </ol>
                     </div>
@@ -26,7 +26,7 @@
                         <div class="d-flex align-items-center">
                             <h5 class="card-title mb-0 flex-grow-1">Insumos con Stock Bajo</h5>
                             <div class="flex-shrink-0 d-flex align-items-center gap-3">
-                                <a href="{{ route('inventario.movimientos.index') }}" class="btn btn-secondary">
+                                <a href="{{ route('movimiento-insumo.index') }}" class="btn btn-secondary">
                                     <i class="ri-arrow-go-back-line align-bottom me-1"></i> Volver
                                 </a>
                             </div>
@@ -107,7 +107,7 @@
                                                         </button>
                                                         <ul class="dropdown-menu dropdown-menu-end">
                                                             <li>
-                                                                <a href="{{ route('inventario.movimientos.historial', $insumo->id) }}"
+                                                                <a href="{{ route('movimiento-insumo.historial', $insumo->id) }}"
                                                                     class="dropdown-item">
                                                                     <i class="ri-history-line align-bottom me-2 text-muted"></i> Ver
                                                                     Historial
@@ -207,7 +207,7 @@
                 var id = $(this).data('id');
 
                 // Redirigir a la página de movimientos y seleccionar el insumo
-                window.location.href = "{{ route('inventario.movimientos.index') }}?insumo_id=" + id + "&tipo=Entrada";
+                window.location.href = "{{ route('movimiento-insumo.index') }}?insumo_id=" + id + "&tipo=Entrada";
             });
         });
     </script>
