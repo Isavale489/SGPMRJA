@@ -245,17 +245,29 @@
             <div class="modal-header">
                 <h5 class="modal-title" id="modalTitle">Nueva Cotización</h5>
                 <div class="wiz-dt-slot me-2">
-                    <div class="wiz-body-datetime wiz-body-datetime--sm" title="Fecha y hora">
-                        <span class="wiz-body-dt-item">
-                            <i class="ri-calendar-event-line"></i>
-                            <span class="wiz-body-dt-text" id="cot-banner-fecha-val">—</span>
-                        </span>
-                        <span class="wiz-body-dt-divider"></span>
-                        <span class="wiz-body-dt-item">
-                            <i class="ri-time-line"></i>
-                            <span class="wiz-body-dt-text" id="cot-banner-hora">—</span>
-                            <span class="wiz-body-dt-live" aria-hidden="true" title="En vivo"></span>
-                        </span>
+                    <div class="wiz-hdr-pills">
+                        <div class="wiz-body-datetime wiz-body-datetime--sm wiz-body-bcv" id="cot-banner-bcv"
+                            title="Tasa oficial BCV del día">
+                            <span class="wiz-body-dt-item">
+                                <i class="ri-money-dollar-circle-line"></i>
+                                <span class="wiz-body-bcv-text">
+                                    <span class="wiz-body-bcv-label">BCV <span id="cot-banner-bcv-fecha">—</span></span>
+                                    <span class="wiz-body-bcv-val" id="cot-banner-bcv-val">—</span>
+                                </span>
+                            </span>
+                        </div>
+                        <div class="wiz-body-datetime wiz-body-datetime--sm" title="Fecha y hora">
+                            <span class="wiz-body-dt-item">
+                                <i class="ri-calendar-event-line"></i>
+                                <span class="wiz-body-dt-text" id="cot-banner-fecha-val">—</span>
+                            </span>
+                            <span class="wiz-body-dt-divider"></span>
+                            <span class="wiz-body-dt-item">
+                                <i class="ri-time-line"></i>
+                                <span class="wiz-body-dt-text" id="cot-banner-hora">—</span>
+                                <span class="wiz-body-dt-live" aria-hidden="true" title="En vivo"></span>
+                            </span>
+                        </div>
                     </div>
                 </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>

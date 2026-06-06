@@ -5729,6 +5729,22 @@
                 }
             }
 
+            // Refleja la tasa BCV del día en el header (formato del header global)
+            function refreshBannerBcv() {
+                if (window.tasaBcv && window.tasaBcv.valor) {
+                    var val = Number(window.tasaBcv.valor)
+                        .toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                    $('#cot-banner-bcv-val').text('Bs. ' + val);
+                    if (window.tasaBcv.fecha) {
+                        var p = String(window.tasaBcv.fecha).split('-');
+                        $('#cot-banner-bcv-fecha').text(p.length === 3 ? (p[2] + '/' + p[1]) : '');
+                    }
+                } else {
+                    $('#cot-banner-bcv-val').text('N/D');
+                    $('#cot-banner-bcv-fecha').text('');
+                }
+            }
+
             // Sincronizar banner-fecha al cambiar el input de fecha
             $(document).on('change', '#fecha-cotizacion-field', refreshBannerFecha);
 
@@ -5739,6 +5755,7 @@
             $('#showModal').on('show.bs.modal', function () {
                 refreshBannerHora();
                 refreshBannerFecha();
+                refreshBannerBcv();
                 showStep(1);
                 refreshKPIs();
                 clearInterval(horaInterval);
