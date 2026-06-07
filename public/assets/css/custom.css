@@ -5298,6 +5298,24 @@ header#page-topbar,
 .ord-asig-card-body { padding: 14px; }
 .ord-asig-card .input-group-text { background: #f1f5f9; border-color: #e2e8f0; color: #1e3c72; }
 
+/* Paso Insumos: tabla liviana dentro de la card por línea */
+.ord-ins-card-body { padding: 0; }
+.ord-ins-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.ord-ins-table thead th {
+    background: #f1f5f9; color: #1e3c72; font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .03em; padding: 8px 14px;
+    border-bottom: 1px solid #e2e8f0; text-align: left;
+}
+.ord-ins-table tbody td { padding: 10px 14px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
+.ord-ins-table tbody tr:last-child td { border-bottom: 0; }
+.ord-ins-c-num { width: 44px; text-align: center; color: #94a3b8; }
+.ord-ins-empty { text-align: center; padding: 18px 14px; color: #94a3b8; }
+.ord-ins-empty i { display: block; font-size: 1.6rem; opacity: .5; margin-bottom: 4px; }
+.ord-ins-empty span { font-size: 12px; }
+[data-bs-theme="dark"] .ord-ins-table thead th { background: #172033; color: #93c5fd; border-bottom-color: #334155; }
+[data-bs-theme="dark"] .ord-ins-table tbody td { border-bottom-color: #1f2a3d; color: #e2e8f0; }
+[data-bs-theme="dark"] .ord-ins-empty { color: #64748b; }
+
 /* Dark mode */
 [data-bs-theme="dark"] .ord-apply-card { background: linear-gradient(135deg, #1e293b, #0f172a); border-color: #334155; }
 [data-bs-theme="dark"] .ord-apply-title { color: #cbd5e1; }

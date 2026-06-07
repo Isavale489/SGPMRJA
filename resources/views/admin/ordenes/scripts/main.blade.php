@@ -589,37 +589,37 @@
         // PASO 3 — Insumos por línea
         // ══════════════════════════════════════════════════════
         function insumosPanelHtml(l, idx) {
-            const tieneInsumos = l.insumos && l.insumos.length;
+            const nIns = l.insumos ? l.insumos.length : 0;
             const rows = (l.insumos || []).map(function (it, j) {
                 return '<tr>'
-                    + '<td class="cot-col-num">' + (j + 1) + '</td>'
-                    + '<td class="cot-col-prod"><div class="fw-semibold">' + escHtml(it.nombre) + '</div>'
+                    + '<td class="ord-ins-c-num">' + (j + 1) + '</td>'
+                    + '<td><div class="fw-semibold">' + escHtml(it.nombre) + '</div>'
                         + (it.unidad ? '<small class="text-muted">' + escHtml(it.unidad) + '</small>' : '') + '</td>'
-                    + '<td class="cot-col-num text-end fw-semibold">' + parseFloat(it.cantidad).toFixed(2) + '</td>'
-                    + '<td class="cot-col-acc text-center">'
+                    + '<td class="text-end fw-semibold">' + parseFloat(it.cantidad).toFixed(2) + '</td>'
+                    + '<td class="text-center text-nowrap">'
                     +   '<button type="button" class="btn btn-sm btn-soft-primary ord-ins-edit me-1" data-l="' + idx + '" data-i="' + j + '" title="Editar"><i class="ri-pencil-line"></i></button>'
                     +   '<button type="button" class="btn btn-sm btn-soft-danger ord-ins-del" data-l="' + idx + '" data-i="' + j + '" title="Quitar"><i class="ri-delete-bin-line"></i></button>'
                     + '</td></tr>';
             }).join('');
-            const cuerpo = tieneInsumos
-                ? '<div class="cot-grouped-tablewrap"><table class="cot-grouped-table"><thead><tr>'
-                  + '<th class="cot-col-num">#</th><th class="cot-col-prod">Insumo</th>'
-                  + '<th class="cot-col-num text-end">Cantidad</th><th class="cot-col-acc text-center">Acciones</th>'
-                  + '</tr></thead><tbody>' + rows + '</tbody></table></div>'
-                : '<div class="text-center py-3 text-muted"><i class="ri-tools-line d-block opacity-50 mb-1" style="font-size:1.5rem;"></i>'
-                  + '<span class="fs-12">Sin insumos. Agrega con el botón de arriba.</span></div>';
-            const nIns = l.insumos ? l.insumos.length : 0;
-            return '<div class="card border-0 shadow-sm mb-2">'
-                + '<div class="card-header border-0 bg-soft-primary py-2 px-3 d-flex align-items-center justify-content-between flex-wrap gap-2">'
-                +   '<div class="d-flex align-items-center flex-wrap gap-2">'
-                +     '<span class="badge bg-secondary">#' + (idx + 1) + '</span>'
-                +     '<span class="fw-semibold text-atlantico-dark fs-13">' + escHtml(l.producto_nombre) + '</span>'
-                +     '<span class="badge rounded-pill badge-soft-primary"><i class="ri-stack-line me-1"></i>' + l.cantidad + ' u a producir</span>'
-                +     '<span class="d-inline-flex flex-wrap gap-1">' + lineaMetaChips(l) + '</span>'
-                +     '<span class="badge rounded-pill badge-soft-info">' + nIns + ' insumo' + (nIns === 1 ? '' : 's') + '</span>'
+            const cuerpo = nIns
+                ? '<table class="ord-ins-table"><thead><tr>'
+                  + '<th class="ord-ins-c-num">#</th><th>Insumo</th>'
+                  + '<th class="text-end">Cantidad</th><th class="text-center">Acciones</th>'
+                  + '</tr></thead><tbody>' + rows + '</tbody></table>'
+                : '<div class="ord-ins-empty"><i class="ri-tools-line"></i>'
+                  + '<span>Sin insumos. Agrégalos con el botón “Agregar insumo”.</span></div>';
+            return '<div class="ord-asig-card ord-ins-card" data-idx="' + idx + '">'
+                + '<div class="ord-asig-card-head">'
+                +   '<span class="ord-asig-num">' + (idx + 1) + '</span>'
+                +   '<div class="ord-asig-prod">'
+                +     '<div class="ord-asig-prod-name">' + escHtml(l.producto_nombre) + ' <span class="ord-asig-qty">· ' + l.cantidad + ' u a producir</span></div>'
+                +     '<div class="ord-asig-chips">' + lineaMetaChips(l)
+                +       '<span class="badge rounded-pill badge-soft-info"><i class="ri-tools-line me-1"></i>' + nIns + ' insumo' + (nIns === 1 ? '' : 's') + '</span></div>'
                 +   '</div>'
-                +   '<button type="button" class="btn btn-sm btn-soft-primary py-0 px-2 ord-ins-add" data-l="' + idx + '"><i class="ri-add-line"></i> Agregar insumo</button>'
-                + '</div><div class="card-body p-0">' + cuerpo + '</div></div>';
+                +   '<button type="button" class="btn btn-sm btn-soft-primary ord-ins-add flex-shrink-0" data-l="' + idx + '"><i class="ri-add-line me-1"></i>Agregar insumo</button>'
+                + '</div>'
+                + '<div class="ord-ins-card-body">' + cuerpo + '</div>'
+                + '</div>';
         }
 
         function renderInsumosAcc() {
