@@ -27,6 +27,7 @@ class DetalleOrdenInsumoController extends Controller
     {
         $detalles = DetalleOrdenInsumo::with(['insumo', 'ordenProduccion'])
             ->where('orden_produccion_id', $ordenId)
+            ->orderBy('id', 'desc') // más reciente primero (estándar del sistema)
             ->get();
 
         return DataTables::of($detalles)

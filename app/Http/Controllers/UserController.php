@@ -28,6 +28,8 @@ class UserController extends Controller
             $users->where('estado', $request->input('filter_estado'));
         }
 
+        $users->orderBy('created_at', 'desc'); // más reciente primero (estándar del sistema)
+
         return DataTables::of($users)
             ->editColumn('avatar', function ($user) {
                 return $user->avatar ? asset('storage/' . $user->avatar) : null;

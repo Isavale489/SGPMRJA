@@ -263,6 +263,8 @@ class CompraController extends Controller
             $query->whereDate('fecha_compra', '<=', $request->filter_fecha_hasta);
         }
 
+        $query->orderBy('compra.id', 'desc'); // más reciente primero (servidor autoritativo)
+
         return DataTables::of($query)
             ->addColumn('proveedor_nombre', fn($c) => $c->proveedor?->nombre_completo ?? 'N/A')
             ->addColumn('registrado_por', fn($c) => $c->registradoPor?->name ?? 'Sistema')
