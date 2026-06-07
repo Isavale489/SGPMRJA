@@ -505,6 +505,8 @@
         function renderAsignacion() {
             const multi = ordWiz.lineas.length > 1;
             $('#ord-apply-bar').attr('hidden', !multi);
+            $('#ord-porlinea-sep').attr('hidden', !multi);
+            $('#ord-porlinea-count').text(multi ? ordWiz.lineas.length : '');
             $('#ord-asignacion-desc').text(multi
                 ? 'Asigna empleado y fechas a cada línea. Usa "Aplicar a todas" para ir más rápido.'
                 : 'Define quién produce la orden y sus fechas.');

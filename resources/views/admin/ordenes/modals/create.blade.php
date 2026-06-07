@@ -244,6 +244,18 @@
                             </div>
                         </div>
 
+                        {{-- Separador: aquí empieza la asignación individual por línea --}}
+                        <div class="px-3" id="ord-porlinea-sep" hidden>
+                            <div class="ord-section-divider">
+                                <span class="ord-section-divider-line"></span>
+                                <span class="ord-section-divider-label">
+                                    <i class="ri-list-check-2 me-1"></i>Asignación por línea
+                                    <span class="ord-section-divider-count" id="ord-porlinea-count"></span>
+                                </span>
+                                <span class="ord-section-divider-line"></span>
+                            </div>
+                        </div>
+
                         {{-- Cards de asignación por línea (render JS) --}}
                         <div class="px-3" id="ord-asignacion-cards"></div>
                     </section>
