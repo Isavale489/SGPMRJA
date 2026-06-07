@@ -1331,13 +1331,13 @@
                     var telas = tipo.telas || [];
                     $('#vt-telas-count').text('(' + telas.length + ')');
                     $('#vt-telas').html(telas.length
-                        ? telas.map(function (t) { return '<span class="badge bg-light text-dark border"><i class="ri-shirt-line me-1"></i>' + vtEsc(t.nombre) + '</span>'; }).join('')
+                        ? telas.map(function (t) { return '<span class="vt-chip vt-chip--tela"><i class="ri-shirt-line"></i>' + vtEsc(t.nombre) + '</span>'; }).join('')
                         : '<span class="text-muted small">' + (reqTela ? 'Sin telas asignadas' : 'No usa tela') + '</span>');
 
                     var attrs = tipo.atributos || [];
                     $('#vt-atributos-count').text('(' + attrs.length + ')');
                     $('#vt-atributos').html(attrs.length
-                        ? attrs.map(function (a) { return '<span class="badge bg-info-subtle text-info">' + vtEsc(a.nombre) + '</span>'; }).join('')
+                        ? attrs.map(function (a) { return '<span class="vt-chip vt-chip--attr"><i class="ri-price-tag-3-line"></i>' + vtEsc(a.nombre) + '</span>'; }).join('')
                         : '<span class="text-muted small">Sin atributos</span>');
 
                     var ins = tipo.insumos_default || [];
