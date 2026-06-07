@@ -471,47 +471,52 @@
                     <h5 class="modal-title"><i class="ri-price-tag-3-line me-2"></i>Tipos de Insumo</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body">
-                    <p class="text-muted small mb-3">
-                        Categorías para clasificar los insumos (Tela, Hilo, Botón, Cinta…). Agrega las que necesites;
-                        aparecerán al crear/editar un insumo. No se puede inhabilitar un tipo si hay insumos usándolo.
-                    </p>
+                <div class="modal-body p-3 p-md-4">
+                    <div class="ti-hint mb-3">
+                        <i class="ri-information-line"></i>
+                        <span>Categorías para clasificar los insumos (Tela, Hilo, Botón, Cinta…). Aparecen al crear/editar un insumo. No se puede inhabilitar un tipo si hay insumos usándolo.</span>
+                    </div>
 
                     {{-- Alta rápida --}}
-                    <form id="tipoInsumoForm" class="row g-2 align-items-start mb-3" novalidate>
-                        <div class="col">
-                            <input type="hidden" id="ti-id-field">
+                    <form id="tipoInsumoForm" novalidate>
+                        <input type="hidden" id="ti-id-field">
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="ri-price-tag-3-line"></i></span>
                             <input type="text" id="ti-nombre-field" class="form-control" maxlength="100"
                                 placeholder="Nuevo tipo (ej: Cinta, Elástico, Broche)…" autocomplete="off">
-                            <div class="invalid-feedback" id="ti-nombre-error"></div>
-                        </div>
-                        <div class="col-auto">
                             <button type="submit" class="btn btn-success" id="ti-save-btn">
                                 <i class="ri-add-line me-1"></i><span id="ti-save-label">Agregar</span>
                             </button>
-                            <button type="button" class="btn btn-light d-none" id="ti-cancel-btn">Cancelar</button>
+                            <button type="button" class="btn btn-light d-none" id="ti-cancel-btn" title="Cancelar edición">
+                                <i class="ri-close-line"></i>
+                            </button>
                         </div>
+                        <div class="invalid-feedback d-block" id="ti-nombre-error"></div>
                     </form>
 
-                    {{-- Toggle activos/historial --}}
-                    <div class="btn-group btn-group-sm mb-2" role="group">
-                        <button type="button" class="btn btn-outline-primary active" id="ti-btn-activos">Activos</button>
-                        <button type="button" class="btn btn-outline-secondary" id="ti-btn-historial">Historial (Inhabilitados)</button>
+                    {{-- Toggle activos / historial (segmentado) --}}
+                    <div class="ti-segment my-3" role="group">
+                        <button type="button" class="ti-seg-btn active" id="ti-btn-activos">
+                            <i class="ri-checkbox-circle-line"></i> Activos
+                        </button>
+                        <button type="button" class="ti-seg-btn" id="ti-btn-historial">
+                            <i class="ri-time-line"></i> Inhabilitados
+                        </button>
                     </div>
 
-                    <div class="tipo-check-scroll" style="max-height: 320px;">
-                        <table class="table table-sm table-hover align-middle mb-0" id="tipos-insumo-table">
+                    <div style="max-height: 340px; overflow-y: auto;">
+                        <table class="ti-table" id="tipos-insumo-table">
                             <thead>
                                 <tr>
                                     <th>Tipo</th>
                                     <th class="text-center" style="width: 22%;">Insumos</th>
-                                    <th class="text-center" style="width: 22%;">Acciones</th>
+                                    <th class="text-center" style="width: 26%;">Acciones</th>
                                 </tr>
                             </thead>
                             <tbody id="tipos-insumo-tbody"></tbody>
                         </table>
-                        <div class="text-muted small text-center py-3 d-none" id="tipos-insumo-empty">
-                            <i class="ri-inbox-line me-1"></i>Sin tipos en esta vista.
+                        <div class="ti-empty d-none" id="tipos-insumo-empty">
+                            <i class="ri-inbox-line"></i><span>Sin tipos en esta vista.</span>
                         </div>
                     </div>
                 </div>
@@ -1232,15 +1237,19 @@
                 var $tb = $('#tipos-insumo-tbody').empty();
                 $('#tipos-insumo-empty').toggleClass('d-none', rows.length > 0);
                 rows.forEach(function (t) {
+                    var n = t.insumos_count || 0;
                     var acciones = tiHistorial
-                        ? '<button class="btn btn-sm btn-outline-success ti-restore" data-id="' + t.id + '" title="Restaurar"><i class="ri-refresh-line"></i></button>'
-                        : '<button class="btn btn-sm btn-outline-primary ti-edit me-1" data-id="' + t.id + '" data-nombre="' + escHtml(t.nombre) + '" title="Renombrar"><i class="ri-pencil-line"></i></button>' +
-                          '<button class="btn btn-sm btn-outline-danger ti-delete" data-id="' + t.id + '" data-count="' + (t.insumos_count || 0) + '" title="Inhabilitar"><i class="ri-delete-bin-line"></i></button>';
+                        ? '<button class="btn btn-sm btn-soft-success ti-restore" data-id="' + t.id + '" title="Habilitar"><i class="ri-arrow-go-back-line"></i></button>'
+                        : '<button class="btn btn-sm btn-soft-primary ti-edit me-1" data-id="' + t.id + '" data-nombre="' + escHtml(t.nombre) + '" title="Renombrar"><i class="ri-pencil-line"></i></button>' +
+                          '<button class="btn btn-sm btn-soft-danger ti-delete" data-id="' + t.id + '" data-count="' + n + '" title="Inhabilitar"><i class="ri-forbid-line"></i></button>';
+                    var badge = n > 0
+                        ? '<span class="badge rounded-pill badge-soft-info">' + n + ' en uso</span>'
+                        : '<span class="badge rounded-pill badge-soft-secondary">0</span>';
                     $tb.append(
                         '<tr>' +
-                            '<td>' + escHtml(t.nombre) + '</td>' +
-                            '<td class="text-center"><span class="badge bg-info">' + (t.insumos_count || 0) + '</span></td>' +
-                            '<td class="text-center">' + acciones + '</td>' +
+                            '<td><span class="ti-name"><i class="ri-price-tag-3-line"></i>' + escHtml(t.nombre) + '</span></td>' +
+                            '<td class="text-center">' + badge + '</td>' +
+                            '<td class="text-center text-nowrap">' + acciones + '</td>' +
                         '</tr>'
                     );
                 });

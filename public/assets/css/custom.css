@@ -5354,6 +5354,54 @@ header#page-topbar,
 [data-bs-theme="dark"] .ord-ins-empty { color: #64748b; }
 
 /* ============================================================
+   INSUMOS — MODAL "Tipos de Insumo" (#tiposInsumoModal)
+   ============================================================ */
+.ti-hint {
+    display: flex; align-items: flex-start; gap: 8px;
+    background: #eff6ff; border: 1px solid #dbe7fb; border-radius: 10px;
+    padding: 10px 12px; font-size: 12.5px; color: #475569;
+}
+.ti-hint i { color: #2a5298; font-size: 16px; flex: 0 0 auto; margin-top: 1px; }
+
+/* Toggle segmentado Activos / Inhabilitados */
+.ti-segment { display: inline-flex; background: #eef2f7; border-radius: 10px; padding: 3px; gap: 3px; }
+.ti-seg-btn {
+    border: 0; background: transparent; color: #64748b; font-weight: 600; font-size: 13px;
+    padding: 6px 16px; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 5px;
+    transition: background .15s ease, color .15s ease, box-shadow .15s ease;
+}
+.ti-seg-btn:hover { color: #1e3c72; }
+.ti-seg-btn.active { background: #fff; color: #1e3c72; box-shadow: 0 1px 3px rgba(16,24,40,.12); }
+
+/* Tabla liviana de tipos */
+.ti-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.ti-table thead th {
+    background: #f1f5f9; color: #1e3c72; font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .03em; padding: 9px 14px; text-align: left;
+    border-bottom: 1px solid #e2e8f0; position: sticky; top: 0; z-index: 1;
+}
+.ti-table tbody td { padding: 10px 14px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
+.ti-table tbody tr:last-child td { border-bottom: 0; }
+.ti-table tbody tr:hover td { background: #f8fafc; }
+.ti-name { display: inline-flex; align-items: center; gap: 7px; font-weight: 600; color: #0f172a; }
+.ti-name i { color: #2a5298; font-size: 15px; }
+.ti-empty { text-align: center; padding: 22px 14px; color: #94a3b8; }
+.ti-empty i { display: block; font-size: 1.8rem; opacity: .5; margin-bottom: 4px; }
+.ti-empty span { font-size: 12.5px; }
+
+/* Dark mode */
+[data-bs-theme="dark"] .ti-hint { background: #172033; border-color: #334155; color: #cbd5e1; }
+[data-bs-theme="dark"] .ti-hint i { color: #93c5fd; }
+[data-bs-theme="dark"] .ti-segment { background: #0f172a; }
+[data-bs-theme="dark"] .ti-seg-btn { color: #94a3b8; }
+[data-bs-theme="dark"] .ti-seg-btn.active { background: #1e293b; color: #cbd5e1; }
+[data-bs-theme="dark"] .ti-table thead th { background: #172033; color: #93c5fd; border-bottom-color: #334155; }
+[data-bs-theme="dark"] .ti-table tbody td { border-bottom-color: #1f2a3d; color: #e2e8f0; }
+[data-bs-theme="dark"] .ti-table tbody tr:hover td { background: #172033; }
+[data-bs-theme="dark"] .ti-name { color: #e2e8f0; }
+[data-bs-theme="dark"] .ti-name i { color: #93c5fd; }
+
+/* ============================================================
    PRODUCTOS — MODAL VER (Detalle del Tipo) #viewTipoModal
    ============================================================ */
 .vt-hero { display: flex; gap: 18px; align-items: flex-start; flex-wrap: wrap; }
