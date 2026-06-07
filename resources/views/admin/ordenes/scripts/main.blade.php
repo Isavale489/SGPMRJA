@@ -608,10 +608,16 @@
                   + '</tr></thead><tbody>' + rows + '</tbody></table></div>'
                 : '<div class="text-center py-3 text-muted"><i class="ri-tools-line d-block opacity-50 mb-1" style="font-size:1.5rem;"></i>'
                   + '<span class="fs-12">Sin insumos. Agrega con el botón de arriba.</span></div>';
+            const nIns = l.insumos ? l.insumos.length : 0;
             return '<div class="card border-0 shadow-sm mb-2">'
-                + '<div class="card-header border-0 bg-soft-primary py-2 px-3 d-flex align-items-center justify-content-between">'
-                +   '<h6 class="mb-0 text-atlantico-dark fs-13"><span class="badge bg-secondary me-1">#' + (idx + 1) + '</span>'
-                +     escHtml(l.producto_nombre) + ' <span class="text-muted fw-normal">(' + (l.insumos ? l.insumos.length : 0) + ')</span></h6>'
+                + '<div class="card-header border-0 bg-soft-primary py-2 px-3 d-flex align-items-center justify-content-between flex-wrap gap-2">'
+                +   '<div class="d-flex align-items-center flex-wrap gap-2">'
+                +     '<span class="badge bg-secondary">#' + (idx + 1) + '</span>'
+                +     '<span class="fw-semibold text-atlantico-dark fs-13">' + escHtml(l.producto_nombre) + '</span>'
+                +     '<span class="badge rounded-pill badge-soft-primary"><i class="ri-stack-line me-1"></i>' + l.cantidad + ' u a producir</span>'
+                +     '<span class="d-inline-flex flex-wrap gap-1">' + lineaMetaChips(l) + '</span>'
+                +     '<span class="badge rounded-pill badge-soft-info">' + nIns + ' insumo' + (nIns === 1 ? '' : 's') + '</span>'
+                +   '</div>'
                 +   '<button type="button" class="btn btn-sm btn-soft-primary py-0 px-2 ord-ins-add" data-l="' + idx + '"><i class="ri-add-line"></i> Agregar insumo</button>'
                 + '</div><div class="card-body p-0">' + cuerpo + '</div></div>';
         }
