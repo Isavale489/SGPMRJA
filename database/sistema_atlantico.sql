@@ -32,7 +32,7 @@ CREATE TABLE `atributo` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `atributo_nombre_unique` (`nombre`),
   UNIQUE KEY `atributo_codigo_unique` (`codigo`)
-) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -40,7 +40,7 @@ CREATE TABLE `atributo` (
 --
 
 /*!40000 ALTER TABLE `atributo` DISABLE KEYS */;
-INSERT INTO `atributo` VALUES (1,'Manga','MNG',NULL,'2026-05-07 17:15:29','2026-05-07 17:15:29'),(2,'Cuello','CLL',NULL,'2026-05-07 17:15:29','2026-05-07 17:15:29'),(3,'Corte','CRT',NULL,'2026-05-07 17:15:29','2026-05-07 17:15:29'),(4,'Cierre','CRR',NULL,'2026-05-07 17:15:29','2026-05-07 17:15:29'),(5,'Capucha','CPC',NULL,'2026-05-07 17:15:29','2026-05-07 17:15:29'),(6,'Modelo Delantal','MDLNT','Para el producto delantal','2026-06-06 23:28:07','2026-06-06 23:28:07');
+INSERT INTO `atributo` VALUES (1,'Manga','MNG',NULL,'2026-05-07 17:15:29','2026-05-07 17:15:29'),(2,'Cuello','CLL',NULL,'2026-05-07 17:15:29','2026-05-07 17:15:29'),(3,'Corte','CRT',NULL,'2026-05-07 17:15:29','2026-05-07 17:15:29'),(4,'Cierre','CRR',NULL,'2026-05-07 17:15:29','2026-05-07 17:15:29'),(5,'Capucha','CPC',NULL,'2026-05-07 17:15:29','2026-05-07 17:15:29'),(6,'Modelo de Delantal','MDLNT','Para el producto delantal','2026-06-06 23:28:07','2026-06-07 16:47:46'),(7,'Modelo de Gorra','MG','Distintos modelos de gorras','2026-06-07 16:46:24','2026-06-07 16:46:24');
 /*!40000 ALTER TABLE `atributo` ENABLE KEYS */;
 
 --
@@ -62,7 +62,7 @@ CREATE TABLE `atributo_valor` (
   UNIQUE KEY `atributo_valor_atributo_id_codigo_unique` (`atributo_id`,`codigo`),
   UNIQUE KEY `atributo_valor_atributo_id_nombre_unique` (`atributo_id`,`nombre`),
   CONSTRAINT `atributo_valor_atributo_id_foreign` FOREIGN KEY (`atributo_id`) REFERENCES `atributo` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=20 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=22 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -70,7 +70,7 @@ CREATE TABLE `atributo_valor` (
 --
 
 /*!40000 ALTER TABLE `atributo_valor` DISABLE KEYS */;
-INSERT INTO `atributo_valor` VALUES (1,1,'Larga','L',1,'2026-05-07 17:15:29','2026-05-07 17:15:29'),(2,1,'Corta','C',2,'2026-05-07 17:15:29','2026-05-07 17:15:29'),(3,2,'Clásico','CLA',1,'2026-05-07 17:15:29','2026-05-07 17:15:29'),(4,2,'Mao','MAO',2,'2026-05-07 17:15:29','2026-05-07 17:15:29'),(5,2,'Con Tapa Botones','CTB',3,'2026-05-07 17:15:29','2026-05-07 17:15:29'),(6,2,'Redondo','R',4,'2026-05-07 17:15:29','2026-05-07 17:15:29'),(7,2,'V','V',5,'2026-05-07 17:15:29','2026-05-07 17:15:29'),(8,3,'Rígido','RIG',1,'2026-05-07 17:15:29','2026-05-07 17:15:29'),(9,3,'Stretch','STR',1,'2026-05-07 17:15:29','2026-05-27 02:50:38'),(10,4,'Cremallera','CRE',1,'2026-05-07 17:15:29','2026-05-07 17:15:29'),(11,4,'Botones','BOT',2,'2026-05-07 17:15:29','2026-05-07 17:15:29'),(12,4,'Cerrado','CER',3,'2026-05-07 17:15:29','2026-05-07 17:15:29'),(13,5,'Con capucha','CCH',1,'2026-05-07 17:15:29','2026-05-07 17:15:29'),(14,5,'Sin capucha','SCH',2,'2026-05-07 17:15:29','2026-05-07 17:15:29'),(15,3,'Clasico','CL',3,'2026-05-27 02:50:25','2026-05-27 02:50:25'),(16,3,'Columbia I','CLM1',4,'2026-05-27 02:51:17','2026-05-27 02:51:17'),(17,3,'Columbia II','CLM2',5,'2026-05-27 02:51:36','2026-05-27 02:51:36'),(18,6,'2 bolsillos','2BL',1,'2026-06-06 23:28:32','2026-06-06 23:28:46'),(19,6,'1 Bolsillo','1BL',2,'2026-06-06 23:29:11','2026-06-06 23:29:11');
+INSERT INTO `atributo_valor` VALUES (1,1,'Larga','L',1,'2026-05-07 17:15:29','2026-05-07 17:15:29'),(2,1,'Corta','C',2,'2026-05-07 17:15:29','2026-05-07 17:15:29'),(3,2,'Clásico','CLA',1,'2026-05-07 17:15:29','2026-05-07 17:15:29'),(4,2,'Mao','MAO',2,'2026-05-07 17:15:29','2026-05-07 17:15:29'),(5,2,'Con Tapa Botones','CTB',3,'2026-05-07 17:15:29','2026-05-07 17:15:29'),(6,2,'Redondo','R',4,'2026-05-07 17:15:29','2026-05-07 17:15:29'),(7,2,'V','V',5,'2026-05-07 17:15:29','2026-05-07 17:15:29'),(8,3,'Rígido','RIG',1,'2026-05-07 17:15:29','2026-05-07 17:15:29'),(9,3,'Stretch','STR',1,'2026-05-07 17:15:29','2026-05-27 02:50:38'),(10,4,'Cremallera','CRE',1,'2026-05-07 17:15:29','2026-05-07 17:15:29'),(11,4,'Botones','BOT',2,'2026-05-07 17:15:29','2026-05-07 17:15:29'),(12,4,'Cerrado','CER',3,'2026-05-07 17:15:29','2026-05-07 17:15:29'),(13,5,'Con capucha','CCH',1,'2026-05-07 17:15:29','2026-05-07 17:15:29'),(14,5,'Sin capucha','SCH',2,'2026-05-07 17:15:29','2026-05-07 17:15:29'),(15,3,'Clasico','CL',3,'2026-05-27 02:50:25','2026-05-27 02:50:25'),(16,3,'Columbia I','CLM1',4,'2026-05-27 02:51:17','2026-05-27 02:51:17'),(17,3,'Columbia II','CLM2',5,'2026-05-27 02:51:36','2026-05-27 02:51:36'),(18,6,'2 bolsillos','2BL',1,'2026-06-06 23:28:32','2026-06-06 23:28:46'),(19,6,'1 Bolsillo','1BL',2,'2026-06-06 23:29:11','2026-06-06 23:29:11'),(20,7,'Gorra Clasica','GC',1,'2026-06-07 16:46:43','2026-06-07 16:46:43'),(21,7,'Nano Cap','NNOCAP',2,'2026-06-07 16:48:19','2026-06-07 16:48:19');
 /*!40000 ALTER TABLE `atributo_valor` ENABLE KEYS */;
 
 --
@@ -320,7 +320,7 @@ CREATE TABLE `cotizacion` (
   KEY `idx_cotizacion_cliente_estado` (`cliente_id`,`estado`),
   CONSTRAINT `cotizacion_cliente_id_foreign` FOREIGN KEY (`cliente_id`) REFERENCES `cliente` (`id`),
   CONSTRAINT `cotizacion_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `user` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -328,7 +328,7 @@ CREATE TABLE `cotizacion` (
 --
 
 /*!40000 ALTER TABLE `cotizacion` DISABLE KEYS */;
-INSERT INTO `cotizacion` VALUES (1,23,'2026-06-06','2026-06-22','Convertida',352.00,563.2892,'Para el director de compañia de tecnologia',NULL,7,'Normal','2026-06-07 03:23:23','2026-06-07 06:02:13',NULL);
+INSERT INTO `cotizacion` VALUES (1,23,'2026-06-06','2026-06-22','Convertida',352.00,563.2892,'Para el director de compañia de tecnologia',NULL,7,'Normal','2026-06-07 03:23:23','2026-06-07 06:02:13',NULL),(2,14,'2026-06-07','2026-06-22','Convertida',70.00,563.2892,'Para encargada de grupo musical',NULL,7,'Normal','2026-06-07 17:22:52','2026-06-07 17:24:05',NULL),(3,42,'2026-06-07','2026-06-22','Convertida',62.00,563.2892,'Para evento',NULL,7,'Normal','2026-06-07 17:25:28','2026-06-07 17:26:16',NULL);
 /*!40000 ALTER TABLE `cotizacion` ENABLE KEYS */;
 
 --
@@ -392,7 +392,7 @@ CREATE TABLE `detalle_cotizacion` (
   CONSTRAINT `detalle_cotizacion_tipo_producto_id_foreign` FOREIGN KEY (`tipo_producto_id`) REFERENCES `tipo_producto` (`id`) ON DELETE SET NULL,
   CONSTRAINT `detalle_cotizaciones_cotizacion_id_foreign` FOREIGN KEY (`cotizacion_id`) REFERENCES `cotizacion` (`id`) ON DELETE CASCADE,
   CONSTRAINT `detalle_cotizaciones_producto_id_foreign` FOREIGN KEY (`producto_id`) REFERENCES `producto` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -400,7 +400,7 @@ CREATE TABLE `detalle_cotizacion` (
 --
 
 /*!40000 ALTER TABLE `detalle_cotizacion` DISABLE KEYS */;
-INSERT INTO `detalle_cotizacion` VALUES (1,1,NULL,10,'{\"id\":10,\"nombre\":\"Gabardina \\/ Dril\",\"codigo\":\"GBD\",\"costo_unitario\":22,\"unidad_medida\":\"Metro\",\"snapshot_at\":\"2026-06-06\"}','{\"Modelo Delantal\":\"2 bolsillos\"}','DLNT-GBD-2BL-001',11,NULL,1,11,11,32.00,'2026-06-07 03:23:23','2026-06-07 03:23:23');
+INSERT INTO `detalle_cotizacion` VALUES (1,1,NULL,10,'{\"id\":10,\"nombre\":\"Gabardina \\/ Dril\",\"codigo\":\"GBD\",\"costo_unitario\":22,\"unidad_medida\":\"Metro\",\"snapshot_at\":\"2026-06-06\"}','{\"Modelo Delantal\":\"2 bolsillos\"}','DLNT-GBD-2BL-001',11,NULL,1,11,11,32.00,'2026-06-07 03:23:23','2026-06-07 03:23:23'),(2,2,NULL,1,'{\"id\":3,\"nombre\":\"Pique\",\"codigo\":\"PIQ\",\"costo_unitario\":50,\"unidad_medida\":\"Kg\",\"snapshot_at\":\"2026-06-07\"}','{\"Manga\":\"Corta\",\"Cuello\":\"Cl\\u00e1sico\",\"Corte\":\"Clasico\"}','CHM-PIQ-C-CLA-CL-001',2,NULL,0,2,11,14.00,'2026-06-07 17:22:52','2026-06-07 17:22:52'),(3,2,NULL,2,'{\"id\":5,\"nombre\":\"Jersey\",\"codigo\":\"AJR\",\"costo_unitario\":3,\"unidad_medida\":\"Kg\",\"snapshot_at\":\"2026-06-07\"}','{\"Manga\":\"Corta\",\"Cuello\":\"Redondo\"}','FRN-AJR-C-R-001',2,NULL,0,2,11,11.00,'2026-06-07 17:22:52','2026-06-07 17:22:52'),(4,2,NULL,9,NULL,'{\"Modelo de Gorra\":\"Gorra Clasica\"}','GO-GC-001',2,NULL,0,2,1,10.00,'2026-06-07 17:22:52','2026-06-07 17:22:52'),(5,3,NULL,1,'{\"id\":3,\"nombre\":\"Pique\",\"codigo\":\"PIQ\",\"costo_unitario\":50,\"unidad_medida\":\"Kg\",\"snapshot_at\":\"2026-06-07\"}','{\"Manga\":\"Corta\",\"Cuello\":\"Redondo\",\"Corte\":\"Clasico\"}','CHM-PIQ-C-R-CL-001',1,NULL,0,6,11,62.00,'2026-06-07 17:25:28','2026-06-07 17:25:28');
 /*!40000 ALTER TABLE `detalle_cotizacion` ENABLE KEYS */;
 
 --
@@ -461,7 +461,7 @@ CREATE TABLE `detalle_orden_insumo` (
   KEY `detalle_orden_insumos_insumo_id_foreign` (`insumo_id`),
   CONSTRAINT `detalle_orden_insumos_insumo_id_foreign` FOREIGN KEY (`insumo_id`) REFERENCES `insumo` (`id`),
   CONSTRAINT `detalle_orden_insumos_orden_produccion_id_foreign` FOREIGN KEY (`orden_produccion_id`) REFERENCES `orden_produccion` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -469,7 +469,7 @@ CREATE TABLE `detalle_orden_insumo` (
 --
 
 /*!40000 ALTER TABLE `detalle_orden_insumo` DISABLE KEYS */;
-INSERT INTO `detalle_orden_insumo` VALUES (1,1,10,16.50,0.00,'2026-06-07 15:54:52','2026-06-07 15:54:52'),(2,1,14,11.00,0.00,'2026-06-07 15:54:52','2026-06-07 15:54:52'),(3,1,16,11.00,0.00,'2026-06-07 15:54:52','2026-06-07 15:54:52'),(4,1,17,1100.00,0.00,'2026-06-07 15:54:52','2026-06-07 15:54:52');
+INSERT INTO `detalle_orden_insumo` VALUES (1,1,10,16.50,0.00,'2026-06-07 15:54:52','2026-06-07 15:54:52'),(2,1,14,11.00,0.00,'2026-06-07 15:54:52','2026-06-07 15:54:52'),(3,1,16,11.00,0.00,'2026-06-07 15:54:52','2026-06-07 15:54:52'),(4,1,17,1100.00,0.00,'2026-06-07 15:54:52','2026-06-07 15:54:52'),(5,2,3,4.00,0.00,'2026-06-07 17:55:58','2026-06-07 17:55:58'),(6,3,5,4.00,0.00,'2026-06-07 17:55:58','2026-06-07 17:55:58'),(8,4,3,3.00,0.00,'2026-06-07 18:02:53','2026-06-07 18:02:53');
 /*!40000 ALTER TABLE `detalle_orden_insumo` ENABLE KEYS */;
 
 --
@@ -506,7 +506,7 @@ CREATE TABLE `detalle_pedido` (
   CONSTRAINT `detalle_pedido_tipo_producto_id_foreign` FOREIGN KEY (`tipo_producto_id`) REFERENCES `tipo_producto` (`id`) ON DELETE SET NULL,
   CONSTRAINT `detalle_pedidos_pedido_id_foreign` FOREIGN KEY (`pedido_id`) REFERENCES `pedido` (`id`) ON DELETE CASCADE,
   CONSTRAINT `detalle_pedidos_producto_id_foreign` FOREIGN KEY (`producto_id`) REFERENCES `producto` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -514,7 +514,7 @@ CREATE TABLE `detalle_pedido` (
 --
 
 /*!40000 ALTER TABLE `detalle_pedido` DISABLE KEYS */;
-INSERT INTO `detalle_pedido` VALUES (1,1,NULL,10,'{\"id\":10,\"nombre\":\"Gabardina \\/ Dril\",\"codigo\":\"GBD\",\"costo_unitario\":22,\"unidad_medida\":\"Metro\",\"snapshot_at\":\"2026-06-07\"}','{\"Modelo Delantal\":\"2 bolsillos\"}','DLNT-GBD-2BL-001',11,NULL,1,11,11,32.00,'2026-06-07 06:02:13','2026-06-07 06:02:13');
+INSERT INTO `detalle_pedido` VALUES (1,1,NULL,10,'{\"id\":10,\"nombre\":\"Gabardina \\/ Dril\",\"codigo\":\"GBD\",\"costo_unitario\":22,\"unidad_medida\":\"Metro\",\"snapshot_at\":\"2026-06-07\"}','{\"Modelo Delantal\":\"2 bolsillos\"}','DLNT-GBD-2BL-001',11,NULL,1,11,11,32.00,'2026-06-07 06:02:13','2026-06-07 06:02:13'),(2,2,NULL,1,'{\"id\":3,\"nombre\":\"Pique\",\"codigo\":\"PIQ\",\"costo_unitario\":50,\"unidad_medida\":\"Kg\",\"snapshot_at\":\"2026-06-07\"}','{\"Manga\":\"Corta\",\"Cuello\":\"Cl\\u00e1sico\",\"Corte\":\"Clasico\"}','CHM-PIQ-C-CLA-CL-001',2,NULL,0,2,11,14.00,'2026-06-07 17:24:05','2026-06-07 17:24:05'),(3,2,NULL,2,'{\"id\":5,\"nombre\":\"Jersey\",\"codigo\":\"AJR\",\"costo_unitario\":3,\"unidad_medida\":\"Kg\",\"snapshot_at\":\"2026-06-07\"}','{\"Manga\":\"Corta\",\"Cuello\":\"Redondo\"}','FRN-AJR-C-R-001',2,NULL,0,2,11,11.00,'2026-06-07 17:24:05','2026-06-07 17:24:05'),(4,2,NULL,9,NULL,'{\"Modelo de Gorra\":\"Gorra Clasica\"}','GO-GC-001',2,NULL,0,2,1,10.00,'2026-06-07 17:24:05','2026-06-07 17:24:05'),(5,3,NULL,1,'{\"id\":3,\"nombre\":\"Pique\",\"codigo\":\"PIQ\",\"costo_unitario\":50,\"unidad_medida\":\"Kg\",\"snapshot_at\":\"2026-06-07\"}','{\"Manga\":\"Corta\",\"Cuello\":\"Redondo\",\"Corte\":\"Clasico\"}','CHM-PIQ-C-R-CL-001',1,NULL,0,6,11,62.00,'2026-06-07 17:26:16','2026-06-07 17:26:16');
 /*!40000 ALTER TABLE `detalle_pedido` ENABLE KEYS */;
 
 --
@@ -757,7 +757,7 @@ CREATE TABLE `migrations` (
   `migration` varchar(191) COLLATE utf8mb4_unicode_ci NOT NULL,
   `batch` int NOT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=129 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=130 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -765,7 +765,7 @@ CREATE TABLE `migrations` (
 --
 
 /*!40000 ALTER TABLE `migrations` DISABLE KEYS */;
-INSERT INTO `migrations` VALUES (1,'2014_10_12_000000_create_users_table',1),(2,'2014_10_12_100000_create_password_resets_table',1),(3,'2019_08_19_000000_create_failed_jobs_table',1),(4,'2019_12_14_000001_create_personal_access_tokens_table',1),(5,'2025_03_01_000000_create_sistema_produccion_tables',1),(6,'2025_06_14_091624_create_pedidos_table',1),(7,'2025_06_14_091726_create_detalle_pedidos_table',1),(8,'2025_06_14_094205_add_fecha_entrega_estimada_to_pedidos_table',1),(9,'2025_06_14_100214_add_rif_to_pedidos_table',1),(10,'2025_06_14_102229_remove_unique_rif_from_pedidos_table',1),(11,'2025_06_14_103232_rename_rif_to_ci_rif_in_pedidos_table',1),(12,'2025_06_14_112859_add_description_and_logo_fields_to_detalle_pedidos_table',1),(13,'2025_06_14_114729_add_talla_and_color_to_detalle_pedidos_table',1),(14,'2025_06_14_115649_update_talla_enum_in_detalle_pedidos_table',1),(15,'2025_06_14_123551_force_update_talla_enum_in_detalle_pedidos_table',1),(16,'2025_06_14_210039_create_detalle_pedido_insumo_table',1),(17,'2025_06_15_191252_create_bancos_table',1),(18,'2025_06_15_191339_add_payment_fields_to_pedidos_table',1),(19,'2025_06_19_143226_create_clientes_table',1),(20,'2025_06_19_143359_add_cliente_id_to_pedidos_table',1),(21,'2025_06_20_000001_create_cotizaciones_table',1),(22,'2025_06_20_000002_create_detalle_cotizaciones_table',1),(23,'2025_06_21_112333_add_deleted_at_to_clientes_table',1),(24,'2025_06_26_221106_remove_prioridad_column_from_cotizaciones_table',1),(25,'2025_12_04_134221_update_user_role_enum',1),(26,'2025_12_04_150028_rename_all_tables_to_singular_final',2),(27,'2025_12_04_153326_add_missing_columns_to_cliente_table',3),(28,'2025_12_04_154406_create_persona_table',4),(29,'2025_12_04_154408_create_empleado_table',4),(30,'2025_12_04_154409_add_persona_id_to_user_table',4),(31,'2025_12_04_154448_migrate_users_to_persona',4),(32,'2025_12_04_154449_create_empleados_from_supervisores',4),(33,'2025_12_05_165423_rename_ruc_to_rif_in_proveedor_table',5),(34,'2025_12_08_151400_add_cliente_id_to_cotizacion',6),(36,'2025_12_08_153400_normalize_cotizacion_remove_redundant_cliente_fields',7),(37,'2025_12_08_154900_normalize_cliente_with_persona',8),(38,'2025_12_09_170406_remove_payment_columns_from_cotizacion_table',9),(39,'2025_12_10_143835_create_telefono_table',10),(40,'2025_12_10_144011_create_direccion_table',10),(41,'2025_12_10_144137_migrate_telefono_direccion_data_from_persona',10),(42,'2025_12_10_164505_remove_telefono_direccion_ciudad_from_persona_table',11),(43,'2025_12_10_173653_add_cliente_id_to_pedido_table',12),(44,'2025_12_10_194225_remove_legacy_cliente_columns_from_pedido_table',13),(45,'2025_12_15_150500_make_color_nullable_in_producto_table',14),(46,'2025_12_15_155200_make_material_talla_nullable_in_producto_table',15),(47,'2025_12_15_160400_drop_material_talla_from_producto_table',16),(48,'2025_12_15_164400_create_tasa_cambio_table',17),(49,'2025_12_16_134300_create_tipo_producto_table',18),(50,'2025_12_16_134400_add_tipo_and_codigo_to_producto_table',18),(51,'2025_12_18_134800_add_pedido_id_and_logo_to_orden_produccion',19),(52,'2025_12_19_152000_add_cotizacion_id_to_pedido',20),(53,'2026_01_17_225337_rename_estado_to_estatus_and_add_estado_territorial',21),(54,'2026_01_18_160000_add_tipo_proveedor_and_persona_id_to_proveedor',22),(55,'2026_01_18_162000_make_proveedor_fields_nullable',23),(56,'2026_01_19_145036_add_separate_bank_fields_to_pedidos_table',24),(57,'2026_02_19_200000_add_unique_index_to_pedido_cotizacion_id',25),(58,'2026_02_22_125718_add_notas_to_cotizacion_table',26),(59,'2026_02_22_143623_create_logos_table',27),(60,'2026_02_23_140000_create_colores_table',28),(61,'2026_02_23_170000_create_tallas_table',29),(62,'2026_02_23_201000_create_bordado_ubicaciones_table',30),(63,'2026_02_23_201100_create_detalle_cotizacion_bordados_table',30),(64,'2026_02_23_201200_create_detalle_pedido_bordados_table',30),(65,'2026_02_23_201300_migrate_legacy_bordado_fields_and_drop_columns',30),(66,'2026_02_23_230000_add_nombre_logo_aplicado_to_detalle_bordados_tables',31),(67,'2026_03_06_155710_rename_operario_id_to_empleado_id_in_produccion_diaria',32),(68,'2026_03_19_000001_cr03_enum_estado_prioridad_pedido_cotizacion',33),(69,'2026_03_19_000002_cr01_color_talla_fk_detalle_cotizacion_pedido',34),(70,'2026_03_19_000003_me01_indices_faltantes',35),(71,'2026_03_19_000004_me04_fecha_produccion_produccion_diaria',36),(72,'2026_03_19_000005_me06_fecha_fin_real_orden_produccion',37),(73,'2026_03_19_000006_batch_me05_me03_ba01_to_ba06',38),(74,'2026_03_19_000007_cr06_created_by_on_delete_restrict',39),(75,'2026_03_19_000008_ba03_rename_estado_persona_to_estado_geografico',40),(76,'2026_03_19_000009_cr05_logo_id_fk_orden_produccion',41),(77,'2026_03_19_000010_cr02_normalizar_proveedores_juridicos',42),(78,'2026_03_19_200001_cr07_cr01_softdeletes_user_restrict_fks',43),(79,'2026_03_19_200002_cr06_cr05_fks_banco_pedido_unique_persona',43),(80,'2026_03_19_200003_cr02_cr03_me03_cascade_to_restrict',43),(81,'2026_03_19_200004_me01_me02_me05_ba03_unify_persona_fks',43),(82,'2026_03_19_200005_me04_ba01_composite_indexes',43),(83,'2026_03_19_200006_ba05_enum_cancelada_cotizacion',44),(84,'2026_03_19_200007_me06_rename_plural_tables_to_singular',45),(85,'2026_03_19_200008_ba02_softdeletes_catalogos_maestros',46),(86,'2026_03_19_200009_ba04_create_pago_pedido_migrate_data',47),(87,'2026_03_19_200010_ba04_drop_flat_payment_columns_from_pedido',48),(88,'2026_03_19_200011_me07_logo_id_fk_bordados_drop_nombre_logo',49),(89,'2026_04_14_140742_normalize_unidad_medida_in_insumos',50),(90,'2026_04_21_000001_create_departamento_table',51),(91,'2026_04_21_000002_create_cargo_table',51),(92,'2026_04_21_000003_normalize_departamento_cargo_in_empleado',51),(93,'2026_04_26_000001_create_user_recovery_question_table',52),(94,'2026_04_26_000002_create_recovery_attempt_table',52),(95,'2026_04_26_000003_add_recovery_columns_to_user_table',52),(96,'2026_04_26_000004_add_password_reset_flag_to_user_table',53),(97,'2026_05_07_100000_create_atributo_table',54),(98,'2026_05_07_100001_create_atributo_valor_table',54),(99,'2026_05_07_100002_create_tipo_producto_atributo_table',54),(100,'2026_05_07_100003_create_producto_atributo_valor_table',54),(101,'2026_05_07_100004_add_codigo_to_insumo',54),(102,'2026_05_07_100005_add_precio_confeccion_and_requiere_tela_to_tipo_producto',54),(103,'2026_05_07_100006_add_insumo_tela_and_atributos_to_producto',54),(104,'2026_05_07_100007_add_snapshots_to_detalle_cotizacion',54),(105,'2026_05_07_100008_add_snapshots_to_detalle_pedido',54),(106,'2026_05_07_100009_modelo_nullable_in_producto',55),(107,'2026_05_07_100010_rename_codigo_prefijo_to_prefijo_in_tipo_producto',56),(108,'2026_05_07_100011_drop_modelo_from_producto',56),(109,'2026_05_27_220125_op_redesign_orden_produccion_empleado_detalle',57),(110,'2026_05_27_222657_op_drop_produccion_diaria_add_defectuosa',58),(111,'2026_05_28_004004_add_is_inventoriable_to_insumo_table',59),(112,'2026_05_28_185713_drop_proveedor_id_from_insumo',60),(113,'2026_05_28_191504_create_tipo_producto_insumo_table',61),(114,'2026_05_28_194636_add_consumo_tela_por_unidad_to_tipo_producto',62),(115,'2026_05_29_110403_drop_costo_estimado_from_orden_produccion',63),(116,'2026_05_31_000000_add_stock_maximo_to_insumo_table',64),(117,'2026_06_01_142640_add_tasa_y_condiciones_to_cotizacion_table',65),(118,'2026_06_02_000001_create_compra_table',66),(119,'2026_06_02_000002_create_compra_detalle_table',66),(120,'2026_06_03_000001_add_auditoria_anulacion_to_compra_table',67),(122,'2026_06_03_000002_add_clonada_to_compra_table',68),(123,'2026_06_03_220000_create_tipo_producto_tela_table',69),(124,'2026_06_03_220100_detalle_nullable_producto_add_tipo',69),(125,'2026_06_03_220200_add_sku_snapshot_to_detalles',69),(126,'2026_06_03_220300_orden_produccion_nullable_producto',69),(127,'2026_06_06_000001_add_imagen_to_tipo_producto_table',70),(128,'2026_06_06_000002_create_tipo_insumo_and_alter_insumo_tipo',71);
+INSERT INTO `migrations` VALUES (1,'2014_10_12_000000_create_users_table',1),(2,'2014_10_12_100000_create_password_resets_table',1),(3,'2019_08_19_000000_create_failed_jobs_table',1),(4,'2019_12_14_000001_create_personal_access_tokens_table',1),(5,'2025_03_01_000000_create_sistema_produccion_tables',1),(6,'2025_06_14_091624_create_pedidos_table',1),(7,'2025_06_14_091726_create_detalle_pedidos_table',1),(8,'2025_06_14_094205_add_fecha_entrega_estimada_to_pedidos_table',1),(9,'2025_06_14_100214_add_rif_to_pedidos_table',1),(10,'2025_06_14_102229_remove_unique_rif_from_pedidos_table',1),(11,'2025_06_14_103232_rename_rif_to_ci_rif_in_pedidos_table',1),(12,'2025_06_14_112859_add_description_and_logo_fields_to_detalle_pedidos_table',1),(13,'2025_06_14_114729_add_talla_and_color_to_detalle_pedidos_table',1),(14,'2025_06_14_115649_update_talla_enum_in_detalle_pedidos_table',1),(15,'2025_06_14_123551_force_update_talla_enum_in_detalle_pedidos_table',1),(16,'2025_06_14_210039_create_detalle_pedido_insumo_table',1),(17,'2025_06_15_191252_create_bancos_table',1),(18,'2025_06_15_191339_add_payment_fields_to_pedidos_table',1),(19,'2025_06_19_143226_create_clientes_table',1),(20,'2025_06_19_143359_add_cliente_id_to_pedidos_table',1),(21,'2025_06_20_000001_create_cotizaciones_table',1),(22,'2025_06_20_000002_create_detalle_cotizaciones_table',1),(23,'2025_06_21_112333_add_deleted_at_to_clientes_table',1),(24,'2025_06_26_221106_remove_prioridad_column_from_cotizaciones_table',1),(25,'2025_12_04_134221_update_user_role_enum',1),(26,'2025_12_04_150028_rename_all_tables_to_singular_final',2),(27,'2025_12_04_153326_add_missing_columns_to_cliente_table',3),(28,'2025_12_04_154406_create_persona_table',4),(29,'2025_12_04_154408_create_empleado_table',4),(30,'2025_12_04_154409_add_persona_id_to_user_table',4),(31,'2025_12_04_154448_migrate_users_to_persona',4),(32,'2025_12_04_154449_create_empleados_from_supervisores',4),(33,'2025_12_05_165423_rename_ruc_to_rif_in_proveedor_table',5),(34,'2025_12_08_151400_add_cliente_id_to_cotizacion',6),(36,'2025_12_08_153400_normalize_cotizacion_remove_redundant_cliente_fields',7),(37,'2025_12_08_154900_normalize_cliente_with_persona',8),(38,'2025_12_09_170406_remove_payment_columns_from_cotizacion_table',9),(39,'2025_12_10_143835_create_telefono_table',10),(40,'2025_12_10_144011_create_direccion_table',10),(41,'2025_12_10_144137_migrate_telefono_direccion_data_from_persona',10),(42,'2025_12_10_164505_remove_telefono_direccion_ciudad_from_persona_table',11),(43,'2025_12_10_173653_add_cliente_id_to_pedido_table',12),(44,'2025_12_10_194225_remove_legacy_cliente_columns_from_pedido_table',13),(45,'2025_12_15_150500_make_color_nullable_in_producto_table',14),(46,'2025_12_15_155200_make_material_talla_nullable_in_producto_table',15),(47,'2025_12_15_160400_drop_material_talla_from_producto_table',16),(48,'2025_12_15_164400_create_tasa_cambio_table',17),(49,'2025_12_16_134300_create_tipo_producto_table',18),(50,'2025_12_16_134400_add_tipo_and_codigo_to_producto_table',18),(51,'2025_12_18_134800_add_pedido_id_and_logo_to_orden_produccion',19),(52,'2025_12_19_152000_add_cotizacion_id_to_pedido',20),(53,'2026_01_17_225337_rename_estado_to_estatus_and_add_estado_territorial',21),(54,'2026_01_18_160000_add_tipo_proveedor_and_persona_id_to_proveedor',22),(55,'2026_01_18_162000_make_proveedor_fields_nullable',23),(56,'2026_01_19_145036_add_separate_bank_fields_to_pedidos_table',24),(57,'2026_02_19_200000_add_unique_index_to_pedido_cotizacion_id',25),(58,'2026_02_22_125718_add_notas_to_cotizacion_table',26),(59,'2026_02_22_143623_create_logos_table',27),(60,'2026_02_23_140000_create_colores_table',28),(61,'2026_02_23_170000_create_tallas_table',29),(62,'2026_02_23_201000_create_bordado_ubicaciones_table',30),(63,'2026_02_23_201100_create_detalle_cotizacion_bordados_table',30),(64,'2026_02_23_201200_create_detalle_pedido_bordados_table',30),(65,'2026_02_23_201300_migrate_legacy_bordado_fields_and_drop_columns',30),(66,'2026_02_23_230000_add_nombre_logo_aplicado_to_detalle_bordados_tables',31),(67,'2026_03_06_155710_rename_operario_id_to_empleado_id_in_produccion_diaria',32),(68,'2026_03_19_000001_cr03_enum_estado_prioridad_pedido_cotizacion',33),(69,'2026_03_19_000002_cr01_color_talla_fk_detalle_cotizacion_pedido',34),(70,'2026_03_19_000003_me01_indices_faltantes',35),(71,'2026_03_19_000004_me04_fecha_produccion_produccion_diaria',36),(72,'2026_03_19_000005_me06_fecha_fin_real_orden_produccion',37),(73,'2026_03_19_000006_batch_me05_me03_ba01_to_ba06',38),(74,'2026_03_19_000007_cr06_created_by_on_delete_restrict',39),(75,'2026_03_19_000008_ba03_rename_estado_persona_to_estado_geografico',40),(76,'2026_03_19_000009_cr05_logo_id_fk_orden_produccion',41),(77,'2026_03_19_000010_cr02_normalizar_proveedores_juridicos',42),(78,'2026_03_19_200001_cr07_cr01_softdeletes_user_restrict_fks',43),(79,'2026_03_19_200002_cr06_cr05_fks_banco_pedido_unique_persona',43),(80,'2026_03_19_200003_cr02_cr03_me03_cascade_to_restrict',43),(81,'2026_03_19_200004_me01_me02_me05_ba03_unify_persona_fks',43),(82,'2026_03_19_200005_me04_ba01_composite_indexes',43),(83,'2026_03_19_200006_ba05_enum_cancelada_cotizacion',44),(84,'2026_03_19_200007_me06_rename_plural_tables_to_singular',45),(85,'2026_03_19_200008_ba02_softdeletes_catalogos_maestros',46),(86,'2026_03_19_200009_ba04_create_pago_pedido_migrate_data',47),(87,'2026_03_19_200010_ba04_drop_flat_payment_columns_from_pedido',48),(88,'2026_03_19_200011_me07_logo_id_fk_bordados_drop_nombre_logo',49),(89,'2026_04_14_140742_normalize_unidad_medida_in_insumos',50),(90,'2026_04_21_000001_create_departamento_table',51),(91,'2026_04_21_000002_create_cargo_table',51),(92,'2026_04_21_000003_normalize_departamento_cargo_in_empleado',51),(93,'2026_04_26_000001_create_user_recovery_question_table',52),(94,'2026_04_26_000002_create_recovery_attempt_table',52),(95,'2026_04_26_000003_add_recovery_columns_to_user_table',52),(96,'2026_04_26_000004_add_password_reset_flag_to_user_table',53),(97,'2026_05_07_100000_create_atributo_table',54),(98,'2026_05_07_100001_create_atributo_valor_table',54),(99,'2026_05_07_100002_create_tipo_producto_atributo_table',54),(100,'2026_05_07_100003_create_producto_atributo_valor_table',54),(101,'2026_05_07_100004_add_codigo_to_insumo',54),(102,'2026_05_07_100005_add_precio_confeccion_and_requiere_tela_to_tipo_producto',54),(103,'2026_05_07_100006_add_insumo_tela_and_atributos_to_producto',54),(104,'2026_05_07_100007_add_snapshots_to_detalle_cotizacion',54),(105,'2026_05_07_100008_add_snapshots_to_detalle_pedido',54),(106,'2026_05_07_100009_modelo_nullable_in_producto',55),(107,'2026_05_07_100010_rename_codigo_prefijo_to_prefijo_in_tipo_producto',56),(108,'2026_05_07_100011_drop_modelo_from_producto',56),(109,'2026_05_27_220125_op_redesign_orden_produccion_empleado_detalle',57),(110,'2026_05_27_222657_op_drop_produccion_diaria_add_defectuosa',58),(111,'2026_05_28_004004_add_is_inventoriable_to_insumo_table',59),(112,'2026_05_28_185713_drop_proveedor_id_from_insumo',60),(113,'2026_05_28_191504_create_tipo_producto_insumo_table',61),(114,'2026_05_28_194636_add_consumo_tela_por_unidad_to_tipo_producto',62),(115,'2026_05_29_110403_drop_costo_estimado_from_orden_produccion',63),(116,'2026_05_31_000000_add_stock_maximo_to_insumo_table',64),(117,'2026_06_01_142640_add_tasa_y_condiciones_to_cotizacion_table',65),(118,'2026_06_02_000001_create_compra_table',66),(119,'2026_06_02_000002_create_compra_detalle_table',66),(120,'2026_06_03_000001_add_auditoria_anulacion_to_compra_table',67),(122,'2026_06_03_000002_add_clonada_to_compra_table',68),(123,'2026_06_03_220000_create_tipo_producto_tela_table',69),(124,'2026_06_03_220100_detalle_nullable_producto_add_tipo',69),(125,'2026_06_03_220200_add_sku_snapshot_to_detalles',69),(126,'2026_06_03_220300_orden_produccion_nullable_producto',69),(127,'2026_06_06_000001_add_imagen_to_tipo_producto_table',70),(128,'2026_06_06_000002_create_tipo_insumo_and_alter_insumo_tipo',71),(129,'2026_06_07_000001_add_requiere_produccion_to_tipo_producto',72);
 /*!40000 ALTER TABLE `migrations` ENABLE KEYS */;
 
 --
@@ -842,7 +842,7 @@ CREATE TABLE `orden_produccion` (
   CONSTRAINT `orden_produccion_pedido_id_foreign` FOREIGN KEY (`pedido_id`) REFERENCES `pedido` (`id`) ON DELETE SET NULL,
   CONSTRAINT `ordenes_produccion_created_by_foreign` FOREIGN KEY (`created_by`) REFERENCES `user` (`id`),
   CONSTRAINT `ordenes_produccion_producto_id_foreign` FOREIGN KEY (`producto_id`) REFERENCES `producto` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -850,7 +850,7 @@ CREATE TABLE `orden_produccion` (
 --
 
 /*!40000 ALTER TABLE `orden_produccion` DISABLE KEYS */;
-INSERT INTO `orden_produccion` VALUES (1,1,1,NULL,10,11,0,0,'2026-06-08','2026-06-15',NULL,'Pendiente','notificar a departamente administrativo cuando finalice la produccion de este producto',7,'2026-06-07 15:54:52','2026-06-07 15:54:52',NULL);
+INSERT INTO `orden_produccion` VALUES (1,1,1,NULL,10,11,0,0,'2026-06-08','2026-06-15',NULL,'Pendiente','notificar a departamente administrativo cuando finalice la produccion de este producto',7,'2026-06-07 15:54:52','2026-06-07 15:54:52',NULL),(2,2,2,NULL,12,2,0,0,'2026-06-07','2026-06-20',NULL,'Pendiente',NULL,7,'2026-06-07 17:55:58','2026-06-07 17:55:58',NULL),(3,2,3,NULL,11,2,0,0,'2026-06-07','2026-06-20',NULL,'Pendiente',NULL,7,'2026-06-07 17:55:58','2026-06-07 17:55:58',NULL),(4,3,5,NULL,3,1,0,0,'2026-06-07','2026-06-21',NULL,'Pendiente','notas',7,'2026-06-07 17:57:45','2026-06-07 18:02:53',NULL);
 /*!40000 ALTER TABLE `orden_produccion` ENABLE KEYS */;
 
 --
@@ -874,7 +874,7 @@ CREATE TABLE `pago_pedido` (
   KEY `idx_pago_pedido_metodo` (`pedido_id`,`metodo`),
   CONSTRAINT `pago_pedido_banco_id_foreign` FOREIGN KEY (`banco_id`) REFERENCES `banco` (`id`) ON DELETE SET NULL,
   CONSTRAINT `pago_pedido_pedido_id_foreign` FOREIGN KEY (`pedido_id`) REFERENCES `pedido` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -882,7 +882,7 @@ CREATE TABLE `pago_pedido` (
 --
 
 /*!40000 ALTER TABLE `pago_pedido` DISABLE KEYS */;
-INSERT INTO `pago_pedido` VALUES (1,1,'efectivo',100.00,NULL,NULL,'2026-06-07 06:02:12','2026-06-07 06:02:12');
+INSERT INTO `pago_pedido` VALUES (1,1,'efectivo',100.00,NULL,NULL,'2026-06-07 06:02:12','2026-06-07 06:02:12'),(2,2,'efectivo',40.00,NULL,NULL,'2026-06-07 17:24:05','2026-06-07 17:24:05'),(3,3,'efectivo',30.00,NULL,NULL,'2026-06-07 17:26:16','2026-06-07 17:26:16');
 /*!40000 ALTER TABLE `pago_pedido` ENABLE KEYS */;
 
 --
@@ -940,7 +940,7 @@ CREATE TABLE `pedido` (
   CONSTRAINT `pedido_cliente_id_foreign` FOREIGN KEY (`cliente_id`) REFERENCES `cliente` (`id`) ON DELETE SET NULL,
   CONSTRAINT `pedido_cotizacion_id_foreign` FOREIGN KEY (`cotizacion_id`) REFERENCES `cotizacion` (`id`) ON DELETE SET NULL,
   CONSTRAINT `pedido_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `user` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -948,7 +948,7 @@ CREATE TABLE `pedido` (
 --
 
 /*!40000 ALTER TABLE `pedido` DISABLE KEYS */;
-INSERT INTO `pedido` VALUES (1,1,23,'2026-06-07','2026-06-22','Pendiente','Normal',352.00,100.00,7,'2026-06-07 06:02:12','2026-06-07 06:02:12',NULL);
+INSERT INTO `pedido` VALUES (1,1,23,'2026-06-07','2026-06-22','Pendiente','Normal',352.00,100.00,7,'2026-06-07 06:02:12','2026-06-07 06:02:12',NULL),(2,2,14,'2026-06-07','2026-06-22','Pendiente','Normal',70.00,40.00,7,'2026-06-07 17:24:05','2026-06-07 17:24:05',NULL),(3,3,42,'2026-06-07','2026-06-22','Pendiente','Normal',62.00,30.00,7,'2026-06-07 17:26:16','2026-06-07 17:26:16',NULL);
 /*!40000 ALTER TABLE `pedido` ENABLE KEYS */;
 
 --
@@ -1307,6 +1307,7 @@ CREATE TABLE `tipo_producto` (
   `imagen` varchar(191) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `precio_confeccion` decimal(10,2) NOT NULL DEFAULT '0.00',
   `requiere_tela` tinyint(1) NOT NULL DEFAULT '1',
+  `requiere_produccion` tinyint(1) NOT NULL DEFAULT '1',
   `consumo_tela_por_unidad` decimal(8,2) NOT NULL DEFAULT '0.00',
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
@@ -1321,7 +1322,7 @@ CREATE TABLE `tipo_producto` (
 --
 
 /*!40000 ALTER TABLE `tipo_producto` DISABLE KEYS */;
-INSERT INTO `tipo_producto` VALUES (1,'Chemise','CHM','Camisas tipo polo con cuello','productoimg/tipos/6a259a4c388c5.jpg',12.00,1,0.00,'2025-12-16 17:48:48','2026-06-07 16:20:28',NULL),(2,'Franela','FRN','Franelas cuello redondo o V','productoimg/tipos/6a259afddafc4.jpg',8.00,1,0.00,'2025-12-16 17:48:48','2026-06-07 16:23:25',NULL),(3,'Camisa','CAM','Camisas formales','productoimg/tipos/6a2596791397d.jpg',15.00,1,2.00,'2025-12-16 17:48:48','2026-06-07 16:04:09',NULL),(4,'Pantalón','PNT','Pantalones de trabajo o formales','productoimg/tipos/6a259be89184c.jpg',18.00,0,0.00,'2025-12-16 17:48:48','2026-06-07 16:27:20',NULL),(5,'Chaqueta','CHQ','Chaquetas industriales o formales','productoimg/tipos/6a2599d8769af.jpg',25.00,1,0.00,'2025-12-16 17:48:48','2026-06-07 16:18:32',NULL),(6,'Overol','OVR','Overoles y monos de trabajo','productoimg/tipos/6a259b83d8470.jpg',0.00,1,0.00,'2025-12-16 17:48:48','2026-06-07 16:25:39',NULL),(7,'Chemise Escolar','ESC','Prendas para uniformes escolares','productoimg/tipos/6a259a90459fe.jpg',0.00,1,0.00,'2025-12-16 17:48:48','2026-06-07 16:21:36',NULL),(8,'Accesorio','ACC','delantales, chalecos, etc.','productoimg/tipos/6a2598f47744f.jpg',0.00,0,0.00,'2025-12-16 17:48:48','2026-06-07 16:29:29','2026-06-07 16:29:29'),(9,'Gorra','GO','Clasica','productoimg/tipos/6a259869d6d86.jpg',0.00,0,0.00,'2026-05-03 21:27:03','2026-06-07 16:12:25',NULL),(10,'Delantal','DLNT','Para carniceros, caleteros, chefs, entre otros','productoimg/tipos/6a2596ebb12cf.jpg',7.00,1,1.50,'2026-06-07 02:02:23','2026-06-07 16:06:03',NULL);
+INSERT INTO `tipo_producto` VALUES (1,'Chemise','CHM','Camisas tipo polo con cuello','productoimg/tipos/6a259a4c388c5.jpg',12.00,1,1,0.00,'2025-12-16 17:48:48','2026-06-07 16:20:28',NULL),(2,'Franela','FRN','Franelas cuello redondo o V','productoimg/tipos/6a259afddafc4.jpg',8.00,1,1,0.00,'2025-12-16 17:48:48','2026-06-07 16:23:25',NULL),(3,'Camisa','CAM','Camisas formales','productoimg/tipos/6a2596791397d.jpg',15.00,1,1,2.00,'2025-12-16 17:48:48','2026-06-07 16:04:09',NULL),(4,'Pantalón','PNT','Pantalones de trabajo o formales','productoimg/tipos/6a259be89184c.jpg',18.00,0,1,0.00,'2025-12-16 17:48:48','2026-06-07 16:27:20',NULL),(5,'Chaqueta','CHQ','Chaquetas industriales o formales','productoimg/tipos/6a2599d8769af.jpg',25.00,1,1,0.00,'2025-12-16 17:48:48','2026-06-07 16:18:32',NULL),(6,'Overol','OVR','Overoles y monos de trabajo','productoimg/tipos/6a259b83d8470.jpg',0.00,1,1,0.00,'2025-12-16 17:48:48','2026-06-07 16:25:39',NULL),(7,'Chemise Escolar','ESC','Prendas para uniformes escolares','productoimg/tipos/6a259a90459fe.jpg',0.00,1,1,0.00,'2025-12-16 17:48:48','2026-06-07 16:21:36',NULL),(8,'Accesorio','ACC','delantales, chalecos, etc.','productoimg/tipos/6a2598f47744f.jpg',0.00,0,1,0.00,'2025-12-16 17:48:48','2026-06-07 16:29:29','2026-06-07 16:29:29'),(9,'Gorra','GO','Clasica','productoimg/tipos/6a259869d6d86.jpg',10.00,0,0,0.00,'2026-05-03 21:27:03','2026-06-07 17:09:23',NULL),(10,'Delantal','DLNT','Para carniceros, caleteros, chefs, entre otros','productoimg/tipos/6a2596ebb12cf.jpg',7.00,1,1,1.50,'2026-06-07 02:02:23','2026-06-07 16:06:03',NULL);
 /*!40000 ALTER TABLE `tipo_producto` ENABLE KEYS */;
 
 --
@@ -1344,7 +1345,7 @@ CREATE TABLE `tipo_producto_atributo` (
   KEY `tipo_producto_atributo_atributo_id_foreign` (`atributo_id`),
   CONSTRAINT `tipo_producto_atributo_atributo_id_foreign` FOREIGN KEY (`atributo_id`) REFERENCES `atributo` (`id`) ON DELETE CASCADE,
   CONSTRAINT `tipo_producto_atributo_tipo_producto_id_foreign` FOREIGN KEY (`tipo_producto_id`) REFERENCES `tipo_producto` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=13 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=14 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1352,7 +1353,7 @@ CREATE TABLE `tipo_producto_atributo` (
 --
 
 /*!40000 ALTER TABLE `tipo_producto_atributo` DISABLE KEYS */;
-INSERT INTO `tipo_producto_atributo` VALUES (1,3,1,1,1,'2026-05-07 17:15:29','2026-06-07 16:04:09'),(2,3,2,1,2,'2026-05-07 17:15:29','2026-06-07 16:04:09'),(3,2,1,1,1,'2026-05-07 17:15:29','2026-06-07 16:23:25'),(4,2,2,1,2,'2026-05-07 17:15:29','2026-06-07 16:23:25'),(5,1,1,1,1,'2026-05-07 17:15:29','2026-06-07 16:20:28'),(6,1,2,1,2,'2026-05-07 17:15:29','2026-06-07 16:20:28'),(7,4,3,1,1,'2026-05-07 17:15:29','2026-06-07 16:27:20'),(8,5,4,1,1,'2026-05-07 17:15:29','2026-06-07 16:18:32'),(9,5,5,1,2,'2026-05-07 17:15:29','2026-06-07 16:18:32'),(10,3,3,1,3,'2026-05-14 14:29:56','2026-06-07 16:04:09'),(11,1,3,1,3,'2026-05-14 14:31:53','2026-06-07 16:20:28'),(12,10,6,1,1,'2026-06-07 02:02:23','2026-06-07 16:06:03');
+INSERT INTO `tipo_producto_atributo` VALUES (1,3,1,1,1,'2026-05-07 17:15:29','2026-06-07 16:04:09'),(2,3,2,1,2,'2026-05-07 17:15:29','2026-06-07 16:04:09'),(3,2,1,1,1,'2026-05-07 17:15:29','2026-06-07 16:23:25'),(4,2,2,1,2,'2026-05-07 17:15:29','2026-06-07 16:23:25'),(5,1,1,1,1,'2026-05-07 17:15:29','2026-06-07 16:20:28'),(6,1,2,1,2,'2026-05-07 17:15:29','2026-06-07 16:20:28'),(7,4,3,1,1,'2026-05-07 17:15:29','2026-06-07 16:27:20'),(8,5,4,1,1,'2026-05-07 17:15:29','2026-06-07 16:18:32'),(9,5,5,1,2,'2026-05-07 17:15:29','2026-06-07 16:18:32'),(10,3,3,1,3,'2026-05-14 14:29:56','2026-06-07 16:04:09'),(11,1,3,1,3,'2026-05-14 14:31:53','2026-06-07 16:20:28'),(12,10,6,1,1,'2026-06-07 02:02:23','2026-06-07 16:06:03'),(13,9,7,1,1,'2026-06-07 16:46:24','2026-06-07 17:09:23');
 /*!40000 ALTER TABLE `tipo_producto_atributo` ENABLE KEYS */;
 
 --
@@ -1497,4 +1498,4 @@ INSERT INTO `user_recovery_question` VALUES (1,1,1,'$2y$12$O.578XXRW1QdIHrZS9Qi9
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-06-07 12:34:00
+-- Dump completed on 2026-06-07 14:07:03
