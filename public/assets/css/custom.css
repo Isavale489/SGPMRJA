@@ -2055,6 +2055,13 @@ header#page-topbar,
     border: 1px solid #e7ecf3; border-left: 3px solid var(--atlantico-cyan, #10b981);
     border-radius: 10px; padding: 10px 12px; background: #fff;
 }
+.cot-linea-thumb {
+    width: 56px; height: 56px; border-radius: 10px; flex-shrink: 0; overflow: hidden;
+    background: #f1f5f9; display: flex; align-items: center; justify-content: center; align-self: center;
+}
+.cot-linea-thumb-img { width: 100%; height: 100%; object-fit: contain; padding: 4px; }
+.cot-linea-thumb-ph { color: #cbd5e1; font-size: 1.6rem; display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; }
+[data-bs-theme="dark"] .cot-linea-thumb { background: #0f172a; }
 .cot-linea-info { min-width: 0; flex: 1; }
 .cot-linea-top { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
 .cot-linea-codigo {
