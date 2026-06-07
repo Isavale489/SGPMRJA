@@ -448,11 +448,15 @@ class OrdenProduccionController extends Controller
                 'producto',
                 'empleado.persona',
                 'pedido.cliente',
+                'detallePedido.tipoProducto',
                 'detallePedido.color',
                 'detallePedido.talla',
                 'detallePedido.bordados',
                 'creadoPor:id,name,avatar',
             ])->findOrFail($id);
+
+        // Nombre legible (legacy o dinámico desde snapshot) para líneas sin producto.
+        $orden->append('nombre_producto');
 
         $data = $orden->toArray();
         // Cliente del pedido y creador real (para el chip "Registrada por").

@@ -803,7 +803,7 @@
                 const linea = {
                     detalle_id: data.detalle_pedido_id,
                     producto_id: data.producto_id,
-                    producto_nombre: data.producto ? data.producto.nombre : ('Producto #' + data.producto_id),
+                    producto_nombre: data.nombre_producto || (data.producto ? data.producto.nombre : (data.producto_id ? 'Producto #' + data.producto_id : 'Producto')),
                     cantidad: data.cantidad_solicitada,
                     color: det.color ? det.color.nombre : null,
                     talla: det.talla ? (det.talla.etiqueta || det.talla.nombre) : null,
