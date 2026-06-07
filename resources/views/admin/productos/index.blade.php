@@ -97,59 +97,40 @@
                                     placeholder="Buscar tipo de producto..."
                                     autocomplete="off">
                             </div>
-                            {{-- Filtros de productos retirados: el catálogo es por Tipo (Fase 3).
-                                 Se conserva solo la búsqueda global. --}}
+                            <div class="navy-header-divider"></div>
+                            <button class="navy-filter-btn collapsed" type="button"
+                                data-bs-toggle="collapse" data-bs-target="#filters-collapse-body"
+                                aria-expanded="false" aria-controls="filters-collapse-body">
+                                <i class="ri-filter-3-line"></i>
+                                <span>Filtros</span>
+                                <span class="navy-filter-badge d-none" id="active-filter-count"></span>
+                                <i class="ri-arrow-down-s-line navy-filter-chevron"></i>
+                            </button>
                         </div>
                         {{-- Body: colapsable, oculto (filtros de producto no aplican a Tipos) --}}
-                        <div class="collapse d-none" id="filters-collapse-body">
+                        <div class="collapse" id="filters-collapse-body">
                             <div class="navy-filter-body">
-                                <div style="display: grid; grid-template-columns: 1fr; gap: 0.75rem;" class="navy-filter-grid">
-                                    {{-- Filtro 1: Tipo de Producto (dinámico desde $tiposProducto) --}}
+                                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.75rem;" class="navy-filter-grid">
+                                    {{-- Filtro 1: Producción (fabricado vs reventa) --}}
                                     <div>
-                                        <label class="navy-filter-label" for="filter-tipo-producto">
-                                            <i class="ri-price-tag-3-line"></i> Tipo de Producto
+                                        <label class="navy-filter-label" for="filter-produccion">
+                                            <i class="ri-hammer-line"></i> Producción
                                         </label>
-                                        <select class="form-select navy-filter-select" id="filter-tipo-producto">
+                                        <select class="form-select navy-filter-select" id="filter-produccion">
                                             <option value="">Todos</option>
-                                            @foreach($tiposProducto as $tipo)
-                                                <option value="{{ $tipo->id }}">{{ $tipo->nombre }}</option>
-                                            @endforeach
+                                            <option value="1">Fabricado</option>
+                                            <option value="0">Reventa</option>
                                         </select>
                                     </div>
-                                    {{-- Filtro 2: Tela (dinámico desde $telasDisponibles) --}}
+                                    {{-- Filtro 2: ¿Requiere tela? --}}
                                     <div>
-                                        <label class="navy-filter-label" for="filter-tela">
-                                            <i class="ri-shirt-line"></i> Tela
+                                        <label class="navy-filter-label" for="filter-requiere-tela">
+                                            <i class="ri-shirt-line"></i> ¿Requiere tela?
                                         </label>
-                                        <select class="form-select navy-filter-select" id="filter-tela">
+                                        <select class="form-select navy-filter-select" id="filter-requiere-tela">
                                             <option value="">Todas</option>
-                                            @foreach($telasDisponibles as $tela)
-                                                <option value="{{ $tela->id }}">{{ $tela->nombre }}</option>
-                                            @endforeach
-                                        </select>
-                                    </div>
-                                    {{-- Filtro 3: Estatus --}}
-                                    <div>
-                                        <label class="navy-filter-label" for="filter-estatus">
-                                            <i class="ri-shield-check-line"></i> Estatus
-                                        </label>
-                                        <select class="form-select navy-filter-select" id="filter-estatus">
-                                            <option value="">Todos</option>
-                                            <option value="1" selected>Activo</option>
-                                            <option value="0">Inactivo</option>
-                                        </select>
-                                    </div>
-                                    {{-- Filtro 4: Ordenar por --}}
-                                    <div>
-                                        <label class="navy-filter-label" for="filter-orden">
-                                            <i class="ri-sort-asc"></i> Ordenar por
-                                        </label>
-                                        <select class="form-select navy-filter-select" id="filter-orden">
-                                            <option value="recientes">Más recientes primero</option>
-                                            <option value="codigo_asc">Código (A-Z)</option>
-                                            <option value="codigo_desc">Código (Z-A)</option>
-                                            <option value="precio_mayor">Mayor Precio Base</option>
-                                            <option value="precio_menor">Menor Precio Base</option>
+                                            <option value="1">Sí</option>
+                                            <option value="0">No</option>
                                         </select>
                                     </div>
                                 </div>
@@ -617,23 +598,33 @@
             // Filtros: server-side (ajax.reload con filter_tipo_producto_id)
             // ══════════════════════════════════════════════════════
 
-            // ── Badge: actualizar contador de filtros activos + punto rojo ──
+            // ── Badge: contador de filtros activos ──
             function updateFilterBadge() {
                 var count = 0;
-                if ($('#filter-tipo-producto').val() !== '')                         count++;
-                if ($('#filter-tela').val() !== '')                                  count++;
-                if ($('#filter-estatus').val() !== '1')                              count++;
-                if ($('#filter-orden').val() !== 'recientes')                        count++;
+                if ($('#filter-produccion').val() !== '')     count++;
+                if ($('#filter-requiere-tela').val() !== '')  count++;
                 var $badge = $('#active-filter-count');
-                var $dot   = $('#filter-dot-indicator');
-                if (count > 0) {
-                    $badge.text(count).removeClass('d-none');
-                    $dot.removeClass('d-none');
-                } else {
-                    $badge.addClass('d-none');
-                    $dot.addClass('d-none');
-                }
+                if (count > 0) { $badge.text(count).removeClass('d-none'); }
+                else           { $badge.addClass('d-none'); }
             }
+
+            // ── Filtro client-side por Producción y Requiere tela (sobre #productos-table) ──
+            $.fn.dataTable.ext.search.push(function (settings, searchData, dataIndex, rowData) {
+                if (settings.nTable.id !== 'productos-table') return true;
+                var prod = $('#filter-produccion').val();
+                var tela = $('#filter-requiere-tela').val();
+                if (prod !== '') {
+                    var esFabricado = rowData.requiere_produccion !== false && rowData.requiere_produccion != 0;
+                    if (prod === '1' && !esFabricado) return false;
+                    if (prod === '0' &&  esFabricado) return false;
+                }
+                if (tela !== '') {
+                    var reqTela = rowData.requiere_tela === true || rowData.requiere_tela == 1;
+                    if (tela === '1' && !reqTela) return false;
+                    if (tela === '0' &&  reqTela) return false;
+                }
+                return true;
+            });
 
             // ── Sincronizar clase is-collapsed con el collapse ──
             $('#filters-collapse-body').on('show.bs.collapse', function () {
@@ -652,30 +643,19 @@
                 }, 300);
             });
 
-            // ── Filtros de select: recargar al cambiar ──
+            // ── Filtros de select: redibujar al cambiar (client-side) ──
             $('.navy-filter-select').on('change', function () {
-                table.ajax.reload();
+                table.draw();
                 updateFilterBadge();
             });
 
-            // ── Si se llegó por toggle historial (?historial=true) ──
-            @if($historial)
-                $('#filter-estatus').val('0');
-                table.ajax.reload();
-                updateFilterBadge();
-            @endif
-
-            // ── Botón limpiar: resetea búsqueda + filtros + orden ──
+            // ── Botón limpiar: resetea búsqueda + filtros ──
             $('#btn-clear-filters').on('click', function () {
-                $('#filter-tipo-producto').val('');
-                $('#filter-tela').val('');
-                $('#filter-estatus').val('1');
-                $('#filter-orden').val('recientes');
+                $('#filter-produccion').val('');
+                $('#filter-requiere-tela').val('');
                 $('#custom-search-input').val('');
                 updateFilterBadge();
-                table.search('').ajax.reload(function () {
-                    updateFilterBadge();
-                });
+                table.search('').draw();
             });
 
             // Sincronizar switch de estado con hidden input
