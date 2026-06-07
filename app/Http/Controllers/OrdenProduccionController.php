@@ -126,7 +126,11 @@ class OrdenProduccionController extends Controller
             ->pluck('id', 'detalle_pedido_id');
 
         $data = $pedidos->map(function ($pedido) use ($detallesConOrden) {
-            $lineas = $pedido->productos->map(function ($d) use ($detallesConOrden) {
+            $lineas = $pedido->productos
+                // Solo líneas fabricables: los productos de reventa
+                // (tipo->requiere_produccion = false) se venden pero no se producen.
+                ->filter(fn($d) => $d->requiereProduccion())
+                ->map(function ($d) use ($detallesConOrden) {
                 // Tipo: legacy desde el producto; dinámico desde la relación directa.
                 $tipo = $d->producto ? $d->producto->tipoProducto : $d->tipoProducto;
 
@@ -198,7 +202,10 @@ class OrdenProduccionController extends Controller
                 'progreso'          => $pedido->progreso_produccion,
                 'lineas'            => $lineas,
             ];
-        })->values();
+        })
+        // Ocultar pedidos sin nada que producir (solo productos de reventa).
+        ->filter(fn($p) => $p['total_lineas'] > 0)
+        ->values();
 
         return response()->json($data);
     }
@@ -441,11 +448,15 @@ class OrdenProduccionController extends Controller
                 'producto',
                 'empleado.persona',
                 'pedido.cliente',
+                'detallePedido.tipoProducto',
                 'detallePedido.color',
                 'detallePedido.talla',
                 'detallePedido.bordados',
                 'creadoPor:id,name,avatar',
             ])->findOrFail($id);
+
+        // Nombre legible (legacy o dinámico desde snapshot) para líneas sin producto.
+        $orden->append('nombre_producto');
 
         $data = $orden->toArray();
         // Cliente del pedido y creador real (para el chip "Registrada por").

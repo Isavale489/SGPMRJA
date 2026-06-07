@@ -1,189 +1,327 @@
-<!-- Modal para crear/editar orden de producción -->
-<div class="modal fade atlantico-modal atlantico-modal--op" id="showModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
+{{-- ═══════════════════════════════════════════════════════════════════
+     WIZARD ORDEN DE PRODUCCIÓN — showModal
+     Fusiona la selección de pedido/líneas + la configuración de la(s)
+     orden(es). Escala de 1 a N líneas en un mismo flujo:
+       Paso 1 · Pedido    → buscar pedido y elegir 1+ líneas a producir
+       Paso 2 · Asignación → empleado + cronograma (por línea, con "aplicar a todas")
+       Paso 3 · Insumos    → insumos requeridos por línea (precargados del Tipo)
+       Paso 4 · Resumen    → confirmar las órdenes a crear
+     Lógica JS en: ordenes/scripts/main.blade.php (IIFE ordWiz)
+     ═══════════════════════════════════════════════════════════════════ --}}
+<div class="modal fade atlantico-modal atlantico-modal--op wiz-modal" id="showModal" tabindex="-1"
+    aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false"
+    data-guard-id-field="ord-wiz-id-field" data-guard-save-btn="ord-wiz-submit-btn">
+    <div class="modal-dialog modal-dialog-centered modal-xl modal-fullscreen-sm-down">
         <div class="modal-content">
-            <div class="modal-header py-2">
-                <h5 class="modal-title mb-0" id="modalTitle">Nueva Orden de Producción</h5>
+
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalTitle">Nueva Orden de Producción</h5>
                 <div class="wiz-dt-slot me-2">
                     @include('admin.partials.wizard-datetime-bar', ['prefix' => 'ord', 'modalId' => 'showModal', 'sm' => true])
                 </div>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
             </div>
-            <form id="ordenForm" novalidate>
-                @csrf
-                <div class="modal-body p-3">
-                    {{-- id de la orden (modo edición) --}}
-                    <input type="hidden" id="id-field" />
-                    {{-- línea del pedido que produce la orden (de aquí salen producto + cantidad en el backend) --}}
-                    <input type="hidden" id="detalle-pedido-id-field" name="detalle_pedido_id" />
-                    {{-- referencias de solo lectura (sin name → no se envían) --}}
-                    <input type="hidden" id="pedido-id-hidden-field" />
-                    <input type="hidden" id="producto-id-field" />
 
-                    {{-- ── Chips: cliente (izq.) + usuario que registra (der.) ──────── --}}
-                    <div class="d-flex justify-content-between align-items-center gap-2 flex-wrap mb-2">
-                        {{-- Cliente del pedido --}}
-                        <div class="wiz-client-banner" id="orden-cliente-banner" title="Cliente del pedido">
-                            <span class="wiz-client-banner-label">Cliente:</span>
-                            <div class="wiz-client-banner-avatar" id="orden-cliente-avatar">—</div>
-                            <div class="wiz-client-banner-main">
-                                <span class="wiz-client-banner-name" id="orden-cliente-name">—</span>
+            {{-- Stepper visual — 4 pasos --}}
+            <div class="wiz-stepper-wrapper">
+                {{-- Chip cliente persistente — gutter izquierdo (pasos 2+) --}}
+                <div class="wiz-stepper-side wiz-stepper-side--left">
+                    <div class="wiz-client-banner" id="ord-cliente-banner" hidden aria-hidden="true"
+                        title="Cliente del pedido">
+                        <span class="wiz-client-banner-label">Cliente:</span>
+                        <div class="wiz-client-banner-avatar" id="ord-banner-avatar">—</div>
+                        <div class="wiz-client-banner-main">
+                            <span class="wiz-client-banner-name" id="ord-banner-name">—</span>
+                            <div class="wiz-client-banner-sub">
+                                <span class="wiz-client-banner-doc" id="ord-banner-doc">—</span>
                             </div>
-                        </div>
-                        {{-- Usuario que registra la orden --}}
-                        <div class="wiz-client-banner wiz-client-banner--creator" id="orden-creador-banner"
-                            title="Creada por"
-                            data-default-name="{{ Auth::user()->name }}"
-                            data-default-avatar="{{ Auth::user()->avatar_url }}">
-                            <span class="wiz-client-banner-label">Creada por:</span>
-                            <img class="wiz-client-banner-avatar wiz-client-banner-avatar--img" id="orden-creador-avatar"
-                                src="{{ Auth::user()->avatar_url }}" alt="" />
-                            <div class="wiz-client-banner-main">
-                                <span class="wiz-client-banner-name" id="orden-creador-name">{{ Auth::user()->name }}</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    {{-- ── Hero: línea seleccionada (solo lectura, compacto) ────────── --}}
-                    <div class="cot-resumen-card mb-2" id="orden-linea-panel">
-                        <div class="cot-resumen-card-header py-2 px-3">
-                            <i class="ri-file-list-3-line"></i>
-                            <span>Línea seleccionada</span>
-                            <span class="ms-auto badge bg-light text-dark fw-normal" id="orden-linea-pedido">Pedido #—</span>
-                        </div>
-                        <div class="cot-resumen-card-body p-3">
-                            <div class="d-flex align-items-center justify-content-between gap-3 flex-wrap">
-                                <div class="flex-grow-1 min-w-0">
-                                    <div class="text-white fw-semibold mb-2" id="orden-linea-producto">—</div>
-                                    <div class="d-flex flex-wrap gap-1" id="orden-linea-meta"></div>
-                                </div>
-                                <div class="text-end">
-                                    <div class="fw-bold text-white fs-4 lh-1" id="orden-linea-cantidad">0</div>
-                                    <small class="text-white-50" style="font-size: 10.5px;">unidades</small>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {{-- ── Asignación: empleado + estado ───────────────────────── --}}
-                    <div class="card border-0 shadow-sm mb-2">
-                        <div class="card-header border-0 bg-soft-primary py-2 px-3">
-                            <h6 class="mb-0 text-atlantico-dark fs-13">
-                                <i class="ri-user-star-line me-1"></i>Asignación
-                            </h6>
-                        </div>
-                        <div class="card-body p-3">
-                            <div class="row g-2">
-                                <div class="col-md-6">
-                                    <label for="empleado-id-field" class="form-label form-label-sm required mb-1">Empleado asignado</label>
-                                    <select id="empleado-id-field" name="empleado_id" class="form-select form-select-sm" required>
-                                        <option value="">Seleccione empleado...</option>
-                                        @foreach($empleados as $emp)
-                                            <option value="{{ $emp->id }}">{{ $emp->name }}</option>
-                                        @endforeach
-                                    </select>
-                                    <small class="text-muted d-block mt-1" style="font-size: 10.5px;">
-                                        <i class="ri-information-line"></i> Responsable de producir esta orden.
-                                    </small>
-                                </div>
-                                <div class="col-md-6" id="estado-container" style="display: none;">
-                                    <label for="estado-field" class="form-label form-label-sm mb-1">Estado</label>
-                                    <select id="estado-field" name="estado" class="form-select form-select-sm">
-                                        <option value="Pendiente">Pendiente</option>
-                                        <option value="En Proceso">En Proceso</option>
-                                        <option value="Finalizado">Finalizado</option>
-                                        <option value="Cancelado">Cancelado</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {{-- ── Cronograma ─────────────────────────────────────────── --}}
-                    <div class="card border-0 shadow-sm mb-2">
-                        <div class="card-header border-0 bg-soft-primary py-2 px-3">
-                            <h6 class="mb-0 text-atlantico-dark fs-13">
-                                <i class="ri-calendar-2-line me-1"></i>Cronograma
-                            </h6>
-                        </div>
-                        <div class="card-body p-3">
-                            <div class="row g-2">
-                                <div class="col-md-6">
-                                    <label for="fecha-inicio-field" class="form-label form-label-sm required mb-1">Inicio</label>
-                                    <input type="date" id="fecha-inicio-field" name="fecha_inicio" class="form-control form-control-sm" required />
-                                </div>
-                                <div class="col-md-6">
-                                    <label for="fecha-fin-estimada-field" class="form-label form-label-sm required mb-1">Fin estimado</label>
-                                    <input type="date" id="fecha-fin-estimada-field" name="fecha_fin_estimada" class="form-control form-control-sm" required />
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {{-- ── Insumos requeridos (grilla, como wizard productos) ─── --}}
-                    <div class="card border-0 shadow-sm mb-2">
-                        <div class="card-header border-0 bg-soft-primary py-2 px-3 d-flex align-items-center justify-content-between">
-                            <h6 class="mb-0 text-atlantico-dark fs-13">
-                                <i class="ri-tools-line me-1"></i>Insumos requeridos
-                                <span class="text-muted fw-normal ms-1" id="orden-insumos-count">(0)</span>
-                            </h6>
-                            <button type="button" class="btn btn-sm btn-soft-primary py-0 px-2" id="add-insumo-btn">
-                                <i class="ri-add-line"></i> Agregar insumo
-                            </button>
-                        </div>
-                        <div class="card-body p-0">
-                            {{-- Empty state --}}
-                            <div id="orden-insumos-empty" class="text-center py-3 text-muted">
-                                <i class="ri-tools-line d-block opacity-50 mb-1" style="font-size: 1.75rem;"></i>
-                                <p class="fs-12 mb-0">Aún no agregaste insumos. Haz click en <strong>“Agregar insumo”</strong>.</p>
-                            </div>
-
-                            {{-- Tabla agrupada (mismo estilo que el wizard de cotización) --}}
-                            <div id="orden-insumos-table-wrap" class="cot-grouped-tablewrap" hidden>
-                                <table class="cot-grouped-table">
-                                    <thead>
-                                        <tr>
-                                            <th class="cot-col-num">#</th>
-                                            <th class="cot-col-prod">Insumo</th>
-                                            <th class="cot-col-num text-end">Cantidad</th>
-                                            <th class="cot-col-acc text-center">Acciones</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="orden-insumos-tbody"></tbody>
-                                </table>
-                            </div>
-
-                            {{-- Fuente de verdad para FormData: hidden inputs sincronizados con el estado --}}
-                            <div id="insumos-container" hidden></div>
-                        </div>
-                    </div>
-
-                    {{-- ── Notas ─────────────────────────────────────────────── --}}
-                    <div class="card border-0 shadow-sm mb-0">
-                        <div class="card-header border-0 bg-soft-primary py-2 px-3">
-                            <h6 class="mb-0 text-atlantico-dark fs-13">
-                                <i class="ri-sticky-note-line me-1"></i>Notas
-                            </h6>
-                        </div>
-                        <div class="card-body p-3">
-                            <textarea id="notas-field" name="notas" class="form-control form-control-sm" rows="2" placeholder="Observaciones sobre la orden (opcional)..."></textarea>
                         </div>
                     </div>
                 </div>
-                <div class="modal-footer bg-light border-0 py-2">
-                    <div class="hstack gap-2 justify-content-end">
-                        <button type="button" class="btn btn-sm btn-light" data-bs-dismiss="modal">
+                <div class="wiz-stepper" role="tablist" aria-label="Pasos de la orden">
+                    <button type="button" class="wiz-step-marker is-active" data-step="1"
+                        role="tab" aria-selected="true" aria-controls="ord-wiz-step-1">
+                        <span class="wiz-step-dot">1</span>
+                        <span class="wiz-step-label">Pedido</span>
+                    </button>
+                    <span class="wiz-step-line"><span class="wiz-step-line-fill" data-line="1"></span></span>
+                    <button type="button" class="wiz-step-marker" data-step="2"
+                        role="tab" aria-selected="false" aria-controls="ord-wiz-step-2">
+                        <span class="wiz-step-dot">2</span>
+                        <span class="wiz-step-label">Asignación</span>
+                    </button>
+                    <span class="wiz-step-line"><span class="wiz-step-line-fill" data-line="2"></span></span>
+                    <button type="button" class="wiz-step-marker" data-step="3"
+                        role="tab" aria-selected="false" aria-controls="ord-wiz-step-3">
+                        <span class="wiz-step-dot">3</span>
+                        <span class="wiz-step-label">Insumos</span>
+                    </button>
+                    <span class="wiz-step-line"><span class="wiz-step-line-fill" data-line="3"></span></span>
+                    <button type="button" class="wiz-step-marker" data-step="4"
+                        role="tab" aria-selected="false" aria-controls="ord-wiz-step-4">
+                        <span class="wiz-step-dot">4</span>
+                        <span class="wiz-step-label">Resumen</span>
+                    </button>
+                </div>
+                {{-- Chip "Creada por" — usuario logueado, gutter derecho --}}
+                <div class="wiz-stepper-side wiz-stepper-side--right">
+                    <div class="wiz-client-banner wiz-client-banner--creator" id="ord-creador-banner" hidden
+                        aria-hidden="true" title="Creada por"
+                        data-default-name="{{ Auth::user()->name }}"
+                        data-default-avatar="{{ Auth::user()->avatar_url }}">
+                        <span class="wiz-client-banner-label">Creada por:</span>
+                        <img class="wiz-client-banner-avatar wiz-client-banner-avatar--img"
+                            id="ord-creador-avatar" src="{{ Auth::user()->avatar_url }}" alt="" />
+                        <div class="wiz-client-banner-main">
+                            <span class="wiz-client-banner-name" id="ord-creador-name">{{ Auth::user()->name }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <form id="ordenForm" novalidate>
+                @csrf
+                <input type="hidden" id="ord-wiz-id-field" />
+
+                {{-- Plantilla de opciones de empleado (clonada por línea en JS) --}}
+                <select id="ord-empleados-tpl" class="d-none" tabindex="-1" aria-hidden="true">
+                    <option value="">Seleccione empleado...</option>
+                    @foreach($empleados as $emp)
+                        <option value="{{ $emp->id }}">{{ $emp->name }}</option>
+                    @endforeach
+                </select>
+
+                <div class="modal-body p-0 wiz-wizard-body">
+
+                    {{-- ═══════════════════ PASO 1 — PEDIDO Y LÍNEAS ═══════════════════ --}}
+                    <section class="wiz-step-content is-active" id="ord-wiz-step-1" data-step="1">
+                        <div class="wiz-step-header">
+                            <h4 class="wiz-step-title">Pedido y líneas a producir</h4>
+                            <p class="wiz-step-desc">Busca el pedido y marca las líneas para las que vas a generar orden de producción.</p>
+                        </div>
+
+                        {{-- Modo edición: la línea queda fija (no se cambia el pedido) --}}
+                        <div id="ord-edit-locked" class="px-3" hidden>
+                            <div class="alert alert-info d-flex align-items-center gap-2 mb-0">
+                                <i class="ri-lock-2-line fs-5"></i>
+                                <div>
+                                    <div class="fw-semibold">Estás editando una orden existente.</div>
+                                    <small>El pedido y la línea no se pueden cambiar; ajusta la asignación, insumos y notas en los siguientes pasos.</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        {{-- Selección de pedidos (modo crear) --}}
+                        <div id="ord-select-wrap" class="px-3">
+                            {{-- Búsqueda + filtros avanzados — Patrón Maestro S-07 --}}
+                            <div class="advanced-filters-wrapper emerald-theme mb-3" id="pedord-advanced-filters">
+                                <div class="navy-filter-header is-collapsed">
+                                    <div class="navy-header-search">
+                                        <i class="ri-search-line"></i>
+                                        <input type="text" class="navy-search-input" id="pedord-search"
+                                            placeholder="Buscar por cliente, documento o N° de pedido..." autocomplete="off">
+                                    </div>
+                                    <div class="navy-header-divider"></div>
+                                    <button class="navy-filter-btn collapsed" type="button"
+                                        data-bs-toggle="collapse" data-bs-target="#pedord-filters-collapse"
+                                        aria-expanded="false" aria-controls="pedord-filters-collapse">
+                                        <i class="ri-filter-3-line"></i>
+                                        <span>Filtros</span>
+                                        <span class="navy-filter-badge d-none" id="pedord-filter-count"></span>
+                                        <i class="ri-arrow-down-s-line navy-filter-chevron"></i>
+                                    </button>
+                                </div>
+                                <div class="collapse" id="pedord-filters-collapse">
+                                    <div class="navy-filter-body">
+                                        <div class="row g-3">
+                                            <div class="col-12 col-md-6 col-lg-3">
+                                                <label class="navy-filter-label" for="pedord-filter-estado">
+                                                    <i class="ri-flag-line"></i> Estado del pedido
+                                                </label>
+                                                <select class="form-select navy-filter-select" id="pedord-filter-estado">
+                                                    <option value="">Todos</option>
+                                                    <option value="Pendiente">Pendiente</option>
+                                                    <option value="Procesando">Procesando</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-12 col-md-6 col-lg-3">
+                                                <label class="navy-filter-label" for="pedord-filter-orden">
+                                                    <i class="ri-sort-asc"></i> Ordenar por
+                                                </label>
+                                                <select class="form-select navy-filter-select" id="pedord-filter-orden">
+                                                    <option value="recientes">Más recientes</option>
+                                                    <option value="entrega">Entrega más próxima</option>
+                                                    <option value="pendientes">Más líneas sin orden</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-6 col-lg-3">
+                                                <label class="navy-filter-label" for="pedord-filter-desde">
+                                                    <i class="ri-calendar-line"></i> Pedido desde
+                                                </label>
+                                                <input type="date" class="form-control navy-filter-select" id="pedord-filter-desde">
+                                            </div>
+                                            <div class="col-6 col-lg-3">
+                                                <label class="navy-filter-label" for="pedord-filter-hasta">
+                                                    <i class="ri-calendar-2-line"></i> Pedido hasta
+                                                </label>
+                                                <input type="date" class="form-control navy-filter-select" id="pedord-filter-hasta">
+                                            </div>
+                                            <div class="col-12 col-md-6 col-lg-3">
+                                                <label class="navy-filter-label" for="pedord-filter-cobertura">
+                                                    <i class="ri-list-check-2"></i> Cobertura de órdenes
+                                                </label>
+                                                <select class="form-select navy-filter-select" id="pedord-filter-cobertura">
+                                                    <option value="">Todos</option>
+                                                    <option value="pendientes">Con líneas sin orden</option>
+                                                    <option value="cubiertos">Completamente cubiertos</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="d-flex justify-content-end mt-2">
+                                            <button type="button" class="btn btn-link" id="pedord-clear-filters">Limpiar filtros</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {{-- Contenedor de pedidos --}}
+                            <div id="pedidos-orden-container" style="max-height: 420px; overflow-y: auto;"></div>
+
+                            {{-- Estado vacío --}}
+                            <div id="pedidos-orden-empty" class="text-center py-5" style="display: none;">
+                                <i class="ri-inbox-line" style="font-size: 4rem; color: #cbd5e1;"></i>
+                                <p class="text-muted mt-3 mb-0">No hay pedidos disponibles para producir</p>
+                                <small class="text-muted">Los pedidos cancelados o completados no aparecen aquí</small>
+                            </div>
+
+                            {{-- Loading --}}
+                            <div id="pedidos-orden-loading" class="text-center py-5" style="display: none;">
+                                <div class="spinner-border text-success" role="status">
+                                    <span class="visually-hidden">Cargando...</span>
+                                </div>
+                                <p class="text-muted mt-3 mb-0">Cargando pedidos...</p>
+                            </div>
+                        </div>
+                    </section>
+
+                    {{-- ═══════════════════ PASO 2 — ASIGNACIÓN ═══════════════════ --}}
+                    <section class="wiz-step-content" id="ord-wiz-step-2" data-step="2" hidden>
+                        <div class="wiz-step-header">
+                            <h4 class="wiz-step-title">Asignación y cronograma</h4>
+                            <p class="wiz-step-desc" id="ord-asignacion-desc">Define quién produce cada orden y sus fechas.</p>
+                        </div>
+
+                        {{-- Barra "aplicar a todas" — solo visible con 2+ líneas --}}
+                        <div class="px-3" id="ord-apply-bar" hidden>
+                            <div class="ord-apply-card mb-3">
+                                <div class="ord-apply-head">
+                                    <span class="ord-apply-icon"><i class="ri-flashlight-line"></i></span>
+                                    <div>
+                                        <div class="ord-apply-title">Aplicar a todas las líneas</div>
+                                        <div class="ord-apply-sub">Define empleado y fechas una vez y cópialos a cada orden.</div>
+                                    </div>
+                                </div>
+                                <div class="row g-2 align-items-end">
+                                    <div class="col-md-4">
+                                        <label for="ord-default-empleado" class="form-label form-label-sm mb-1"><i class="ri-user-star-line me-1"></i>Empleado</label>
+                                        <select id="ord-default-empleado" class="form-select form-select-sm"></select>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label for="ord-default-inicio" class="form-label form-label-sm mb-1"><i class="ri-calendar-event-line me-1"></i>Inicio</label>
+                                        <input type="date" id="ord-default-inicio" class="form-control form-control-sm" />
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label for="ord-default-fin" class="form-label form-label-sm mb-1"><i class="ri-calendar-check-line me-1"></i>Fin estimado</label>
+                                        <input type="date" id="ord-default-fin" class="form-control form-control-sm" />
+                                    </div>
+                                    <div class="col-md-2 d-grid">
+                                        <button type="button" class="btn btn-sm btn-atlantico-brand" id="ord-apply-defaults"
+                                            title="Copia estos valores a todas las líneas">
+                                            <i class="ri-arrow-down-double-line me-1"></i>Aplicar
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {{-- Separador: aquí empieza la asignación individual por línea --}}
+                        <div class="px-3" id="ord-porlinea-sep" hidden>
+                            <div class="ord-section-divider">
+                                <span class="ord-section-divider-line"></span>
+                                <span class="ord-section-divider-label">
+                                    <i class="ri-list-check-2 me-1"></i>Asignación por línea
+                                    <span class="ord-section-divider-count" id="ord-porlinea-count"></span>
+                                </span>
+                                <span class="ord-section-divider-line"></span>
+                            </div>
+                        </div>
+
+                        {{-- Cards de asignación por línea (render JS) --}}
+                        <div class="px-3" id="ord-asignacion-cards"></div>
+                    </section>
+
+                    {{-- ═══════════════════ PASO 3 — INSUMOS ═══════════════════ --}}
+                    <section class="wiz-step-content" id="ord-wiz-step-3" data-step="3" hidden>
+                        <div class="wiz-step-header">
+                            <h4 class="wiz-step-title">Insumos requeridos</h4>
+                            <p class="wiz-step-desc">Los insumos vienen precargados del tipo de producto. Ajústalos por línea si es necesario.</p>
+                        </div>
+                        {{-- Acordeón de insumos por línea (render JS) --}}
+                        <div class="px-3" id="ord-insumos-acc"></div>
+                    </section>
+
+                    {{-- ═══════════════════ PASO 4 — RESUMEN ═══════════════════ --}}
+                    <section class="wiz-step-content" id="ord-wiz-step-4" data-step="4" hidden>
+                        <div class="wiz-step-header">
+                            <h4 class="wiz-step-title">Resumen</h4>
+                            <p class="wiz-step-desc" id="ord-resumen-desc">Revisa las órdenes que se van a crear antes de confirmar.</p>
+                        </div>
+                        <div class="px-3">
+                            <div id="ord-resumen"></div>
+
+                            {{-- Notas (compartidas para todas las órdenes del lote) --}}
+                            <div class="card border-0 shadow-sm mt-2 mb-0">
+                                <div class="card-header border-0 bg-soft-primary py-2 px-3">
+                                    <h6 class="mb-0 text-atlantico-dark fs-13">
+                                        <i class="ri-sticky-note-line me-1"></i>Notas <span class="text-muted fw-normal" id="ord-notas-scope"></span>
+                                    </h6>
+                                </div>
+                                <div class="card-body p-3">
+                                    <textarea id="ord-notas-global" class="form-control form-control-sm" rows="2"
+                                        placeholder="Observaciones sobre la orden (opcional)..."></textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                </div>{{-- /modal-body --}}
+
+                <div class="modal-footer wiz-wizard-footer">
+                    <div class="wiz-wizard-footer-info">
+                        <span class="wiz-wizard-step-info">
+                            Paso <span id="ord-step-current">1</span> de 4
+                        </span>
+                        <span class="ms-2 badge bg-success-subtle text-success d-none" id="ord-lineas-chip"></span>
+                    </div>
+                    <div class="wiz-wizard-footer-actions">
+                        <button type="button" class="btn btn-light wiz-wizard-btn-prev" id="btn-ord-prev"
+                            style="display:none;">
+                            <i class="ri-arrow-left-line me-1"></i>Anterior
+                        </button>
+                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">
                             <i class="ri-close-line me-1"></i>Cerrar
                         </button>
-                        <button type="submit" class="btn btn-sm btn-success" id="add-btn">
-                            <i class="ri-add-line me-1"></i>Crear Orden
+                        <button type="button" class="btn btn-atlantico-brand wiz-wizard-btn-next" id="btn-ord-next">
+                            Continuar<i class="ri-arrow-right-line ms-1"></i>
                         </button>
-                        <button type="submit" class="btn btn-sm btn-success" id="edit-btn" style="display: none;">
-                            <i class="ri-save-line me-1"></i>Actualizar
+                        <button type="submit" class="btn btn-success wiz-wizard-btn-submit" id="ord-wiz-submit-btn"
+                            style="display:none;">
+                            <i class="ri-check-line me-1"></i><span id="ord-wiz-submit-label">Crear Orden</span>
                         </button>
                     </div>
                 </div>
             </form>
+
         </div>
     </div>
 </div>

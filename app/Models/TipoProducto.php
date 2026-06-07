@@ -19,12 +19,14 @@ class TipoProducto extends Model
         'imagen',
         'precio_confeccion',
         'requiere_tela',
+        'requiere_produccion',
         'consumo_tela_por_unidad',
     ];
 
     protected $casts = [
         'precio_confeccion' => 'decimal:2',
         'requiere_tela' => 'boolean',
+        'requiere_produccion' => 'boolean',
         'consumo_tela_por_unidad' => 'decimal:2',
     ];
 

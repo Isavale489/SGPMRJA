@@ -93,11 +93,22 @@ class Pedido extends Model
      * Cada línea aporta 1/N: una orden completa de una línea = +100/N. Las
      * líneas sin orden aún aportan 0. Promedio sobre el total de líneas.
      */
+    /**
+     * Líneas que SÍ entran al flujo de producción (excluye reventa).
+     * Carga las relaciones de tipo si aún no están cargadas para evitar N+1.
+     */
+    public function lineasProducibles()
+    {
+        $productos = $this->relationLoaded('productos')
+            ? $this->productos
+            : $this->productos()->with(['producto.tipoProducto', 'tipoProducto'])->get();
+
+        return $productos->filter(fn ($d) => $d->requiereProduccion())->values();
+    }
+
     public function getProgresoProduccionAttribute(): float
     {
-        $totalLineas = $this->relationLoaded('productos')
-            ? $this->productos->count()
-            : $this->productos()->count();
+        $totalLineas = $this->lineasProducibles()->count();
 
         if ($totalLineas === 0) {
             return 0.0;
@@ -131,7 +142,7 @@ class Pedido extends Model
             return; // terminal y manual
         }
 
-        $totalLineas = $this->productos()->count();
+        $totalLineas = $this->lineasProducibles()->count();
         $activas = $this->ordenes()->get()->where('estado', '!=', 'Cancelado');
 
         if ($totalLineas === 0 || $activas->isEmpty()) {
