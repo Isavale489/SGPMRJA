@@ -1786,6 +1786,36 @@ header#page-topbar,
     position: relative;
 }
 
+/* Alto fijo dentro del viewport + body scrollable: header, stepper y footer
+   quedan fijos y solo el contenido del paso hace scroll cuando hay muchos
+   elementos. Generaliza a todos los .wiz-modal el patrón que ya usaba compras. */
+.wiz-modal .modal-content {
+    max-height: calc(100vh - 3.5rem);
+    min-height: min(560px, calc(100vh - 3.5rem));
+    display: flex;
+    flex-direction: column;
+}
+.wiz-modal .modal-content > form {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+}
+.wiz-modal .wiz-wizard-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+}
+.wiz-modal .modal-header,
+.wiz-modal .wiz-stepper-wrapper,
+.wiz-modal .wiz-wizard-footer {
+    flex: 0 0 auto;
+}
+@media (max-width: 575.98px) {
+    .wiz-modal .modal-content { max-height: 100vh; min-height: auto; }
+}
+
 .wiz-step-content { display: none; }
 .wiz-step-content.is-active {
     display: block;
