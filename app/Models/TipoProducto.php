@@ -16,6 +16,7 @@ class TipoProducto extends Model
         'nombre',
         'prefijo',
         'descripcion',
+        'imagen',
         'precio_confeccion',
         'requiere_tela',
         'consumo_tela_por_unidad',
@@ -26,6 +27,16 @@ class TipoProducto extends Model
         'requiere_tela' => 'boolean',
         'consumo_tela_por_unidad' => 'decimal:2',
     ];
+
+    protected $appends = ['imagen_url'];
+
+    /**
+     * URL pública de la imagen del catálogo (null si no tiene).
+     */
+    public function getImagenUrlAttribute(): ?string
+    {
+        return $this->imagen ? asset($this->imagen) : null;
+    }
 
     public function productos()
     {

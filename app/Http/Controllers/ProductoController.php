@@ -378,12 +378,15 @@ class ProductoController extends Controller
         return $request->validate([
             'tipo_producto_id' => 'required|exists:tipo_producto,id',
             'precio_base'      => 'required|numeric|min:0.01',
-            'imagen'           => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'imagen'           => 'nullable|image|mimes:jpeg,png,jpg,gif,webp,bmp,avif|max:10240',
         ], [
             'tipo_producto_id.required' => 'Debe seleccionar un tipo de producto.',
             'tipo_producto_id.exists'   => 'El tipo de producto no existe.',
             'precio_base.required'      => 'El precio base es obligatorio.',
             'precio_base.min'           => 'El precio base debe ser mayor a cero.',
+            'imagen.image'              => 'El archivo debe ser una imagen válida.',
+            'imagen.mimes'              => 'Formato no permitido. Use JPG, PNG, GIF, WEBP, BMP o AVIF.',
+            'imagen.max'                => 'La imagen no puede superar 10MB.',
         ]);
     }
 
@@ -401,6 +404,14 @@ class ProductoController extends Controller
             ], 422));
         }
 
+        // Un tipo que no requiere tela no debe recibir una (espejo de resolverVariante).
+        if (!$tipo->requiere_tela && $request->filled('insumo_tela_id')) {
+            abort(response()->json([
+                'message' => 'Validación falló.',
+                'errors'  => ['insumo_tela_id' => ['Este tipo de producto no usa tela.']],
+            ], 422));
+        }
+
         if ($request->filled('insumo_tela_id')) {
             $tela = Insumo::find($request->insumo_tela_id);
             if (!$tela || $tela->tipo !== 'Tela') {
@@ -411,17 +422,12 @@ class ProductoController extends Controller
             }
         }
 
-        // Atributos: deben pertenecer a atributos asociados al tipo
+        // Atributos: el catálogo guarda el producto BASE (tipo + tela). Las variaciones
+        // (manga, cuello, corte...) se configuran al cotizar (FEAT-003), por lo que aquí
+        // NO se exigen — aunque el tipo las tenga marcadas como obligatorias.
+        // Si por compatibilidad llegan valores, se validan que pertenezcan al tipo.
         $valoresIds = array_map('intval', $request->input('atributo_valor_ids', []));
         if (empty($valoresIds)) {
-            // Si el tipo tiene atributos obligatorios, exigir al menos uno
-            $obligatorios = $tipo->atributos()->wherePivot('es_obligatorio', true)->count();
-            if ($obligatorios > 0) {
-                abort(response()->json([
-                    'message' => 'Validación falló.',
-                    'errors'  => ['atributo_valor_ids' => ['Debes seleccionar los valores de los atributos del tipo.']],
-                ], 422));
-            }
             return;
         }
 

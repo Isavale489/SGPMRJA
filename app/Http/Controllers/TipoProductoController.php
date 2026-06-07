@@ -36,6 +36,7 @@ class TipoProductoController extends Controller
             'precio_confeccion' => 'nullable|numeric|min:0|max:99999.99',
             'requiere_tela' => 'nullable|boolean',
             'consumo_tela_por_unidad' => 'nullable|numeric|min:0|max:9999.99',
+            'imagen' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp,bmp,avif|max:10240',
             'atributos' => 'nullable|array',
             'atributos.*.id' => 'required_with:atributos|integer|exists:atributo,id',
             'atributos.*.orden' => 'required_with:atributos|integer|min:1|max:99',
@@ -51,12 +52,21 @@ class TipoProductoController extends Controller
             'prefijo.unique' => 'Ya existe un tipo con este prefijo',
             'prefijo.alpha' => 'El prefijo solo puede contener letras',
             'prefijo.max' => 'El prefijo no puede tener más de 5 caracteres',
+            'imagen.image' => 'El archivo debe ser una imagen válida.',
+            'imagen.mimes' => 'Formato no permitido. Use JPG, PNG, GIF, WEBP, BMP o AVIF.',
+            'imagen.max' => 'La imagen no puede superar 10MB.',
         ]);
+
+        $imagenPath = null;
+        if ($request->hasFile('imagen')) {
+            $imagenPath = $this->handleFileUpload($request->file('imagen'), null);
+        }
 
         $tipo = TipoProducto::create([
             'nombre' => $request->nombre,
             'prefijo' => strtoupper($request->prefijo),
             'descripcion' => $request->descripcion,
+            'imagen' => $imagenPath,
             'precio_confeccion' => $request->input('precio_confeccion', 0),
             'requiere_tela' => $request->boolean('requiere_tela', true),
             'consumo_tela_por_unidad' => $request->input('consumo_tela_por_unidad', 0),
@@ -102,22 +112,33 @@ class TipoProductoController extends Controller
             'precio_confeccion' => 'nullable|numeric|min:0|max:99999.99',
             'requiere_tela' => 'nullable|boolean',
             'consumo_tela_por_unidad' => 'nullable|numeric|min:0|max:9999.99',
+            'imagen' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp,bmp,avif|max:10240',
             'atributos' => 'nullable|array',
             'atributos.*.id' => 'required_with:atributos|integer|exists:atributo,id',
             'atributos.*.orden' => 'required_with:atributos|integer|min:1|max:99',
             'insumos_default' => 'nullable|array',
             'insumos_default.*.id' => 'required_with:insumos_default|integer|exists:insumo,id',
             'insumos_default.*.cantidad_estimada' => 'required_with:insumos_default|numeric|min:0.01',
+        ], [
+            'imagen.image' => 'El archivo debe ser una imagen válida.',
+            'imagen.mimes' => 'Formato no permitido. Use JPG, PNG, GIF, WEBP, BMP o AVIF.',
+            'imagen.max' => 'La imagen no puede superar 10MB.',
         ]);
 
-        $tipoProducto->update([
+        $data = [
             'nombre' => $request->nombre,
             'prefijo' => strtoupper($request->prefijo),
             'descripcion' => $request->descripcion,
             'precio_confeccion' => $request->input('precio_confeccion', $tipoProducto->precio_confeccion),
             'requiere_tela' => $request->boolean('requiere_tela', $tipoProducto->requiere_tela),
             'consumo_tela_por_unidad' => $request->input('consumo_tela_por_unidad', $tipoProducto->consumo_tela_por_unidad),
-        ]);
+        ];
+
+        if ($request->hasFile('imagen')) {
+            $data['imagen'] = $this->handleFileUpload($request->file('imagen'), $tipoProducto->imagen);
+        }
+
+        $tipoProducto->update($data);
 
         $this->syncAtributos($tipoProducto, $request->input('atributos', []));
         $this->syncInsumosDefault($tipoProducto, $request->input('insumos_default', []));
@@ -170,6 +191,21 @@ class TipoProductoController extends Controller
     private function syncTelas(TipoProducto $tipo, array $telaIds): void
     {
         $tipo->telas()->sync(array_map('intval', $telaIds));
+    }
+
+    /**
+     * Sube la imagen del catálogo del tipo a public/productoimg/tipos y
+     * elimina la anterior si existía. Devuelve la ruta relativa guardada.
+     */
+    private function handleFileUpload($file, ?string $oldPath): string
+    {
+        if ($oldPath && file_exists(public_path($oldPath))) {
+            @unlink(public_path($oldPath));
+        }
+        $directory = 'productoimg/tipos';
+        $filename = uniqid() . '.' . $file->getClientOriginalExtension();
+        $file->move(public_path($directory), $filename);
+        return $directory . '/' . $filename;
     }
 
     /**

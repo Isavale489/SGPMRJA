@@ -4874,19 +4874,38 @@ header#page-topbar,
 #insumos-table td:nth-child(5) { max-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* ============================================
-   MÓDULO PRODUCTOS — Anchos de columna
+   MÓDULO PRODUCTOS — Anchos de columna (catálogo = Tipos, 8 columnas)
+   Imagen · Tipo · Prefijo · Precio Confección · Telas · Atributos · Estado · Acciones
    ============================================ */
-#productos-table th:nth-child(1) { width: 10%; }
-#productos-table th:nth-child(2) { width: 12%; }
-#productos-table th:nth-child(3) { width: 16%; }
-#productos-table th:nth-child(4) { width: 24%; }
-#productos-table th:nth-child(5) { width: 12%; }
-#productos-table th:nth-child(6) { width: 12%; }
-#productos-table th:nth-child(7) { width: 14%; text-align: center; }
+#productos-table th:nth-child(1) { width: 9%; }                       /* Imagen */
+#productos-table th:nth-child(2) { width: 18%; }                      /* Tipo */
+#productos-table th:nth-child(3) { width: 11%; }                      /* Prefijo */
+#productos-table th:nth-child(4) { width: 16%; }                      /* Precio Confección */
+#productos-table th:nth-child(5) { width: 13%; }                      /* Telas */
+#productos-table th:nth-child(6) { width: 10%; text-align: center; }  /* Atributos */
+#productos-table th:nth-child(7) { width: 13%; text-align: center; }  /* Estado */
+#productos-table th:nth-child(8) { width: 10%; text-align: center; }  /* Acciones */
 
 #productos-table td:last-child    { text-align: center; overflow: visible; }
-#productos-table td:nth-child(2)  { overflow: visible; }
-#productos-table td:nth-child(4)  { max-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#productos-table td:nth-child(1)  { overflow: visible; }              /* Imagen */
+#productos-table td:nth-child(6),
+#productos-table td:nth-child(7)  { text-align: center; }
+
+/* ============================================
+   MODAL TIPO — listas de selección con scroll (Telas / Atributos)
+   Evita que el modal crezca vertical sin límite con muchos registros.
+   ============================================ */
+.tipo-check-scroll {
+    max-height: 220px;
+    overflow-y: auto;
+    border: 1px solid var(--bs-border-color, #dee2e6);
+    border-radius: .375rem;
+    padding: .5rem .75rem;
+}
+.tipo-check-scroll::-webkit-scrollbar { width: 8px; }
+.tipo-check-scroll::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, .15); border-radius: 4px; }
+[data-bs-theme="dark"] .tipo-check-scroll { border-color: rgba(255, 255, 255, .15); }
+[data-bs-theme="dark"] .tipo-check-scroll::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, .2); }
 
 /* ============================================
    MÓDULO PROVEEDORES — Anchos de columna

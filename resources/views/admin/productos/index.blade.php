@@ -40,7 +40,7 @@
             <div class="card card-maestros">
                 <div class="card-header">
                     <div class="d-flex align-items-center">
-                        <h5 class="card-title mb-0 flex-grow-1">SKUs / Productos individuales</h5>
+                        <h5 class="card-title mb-0 flex-grow-1">Catálogo de Productos (Tipos)</h5>
                         <div class="flex-shrink-0 d-flex align-items-center gap-3">
                             <!-- Toggle Historial -->
                             @if($historial)
@@ -54,22 +54,9 @@
                             @endif
                             @if(!$historial)
                             <div class="d-flex gap-2 align-items-center">
-                                <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal"
-                                    data-bs-target="#tiposModal">
-                                    <i class="ri-settings-3-line align-bottom me-1"></i> Gestionar Tipos
-                                </button>
-                                <button type="button" class="btn btn-success add-btn ms-2" data-bs-toggle="modal"
-                                    id="create-btn" data-bs-target="#showModal">
-                                    <i class="ri-add-line align-bottom me-1"></i> Agregar Producto
-                                </button>
-                                <button type="button" class="btn btn-danger ms-2" data-bs-toggle="modal" data-bs-target="#pdfExportModal">
-                                    <i class="ri-file-pdf-fill align-bottom me-1"></i> Exportar PDF
-                                </button>
-                            </div>
-                            @else
-                            <div class="d-flex gap-2 align-items-center">
-                                <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#pdfExportModal">
-                                    <i class="ri-file-pdf-fill align-bottom me-1"></i> Exportar PDF
+                                <button type="button" class="btn btn-success add-btn" data-bs-toggle="modal"
+                                    id="create-btn" data-bs-target="#addTipoModal">
+                                    <i class="ri-add-line align-bottom me-1"></i> Agregar Tipo
                                 </button>
                             </div>
                             @endif
@@ -84,12 +71,10 @@
                     <div class="alert alert-info d-flex align-items-start gap-2 py-2 px-3 mb-3" role="alert">
                         <i class="ri-information-line fs-5 lh-1 mt-1"></i>
                         <div class="small">
-                            El <strong>catálogo</strong> se gestiona por <strong>Tipo de Producto</strong>
-                            (telas y atributos permitidos) desde
-                            <button type="button" class="btn btn-link btn-sm p-0 align-baseline"
-                                data-bs-toggle="modal" data-bs-target="#tiposModal">Gestionar Tipos</button>.
-                            Las variantes (tela + atributos) se eligen dinámicamente al cotizar, sin crear
-                            un producto por combinación. Abajo se listan los <strong>SKUs individuales</strong>.
+                            El <strong>catálogo se define por Tipo de Producto</strong>: cada tipo lleva sus
+                            <strong>telas permitidas</strong>, sus <strong>atributos</strong> (manga, cuello…) y su
+                            precio de confección. Al <strong>cotizar</strong>, el cliente elige la tela y las
+                            variaciones que requiere — <strong>sin crear un producto por combinación</strong>.
                         </div>
                     </div>
                     {{-- ============================================================
@@ -105,27 +90,14 @@
                                 <i class="ri-search-line"></i>
                                 <input type="text" id="custom-search-input"
                                     class="navy-search-input"
-                                    placeholder="Buscar producto..."
+                                    placeholder="Buscar tipo de producto..."
                                     autocomplete="off">
                             </div>
-                            {{-- Divisor vertical --}}
-                            <div class="navy-header-divider"></div>
-                            {{-- Trigger del collapse de filtros --}}
-                            <button class="navy-filter-btn collapsed" type="button"
-                                data-bs-toggle="collapse" data-bs-target="#filters-collapse-body"
-                                aria-expanded="false" aria-controls="filters-collapse-body">
-                                <i class="ri-filter-3-line"></i>
-                                <span class="position-relative">
-                                    Filtros
-                                    <span class="d-none position-absolute" id="filter-dot-indicator"
-                                        style="top: -3px; right: -10px; width: 8px; height: 8px; background: #ef4444; border-radius: 50%; border: 2px solid #1b2e4b; display: inline-block;"></span>
-                                </span>
-                                <span class="navy-filter-badge d-none" id="active-filter-count"></span>
-                                <i class="ri-arrow-down-s-line navy-filter-chevron"></i>
-                            </button>
+                            {{-- Filtros de productos retirados: el catálogo es por Tipo (Fase 3).
+                                 Se conserva solo la búsqueda global. --}}
                         </div>
-                        {{-- Body: colapsable, oculto por defecto --}}
-                        <div class="collapse" id="filters-collapse-body">
+                        {{-- Body: colapsable, oculto (filtros de producto no aplican a Tipos) --}}
+                        <div class="collapse d-none" id="filters-collapse-body">
                             <div class="navy-filter-body">
                                 <div style="display: grid; grid-template-columns: 1fr; gap: 0.75rem;" class="navy-filter-grid">
                                     {{-- Filtro 1: Tipo de Producto (dinámico desde $tiposProducto) --}}
@@ -194,12 +166,12 @@
                     <table id="productos-table" class="table table-bordered table-striped table-sm align-middle table-operativa table-maestro">
                         <thead>
                             <tr>
-                                <th>Código</th>
                                 <th>Imagen</th>
                                 <th>Tipo</th>
-                                <th>Tela</th>
+                                <th>Prefijo</th>
+                                <th>Precio Confección</th>
+                                <th>Telas</th>
                                 <th>Atributos</th>
-                                <th>Precio Base</th>
                                 <th>Estado</th>
                                 <th>Acciones</th>
                             </tr>
@@ -330,7 +302,7 @@
                                     <div class="mb-3">
                                         <label for="tipo-producto-field" class="form-label">Tipo de Producto <span
                                                 class="text-danger">*</span></label>
-                                        <div class="input-group">
+                                        <div class="input-group has-validation">
                                             <select id="tipo-producto-field" name="tipo_producto_id" class="form-select"
                                                 required>
                                                 <option value="">Seleccione un tipo...</option>
@@ -344,6 +316,7 @@
                                                 title="Agregar nuevo tipo">
                                                 <i class="ri-add-line"></i>
                                             </button>
+                                            <div class="invalid-feedback">El tipo de producto es obligatorio.</div>
                                         </div>
                                     </div>
 
@@ -371,8 +344,8 @@
                                     </div>
 
                                     <x-forms.input name="codigo" label="Código (SKU)" readonly class="bg-light fw-bold"
-                                        placeholder="Se genera al seleccionar tipo, tela y atributos"
-                                        hint="Determinístico: prefijo-tela-atributos-secuencial." id="codigo-field" />
+                                        placeholder="Se genera al seleccionar tipo y tela"
+                                        hint="Determinístico: prefijo-tela-secuencial." id="codigo-field" />
 
                                     <div class="mb-0">
                                         <label for="descripcion-field" class="form-label">Descripción <span
@@ -383,15 +356,12 @@
                                 </div>
                             </div>
                             <div class="col-md-6">
-                                <div class="modal-form-section">
-                                    <div class="modal-form-section-title">
-                                        <i class="ri-list-check-2"></i>Variaciones (atributos de confección)
-                                    </div>
-                                    <div id="atributos-chips-container">
-                                        <div class="text-muted small text-center py-3" id="atributos-empty">
-                                            <i class="ri-information-line"></i>
-                                            Selecciona un tipo de producto para ver sus variaciones.
-                                        </div>
+                                <div class="alert alert-info d-flex align-items-start gap-2 py-2 px-3 mb-3" role="alert">
+                                    <i class="ri-information-line mt-1"></i>
+                                    <div class="small mb-0">
+                                        Las variaciones (manga, cuello, corte, etc.) <strong>se configuran al cotizar</strong>,
+                                        cuando el cliente indica lo que requiere. Aquí solo defines el producto base
+                                        (tipo + tela).
                                     </div>
                                 </div>
 
@@ -422,9 +392,9 @@
                                     {{-- Imagen — mantiene HTML nativo por preview --}}
                                     <div class="mb-3">
                                         <label for="imagen-field" class="form-label">Imagen <span
-                                                class="text-danger" id="imagen-required-star">*</span></label>
+                                                class="text-muted small">(opcional)</span></label>
                                         <input type="file" id="imagen-field" name="imagen" class="form-control"
-                                            accept="image/*" required />
+                                            accept="image/*" />
                                         <div id="imagen-preview" class="mt-2 text-center" style="display: none;">
                                             <img src="" alt="Vista previa de la imagen" class="img-fluid"
                                                 style="max-width: 200px;">
@@ -504,7 +474,7 @@
 
     <!-- Modal para agregar/editar Tipo de Producto -->
     <div class="modal fade atlantico-modal" id="addTipoModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-dialog modal-dialog-centered modal-xl">
             <div class="modal-content">
                 <div class="modal-header bg-light p-3">
                     <h5 class="modal-title" id="tipoModalTitle">Agregar Tipo de Producto
@@ -514,6 +484,8 @@
                 <form id="tipoForm" novalidate>
                     <div class="modal-body">
                         <input type="hidden" id="tipo-id-field" />
+                        <div class="row g-4">
+                        <div class="col-lg-6">
                         <div class="modal-form-section mb-0">
                             <div class="modal-form-section-title"><i class="ri-list-settings-line"></i>Datos del Tipo de
                                 Producto</div>
@@ -523,6 +495,7 @@
                                 <input type="text" id="tipo-nombre-field" name="nombre" class="form-control"
                                     placeholder="Ej: Chemise, Franela, Pantalón" required />
                                 <div id="tipo-nombre-error" class="invalid-feedback"></div>
+                                <small class="text-muted d-block">Categoría de prenda del catálogo. Agrupa todas las variantes que comparten telas y atributos.</small>
                             </div>
                             <div class="mb-3">
                                 <label for="tipo-prefijo-field" class="form-label required">Prefijo de Código</label>
@@ -530,13 +503,25 @@
                                     placeholder="Ej: CHM, FRN, PNT (máx 5 letras)" maxlength="5" required
                                     style="text-transform: uppercase;" />
                                 <div id="tipo-prefijo-error" class="invalid-feedback"></div>
-                                <small class="text-muted">Se usará para generar códigos como CHM-001</small>
+                                <small class="text-muted">2–5 letras que identifican al tipo en sus códigos (CHM → CHM-001). Se sugiere desde el nombre; evita cambiarlo después de crear productos.</small>
                             </div>
                             <div class="mb-3">
-                                <label for="tipo-descripcion-field" class="form-label required">Descripción</label>
+                                <label for="tipo-descripcion-field" class="form-label">Descripción
+                                    <span class="text-muted small">(opcional)</span></label>
                                 <textarea id="tipo-descripcion-field" name="descripcion" class="form-control" rows="2"
-                                    placeholder="Descripción opcional" required></textarea>
+                                    placeholder="Notas internas del tipo (uso, detalles)…"></textarea>
                                 <div id="tipo-descripcion-error" class="invalid-feedback"></div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="tipo-imagen-field" class="form-label">Imagen del catálogo
+                                    <span class="text-muted small">(opcional)</span></label>
+                                <input type="file" id="tipo-imagen-field" name="imagen" class="form-control"
+                                    accept="image/*" />
+                                <small class="text-muted d-block mt-1">Foto que se mostrará al navegar el catálogo en la cotización.</small>
+                                <div id="tipo-imagen-preview" class="mt-2 text-center" style="display:none;">
+                                    <img src="" alt="Vista previa" class="img-fluid rounded" style="max-width: 160px;">
+                                </div>
                             </div>
 
                             <div class="row g-2 mb-0">
@@ -555,7 +540,7 @@
                                         <label class="form-check-label" for="tipo-requiere-tela">
                                             Requiere tela
                                         </label>
-                                        <div class="text-muted small">Si está activo, todo producto de este tipo debe tener una tela asignada.</div>
+                                        <div class="text-muted small">Actívalo si se confecciona con tela. Desactívalo para tipos sin tela (gorra, accesorio, servicio).</div>
                                     </div>
                                 </div>
                             </div>
@@ -575,46 +560,73 @@
                                     </small>
                                 </div>
                             </div>
+                        </div>{{-- /modal-form-section Datos+Costos --}}
+                        </div>{{-- /col-lg-6 izquierda --}}
 
+                        <div class="col-lg-6">
+                            <div class="modal-form-section mb-0">
                             {{-- Telas permitidas para este tipo (FEAT-003) — visible si requiere tela --}}
-                            <div class="mt-3" id="tipo-telas-section">
-                                <label class="form-label mb-1"><i class="ri-shirt-line me-1"></i>Telas permitidas</label>
+                            <div class="mt-0" id="tipo-telas-section">
+                                <div class="d-flex align-items-center justify-content-between mb-1">
+                                    <label class="form-label mb-0"><i class="ri-shirt-line me-1"></i>Telas permitidas</label>
+                                    <span class="badge bg-light text-dark border" id="tipo-telas-count">0 seleccionadas</span>
+                                </div>
                                 <p class="text-muted small mb-2">
                                     Marca las telas en las que se puede confeccionar este tipo. Son las que ofrecerá el
                                     selector de variante en la cotización (no hace falta crear un producto por combinación).
                                 </p>
-                                <div class="row g-1" id="tipo-telas-list">
-                                    @foreach($telasDisponibles as $tela)
-                                        <div class="col-md-6">
-                                            <div class="form-check">
-                                                <input class="form-check-input tipo-tela-check" type="checkbox"
-                                                    value="{{ $tela->id }}" id="tipo-tela-{{ $tela->id }}">
-                                                <label class="form-check-label" for="tipo-tela-{{ $tela->id }}">
-                                                    {{ $tela->nombre }}@if($tela->codigo) <span class="text-muted">[{{ $tela->codigo }}]</span>@endif
-                                                </label>
-                                            </div>
-                                        </div>
-                                    @endforeach
-                                </div>
-                                @if($telasDisponibles->isEmpty())
-                                    <div class="text-muted small"><i class="ri-information-line me-1"></i>No hay telas registradas (insumos tipo Tela).</div>
+                                @if(!$telasDisponibles->isEmpty())
+                                    <input type="text" class="form-control form-control-sm mb-2" id="tipo-telas-search"
+                                        placeholder="Buscar tela…" autocomplete="off">
                                 @endif
+                                <div class="tipo-check-scroll">
+                                    <div class="row g-1" id="tipo-telas-list">
+                                        @foreach($telasDisponibles as $tela)
+                                            <div class="col-md-6 tipo-tela-item"
+                                                data-search="{{ strtolower($tela->nombre . ' ' . $tela->codigo) }}">
+                                                <div class="form-check">
+                                                    <input class="form-check-input tipo-tela-check" type="checkbox"
+                                                        value="{{ $tela->id }}" id="tipo-tela-{{ $tela->id }}">
+                                                    <label class="form-check-label" for="tipo-tela-{{ $tela->id }}">
+                                                        {{ $tela->nombre }}@if($tela->codigo) <span class="text-muted">[{{ $tela->codigo }}]</span>@endif
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                    <div class="text-muted small text-center py-2 d-none" id="tipo-telas-noresult">
+                                        <i class="ri-search-line me-1"></i>Sin coincidencias.
+                                    </div>
+                                    @if($telasDisponibles->isEmpty())
+                                        <div class="text-muted small"><i class="ri-information-line me-1"></i>No hay telas registradas (insumos tipo Tela).</div>
+                                    @endif
+                                </div>
                             </div>
                         </div>
 
                         {{-- Sección: Atributos de confección asociados --}}
                         <div class="modal-form-section mb-0 mt-3">
-                            <div class="modal-form-section-title">
-                                <i class="ri-list-check-2"></i>Atributos de confección
+                            <div class="d-flex align-items-center justify-content-between">
+                                <div class="modal-form-section-title mb-0">
+                                    <i class="ri-list-check-2"></i>Atributos de confección
+                                </div>
+                                <span class="badge bg-light text-dark border" id="tipo-atributos-count">0 seleccionados</span>
                             </div>
-                            <p class="text-muted small mb-2">
+                            <p class="text-muted small mb-2 mt-2">
                                 Selecciona qué variaciones definen una variante de este tipo (ej: Manga, Cuello).
                                 El <strong>orden</strong> define cómo se concatenan en el código del producto.
                             </p>
-                            <div id="tipo-atributos-list" class="d-flex flex-column gap-2">
-                                {{-- Render dinámico vía JS --}}
-                                <div class="text-center text-muted py-2" id="tipo-atributos-empty">
-                                    <span class="spinner-border spinner-border-sm me-2"></span>Cargando atributos…
+                            <input type="text" class="form-control form-control-sm mb-2" id="tipo-atributos-search"
+                                placeholder="Buscar atributo…" autocomplete="off">
+                            <div class="tipo-check-scroll">
+                                <div id="tipo-atributos-list" class="d-flex flex-column gap-2">
+                                    {{-- Render dinámico vía JS --}}
+                                    <div class="text-center text-muted py-2" id="tipo-atributos-empty">
+                                        <span class="spinner-border spinner-border-sm me-2"></span>Cargando atributos…
+                                    </div>
+                                </div>
+                                <div class="text-muted small text-center py-2 d-none" id="tipo-atributos-noresult">
+                                    <i class="ri-search-line me-1"></i>Sin coincidencias.
                                 </div>
                             </div>
                         </div>
@@ -630,11 +642,19 @@
                                 </button>
                             </div>
                             <p class="text-muted small mb-2">
-                                Insumos constantes al tipo y su consumo <strong>por unidad producida</strong>
-                                (ej: 8 botones por camisa, 1 etiqueta por chemise). Al crear una orden se prellenan
-                                multiplicados por la cantidad a producir.
-                                <br><span class="text-muted"><i class="ri-information-line me-1"></i>Las telas no aparecen aquí — varían por variante (cada producto tiene su tela).</span>
+                                Materiales <strong>fijos</strong> que lleva todo producto de este tipo —
+                                <strong>hilo, botón, cierre, etiqueta, broche…</strong> — y cuánto se consume
+                                <strong>por cada unidad producida</strong> (ej: 8 botones por camisa, 1 etiqueta por chemise).
+                                Al crear una orden de producción se prellenan automáticamente (consumo × cantidad).
                             </p>
+                            <div class="alert alert-light border d-flex align-items-start gap-2 py-2 px-2 mb-2 small" role="alert">
+                                <i class="ri-information-line mt-1"></i>
+                                <div>
+                                    <strong>Aquí NO van telas</strong> (se eligen al cotizar y varían por variante).
+                                    Solo se listan insumos <strong>activos</strong>; si falta alguno, regístralo en
+                                    <a href="{{ url('insumos') }}" target="_blank">Insumos</a>.
+                                </div>
+                            </div>
                             <div id="tipo-insumos-list" class="d-flex flex-column gap-1">
                                 {{-- Render dinámico vía JS --}}
                             </div>
@@ -642,6 +662,8 @@
                                 <i class="ri-inbox-line me-1"></i>Sin insumos por defecto. Agrega los que se usan al producir.
                             </div>
                         </div>
+                        </div>{{-- /col-lg-6 derecha --}}
+                        </div>{{-- /row --}}
                     </div>
                     <div class="modal-footer bg-light border-0">
                         <button type="button" class="btn btn-light" data-bs-dismiss="modal">
@@ -753,106 +775,96 @@
                 return '<span title="' + value + '" style="cursor:default;">' + value + '</span>';
             }
 
+            // FASE 3 — El catálogo se gestiona por Tipo de Producto. La tabla principal
+            // lista TIPOS (client-side). Los botones reutilizan los handlers
+            // .edit-tipo-btn / .delete-tipo-btn / .restore-tipo-btn (delegados a document).
+            var esHistorial = @json($historial);
+
             var table = $('#productos-table').DataTable({
                 processing: true,
-                serverSide: true,
+                autoWidth: false,
                 ajax: {
-                    url: "{{ route('productos.data') }}",
-                    data: function (d) {
-                        // ── Filtros avanzados: enviar valores al server ──
-                        d.filter_tipo_producto_id    = $('#filter-tipo-producto').val();
-                        d.filter_insumo_tela_id      = $('#filter-tela').val();
-                        d.filter_estatus             = $('#filter-estatus').val();
-                        d.filter_orden               = $('#filter-orden').val();
-                    }
+                    url: "{{ route('tipo-productos.index') }}" + (esHistorial ? '?historial=true' : ''),
+                    dataSrc: ''
                 },
                 columns: [
                     {
-                        data: 'codigo',
-                        name: 'codigo',
+                        data: 'imagen_url',
+                        orderable: false,
+                        searchable: false,
                         render: function (data) {
-                            return data ? '<span class="badge bg-dark">' + data + '</span>' : '-';
+                            return data
+                                ? '<img src="' + data + '" alt="Imagen" class="img-thumbnail" width="44" style="height:44px; object-fit:cover;">'
+                                : '<span class="text-muted small">Sin imagen</span>';
                         }
                     },
                     {
-                        data: 'imagen',
-                        name: 'imagen',
+                        data: 'nombre',
                         render: function (data) {
-                            return data ? '<img src="' + data + '" alt="Imagen del producto" class="img-thumbnail" width="44" style="height:44px; object-fit:cover;">' : '<span class="text-muted">Sin imagen</span>';
-                        }
-                    },
-                    {
-                        data: 'tipo_nombre',
-                        name: 'tipo_nombre',
-                        render: function (data) {
-                            if (!data) return '<span class="text-muted">—</span>';
                             return '<span class="badge badge-tipo badge-tipo-producto" title="' + data + '"><i class="ri-price-tag-3-line"></i> ' + data + '</span>';
                         }
                     },
                     {
-                        data: 'tela_nombre',
-                        name: 'tela_nombre',
-                        orderable: false,
+                        data: 'prefijo',
                         render: function (data) {
-                            if (!data || data === '—') return '<span class="text-muted">—</span>';
-                            return '<span class="badge bg-light text-dark border"><i class="ri-shirt-line me-1"></i>' + data + '</span>';
+                            return '<span class="badge bg-secondary">' + (data || '—') + '</span>';
                         }
                     },
                     {
-                        data: 'atributos_resumen',
-                        name: 'atributos_resumen',
+                        data: 'precio_confeccion',
+                        render: function (data) {
+                            return '$ ' + parseFloat(data || 0).toFixed(2);
+                        }
+                    },
+                    {
+                        data: null,
+                        orderable: false,
+                        searchable: false,
+                        render: function (data, type, row) {
+                            if (!row.requiere_tela) {
+                                return '<span class="text-muted small">No usa tela</span>';
+                            }
+                            var n = row.telas_count || 0;
+                            var cls = n > 0 ? 'bg-light text-dark border' : 'bg-warning-subtle text-warning border border-warning';
+                            return '<span class="badge ' + cls + '"><i class="ri-shirt-line me-1"></i>' + n + ' tela' + (n === 1 ? '' : 's') + '</span>';
+                        }
+                    },
+                    {
+                        data: 'atributos_count',
                         orderable: false,
                         searchable: false,
                         render: function (data) {
-                            if (!data || data === '—') return '<span class="text-muted small">—</span>';
-                            return '<span class="text-muted small">' + data + '</span>';
+                            var n = data || 0;
+                            return '<span class="badge bg-info">' + n + '</span>';
                         }
                     },
                     {
-                        data: 'precio_base',
-                        name: 'precio_base',
-                        render: function (data) {
-                            return '$ ' + parseFloat(data).toFixed(2);
-                        }
-                    },
-                    {
-                        data: 'estado',
-                        name: 'estado',
-                        render: function (data, type, row) {
-                            // Si está en historial (trashed), mostrar badge "Inactivo"
-                            if (row.trashed) {
-                                return '<span class="badge badge-status status-inactivo"><i class="ri-close-circle-line"></i> Inactivo</span>';
-                            }
-                            return data ? '<span class="badge badge-status status-activo"><i class="ri-checkbox-circle-line"></i> Activo</span>' : '<span class="badge badge-status status-inactivo"><i class="ri-close-circle-line"></i> Inactivo</span>';
+                        data: null,
+                        orderable: false,
+                        searchable: false,
+                        render: function () {
+                            return esHistorial
+                                ? '<span class="badge badge-status status-inactivo"><i class="ri-close-circle-line"></i> Inactivo</span>'
+                                : '<span class="badge badge-status status-activo"><i class="ri-checkbox-circle-line"></i> Activo</span>';
                         }
                     },
                     {
                         data: 'id',
-                        name: 'actions',
                         orderable: false,
                         searchable: false,
-                        render: function (data, type, row) {
-                            return generateButtons(data, row.trashed);
+                        render: function (data) {
+                            if (esHistorial) {
+                                return '<button class="btn btn-sm btn-outline-success restore-tipo-btn" data-id="' + data + '" title="Restaurar"><i class="ri-refresh-line"></i></button>';
+                            }
+                            return '<div class="d-inline-flex gap-1">' +
+                                '<button class="btn btn-sm btn-outline-primary edit-tipo-btn" data-id="' + data + '" title="Editar"><i class="ri-pencil-line"></i></button>' +
+                                '<button class="btn btn-sm btn-outline-danger delete-tipo-btn" data-id="' + data + '" title="Inhabilitar"><i class="ri-delete-bin-line"></i></button>' +
+                                '</div>';
                         }
                     }
                 ],
-                order: [],
-                ordering: false,
+                order: [[1, 'asc']],
                 dom: 'rtip',
-                buttons: [
-                    {
-                        extend: 'copy',
-                        exportOptions: {
-                            columns: [0, 1, 2, 3, 4, 5, 6]
-                        }
-                    },
-                    {
-                        extend: 'excel',
-                        exportOptions: {
-                            columns: [2, 3, 4, 5]
-                        }
-                    }
-                ],
                 language: lenguajeData
             });
 
@@ -981,23 +993,15 @@
                     if (data.imagen) {
                         $("#imagen-preview img").attr('src', data.imagen);
                         $("#imagen-preview").show();
-                        $("#imagen-field").prop('required', false);
-                        $("#imagen-required-star").addClass('d-none');
-                    } else {
-                        $("#imagen-field").prop('required', true);
-                        $("#imagen-required-star").removeClass('d-none');
                     }
 
                     $("#add-btn").hide();
                     $("#edit-btn").show();
                     $("#showModal").modal('show');
 
-                    // Cargar atributos del tipo y marcar los del producto
-                    cargarAtributosDeTipo(data.tipo_producto_id).then(function () {
-                        renderAtributosChips(data.atributo_valor_ids || []);
-                        // En edición no recalculamos SKU; mostramos sugerencia y breakdown sí
-                        actualizarSugerenciaPrecioOnly();
-                    });
+                    // Configurar requerimiento de tela según el tipo; en edición no recalculamos SKU,
+                    // pero sí mostramos sugerencia y breakdown de precio.
+                    configurarTipo(data.tipo_producto_id).then(actualizarSugerenciaPrecioOnly);
                 });
             });
 
@@ -1023,85 +1027,80 @@
                 });
             }
 
-            // ========= NUEVO FLUJO: Variantes (tipo + tela + atributos) =========
+            // ========= FLUJO: Producto base (tipo + tela) =========
+            // Las variaciones (manga, cuello, corte...) ya NO se fijan aquí: se configuran
+            // al cotizar (FEAT-003). Este modal solo define el producto base.
 
-            var atributosDelTipoActual = []; // [{id, nombre, codigo, valores: [...]}, ...] en orden del tipo
+            // Habilita/bloquea el selector de tela. Un tipo que no requiere tela
+            // (ej. servicios o accesorios) no debe permitir elegir una.
+            function setTelaHabilitada(habilitada) {
+                var $tela = $('#tela-field');
+                $tela.prop('disabled', !habilitada);
+                if (!habilitada) {
+                    $tela.val('');
+                    $('#tela-hint').text('Este tipo de producto no usa tela.');
+                } else {
+                    $('#tela-hint').text('Materia prima base. Define la sugerencia de precio.');
+                }
+            }
 
-            function cargarAtributosDeTipo(tipoId) {
+            // Cache de TODAS las telas (para preservar selección legacy no permitida en edición
+            // y restaurar el listado completo al cerrar el modal).
+            var telasOptionCache = {};
+            $('#tela-field option').each(function () {
+                if (this.value) telasOptionCache[this.value] = this.outerHTML;
+            });
+            var telaFieldFullHtml = $('#tela-field').html();
+
+            // Repuebla el selector solo con las telas permitidas del tipo (FEAT-003: tipo_producto_tela).
+            function poblarTelasPermitidas(telas, seleccionId) {
+                var opts = '<option value="">Seleccione una tela...</option>';
+                (telas || []).forEach(function (t) {
+                    var costo = parseFloat(t.costo_unitario || 0).toFixed(2);
+                    var cod = t.codigo ? ' [' + escapeHtml(t.codigo) + ']' : '';
+                    opts += '<option value="' + t.id + '"' +
+                        ' data-codigo="' + escapeHtml(t.codigo || '') + '"' +
+                        ' data-costo="' + (t.costo_unitario || 0) + '"' +
+                        ' data-unidad="' + escapeHtml(t.unidad_medida || '') + '">' +
+                        escapeHtml(t.nombre) + cod + ' — $' + costo + '/' + escapeHtml(t.unidad_medida || '') +
+                        '</option>';
+                });
+                var $tela = $('#tela-field').html(opts);
+                // Preservar una selección previa aunque no esté en las permitidas (caso edición legacy).
+                if (seleccionId) {
+                    if ($tela.find('option[value="' + seleccionId + '"]').length === 0 && telasOptionCache[seleccionId]) {
+                        var $legacy = $(telasOptionCache[seleccionId]);
+                        $legacy.append(' (no permitida)');
+                        $tela.append($legacy);
+                    }
+                    $tela.val(String(seleccionId));
+                }
+            }
+
+            function configurarTipo(tipoId) {
                 if (!tipoId) {
-                    atributosDelTipoActual = [];
-                    renderAtributosChips();
+                    $('#tela-field').prop('required', false).prop('disabled', false).val('');
+                    $('#tela-required-star').hide();
+                    $('#tela-hint').text('Materia prima base. Define la sugerencia de precio.');
                     actualizarCodigoYPrecio();
                     return $.Deferred().resolve();
                 }
+                var seleccionActual = $('#tela-field').val();
                 return $.getJSON("{{ url('tipo-productos') }}/" + tipoId).done(function (tipo) {
-                    atributosDelTipoActual = (tipo.atributos || []).map(function (a) {
-                        return {
-                            id: a.id,
-                            nombre: a.nombre,
-                            codigo: a.codigo,
-                            orden: a.pivot ? a.pivot.orden : 999,
-                            valores: a.valores || []
-                        };
-                    });
-                    // Toggle requerimiento de tela
                     var requiereTela = !!tipo.requiere_tela;
                     $('#tela-field').prop('required', requiereTela);
                     $('#tela-required-star').toggle(requiereTela);
-                    renderAtributosChips();
-                });
-            }
 
-            function renderAtributosChips(seleccionadosIds) {
-                var preseleccionados = seleccionadosIds || [];
-                if (!atributosDelTipoActual.length) {
-                    $('#atributos-empty').show().text('Este tipo no tiene atributos asociados.');
-                    $('#atributos-chips-container').find('.atributo-grupo').remove();
-                    return;
-                }
-                $('#atributos-empty').hide();
-
-                var html = atributosDelTipoActual.map(function (atr) {
-                    if (!atr.valores.length) {
-                        return '' +
-                            '<div class="atributo-grupo mb-3" data-atr-id="' + atr.id + '">' +
-                                '<label class="form-label small text-muted mb-1">' +
-                                    escapeHtml(atr.nombre) +
-                                '</label>' +
-                                '<div class="text-muted small fst-italic">Sin valores definidos. ' +
-                                'Agregar en <a href="{{ url('atributos') }}" target="_blank">/atributos</a>.</div>' +
-                            '</div>';
+                    if (requiereTela) {
+                        poblarTelasPermitidas(tipo.telas || [], seleccionActual);
+                        setTelaHabilitada(true);
+                        if (!(tipo.telas || []).length) {
+                            $('#tela-hint').html('<span class="text-warning">Este tipo no tiene telas permitidas. Asígnalas en <strong>Gestionar Tipos</strong>.</span>');
+                        }
+                    } else {
+                        setTelaHabilitada(false);
                     }
-                    var chips = atr.valores.map(function (v) {
-                        var checked = preseleccionados.indexOf(v.id) !== -1;
-                        return '' +
-                            '<input type="radio" class="btn-check atributo-radio" ' +
-                                'name="atr_' + atr.id + '" id="val-' + v.id + '" ' +
-                                'value="' + v.id + '" data-atr-id="' + atr.id + '"' +
-                                (checked ? ' checked' : '') + '>' +
-                            '<label class="btn btn-outline-primary btn-sm" for="val-' + v.id + '">' +
-                                escapeHtml(v.nombre) +
-                                ' <small class="text-muted">' + escapeHtml(v.codigo) + '</small>' +
-                            '</label>';
-                    }).join('');
-                    return '' +
-                        '<div class="atributo-grupo mb-3" data-atr-id="' + atr.id + '">' +
-                            '<label class="form-label small fw-semibold mb-2">' +
-                                escapeHtml(atr.nombre) +
-                                ' <span class="text-muted small">(' + escapeHtml(atr.codigo) + ')</span>' +
-                            '</label>' +
-                            '<div class="d-flex flex-wrap gap-2">' + chips + '</div>' +
-                        '</div>';
-                }).join('');
-
-                $('#atributos-chips-container').find('.atributo-grupo').remove();
-                $('#atributos-chips-container').append(html);
-            }
-
-            function recolectarValoresSeleccionados() {
-                return $('.atributo-radio:checked').map(function () {
-                    return parseInt($(this).val());
-                }).get();
+                });
             }
 
             function actualizarCodigoYPrecio() {
@@ -1135,13 +1134,11 @@
                     }
                 });
 
-                // Vista previa SKU (depende de tipo + tela + atributos seleccionados)
+                // Vista previa SKU (depende de tipo + tela)
                 if ($('#id-field').val()) return; // En edición no recalculamos automáticamente
-                var valoresIds = recolectarValoresSeleccionados();
                 $.getJSON("{{ route('productos.preview-codigo') }}", {
                     tipo_producto_id: tipoId,
-                    insumo_tela_id: telaId || null,
-                    'atributo_valor_ids[]': valoresIds
+                    insumo_tela_id: telaId || null
                 }).done(function (resp) {
                     $('#codigo-field').val(resp.codigo);
                 });
@@ -1155,10 +1152,9 @@
 
             // Listeners
             $('#tipo-producto-field').on('change', function () {
-                cargarAtributosDeTipo($(this).val()).then(actualizarCodigoYPrecio);
+                configurarTipo($(this).val()).then(actualizarCodigoYPrecio);
             });
             $('#tela-field').on('change', actualizarCodigoYPrecio);
-            $(document).on('change', '.atributo-radio', actualizarCodigoYPrecio);
 
             // Aplicar precio sugerido
             $('#btn-aplicar-sugerido').on('click', function () {
@@ -1181,11 +1177,6 @@
                 if (method === "PUT") {
                     formData.append('_method', 'PUT');
                 }
-
-                // Adjuntar valores de atributos seleccionados (uno por radio group)
-                recolectarValoresSeleccionados().forEach(function (vid) {
-                    formData.append('atributo_valor_ids[]', vid);
-                });
 
                 $.ajax({
                     url: url,
@@ -1346,10 +1337,10 @@
                 $("#productoForm")[0].reset();
                 $("#id-field").val("");
                 $("#codigo-field").val("");
-                $("#tela-field").val("");
+                $("#tela-field").html(telaFieldFullHtml).val("").prop('disabled', false).prop('required', false);
+                $("#tela-required-star").hide();
+                $("#tela-hint").text('Materia prima base. Define la sugerencia de precio.');
                 $("#imagen-preview").hide();
-                $("#imagen-field").prop('required', true);
-                $("#imagen-required-star").removeClass('d-none');
                 $("#estado-switch").prop('checked', true);
                 $("#estado-hidden-field").val("1");
                 $("#estado-label").text("Activo");
@@ -1357,10 +1348,6 @@
                 $("#edit-btn").hide();
                 $('#productoForm').find('input, select, textarea').removeClass('is-invalid is-valid');
                 $('#productoForm').find('.invalid-feedback').hide();
-                // Reset variantes
-                atributosDelTipoActual = [];
-                $('#atributos-chips-container').find('.atributo-grupo').remove();
-                $('#atributos-empty').show().text('Selecciona un tipo de producto para ver sus variaciones.');
                 $('#btn-aplicar-sugerido').hide();
                 $('#precio-breakdown').hide();
             });
@@ -1390,15 +1377,6 @@
                     marcarInvalido($precio, 'El precio base debe ser mayor a cero.');
                     esValido = false;
                 } else { marcarValido($precio); }
-
-                let esCreacion = $('#id-field').val() === '';
-                if (esCreacion) {
-                    let $imagen = $('#imagen-field');
-                    if (!$imagen[0].files || $imagen[0].files.length === 0) {
-                        marcarInvalido($imagen, 'La imagen es obligatoria al crear un producto.');
-                        esValido = false;
-                    } else { marcarValido($imagen); }
-                }
 
                 return esValido;
             }
@@ -1574,19 +1552,18 @@
 
             // Imagen — formato y tamaño (solo en creación)
             $(document).on('change', '#imagen-field', function () {
-                let esCreacion = $('#id-field').val() === '';
                 let file = this.files[0];
                 if (!file) {
-                    if (esCreacion) marcarInvalido($(this), 'La imagen es obligatoria.');
+                    marcarValido($(this));
                     return;
                 }
-                let tiposPermitidos = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+                let tiposPermitidos = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/bmp', 'image/avif'];
                 if (!tiposPermitidos.includes(file.type)) {
-                    marcarInvalido($(this), 'Formato no permitido. Use JPG, PNG o GIF.');
+                    marcarInvalido($(this), 'Formato no permitido. Use JPG, PNG, GIF, WEBP, BMP o AVIF.');
                     return;
                 }
-                if (file.size > 2048 * 1024) {
-                    marcarInvalido($(this), 'La imagen no puede superar 2MB.');
+                if (file.size > 10240 * 1024) {
+                    marcarInvalido($(this), 'La imagen no puede superar 10MB.');
                     return;
                 }
                 marcarValido($(this));
@@ -1596,6 +1573,21 @@
             // VALIDACIONES AJAX onblur — Tipos de Producto
 
             // 1. Nombre
+            // Sugiere un prefijo a partir del nombre: primera letra + consonantes (máx 3).
+            // Ej: Chemise→CHM, Franela→FRN, Pantalón→PNT. Es solo una sugerencia editable.
+            function sugerirPrefijo(nombre) {
+                var letras = (nombre || '').normalize('NFD').replace(/[̀-ͯ]/g, '')
+                    .toUpperCase().replace(/[^A-Z]/g, '');
+                if (!letras) return '';
+                var vocales = 'AEIOU';
+                var out = letras.charAt(0);
+                for (var i = 1; i < letras.length && out.length < 3; i++) {
+                    if (vocales.indexOf(letras.charAt(i)) === -1) out += letras.charAt(i);
+                }
+                if (out.length < 3) out = letras.substring(0, 3); // pocas consonantes → primeras letras
+                return out;
+            }
+
             $('#tipo-nombre-field').on('blur', function () {
                 let value = $(this).val().trim();
                 let $input = $(this);
@@ -1609,6 +1601,16 @@
                     marcarInvalido($input, 'El nombre debe tener al menos 2 caracteres.');
                     return;
                 }
+
+                // Sugerencia editable de prefijo (solo al crear y si el campo está vacío)
+                if (!isEdit) {
+                    var $pref = $('#tipo-prefijo-field');
+                    if (!$pref.val().trim()) {
+                        var sug = sugerirPrefijo(value);
+                        if (sug) $pref.val(sug).trigger('blur');
+                    }
+                }
+
                 if (isEdit) {
                     marcarValido($input);
                     return;
@@ -1688,7 +1690,7 @@
                     var checked = seleccionadosMap.hasOwnProperty(a.id);
                     var orden = checked ? seleccionadosMap[a.id] : '';
                     return '' +
-                        '<div class="d-flex align-items-center gap-2 p-2 border rounded tipo-atr-row" data-atr-id="' + a.id + '">' +
+                        '<div class="d-flex align-items-center gap-2 p-2 border rounded tipo-atr-row" data-atr-id="' + a.id + '" data-search="' + escapeHtml((a.nombre + ' ' + (a.codigo || '')).toLowerCase()) + '">' +
                             '<div class="form-check flex-grow-1 mb-0">' +
                                 '<input class="form-check-input tipo-atr-check" type="checkbox" id="tipo-atr-' + a.id + '"' + (checked ? ' checked' : '') + '>' +
                                 '<label class="form-check-label" for="tipo-atr-' + a.id + '">' +
@@ -1703,6 +1705,9 @@
                 }).join('');
 
                 $('#tipo-atributos-list').html(html);
+                actualizarContadorAtributos();
+                // Reaplicar filtro de búsqueda activo (si lo hay)
+                $('#tipo-atributos-search').trigger('input');
             }
 
             // Toggle del input de orden cuando se marca/desmarca
@@ -1722,6 +1727,40 @@
                 } else {
                     $orden.prop('disabled', true).val('');
                 }
+            });
+
+            // ── Contadores de seleccionados ──
+            function actualizarContadorTelas() {
+                var n = $('.tipo-tela-check:checked').length;
+                $('#tipo-telas-count').text(n + (n === 1 ? ' seleccionada' : ' seleccionadas'));
+            }
+            function actualizarContadorAtributos() {
+                var n = $('.tipo-atr-check:checked').length;
+                $('#tipo-atributos-count').text(n + (n === 1 ? ' seleccionado' : ' seleccionados'));
+            }
+            $(document).on('change', '.tipo-tela-check', actualizarContadorTelas);
+            $(document).on('change', '.tipo-atr-check', actualizarContadorAtributos);
+
+            // ── Buscadores con filtrado en vivo ──
+            $(document).on('input', '#tipo-telas-search', function () {
+                var q = this.value.toLowerCase().trim();
+                var any = false;
+                $('#tipo-telas-list > .tipo-tela-item').each(function () {
+                    var match = !q || ($(this).attr('data-search') || '').indexOf(q) !== -1;
+                    $(this).toggleClass('d-none', !match);
+                    if (match) any = true;
+                });
+                $('#tipo-telas-noresult').toggleClass('d-none', !q || any);
+            });
+            $(document).on('input', '#tipo-atributos-search', function () {
+                var q = this.value.toLowerCase().trim();
+                var any = false;
+                $('#tipo-atributos-list > .tipo-atr-row').each(function () {
+                    var match = !q || ($(this).attr('data-search') || '').indexOf(q) !== -1;
+                    $(this).toggleClass('d-none', !match);
+                    if (match) any = true;
+                });
+                $('#tipo-atributos-noresult').toggleClass('d-none', !q || any);
             });
 
             function recolectarAtributosSeleccionados() {
@@ -1765,7 +1804,7 @@
                     return '<div class="row g-2 align-items-center tipo-insumo-row" data-idx="' + idx + '">' +
                         '<div class="col-md-7">' +
                             '<select class="form-select form-select-sm tipo-insumo-select">' +
-                                '<option value="">Seleccione insumo...</option>' + optionsHtml +
+                                '<option value="">Seleccione un insumo (hilo, botón, cierre…)</option>' + optionsHtml +
                             '</select>' +
                         '</div>' +
                         '<div class="col-md-3">' +
@@ -1862,6 +1901,11 @@
                 $('.tipo-tela-check').prop('checked', false);
                 aplicarTipoConsumoTelaVisibility();
                 $('#tipo-atributos-list').html('');
+                $('#tipo-imagen-preview').hide().find('img').attr('src', '');
+                // Reset buscadores + contadores de las listas
+                $('#tipo-telas-search, #tipo-atributos-search').val('').trigger('input');
+                actualizarContadorTelas();
+                actualizarContadorAtributos();
                 tipoInsumosState = [];
                 renderTipoInsumos();
                 $('#tipoModalTitle').html('<i class="ri-add-line me-2"></i>Agregar Tipo de Producto');
@@ -1884,11 +1928,19 @@
                     $("#tipo-requiere-tela").prop('checked', !!tipo.requiere_tela);
                     $("#tipo-consumo-tela").val(tipo.consumo_tela_por_unidad || 0);
 
+                    if (tipo.imagen_url) {
+                        $('#tipo-imagen-preview img').attr('src', tipo.imagen_url);
+                        $('#tipo-imagen-preview').show();
+                    } else {
+                        $('#tipo-imagen-preview').hide();
+                    }
+
                     // Telas permitidas del tipo (FEAT-003)
                     var telaIds = (tipo.telas || []).map(function (t) { return String(t.id); });
                     $('.tipo-tela-check').each(function () {
                         $(this).prop('checked', telaIds.indexOf(String(this.value)) !== -1);
                     });
+                    actualizarContadorTelas();
 
                     aplicarTipoConsumoTelaVisibility();
                     $("#tipoModalTitle").html('<i class="ri-pencil-line me-2"></i>Editar Tipo de Producto');
@@ -2034,6 +2086,28 @@
             });
 
             // Guardar tipo
+            // Preview en vivo de la imagen del tipo
+            $(document).on('change', '#tipo-imagen-field', function () {
+                var file = this.files[0];
+                if (!file) { return; }
+                var tipos = ['image/jpeg','image/jpg','image/png','image/gif','image/webp','image/bmp','image/avif'];
+                if (tipos.indexOf(file.type) === -1) {
+                    marcarInvalido($(this), 'Formato no permitido. Use JPG, PNG, GIF, WEBP, BMP o AVIF.');
+                    return;
+                }
+                if (file.size > 10240 * 1024) {
+                    marcarInvalido($(this), 'La imagen no puede superar 10MB.');
+                    return;
+                }
+                marcarValido($(this));
+                var reader = new FileReader();
+                reader.onload = function (e) {
+                    $('#tipo-imagen-preview img').attr('src', e.target.result);
+                    $('#tipo-imagen-preview').show();
+                };
+                reader.readAsDataURL(file);
+            });
+
             $("#tipoForm").on("submit", function (e) {
                 e.preventDefault();
 
@@ -2043,30 +2117,42 @@
 
                 var id = $("#tipo-id-field").val();
                 var url = id ? "{{ url('tipo-productos') }}/" + id : "{{ route('tipo-productos.store') }}";
-                var method = id ? "PUT" : "POST";
 
                 // Sincronizar estado de insumos desde los inputs visibles antes de enviar
                 sincronizarTipoInsumosState();
 
+                // FormData para poder adjuntar la imagen del catálogo.
+                var fd = new FormData();
+                if (id) fd.append('_method', 'PUT');
+                fd.append('nombre', $("#tipo-nombre-field").val());
+                fd.append('prefijo', $("#tipo-prefijo-field").val().toUpperCase());
+                fd.append('descripcion', $("#tipo-descripcion-field").val());
+                fd.append('precio_confeccion', parseFloat($("#tipo-precio-confeccion").val()) || 0);
+                fd.append('requiere_tela', $("#tipo-requiere-tela").is(':checked') ? 1 : 0);
+                fd.append('consumo_tela_por_unidad', parseFloat($("#tipo-consumo-tela").val()) || 0);
+
+                recolectarAtributosSeleccionados().forEach(function (a, i) {
+                    fd.append('atributos[' + i + '][id]', a.id);
+                    fd.append('atributos[' + i + '][orden]', a.orden);
+                });
+                tipoInsumosState.forEach(function (it, i) {
+                    fd.append('insumos_default[' + i + '][id]', it.id);
+                    fd.append('insumos_default[' + i + '][cantidad_estimada]', it.cantidad);
+                });
+                if ($("#tipo-requiere-tela").is(':checked')) {
+                    $('.tipo-tela-check:checked').each(function () {
+                        fd.append('telas[]', this.value);
+                    });
+                }
+                var imgFile = $('#tipo-imagen-field')[0].files[0];
+                if (imgFile) fd.append('imagen', imgFile);
+
                 $.ajax({
                     url: url,
-                    method: method,
-                    data: {
-                        nombre: $("#tipo-nombre-field").val(),
-                        prefijo: $("#tipo-prefijo-field").val().toUpperCase(),
-                        descripcion: $("#tipo-descripcion-field").val(),
-                        precio_confeccion: parseFloat($("#tipo-precio-confeccion").val()) || 0,
-                        requiere_tela: $("#tipo-requiere-tela").is(':checked') ? 1 : 0,
-                        consumo_tela_por_unidad: parseFloat($("#tipo-consumo-tela").val()) || 0,
-                        atributos: recolectarAtributosSeleccionados(),
-                        insumos_default: tipoInsumosState.map(function (it) {
-                            return { id: it.id, cantidad_estimada: it.cantidad };
-                        }),
-                        // Telas permitidas (FEAT-003) — solo si requiere tela
-                        telas: $("#tipo-requiere-tela").is(':checked')
-                            ? $('.tipo-tela-check:checked').map(function () { return this.value; }).get()
-                            : []
-                    },
+                    method: "POST",
+                    data: fd,
+                    processData: false,
+                    contentType: false,
                     headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
                     success: function (response) {
                         $("#addTipoModal").modal('hide');
@@ -2112,6 +2198,10 @@
 
             // Actualizar select de tipos después de agregar uno nuevo
             function actualizarSelectTipos() {
+                // Refrescar la tabla principal del catálogo (lista de Tipos — Fase 3).
+                if (typeof table !== 'undefined' && table) {
+                    table.ajax.reload(null, false);
+                }
                 $.get("{{ route('tipo-productos.index') }}", function (tipos) {
                     var select = $("#tipo-producto-field");
                     select.find("option:not(:first)").remove();
