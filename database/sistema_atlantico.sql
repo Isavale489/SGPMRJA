@@ -320,7 +320,7 @@ CREATE TABLE `cotizacion` (
   KEY `idx_cotizacion_cliente_estado` (`cliente_id`,`estado`),
   CONSTRAINT `cotizacion_cliente_id_foreign` FOREIGN KEY (`cliente_id`) REFERENCES `cliente` (`id`),
   CONSTRAINT `cotizacion_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `user` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -328,6 +328,7 @@ CREATE TABLE `cotizacion` (
 --
 
 /*!40000 ALTER TABLE `cotizacion` DISABLE KEYS */;
+INSERT INTO `cotizacion` VALUES (1,23,'2026-06-06','2026-06-22','Convertida',352.00,563.2892,'Para el director de compañia de tecnologia',NULL,7,'Normal','2026-06-07 03:23:23','2026-06-07 06:02:13',NULL);
 /*!40000 ALTER TABLE `cotizacion` ENABLE KEYS */;
 
 --
@@ -391,7 +392,7 @@ CREATE TABLE `detalle_cotizacion` (
   CONSTRAINT `detalle_cotizacion_tipo_producto_id_foreign` FOREIGN KEY (`tipo_producto_id`) REFERENCES `tipo_producto` (`id`) ON DELETE SET NULL,
   CONSTRAINT `detalle_cotizaciones_cotizacion_id_foreign` FOREIGN KEY (`cotizacion_id`) REFERENCES `cotizacion` (`id`) ON DELETE CASCADE,
   CONSTRAINT `detalle_cotizaciones_producto_id_foreign` FOREIGN KEY (`producto_id`) REFERENCES `producto` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -399,6 +400,7 @@ CREATE TABLE `detalle_cotizacion` (
 --
 
 /*!40000 ALTER TABLE `detalle_cotizacion` DISABLE KEYS */;
+INSERT INTO `detalle_cotizacion` VALUES (1,1,NULL,10,'{\"id\":10,\"nombre\":\"Gabardina \\/ Dril\",\"codigo\":\"GBD\",\"costo_unitario\":22,\"unidad_medida\":\"Metro\",\"snapshot_at\":\"2026-06-06\"}','{\"Modelo Delantal\":\"2 bolsillos\"}','DLNT-GBD-2BL-001',11,NULL,1,11,11,32.00,'2026-06-07 03:23:23','2026-06-07 03:23:23');
 /*!40000 ALTER TABLE `detalle_cotizacion` ENABLE KEYS */;
 
 --
@@ -428,7 +430,7 @@ CREATE TABLE `detalle_cotizacion_bordado` (
   CONSTRAINT `detalle_cotizacion_bordado_detalle_cotizacion_id_foreign` FOREIGN KEY (`detalle_cotizacion_id`) REFERENCES `detalle_cotizacion` (`id`) ON DELETE CASCADE,
   CONSTRAINT `detalle_cotizacion_bordado_logo_id_foreign` FOREIGN KEY (`logo_id`) REFERENCES `logo` (`id`) ON DELETE SET NULL,
   CONSTRAINT `detalle_cotizacion_bordado_ubicacion_bordado_id_foreign` FOREIGN KEY (`ubicacion_bordado_id`) REFERENCES `bordado_ubicacion` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -436,6 +438,7 @@ CREATE TABLE `detalle_cotizacion_bordado` (
 --
 
 /*!40000 ALTER TABLE `detalle_cotizacion_bordado` DISABLE KEYS */;
+INSERT INTO `detalle_cotizacion_bordado` VALUES (1,1,1,5,'Frontal Izquierdo','Alcaldia Municipal',0,1,3.00,0,'2026-06-07 03:23:23','2026-06-07 03:23:23');
 /*!40000 ALTER TABLE `detalle_cotizacion_bordado` ENABLE KEYS */;
 
 --
@@ -458,7 +461,7 @@ CREATE TABLE `detalle_orden_insumo` (
   KEY `detalle_orden_insumos_insumo_id_foreign` (`insumo_id`),
   CONSTRAINT `detalle_orden_insumos_insumo_id_foreign` FOREIGN KEY (`insumo_id`) REFERENCES `insumo` (`id`),
   CONSTRAINT `detalle_orden_insumos_orden_produccion_id_foreign` FOREIGN KEY (`orden_produccion_id`) REFERENCES `orden_produccion` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -466,6 +469,7 @@ CREATE TABLE `detalle_orden_insumo` (
 --
 
 /*!40000 ALTER TABLE `detalle_orden_insumo` DISABLE KEYS */;
+INSERT INTO `detalle_orden_insumo` VALUES (1,1,10,16.50,0.00,'2026-06-07 15:54:52','2026-06-07 15:54:52'),(2,1,14,11.00,0.00,'2026-06-07 15:54:52','2026-06-07 15:54:52'),(3,1,16,11.00,0.00,'2026-06-07 15:54:52','2026-06-07 15:54:52'),(4,1,17,1100.00,0.00,'2026-06-07 15:54:52','2026-06-07 15:54:52');
 /*!40000 ALTER TABLE `detalle_orden_insumo` ENABLE KEYS */;
 
 --
@@ -502,7 +506,7 @@ CREATE TABLE `detalle_pedido` (
   CONSTRAINT `detalle_pedido_tipo_producto_id_foreign` FOREIGN KEY (`tipo_producto_id`) REFERENCES `tipo_producto` (`id`) ON DELETE SET NULL,
   CONSTRAINT `detalle_pedidos_pedido_id_foreign` FOREIGN KEY (`pedido_id`) REFERENCES `pedido` (`id`) ON DELETE CASCADE,
   CONSTRAINT `detalle_pedidos_producto_id_foreign` FOREIGN KEY (`producto_id`) REFERENCES `producto` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -510,6 +514,7 @@ CREATE TABLE `detalle_pedido` (
 --
 
 /*!40000 ALTER TABLE `detalle_pedido` DISABLE KEYS */;
+INSERT INTO `detalle_pedido` VALUES (1,1,NULL,10,'{\"id\":10,\"nombre\":\"Gabardina \\/ Dril\",\"codigo\":\"GBD\",\"costo_unitario\":22,\"unidad_medida\":\"Metro\",\"snapshot_at\":\"2026-06-07\"}','{\"Modelo Delantal\":\"2 bolsillos\"}','DLNT-GBD-2BL-001',11,NULL,1,11,11,32.00,'2026-06-07 06:02:13','2026-06-07 06:02:13');
 /*!40000 ALTER TABLE `detalle_pedido` ENABLE KEYS */;
 
 --
@@ -539,7 +544,7 @@ CREATE TABLE `detalle_pedido_bordado` (
   CONSTRAINT `detalle_pedido_bordado_detalle_pedido_id_foreign` FOREIGN KEY (`detalle_pedido_id`) REFERENCES `detalle_pedido` (`id`) ON DELETE CASCADE,
   CONSTRAINT `detalle_pedido_bordado_logo_id_foreign` FOREIGN KEY (`logo_id`) REFERENCES `logo` (`id`) ON DELETE SET NULL,
   CONSTRAINT `detalle_pedido_bordado_ubicacion_bordado_id_foreign` FOREIGN KEY (`ubicacion_bordado_id`) REFERENCES `bordado_ubicacion` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -547,6 +552,7 @@ CREATE TABLE `detalle_pedido_bordado` (
 --
 
 /*!40000 ALTER TABLE `detalle_pedido_bordado` DISABLE KEYS */;
+INSERT INTO `detalle_pedido_bordado` VALUES (1,1,1,5,'Frontal Izquierdo','Alcaldia Municipal',0,1,3.00,0,'2026-06-07 06:02:13','2026-06-07 06:02:13');
 /*!40000 ALTER TABLE `detalle_pedido_bordado` ENABLE KEYS */;
 
 --
@@ -836,7 +842,7 @@ CREATE TABLE `orden_produccion` (
   CONSTRAINT `orden_produccion_pedido_id_foreign` FOREIGN KEY (`pedido_id`) REFERENCES `pedido` (`id`) ON DELETE SET NULL,
   CONSTRAINT `ordenes_produccion_created_by_foreign` FOREIGN KEY (`created_by`) REFERENCES `user` (`id`),
   CONSTRAINT `ordenes_produccion_producto_id_foreign` FOREIGN KEY (`producto_id`) REFERENCES `producto` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -844,6 +850,7 @@ CREATE TABLE `orden_produccion` (
 --
 
 /*!40000 ALTER TABLE `orden_produccion` DISABLE KEYS */;
+INSERT INTO `orden_produccion` VALUES (1,1,1,NULL,10,11,0,0,'2026-06-08','2026-06-15',NULL,'Pendiente','notificar a departamente administrativo cuando finalice la produccion de este producto',7,'2026-06-07 15:54:52','2026-06-07 15:54:52',NULL);
 /*!40000 ALTER TABLE `orden_produccion` ENABLE KEYS */;
 
 --
@@ -867,7 +874,7 @@ CREATE TABLE `pago_pedido` (
   KEY `idx_pago_pedido_metodo` (`pedido_id`,`metodo`),
   CONSTRAINT `pago_pedido_banco_id_foreign` FOREIGN KEY (`banco_id`) REFERENCES `banco` (`id`) ON DELETE SET NULL,
   CONSTRAINT `pago_pedido_pedido_id_foreign` FOREIGN KEY (`pedido_id`) REFERENCES `pedido` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -875,6 +882,7 @@ CREATE TABLE `pago_pedido` (
 --
 
 /*!40000 ALTER TABLE `pago_pedido` DISABLE KEYS */;
+INSERT INTO `pago_pedido` VALUES (1,1,'efectivo',100.00,NULL,NULL,'2026-06-07 06:02:12','2026-06-07 06:02:12');
 /*!40000 ALTER TABLE `pago_pedido` ENABLE KEYS */;
 
 --
@@ -932,7 +940,7 @@ CREATE TABLE `pedido` (
   CONSTRAINT `pedido_cliente_id_foreign` FOREIGN KEY (`cliente_id`) REFERENCES `cliente` (`id`) ON DELETE SET NULL,
   CONSTRAINT `pedido_cotizacion_id_foreign` FOREIGN KEY (`cotizacion_id`) REFERENCES `cotizacion` (`id`) ON DELETE SET NULL,
   CONSTRAINT `pedido_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `user` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -940,6 +948,7 @@ CREATE TABLE `pedido` (
 --
 
 /*!40000 ALTER TABLE `pedido` DISABLE KEYS */;
+INSERT INTO `pedido` VALUES (1,1,23,'2026-06-07','2026-06-22','Pendiente','Normal',352.00,100.00,7,'2026-06-07 06:02:12','2026-06-07 06:02:12',NULL);
 /*!40000 ALTER TABLE `pedido` ENABLE KEYS */;
 
 --
@@ -1312,7 +1321,7 @@ CREATE TABLE `tipo_producto` (
 --
 
 /*!40000 ALTER TABLE `tipo_producto` DISABLE KEYS */;
-INSERT INTO `tipo_producto` VALUES (1,'Chemise','CHM','Camisas tipo polo con cuello',NULL,12.00,1,0.00,'2025-12-16 17:48:48','2026-05-28 23:49:57',NULL),(2,'Franela','FRN','Franelas cuello redondo o V',NULL,8.00,1,0.00,'2025-12-16 17:48:48','2026-05-28 23:50:15',NULL),(3,'Camisa','CAM','Camisas formales',NULL,15.00,1,2.00,'2025-12-16 17:48:48','2026-06-06 23:10:07',NULL),(4,'Pantalón','PNT','Pantalones de trabajo o formales',NULL,18.00,0,0.00,'2025-12-16 17:48:48','2026-06-06 22:02:06',NULL),(5,'Chaqueta','CHQ','Chaquetas industriales o formales',NULL,25.00,1,0.00,'2025-12-16 17:48:48','2026-05-07 17:15:29',NULL),(6,'Overol','OVR','Overoles y monos de trabajo',NULL,0.00,1,0.00,'2025-12-16 17:48:48','2025-12-16 17:48:48',NULL),(7,'Chemise Escolar','ESC','Prendas para uniformes escolares',NULL,0.00,1,0.00,'2025-12-16 17:48:48','2026-06-06 22:03:08',NULL),(8,'Accesorio','ACC','delantales, chalecos, etc.',NULL,0.00,0,0.00,'2025-12-16 17:48:48','2026-06-06 18:19:03',NULL),(9,'Gorra','GO','Clasica',NULL,0.00,0,0.00,'2026-05-03 21:27:03','2026-06-06 21:13:51',NULL),(10,'Delantal','DLNT','Para carniceros, caleteros, chefs, entre otros','productoimg/tipos/6a24d12f71096.jpg',7.00,1,1.50,'2026-06-07 02:02:23','2026-06-07 02:02:23',NULL);
+INSERT INTO `tipo_producto` VALUES (1,'Chemise','CHM','Camisas tipo polo con cuello','productoimg/tipos/6a259a4c388c5.jpg',12.00,1,0.00,'2025-12-16 17:48:48','2026-06-07 16:20:28',NULL),(2,'Franela','FRN','Franelas cuello redondo o V','productoimg/tipos/6a259afddafc4.jpg',8.00,1,0.00,'2025-12-16 17:48:48','2026-06-07 16:23:25',NULL),(3,'Camisa','CAM','Camisas formales','productoimg/tipos/6a2596791397d.jpg',15.00,1,2.00,'2025-12-16 17:48:48','2026-06-07 16:04:09',NULL),(4,'Pantalón','PNT','Pantalones de trabajo o formales','productoimg/tipos/6a259be89184c.jpg',18.00,0,0.00,'2025-12-16 17:48:48','2026-06-07 16:27:20',NULL),(5,'Chaqueta','CHQ','Chaquetas industriales o formales','productoimg/tipos/6a2599d8769af.jpg',25.00,1,0.00,'2025-12-16 17:48:48','2026-06-07 16:18:32',NULL),(6,'Overol','OVR','Overoles y monos de trabajo','productoimg/tipos/6a259b83d8470.jpg',0.00,1,0.00,'2025-12-16 17:48:48','2026-06-07 16:25:39',NULL),(7,'Chemise Escolar','ESC','Prendas para uniformes escolares','productoimg/tipos/6a259a90459fe.jpg',0.00,1,0.00,'2025-12-16 17:48:48','2026-06-07 16:21:36',NULL),(8,'Accesorio','ACC','delantales, chalecos, etc.','productoimg/tipos/6a2598f47744f.jpg',0.00,0,0.00,'2025-12-16 17:48:48','2026-06-07 16:29:29','2026-06-07 16:29:29'),(9,'Gorra','GO','Clasica','productoimg/tipos/6a259869d6d86.jpg',0.00,0,0.00,'2026-05-03 21:27:03','2026-06-07 16:12:25',NULL),(10,'Delantal','DLNT','Para carniceros, caleteros, chefs, entre otros','productoimg/tipos/6a2596ebb12cf.jpg',7.00,1,1.50,'2026-06-07 02:02:23','2026-06-07 16:06:03',NULL);
 /*!40000 ALTER TABLE `tipo_producto` ENABLE KEYS */;
 
 --
@@ -1343,7 +1352,7 @@ CREATE TABLE `tipo_producto_atributo` (
 --
 
 /*!40000 ALTER TABLE `tipo_producto_atributo` DISABLE KEYS */;
-INSERT INTO `tipo_producto_atributo` VALUES (1,3,1,1,1,'2026-05-07 17:15:29','2026-06-06 23:10:07'),(2,3,2,1,2,'2026-05-07 17:15:29','2026-06-06 23:10:07'),(3,2,1,1,1,'2026-05-07 17:15:29','2026-06-06 22:01:38'),(4,2,2,1,2,'2026-05-07 17:15:29','2026-06-06 22:01:38'),(5,1,1,1,1,'2026-05-07 17:15:29','2026-06-06 22:01:10'),(6,1,2,1,2,'2026-05-07 17:15:29','2026-06-06 22:01:10'),(7,4,3,1,1,'2026-05-07 17:15:29','2026-06-06 22:02:06'),(8,5,4,1,1,'2026-05-07 17:15:29','2026-06-06 22:00:52'),(9,5,5,1,2,'2026-05-07 17:15:29','2026-06-06 22:00:52'),(10,3,3,1,3,'2026-05-14 14:29:56','2026-06-06 23:10:07'),(11,1,3,1,3,'2026-05-14 14:31:53','2026-06-06 22:01:10'),(12,10,6,1,1,'2026-06-07 02:02:23','2026-06-07 02:06:03');
+INSERT INTO `tipo_producto_atributo` VALUES (1,3,1,1,1,'2026-05-07 17:15:29','2026-06-07 16:04:09'),(2,3,2,1,2,'2026-05-07 17:15:29','2026-06-07 16:04:09'),(3,2,1,1,1,'2026-05-07 17:15:29','2026-06-07 16:23:25'),(4,2,2,1,2,'2026-05-07 17:15:29','2026-06-07 16:23:25'),(5,1,1,1,1,'2026-05-07 17:15:29','2026-06-07 16:20:28'),(6,1,2,1,2,'2026-05-07 17:15:29','2026-06-07 16:20:28'),(7,4,3,1,1,'2026-05-07 17:15:29','2026-06-07 16:27:20'),(8,5,4,1,1,'2026-05-07 17:15:29','2026-06-07 16:18:32'),(9,5,5,1,2,'2026-05-07 17:15:29','2026-06-07 16:18:32'),(10,3,3,1,3,'2026-05-14 14:29:56','2026-06-07 16:04:09'),(11,1,3,1,3,'2026-05-14 14:31:53','2026-06-07 16:20:28'),(12,10,6,1,1,'2026-06-07 02:02:23','2026-06-07 16:06:03');
 /*!40000 ALTER TABLE `tipo_producto_atributo` ENABLE KEYS */;
 
 --
@@ -1373,7 +1382,7 @@ CREATE TABLE `tipo_producto_insumo` (
 --
 
 /*!40000 ALTER TABLE `tipo_producto_insumo` DISABLE KEYS */;
-INSERT INTO `tipo_producto_insumo` VALUES (7,3,2,8.00,'2026-05-28 23:43:33','2026-06-06 23:10:07'),(9,10,16,1.00,'2026-06-07 02:02:23','2026-06-07 02:06:03'),(10,10,14,1.00,'2026-06-07 02:02:23','2026-06-07 02:06:03'),(11,10,17,100.00,'2026-06-07 02:06:03','2026-06-07 02:06:03');
+INSERT INTO `tipo_producto_insumo` VALUES (7,3,2,8.00,'2026-05-28 23:43:33','2026-06-07 16:04:09'),(9,10,16,1.00,'2026-06-07 02:02:23','2026-06-07 16:06:03'),(10,10,14,1.00,'2026-06-07 02:02:23','2026-06-07 16:06:03'),(11,10,17,100.00,'2026-06-07 02:06:03','2026-06-07 16:06:03');
 /*!40000 ALTER TABLE `tipo_producto_insumo` ENABLE KEYS */;
 
 --
@@ -1394,7 +1403,7 @@ CREATE TABLE `tipo_producto_tela` (
   KEY `tipo_producto_tela_insumo_id_foreign` (`insumo_id`),
   CONSTRAINT `tipo_producto_tela_insumo_id_foreign` FOREIGN KEY (`insumo_id`) REFERENCES `insumo` (`id`) ON DELETE CASCADE,
   CONSTRAINT `tipo_producto_tela_tipo_producto_id_foreign` FOREIGN KEY (`tipo_producto_id`) REFERENCES `tipo_producto` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1402,7 +1411,7 @@ CREATE TABLE `tipo_producto_tela` (
 --
 
 /*!40000 ALTER TABLE `tipo_producto_tela` DISABLE KEYS */;
-INSERT INTO `tipo_producto_tela` VALUES (1,2,5,'2026-06-05 01:15:25','2026-06-05 01:15:25'),(2,3,8,'2026-06-06 21:43:25','2026-06-06 21:43:25'),(3,5,10,'2026-06-06 22:00:52','2026-06-06 22:00:52'),(4,1,3,'2026-06-06 22:01:10','2026-06-06 22:01:10'),(5,6,10,'2026-06-06 22:01:52','2026-06-06 22:01:52'),(6,7,3,'2026-06-06 22:03:08','2026-06-06 22:03:08'),(7,3,7,'2026-06-06 22:03:24','2026-06-06 22:03:24'),(8,10,10,'2026-06-07 02:02:23','2026-06-07 02:02:23');
+INSERT INTO `tipo_producto_tela` VALUES (1,2,5,'2026-06-05 01:15:25','2026-06-05 01:15:25'),(2,3,8,'2026-06-06 21:43:25','2026-06-06 21:43:25'),(3,5,10,'2026-06-06 22:00:52','2026-06-06 22:00:52'),(4,1,3,'2026-06-06 22:01:10','2026-06-06 22:01:10'),(5,6,10,'2026-06-06 22:01:52','2026-06-06 22:01:52'),(6,7,3,'2026-06-06 22:03:08','2026-06-06 22:03:08'),(7,3,7,'2026-06-06 22:03:24','2026-06-06 22:03:24'),(8,10,10,'2026-06-07 02:02:23','2026-06-07 02:02:23'),(9,5,5,'2026-06-07 16:15:34','2026-06-07 16:15:34'),(10,1,5,'2026-06-07 16:19:38','2026-06-07 16:19:38'),(11,7,5,'2026-06-07 16:21:36','2026-06-07 16:21:36');
 /*!40000 ALTER TABLE `tipo_producto_tela` ENABLE KEYS */;
 
 --
@@ -1488,4 +1497,4 @@ INSERT INTO `user_recovery_question` VALUES (1,1,1,'$2y$12$O.578XXRW1QdIHrZS9Qi9
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-06-06 22:41:34
+-- Dump completed on 2026-06-07 12:34:00

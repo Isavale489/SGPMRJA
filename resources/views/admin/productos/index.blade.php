@@ -250,13 +250,20 @@
                                     </div>
                                     <small class="text-muted">Mano de obra + insumos secundarios. Se suma al precio de la tela para sugerir el precio final del producto.</small>
                                 </div>
-                                <div class="col-md-5 d-flex align-items-end">
+                                <div class="col-md-5 d-flex flex-column justify-content-end gap-2">
                                     <div class="form-check form-switch w-100">
                                         <input class="form-check-input" type="checkbox" id="tipo-requiere-tela" name="requiere_tela" checked>
                                         <label class="form-check-label" for="tipo-requiere-tela">
                                             Requiere tela
                                         </label>
                                         <div class="text-muted small">Actívalo si se confecciona con tela. Desactívalo para tipos sin tela (gorra, accesorio, servicio).</div>
+                                    </div>
+                                    <div class="form-check form-switch w-100">
+                                        <input class="form-check-input" type="checkbox" id="tipo-requiere-produccion" name="requiere_produccion" checked>
+                                        <label class="form-check-label" for="tipo-requiere-produccion">
+                                            Requiere producción
+                                        </label>
+                                        <div class="text-muted small">Actívalo si se fabrica. Desactívalo para productos de reventa (se venden pero no entran a Órdenes de Producción).</div>
                                     </div>
                                 </div>
                             </div>
@@ -1127,6 +1134,7 @@
                 $('#tipo-id-field').val('');
                 $('#tipo-precio-confeccion').val('');
                 $('#tipo-requiere-tela').prop('checked', true);
+                $('#tipo-requiere-produccion').prop('checked', true);
                 $('#tipo-consumo-tela').val('');
                 $('.tipo-tela-check').prop('checked', false);
                 aplicarTipoConsumoTelaVisibility();
@@ -1156,6 +1164,7 @@
                     $("#tipo-descripcion-field").val(tipo.descripcion || '');
                     $("#tipo-precio-confeccion").val(tipo.precio_confeccion || 0);
                     $("#tipo-requiere-tela").prop('checked', !!tipo.requiere_tela);
+                    $("#tipo-requiere-produccion").prop('checked', tipo.requiere_produccion == null ? true : !!tipo.requiere_produccion);
                     $("#tipo-consumo-tela").val(tipo.consumo_tela_por_unidad || 0);
 
                     if (tipo.imagen_url) {
@@ -1359,6 +1368,7 @@
                 fd.append('descripcion', $("#tipo-descripcion-field").val());
                 fd.append('precio_confeccion', parseFloat($("#tipo-precio-confeccion").val()) || 0);
                 fd.append('requiere_tela', $("#tipo-requiere-tela").is(':checked') ? 1 : 0);
+                fd.append('requiere_produccion', $("#tipo-requiere-produccion").is(':checked') ? 1 : 0);
                 fd.append('consumo_tela_por_unidad', parseFloat($("#tipo-consumo-tela").val()) || 0);
 
                 recolectarAtributosSeleccionados().forEach(function (a, i) {

@@ -35,6 +35,7 @@ class TipoProductoController extends Controller
             'descripcion' => 'nullable|string|max:500',
             'precio_confeccion' => 'nullable|numeric|min:0|max:99999.99',
             'requiere_tela' => 'nullable|boolean',
+            'requiere_produccion' => 'nullable|boolean',
             'consumo_tela_por_unidad' => 'nullable|numeric|min:0|max:9999.99',
             'imagen' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp,bmp,avif|max:10240',
             'atributos' => 'nullable|array',
@@ -69,6 +70,7 @@ class TipoProductoController extends Controller
             'imagen' => $imagenPath,
             'precio_confeccion' => $request->input('precio_confeccion', 0),
             'requiere_tela' => $request->boolean('requiere_tela', true),
+            'requiere_produccion' => $request->boolean('requiere_produccion', true),
             'consumo_tela_por_unidad' => $request->input('consumo_tela_por_unidad', 0),
         ]);
 
@@ -111,6 +113,7 @@ class TipoProductoController extends Controller
             'descripcion' => 'nullable|string|max:500',
             'precio_confeccion' => 'nullable|numeric|min:0|max:99999.99',
             'requiere_tela' => 'nullable|boolean',
+            'requiere_produccion' => 'nullable|boolean',
             'consumo_tela_por_unidad' => 'nullable|numeric|min:0|max:9999.99',
             'imagen' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp,bmp,avif|max:10240',
             'atributos' => 'nullable|array',
@@ -131,6 +134,7 @@ class TipoProductoController extends Controller
             'descripcion' => $request->descripcion,
             'precio_confeccion' => $request->input('precio_confeccion', $tipoProducto->precio_confeccion),
             'requiere_tela' => $request->boolean('requiere_tela', $tipoProducto->requiere_tela),
+            'requiere_produccion' => $request->boolean('requiere_produccion', $tipoProducto->requiere_produccion),
             'consumo_tela_por_unidad' => $request->input('consumo_tela_por_unidad', $tipoProducto->consumo_tela_por_unidad),
         ];
 
