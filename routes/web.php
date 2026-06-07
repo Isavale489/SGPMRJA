@@ -202,7 +202,7 @@ Route::middleware(['auth', 'throttle:60,1', 'active.user', 'recovery.questions.r
         Route::get('tipo-productos', [App\Http\Controllers\TipoProductoController::class, 'index'])->name('tipo-productos.index');
         Route::post('tipo-productos', [App\Http\Controllers\TipoProductoController::class, 'store'])->name('tipo-productos.store');
         Route::post('tipo-productos/{tipoProducto}/telas', [App\Http\Controllers\TipoProductoController::class, 'storeTela'])->name('tipo-productos.telas.store');
-        Route::get('tipo-productos/{tipoProducto}', [App\Http\Controllers\TipoProductoController::class, 'show'])->name('tipo-productos.show');
+        Route::get('tipo-productos/{id}', [App\Http\Controllers\TipoProductoController::class, 'show'])->name('tipo-productos.show');
         Route::put('tipo-productos/{tipoProducto}', [App\Http\Controllers\TipoProductoController::class, 'update'])->name('tipo-productos.update');
         Route::delete('tipo-productos/{tipoProducto}', [App\Http\Controllers\TipoProductoController::class, 'destroy'])->name('tipo-productos.destroy');
         Route::patch('tipo-productos/{id}/restore', [App\Http\Controllers\TipoProductoController::class, 'restore'])->name('tipo-productos.restore');

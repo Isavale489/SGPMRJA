@@ -178,7 +178,6 @@
                                 <th>Teléfono</th>
                                 <th>Cargo</th>
                                 <th>Departamento</th>
-                                <th>Estado</th>
                                 <th>Acciones</th>
                             </tr>
                         </thead>
@@ -1008,13 +1007,6 @@
                                 return '<span class="badge-tipo badge-depto-produccion"><i class="ri-tools-line"></i> ' + data + '</span>';
                             }
                             return '<span class="badge-tipo badge-depto-otro"><i class="ri-briefcase-line"></i> ' + data + '</span>';
-                        }
-                    },
-                    {
-                        data: 'trashed', render: function (data) {
-                            return data
-                                ? '<span class="badge-status badge-status-inactivo"><i class="ri-close-circle-line"></i> Inhabilitado</span>'
-                                : '<span class="badge-status badge-status-activo"><i class="ri-checkbox-circle-line"></i> Activo</span>';
                         }
                     },
                     {

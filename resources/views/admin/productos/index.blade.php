@@ -176,7 +176,6 @@
                                 <th>Precio Confección</th>
                                 <th>Telas</th>
                                 <th>Atributos</th>
-                                <th>Estado</th>
                                 <th>Acciones</th>
                             </tr>
                         </thead>
@@ -400,6 +399,87 @@
             </div>
         </div>
     </div>
+
+    {{-- ═══════════ MODAL VER — Detalle del Tipo (solo lectura) ═══════════ --}}
+    <div class="modal fade atlantico-modal" id="viewTipoModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="ri-eye-line me-2"></i>Detalle del Tipo</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body p-3">
+                    <div class="row g-3">
+                        <div class="col-md-4 text-center">
+                            <div id="vt-imagen-wrap">
+                                <img id="vt-imagen" src="" alt="Imagen del tipo" class="img-thumbnail w-100"
+                                    style="max-height: 200px; object-fit: cover;">
+                            </div>
+                            <div id="vt-imagen-empty" class="text-muted small py-5 border rounded" hidden>
+                                <i class="ri-image-line d-block mb-1" style="font-size: 2rem; opacity:.4;"></i>Sin imagen
+                            </div>
+                        </div>
+                        <div class="col-md-8">
+                            <div class="d-flex align-items-center gap-2 flex-wrap mb-2">
+                                <h4 class="mb-0" id="vt-nombre">—</h4>
+                                <span class="badge bg-secondary" id="vt-prefijo">—</span>
+                                <span class="badge rounded-pill" id="vt-estatus">—</span>
+                            </div>
+                            <div class="row g-2">
+                                <div class="col-6">
+                                    <small class="text-muted d-block">Precio confección</small>
+                                    <span class="fw-semibold" id="vt-precio">—</span>
+                                </div>
+                                <div class="col-6">
+                                    <small class="text-muted d-block">Producción</small>
+                                    <span class="fw-semibold" id="vt-produccion">—</span>
+                                </div>
+                                <div class="col-6">
+                                    <small class="text-muted d-block">¿Requiere tela?</small>
+                                    <span class="fw-semibold" id="vt-requiere-tela">—</span>
+                                </div>
+                                <div class="col-6" id="vt-consumo-wrap">
+                                    <small class="text-muted d-block">Consumo de tela / unidad</small>
+                                    <span class="fw-semibold" id="vt-consumo">—</span>
+                                </div>
+                            </div>
+                            <div class="mt-2" id="vt-descripcion-wrap">
+                                <small class="text-muted d-block">Descripción</small>
+                                <span id="vt-descripcion">—</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr class="my-3">
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <h6 class="fs-13 text-atlantico-dark mb-2"><i class="ri-shirt-line me-1"></i>Telas permitidas <span class="text-muted fw-normal" id="vt-telas-count"></span></h6>
+                            <div id="vt-telas" class="d-flex flex-wrap gap-1"></div>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="fs-13 text-atlantico-dark mb-2"><i class="ri-list-settings-line me-1"></i>Atributos <span class="text-muted fw-normal" id="vt-atributos-count"></span></h6>
+                            <div id="vt-atributos" class="d-flex flex-wrap gap-1"></div>
+                        </div>
+                    </div>
+
+                    <div class="mt-3">
+                        <h6 class="fs-13 text-atlantico-dark mb-2"><i class="ri-tools-line me-1"></i>Insumos por defecto <span class="text-muted fw-normal" id="vt-insumos-count"></span></h6>
+                        <div id="vt-insumos-empty" class="text-muted small">Sin insumos por defecto.</div>
+                        <div class="table-responsive" id="vt-insumos-wrap" hidden>
+                            <table class="table table-sm align-middle mb-0">
+                                <thead><tr><th>Insumo</th><th class="text-end">Cantidad</th></tr></thead>
+                                <tbody id="vt-insumos"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light border-0">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal"><i class="ri-close-line me-1"></i>Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
 @endsection
 
 @push('scripts')
@@ -503,27 +583,20 @@
                         }
                     },
                     {
-                        data: null,
-                        orderable: false,
-                        searchable: false,
-                        render: function () {
-                            return esHistorial
-                                ? '<span class="badge badge-status status-inactivo"><i class="ri-close-circle-line"></i> Inactivo</span>'
-                                : '<span class="badge badge-status status-activo"><i class="ri-checkbox-circle-line"></i> Activo</span>';
-                        }
-                    },
-                    {
                         data: 'id',
                         orderable: false,
                         searchable: false,
                         render: function (data) {
-                            if (esHistorial) {
-                                return '<button class="btn btn-sm btn-outline-success restore-tipo-btn" data-id="' + data + '" title="Restaurar"><i class="ri-refresh-line"></i></button>';
-                            }
-                            return '<div class="d-inline-flex gap-1">' +
-                                '<button class="btn btn-sm btn-outline-primary edit-tipo-btn" data-id="' + data + '" title="Editar"><i class="ri-pencil-line"></i></button>' +
-                                '<button class="btn btn-sm btn-outline-danger delete-tipo-btn" data-id="' + data + '" title="Inhabilitar"><i class="ri-delete-bin-line"></i></button>' +
+                            var sVer = '<button class="btn btn-sm btn-soft-info view-tipo-btn" data-id="' + data + '" title="Ver"><i class="ri-eye-fill"></i></button>';
+                            var items = esHistorial
+                                ? '<li><button type="button" class="dropdown-item act-item act-restore restore-tipo-btn" data-id="' + data + '"><span class="act-ic"><i class="ri-arrow-go-back-line"></i></span>Habilitar</button></li>'
+                                : '<li><button type="button" class="dropdown-item act-item act-edit edit-tipo-btn" data-id="' + data + '"><span class="act-ic"><i class="ri-pencil-fill"></i></span>Editar</button></li>' +
+                                  '<li><button type="button" class="dropdown-item act-item act-warn delete-tipo-btn" data-id="' + data + '"><span class="act-ic"><i class="ri-forbid-line"></i></span>Inhabilitar</button></li>';
+                            var menu = '<div class="dropdown d-inline-block">' +
+                                '<button class="btn btn-sm btn-soft-secondary" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Más acciones"><i class="ri-more-2-fill"></i></button>' +
+                                '<ul class="dropdown-menu dropdown-menu-end actions-menu">' + items + '</ul>' +
                                 '</div>';
+                            return '<div class="d-flex gap-1 justify-content-center align-items-center">' + sVer + menu + '</div>';
                         }
                     }
                 ],
@@ -1206,6 +1279,76 @@
                         renderAtributosLista(asociados);
                         renderTipoInsumos();
                     });
+                });
+            });
+
+            // Ver tipo (detalle de solo lectura)
+            function vtEsc(s) {
+                return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+            }
+            $(document).on("click", ".view-tipo-btn", function () {
+                var id = $(this).data("id");
+                $.getJSON("{{ url('tipo-productos') }}/" + id, function (tipo) {
+                    if (tipo.imagen_url) {
+                        $('#vt-imagen').attr('src', tipo.imagen_url);
+                        $('#vt-imagen-wrap').show();
+                        $('#vt-imagen-empty').attr('hidden', true);
+                    } else {
+                        $('#vt-imagen-wrap').hide();
+                        $('#vt-imagen-empty').removeAttr('hidden');
+                    }
+                    $('#vt-nombre').text(tipo.nombre || '—');
+                    $('#vt-prefijo').text(tipo.prefijo || '—');
+
+                    var trashed = !!tipo.deleted_at || ((typeof esHistorial !== 'undefined') && esHistorial);
+                    $('#vt-estatus').text(trashed ? 'Inhabilitado' : 'Activo')
+                        .removeClass('badge-soft-success badge-soft-danger')
+                        .addClass(trashed ? 'badge-soft-danger' : 'badge-soft-success');
+
+                    $('#vt-precio').text('$ ' + parseFloat(tipo.precio_confeccion || 0).toFixed(2));
+                    $('#vt-produccion').html(tipo.requiere_produccion === false
+                        ? '<span class="badge badge-soft-warning">Reventa</span>'
+                        : '<span class="badge badge-soft-success">Fabricado</span>');
+
+                    var reqTela = !!tipo.requiere_tela;
+                    $('#vt-requiere-tela').text(reqTela ? 'Sí' : 'No');
+                    $('#vt-consumo-wrap').toggle(reqTela);
+                    $('#vt-consumo').text(parseFloat(tipo.consumo_tela_por_unidad || 0).toFixed(2) + ' por unidad');
+
+                    if (tipo.descripcion) {
+                        $('#vt-descripcion').text(tipo.descripcion);
+                        $('#vt-descripcion-wrap').show();
+                    } else {
+                        $('#vt-descripcion-wrap').hide();
+                    }
+
+                    var telas = tipo.telas || [];
+                    $('#vt-telas-count').text('(' + telas.length + ')');
+                    $('#vt-telas').html(telas.length
+                        ? telas.map(function (t) { return '<span class="badge bg-light text-dark border"><i class="ri-shirt-line me-1"></i>' + vtEsc(t.nombre) + '</span>'; }).join('')
+                        : '<span class="text-muted small">' + (reqTela ? 'Sin telas asignadas' : 'No usa tela') + '</span>');
+
+                    var attrs = tipo.atributos || [];
+                    $('#vt-atributos-count').text('(' + attrs.length + ')');
+                    $('#vt-atributos').html(attrs.length
+                        ? attrs.map(function (a) { return '<span class="badge bg-info-subtle text-info">' + vtEsc(a.nombre) + '</span>'; }).join('')
+                        : '<span class="text-muted small">Sin atributos</span>');
+
+                    var ins = tipo.insumos_default || [];
+                    $('#vt-insumos-count').text('(' + ins.length + ')');
+                    if (ins.length) {
+                        $('#vt-insumos').html(ins.map(function (i) {
+                            var cant = i.pivot ? parseFloat(i.pivot.cantidad_estimada || 0).toFixed(2) : '—';
+                            return '<tr><td>' + vtEsc(i.nombre) + '</td><td class="text-end">' + cant + ' ' + vtEsc(i.unidad_medida || '') + '</td></tr>';
+                        }).join(''));
+                        $('#vt-insumos-wrap').removeAttr('hidden');
+                        $('#vt-insumos-empty').hide();
+                    } else {
+                        $('#vt-insumos-wrap').attr('hidden', true);
+                        $('#vt-insumos-empty').show();
+                    }
+
+                    $('#viewTipoModal').modal('show');
                 });
             });
 
