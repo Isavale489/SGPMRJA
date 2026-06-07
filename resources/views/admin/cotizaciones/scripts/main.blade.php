@@ -2150,6 +2150,28 @@
             calculateCotizacionTotals();
         });
 
+        // Al cerrar el panel de bordados: una línea que quedó marcada como
+        // "lleva bordado" pero SIN ubicaciones vuelve a "Sin bordado".
+        // (Abrir y cerrar el panel sin agregar nada NO debe comprometer bordado
+        // ni bloquear el guardado pidiendo una ubicación.)
+        $(document).on('hidden.bs.offcanvas', '#bordadoOffcanvas', function () {
+            $('#productos-container .product-item').each(function () {
+                var $card = $(this);
+                var marcado = parseInt($card.find('.lleva-bordado-value').val() || 0, 10) === 1;
+                var eff = getEffectiveBordadosForCard($card);
+                if (marcado && (!eff || eff.length === 0)) {
+                    $card.find('.lleva-bordado-checkbox').prop('checked', false);
+                    $card.find('.bordado-label').removeClass('active');
+                    $card.find('.lleva-bordado-value').val(0);
+                    $card.find('.nombre-logo-container').hide();
+                    setCardBordados($card, []);
+                    actualizarResumenBordadosEnCard($card);
+                }
+            });
+            if (typeof window.cotRefreshGroupedList === 'function') window.cotRefreshGroupedList();
+            calculateCotizacionTotals();
+        });
+
         // Calcular el total de la cotización y el restante
         function calculateCotizacionTotals() {
             let sum = 0;
