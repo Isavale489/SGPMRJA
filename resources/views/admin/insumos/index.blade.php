@@ -405,16 +405,6 @@
                                     <x-forms.input name="costo_unitario" label="Costo Unitario" type="number" step="0.01" min="0"
                                         required />
                                 </div>
-                                <div class="col-md-6">
-                                    <label class="form-label d-block">Estatus</label>
-                                    {{-- Switch solo lectura: lo gobiernan Inhabilitar / Habilitar, no es editable aquí. --}}
-                                    <div class="form-check form-switch estatus-switch" title="Solo lectura — se gestiona con Inhabilitar / Habilitar">
-                                        <input class="form-check-input" type="checkbox" role="switch" id="estado-display" checked disabled>
-                                        <label class="form-check-label" for="estado-display" id="estado-display-label">Activo</label>
-                                        <i class="ri-lock-line estatus-lock" aria-hidden="true"></i>
-                                    </div>
-                                    <small class="text-muted d-block mt-1 lh-sm">Se gestiona con las acciones <strong>Inhabilitar</strong> / <strong>Habilitar</strong>.</small>
-                                </div>
                             </div>
                         </div>
                     </div>

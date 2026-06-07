@@ -200,6 +200,18 @@
                                         </div>
                                     </div>
                                 </div>
+                                <div class="col-12">
+                                    <div class="d-flex align-items-center">
+                                        <div class="rounded-circle me-2 d-flex align-items-center justify-content-center"
+                                            style="width: 32px; height: 32px; background: rgba(30, 60, 114, 0.1);">
+                                            <i class="ri-shield-check-line" style="color: #1e3c72;"></i>
+                                        </div>
+                                        <div>
+                                            <small class="text-muted d-block">Estado (acceso al sistema)</small>
+                                            <span class="badge rounded-pill" id="view-estado">-</span>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -255,19 +267,10 @@
                             <div class="modal-form-section-title"><i class="ri-user-settings-line"></i>Perfil de Usuario</div>
 
                             <div class="row mb-3">
-                                <div class="col-md-6">
+                                <div class="col-md-12">
                                     <x-forms.select name="role" label="Rol" required
                                         :options="['Administrador' => 'Administrador', 'Supervisor' => 'Supervisor']"
                                         placeholder="Seleccione un rol" />
-                                </div>
-                                <div class="col-md-6">
-                                    {{-- Estado: switch de solo lectura. Lo gobierna Inhabilitar/Habilitar (controla el acceso al login). --}}
-                                    <label class="form-label d-block">Estado</label>
-                                    <div class="form-check form-switch estatus-switch" title="Solo lectura — se gestiona con Inhabilitar / Habilitar">
-                                        <input class="form-check-input" type="checkbox" role="switch" id="estado-display" checked disabled>
-                                        <label class="form-check-label" for="estado-display" id="estado-display-label">Activo</label>
-                                        <i class="ri-lock-line estatus-lock" aria-hidden="true"></i>
-                                    </div>
                                 </div>
                             </div>
                             <div class="d-flex align-items-start gap-2 mb-3 p-2 rounded-3 bg-info-subtle border border-info-subtle">
@@ -760,6 +763,11 @@
                     $("#view-email").text(data.email);
                     $("#view-role").text(data.role || 'Sin rol');
                     $("#view-created").text(data.created_at);
+                    var _activo = (data.estado == 1 || data.estado === true);
+                    $("#view-estado")
+                        .text(_activo ? 'Activo' : 'Inhabilitado')
+                        .removeClass('bg-success bg-danger')
+                        .addClass(_activo ? 'bg-success' : 'bg-danger');
 
                     // Mostrar avatar
                     if (data.avatar) {

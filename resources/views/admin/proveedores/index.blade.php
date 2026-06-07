@@ -705,19 +705,6 @@
                             </div>
                         </div>
 
-                        <div class="modal-form-section mb-0">
-                            <div class="modal-form-section-title"><i class="ri-shield-check-line"></i>Estatus</div>
-                            {{-- Switch de solo lectura: activado = Activo. Lo gobierna Inhabilitar/Restaurar, no es editable aquí. --}}
-                            <div class="form-check form-switch estatus-switch ms-2" title="Solo lectura — se gestiona con Inhabilitar / Restaurar">
-                                <input class="form-check-input" type="checkbox" role="switch" id="estado-display" checked disabled>
-                                <label class="form-check-label" for="estado-display" id="estado-display-label">Activo</label>
-                                <i class="ri-lock-line estatus-lock" aria-hidden="true"></i>
-                            </div>
-                            <small class="text-muted d-block mt-1 lh-sm">
-                                El estatus se gestiona mediante las acciones <strong>Inhabilitar</strong> y <strong>Restaurar</strong>.
-                            </small>
-                        </div>
-
                     </div>
                     <div class="modal-footer bg-light border-0">
                         <div class="hstack gap-2 justify-content-end">

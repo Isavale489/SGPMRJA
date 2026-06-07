@@ -595,21 +595,6 @@
 
                             <input type="hidden" id="field-codigo_empleado" name="codigo_empleado" />
 
-                            {{-- Estado Laboral: solo lectura. Lo gobierna Inhabilitar/Restaurar, no es editable aquí. --}}
-                            <div class="row mb-0">
-                                <div class="col-md-6">
-                                    <label class="form-label d-inline-flex align-items-center mb-0">Estado Laboral</label>
-                                    {{-- Switch de solo lectura: activado = Activo. Lo gobierna Inhabilitar/Restaurar, no es editable aquí. --}}
-                                    <div class="form-check form-switch estatus-switch ms-2" title="Solo lectura — se gestiona con Inhabilitar / Restaurar">
-                                        <input class="form-check-input" type="checkbox" role="switch" id="field-estado-display" checked disabled>
-                                        <label class="form-check-label" for="field-estado-display" id="field-estado-display-label">Activo</label>
-                                        <i class="ri-lock-line estatus-lock" aria-hidden="true"></i>
-                                    </div>
-                                    <small class="text-muted d-block mt-1 lh-sm">
-                                        El estatus se gestiona mediante las acciones <strong>Inhabilitar</strong> y <strong>Restaurar</strong>.
-                                    </small>
-                                </div>
-                            </div>
                         </div>
 
                     </div>
