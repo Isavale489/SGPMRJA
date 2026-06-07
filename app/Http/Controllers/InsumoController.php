@@ -3,14 +3,24 @@
 namespace App\Http\Controllers;
 
 use App\Models\Insumo;
+use App\Models\TipoInsumo;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Yajra\DataTables\DataTables;
 
 class InsumoController extends Controller
 {
     public function index()
     {
-        return view('admin.insumos.index');
+        $tiposInsumo = TipoInsumo::where('activo', true)->orderBy('nombre')->get(['id', 'nombre']);
+        return view('admin.insumos.index', compact('tiposInsumo'));
+    }
+
+    /** Regla de validación del tipo: debe existir en el catálogo y estar activo. */
+    private function tipoRule(): array
+    {
+        return ['required', 'string', Rule::exists('tipo_insumo', 'nombre')
+            ->where('activo', true)->whereNull('deleted_at')];
     }
 
     public function getInsumos(Request $request)
@@ -69,10 +79,16 @@ class InsumoController extends Controller
 
     public function store(Request $request)
     {
+        // Normalizar el código a MAYÚSCULAS antes de validar: el input usa
+        // text-uppercase (solo visual), así que el valor real puede venir en minúsculas.
+        if ($request->filled('codigo')) {
+            $request->merge(['codigo' => strtoupper(trim($request->input('codigo')))]);
+        }
+
         $request->validate([
             'nombre'          => 'required|string|max:100',
             'codigo'          => 'nullable|string|min:2|max:8|regex:/^[A-Z0-9]+$/|unique:insumo,codigo',
-            'tipo'            => 'required|in:Tela,Hilo,Boton,Cierre,Etiqueta',
+            'tipo'            => $this->tipoRule(),
             'unidad_medida'   => 'required|in:Metro,Kg,Gramo,Unidad,Rollo,Cono,Docena',
             'is_inventoriable'=> 'nullable|boolean',
             'costo_unitario'  => 'required|numeric|min:0.01',
@@ -109,10 +125,15 @@ class InsumoController extends Controller
     {
         $insumo = Insumo::findOrFail($id);
 
+        // Normalizar el código a MAYÚSCULAS antes de validar (input usa text-uppercase visual).
+        if ($request->filled('codigo')) {
+            $request->merge(['codigo' => strtoupper(trim($request->input('codigo')))]);
+        }
+
         $request->validate([
             'nombre'          => 'required|string|max:100',
             'codigo'          => 'nullable|string|min:2|max:8|regex:/^[A-Z0-9]+$/|unique:insumo,codigo,' . $insumo->id,
-            'tipo'            => 'required|in:Tela,Hilo,Boton,Cierre,Etiqueta',
+            'tipo'            => $this->tipoRule(),
             'unidad_medida'   => 'required|in:Metro,Kg,Gramo,Unidad,Rollo,Cono,Docena',
             'is_inventoriable'=> 'nullable|boolean',
             'costo_unitario'  => 'required|numeric|min:0.01',

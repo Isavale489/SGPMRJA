@@ -220,21 +220,23 @@ class ProductoController extends Controller
 
     public function reportePdf(Request $request)
     {
-        $query = Producto::with(['tipoProducto', 'tela']);
-        if ($request->filled('tipo_producto')) {
-            $query->where('tipo_producto_id', $request->tipo_producto);
+        // Catálogo = Tipo de Producto. El reporte lista los Tipos (activos o historial).
+        $historial = $request->boolean('historial');
+
+        $query = TipoProducto::withCount(['atributos', 'telas'])->orderBy('nombre');
+        if ($historial) {
+            $query->onlyTrashed();
         }
-        if ($request->filled('estatus')) {
-            $query->where('estado', (int) $request->estatus);
-        }
-        $productos = $query->get();
+        $tipos = $query->get();
+
         $data = [
-            'title'     => 'Reporte de Productos',
+            'title'     => 'Catálogo de Tipos de Producto',
             'date'      => date('m/d/Y'),
-            'productos' => $productos,
+            'tipos'     => $tipos,
+            'historial' => $historial,
         ];
         $pdf = PDF::loadView('admin.productos.reporte_pdf', $data);
-        return $pdf->download('productos-reporte-' . time() . '.pdf');
+        return $pdf->download('catalogo-tipos-' . time() . '.pdf');
     }
 
     /**

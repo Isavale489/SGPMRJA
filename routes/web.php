@@ -4,6 +4,7 @@ use App\Http\Controllers\CompraController;
 use App\Http\Controllers\DetalleOrdenInsumoController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\InsumoController;
+use App\Http\Controllers\TipoInsumoController;
 use App\Http\Controllers\MovimientoInsumoController;
 use App\Http\Controllers\NotificacionController;
 use App\Http\Controllers\OrdenProduccionController;
@@ -229,6 +230,15 @@ Route::middleware(['auth', 'throttle:60,1', 'active.user', 'recovery.questions.r
         Route::get('insumos-data', [InsumoController::class, 'getInsumos'])->name('insumos.data');
         Route::get('insumos/reporte/pdf', [InsumoController::class, 'reportePdf'])->name('insumos.reporte.pdf');
         Route::get('insumos/check-nombre', [InsumoController::class, 'checkNombre'])->name('insumos.check-nombre');
+
+        // Catálogo gestionable de tipos de insumo
+        Route::get('tipo-insumos', [TipoInsumoController::class, 'index'])->name('tipo-insumos.index');
+        Route::post('tipo-insumos', [TipoInsumoController::class, 'store'])->name('tipo-insumos.store');
+        Route::get('tipo-insumos-check-nombre', [TipoInsumoController::class, 'checkNombre'])->name('tipo-insumos.check-nombre');
+        Route::get('tipo-insumos/{tipoInsumo}', [TipoInsumoController::class, 'show'])->name('tipo-insumos.show');
+        Route::put('tipo-insumos/{tipoInsumo}', [TipoInsumoController::class, 'update'])->name('tipo-insumos.update');
+        Route::delete('tipo-insumos/{tipoInsumo}', [TipoInsumoController::class, 'destroy'])->name('tipo-insumos.destroy');
+        Route::patch('tipo-insumos/{id}/restore', [TipoInsumoController::class, 'restore'])->name('tipo-insumos.restore');
 
         // Órdenes de Producción
         // (rutas específicas ANTES del resource para que no colisionen con ordenes/{orden})
