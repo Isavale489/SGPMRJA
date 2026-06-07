@@ -1,30 +1,7 @@
 <script>
-    // Validación onblur: fecha_fin_estimada debe ser posterior a fecha_inicio
-    $(document).on('blur', '#fecha-fin-estimada-field', function () {
-        let finVal = $(this).val();
-        let inicioVal = $('#fecha-inicio-field').val();
-        if (finVal && inicioVal) {
-            if (finVal <= inicioVal) {
-                marcarInvalido($(this), 'La fecha fin estimada debe ser posterior a la fecha de inicio.');
-            } else {
-                marcarValido($(this));
-            }
-        } else if (finVal) {
-            marcarValido($(this));
-        }
-    });
-
-    // Validación onblur: fecha_inicio — obligatoria
-    $(document).on('blur', '#fecha-inicio-field', function () {
-        if (!$(this).val()) {
-            marcarInvalido($(this), 'La fecha de inicio es obligatoria.');
-        } else {
-            marcarValido($(this));
-        }
-        let $fin = $('#fecha-fin-estimada-field');
-        if ($fin.val()) { $fin.trigger('blur'); }
-    });
-
+    // ─────────────────────────────────────────────────────────────
+    // Validaciones onblur de modales auxiliares (insumo nested + avance)
+    // ─────────────────────────────────────────────────────────────
     // Validación al cerrar Select2 — insumo obligatorio (modal nested)
     $(document).on('select2:close', '#insumo-add-select', function () {
         if (!$(this).val()) {
@@ -77,8 +54,8 @@
         // ══════════════════════════════════════════════════════
         // Helpers
         // ══════════════════════════════════════════════════════
-        function fmtMoneda(n) {
-            return Number(n || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        function escHtml(s) {
+            return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
         }
         const hoyISO = () => new Date().toISOString().split('T')[0];
         const formatDateForInput = (dateString) => {
@@ -103,13 +80,21 @@
             }
             return fin;
         }
+        function parseDMY(s) { // "dd/mm/yyyy" -> "yyyy-mm-dd" para comparar
+            if (!s) return '';
+            const m = String(s).split('/');
+            return m.length === 3 ? (m[2] + '-' + m[1] + '-' + m[0]) : '';
+        }
+        function debounce(func, wait) {
+            let timeout;
+            return function () {
+                const context = this, args = arguments;
+                clearTimeout(timeout);
+                timeout = setTimeout(() => func.apply(context, args), wait);
+            };
+        }
 
-        // ── Insumos: estado + grilla + nested modal ──────────────────
-        // Estado en memoria. Render → tabla visible + hidden inputs en #insumos-container
-        // (fuente de verdad para FormData).
-        let ordenInsumosState = []; // [{ id, nombre, unidad, cantidad }]
-
-        // Select2 dentro del nested modal de agregar
+        // Select2 dentro del nested modal de agregar insumo
         $('#insumo-add-select').select2({
             theme: 'bootstrap-5',
             placeholder: 'Seleccione insumo...',
@@ -117,81 +102,138 @@
             dropdownParent: $('#insumoAddModal')
         });
 
-        function renderInsumosGrid() {
-            const $tbody    = $('#orden-insumos-tbody');
-            const $empty    = $('#orden-insumos-empty');
-            const $wrap     = $('#orden-insumos-table-wrap');
-            const $hidden   = $('#insumos-container');
-            $('#orden-insumos-count').text('(' + ordenInsumosState.length + ')');
+        // ══════════════════════════════════════════════════════════════
+        // WIZARD ORDEN — estado unificado (escala de 1 a N líneas)
+        // ══════════════════════════════════════════════════════════════
+        const TOTAL_STEPS = 4;
+        let currentStep = 1;
 
-            if (!ordenInsumosState.length) {
-                $tbody.empty();
-                $hidden.empty();
-                $wrap.attr('hidden', true);
-                $empty.show();
-                return;
-            }
-            $empty.hide();
-            $wrap.removeAttr('hidden');
+        // Estado del wizard. Cada "línea" = una orden a crear/editar.
+        // línea: { detalle_id, producto_id, producto_nombre, cantidad, color, talla,
+        //          lleva_bordado, bordados_count, empleado_id, fecha_inicio,
+        //          fecha_fin_estimada, estado, insumos:[{id,nombre,unidad,cantidad}] }
+        let ordWiz = { mode: 'create', editId: null, pedido: null, lineas: [] };
+        function isEditMode() { return ordWiz.mode === 'edit'; }
 
-            $tbody.html(ordenInsumosState.map(function (it, idx) {
-                const cant = parseFloat(it.cantidad).toFixed(2);
-                return '<tr>' +
-                    '<td class="cot-col-num">' + (idx + 1) + '</td>' +
-                    '<td class="cot-col-prod">' +
-                        '<div class="fw-semibold">' + escHtml(it.nombre) + '</div>' +
-                        (it.unidad ? '<small class="text-muted">' + escHtml(it.unidad) + '</small>' : '') +
-                    '</td>' +
-                    '<td class="cot-col-num text-end fw-semibold">' + cant + '</td>' +
-                    '<td class="cot-col-acc text-center">' +
-                        '<button type="button" class="btn btn-sm btn-soft-primary edit-insumo-btn me-1" data-idx="' + idx + '" title="Editar"><i class="ri-pencil-line"></i></button>' +
-                        '<button type="button" class="btn btn-sm btn-soft-danger remove-insumo" data-idx="' + idx + '" title="Quitar"><i class="ri-delete-bin-line"></i></button>' +
-                    '</td>' +
-                '</tr>';
-            }).join(''));
-
-            // Sincronizar hidden inputs (fuente de verdad para FormData)
-            $hidden.html(ordenInsumosState.map(function (it, idx) {
-                return '<input type="hidden" name="insumos[' + idx + '][id]" value="' + it.id + '">' +
-                       '<input type="hidden" name="insumos[' + idx + '][cantidad_estimada]" value="' + it.cantidad + '">';
-            }).join(''));
-        }
-
-        function resetInsumos() {
-            ordenInsumosState = [];
-            renderInsumosGrid();
-        }
-
-        function abrirInsumoAddModal(idx) {
-            $('#insumoAddModal').find('.is-invalid, .is-valid').removeClass('is-invalid is-valid');
-            if (idx != null && ordenInsumosState[idx]) {
-                const it = ordenInsumosState[idx];
-                $('#insumo-add-edit-idx').val(idx);
-                $('#insumoAddModal-title').text('Editar insumo');
-                $('#insumo-add-confirm-label').text('Guardar');
-                $('#insumo-add-select').val(it.id).trigger('change');
-                $('#insumo-add-cantidad').val(it.cantidad);
-            } else {
-                $('#insumo-add-edit-idx').val('');
-                $('#insumoAddModal-title').text('Agregar insumo');
-                $('#insumo-add-confirm-label').text('Agregar');
-                $('#insumo-add-select').val('').trigger('change');
-                $('#insumo-add-cantidad').val('');
-            }
-            $('#insumoAddModal').modal('show');
-        }
-
-        // ══════════════════════════════════════════════════════
-        // SELECCIÓN DE PEDIDO / LÍNEA (modal de cards)
-        // ══════════════════════════════════════════════════════
+        // Pedidos disponibles (paso 1)
         let pedidosOrdenData = [];
 
-        $(document).on('shown.bs.modal', '#seleccionarPedidoModal', function () {
-            pedordResetFiltros();
-            cargarPedidosDisponibles();
-        });
+        // Insumo nested modal — línea destino + índice del insumo en edición
+        let ordInsLineIdx = null;
+        let ordInsEditIdx = null;
 
-        function cargarPedidosDisponibles() {
+        function empleadoOptionsHtml() { return $('#ord-empleados-tpl').html(); }
+
+        // Chips de cabecera (cliente + creador)
+        function ordSetCreador(name, avatar) {
+            $('#ord-creador-name').text(name || '—');
+            if (avatar) $('#ord-creador-avatar').attr('src', avatar);
+        }
+        function ordResetCreador() {
+            const $b = $('#ord-creador-banner');
+            ordSetCreador($b.data('default-name'), $b.data('default-avatar'));
+        }
+        function ordSetClienteBanner(name, doc) {
+            const n = (name || '').trim();
+            $('#ord-banner-name').text(n || '—');
+            $('#ord-banner-doc').text(doc || '');
+            $('#ord-banner-avatar').text(n ? n.charAt(0).toUpperCase() : '—');
+        }
+
+        // Chips de atributos de una línea (color / talla / bordado)
+        function lineaMetaChips(l) {
+            const cls = 'badge rounded-pill badge-soft-secondary fw-normal';
+            const chips = [];
+            chips.push('<span class="' + cls + '"><i class="ri-palette-line me-1"></i>' + escHtml(l.color || 'Sin color') + '</span>');
+            chips.push('<span class="' + cls + '"><i class="ri-ruler-line me-1"></i>' + escHtml(l.talla || 'Talla única') + '</span>');
+            if (l.lleva_bordado) {
+                chips.push('<span class="' + cls + '"><i class="ri-scissors-cut-line me-1"></i>' + (l.bordados_count || 0) + ' bordado(s)</span>');
+            }
+            return chips.join('');
+        }
+
+        // Construye una "línea" del wizard desde una línea del pedido disponible
+        function makeLineaDesde(pedido, l) {
+            return {
+                detalle_id: l.detalle_id,
+                producto_id: l.producto_id,
+                producto_nombre: l.producto_nombre,
+                cantidad: l.cantidad,
+                color: l.color,
+                talla: l.talla,
+                lleva_bordado: l.lleva_bordado,
+                bordados_count: l.bordados_count,
+                empleado_id: '',
+                fecha_inicio: hoyISO(),
+                fecha_fin_estimada: finEstimadoDefault(pedido.fecha_entrega, hoyISO()),
+                estado: 'Pendiente',
+                insumos: Array.isArray(l.insumos_default)
+                    ? l.insumos_default.map(function (i) {
+                        return { id: i.id, nombre: i.nombre, unidad: i.unidad || '', cantidad: parseFloat(i.cantidad) || 0 };
+                    })
+                    : []
+            };
+        }
+
+        // ── Navegación del wizard ────────────────────────────────────
+        function ordShowStep(n) {
+            n = Math.max(1, Math.min(TOTAL_STEPS, n));
+            currentStep = n;
+
+            $('#showModal .wiz-step-content').removeClass('is-active').attr('hidden', true);
+            $('#showModal .wiz-step-content[data-step="' + n + '"]').addClass('is-active').removeAttr('hidden');
+
+            $('#showModal .wiz-step-marker').each(function () {
+                const s = parseInt($(this).data('step'), 10);
+                $(this).removeClass('is-active is-complete').attr('aria-selected', 'false');
+                if (s < n) $(this).addClass('is-complete');
+                else if (s === n) $(this).addClass('is-active').attr('aria-selected', 'true');
+            });
+
+            for (let i = 1; i < TOTAL_STEPS; i++) {
+                $('#showModal .wiz-step-line-fill[data-line="' + i + '"]').css('width', i < n ? '100%' : '0%');
+            }
+
+            $('#ord-step-current').text(n);
+            $('#btn-ord-prev').toggle(n > 1);
+            $('#btn-ord-next').toggle(n < TOTAL_STEPS);
+            $('#ord-wiz-submit-btn').toggle(n === TOTAL_STEPS);
+
+            actualizarBanners(n);
+
+            if (n === 2) renderAsignacion();
+            if (n === 3) renderInsumosAcc();
+            if (n === 4) renderResumen();
+        }
+
+        function actualizarBanners(n) {
+            const hayCliente = ordWiz.pedido && ordWiz.pedido.cliente_nombre;
+            if (hayCliente && n >= 2) {
+                ordSetClienteBanner(ordWiz.pedido.cliente_nombre, ordWiz.pedido.cliente_documento || '');
+                $('#ord-cliente-banner').removeAttr('hidden').attr('aria-hidden', 'false');
+            } else {
+                $('#ord-cliente-banner').attr('hidden', true).attr('aria-hidden', 'true');
+            }
+            if (!isEditMode()) ordResetCreador();
+            $('#ord-creador-banner').removeAttr('hidden').attr('aria-hidden', 'false');
+        }
+
+        function ordSyncStep(n) {
+            if (n === 2) syncAsignacion();
+            if (n === 4) { /* notas se leen al enviar */ }
+        }
+
+        function validateStep(n) {
+            if (n === 1) return validateStep1();
+            if (n === 2) return validateStep2();
+            if (n === 3) return validateStep3();
+            return true;
+        }
+
+        // ══════════════════════════════════════════════════════
+        // PASO 1 — Pedido y líneas
+        // ══════════════════════════════════════════════════════
+        function ordCargarPedidos() {
             const $cont = $('#pedidos-orden-container');
             const $empty = $('#pedidos-orden-empty');
             const $loading = $('#pedidos-orden-loading');
@@ -215,21 +257,13 @@
             });
         }
 
-        function escHtml(s) {
-            return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-        }
-
         function renderPedidosOrden(pedidos) {
             const $cont = $('#pedidos-orden-container');
             $cont.empty();
 
             pedidos.forEach(function (p) {
                 const lineasHtml = p.lineas.map(function (l) {
-                    const meta = [
-                        l.cantidad + ' u',
-                        l.color || 'Sin color',
-                        l.talla || 'Talla única'
-                    ].join(' · ');
+                    const meta = [l.cantidad + ' u', l.color || 'Sin color', l.talla || 'Talla única'].join(' · ');
                     const bordadoBadge = l.lleva_bordado
                         ? `<span class="badge bg-info-subtle text-info ms-1"><i class="ri-scissors-cut-line"></i> ${l.bordados_count} bordado(s)</span>`
                         : '';
@@ -257,15 +291,6 @@
                 }).join('');
 
                 const hayPendientes = p.lineas_pendientes > 0;
-                const footerHtml = hayPendientes
-                    ? `<div class="d-flex justify-content-end mt-2">
-                          <button type="button" class="btn btn-sm btn-success crear-batch-btn"
-                              data-pedido-id="${p.id}" disabled>
-                              <i class="ri-add-line me-1"></i><span class="batch-btn-label">Selecciona líneas</span>
-                          </button>
-                       </div>`
-                    : '';
-
                 const inicialCliente = (p.cliente_nombre || '?').trim().charAt(0).toUpperCase() || '?';
                 const card = `
                     <div class="cotizacion-card" data-pedido-id="${p.id}">
@@ -292,38 +317,71 @@
                             <small class="text-muted fw-semibold" style="white-space: nowrap;">Progreso ${p.progreso}%</small>
                         </div>
                         <div class="list-group">${lineasHtml}</div>
-                        ${footerHtml}
                     </div>`;
                 $cont.append(card);
             });
+
+            // Restaurar marca visual de selección (si seguimos en el mismo pedido)
+            ordResaltarSeleccion();
         }
 
-        // Actualizar texto y estado disabled del botón "Crear N" por pedido
-        function actualizarBotonBatch(pedidoId) {
-            const $card = $('#pedidos-orden-container .cotizacion-card[data-pedido-id="' + pedidoId + '"]');
-            const seleccionadas = $card.find('.linea-check:checked').length;
-            const $btn = $card.find('.crear-batch-btn');
-            $btn.prop('disabled', seleccionadas === 0);
-            const $label = $btn.find('.batch-btn-label');
-            if (seleccionadas === 0)      $label.text('Selecciona líneas');
-            else if (seleccionadas === 1) $label.text('Crear 1 orden');
-            else                          $label.text('Crear ' + seleccionadas + ' órdenes');
-        }
-
-        // Tracking de checkboxes
+        // Selección limitada a UN pedido (un batch = un pedido)
         $(document).on('change', '.linea-check', function () {
-            actualizarBotonBatch($(this).data('pedido-id'));
+            if (this.checked) {
+                const pid = $(this).data('pedido-id');
+                let limpiado = false;
+                $('#pedidos-orden-container .linea-check:checked').each(function () {
+                    if ($(this).data('pedido-id') != pid) { $(this).prop('checked', false); limpiado = true; }
+                });
+                if (limpiado) {
+                    Swal.fire({ icon: 'info', title: 'Una orden cubre un solo pedido', text: 'Se limpió la selección del pedido anterior.', toast: true, position: 'top-end', showConfirmButton: false, timer: 1800 });
+                }
+            }
+            ordActualizarSeleccionChip();
+            ordResaltarSeleccion();
         });
 
-        // ══════════════════════════════════════════════════════
-        // BÚSQUEDA + FILTROS AVANZADOS (selección de pedidos a producir)
-        // ══════════════════════════════════════════════════════
-        function parseDMY(s) { // "dd/mm/yyyy" -> "yyyy-mm-dd" para comparar
-            if (!s) return '';
-            const m = String(s).split('/');
-            return m.length === 3 ? (m[2] + '-' + m[1] + '-' + m[0]) : '';
+        function ordActualizarSeleccionChip() {
+            const n = $('#pedidos-orden-container .linea-check:checked').length;
+            const $chip = $('#ord-lineas-chip');
+            if (n > 0) { $chip.removeClass('d-none').text(n === 1 ? '1 línea seleccionada' : n + ' líneas seleccionadas'); }
+            else { $chip.addClass('d-none'); }
         }
 
+        function ordResaltarSeleccion() {
+            $('#pedidos-orden-container .cotizacion-card').removeClass('border border-2 border-success');
+            const $checked = $('#pedidos-orden-container .linea-check:checked').first();
+            if ($checked.length) {
+                $checked.closest('.cotizacion-card').addClass('border border-2 border-success');
+            }
+        }
+
+        function validateStep1() {
+            if (isEditMode()) return true; // la línea queda fija al editar
+            const $checked = $('#pedidos-orden-container .linea-check:checked');
+            if (!$checked.length) {
+                Swal.fire({ icon: 'warning', title: 'Sin selección', text: 'Selecciona al menos una línea del pedido para producir.' });
+                return false;
+            }
+            const pid = $checked.first().data('pedido-id');
+            const pedido = pedidosOrdenData.find(p => p.id == pid);
+            if (!pedido) return false;
+            const detalleIds = $checked.map(function () { return parseInt($(this).data('detalle-id'), 10); }).get();
+
+            // Si la selección no cambió, conservar lo ya capturado (asignación/insumos)
+            const prev = ordWiz.lineas.map(l => l.detalle_id).slice().sort().join(',');
+            const now = detalleIds.slice().sort().join(',');
+            if (ordWiz.pedido && ordWiz.pedido.id == pid && prev === now && ordWiz.lineas.length) return true;
+
+            ordWiz.pedido = pedido;
+            ordWiz.lineas = detalleIds.map(function (id) {
+                const l = pedido.lineas.find(x => x.detalle_id == id);
+                return l ? makeLineaDesde(pedido, l) : null;
+            }).filter(Boolean);
+            return ordWiz.lineas.length > 0;
+        }
+
+        // ── Filtros del paso 1 ───────────────────────────────────────
         function pedordUpdateBadge() {
             let count = 0;
             if ($('#pedord-filter-estado').val())    count++;
@@ -388,7 +446,6 @@
             pedordUpdateBadge();
         }
 
-        // Header colapsable de filtros (clase is-collapsed)
         $('#pedord-filters-collapse')
             .on('show.bs.collapse',   function () { $('#pedord-advanced-filters .navy-filter-header').removeClass('is-collapsed'); })
             .on('hidden.bs.collapse', function () { $('#pedord-advanced-filters .navy-filter-header').addClass('is-collapsed'); });
@@ -397,288 +454,438 @@
         $('#pedord-advanced-filters .navy-filter-select').on('change', aplicarFiltrosPedidos);
         $('#pedord-clear-filters').on('click', function () { pedordResetFiltros(); aplicarFiltrosPedidos(); });
 
-        // Click "Crear N órdenes" → 1 línea: modal single; 2+ líneas: modal batch
-        $(document).on('click', '.crear-batch-btn', function () {
-            const pedidoId = $(this).data('pedido-id');
-            const pedido = pedidosOrdenData.find(p => p.id == pedidoId);
-            if (!pedido) return;
-            const $card = $(this).closest('.cotizacion-card');
-            const detalleIds = $card.find('.linea-check:checked').map(function () {
-                return parseInt($(this).data('detalle-id'), 10);
-            }).get();
-            if (!detalleIds.length) return;
+        // ══════════════════════════════════════════════════════
+        // PASO 2 — Asignación (empleado + cronograma) por línea
+        // ══════════════════════════════════════════════════════
+        function asignacionCardHtml(l, idx) {
+            const meta = lineaMetaChips(l);
+            const edit = isEditMode();
+            const empCol = edit ? 'col-md-4' : 'col-md-4';
+            const fechaCol = edit ? 'col-md-3' : 'col-md-4';
+            const estadoBlock = edit
+                ? '<div class="col-md-2"><label class="form-label form-label-sm mb-1">Estado</label>'
+                  + '<select class="form-select form-select-sm ord-asig-estado" id="ord-asig-estado-' + idx + '" data-idx="' + idx + '">'
+                  + '<option value="Pendiente">Pendiente</option><option value="En Proceso">En Proceso</option>'
+                  + '<option value="Finalizado">Finalizado</option><option value="Cancelado">Cancelado</option></select></div>'
+                : '';
+            return '<div class="card border-0 shadow-sm mb-2 ord-asig-card" data-idx="' + idx + '">'
+                + '<div class="card-body p-3">'
+                +   '<div class="mb-2">'
+                +     '<span class="badge bg-secondary me-1">#' + (idx + 1) + '</span>'
+                +     '<span class="fw-semibold">' + escHtml(l.producto_nombre) + '</span> '
+                +     '<span class="text-muted fs-12">· ' + l.cantidad + ' u</span>'
+                +     '<div class="d-flex flex-wrap gap-1 mt-1">' + meta + '</div>'
+                +   '</div>'
+                +   '<div class="row g-2">'
+                +     '<div class="' + empCol + '"><label class="form-label form-label-sm required mb-1" for="ord-asig-emp-' + idx + '">Empleado asignado</label>'
+                +       '<select class="form-select form-select-sm ord-asig-emp" id="ord-asig-emp-' + idx + '" data-idx="' + idx + '">' + empleadoOptionsHtml() + '</select></div>'
+                +     '<div class="' + fechaCol + '"><label class="form-label form-label-sm required mb-1" for="ord-asig-inicio-' + idx + '">Inicio</label>'
+                +       '<input type="date" class="form-control form-control-sm ord-asig-inicio" id="ord-asig-inicio-' + idx + '" data-idx="' + idx + '" value="' + (l.fecha_inicio || '') + '"></div>'
+                +     '<div class="' + fechaCol + '"><label class="form-label form-label-sm required mb-1" for="ord-asig-fin-' + idx + '">Fin estimado</label>'
+                +       '<input type="date" class="form-control form-control-sm ord-asig-fin" id="ord-asig-fin-' + idx + '" data-idx="' + idx + '" value="' + (l.fecha_fin_estimada || '') + '"></div>'
+                +     estadoBlock
+                +   '</div>'
+                + '</div></div>';
+        }
 
-            const lineas = detalleIds.map(id => pedido.lineas.find(l => l.detalle_id == id)).filter(Boolean);
-            $('#seleccionarPedidoModal').modal('hide');
+        function renderAsignacion() {
+            const multi = ordWiz.lineas.length > 1;
+            $('#ord-apply-bar').attr('hidden', !multi);
+            $('#ord-asignacion-desc').text(multi
+                ? 'Asigna empleado y fechas a cada línea. Usa "Aplicar a todas" para ir más rápido.'
+                : 'Define quién produce la orden y sus fechas.');
 
-            // 1 línea → modal individual (UX completa, edita insumos)
-            if (lineas.length === 1) {
-                setTimeout(() => ordenAbrirDesdeLinea(pedido, lineas[0]), 300);
-                return;
+            if (multi) {
+                if (!$('#ord-default-empleado option').length) $('#ord-default-empleado').html(empleadoOptionsHtml());
+                $('#ord-default-inicio').val(hoyISO());
+                $('#ord-default-fin').val(ordWiz.lineas[0].fecha_fin_estimada || '');
             }
-            // 2+ líneas → modal batch (defaults compartidos, insumos por template)
-            setTimeout(() => batchAbrir(pedido, lineas), 300);
-        });
 
-        // ══════════════════════════════════════════════════════
-        // HIDRATAR FORM DESDE UNA LÍNEA (modo crear)
-        // ══════════════════════════════════════════════════════
-        // Chip "Registrada por": creador real (editar) o usuario logueado (crear).
-        function ordSetCreador(name, avatar) {
-            $('#orden-creador-name').text(name || '—');
-            if (avatar) $('#orden-creador-avatar').attr('src', avatar);
-        }
-        function ordResetCreador() {
-            var $b = $('#orden-creador-banner');
-            ordSetCreador($b.data('default-name'), $b.data('default-avatar'));
-        }
-
-        // Chip "Cliente": nombre + avatar con inicial.
-        function ordSetCliente(name) {
-            var n = (name || '').trim();
-            $('#orden-cliente-name').text(n || '—');
-            $('#orden-cliente-avatar').text(n ? n.charAt(0).toUpperCase() : '—');
-        }
-
-        function llenarPanelLinea(d) {
-            $('#orden-linea-pedido').text('Pedido #' + d.pedido_id);
-            ordSetCliente(d.cliente_nombre);
-            $('#orden-linea-producto').text(d.producto_nombre || '—');
-            $('#orden-linea-cantidad').text(d.cantidad != null ? d.cantidad : 0);
-
-            // Chips translúcidos sobre el gradiente del hero
-            const chipCls = 'badge rounded-pill bg-white bg-opacity-10 text-white fw-normal';
-            const chips = [];
-            chips.push('<span class="' + chipCls + '"><i class="ri-palette-line me-1"></i>' + escHtml(d.color || 'Sin color') + '</span>');
-            chips.push('<span class="' + chipCls + '"><i class="ri-ruler-line me-1"></i>' + escHtml(d.talla || 'Talla única') + '</span>');
-            if (d.lleva_bordado) {
-                chips.push('<span class="' + chipCls + '"><i class="ri-scissors-cut-line me-1"></i>' + (d.bordados_count || 0) + ' bordado(s)</span>');
-            }
-            $('#orden-linea-meta').html(chips.join(''));
-        }
-
-        function ordenAbrirDesdeLinea(pedido, linea) {
-            // Modo crear
-            $('#id-field').val('');
-            $('#modalTitle').text('Nueva Orden de Producción');
-            $('#estado-container').hide();
-            $('#add-btn').show();
-            $('#edit-btn').hide();
-
-            // Hidden
-            $('#detalle-pedido-id-field').val(linea.detalle_id);
-            $('#pedido-id-hidden-field').val(pedido.id);
-            $('#producto-id-field').val(linea.producto_id);
-
-            // Panel solo lectura
-            llenarPanelLinea({
-                pedido_id: pedido.id,
-                cliente_nombre: pedido.cliente_nombre,
-                producto_nombre: linea.producto_nombre,
-                cantidad: linea.cantidad,
-                color: linea.color,
-                talla: linea.talla,
-                lleva_bordado: linea.lleva_bordado,
-                bordados_count: linea.bordados_count
-            });
-
-            // Creador: la registra el usuario logueado
-            ordResetCreador();
-
-            // Empleado
-            $('#empleado-id-field').val('');
-
-            // Fechas sugeridas (el fin nunca queda antes del inicio)
-            $('#fecha-inicio-field').val(hoyISO());
-            $('#fecha-fin-estimada-field').val(finEstimadoDefault(pedido.fecha_entrega, hoyISO()));
-
-            // Insumos: prefill desde el template del tipo_producto (si tiene)
-            resetInsumos();
-            if (Array.isArray(linea.insumos_default) && linea.insumos_default.length) {
-                ordenInsumosState = linea.insumos_default.map(function (i) {
-                    return {
-                        id: i.id,
-                        nombre: i.nombre,
-                        unidad: i.unidad || '',
-                        cantidad: parseFloat(i.cantidad) || 0
-                    };
-                });
-                renderInsumosGrid();
-            }
-            $('#notas-field').val('');
-
-            // Limpiar validaciones
-            $('#ordenForm').find('.is-invalid, .is-valid').removeClass('is-invalid is-valid');
-
-            $('#showModal').modal('show');
-        }
-
-        // ══════════════════════════════════════════════════════
-        // BATCH: crear varias órdenes del mismo pedido en un solo flow
-        // ══════════════════════════════════════════════════════
-        // Estado en memoria. Cada fila = una orden a crear. Los insumos vienen
-        // del template del tipo (Feature D) y se envían sin edición en batch.
-        let batchState = { pedido: null, filas: [] };
-
-        function batchAbrir(pedido, lineas) {
-            batchState.pedido = pedido;
-            batchState.filas = lineas.map(function (l) {
-                return {
-                    detalle_id: l.detalle_id,
-                    producto_nombre: l.producto_nombre,
-                    color: l.color,
-                    talla: l.talla,
-                    lleva_bordado: l.lleva_bordado,
-                    bordados_count: l.bordados_count,
-                    cantidad: l.cantidad,
-                    // Deep copy para evitar referencias compartidas entre filas
-                    insumos: Array.isArray(l.insumos_default)
-                        ? l.insumos_default.map(function (i) { return Object.assign({}, i); })
-                        : [],
-                    // editables
-                    empleado_id: '',
-                    fecha_inicio: hoyISO(),
-                    fecha_fin_estimada: finEstimadoDefault(pedido.fecha_entrega, hoyISO()),
-                };
-            });
-
-            // Header
-            $('#batch-pedido-label').text('Pedido #' + pedido.id + ' — ' + pedido.cliente_nombre);
-            $('#batch-submit-count').text(batchState.filas.length);
-
-            // Defaults arriba: vacíos
-            $('#batch-default-empleado').val('');
-            $('#batch-default-inicio').val(hoyISO());
-            $('#batch-default-fin').val(batchState.filas[0]?.fecha_fin_estimada || '');
-
-            batchRenderFilas();
-            $('#batchOrdenModal').modal('show');
-        }
-
-        function batchRenderFilas() {
-            const $tbody = $('#batch-ordenes-tbody');
-            // Cache de opciones de empleado (las mismas que en el select default)
-            const empleadosOpts = $('#batch-default-empleado').html();
-
-            $tbody.html(batchState.filas.map(function (f, idx) {
-                const meta = [
-                    f.color || 'Sin color',
-                    f.talla || 'Talla única',
-                    f.lleva_bordado ? (f.bordados_count + ' bord.') : ''
-                ].filter(Boolean).join(' · ');
-                return '<tr data-idx="' + idx + '">' +
-                    '<td class="cot-col-num">' + (idx + 1) + '</td>' +
-                    '<td class="cot-col-prod">' +
-                        '<div class="fw-semibold">' + escHtml(f.producto_nombre) + '</div>' +
-                        '<small class="text-muted">' + escHtml(meta) + '</small>' +
-                    '</td>' +
-                    '<td class="cot-col-num text-center fw-semibold">' + f.cantidad + '</td>' +
-                    '<td><select class="form-select form-select-sm batch-empleado">' + empleadosOpts + '</select></td>' +
-                    '<td><input type="date" class="form-control form-control-sm batch-inicio" value="' + (f.fecha_inicio || '') + '"></td>' +
-                    '<td><input type="date" class="form-control form-control-sm batch-fin" value="' + (f.fecha_fin_estimada || '') + '"></td>' +
-                    '<td class="text-center">' +
-                        '<button type="button" class="btn btn-sm btn-soft-info batch-ins-btn" data-idx="' + idx + '" title="Editar insumos de esta línea">' +
-                            '<i class="ri-tools-line me-1"></i>' + (f.insumos ? f.insumos.length : 0) +
-                        '</button>' +
-                    '</td>' +
-                '</tr>';
+            $('#ord-asignacion-cards').html(ordWiz.lineas.map(function (l, idx) {
+                return asignacionCardHtml(l, idx);
             }).join(''));
 
-            // Setear el valor de empleado seleccionado por fila
-            batchState.filas.forEach(function (f, idx) {
-                $('#batch-ordenes-tbody tr[data-idx="' + idx + '"] .batch-empleado').val(f.empleado_id || '');
+            ordWiz.lineas.forEach(function (l, idx) {
+                $('#ord-asig-emp-' + idx).val(l.empleado_id || '');
+                if (isEditMode()) $('#ord-asig-estado-' + idx).val(l.estado || 'Pendiente');
             });
         }
 
-        // Sincronizar inputs visibles → estado (antes de submit / aplicar defaults)
-        function batchSyncFilasDesdeDom() {
-            $('#batch-ordenes-tbody tr').each(function () {
+        function syncAsignacion() {
+            $('#ord-asignacion-cards .ord-asig-card').each(function () {
                 const idx = parseInt($(this).data('idx'), 10);
-                batchState.filas[idx].empleado_id        = $(this).find('.batch-empleado').val() || '';
-                batchState.filas[idx].fecha_inicio       = $(this).find('.batch-inicio').val();
-                batchState.filas[idx].fecha_fin_estimada = $(this).find('.batch-fin').val();
+                const l = ordWiz.lineas[idx];
+                if (!l) return;
+                l.empleado_id = $(this).find('.ord-asig-emp').val() || '';
+                l.fecha_inicio = $(this).find('.ord-asig-inicio').val() || '';
+                l.fecha_fin_estimada = $(this).find('.ord-asig-fin').val() || '';
+                const $est = $(this).find('.ord-asig-estado');
+                if ($est.length) l.estado = $est.val();
             });
         }
 
-        // "Aplicar a todas" → propaga defaults a cada fila
-        $(document).on('click', '#batch-apply-defaults', function () {
-            const emp = $('#batch-default-empleado').val();
-            const ini = $('#batch-default-inicio').val();
-            const fin = $('#batch-default-fin').val();
-            $('#batch-ordenes-tbody tr').each(function () {
-                if (emp) $(this).find('.batch-empleado').val(emp);
-                if (ini) $(this).find('.batch-inicio').val(ini);
-                if (fin) $(this).find('.batch-fin').val(fin);
+        $(document).on('click', '#ord-apply-defaults', function () {
+            const emp = $('#ord-default-empleado').val();
+            const ini = $('#ord-default-inicio').val();
+            const fin = $('#ord-default-fin').val();
+            $('#ord-asignacion-cards .ord-asig-card').each(function () {
+                if (emp) $(this).find('.ord-asig-emp').val(emp);
+                if (ini) $(this).find('.ord-asig-inicio').val(ini);
+                if (fin) $(this).find('.ord-asig-fin').val(fin);
             });
-            Swal.fire({
-                icon: 'success', title: 'Defaults aplicados', toast: true, position: 'top-end',
-                showConfirmButton: false, timer: 1500
+            Swal.fire({ icon: 'success', title: 'Aplicado a todas', toast: true, position: 'top-end', showConfirmButton: false, timer: 1400 });
+        });
+
+        // Validación en vivo de fechas por línea
+        $(document).on('blur', '.ord-asig-fin', function () {
+            const $row = $(this).closest('.ord-asig-card');
+            const ini = $row.find('.ord-asig-inicio').val();
+            const fin = $(this).val();
+            if (fin && ini && fin <= ini) marcarInvalido($(this), 'El fin debe ser posterior al inicio.');
+            else if (fin) marcarValido($(this));
+        });
+
+        function validateStep2() {
+            syncAsignacion();
+            let ok = true, $first = null;
+            ordWiz.lineas.forEach(function (l, idx) {
+                const $emp = $('#ord-asig-emp-' + idx), $ini = $('#ord-asig-inicio-' + idx), $fin = $('#ord-asig-fin-' + idx);
+                if (!l.empleado_id) { marcarInvalido($emp, 'Selecciona el empleado.'); ok = false; $first = $first || $emp; } else marcarValido($emp);
+                if (!l.fecha_inicio) { marcarInvalido($ini, 'Fecha de inicio requerida.'); ok = false; $first = $first || $ini; } else marcarValido($ini);
+                if (!l.fecha_fin_estimada) { marcarInvalido($fin, 'Fecha fin requerida.'); ok = false; $first = $first || $fin; }
+                else if (l.fecha_inicio && l.fecha_fin_estimada <= l.fecha_inicio) { marcarInvalido($fin, 'El fin debe ser posterior al inicio.'); ok = false; $first = $first || $fin; }
+                else marcarValido($fin);
+            });
+            if (!ok && $first) $first.trigger('focus');
+            return ok;
+        }
+
+        // ══════════════════════════════════════════════════════
+        // PASO 3 — Insumos por línea
+        // ══════════════════════════════════════════════════════
+        function insumosPanelHtml(l, idx) {
+            const tieneInsumos = l.insumos && l.insumos.length;
+            const rows = (l.insumos || []).map(function (it, j) {
+                return '<tr>'
+                    + '<td class="cot-col-num">' + (j + 1) + '</td>'
+                    + '<td class="cot-col-prod"><div class="fw-semibold">' + escHtml(it.nombre) + '</div>'
+                        + (it.unidad ? '<small class="text-muted">' + escHtml(it.unidad) + '</small>' : '') + '</td>'
+                    + '<td class="cot-col-num text-end fw-semibold">' + parseFloat(it.cantidad).toFixed(2) + '</td>'
+                    + '<td class="cot-col-acc text-center">'
+                    +   '<button type="button" class="btn btn-sm btn-soft-primary ord-ins-edit me-1" data-l="' + idx + '" data-i="' + j + '" title="Editar"><i class="ri-pencil-line"></i></button>'
+                    +   '<button type="button" class="btn btn-sm btn-soft-danger ord-ins-del" data-l="' + idx + '" data-i="' + j + '" title="Quitar"><i class="ri-delete-bin-line"></i></button>'
+                    + '</td></tr>';
+            }).join('');
+            const cuerpo = tieneInsumos
+                ? '<div class="cot-grouped-tablewrap"><table class="cot-grouped-table"><thead><tr>'
+                  + '<th class="cot-col-num">#</th><th class="cot-col-prod">Insumo</th>'
+                  + '<th class="cot-col-num text-end">Cantidad</th><th class="cot-col-acc text-center">Acciones</th>'
+                  + '</tr></thead><tbody>' + rows + '</tbody></table></div>'
+                : '<div class="text-center py-3 text-muted"><i class="ri-tools-line d-block opacity-50 mb-1" style="font-size:1.5rem;"></i>'
+                  + '<span class="fs-12">Sin insumos. Agrega con el botón de arriba.</span></div>';
+            return '<div class="card border-0 shadow-sm mb-2">'
+                + '<div class="card-header border-0 bg-soft-primary py-2 px-3 d-flex align-items-center justify-content-between">'
+                +   '<h6 class="mb-0 text-atlantico-dark fs-13"><span class="badge bg-secondary me-1">#' + (idx + 1) + '</span>'
+                +     escHtml(l.producto_nombre) + ' <span class="text-muted fw-normal">(' + (l.insumos ? l.insumos.length : 0) + ')</span></h6>'
+                +   '<button type="button" class="btn btn-sm btn-soft-primary py-0 px-2 ord-ins-add" data-l="' + idx + '"><i class="ri-add-line"></i> Agregar insumo</button>'
+                + '</div><div class="card-body p-0">' + cuerpo + '</div></div>';
+        }
+
+        function renderInsumosAcc() {
+            $('#ord-insumos-acc').html(ordWiz.lineas.map(function (l, idx) {
+                return insumosPanelHtml(l, idx);
+            }).join(''));
+        }
+
+        function abrirInsumoModal(lineIdx, insIdx) {
+            ordInsLineIdx = lineIdx;
+            ordInsEditIdx = (insIdx == null ? null : insIdx);
+            $('#insumoAddModal').find('.is-invalid, .is-valid').removeClass('is-invalid is-valid');
+            const L = ordWiz.lineas[lineIdx];
+            if (insIdx != null && L && L.insumos[insIdx]) {
+                const it = L.insumos[insIdx];
+                $('#insumo-add-edit-idx').val(insIdx);
+                $('#insumoAddModal-title').text('Editar insumo');
+                $('#insumo-add-confirm-label').text('Guardar');
+                $('#insumo-add-select').val(it.id).trigger('change');
+                $('#insumo-add-cantidad').val(it.cantidad);
+            } else {
+                $('#insumo-add-edit-idx').val('');
+                $('#insumoAddModal-title').text('Agregar insumo');
+                $('#insumo-add-confirm-label').text('Agregar');
+                $('#insumo-add-select').val('').trigger('change');
+                $('#insumo-add-cantidad').val('');
+            }
+            $('#insumoAddModal').modal('show');
+        }
+
+        $(document).on('click', '.ord-ins-add', function () { abrirInsumoModal(parseInt($(this).data('l'), 10), null); });
+        $(document).on('click', '.ord-ins-edit', function () { abrirInsumoModal(parseInt($(this).data('l'), 10), parseInt($(this).data('i'), 10)); });
+        $(document).on('click', '.ord-ins-del', function () {
+            const li = parseInt($(this).data('l'), 10), ii = parseInt($(this).data('i'), 10);
+            if (ordWiz.lineas[li]) { ordWiz.lineas[li].insumos.splice(ii, 1); renderInsumosAcc(); }
+        });
+
+        $(document).on('click', '#insumo-add-confirm', function () {
+            const $sel = $('#insumo-add-select');
+            const id = $sel.val();
+            const cantidad = parseFloat($('#insumo-add-cantidad').val());
+            if (!id) { marcarInvalido($sel, 'Selecciona un insumo.'); return; }
+            if (isNaN(cantidad) || cantidad <= 0) { marcarInvalido($('#insumo-add-cantidad'), 'La cantidad debe ser mayor a cero.'); return; }
+
+            const $opt = $sel.find('option:selected');
+            const item = {
+                id: parseInt(id, 10),
+                nombre: $opt.data('nombre') || $opt.text().replace(/\s*\(.*\)\s*$/, ''),
+                unidad: $opt.data('unidad') || '',
+                cantidad: +cantidad.toFixed(2)
+            };
+            const L = ordWiz.lineas[ordInsLineIdx];
+            if (!L) { $('#insumoAddModal').modal('hide'); return; }
+            if (ordInsEditIdx != null) {
+                L.insumos[ordInsEditIdx] = item;
+            } else {
+                const existing = L.insumos.findIndex(x => x.id === item.id);
+                if (existing !== -1) L.insumos[existing].cantidad = +(L.insumos[existing].cantidad + item.cantidad).toFixed(2);
+                else L.insumos.push(item);
+            }
+            renderInsumosAcc();
+            $('#insumoAddModal').modal('hide');
+        });
+
+        $('#insumoAddModal').on('hidden.bs.modal', function () {
+            ordInsLineIdx = null; ordInsEditIdx = null;
+            $('#insumo-add-edit-idx').val('');
+            $('#insumo-add-select').val('').trigger('change');
+            $('#insumo-add-cantidad').val('');
+            $('#insumoAddModal').find('.is-invalid, .is-valid').removeClass('is-invalid is-valid');
+        });
+
+        function validateStep3() {
+            const bad = ordWiz.lineas.findIndex(l => !l.insumos || !l.insumos.length);
+            if (bad !== -1) {
+                Swal.fire({ icon: 'warning', title: 'Faltan insumos', text: 'La línea #' + (bad + 1) + ' no tiene insumos. Agrega al menos uno.' });
+                return false;
+            }
+            return true;
+        }
+
+        // ══════════════════════════════════════════════════════
+        // PASO 4 — Resumen
+        // ══════════════════════════════════════════════════════
+        function empName(id) {
+            const t = $('#ord-empleados-tpl option[value="' + id + '"]').text();
+            return t || '—';
+        }
+
+        function renderResumen() {
+            const multi = ordWiz.lineas.length > 1;
+            const pedidoId = ordWiz.pedido ? ordWiz.pedido.id : '—';
+            $('#ord-resumen-desc').text(isEditMode()
+                ? 'Revisa los cambios antes de guardar.'
+                : (multi ? ('Se crearán ' + ordWiz.lineas.length + ' órdenes para el Pedido #' + pedidoId + '.') : 'Revisa la orden antes de confirmar.'));
+            $('#ord-notas-scope').text(multi ? '(se aplican a todas las órdenes)' : '');
+
+            const estadoTh = isEditMode() ? '<th class="text-center">Estado</th>' : '';
+            const rows = ordWiz.lineas.map(function (l, idx) {
+                const estadoTd = isEditMode() ? '<td class="text-center"><span class="badge badge-soft-secondary">' + escHtml(l.estado || 'Pendiente') + '</span></td>' : '';
+                return '<tr>'
+                    + '<td class="cot-col-num">' + (idx + 1) + '</td>'
+                    + '<td><div class="fw-semibold">' + escHtml(l.producto_nombre) + '</div><div class="d-flex flex-wrap gap-1 mt-1">' + lineaMetaChips(l) + '</div></td>'
+                    + '<td class="text-center fw-semibold">' + l.cantidad + '</td>'
+                    + '<td>' + escHtml(empName(l.empleado_id)) + '</td>'
+                    + '<td class="text-center fs-12">' + (l.fecha_inicio || '—') + '<br><span class="text-muted">→ ' + (l.fecha_fin_estimada || '—') + '</span></td>'
+                    + '<td class="text-center"><span class="badge badge-soft-info">' + ((l.insumos || []).length) + ' insumo(s)</span></td>'
+                    + estadoTd
+                    + '</tr>';
+            }).join('');
+
+            const html = '<div class="cot-grouped-tablewrap"><table class="cot-grouped-table"><thead><tr>'
+                + '<th class="cot-col-num">#</th><th>Producto</th><th class="text-center">Cant.</th>'
+                + '<th>Empleado</th><th class="text-center">Cronograma</th><th class="text-center">Insumos</th>' + estadoTh
+                + '</tr></thead><tbody>' + rows + '</tbody></table></div>';
+            $('#ord-resumen').html(html);
+        }
+
+        // ══════════════════════════════════════════════════════
+        // Navegación — botones y markers
+        // ══════════════════════════════════════════════════════
+        $('#btn-ord-next').on('click', function () {
+            ordSyncStep(currentStep);
+            if (validateStep(currentStep)) ordShowStep(currentStep + 1);
+        });
+        $('#btn-ord-prev').on('click', function () {
+            ordSyncStep(currentStep);
+            ordShowStep(currentStep - 1);
+        });
+        $('#showModal').on('click', '.wiz-step-marker', function () {
+            const target = parseInt($(this).data('step'), 10);
+            ordSyncStep(currentStep);
+            if (target <= currentStep) { ordShowStep(target); return; }
+            for (let s = currentStep; s < target; s++) {
+                if (!validateStep(s)) { ordShowStep(s); return; }
+                ordShowStep(s + 1);
+            }
+        });
+
+        // ══════════════════════════════════════════════════════
+        // Abrir wizard — modo CREAR
+        // ══════════════════════════════════════════════════════
+        $(document).on('click', '#create-btn', function () {
+            ordWiz = { mode: 'create', editId: null, pedido: null, lineas: [] };
+            $('#ord-wiz-id-field').val('');
+            $('#modalTitle').text('Nueva Orden de Producción');
+            $('#ord-edit-locked').attr('hidden', true);
+            $('#ord-select-wrap').removeAttr('hidden');
+            $('#ord-wiz-submit-label').text('Crear Orden');
+            $('#ord-notas-global').val('');
+            $('#ord-lineas-chip').addClass('d-none');
+            $('#ordenForm').find('.is-invalid, .is-valid').removeClass('is-invalid is-valid');
+            ordShowStep(1);
+            $('#showModal').modal('show');
+        });
+
+        $('#showModal').on('shown.bs.modal', function () {
+            if (ordWiz.mode === 'create') {
+                pedordResetFiltros();
+                ordCargarPedidos();
+            }
+        });
+
+        // ══════════════════════════════════════════════════════
+        // Abrir wizard — modo EDITAR
+        // ══════════════════════════════════════════════════════
+        function ordEditSummaryHtml(l, pedidoId) {
+            return '<div class="card border-0 shadow-sm">'
+                + '<div class="card-body p-3 d-flex align-items-center justify-content-between gap-3 flex-wrap">'
+                +   '<div><div class="text-muted fs-11 mb-1">Pedido #' + escHtml(pedidoId) + '</div>'
+                +     '<div class="fw-semibold">' + escHtml(l.producto_nombre) + '</div>'
+                +     '<div class="d-flex flex-wrap gap-1 mt-1">' + lineaMetaChips(l) + '</div></div>'
+                +   '<div class="text-end"><div class="fw-bold fs-4 lh-1">' + l.cantidad + '</div><small class="text-muted">unidades</small></div>'
+                + '</div></div>';
+        }
+
+        $(document).on('click', '.edit-btn', function () {
+            const id = $(this).data('id');
+            $.get("{{ route('ordenes.edit', ':id') }}".replace(':id', id), function (data) {
+                const det = data.detalle_pedido || {};
+                const linea = {
+                    detalle_id: data.detalle_pedido_id,
+                    producto_id: data.producto_id,
+                    producto_nombre: data.producto ? data.producto.nombre : ('Producto #' + data.producto_id),
+                    cantidad: data.cantidad_solicitada,
+                    color: det.color ? det.color.nombre : null,
+                    talla: det.talla ? (det.talla.etiqueta || det.talla.nombre) : null,
+                    lleva_bordado: !!(det.bordados && det.bordados.length),
+                    bordados_count: det.bordados ? det.bordados.length : 0,
+                    empleado_id: data.empleado_id || '',
+                    fecha_inicio: formatDateForInput(data.fecha_inicio),
+                    fecha_fin_estimada: formatDateForInput(data.fecha_fin_estimada),
+                    estado: data.estado || 'Pendiente',
+                    insumos: (data.insumos || []).map(function (i) {
+                        return { id: i.id, nombre: i.nombre || ('Insumo #' + i.id), unidad: i.unidad_medida || '', cantidad: parseFloat(i.pivot && i.pivot.cantidad_estimada) || 0 };
+                    })
+                };
+                ordWiz = {
+                    mode: 'edit',
+                    editId: data.id,
+                    pedido: { id: data.pedido_id, cliente_nombre: data.cliente_nombre || '', cliente_documento: det.documento || '' },
+                    lineas: [linea]
+                };
+
+                $('#ord-wiz-id-field').val(data.id);
+                $('#modalTitle').text('Editar Orden de Producción');
+                $('#ord-select-wrap').attr('hidden', true);
+                $('#ord-edit-locked').removeAttr('hidden');
+                $('#ord-edit-line-summary').html(ordEditSummaryHtml(linea, data.pedido_id || '—'));
+                $('#ord-wiz-submit-label').text('Actualizar Orden');
+
+                if (data.creador) ordSetCreador(data.creador.name, data.creador.avatar_url);
+                else ordResetCreador();
+
+                $('#ord-notas-global').val(data.notas || '');
+                $('#ord-lineas-chip').addClass('d-none');
+                $('#ordenForm').find('.is-invalid, .is-valid').removeClass('is-invalid is-valid');
+
+                ordShowStep(1);
+                $('#showModal').modal('show');
             });
         });
 
-        // Submit del batch
-        $(document).on('click', '#batch-submit-btn', function () {
-            batchSyncFilasDesdeDom();
-
-            // Validación cliente: duplicados, empleado, fechas, insumos
-            const errores = [];
-
-            // Detectar detalle_id duplicado dentro del batch
-            const detalleIdsSeen = new Set();
-            batchState.filas.forEach(function (f) {
-                if (detalleIdsSeen.has(f.detalle_id)) {
-                    errores.push('Línea de pedido #' + f.detalle_id + ' aparece duplicada. Recarga e intenta de nuevo.');
+        // ══════════════════════════════════════════════════════
+        // Enviar — crea 1 (store), N (batch) o actualiza (update)
+        // ══════════════════════════════════════════════════════
+        function ordFinalCheck() {
+            if (!ordWiz.lineas.length) {
+                Swal.fire({ icon: 'warning', title: 'Sin líneas', text: 'No hay líneas para producir.' });
+                ordShowStep(1);
+                return false;
+            }
+            for (let i = 0; i < ordWiz.lineas.length; i++) {
+                const l = ordWiz.lineas[i];
+                if (!l.empleado_id || !l.fecha_inicio || !l.fecha_fin_estimada || l.fecha_fin_estimada <= l.fecha_inicio) {
+                    ordShowStep(2); validateStep2(); return false;
                 }
-                detalleIdsSeen.add(f.detalle_id);
-            });
+                if (!l.insumos || !l.insumos.length) {
+                    ordShowStep(3);
+                    Swal.fire({ icon: 'warning', title: 'Faltan insumos', text: 'La línea #' + (i + 1) + ' no tiene insumos.' });
+                    return false;
+                }
+            }
+            return true;
+        }
 
-            batchState.filas.forEach(function (f, idx) {
-                if (!f.empleado_id)                    errores.push('Fila ' + (idx + 1) + ': empleado requerido');
-                if (!f.fecha_inicio)                   errores.push('Fila ' + (idx + 1) + ': fecha inicio requerida');
-                if (!f.fecha_fin_estimada)             errores.push('Fila ' + (idx + 1) + ': fecha fin requerida');
-                if (f.fecha_inicio && f.fecha_fin_estimada && f.fecha_fin_estimada <= f.fecha_inicio)
-                    errores.push('Fila ' + (idx + 1) + ': la fecha fin debe ser posterior al inicio');
-                if (!f.insumos || !f.insumos.length)
-                    errores.push('Fila ' + (idx + 1) + ': sin insumos (agrégalos con el botón de la columna Ins.)');
-            });
-            if (errores.length) {
-                Swal.fire({ icon: 'warning', title: 'Revisa los datos', html: errores.join('<br>') });
-                return;
+        $('#ordenForm').on('submit', function (e) {
+            e.preventDefault();
+            if (currentStep !== TOTAL_STEPS) return;      // enviar solo desde el resumen
+            if (!ordFinalCheck()) return;
+
+            const notas = $('#ord-notas-global').val() || null;
+            const $btn = $('#ord-wiz-submit-btn').prop('disabled', true);
+            const mapInsumos = (arr) => arr.map(i => ({ id: i.id, cantidad_estimada: i.cantidad }));
+
+            let url, payload;
+            if (isEditMode()) {
+                const l = ordWiz.lineas[0];
+                url = "{{ route('ordenes.update', ':id') }}".replace(':id', ordWiz.editId);
+                payload = {
+                    _token: '{{ csrf_token() }}', _method: 'PUT',
+                    empleado_id: l.empleado_id, fecha_inicio: l.fecha_inicio, fecha_fin_estimada: l.fecha_fin_estimada,
+                    estado: l.estado || 'Pendiente', notas: notas, insumos: mapInsumos(l.insumos)
+                };
+            } else if (ordWiz.lineas.length === 1) {
+                const l = ordWiz.lineas[0];
+                url = "{{ route('ordenes.store') }}";
+                payload = {
+                    _token: '{{ csrf_token() }}',
+                    detalle_pedido_id: l.detalle_id, empleado_id: l.empleado_id,
+                    fecha_inicio: l.fecha_inicio, fecha_fin_estimada: l.fecha_fin_estimada,
+                    notas: notas, insumos: mapInsumos(l.insumos)
+                };
+            } else {
+                url = "{{ route('ordenes.batch') }}";
+                payload = {
+                    _token: '{{ csrf_token() }}',
+                    pedido_id: ordWiz.pedido.id,
+                    ordenes: ordWiz.lineas.map(l => ({
+                        detalle_pedido_id: l.detalle_id, empleado_id: l.empleado_id,
+                        fecha_inicio: l.fecha_inicio, fecha_fin_estimada: l.fecha_fin_estimada,
+                        notas: notas, insumos: mapInsumos(l.insumos)
+                    }))
+                };
             }
 
-            const payload = {
-                _token: '{{ csrf_token() }}',
-                pedido_id: batchState.pedido.id,
-                ordenes: batchState.filas.map(function (f) {
-                    return {
-                        detalle_pedido_id: f.detalle_id,
-                        empleado_id: f.empleado_id,
-                        fecha_inicio: f.fecha_inicio,
-                        fecha_fin_estimada: f.fecha_fin_estimada,
-                        insumos: f.insumos.map(function (i) {
-                            return { id: i.id, cantidad_estimada: i.cantidad };
-                        })
-                    };
-                })
-            };
-
-            const $btn = $('#batch-submit-btn').prop('disabled', true);
             $.ajax({
-                url: "{{ route('ordenes.batch') }}",
-                method: 'POST',
-                data: payload,
+                url: url, method: 'POST', data: payload,
                 success: function (resp) {
                     $btn.prop('disabled', false);
-                    $('#batchOrdenModal').modal('hide');
+                    $('#showModal').modal('hide');
                     table.ajax.reload(null, false);
-                    Swal.fire({
-                        icon: 'success', title: '¡Listo!', text: resp.message,
-                        timer: 2200, showConfirmButton: false
-                    });
+                    Swal.fire({ icon: 'success', title: '¡Listo!', text: resp.message, timer: 2200, showConfirmButton: false });
                 },
                 error: function (xhr) {
                     $btn.prop('disabled', false);
-                    let msg = 'Error al crear las órdenes.';
+                    let msg = 'Ocurrió un error al procesar la solicitud.';
                     if (xhr.responseJSON) {
                         if (xhr.responseJSON.errors) {
                             msg = Object.values(xhr.responseJSON.errors).map(v => Array.isArray(v) ? v[0] : v).join('\n');
@@ -689,81 +896,27 @@
             });
         });
 
-        // ── Editor de insumos por línea (batch) ─────────────────────
-        let batchInsTemp = [];        // insumos en edición (copia temporal)
-        let batchInsRowIdx = null;    // fila del batch que se está editando
-
-        function batchRenderInsTemp() {
-            const $tbody = $('#batch-ins-tbody');
-            const $empty = $('#batch-ins-empty');
-            const $wrap  = $('#batch-ins-tablewrap');
-            if (!batchInsTemp.length) {
-                $tbody.empty(); $wrap.attr('hidden', true); $empty.show(); return;
-            }
-            $empty.hide(); $wrap.removeAttr('hidden');
-            $tbody.html(batchInsTemp.map(function (it, i) {
-                return '<tr>' +
-                    '<td class="cot-col-prod"><div class="fw-semibold">' + escHtml(it.nombre) + '</div>' +
-                        (it.unidad ? '<small class="text-muted">' + escHtml(it.unidad) + '</small>' : '') + '</td>' +
-                    '<td class="cot-col-num text-end fw-semibold">' + parseFloat(it.cantidad).toFixed(2) + '</td>' +
-                    '<td class="cot-col-acc text-center"><button type="button" class="btn btn-sm btn-soft-danger batch-ins-del" data-i="' + i + '" title="Quitar"><i class="ri-delete-bin-line"></i></button></td>' +
-                '</tr>';
-            }).join(''));
-        }
-
-        // Abrir el editor de insumos para una línea
-        $(document).on('click', '.batch-ins-btn', function () {
-            const idx = parseInt($(this).data('idx'), 10);
-            if (!batchState.filas[idx]) return;
-            // No perder lo editado (empleado/fechas) al re-renderear luego
-            batchSyncFilasDesdeDom();
-            batchInsRowIdx = idx;
-            batchInsTemp = (batchState.filas[idx].insumos || []).map(function (i) {
-                return { id: i.id, nombre: i.nombre, unidad: i.unidad || '', cantidad: i.cantidad };
-            });
-            $('#batch-ins-prod').text(batchState.filas[idx].producto_nombre || ('Línea ' + (idx + 1)));
-            $('#batch-ins-select').val('');
-            $('#batch-ins-cant').val('');
-            batchRenderInsTemp();
-            $('#batchInsumosModal').modal('show');
-        });
-
-        // Agregar (o actualizar cantidad si ya existe) un insumo a la lista temporal
-        $(document).on('click', '#batch-ins-add', function () {
-            const $opt = $('#batch-ins-select option:selected');
-            const id   = $('#batch-ins-select').val();
-            const cant = parseFloat($('#batch-ins-cant').val());
-            if (!id) { Swal.fire({ icon: 'warning', title: 'Selecciona un insumo', toast: true, position: 'top-end', showConfirmButton: false, timer: 1400 }); return; }
-            if (isNaN(cant) || cant <= 0) { Swal.fire({ icon: 'warning', title: 'Cantidad inválida', toast: true, position: 'top-end', showConfirmButton: false, timer: 1400 }); return; }
-            const ex = batchInsTemp.find(function (i) { return String(i.id) === String(id); });
-            if (ex) {
-                ex.cantidad = cant;
-            } else {
-                batchInsTemp.push({ id: parseInt(id, 10), nombre: $opt.data('nombre'), unidad: $opt.data('unidad') || '', cantidad: cant });
-            }
-            $('#batch-ins-select').val('');
-            $('#batch-ins-cant').val('');
-            batchRenderInsTemp();
-        });
-
-        // Quitar un insumo de la lista temporal
-        $(document).on('click', '.batch-ins-del', function () {
-            batchInsTemp.splice(parseInt($(this).data('i'), 10), 1);
-            batchRenderInsTemp();
-        });
-
-        // Guardar → vuelca la lista a la fila del batch y refresca el contador
-        $(document).on('click', '#batch-ins-save', function () {
-            if (batchInsRowIdx == null) return;
-            batchState.filas[batchInsRowIdx].insumos = batchInsTemp.slice();
-            $('#batchInsumosModal').modal('hide');
-            batchRenderFilas();
-        });
-
-        // Reset al cerrar
-        $('#batchOrdenModal').on('hidden.bs.modal', function () {
-            batchState = { pedido: null, filas: [] };
-            $('#batch-ordenes-tbody').empty();
+        // ══════════════════════════════════════════════════════
+        // Reset al cerrar el wizard
+        // ══════════════════════════════════════════════════════
+        $('#showModal').on('hidden.bs.modal', function () {
+            ordWiz = { mode: 'create', editId: null, pedido: null, lineas: [] };
+            $('#ord-wiz-id-field').val('');
+            $('#ordenForm').find('.is-invalid, .is-valid').removeClass('is-invalid is-valid');
+            $('#ord-asignacion-cards').empty();
+            $('#ord-insumos-acc').empty();
+            $('#ord-resumen').empty();
+            $('#ord-edit-line-summary').empty();
+            $('#ord-notas-global').val('');
+            $('#pedidos-orden-container').empty();
+            $('#ord-lineas-chip').addClass('d-none');
+            $('#ord-cliente-banner').attr('hidden', true).attr('aria-hidden', 'true');
+            $('#ord-creador-banner').attr('hidden', true).attr('aria-hidden', 'true');
+            $('#ord-edit-locked').attr('hidden', true);
+            $('#ord-select-wrap').removeAttr('hidden');
+            $('#modalTitle').text('Nueva Orden de Producción');
+            ordResetCreador();
+            ordShowStep(1);
         });
 
         // ══════════════════════════════════════════════════════
@@ -885,15 +1038,6 @@
         // ══════════════════════════════════════════════════════
         // DataTable
         // ══════════════════════════════════════════════════════
-        function debounce(func, wait) {
-            let timeout;
-            return function () {
-                const context = this, args = arguments;
-                clearTimeout(timeout);
-                timeout = setTimeout(() => func.apply(context, args), wait);
-            };
-        }
-
         function updateFilterBadge() {
             let count = 0;
             const ordenValue = $('#filter-orden').val();
@@ -1014,200 +1158,6 @@
         });
 
         updateFilterBadge();
-
-        // ══════════════════════════════════════════════════════
-        // Insumos: abrir/editar/eliminar/confirmar (vía nested modal)
-        // ══════════════════════════════════════════════════════
-        $(document).on('click', '#add-insumo-btn', function () {
-            abrirInsumoAddModal(null);
-        });
-        $(document).on('click', '.edit-insumo-btn', function () {
-            abrirInsumoAddModal(parseInt($(this).data('idx'), 10));
-        });
-        $(document).on('click', '.remove-insumo', function () {
-            const idx = parseInt($(this).data('idx'), 10);
-            if (isNaN(idx)) return;
-            ordenInsumosState.splice(idx, 1);
-            renderInsumosGrid();
-        });
-        $(document).on('click', '#insumo-add-confirm', function () {
-            const $sel = $('#insumo-add-select');
-            const id = $sel.val();
-            const cantidad = parseFloat($('#insumo-add-cantidad').val());
-            if (!id) {
-                marcarInvalido($sel, 'Selecciona un insumo.');
-                return;
-            }
-            if (isNaN(cantidad) || cantidad <= 0) {
-                marcarInvalido($('#insumo-add-cantidad'), 'La cantidad debe ser mayor a cero.');
-                return;
-            }
-
-            const $opt = $sel.find('option:selected');
-            const item = {
-                id: parseInt(id, 10),
-                nombre: $opt.data('nombre') || $opt.text().replace(/\s*\(.*\)\s*$/, ''),
-                unidad: $opt.data('unidad') || '',
-                cantidad: +cantidad.toFixed(2)
-            };
-
-            const idxStr = $('#insumo-add-edit-idx').val();
-            if (idxStr !== '') {
-                ordenInsumosState[parseInt(idxStr, 10)] = item;
-            } else {
-                // Si el insumo ya estaba en la lista, sumamos las cantidades
-                const existing = ordenInsumosState.findIndex(x => x.id === item.id);
-                if (existing !== -1) {
-                    ordenInsumosState[existing].cantidad = +(ordenInsumosState[existing].cantidad + item.cantidad).toFixed(2);
-                } else {
-                    ordenInsumosState.push(item);
-                }
-            }
-
-            renderInsumosGrid();
-            $('#insumoAddModal').modal('hide');
-        });
-        $('#insumoAddModal').on('hidden.bs.modal', function () {
-            $('#insumo-add-edit-idx').val('');
-            $('#insumo-add-select').val('').trigger('change');
-            $('#insumo-add-cantidad').val('');
-            $('#insumoAddModal').find('.is-invalid, .is-valid').removeClass('is-invalid is-valid');
-        });
-
-        // ══════════════════════════════════════════════════════
-        // VALIDACIÓN AL SUBMIT
-        // ══════════════════════════════════════════════════════
-        function validarFormularioOrden() {
-            let esValido = true;
-
-            // Línea del pedido seleccionada (solo en creación)
-            let isEdit = $('#id-field').val() !== '';
-            if (!isEdit && !$('#detalle-pedido-id-field').val()) {
-                Swal.fire({ icon: 'warning', title: 'Sin pedido', text: 'Selecciona un pedido y producto antes de crear la orden.' });
-                return false;
-            }
-
-            // Empleado — obligatorio
-            let $emp = $('#empleado-id-field');
-            if (!$emp.val()) { marcarInvalido($emp, 'Selecciona el empleado asignado.'); esValido = false; }
-            else { marcarValido($emp); }
-
-            // Fecha Inicio
-            let $inicio = $('#fecha-inicio-field');
-            if (!$inicio.val()) { marcarInvalido($inicio, 'La fecha de inicio es obligatoria.'); esValido = false; }
-            else { marcarValido($inicio); }
-
-            // Fecha Fin Estimada
-            let $fin = $('#fecha-fin-estimada-field');
-            if (!$fin.val()) { marcarInvalido($fin, 'La fecha fin estimada es obligatoria.'); esValido = false; }
-            else if ($inicio.val() && $fin.val() <= $inicio.val()) { marcarInvalido($fin, 'La fecha fin estimada debe ser posterior a la fecha de inicio.'); esValido = false; }
-            else { marcarValido($fin); }
-
-            // Insumos: al menos 1 en el estado (cada uno se valida al agregarlo)
-            if (!ordenInsumosState.length) {
-                Swal.fire({ icon: 'warning', title: 'Sin insumos', text: 'Agrega al menos un insumo a la orden.', timer: 2200, showConfirmButton: false });
-                esValido = false;
-            }
-
-            return esValido;
-        }
-
-        // Crear / actualizar orden
-        $('#ordenForm').on('submit', function (e) {
-            e.preventDefault();
-            if (!validarFormularioOrden()) return;
-
-            let formData = new FormData(this);
-            let editId = $('#id-field').val();
-            let url = editId
-                ? "{{ route('ordenes.update', ':id') }}".replace(':id', editId)
-                : "{{ route('ordenes.store') }}";
-            if (editId) { formData.append('_method', 'PUT'); }
-
-            let $btn = $(editId ? '#edit-btn' : '#add-btn').prop('disabled', true);
-
-            $.ajax({
-                url: url,
-                method: 'POST',
-                data: formData,
-                processData: false,
-                contentType: false,
-                success: function (response) {
-                    $btn.prop('disabled', false);
-                    $('#showModal').modal('hide');
-                    table.ajax.reload(null, false);
-                    Swal.fire({ icon: 'success', title: 'Éxito', text: response.message, timer: 2000, showConfirmButton: false });
-                },
-                error: function (xhr) {
-                    $btn.prop('disabled', false);
-                    let msg = 'Ocurrió un error al procesar la solicitud.';
-                    if (xhr.responseJSON) {
-                        if (xhr.responseJSON.errors) {
-                            msg = Object.values(xhr.responseJSON.errors).map(v => Array.isArray(v) ? v[0] : v).join('\n');
-                        } else if (xhr.responseJSON.message) {
-                            msg = xhr.responseJSON.message;
-                        }
-                    }
-                    Swal.fire({ icon: 'error', title: 'Error', text: msg });
-                }
-            });
-        });
-
-        // ══════════════════════════════════════════════════════
-        // Editar orden
-        // ══════════════════════════════════════════════════════
-        $(document).on('click', '.edit-btn', function () {
-            let id = $(this).data('id');
-            $.get("{{ route('ordenes.edit', ':id') }}".replace(':id', id), function (data) {
-                $('#modalTitle').text('Editar Orden de Producción');
-                $('#id-field').val(data.id);
-                $('#detalle-pedido-id-field').val(data.detalle_pedido_id || '');
-                $('#pedido-id-hidden-field').val(data.pedido_id || '');
-                $('#producto-id-field').val(data.producto_id || '');
-
-                // Creador real de la orden (no quien edita)
-                if (data.creador) {
-                    ordSetCreador(data.creador.name, data.creador.avatar_url);
-                } else {
-                    ordResetCreador();
-                }
-
-                const det = data.detalle_pedido || {};
-                llenarPanelLinea({
-                    pedido_id: data.pedido_id || '—',
-                    cliente_nombre: data.cliente_nombre || '',
-                    producto_nombre: data.producto ? data.producto.nombre : ('Producto #' + data.producto_id),
-                    cantidad: data.cantidad_solicitada,
-                    color: det.color ? det.color.nombre : null,
-                    talla: det.talla ? (det.talla.etiqueta || det.talla.nombre) : null,
-                    lleva_bordado: !!(det.bordados && det.bordados.length),
-                    bordados_count: det.bordados ? det.bordados.length : 0
-                });
-
-                $('#empleado-id-field').val(data.empleado_id || '');
-                $('#fecha-inicio-field').val(formatDateForInput(data.fecha_inicio));
-                $('#fecha-fin-estimada-field').val(formatDateForInput(data.fecha_fin_estimada));
-                $('#estado-field').val(data.estado);
-                $('#notas-field').val(data.notas);
-
-                // Insumos: hidratar estado desde la orden y rerenderear la grilla
-                ordenInsumosState = (data.insumos || []).map(function (i) {
-                    return {
-                        id: i.id,
-                        nombre: i.nombre || ('Insumo #' + i.id),
-                        unidad: i.unidad_medida || '',
-                        cantidad: parseFloat(i.pivot && i.pivot.cantidad_estimada) || 0
-                    };
-                });
-                renderInsumosGrid();
-
-                $('#estado-container').show();
-                $('#add-btn').hide();
-                $('#edit-btn').show();
-                $('#ordenForm').find('.is-invalid, .is-valid').removeClass('is-invalid is-valid');
-                $('#showModal').modal('show');
-            });
-        });
 
         // ══════════════════════════════════════════════════════
         // Ver orden
@@ -1446,28 +1396,5 @@
                 viewOrdShowStep(parseInt($(this).data('step')));
             });
         }());
-
-        // ══════════════════════════════════════════════════════
-        // Reset del form al cerrar
-        // ══════════════════════════════════════════════════════
-        $('#showModal').on('hidden.bs.modal', function () {
-            $('#ordenForm')[0].reset();
-            $('#id-field').val('');
-            $('#detalle-pedido-id-field').val('');
-            $('#pedido-id-hidden-field').val('');
-            $('#producto-id-field').val('');
-            $('#orden-linea-pedido').text('Pedido #—');
-            ordSetCliente('');
-            ordResetCreador();
-            $('#orden-linea-producto').text('—');
-            $('#orden-linea-cantidad').text('0');
-            $('#orden-linea-meta').empty();
-            $('#modalTitle').text('Nueva Orden de Producción');
-            $('#estado-container').hide();
-            $('#add-btn').show();
-            $('#edit-btn').hide();
-            $('#ordenForm').find('.is-invalid, .is-valid').removeClass('is-invalid is-valid');
-            resetInsumos();
-        });
     });
 </script>

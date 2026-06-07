@@ -40,8 +40,7 @@
                                 data-bs-toggle="modal" data-bs-target="#misOrdenesModal">
                                 <i class="ri-user-follow-line align-bottom me-1"></i> Mis Órdenes
                             </button>
-                            <button type="button" class="btn btn-success add-btn" data-bs-toggle="modal" id="create-btn"
-                                data-bs-target="#seleccionarPedidoModal">
+                            <button type="button" class="btn btn-success add-btn" id="create-btn">
                                 <i class="ri-add-line align-bottom me-1"></i> Nueva Orden
                             </button>
                         </div>
@@ -129,10 +128,7 @@
         </div>
     </div>
 
-    @include('admin.ordenes.modals.seleccionar_pedido')
     @include('admin.ordenes.modals.mis_ordenes')
-    @include('admin.ordenes.modals.batch')
-    @include('admin.ordenes.modals.batch_insumos')
     @include('admin.ordenes.modals.create')
     @include('admin.ordenes.modals.insumo_add')
     @include('admin.ordenes.modals.view')
