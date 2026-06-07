@@ -5316,6 +5316,73 @@ header#page-topbar,
 [data-bs-theme="dark"] .ord-ins-table tbody td { border-bottom-color: #1f2a3d; color: #e2e8f0; }
 [data-bs-theme="dark"] .ord-ins-empty { color: #64748b; }
 
+/* ============================================================
+   PRODUCTOS — MODAL VER (Detalle del Tipo) #viewTipoModal
+   ============================================================ */
+.vt-hero { display: flex; gap: 18px; align-items: flex-start; flex-wrap: wrap; }
+.vt-hero-media { flex: 0 0 180px; width: 180px; }
+.vt-img {
+    width: 180px; height: 180px; object-fit: cover; border-radius: 14px;
+    border: 1px solid #e6eaf2; box-shadow: 0 6px 18px rgba(30,60,114,.10); background: #fff;
+}
+.vt-img-empty {
+    width: 180px; height: 180px; border-radius: 14px; border: 1px dashed #cbd5e1;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    color: #94a3b8; gap: 4px; background: #f8fafc;
+}
+.vt-img-empty i { font-size: 2rem; opacity: .5; }
+.vt-img-empty span { font-size: 12px; }
+.vt-hero-info { flex: 1 1 320px; min-width: 0; }
+.vt-title-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 4px; }
+.vt-name { margin: 0; font-weight: 700; color: #1e3c72; font-size: 1.5rem; line-height: 1.1; }
+.vt-prefijo {
+    font-family: monospace; font-weight: 700; font-size: .8rem; letter-spacing: .03em;
+    background: rgba(30,60,114,.10); color: #1e3c72; padding: .15rem .5rem; border-radius: 6px;
+}
+.vt-desc { color: #64748b; font-size: 13px; margin-bottom: 14px; }
+.vt-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.vt-stat {
+    display: flex; align-items: center; gap: 10px;
+    background: #f8fafc; border: 1px solid #eef1f6; border-radius: 10px; padding: 10px 12px;
+}
+.vt-stat-ic {
+    width: 34px; height: 34px; flex: 0 0 34px; border-radius: 9px;
+    display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(135deg, #1e3c72, #2a5298); color: #fff; font-size: 16px;
+}
+.vt-stat-label { display: block; font-size: 11px; color: #64748b; line-height: 1.1; }
+.vt-stat-val { display: block; font-weight: 700; color: #0f172a; font-size: 14px; }
+.vt-section { background: #fff; border: 1px solid #eef1f6; border-radius: 12px; padding: 12px 14px; }
+.vt-section-head {
+    display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700;
+    color: #1e3c72; margin-bottom: 10px;
+}
+.vt-section-count { color: #94a3b8; font-weight: 600; }
+.vt-ins-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.vt-ins-table thead th {
+    background: #f1f5f9; color: #1e3c72; font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .03em; padding: 7px 12px; text-align: left;
+    border-bottom: 1px solid #e2e8f0;
+}
+.vt-ins-table tbody td { padding: 9px 12px; border-bottom: 1px solid #f1f5f9; }
+.vt-ins-table tbody tr:last-child td { border-bottom: 0; }
+[data-bs-theme="dark"] .vt-img { background: #0f172a; border-color: #334155; }
+[data-bs-theme="dark"] .vt-img-empty { background: #0f172a; border-color: #334155; color: #64748b; }
+[data-bs-theme="dark"] .vt-name { color: #cbd5e1; }
+[data-bs-theme="dark"] .vt-prefijo { background: rgba(147,197,253,.12); color: #93c5fd; }
+[data-bs-theme="dark"] .vt-desc { color: #94a3b8; }
+[data-bs-theme="dark"] .vt-stat { background: #1e293b; border-color: #334155; }
+[data-bs-theme="dark"] .vt-stat-val { color: #e2e8f0; }
+[data-bs-theme="dark"] .vt-section { background: #1e293b; border-color: #334155; }
+[data-bs-theme="dark"] .vt-section-head { color: #93c5fd; }
+[data-bs-theme="dark"] .vt-ins-table thead th { background: #172033; color: #93c5fd; border-bottom-color: #334155; }
+[data-bs-theme="dark"] .vt-ins-table tbody td { border-bottom-color: #1f2a3d; color: #e2e8f0; }
+@media (max-width: 575.98px) {
+    .vt-hero-media, .vt-img, .vt-img-empty { width: 100%; flex-basis: auto; }
+    .vt-img, .vt-img-empty { height: 200px; }
+    .vt-stats { grid-template-columns: 1fr; }
+}
+
 /* Dark mode */
 [data-bs-theme="dark"] .ord-apply-card { background: linear-gradient(135deg, #1e293b, #0f172a); border-color: #334155; }
 [data-bs-theme="dark"] .ord-apply-title { color: #cbd5e1; }

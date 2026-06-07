@@ -408,66 +408,72 @@
                     <h5 class="modal-title"><i class="ri-eye-line me-2"></i>Detalle del Tipo</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
                 </div>
-                <div class="modal-body p-3">
-                    <div class="row g-3">
-                        <div class="col-md-4 text-center">
-                            <div id="vt-imagen-wrap">
-                                <img id="vt-imagen" src="" alt="Imagen del tipo" class="img-thumbnail w-100"
-                                    style="max-height: 200px; object-fit: cover;">
-                            </div>
-                            <div id="vt-imagen-empty" class="text-muted small py-5 border rounded" hidden>
-                                <i class="ri-image-line d-block mb-1" style="font-size: 2rem; opacity:.4;"></i>Sin imagen
+                <div class="modal-body p-3 p-md-4 vt-body">
+                    {{-- Hero: imagen + identidad --}}
+                    <div class="vt-hero">
+                        <div class="vt-hero-media">
+                            <img id="vt-imagen" src="" alt="Imagen del tipo" class="vt-img">
+                            <div id="vt-imagen-empty" class="vt-img-empty" hidden>
+                                <i class="ri-image-line"></i><span>Sin imagen</span>
                             </div>
                         </div>
-                        <div class="col-md-8">
-                            <div class="d-flex align-items-center gap-2 flex-wrap mb-2">
-                                <h4 class="mb-0" id="vt-nombre">—</h4>
-                                <span class="badge bg-secondary" id="vt-prefijo">—</span>
+                        <div class="vt-hero-info">
+                            <div class="vt-title-row">
+                                <h3 class="vt-name" id="vt-nombre">—</h3>
+                                <span class="vt-prefijo" id="vt-prefijo">—</span>
                                 <span class="badge rounded-pill" id="vt-estatus">—</span>
                             </div>
-                            <div class="row g-2">
-                                <div class="col-6">
-                                    <small class="text-muted d-block">Precio confección</small>
-                                    <span class="fw-semibold" id="vt-precio">—</span>
-                                </div>
-                                <div class="col-6">
-                                    <small class="text-muted d-block">Producción</small>
-                                    <span class="fw-semibold" id="vt-produccion">—</span>
-                                </div>
-                                <div class="col-6">
-                                    <small class="text-muted d-block">¿Requiere tela?</small>
-                                    <span class="fw-semibold" id="vt-requiere-tela">—</span>
-                                </div>
-                                <div class="col-6" id="vt-consumo-wrap">
-                                    <small class="text-muted d-block">Consumo de tela / unidad</small>
-                                    <span class="fw-semibold" id="vt-consumo">—</span>
-                                </div>
-                            </div>
-                            <div class="mt-2" id="vt-descripcion-wrap">
-                                <small class="text-muted d-block">Descripción</small>
+                            <div id="vt-descripcion-wrap" class="vt-desc">
                                 <span id="vt-descripcion">—</span>
                             </div>
+
+                            {{-- Stat tiles --}}
+                            <div class="vt-stats">
+                                <div class="vt-stat">
+                                    <span class="vt-stat-ic"><i class="ri-price-tag-3-line"></i></span>
+                                    <div><span class="vt-stat-label">Precio confección</span>
+                                        <span class="vt-stat-val" id="vt-precio">—</span></div>
+                                </div>
+                                <div class="vt-stat">
+                                    <span class="vt-stat-ic"><i class="ri-hammer-line"></i></span>
+                                    <div><span class="vt-stat-label">Producción</span>
+                                        <span class="vt-stat-val" id="vt-produccion">—</span></div>
+                                </div>
+                                <div class="vt-stat">
+                                    <span class="vt-stat-ic"><i class="ri-shirt-line"></i></span>
+                                    <div><span class="vt-stat-label">¿Requiere tela?</span>
+                                        <span class="vt-stat-val" id="vt-requiere-tela">—</span></div>
+                                </div>
+                                <div class="vt-stat" id="vt-consumo-wrap">
+                                    <span class="vt-stat-ic"><i class="ri-ruler-line"></i></span>
+                                    <div><span class="vt-stat-label">Consumo de tela / u</span>
+                                        <span class="vt-stat-val" id="vt-consumo">—</span></div>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
-                    <hr class="my-3">
-
-                    <div class="row g-3">
+                    {{-- Secciones --}}
+                    <div class="row g-3 mt-1">
                         <div class="col-md-6">
-                            <h6 class="fs-13 text-atlantico-dark mb-2"><i class="ri-shirt-line me-1"></i>Telas permitidas <span class="text-muted fw-normal" id="vt-telas-count"></span></h6>
-                            <div id="vt-telas" class="d-flex flex-wrap gap-1"></div>
+                            <div class="vt-section h-100">
+                                <div class="vt-section-head"><i class="ri-shirt-line"></i>Telas permitidas <span class="vt-section-count" id="vt-telas-count"></span></div>
+                                <div id="vt-telas" class="d-flex flex-wrap gap-1"></div>
+                            </div>
                         </div>
                         <div class="col-md-6">
-                            <h6 class="fs-13 text-atlantico-dark mb-2"><i class="ri-list-settings-line me-1"></i>Atributos <span class="text-muted fw-normal" id="vt-atributos-count"></span></h6>
-                            <div id="vt-atributos" class="d-flex flex-wrap gap-1"></div>
+                            <div class="vt-section h-100">
+                                <div class="vt-section-head"><i class="ri-list-settings-line"></i>Atributos <span class="vt-section-count" id="vt-atributos-count"></span></div>
+                                <div id="vt-atributos" class="d-flex flex-wrap gap-1"></div>
+                            </div>
                         </div>
                     </div>
 
-                    <div class="mt-3">
-                        <h6 class="fs-13 text-atlantico-dark mb-2"><i class="ri-tools-line me-1"></i>Insumos por defecto <span class="text-muted fw-normal" id="vt-insumos-count"></span></h6>
+                    <div class="vt-section mt-3">
+                        <div class="vt-section-head"><i class="ri-tools-line"></i>Insumos por defecto <span class="vt-section-count" id="vt-insumos-count"></span></div>
                         <div id="vt-insumos-empty" class="text-muted small">Sin insumos por defecto.</div>
-                        <div class="table-responsive" id="vt-insumos-wrap" hidden>
-                            <table class="table table-sm align-middle mb-0">
+                        <div id="vt-insumos-wrap" hidden>
+                            <table class="vt-ins-table">
                                 <thead><tr><th>Insumo</th><th class="text-end">Cantidad</th></tr></thead>
                                 <tbody id="vt-insumos"></tbody>
                             </table>
