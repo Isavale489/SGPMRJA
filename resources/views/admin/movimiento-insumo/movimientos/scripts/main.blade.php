@@ -216,9 +216,9 @@
         });
 
         // Validar cantidad según tipo de movimiento
-        $('#cantidad, #tipo_movimiento, #insumo_id').on('change input', function () {
-            var cantidad = parseFloat($('#cantidad').val()) || 0;
-            var tipoMovimiento = $('#tipo_movimiento').val();
+        $('#field-cantidad, #field-tipo_movimiento, #insumo_id').on('change input', function () {
+            var cantidad = parseFloat($('#field-cantidad').val()) || 0;
+            var tipoMovimiento = $('#field-tipo_movimiento').val();
             var option = $('#insumo_id').find('option:selected');
             var stock = parseFloat(option.data('stock')) || 0;
 
@@ -241,8 +241,8 @@
             }
 
             // Validar stock para salidas
-            var cantidad = parseFloat($('#cantidad').val());
-            var tipoMovimiento = $('#tipo_movimiento').val();
+            var cantidad = parseFloat($('#field-cantidad').val());
+            var tipoMovimiento = $('#field-tipo_movimiento').val();
             var option = $('#insumo_id').find('option:selected');
             var stock = parseFloat(option.data('stock')) || 0;
 
@@ -263,9 +263,9 @@
                 data: {
                     _token: "{{ csrf_token() }}",
                     insumo_id: $('#insumo_id').val(),
-                    tipo_movimiento: $('#tipo_movimiento').val(),
-                    cantidad: $('#cantidad').val(),
-                    motivo: $('#motivo').val()
+                    tipo_movimiento: $('#field-tipo_movimiento').val(),
+                    cantidad: $('#field-cantidad').val(),
+                    motivo: $('#field-motivo').val()
                 },
                 success: function (response) {
                     $('#createModal').modal('hide');
@@ -282,8 +282,11 @@
                     });
                 },
                 error: function (xhr) {
-                    var errors = xhr.responseJSON;
-                    var errorMessage = errors.error || 'Ocurrió un error al procesar la solicitud';
+                    var r = xhr.responseJSON || {};
+                    var errorMessage = r.error || r.message || 'Ocurrió un error al procesar la solicitud';
+                    if (r.errors) {
+                        errorMessage = Object.values(r.errors).map(function (v) { return Array.isArray(v) ? v[0] : v; }).join('\n');
+                    }
 
                     Swal.fire({
                         title: 'Error',
