@@ -457,35 +457,49 @@
         // ══════════════════════════════════════════════════════
         // PASO 2 — Asignación (empleado + cronograma) por línea
         // ══════════════════════════════════════════════════════
+        // Texto/clase de la píldora de duración (días entre inicio y fin)
+        function actualizarDur($el, ini, fin) {
+            if (!$el || !$el.length) return;
+            if (!ini || !fin) { $el.html('').removeClass('is-bad'); return; }
+            const dias = Math.round((new Date(fin) - new Date(ini)) / 86400000);
+            if (isNaN(dias)) { $el.html('').removeClass('is-bad'); return; }
+            if (dias < 0) { $el.html('<i class="ri-error-warning-line me-1"></i>Revisa fechas').addClass('is-bad'); return; }
+            $el.html('<i class="ri-time-line me-1"></i>' + dias + (dias === 1 ? ' día' : ' días')).removeClass('is-bad');
+        }
+
         function asignacionCardHtml(l, idx) {
             const meta = lineaMetaChips(l);
             const edit = isEditMode();
-            const empCol = edit ? 'col-md-4' : 'col-md-4';
+            const empCol = edit ? 'col-md-3' : 'col-md-4';
             const fechaCol = edit ? 'col-md-3' : 'col-md-4';
             const estadoBlock = edit
-                ? '<div class="col-md-2"><label class="form-label form-label-sm mb-1">Estado</label>'
+                ? '<div class="col-md-3"><label class="form-label form-label-sm required mb-1" for="ord-asig-estado-' + idx + '"><i class="ri-flag-line me-1"></i>Estado</label>'
                   + '<select class="form-select form-select-sm ord-asig-estado" id="ord-asig-estado-' + idx + '" data-idx="' + idx + '">'
                   + '<option value="Pendiente">Pendiente</option><option value="En Proceso">En Proceso</option>'
                   + '<option value="Finalizado">Finalizado</option><option value="Cancelado">Cancelado</option></select></div>'
                 : '';
-            return '<div class="card border-0 shadow-sm mb-2 ord-asig-card" data-idx="' + idx + '">'
-                + '<div class="card-body p-3">'
-                +   '<div class="mb-2">'
-                +     '<span class="badge bg-secondary me-1">#' + (idx + 1) + '</span>'
-                +     '<span class="fw-semibold">' + escHtml(l.producto_nombre) + '</span> '
-                +     '<span class="text-muted fs-12">· ' + l.cantidad + ' u</span>'
-                +     '<div class="d-flex flex-wrap gap-1 mt-1">' + meta + '</div>'
+            return '<div class="ord-asig-card" data-idx="' + idx + '">'
+                + '<div class="ord-asig-card-head">'
+                +   '<span class="ord-asig-num">' + (idx + 1) + '</span>'
+                +   '<div class="ord-asig-prod">'
+                +     '<div class="ord-asig-prod-name">' + escHtml(l.producto_nombre) + ' <span class="ord-asig-qty">· ' + l.cantidad + ' u</span></div>'
+                +     '<div class="ord-asig-chips">' + meta + '</div>'
                 +   '</div>'
-                +   '<div class="row g-2">'
-                +     '<div class="' + empCol + '"><label class="form-label form-label-sm required mb-1" for="ord-asig-emp-' + idx + '">Empleado asignado</label>'
-                +       '<select class="form-select form-select-sm ord-asig-emp" id="ord-asig-emp-' + idx + '" data-idx="' + idx + '">' + empleadoOptionsHtml() + '</select></div>'
-                +     '<div class="' + fechaCol + '"><label class="form-label form-label-sm required mb-1" for="ord-asig-inicio-' + idx + '">Inicio</label>'
-                +       '<input type="date" class="form-control form-control-sm ord-asig-inicio" id="ord-asig-inicio-' + idx + '" data-idx="' + idx + '" value="' + (l.fecha_inicio || '') + '"></div>'
-                +     '<div class="' + fechaCol + '"><label class="form-label form-label-sm required mb-1" for="ord-asig-fin-' + idx + '">Fin estimado</label>'
-                +       '<input type="date" class="form-control form-control-sm ord-asig-fin" id="ord-asig-fin-' + idx + '" data-idx="' + idx + '" value="' + (l.fecha_fin_estimada || '') + '"></div>'
-                +     estadoBlock
-                +   '</div>'
-                + '</div></div>';
+                +   '<span class="ord-asig-dur" id="ord-asig-dur-' + idx + '"></span>'
+                + '</div>'
+                + '<div class="ord-asig-card-body"><div class="row g-2">'
+                +   '<div class="' + empCol + '"><label class="form-label form-label-sm required mb-1" for="ord-asig-emp-' + idx + '">Empleado asignado</label>'
+                +     '<div class="input-group input-group-sm"><span class="input-group-text"><i class="ri-user-star-line"></i></span>'
+                +     '<select class="form-select ord-asig-emp" id="ord-asig-emp-' + idx + '" data-idx="' + idx + '">' + empleadoOptionsHtml() + '</select></div></div>'
+                +   '<div class="' + fechaCol + '"><label class="form-label form-label-sm required mb-1" for="ord-asig-inicio-' + idx + '">Inicio</label>'
+                +     '<div class="input-group input-group-sm"><span class="input-group-text"><i class="ri-calendar-event-line"></i></span>'
+                +     '<input type="date" class="form-control ord-asig-inicio" id="ord-asig-inicio-' + idx + '" data-idx="' + idx + '" value="' + (l.fecha_inicio || '') + '"></div></div>'
+                +   '<div class="' + fechaCol + '"><label class="form-label form-label-sm required mb-1" for="ord-asig-fin-' + idx + '">Fin estimado</label>'
+                +     '<div class="input-group input-group-sm"><span class="input-group-text"><i class="ri-calendar-check-line"></i></span>'
+                +     '<input type="date" class="form-control ord-asig-fin" id="ord-asig-fin-' + idx + '" data-idx="' + idx + '" value="' + (l.fecha_fin_estimada || '') + '"></div></div>'
+                +   estadoBlock
+                + '</div></div>'
+                + '</div>';
         }
 
         function renderAsignacion() {
@@ -508,8 +522,15 @@
             ordWiz.lineas.forEach(function (l, idx) {
                 $('#ord-asig-emp-' + idx).val(l.empleado_id || '');
                 if (isEditMode()) $('#ord-asig-estado-' + idx).val(l.estado || 'Pendiente');
+                actualizarDur($('#ord-asig-dur-' + idx), l.fecha_inicio, l.fecha_fin_estimada);
             });
         }
+
+        // Duración en vivo al cambiar fechas de una línea
+        $(document).on('change', '.ord-asig-inicio, .ord-asig-fin', function () {
+            const idx = parseInt($(this).data('idx'), 10);
+            actualizarDur($('#ord-asig-dur-' + idx), $('#ord-asig-inicio-' + idx).val(), $('#ord-asig-fin-' + idx).val());
+        });
 
         function syncAsignacion() {
             $('#ord-asignacion-cards .ord-asig-card').each(function () {
@@ -529,9 +550,11 @@
             const ini = $('#ord-default-inicio').val();
             const fin = $('#ord-default-fin').val();
             $('#ord-asignacion-cards .ord-asig-card').each(function () {
+                const idx = parseInt($(this).data('idx'), 10);
                 if (emp) $(this).find('.ord-asig-emp').val(emp);
                 if (ini) $(this).find('.ord-asig-inicio').val(ini);
                 if (fin) $(this).find('.ord-asig-fin').val(fin);
+                actualizarDur($('#ord-asig-dur-' + idx), $('#ord-asig-inicio-' + idx).val(), $('#ord-asig-fin-' + idx).val());
             });
             Swal.fire({ icon: 'success', title: 'Aplicado a todas', toast: true, position: 'top-end', showConfirmButton: false, timer: 1400 });
         });

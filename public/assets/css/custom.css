@@ -5227,6 +5227,74 @@ header#page-topbar,
 #ordenes-table td:last-child { overflow: visible; text-overflow: clip; text-align: center; }
 
 /* ============================================================
+   MÓDULO ÓRDENES — WIZARD: PASO ASIGNACIÓN (#showModal)
+   ============================================================ */
+
+/* Barra "Aplicar a todas" */
+.ord-apply-card {
+    background: linear-gradient(135deg, #eef2ff, #f8fafc);
+    border: 1px solid #dbe3f4;
+    border-radius: 14px;
+    padding: 14px 16px;
+}
+.ord-apply-head { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.ord-apply-icon {
+    width: 38px; height: 38px; flex: 0 0 38px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(135deg, #1e3c72, #2a5298);
+    color: #fff; font-size: 18px;
+    box-shadow: 0 4px 10px rgba(30, 60, 114, .25);
+}
+.ord-apply-title { font-weight: 700; color: #1e3c72; font-size: 14px; line-height: 1.15; }
+.ord-apply-sub   { font-size: 12px; color: #64748b; }
+
+/* Card de asignación por línea */
+.ord-asig-card {
+    background: #fff;
+    border: 1px solid #e6eaf2;
+    border-left: 4px solid #2a5298;
+    border-radius: 12px;
+    margin-bottom: 12px;
+    overflow: hidden;
+    box-shadow: 0 1px 2px rgba(16, 24, 40, .04);
+    transition: box-shadow .15s ease, transform .15s ease;
+}
+.ord-asig-card:hover { box-shadow: 0 6px 18px rgba(30, 60, 114, .10); }
+.ord-asig-card-head {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 14px; background: #f8fafc; border-bottom: 1px solid #eef1f6;
+}
+.ord-asig-num {
+    width: 26px; height: 26px; flex: 0 0 26px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    background: #1e3c72; color: #fff; font-weight: 700; font-size: 12px;
+}
+.ord-asig-prod { flex: 1 1 auto; min-width: 0; }
+.ord-asig-prod-name { font-weight: 600; color: #0f172a; font-size: 14px; }
+.ord-asig-qty { color: #64748b; font-weight: 500; font-size: 12px; }
+.ord-asig-chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 3px; }
+.ord-asig-dur {
+    flex: 0 0 auto; font-size: 12px; font-weight: 600; color: #0369a1;
+    background: #e0f2fe; border-radius: 999px; padding: 3px 10px; white-space: nowrap;
+}
+.ord-asig-dur.is-bad { color: #b42318; background: #fee4e2; }
+.ord-asig-dur:empty { display: none; }
+.ord-asig-card-body { padding: 14px; }
+.ord-asig-card .input-group-text { background: #f1f5f9; border-color: #e2e8f0; color: #1e3c72; }
+
+/* Dark mode */
+[data-bs-theme="dark"] .ord-apply-card { background: linear-gradient(135deg, #1e293b, #0f172a); border-color: #334155; }
+[data-bs-theme="dark"] .ord-apply-title { color: #cbd5e1; }
+[data-bs-theme="dark"] .ord-apply-sub { color: #94a3b8; }
+[data-bs-theme="dark"] .ord-asig-card { background: #1e293b; border-color: #334155; border-left-color: #3b82f6; }
+[data-bs-theme="dark"] .ord-asig-card-head { background: #172033; border-bottom-color: #334155; }
+[data-bs-theme="dark"] .ord-asig-prod-name { color: #e2e8f0; }
+[data-bs-theme="dark"] .ord-asig-qty { color: #94a3b8; }
+[data-bs-theme="dark"] .ord-asig-card .input-group-text { background: #0f172a; border-color: #334155; color: #93c5fd; }
+[data-bs-theme="dark"] .ord-asig-dur { background: #0c3a52; color: #7dd3fc; }
+[data-bs-theme="dark"] .ord-asig-dur.is-bad { background: #4c1d1a; color: #fca5a5; }
+
+/* ============================================================
    MÓDULO ÓRDENES DE PRODUCCIÓN — MODAL DETALLES (#viewModal)
    ============================================================ */
 

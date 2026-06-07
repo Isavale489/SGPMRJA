@@ -213,31 +213,32 @@
 
                         {{-- Barra "aplicar a todas" — solo visible con 2+ líneas --}}
                         <div class="px-3" id="ord-apply-bar" hidden>
-                            <div class="card border-0 shadow-sm mb-3 bg-soft-primary">
-                                <div class="card-body p-3">
-                                    <div class="d-flex align-items-center gap-2 mb-2">
-                                        <i class="ri-magic-line text-atlantico-dark"></i>
-                                        <h6 class="mb-0 text-atlantico-dark fs-13">Valores por defecto para todas las líneas</h6>
+                            <div class="ord-apply-card mb-3">
+                                <div class="ord-apply-head">
+                                    <span class="ord-apply-icon"><i class="ri-flashlight-line"></i></span>
+                                    <div>
+                                        <div class="ord-apply-title">Aplicar a todas las líneas</div>
+                                        <div class="ord-apply-sub">Define empleado y fechas una vez y cópialos a cada orden.</div>
                                     </div>
-                                    <div class="row g-2 align-items-end">
-                                        <div class="col-md-4">
-                                            <label for="ord-default-empleado" class="form-label form-label-sm mb-1">Empleado</label>
-                                            <select id="ord-default-empleado" class="form-select form-select-sm"></select>
-                                        </div>
-                                        <div class="col-md-3">
-                                            <label for="ord-default-inicio" class="form-label form-label-sm mb-1">Inicio</label>
-                                            <input type="date" id="ord-default-inicio" class="form-control form-control-sm" />
-                                        </div>
-                                        <div class="col-md-3">
-                                            <label for="ord-default-fin" class="form-label form-label-sm mb-1">Fin estimado</label>
-                                            <input type="date" id="ord-default-fin" class="form-control form-control-sm" />
-                                        </div>
-                                        <div class="col-md-2 d-grid">
-                                            <button type="button" class="btn btn-sm btn-outline-primary" id="ord-apply-defaults"
-                                                title="Copia estos valores a todas las líneas">
-                                                <i class="ri-arrow-down-line me-1"></i>Aplicar a todas
-                                            </button>
-                                        </div>
+                                </div>
+                                <div class="row g-2 align-items-end">
+                                    <div class="col-md-4">
+                                        <label for="ord-default-empleado" class="form-label form-label-sm mb-1"><i class="ri-user-star-line me-1"></i>Empleado</label>
+                                        <select id="ord-default-empleado" class="form-select form-select-sm"></select>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label for="ord-default-inicio" class="form-label form-label-sm mb-1"><i class="ri-calendar-event-line me-1"></i>Inicio</label>
+                                        <input type="date" id="ord-default-inicio" class="form-control form-control-sm" />
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label for="ord-default-fin" class="form-label form-label-sm mb-1"><i class="ri-calendar-check-line me-1"></i>Fin estimado</label>
+                                        <input type="date" id="ord-default-fin" class="form-control form-control-sm" />
+                                    </div>
+                                    <div class="col-md-2 d-grid">
+                                        <button type="button" class="btn btn-sm btn-atlantico-brand" id="ord-apply-defaults"
+                                            title="Copia estos valores a todas las líneas">
+                                            <i class="ri-arrow-down-double-line me-1"></i>Aplicar
+                                        </button>
                                     </div>
                                 </div>
                             </div>
