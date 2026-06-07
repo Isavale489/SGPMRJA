@@ -2048,6 +2048,48 @@ header#page-topbar,
     margin-top: 2px;
 }
 
+/* ── Líneas incluidas (resumen paso 3) — tarjetas por línea ── */
+.cot-lineas-list { display: flex; flex-direction: column; gap: 8px; max-height: 280px; overflow-y: auto; }
+.cot-linea-card {
+    display: flex; align-items: stretch; justify-content: space-between; gap: 12px;
+    border: 1px solid #e7ecf3; border-left: 3px solid var(--atlantico-cyan, #10b981);
+    border-radius: 10px; padding: 10px 12px; background: #fff;
+}
+.cot-linea-info { min-width: 0; flex: 1; }
+.cot-linea-top { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
+.cot-linea-codigo {
+    font-family: monospace; font-size: .72rem; font-weight: 700; color: #1e3c72;
+    background: rgba(30, 60, 114, .08); border-radius: 5px; padding: 1px 6px;
+}
+.cot-linea-nombre { font-weight: 700; color: #1e293b; font-size: .9rem; }
+.cot-linea-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.cot-linea-chip {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: .72rem; color: #475569; background: #f1f5f9;
+    border-radius: 999px; padding: 2px 9px;
+}
+.cot-linea-chip i { font-size: .8rem; }
+.cot-linea-swatch { width: 12px; height: 12px; border-radius: 50%; border: 1px solid rgba(0, 0, 0, .15); display: inline-block; flex-shrink: 0; }
+.cot-linea-tallas { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 7px; }
+.cot-linea-talla {
+    font-size: .7rem; color: #334155; background: #fff; border: 1px solid #e2e8f0;
+    border-radius: 6px; padding: 1px 7px;
+}
+.cot-linea-talla b { color: #1e3c72; margin-left: 2px; }
+.cot-linea-precio { display: flex; flex-direction: column; align-items: flex-end; justify-content: center; text-align: right; flex-shrink: 0; }
+.cot-linea-qxu { font-size: .72rem; color: #64748b; font-family: monospace; }
+.cot-linea-unitnote { font-size: .64rem; color: #94a3b8; }
+.cot-linea-sub { font-size: 1rem; font-weight: 800; color: #0f172a; font-family: monospace; margin-top: 2px; }
+
+[data-bs-theme="dark"] .cot-linea-card { background: #1e293b; border-color: #334155; }
+[data-bs-theme="dark"] .cot-linea-nombre { color: #f1f5f9; }
+[data-bs-theme="dark"] .cot-linea-codigo { background: rgba(96, 165, 250, .15); color: #93c5fd; }
+[data-bs-theme="dark"] .cot-linea-chip { background: #334155; color: #cbd5e1; }
+[data-bs-theme="dark"] .cot-linea-talla { background: #0f172a; border-color: #334155; color: #cbd5e1; }
+[data-bs-theme="dark"] .cot-linea-talla b { color: #93c5fd; }
+[data-bs-theme="dark"] .cot-linea-sub { color: #f8fafc; }
+[data-bs-theme="dark"] .cot-linea-qxu { color: #94a3b8; }
+
 [data-bs-theme="dark"] .cot-resumen-row-prod { color: #e2e8f0; }
 [data-bs-theme="dark"] .cot-resumen-row-meta { color: #94a3b8; }
 [data-bs-theme="dark"] .cot-resumen-row-tallas { color: #cbd5e1; }
@@ -2836,7 +2878,9 @@ header#page-topbar,
 .cat-card-img-placeholder {
     width: 100%;
     height: 100%;
-    object-fit: cover;
+    /* contain: muestra el producto completo sin recortar (imágenes de tamaños variados) */
+    object-fit: contain;
+    padding: 6px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -3572,7 +3616,9 @@ header#page-topbar,
 .cfg-media-img {
     width: 100%;
     height: 100%;
-    object-fit: cover;
+    /* contain: imagen completa del producto, sin recorte; centrada con respiro */
+    object-fit: contain;
+    padding: 10px;
 }
 
 .cfg-info-body { padding: 18px 22px 22px; }

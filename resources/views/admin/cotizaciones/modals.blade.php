@@ -625,25 +625,11 @@
                                             <i class="ri-list-check-2 me-2"></i>Líneas incluidas
                                         </h6>
                                     </div>
-                                    <div class="card-body p-0">
-                                        <div class="table-responsive cot-resumen-tabla-wrap">
-                                            <table class="table table-sm mb-0 cot-resumen-tabla">
-                                                <thead>
-                                                    <tr>
-                                                        <th style="width:46%">Producto</th>
-                                                        <th class="text-center" style="width:14%">Cant.</th>
-                                                        <th class="text-end" style="width:18%">Unit.</th>
-                                                        <th class="text-end" style="width:22%">Subtotal</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody id="cot-resumen-lineas">
-                                                    <tr>
-                                                        <td colspan="4" class="text-center text-muted py-3 small">
-                                                            Sin productos agregados
-                                                        </td>
-                                                    </tr>
-                                                </tbody>
-                                            </table>
+                                    <div class="card-body p-3">
+                                        <div id="cot-resumen-lineas" class="cot-lineas-list">
+                                            <div class="cot-lineas-empty text-center text-muted py-3 small">
+                                                Sin productos agregados
+                                            </div>
                                         </div>
                                     </div>
                                 </div>

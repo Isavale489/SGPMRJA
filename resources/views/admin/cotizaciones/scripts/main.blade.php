@@ -602,6 +602,9 @@
 
         // === Lógica de productos (Adaptada de Pedidos) ===
         var products = @json($productos);
+        // Catálogo = Tipo de Producto (FEAT-003). El grid del catálogo se arma desde los Tipos,
+        // no desde filas producto: el cliente elige tela + variaciones al cotizar.
+        var catalogoTipos = @json($tiposProducto ?? []);
         var productItemIndex = 0;
         var productosModalCotizacion = null;
         var currentProductIndex = null; // Para saber qué items editar si fuera el caso
@@ -2449,9 +2452,48 @@
                     }
                     // Cargar productos existentes
                     $('#productos-container').empty();
-                    if (data.productos && data.productos.length > 0) {
+                    var __detalles = (data.productos || []);
+
+                    // Precargar los tipos de las líneas DINÁMICAS (producto_id null + tipo_producto_id):
+                    // el snapshot guarda nombres atributo→valor, así que necesitamos los valores del tipo
+                    // para resolver los atributo_valor_ids al reconstruir el producto virtual.
+                    var __tipoCache = {};
+                    var __tipoFetches = [];
+                    var __tipoIds = {};
+                    __detalles.forEach(function (d) {
+                        if (!d.producto_id && d.tipo_producto_id) __tipoIds[d.tipo_producto_id] = true;
+                    });
+                    Object.keys(__tipoIds).forEach(function (tid) {
+                        __tipoFetches.push(
+                            $.getJSON("{{ url('tipo-productos') }}/" + tid).done(function (t) { __tipoCache[tid] = t; })
+                        );
+                    });
+
+                    function __finalizarCargaEdicion() {
+                        setTimeout(function () {
+                            calculateCotizacionTotals();
+                            if (typeof window.cotRefreshGroupedList === 'function') window.cotRefreshGroupedList();
+                            if (window.cotWizard) window.cotWizard.refreshKPIs();
+                            try {
+                                $('.product-select').each(function () {
+                                    if ($(this).hasClass("select2-hidden-accessible")) { $(this).select2('destroy'); }
+                                    $(this).select2({
+                                        theme: 'bootstrap-5', placeholder: '🔍 Buscar producto...',
+                                        allowClear: true, width: '100%', dropdownParent: $('#showModal'),
+                                        language: {
+                                            noResults: function () { return 'No se encontraron productos'; },
+                                            searching: function () { return 'Buscando...'; }
+                                        }
+                                    });
+                                });
+                            } catch (e) { console.error('Error inicializando Select2:', e); }
+                            $('#showModal').modal('show');
+                        }, 200);
+                    }
+
+                    $.when.apply($, __tipoFetches).always(function () {
                         productItemIndex = 0;
-                        data.productos.forEach(function (detalle) {
+                        __detalles.forEach(function (detalle) {
                             var recargoUnitario = (detalle.bordados || []).reduce(function (acc, bordado) {
                                 var precio = parseFloat(bordado.precio_aplicado || 0);
                                 var cantidad = Math.max(1, parseInt(bordado.cantidad || 1, 10));
@@ -2459,8 +2501,14 @@
                             }, 0);
                             var precioBase = Math.max(0, (parseFloat(detalle.precio_unitario || 0) - recargoUnitario));
 
+                            // Línea dinámica (sin producto_id): reconstruir el producto virtual desde el snapshot.
+                            var productoId = detalle.producto_id;
+                            if (!productoId && detalle.tipo_producto_id && typeof window.cotReconstruirVirtualDesdeDetalle === 'function') {
+                                productoId = window.cotReconstruirVirtualDesdeDetalle(detalle, __tipoCache[detalle.tipo_producto_id], precioBase);
+                            }
+
                             addProductItem(
-                                detalle.producto_id,
+                                productoId,
                                 detalle.cantidad,
                                 precioBase,
                                 detalle.descripcion,
@@ -2471,53 +2519,16 @@
                                 detalle.bordados || []
                             );
 
-                            // Poblar cotGroupBordadosState con bordados del server
+                            // Poblar cotGroupBordadosState con bordados del server (usar el id real de la línea)
                             if ((detalle.bordados || []).length > 0) {
-                                var gKey = String(detalle.producto_id) + '|' + String(detalle.color_id || '');
+                                var gKey = String(productoId) + '|' + String(detalle.color_id || '');
                                 if (!window.cotGroupBordadosState[gKey]) {
                                     window.cotGroupBordadosState[gKey] = { bordados: detalle.bordados };
                                 }
                             }
                         });
-                    }
-
-                    // Esperar un momento para que todos los elementos se rendericen
-                    setTimeout(function () {
-                        calculateCotizacionTotals();
-                        // Wizard: regenerar tabla agrupada y KPIs con los datos cargados
-                        if (typeof window.cotRefreshGroupedList === 'function') window.cotRefreshGroupedList();
-                        if (window.cotWizard) window.cotWizard.refreshKPIs();
-
-                        // Intentar inicializar Select2, pero no detener la ejecución si falla
-                        try {
-                            // Destruir y reinicializar Select2 en todos los selectores de productos
-                            $('.product-select').each(function () {
-                                if ($(this).hasClass("select2-hidden-accessible")) {
-                                    $(this).select2('destroy');
-                                }
-                                $(this).select2({
-                                    theme: 'bootstrap-5',
-                                    placeholder: '🔍 Buscar producto...',
-                                    allowClear: true,
-                                    width: '100%',
-                                    dropdownParent: $('#showModal'),
-                                    language: {
-                                        noResults: function () {
-                                            return 'No se encontraron productos';
-                                        },
-                                        searching: function () {
-                                            return 'Buscando...';
-                                        }
-                                    }
-                                });
-                            });
-                        } catch (e) {
-                            console.error('Error inicializando Select2:', e);
-                        }
-
-                        // Mostrar el modal siempre, independientemente de errores en Select2
-                        $('#showModal').modal('show');
-                    }, 200);
+                        __finalizarCargaEdicion();
+                    });
                 },
                 error: function (xhr) {
                     Swal.fire({
@@ -3756,22 +3767,37 @@
                 return (typeof products !== 'undefined' && Array.isArray(products)) ? products : [];
             }
 
+            function getCatalogoTipos() {
+                return (typeof catalogoTipos !== 'undefined' && Array.isArray(catalogoTipos)) ? catalogoTipos : [];
+            }
+
             function getTipoCount(tipoId) {
-                return getProductsList().filter(function (p) {
-                    return p.tipo_producto && p.tipo_producto.id == tipoId;
-                }).length;
+                var t = getCatalogoTipos().find(function (x) { return x.id == tipoId; });
+                return t ? (t.telas_count || 0) : 0;
             }
 
             function uniqueTipos() {
-                var byId = {};
-                getProductsList().forEach(function (p) {
-                    if (p.tipo_producto && !byId[p.tipo_producto.id]) {
-                        byId[p.tipo_producto.id] = p.tipo_producto;
-                    }
-                });
-                return Object.values(byId).sort(function (a, b) {
+                return getCatalogoTipos().slice().sort(function (a, b) {
                     return String(a.nombre || '').localeCompare(String(b.nombre || ''));
                 });
+            }
+
+            // Filtra los TIPOS del catálogo por búsqueda, tipos seleccionados y orden.
+            function getFilteredTipos() {
+                var list = getCatalogoTipos().slice();
+                var q = (catState.search || '').toLowerCase().trim();
+                list = list.filter(function (t) {
+                    if (q) {
+                        var hay = ((t.nombre || '') + ' ' + (t.prefijo || '')).toLowerCase();
+                        if (!hay.includes(q)) return false;
+                    }
+                    if (catState.tipos.size && !catState.tipos.has(t.id)) return false;
+                    return true;
+                });
+                if (catState.sort === 'price-asc') list.sort(function (a, b) { return (parseFloat(a.precio_confeccion) || 0) - (parseFloat(b.precio_confeccion) || 0); });
+                else if (catState.sort === 'price-desc') list.sort(function (a, b) { return (parseFloat(b.precio_confeccion) || 0) - (parseFloat(a.precio_confeccion) || 0); });
+                else list.sort(function (a, b) { return String(a.nombre || '').localeCompare(String(b.nombre || '')); });
+                return list;
             }
 
             function renderFilterTipos() {
@@ -3858,38 +3884,38 @@
             function renderGrid() {
                 var $grid = $('#cat-grid');
                 var $empty = $('#cat-grid-empty');
-                var items = getFilteredProducts();
-                var grupos = groupByTipo(items);
+                var tipos = getFilteredTipos();
 
-                $('#cat-results-count').text(grupos.length + ' familia' + (grupos.length === 1 ? '' : 's'));
+                $('#cat-results-count').text(tipos.length + ' tipo' + (tipos.length === 1 ? '' : 's'));
 
-                if (!grupos.length) {
+                if (!tipos.length) {
                     $grid.html('');
                     $empty.removeClass('d-none');
                     return;
                 }
                 $empty.addClass('d-none');
 
-                $grid.html(grupos.map(function (g) {
-                    var hasImg = !!g.firstImg;
-                    var imgBlock = hasImg
-                        ? '<img src="' + escapeForHtml(g.firstImg) + '" alt="" class="cat-card-img">'
+                $grid.html(tipos.map(function (t) {
+                    var imgBlock = t.imagen_url
+                        ? '<img src="' + escapeForHtml(t.imagen_url) + '" alt="" class="cat-card-img">'
                         : '<div class="cat-card-img-placeholder"><i class="ri-t-shirt-2-line"></i></div>';
-                    var rangoPrecio = g.precioMin === g.precioMax
-                        ? formatMoney(g.precioMin)
-                        : formatMoney(g.precioMin) + ' – ' + formatMoney(g.precioMax);
-                    var nVariantes = g.productos.length;
-                    var tipoId = g.tipo ? g.tipo.id : '';
+                    var nTelas = t.telas_count || 0;
+                    var nAtrib = t.atributos_count || 0;
+                    var meta = t.requiere_tela
+                        ? (nTelas + ' tela' + (nTelas === 1 ? '' : 's') + ' · ' + nAtrib + ' atributo' + (nAtrib === 1 ? '' : 's'))
+                        : ('Sin tela · ' + nAtrib + ' atributo' + (nAtrib === 1 ? '' : 's'));
+                    var precio = parseFloat(t.precio_confeccion || 0);
+                    var precioTxt = precio > 0 ? ('desde ' + formatMoney(precio)) : 'Precio al configurar';
                     return (
-                        '<button type="button" class="cat-card cat-card-tipo" data-tipo-id="' + tipoId + '">' +
+                        '<button type="button" class="cat-card cat-card-tipo" data-tipo-id="' + t.id + '">' +
                             '<div class="cat-card-media">' + imgBlock +
-                                '<span class="cat-card-tipo-badge">' + escapeForHtml(g.tipoNombre) + '</span>' +
+                                '<span class="cat-card-tipo-badge">' + escapeForHtml(t.nombre) + '</span>' +
                             '</div>' +
                             '<div class="cat-card-body">' +
-                                '<p class="cat-card-codigo"><i class="ri-stack-line me-1"></i>' + nVariantes + ' variante' + (nVariantes === 1 ? '' : 's') + '</p>' +
-                                '<h6 class="cat-card-modelo">' + escapeForHtml(g.tipoNombre) + '</h6>' +
+                                '<p class="cat-card-codigo"><i class="ri-shirt-line me-1"></i>' + meta + '</p>' +
+                                '<h6 class="cat-card-modelo">' + escapeForHtml(t.nombre) + '</h6>' +
                                 '<div class="cat-card-foot">' +
-                                    '<span class="cat-card-price">' + rangoPrecio + '</span>' +
+                                    '<span class="cat-card-price">' + precioTxt + '</span>' +
                                     '<span class="cat-card-cta">Elegir variante <i class="ri-arrow-right-line"></i></span>' +
                                 '</div>' +
                             '</div>' +
@@ -3969,7 +3995,7 @@
                     if (!el) return;
                     catModalInstance = bootstrap.Modal.getOrCreateInstance(el);
                 }
-                $('#cat-eyebrow').text('Catálogo · ' + getProductsList().length + ' productos disponibles');
+                $('#cat-eyebrow').text('Catálogo · ' + getCatalogoTipos().length + ' tipos disponibles');
                 renderFilterTipos();
                 renderGrid();
                 renderCart();
@@ -4152,6 +4178,11 @@
                     .concat(atributoValores.map(function (x) { return x.nombre; }))
                     .filter(Boolean).join(' ');
 
+                // La variante no tiene imagen propia: hereda la del Tipo (catálogo = Tipo).
+                var imagenTipo = tipo.imagen_url
+                    || ((getCatalogoTipos().find(function (x) { return x.id == v.tipo_producto_id; }) || {}).imagen_url)
+                    || null;
+
                 var virtual = {
                     id: 'v' + (++cotVirtualSeq),
                     _dynamic: true,
@@ -4165,6 +4196,7 @@
                     nombre: pr.tipo_nombre || 'Variante',
                     nombre_completo: nombreCompleto,
                     modelo: '',
+                    imagen: imagenTipo,
                     tipo_producto: { id: v.tipo_producto_id, nombre: pr.tipo_nombre },
                     tela: v.tela_snapshot ? { id: v.tela_snapshot.id, nombre: v.tela_snapshot.nombre, codigo: v.tela_snapshot.codigo } : null,
                     atributo_valores: atributoValores
@@ -4172,6 +4204,53 @@
                 products.push(virtual);
                 return virtual.id;
             }
+
+            // Reconstruye un producto virtual a partir de un DETALLE guardado (edición de
+            // cotización con línea dinámica: producto_id null + snapshots). Resuelve los
+            // atributo_valor_ids por NOMBRE usando los atributos/valores del tipo (tipoData).
+            // Devuelve el id virtual ('v...') para usar en addProductItem.
+            window.cotReconstruirVirtualDesdeDetalle = function (detalle, tipoData, precioBase) {
+                var tela = detalle.tela_snapshot || null;
+                var snap = detalle.atributos_snapshot || {}; // { atributoNombre: valorNombre }
+                var atributoValores = [];
+                var atrIds = [];
+                (tipoData && tipoData.atributos ? tipoData.atributos : []).forEach(function (atr) {
+                    var valorNombre = snap[atr.nombre];
+                    if (valorNombre == null) return;
+                    var val = (atr.valores || []).find(function (v) { return String(v.nombre) === String(valorNombre); });
+                    if (val) {
+                        atrIds.push(val.id);
+                        atributoValores.push({ id: val.id, atributo_id: atr.id, nombre: val.nombre, codigo: val.codigo });
+                    }
+                });
+
+                var tipoNombre = tipoData ? tipoData.nombre : 'Variante';
+                var nombreCompleto = [tipoNombre, tela ? tela.nombre : null]
+                    .concat(atributoValores.map(function (x) { return x.nombre; }))
+                    .filter(Boolean).join(' ');
+                var imagenTipo = tipoData ? tipoData.imagen_url : null;
+
+                var virtual = {
+                    id: 'v' + (++cotVirtualSeq),
+                    _dynamic: true,
+                    _variante: {
+                        tipo_producto_id: detalle.tipo_producto_id,
+                        insumo_tela_id: tela ? tela.id : null,
+                        atributo_valor_ids: atrIds
+                    },
+                    codigo: detalle.sku_snapshot || '',
+                    precio_base: precioBase,
+                    nombre: tipoNombre,
+                    nombre_completo: nombreCompleto,
+                    modelo: '',
+                    imagen: imagenTipo,
+                    tipo_producto: { id: detalle.tipo_producto_id, nombre: tipoNombre },
+                    tela: tela ? { id: tela.id, nombre: tela.nombre, codigo: tela.codigo } : null,
+                    atributo_valores: atributoValores
+                };
+                products.push(virtual);
+                return virtual.id;
+            };
 
             function vsAbrir(tipoId, opts) {
                 opts = opts || {};
@@ -4337,8 +4416,9 @@
 
             // Quitar item del carrito (delegado)
             $(document).on('click', '.cat-cart-item-remove', function () {
-                var pid = parseInt(this.dataset.productoId, 10);
-                window.cotCart = (window.cotCart || []).filter(function (it) { return it.productoId !== pid; });
+                // El id puede ser virtual ('v1') o numérico → comparar como string.
+                var pid = String(this.dataset.productoId);
+                window.cotCart = (window.cotCart || []).filter(function (it) { return String(it.productoId) !== pid; });
                 renderCart();
                 renderGrid();
             });
@@ -5222,7 +5302,7 @@
             // Editar bloque → reabre configurador con datos cargados
             $(document).on('click', '.cot-action-edit', function () {
                 var $blk = $(this).closest('.cot-grouped-row');
-                var prodId = parseInt($blk.data('product-id'), 10);
+                var prodId = $blk.data('product-id');          // puede ser virtual ('v1') o numérico
                 var colorId = parseInt($blk.data('color-id'), 10);
                 var groupKey = $blk.data('group-key');
 
@@ -5231,9 +5311,9 @@
                 var precioFromCards = null;
                 $('#productos-container .product-item').each(function () {
                     var $c = $(this);
-                    var pid = parseInt($c.find('.producto-id-input').val(), 10);
+                    var pid = String($c.find('.producto-id-input').val());
                     var cid = parseInt($c.find('.color-id-input').val(), 10);
-                    if (pid !== prodId || cid !== colorId) return;
+                    if (pid !== String(prodId) || cid !== colorId) return;
                     var tid = parseInt($c.find('.talla-input-value').val(), 10);
                     var qty = parseInt($c.find('.cantidad-input').val(), 10) || 0;
                     if (tid && qty > 0) tallasMap[tid] = qty;
@@ -5324,9 +5404,9 @@
                         var colorId = lastItem.colorId;
                         $('#productos-container .product-item').each(function () {
                             var $c = $(this);
-                            var pid = parseInt($c.find('.producto-id-input').val(), 10);
+                            var pid = String($c.find('.producto-id-input').val());
                             var cid = parseInt($c.find('.color-id-input').val(), 10);
-                            if (pid === prodIdParaBorrar && cid === colorId) $c.remove();
+                            if (pid === String(prodIdParaBorrar) && cid === colorId) $c.remove();
                         });
 
                         // 2) Insertar nuevas cards del item editado (una por talla)
@@ -5609,24 +5689,36 @@
                             ? ' <span class="cot-resumen-bordado-pill"><i class="ri-scissors-cut-line"></i> bordado</span>'
                             : '';
                         var unitDisplay = formatMoney(g.unitWithBordado);
-                        var unitNote = (g.llevaBordado && g.unitWithBordado !== g.unitBase)
-                            ? '<small class="cot-resumen-unit-note">' + formatMoney(g.unitBase) + ' + ' + formatMoney(g.unitWithBordado - g.unitBase) + '</small>'
+                        var unitNoteTxt = (g.llevaBordado && g.unitWithBordado !== g.unitBase)
+                            ? (formatMoney(g.unitBase) + ' + ' + formatMoney(g.unitWithBordado - g.unitBase) + ' bordado')
                             : '';
+                        var codigo = (g.producto && g.producto.codigo) ? g.producto.codigo : '';
+                        var tipoNombre = (g.producto && g.producto.tipo_producto) ? g.producto.tipo_producto.nombre : '(sin tipo)';
+                        var colorHex = g.color ? g.color.hex_referencial : null;
+                        var tallasPills = g.cards.map(function (c) {
+                            return '<span class="cot-linea-talla">' + escHtmlW(c.tallaLabel) + '<b>×' + c.qty + '</b></span>';
+                        }).join('');
 
                         rows.push(
-                            '<tr>' +
-                                '<td>' +
-                                    '<div class="cot-resumen-row-prod">' + escHtmlW(prodLabel) + bordadoBadge + '</div>' +
-                                    (variantLabel ? '<div class="cot-resumen-row-variant" style="font-size:.72rem;color:#475569;margin:2px 0;"><i class="ri-shape-2-line me-1"></i>' + escHtmlW(variantLabel) + '</div>' : '') +
-                                    '<div class="cot-resumen-row-meta">' +
-                                        (colorName ? '<span>' + escHtmlW(colorName) + '</span>' : '') +
-                                        '<span class="cot-resumen-row-tallas">' + escHtmlW(tallasTxt) + '</span>' +
+                            '<div class="cot-linea-card">' +
+                                '<div class="cot-linea-info">' +
+                                    '<div class="cot-linea-top">' +
+                                        (codigo ? '<span class="cot-linea-codigo">' + escHtmlW(codigo) + '</span>' : '') +
+                                        '<span class="cot-linea-nombre">' + escHtmlW(tipoNombre) + '</span>' +
+                                        bordadoBadge +
                                     '</div>' +
-                                '</td>' +
-                                '<td class="text-center align-middle"><strong>' + g.totalQty + '</strong></td>' +
-                                '<td class="text-end font-monospace align-middle">' + unitDisplay + unitNote + '</td>' +
-                                '<td class="text-end font-monospace fw-semibold align-middle">' + formatMoney(g.totalSubtotal) + '</td>' +
-                            '</tr>'
+                                    '<div class="cot-linea-chips">' +
+                                        (variantLabel ? '<span class="cot-linea-chip"><i class="ri-shape-2-line"></i>' + escHtmlW(variantLabel) + '</span>' : '') +
+                                        (colorName ? '<span class="cot-linea-chip"><span class="cot-linea-swatch" style="background:' + (colorHex || '#cbd5e1') + '"></span>' + escHtmlW(colorName) + '</span>' : '') +
+                                    '</div>' +
+                                    (tallasPills ? '<div class="cot-linea-tallas">' + tallasPills + '</div>' : '') +
+                                '</div>' +
+                                '<div class="cot-linea-precio">' +
+                                    '<div class="cot-linea-qxu">' + g.totalQty + ' u × ' + unitDisplay + '</div>' +
+                                    (unitNoteTxt ? '<div class="cot-linea-unitnote">' + unitNoteTxt + '</div>' : '') +
+                                    '<div class="cot-linea-sub">' + formatMoney(g.totalSubtotal) + '</div>' +
+                                '</div>' +
+                            '</div>'
                         );
                     });
                 } else {
@@ -5644,20 +5736,25 @@
                         var colorName = $c.find('.color-display').val() || '';
                         var tallaName = $c.find('.talla-input-display').val() || '';
                         var bits = [colorName, tallaName].filter(Boolean).join(' · ');
-                        var label = prodName + (bits ? ' — ' + bits : '');
                         rows.push(
-                            '<tr>' +
-                                '<td class="text-truncate" style="max-width:0;" title="' + escHtmlW(label) + '">' + escHtmlW(label) + '</td>' +
-                                '<td class="text-center">' + s.qty + '</td>' +
-                                '<td class="text-end font-monospace">' + formatMoney(s.unit) + '</td>' +
-                                '<td class="text-end font-monospace fw-semibold">' + formatMoney(rowSubtotal) + '</td>' +
-                            '</tr>'
+                            '<div class="cot-linea-card">' +
+                                '<div class="cot-linea-info">' +
+                                    '<div class="cot-linea-top">' +
+                                        '<span class="cot-linea-nombre">' + escHtmlW(prodName) + '</span>' +
+                                    '</div>' +
+                                    (bits ? '<div class="cot-linea-chips"><span class="cot-linea-chip">' + escHtmlW(bits) + '</span></div>' : '') +
+                                '</div>' +
+                                '<div class="cot-linea-precio">' +
+                                    '<div class="cot-linea-qxu">' + s.qty + ' u × ' + formatMoney(s.unit) + '</div>' +
+                                    '<div class="cot-linea-sub">' + formatMoney(rowSubtotal) + '</div>' +
+                                '</div>' +
+                            '</div>'
                         );
                     });
                 }
 
                 if (!rows.length) {
-                    rows.push('<tr><td colspan="4" class="text-center text-muted py-3 small">Sin productos agregados</td></tr>');
+                    rows.push('<div class="cot-lineas-empty text-center text-muted py-3 small">Sin productos agregados</div>');
                 }
                 var iva = subtotal * IVA_RATE;
                 var total = subtotal + iva;

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Cotizacion;
 use App\Models\Producto;
+use App\Models\TipoProducto;
 use App\Models\Logo;
 use App\Models\Pedido;
 use App\Models\Insumo;
@@ -35,10 +36,16 @@ class CotizacionController extends Controller
             'atributoValores.atributo:id,nombre,codigo',
         ])->where('estado', true)->get();
 
+        // Catálogo = Tipo de Producto. El grid de la cotización se arma desde los Tipos
+        // (no desde filas producto): el cliente elige tela + variaciones al cotizar.
+        $tiposProducto = TipoProducto::withCount(['telas', 'atributos'])
+            ->orderBy('nombre')
+            ->get(['id', 'nombre', 'prefijo', 'imagen', 'precio_confeccion', 'requiere_tela']);
+
         $logos = Logo::orderBy('name')->get(['id', 'name', 'original_filename']);
         $insumos = Insumo::all();
         $bancos = Banco::all();
-        return view('admin.cotizaciones.index', compact('productos', 'logos', 'insumos', 'bancos'));
+        return view('admin.cotizaciones.index', compact('productos', 'tiposProducto', 'logos', 'insumos', 'bancos'));
     }
 
     public function getCotizaciones(Request $request)
