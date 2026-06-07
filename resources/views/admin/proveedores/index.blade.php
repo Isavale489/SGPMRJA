@@ -798,12 +798,6 @@
             // Los selectores incluyen tanto los bloques grandes (#campos-juridico/#campos-natural)
             // como los wrappers del RIF/Documento dentro de la sección Identificación
             // (.js-tipo-juridico/.js-tipo-natural).
-            // Switch de solo lectura del Estatus (activado = Activo).
-            function setEstatusSwitch(activo) {
-                $("#estado-display").prop('checked', !!activo);
-                $("#estado-display-label").text(activo ? 'Activo' : 'Inhabilitado');
-            }
-
             function toggleCampos() {
                 var tipo = $('#tipo-proveedor-field').val();
                 var $jur = $('#campos-juridico, .js-tipo-juridico');
@@ -1048,7 +1042,6 @@
                     $("#modalTitle").text("Editar Proveedor");
                     $("#id-field").val(data.id);
                     $("#tipo-proveedor-field").val(data.tipo_proveedor || 'juridico');
-                    setEstatusSwitch(!data.trashed);
 
                     toggleCampos();
 
@@ -1355,7 +1348,6 @@
                 $("#proveedorForm")[0].reset();
                 $("#id-field").val("");
                 $("#tipo-proveedor-field").val("juridico");
-                setEstatusSwitch(true);
                 toggleCampos();
                 $("#add-btn").show().prop('disabled', false);
                 $("#edit-btn").hide();

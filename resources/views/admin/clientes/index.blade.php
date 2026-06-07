@@ -1008,11 +1008,6 @@
                 return '<div class="d-flex gap-1 justify-content-center align-items-center">' + sVer + menu + '</div>';
             }
 
-            function setEstatusPill(activo) {
-                $("#estatus-display").prop('checked', !!activo);
-                $("#estatus-display-label").text(activo ? 'Activo' : 'Inhabilitado');
-            }
-
             function formatDate(dateStr) {
                 if (!dateStr) return 'N/A';
 
@@ -1169,7 +1164,6 @@
                 $("#documento-prefix-field").prop('disabled', false).removeClass('campo-protegido');
                 $("#documento-number-field").val("");
                 $("#documento-number-field").prop('disabled', false).removeClass('campo-protegido');
-                setEstatusPill(true);
                 // Reset teléfono
                 $("#telefono-prefix-field").val("0424");
                 $("#telefono-number-field").val("");
@@ -1424,8 +1418,6 @@
 
                     // Ahora seleccionar el municipio guardado
                     $("#ciudad-field").val(data.ciudad || '');
-                    // Estatus: display de solo lectura (siempre Activo al editar, los inhabilitados no se editan)
-                    setEstatusPill(!data.trashed);
                     $("#showModal").modal("show");
                 });
             });

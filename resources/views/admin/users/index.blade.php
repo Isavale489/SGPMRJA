@@ -635,17 +635,10 @@
                 return esValido;
             }
 
-            // Switch de solo lectura del Estado (activado = Activo).
-            function setEstatusSwitch(activo) {
-                $("#estado-display").prop('checked', !!activo);
-                $("#estado-display-label").text(activo ? 'Activo' : 'Inhabilitado');
-            }
-
             function resetForm() {
                 $('#modalTitle').text('Agregar Usuario');
                 $('#userForm')[0].reset();
                 $('#userForm input[type="hidden"]').val('');
-                setEstatusSwitch(true);
                 $('#avatar-preview').hide().find('img').attr('src', '');
                 $('#add-btn').show();
                 $('#edit-btn').hide();
@@ -789,7 +782,6 @@
                     $("#field-name").val(data.name);
                     $("#field-email").val(data.email);
                     $("#field-role").val(data.role);
-                    setEstatusSwitch(data.estado == 1);
 
                     // Mostrar las imágenes existentes si las hay
                     if (data.avatar) {

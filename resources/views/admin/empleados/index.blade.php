@@ -927,12 +927,6 @@
                 return '<span title="' + value + '" style="cursor:default;">' + value + '</span>';
             }
 
-            // Switch de solo lectura del Estado Laboral (activado = Activo).
-            function setEstatusSwitch(activo) {
-                $("#field-estado-display").prop('checked', !!activo);
-                $("#field-estado-display-label").text(activo ? 'Activo' : 'Inhabilitado');
-            }
-
             function formatDate(dateStr) {
                 if (!dateStr) return 'N/A';
                 if (typeof dateStr === 'string') {
@@ -1084,7 +1078,6 @@
                 $("#field-codigo_empleado").val("");
                 $("#tipo-documento-field").val("V-").prop('disabled', false).removeClass('campo-protegido');
                 $("#field-documento_identidad").prop('disabled', false).removeClass('campo-protegido');
-                setEstatusSwitch(true);
                 // Resetear teléfono
                 $("#telefono-prefix-field").val("0424");
                 $("#telefono-number-field").val("");
@@ -1303,7 +1296,6 @@
                     $("#field-genero").val(data.persona.genero);
                     $("#field-codigo_empleado").val(data.codigo_empleado);
                     $("#field-fecha_ingreso").val(data.fecha_ingreso);
-                    setEstatusSwitch(!data.trashed);
 
                     // Departamento → cargo en cascada
                     var $deptoSel = $('#field-departamento_id');

@@ -557,12 +557,6 @@
                 return `<div class="d-flex gap-1 justify-content-center align-items-center">${sVer}${menu}</div>`;
             }
 
-            // Switch de estatus (solo lectura) en el form: lo gobiernan Inhabilitar/Habilitar.
-            function setEstatusSwitch(activo) {
-                $("#estado-display").prop('checked', !!activo);
-                $("#estado-display-label").text(activo ? 'Activo' : 'Inhabilitado');
-            }
-
             function renderEllipsis(value) {
                 if (!value) return '<span class="text-muted">—</span>';
                 return '<span title="' + value + '" style="cursor:default;">' + value + '</span>';
@@ -821,7 +815,6 @@
                     $("#field-stock_minimo").val(data.stock_minimo);
                     $("#field-stock_maximo").val(data.stock_maximo);
                     $("#field-costo_unitario").val(data.costo_unitario);
-                    setEstatusSwitch(!data.trashed);
 
                     $("#add-btn").hide();
                     $("#edit-btn").show();
@@ -1008,7 +1001,6 @@
             $("#showModal").on("hidden.bs.modal", function () {
                 $("#modalTitle").text("Agregar Insumo");
                 $("#insumoForm")[0].reset();
-                setEstatusSwitch(true);
                 $("#id-field").val("");
                 $("#codigo-field").prop('readonly', false);
                 $("#is-inventoriable-switch").prop('checked', true);
