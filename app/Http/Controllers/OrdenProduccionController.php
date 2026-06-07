@@ -126,7 +126,11 @@ class OrdenProduccionController extends Controller
             ->pluck('id', 'detalle_pedido_id');
 
         $data = $pedidos->map(function ($pedido) use ($detallesConOrden) {
-            $lineas = $pedido->productos->map(function ($d) use ($detallesConOrden) {
+            $lineas = $pedido->productos
+                // Solo líneas fabricables: los productos de reventa
+                // (tipo->requiere_produccion = false) se venden pero no se producen.
+                ->filter(fn($d) => $d->requiereProduccion())
+                ->map(function ($d) use ($detallesConOrden) {
                 // Tipo: legacy desde el producto; dinámico desde la relación directa.
                 $tipo = $d->producto ? $d->producto->tipoProducto : $d->tipoProducto;
 
@@ -198,7 +202,10 @@ class OrdenProduccionController extends Controller
                 'progreso'          => $pedido->progreso_produccion,
                 'lineas'            => $lineas,
             ];
-        })->values();
+        })
+        // Ocultar pedidos sin nada que producir (solo productos de reventa).
+        ->filter(fn($p) => $p['total_lineas'] > 0)
+        ->values();
 
         return response()->json($data);
     }
