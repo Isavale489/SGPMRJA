@@ -38,9 +38,12 @@
             <div class="card card-maestros">
                 <div class="card-header">
                     <div class="d-flex align-items-center">
-                        <h5 class="card-title mb-0 flex-grow-1">Listado de Insumos</h5>
+                        <h5 class="card-title mb-0 flex-grow-1" id="insumos-card-title">Listado de Insumos</h5>
                         <div class="flex-shrink-0 d-flex align-items-center gap-3">
                             <div class="d-flex gap-2">
+                                <button type="button" class="btn-historial btn-historial-ver" id="ins-toggle-historial">
+                                    <i class="ri-time-line"></i> <span>Ver Historial</span>
+                                </button>
                                 <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal"
                                     data-bs-target="#tiposInsumoModal">
                                     <i class="ri-settings-3-line align-bottom me-1"></i> Gestionar Tipos
@@ -294,15 +297,18 @@
                             {{-- Tarjeta de Registro --}}
                             <div class="card border-0 shadow-sm">
                                 <div class="card-body py-2 px-3">
-                                    <div class="d-flex align-items-center">
-                                        <div class="rounded-circle me-2 d-flex align-items-center justify-content-center flex-shrink-0"
-                                            style="width:28px;height:28px;background:rgba(30,60,114,0.08);">
-                                            <i class="ri-calendar-line" style="color:#1e3c72;font-size:12px;"></i>
+                                    <div class="d-flex align-items-center justify-content-between gap-2">
+                                        <div class="d-flex align-items-center">
+                                            <div class="rounded-circle me-2 d-flex align-items-center justify-content-center flex-shrink-0"
+                                                style="width:28px;height:28px;background:rgba(30,60,114,0.08);">
+                                                <i class="ri-calendar-line" style="color:#1e3c72;font-size:12px;"></i>
+                                            </div>
+                                            <div>
+                                                <small class="text-muted d-block" style="font-size:11px;">Fecha de Registro</small>
+                                                <small class="fw-semibold" id="view-created">-</small>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <small class="text-muted d-block" style="font-size:11px;">Fecha de Registro</small>
-                                            <small class="fw-semibold" id="view-created">-</small>
-                                        </div>
+                                        <span class="badge rounded-pill" id="view-estatus">-</span>
                                     </div>
                                 </div>
                             </div>
@@ -400,8 +406,14 @@
                                         required />
                                 </div>
                                 <div class="col-md-6">
-                                    <x-forms.select name="estado" label="Estado" required
-                                        :options="['1' => 'Activo', '0' => 'Inactivo']" placeholder="" value="1" />
+                                    <label class="form-label d-block">Estatus</label>
+                                    {{-- Switch solo lectura: lo gobiernan Inhabilitar / Habilitar, no es editable aquí. --}}
+                                    <div class="form-check form-switch estatus-switch" title="Solo lectura — se gestiona con Inhabilitar / Habilitar">
+                                        <input class="form-check-input" type="checkbox" role="switch" id="estado-display" checked disabled>
+                                        <label class="form-check-label" for="estado-display" id="estado-display-label">Activo</label>
+                                        <i class="ri-lock-line estatus-lock" aria-hidden="true"></i>
+                                    </div>
+                                    <small class="text-muted d-block mt-1 lh-sm">Se gestiona con las acciones <strong>Inhabilitar</strong> / <strong>Habilitar</strong>.</small>
                                 </div>
                             </div>
                         </div>
@@ -541,11 +553,12 @@
 
     <script>
         $(document).ready(function () {
-            function generateButtons(insumoId) {
+            function generateButtons(insumoId, isTrashed) {
                 var sVer = `<button class="btn btn-sm btn-soft-info view-item-btn" data-id="${insumoId}" title="Ver"><i class="ri-eye-fill"></i></button>`;
-                var items =
-                    `<li><button type="button" class="dropdown-item act-item act-edit edit-item-btn" data-id="${insumoId}"><span class="act-ic"><i class="ri-pencil-fill"></i></span>Editar</button></li>` +
-                    `<li><button type="button" class="dropdown-item act-item act-del remove-item-btn" data-id="${insumoId}"><span class="act-ic"><i class="ri-delete-bin-fill"></i></span>Eliminar</button></li>`;
+                var items = isTrashed
+                    ? `<li><button type="button" class="dropdown-item act-item act-restore restore-item-btn" data-id="${insumoId}"><span class="act-ic"><i class="ri-arrow-go-back-line"></i></span>Habilitar</button></li>`
+                    : `<li><button type="button" class="dropdown-item act-item act-edit edit-item-btn" data-id="${insumoId}"><span class="act-ic"><i class="ri-pencil-fill"></i></span>Editar</button></li>` +
+                      `<li><button type="button" class="dropdown-item act-item act-warn remove-item-btn" data-id="${insumoId}"><span class="act-ic"><i class="ri-forbid-line"></i></span>Inhabilitar</button></li>`;
                 var menu =
                     `<div class="dropdown d-inline-block">` +
                         `<button class="btn btn-sm btn-soft-secondary" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Más acciones"><i class="ri-more-2-fill"></i></button>` +
@@ -554,10 +567,19 @@
                 return `<div class="d-flex gap-1 justify-content-center align-items-center">${sVer}${menu}</div>`;
             }
 
+            // Switch de estatus (solo lectura) en el form: lo gobiernan Inhabilitar/Habilitar.
+            function setEstatusSwitch(activo) {
+                $("#estado-display").prop('checked', !!activo);
+                $("#estado-display-label").text(activo ? 'Activo' : 'Inhabilitado');
+            }
+
             function renderEllipsis(value) {
                 if (!value) return '<span class="text-muted">—</span>';
                 return '<span title="' + value + '" style="cursor:default;">' + value + '</span>';
             }
+
+            // Toggle de historial (insumos inhabilitados). Lo lee ajax.data.
+            var insHistorial = false;
 
             var table = $('#insumos-table').DataTable({
                 processing: true,
@@ -570,6 +592,7 @@
                         d.filter_tipo   = $('#filter-tipo').val();
                         d.filter_stock  = $('#filter-stock').val();
                         d.filter_orden  = $('#filter-orden').val();
+                        d.historial     = insHistorial ? 1 : 0;
                     }
                 },
                 dom: 'rtip',
@@ -668,14 +691,26 @@
                         width: '19%',
                         orderable: false,
                         searchable: false,
-                        render: function (data) {
-                            return generateButtons(data);
+                        render: function (data, type, row) {
+                            return generateButtons(data, row.trashed);
                         }
                     }
                 ],
                 order: [],
                 ordering: false,
                 language: lenguajeData
+            });
+
+            // ── Toggle Activos / Historial (Inhabilitados) ──
+            $('#ins-toggle-historial').on('click', function () {
+                insHistorial = !insHistorial;
+                var $btn = $(this);
+                $btn.toggleClass('btn-historial-ver', !insHistorial)
+                    .toggleClass('btn-historial-volver', insHistorial);
+                $btn.find('i').attr('class', insHistorial ? 'ri-arrow-left-line' : 'ri-time-line');
+                $btn.find('span').text(insHistorial ? 'Solo Activos' : 'Ver Historial');
+                $('#insumos-card-title').text(insHistorial ? 'Insumos inhabilitados (historial)' : 'Listado de Insumos');
+                table.ajax.reload();
             });
 
             // ══════════════════════════════════════════════════
@@ -770,6 +805,10 @@
                     $("#view-stock-maximo").text(parseFloat(data.stock_maximo).toFixed(2));
                     $("#view-costo-unitario").text('$/ ' + parseFloat(data.costo_unitario).toFixed(2));
                     $("#view-created").text(formatDate(data.created_at));
+                    $("#view-estatus")
+                        .text(data.trashed ? 'Inhabilitado' : 'Activo')
+                        .removeClass('badge-soft-success badge-soft-danger')
+                        .addClass(data.trashed ? 'badge-soft-danger' : 'badge-soft-success');
                     $("#viewModal").modal('show');
                 });
             });
@@ -792,7 +831,7 @@
                     $("#field-stock_minimo").val(data.stock_minimo);
                     $("#field-stock_maximo").val(data.stock_maximo);
                     $("#field-costo_unitario").val(data.costo_unitario);
-                    $("#field-estado").val(data.estado ? '1' : '0');
+                    setEstatusSwitch(!data.trashed);
 
                     $("#add-btn").hide();
                     $("#edit-btn").show();
@@ -863,15 +902,15 @@
                 });
             });
 
-            // Eliminar
+            // Inhabilitar (soft delete → historial, reversible con Habilitar)
             $(document).on("click", ".remove-item-btn", function () {
                 var id = $(this).data("id");
                 Swal.fire({
-                    title: '¿Estás seguro?',
-                    text: "¡No podrás revertir esto!",
+                    title: '¿Inhabilitar este insumo?',
+                    text: "Se moverá al historial y dejará de estar disponible en compras y órdenes. Podrás habilitarlo de nuevo.",
                     icon: 'warning',
                     showCancelButton: true,
-                    confirmButtonText: 'Sí, eliminar',
+                    confirmButtonText: 'Sí, inhabilitar',
                     cancelButtonText: 'Cancelar',
                     customClass: {
                         confirmButton: 'btn btn-primary w-xs me-2',
@@ -891,7 +930,7 @@
                                 table.draw();
                                 Swal.fire({
                                     icon: 'success',
-                                    title: '¡Eliminado!',
+                                    title: '¡Inhabilitado!',
                                     text: response.success,
                                     showConfirmButton: false,
                                     customClass: {
@@ -907,7 +946,7 @@
                                 Swal.fire({
                                     icon: 'error',
                                     title: 'Error',
-                                    text: 'No se pudo eliminar el insumo',
+                                    text: 'No se pudo inhabilitar el insumo',
                                     customClass: {
                                         confirmButton: 'btn btn-primary w-xs me-2',
                                         cancelButton: 'btn btn-danger w-xs'
@@ -915,6 +954,48 @@
                                     buttonsStyling: false,
                                     showCloseButton: true
                                 });
+                            }
+                        });
+                    }
+                });
+            });
+
+            // Habilitar (restaurar desde el historial)
+            $(document).on("click", ".restore-item-btn", function () {
+                var id = $(this).data("id");
+                Swal.fire({
+                    title: '¿Habilitar este insumo?',
+                    text: "Volverá a estar disponible en compras y órdenes.",
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonText: 'Sí, habilitar',
+                    cancelButtonText: 'Cancelar',
+                    customClass: {
+                        confirmButton: 'btn btn-success w-xs me-2',
+                        cancelButton: 'btn btn-light w-xs'
+                    },
+                    buttonsStyling: false,
+                    showCloseButton: true
+                }).then(function (result) {
+                    if (result.value) {
+                        $.ajax({
+                            url: "{{ url('insumos') }}/" + id + "/restore",
+                            method: "POST",
+                            headers: {
+                                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                            },
+                            success: function (response) {
+                                table.ajax.reload();
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: '¡Habilitado!',
+                                    text: response.success,
+                                    showConfirmButton: false,
+                                    timer: 1500
+                                });
+                            },
+                            error: function () {
+                                Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo habilitar el insumo.' });
                             }
                         });
                     }
@@ -937,6 +1018,7 @@
             $("#showModal").on("hidden.bs.modal", function () {
                 $("#modalTitle").text("Agregar Insumo");
                 $("#insumoForm")[0].reset();
+                setEstatusSwitch(true);
                 $("#id-field").val("");
                 $("#codigo-field").prop('readonly', false);
                 $("#is-inventoriable-switch").prop('checked', true);
