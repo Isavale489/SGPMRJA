@@ -133,17 +133,6 @@
                                             @endforeach
                                         </select>
                                     </div>
-                                    {{-- Filtro 3: Estatus --}}
-                                    <div>
-                                        <label class="navy-filter-label" for="filter-estatus">
-                                            <i class="ri-shield-check-line"></i> Estatus
-                                        </label>
-                                        <select class="form-select navy-filter-select" id="filter-estatus">
-                                            <option value="">Todos</option>
-                                            <option value="1" selected>Activo</option>
-                                            <option value="0">Inactivo</option>
-                                        </select>
-                                    </div>
                                     {{-- Filtro 4: Ordenar por --}}
                                     <div>
                                         <label class="navy-filter-label" for="filter-orden">
@@ -952,7 +941,7 @@
                         // ── Filtros avanzados: enviar valores al server ──
                         d.filter_departamento   = $('#filter-departamento').val();
                         d.filter_cargo          = $('#filter-cargo').val();
-                        d.filter_estatus        = $('#filter-estatus').val();
+                        d.historial             = @json($historial);
                         d.filter_orden          = $('#filter-orden').val();
                     }
                 },
@@ -1012,7 +1001,6 @@
                 var count = 0;
                 if ($('#filter-departamento').val() !== '')                          count++;
                 if ($('#filter-cargo').val() !== '')                                 count++;
-                if ($('#filter-estatus').val() !== '1')                              count++;
                 if ($('#filter-orden').val() !== 'recientes')                        count++;
                 var $badge = $('#active-filter-count');
                 var $dot   = $('#filter-dot-indicator');
@@ -1048,18 +1036,10 @@
                 updateFilterBadge();
             });
 
-            // ── Si se llegó por toggle historial (?historial=true) → mostrar inhabilitados ──
-            @if($historial)
-                $('#filter-estatus').val('0');
-                table.ajax.reload();
-                updateFilterBadge();
-            @endif
-
             // ── Botón limpiar: resetea búsqueda + filtros + orden ──
             $('#btn-clear-filters').on('click', function () {
                 $('#filter-departamento').val('');
                 $('#filter-cargo').val('');
-                $('#filter-estatus').val('1');
                 $('#filter-orden').val('recientes');
                 $('#custom-search-input').val('');
                 updateFilterBadge();

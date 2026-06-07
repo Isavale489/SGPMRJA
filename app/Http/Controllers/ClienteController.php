@@ -47,15 +47,10 @@ class ClienteController extends Controller
             $query->where('tipo_cliente', $request->input('filter_tipo_cliente'));
         }
 
-        // Filtro: Estatus (1 = activo, 0 = inactivo/trashed)
-        if ($request->filled('filter_estatus')) {
-            $estatus = $request->input('filter_estatus');
-            if ($estatus === '0') {
-                // Inactivo: incluir registros en papelera (SoftDeletes)
-                $query->onlyTrashed();
-            }
-            // Si estatus es '1' (activo), no se necesita filtro adicional
-            // porque el query base ya excluye trashed por defecto.
+        // Activos vs Historial: lo define la página (no un filtro). La principal
+        // muestra solo activos; el historial (?historial=true) solo inhabilitados.
+        if ($request->boolean('historial')) {
+            $query->onlyTrashed();
         }
 
         // Filtro: Estado Territorial

@@ -68,12 +68,10 @@ class ProveedorController extends Controller
             $query->where('tipo_proveedor', $request->input('filter_tipo_proveedor'));
         }
 
-        // Filtro: Estatus (1 = activo, 0 = inactivo/trashed)
-        if ($request->filled('filter_estatus')) {
-            $estatus = $request->input('filter_estatus');
-            if ($estatus === '0') {
-                $query->onlyTrashed();
-            }
+        // Activos vs Historial: lo define la página (no un filtro). La principal
+        // muestra solo activos; el historial (?historial=true) solo inhabilitados.
+        if ($request->boolean('historial')) {
+            $query->onlyTrashed();
         }
 
         // Filtro: Estado Territorial

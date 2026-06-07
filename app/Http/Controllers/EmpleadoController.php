@@ -53,8 +53,9 @@ class EmpleadoController extends Controller
             $query->where('cargo_id', $request->input('filter_cargo'));
         }
 
-        // Filtro: Estatus (1 = activo/default, 0 = inhabilitado/trashed) — estándar Clientes/Proveedores
-        if ($request->filled('filter_estatus') && $request->input('filter_estatus') === '0') {
+        // Activos vs Historial: lo define la página (no un filtro). La principal
+        // muestra solo activos; el historial (?historial=true) solo inhabilitados.
+        if ($request->boolean('historial')) {
             $query->onlyTrashed();
         }
 

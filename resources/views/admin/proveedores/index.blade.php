@@ -115,17 +115,6 @@
                                             <option value="juridico">Jurídico</option>
                                         </select>
                                     </div>
-                                    {{-- Filtro 2: Estatus --}}
-                                    <div>
-                                        <label class="navy-filter-label" for="filter-estatus">
-                                            <i class="ri-shield-check-line"></i> Estatus
-                                        </label>
-                                        <select class="form-select navy-filter-select" id="filter-estatus">
-                                            <option value="">Todos</option>
-                                            <option value="1" selected>Activo</option>
-                                            <option value="0">Inactivo</option>
-                                        </select>
-                                    </div>
                                     {{-- Filtro 3: Estado Territorial (Venezuela) --}}
                                     <div>
                                         <label class="navy-filter-label" for="filter-estado-territorial">
@@ -879,7 +868,7 @@
                     data: function (d) {
                         // ── Filtros avanzados: enviar valores al server ──
                         d.filter_tipo_proveedor      = $('#filter-tipo-proveedor').val();
-                        d.filter_estatus             = $('#filter-estatus').val();
+                        d.historial                  = @json($historial);
                         d.filter_estado_territorial  = $('#filter-estado-territorial').val();
                         d.filter_orden               = $('#filter-orden').val();
                     }
@@ -930,7 +919,6 @@
             function updateFilterBadge() {
                 var count = 0;
                 if ($('#filter-tipo-proveedor').val() !== '')                        count++;
-                if ($('#filter-estatus').val() !== '1')                              count++;
                 if ($('#filter-estado-territorial').val() !== '')                    count++;
                 if ($('#filter-orden').val() !== 'recientes')                        count++;
                 var $badge = $('#active-filter-count');
@@ -967,17 +955,9 @@
                 updateFilterBadge();
             });
 
-            // ── Si se llegó por toggle historial (?historial=true) ──
-            @if($historial)
-                $('#filter-estatus').val('0');
-                table.ajax.reload();
-                updateFilterBadge();
-            @endif
-
             // ── Botón limpiar: resetea búsqueda + filtros + orden ──
             $('#btn-clear-filters').on('click', function () {
                 $('#filter-tipo-proveedor').val('');
-                $('#filter-estatus').val('1');
                 $('#filter-estado-territorial').val('');
                 $('#filter-orden').val('recientes');
                 $('#custom-search-input').val('');
