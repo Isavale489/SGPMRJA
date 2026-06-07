@@ -38,6 +38,32 @@ class TipoProducto extends Model
         return $this->imagen ? asset($this->imagen) : null;
     }
 
+    /**
+     * Resuelve los IDs de atributo_valor a partir de un snapshot de atributos
+     * ({nombreAtributo: nombreValor}), que es lo que guardan los detalles.
+     * Requiere que la relación atributos.valores esté cargada.
+     * @param  array|null  $snapshot
+     * @return array<int>
+     */
+    public function valorIdsDesdeSnapshot($snapshot): array
+    {
+        if (!is_array($snapshot) || empty($snapshot)) {
+            return [];
+        }
+        $ids = [];
+        foreach ($this->atributos as $atr) {
+            $valorNombre = $snapshot[$atr->nombre] ?? null;
+            if ($valorNombre === null) {
+                continue;
+            }
+            $val = $atr->valores->firstWhere('nombre', $valorNombre);
+            if ($val) {
+                $ids[] = $val->id;
+            }
+        }
+        return $ids;
+    }
+
     public function productos()
     {
         return $this->hasMany(Producto::class);

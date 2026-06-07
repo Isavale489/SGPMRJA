@@ -310,9 +310,13 @@
                                 <span class="cot-kpi-label">Líneas</span>
                                 <span class="cot-kpi-value" id="ped-kpi-lineas">0</span>
                             </div>
+                            <div class="cot-kpi">
+                                <span class="cot-kpi-label">Subtotal</span>
+                                <span class="cot-kpi-value" id="ped-kpi-subtotal">$0,00</span>
+                            </div>
                             <div class="cot-kpi cot-kpi--total">
                                 <span class="cot-kpi-label">Total del pedido</span>
-                                <span class="cot-kpi-value" id="ped-kpi-total">$0.00</span>
+                                <span class="cot-kpi-value" id="ped-kpi-total">$0,00</span>
                             </div>
                         </div>
 
@@ -463,33 +467,9 @@
                                             (<span id="ped-res-lineas">0</span>&nbsp;línea(s))
                                         </h6>
                                     </div>
-                                    <div class="card-body p-0">
-                                        <div class="table-responsive">
-                                            <table class="table table-sm table-hover mb-0">
-                                                <thead class="table-light">
-                                                    <tr>
-                                                        <th class="ps-3">Producto</th>
-                                                        <th class="text-center">Cant.</th>
-                                                        <th>Talla</th>
-                                                        <th>Color</th>
-                                                        <th class="text-end">P. Unit.</th>
-                                                        <th class="text-end pe-3">Subtotal</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody id="ped-res-productos-tbody">
-                                                    <tr>
-                                                        <td colspan="6" class="text-center text-muted py-3 small">
-                                                            Sin productos
-                                                        </td>
-                                                    </tr>
-                                                </tbody>
-                                                <tfoot>
-                                                    <tr class="table-primary">
-                                                        <td colspan="5" class="text-end fw-bold small ps-3">Total estimado</td>
-                                                        <td class="text-end fw-bold pe-3" id="ped-res-total">$0.00</td>
-                                                    </tr>
-                                                </tfoot>
-                                            </table>
+                                    <div class="card-body p-3">
+                                        <div id="ped-res-productos-list" class="cot-lineas-list">
+                                            <div class="cot-lineas-empty text-center text-muted py-3 small">Sin productos</div>
                                         </div>
                                     </div>
                                 </div>

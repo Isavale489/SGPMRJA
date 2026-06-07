@@ -158,6 +158,7 @@ class PedidoController extends Controller
         $pedido = Pedido::with([
             'user:id,name,avatar',
             'productos.producto.tipoProducto',
+            'productos.tipoProducto.atributos.valores',
             'productos.bordados.logo:id,name',
             'pagos.banco:id,nombre',
             'cliente.persona.telefonos',
@@ -167,6 +168,28 @@ class PedidoController extends Controller
 
         // Agregar datos normalizados del cliente al response
         $data = $pedido->toArray();
+
+        // Enriquecer cada línea con la variante resuelta (para reconstruir líneas dinámicas
+        // al editar): tipo, tela, atributo_valor_ids (por nombre) y un nombre legible.
+        $data['productos'] = $pedido->productos->map(function ($detalle) {
+            $arr = $detalle->toArray();
+            $esDinamica = empty($detalle->producto_id) && !empty($detalle->tipo_producto_id);
+            $telaSnap = $detalle->tela_snapshot ?? null;
+            $arr['insumo_tela_id'] = is_array($telaSnap) ? ($telaSnap['id'] ?? null) : null;
+            $arr['atributo_valor_ids'] = $esDinamica && $detalle->tipoProducto
+                ? $detalle->tipoProducto->valorIdsDesdeSnapshot($detalle->atributos_snapshot)
+                : [];
+            $arr['sku'] = $detalle->producto ? $detalle->producto->codigo : $detalle->sku_snapshot;
+            $arr['producto_nombre'] = $detalle->producto
+                ? $detalle->producto->nombre_completo
+                : trim(($detalle->tipoProducto?->nombre ?? 'Variante')
+                    . (is_array($telaSnap) && !empty($telaSnap['nombre']) ? ' · ' . $telaSnap['nombre'] : ''));
+            // Miniatura: imagen del producto (legacy) o del tipo (catálogo = Tipo).
+            $arr['imagen_url'] = ($detalle->producto && $detalle->producto->imagen)
+                ? asset($detalle->producto->imagen)
+                : ($detalle->tipoProducto?->imagen_url);
+            return $arr;
+        })->all();
         // Tasa BCV heredada de la cotización de origen (para reflejar el bordado en Bs)
         $data['tasa_cambio_valor'] = optional($pedido->cotizacion)->tasa_cambio_valor;
         $data['cliente_nombre_completo'] = $pedido->cliente_nombre_completo;

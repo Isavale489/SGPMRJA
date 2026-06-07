@@ -458,8 +458,12 @@ class CotizacionController extends Controller
      */
     public function getDatosParaPedido($id)
     {
-        $cotizacion = Cotizacion::with(['cliente.persona', 'productos.producto.tipoProducto', 'productos.bordados.logo:id,name'])
-            ->findOrFail($id);
+        $cotizacion = Cotizacion::with([
+            'cliente.persona',
+            'productos.producto.tipoProducto',
+            'productos.tipoProducto.atributos.valores',
+            'productos.bordados.logo:id,name',
+        ])->findOrFail($id);
 
         // Verificar que esté aprobada
         if ($cotizacion->estado !== 'Aprobada') {
@@ -491,9 +495,27 @@ class CotizacionController extends Controller
                     return (int) ($bordado->cantidad ?: 1);
                 });
 
+                // Línea dinámica (sin producto_id): arrastrar la variante (tipo + tela + atributos)
+                // para que el pedido la persista, y construir un nombre legible desde el snapshot.
+                $esDinamica = empty($detalle->producto_id) && !empty($detalle->tipo_producto_id);
+                $telaSnap   = $detalle->tela_snapshot ?? null;
+                $nombreLinea = $detalle->producto
+                    ? $detalle->producto->nombre_completo
+                    : trim(($detalle->tipoProducto?->nombre ?? 'Variante')
+                        . (is_array($telaSnap) && !empty($telaSnap['nombre']) ? ' · ' . $telaSnap['nombre'] : ''));
+
                 return [
                     'producto_id' => $detalle->producto_id,
-                    'producto_nombre' => $detalle->producto ? $detalle->producto->nombre_completo : 'N/A',
+                    'tipo_producto_id' => $detalle->tipo_producto_id,
+                    'insumo_tela_id' => is_array($telaSnap) ? ($telaSnap['id'] ?? null) : null,
+                    'atributo_valor_ids' => $esDinamica && $detalle->tipoProducto
+                        ? $detalle->tipoProducto->valorIdsDesdeSnapshot($detalle->atributos_snapshot)
+                        : [],
+                    'sku' => $detalle->producto ? $detalle->producto->codigo : $detalle->sku_snapshot,
+                    'imagen_url' => ($detalle->producto && $detalle->producto->imagen)
+                        ? asset($detalle->producto->imagen)
+                        : ($detalle->tipoProducto?->imagen_url),
+                    'producto_nombre' => $nombreLinea ?: 'N/A',
                     'cantidad' => $detalle->cantidad,
                     'descripcion' => $detalle->descripcion,
                     'lleva_bordado' => $detalle->lleva_bordado,

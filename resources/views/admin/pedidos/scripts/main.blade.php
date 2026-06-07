@@ -818,7 +818,8 @@ $(document).ready(function () {
         }));
 
         function pedFmt(n) {
-            return '$' + parseFloat(n || 0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+            // Formato es-VE (estándar de la app): $1.234,56
+            return '$' + Number(n || 0).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         }
 
         function pedRecalcularSubtotal() {
@@ -830,6 +831,7 @@ $(document).ready(function () {
         function pedRecalcularTotal() {
             var total = pedProdItems.reduce(function (acc, it) { return acc + (it.subtotal || 0); }, 0);
             $('#ped-kpi-lineas').text(pedProdItems.length);
+            $('#ped-kpi-subtotal').text(pedFmt(total));
             $('#ped-kpi-total').text(pedFmt(total));
             window.pedProdState = { items: pedProdItems, total: total };
         }
@@ -866,7 +868,12 @@ $(document).ready(function () {
             var groups = [];
             var byKey  = {};
             pedProdItems.forEach(function (it) {
-                var key = (it.producto_id || '0') + '::' + (it.color_id || '0');
+                // Firma de variante: producto_id (legacy) o tipo+tela+atributos (dinámica),
+                // para no colapsar variantes distintas que comparten producto_id null.
+                var variantSig = it.producto_id || ('t' + (it.tipo_producto_id || '') + '|' +
+                    (it.insumo_tela_id || '') + '|' +
+                    ((it.atributo_valor_ids || []).slice().sort(function (a, b) { return a - b; }).join('-')));
+                var key = variantSig + '::' + (it.color_id || '0');
                 if (!byKey[key]) {
                     byKey[key] = {
                         producto_id: it.producto_id, nombre: it.nombre,
@@ -941,8 +948,7 @@ $(document).ready(function () {
                             '<th class="cot-cell-num">Subtotal</th>' +
                         '</tr></thead>' +
                         '<tbody>' + rows + '</tbody>' +
-                        '<tfoot><tr><td colspan="6" class="text-end fw-bold">Total</td>' +
-                            '<td class="cot-cell-num cot-cell-subtotal fw-bold">' + pedFmt(total) + '</td></tr></tfoot>' +
+                        // El total ya se muestra en el KPI "TOTAL DEL PEDIDO" arriba; no repetirlo aquí.
                     '</table>' +
                 '</div>'
             );
@@ -1128,12 +1134,18 @@ $(document).ready(function () {
                         var precio  = parseFloat(p.precio_unitario);
                         pedProdItems.push({
                             producto_id:  p.producto_id,
+                            tipo_producto_id:   p.tipo_producto_id || null,
+                            insumo_tela_id:     p.insumo_tela_id || null,
+                            atributo_valor_ids: Array.isArray(p.atributo_valor_ids) ? p.atributo_valor_ids : [],
                             nombre:       p.producto_nombre,
                             cantidad:     cant,
                             talla_id:     p.talla_id || null,
                             talla_label:  p.talla_id ? (pedTallasCatalogo[p.talla_id] || '') : '',
                             color_id:     p.color_id || null,
                             color_label:  p.color_id ? (pedColoresCatalogo[p.color_id] || '') : '',
+                    color_hex:    p.color_id ? (pedColoresHex[p.color_id] || '') : '',
+                    sku:          p.sku || '',
+                    imagen_url:   p.imagen_url || '',
                             precio_unitario: precio,
                             subtotal:     cant * precio,
                             heredado_cotizacion_id: cotizacionId
@@ -1165,12 +1177,19 @@ $(document).ready(function () {
                 var recargo = pedRecargoBordado(bordados);                   // recargo bordado por unidad
                 pedProdItems.push({
                     producto_id:  p.producto_id,
+                    // Variante dinámica (FEAT-003): se arrastra para persistir y agrupar
+                    tipo_producto_id:   p.tipo_producto_id || null,
+                    insumo_tela_id:     p.insumo_tela_id || null,
+                    atributo_valor_ids: Array.isArray(p.atributo_valor_ids) ? p.atributo_valor_ids : [],
                     nombre:       p.producto_nombre,
                     cantidad:     cant,
                     talla_id:     p.talla_id || null,
                     talla_label:  p.talla_id ? (pedTallasCatalogo[p.talla_id] || '') : '',
                     color_id:     p.color_id || null,
                     color_label:  p.color_id ? (pedColoresCatalogo[p.color_id] || '') : '',
+                    color_hex:    p.color_id ? (pedColoresHex[p.color_id] || '') : '',
+                    sku:          p.sku || '',
+                    imagen_url:   p.imagen_url || '',
                     precio_unitario: precio,                                 // final → display/subtotal
                     precio_base:  +(precio - recargo).toFixed(2),            // base → payload (el backend re-suma el bordado)
                     lleva_bordado: bordados.length > 0,
@@ -1376,82 +1395,126 @@ $(document).ready(function () {
         };
 
         function pedFmtRes(n) {
-            return '$' + parseFloat(n || 0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+            // Formato es-VE (estándar de la app): $1.234,56
+            return '$' + Number(n || 0).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         }
 
-        // Renderizar bloque cliente
+        // Escape local (este scope no comparte el pedEscHtml de la IIFE de productos)
+        function pedEscRes(s) {
+            return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+                return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c];
+            });
+        }
+
+        function pedFichaRow(ico, label, val) {
+            return '<div class="res-ficha-row">' +
+                '<span class="res-ficha-row-label"><i class="' + ico + '"></i>' + label + '</span>' +
+                '<span class="res-ficha-row-value">' + val + '</span></div>';
+        }
+
+        // Renderizar bloque cliente (ficha: avatar + divisor)
         function pedRenderResCliente() {
             var nombre = $('#ped-cliente-name-display').text().trim() || '—';
             var doc    = $('#ped-cliente-doc-display').text().trim() || '—';
             var tel    = $('#ped-cliente-tel-wrap').is(':visible') ? $('#ped-cliente-tel-display').text().trim() : '';
             var email  = $('#ped-cliente-email-wrap').is(':visible') ? $('#ped-cliente-email-display').text().trim() : '';
-            function icoItem(ico, bg, col, label, val) {
-                return '<div class="col-6 d-flex align-items-start mb-2">' +
-                    '<div class="emp-icon-box emp-icon-box--' + bg + ' rounded-circle me-2 flex-shrink-0 d-flex align-items-center justify-content-center">' +
-                    '<i class="' + ico + ' emp-icon--' + col + '"></i></div>' +
-                    '<div class="min-w-0"><small class="text-muted d-block fs-12">' + label + '</small>' +
-                    '<span class="fw-semibold fs-13 text-break">' + val + '</span></div></div>';
-            }
-            var html = '<div class="row g-0">' +
-                icoItem('ri-user-line',      'navy',  'navy',  'Nombre',    nombre) +
-                icoItem('ri-bank-card-line', 'green', 'green', 'Documento', doc) +
-                (tel   ? icoItem('ri-phone-line', 'teal', 'teal', 'Teléfono', tel)   : '') +
-                (email ? icoItem('ri-mail-line',  'navy', 'navy', 'Email',    email) : '') +
-                '</div>';
-            $('#ped-res-cliente-bloque').html(html);
+
+            var iniciales = nombre.split(/\s+/).filter(Boolean).slice(0, 2)
+                .map(function (w) { return w.charAt(0); }).join('').toUpperCase() || '–';
+
+            var rows = pedFichaRow('ri-bank-card-line', 'Documento', pedEscRes(doc));
+            if (tel)   rows += pedFichaRow('ri-phone-line', 'Teléfono', pedEscRes(tel));
+            if (email) rows += pedFichaRow('ri-mail-line',  'Email',    pedEscRes(email));
+
+            $('#ped-res-cliente-bloque').html(
+                '<div class="res-ficha">' +
+                    '<div class="res-ficha-head">' +
+                        '<div class="res-ficha-avatar">' + pedEscRes(iniciales) + '</div>' +
+                        '<div class="res-ficha-headtext">' +
+                            '<div class="res-ficha-title">' + pedEscRes(nombre) + '</div>' +
+                            '<div class="res-ficha-sub">Cliente</div>' +
+                        '</div>' +
+                    '</div>' +
+                    '<div class="res-ficha-divider"></div>' +
+                    '<div class="res-ficha-rows">' + rows + '</div>' +
+                '</div>'
+            );
         }
 
-        // Renderizar bloque datos del pedido
+        // Renderizar bloque datos del pedido (ficha: dato principal = entrega estimada)
         function pedRenderResDatos() {
             var fecha     = $('#ped-fecha-pedido-field').val() || '—';
             var entrega   = $('#ped-fecha-entrega-field').val() || 'No especificada';
             var prioridad = $('#ped-prioridad-field').val() || 'Normal';
             var prioBg    = { Normal: 'bg-success', Alta: 'bg-warning', Urgente: 'bg-danger' };
-            var prioBadge = '<span class="badge ' + (prioBg[prioridad] || 'bg-secondary') + '">' + prioridad + '</span>';
-            function icoItem(ico, bg, col, label, val) {
-                return '<div class="col-6 d-flex align-items-start mb-2">' +
-                    '<div class="emp-icon-box emp-icon-box--' + bg + ' rounded-circle me-2 flex-shrink-0 d-flex align-items-center justify-content-center">' +
-                    '<i class="' + ico + ' emp-icon--' + col + '"></i></div>' +
-                    '<div><small class="text-muted d-block fs-12">' + label + '</small>' +
-                    '<span class="fw-semibold fs-13">' + val + '</span></div></div>';
-            }
-            var html = '<div class="row g-0">' +
-                icoItem('ri-calendar-line',       'navy', 'navy', 'Fecha pedido',     fecha) +
-                icoItem('ri-calendar-check-line', 'navy', 'navy', 'Entrega estimada', entrega) +
-                '<div class="col-6 d-flex align-items-start mb-2">' +
-                '<div class="emp-icon-box emp-icon-box--navy rounded-circle me-2 flex-shrink-0 d-flex align-items-center justify-content-center">' +
-                '<i class="ri-flag-line emp-icon--navy"></i></div>' +
-                '<div><small class="text-muted d-block fs-12">Prioridad</small>' + prioBadge + '</div></div>' +
-                '</div>';
-            $('#ped-res-datos-bloque').html(html);
+            var prioBadge = '<span class="badge ' + (prioBg[prioridad] || 'bg-secondary') + '">' + pedEscRes(prioridad) + '</span>';
+
+            $('#ped-res-datos-bloque').html(
+                '<div class="res-ficha">' +
+                    '<div class="res-ficha-head">' +
+                        '<div class="res-ficha-avatar res-ficha-avatar--icon"><i class="ri-calendar-check-line"></i></div>' +
+                        '<div class="res-ficha-headtext">' +
+                            '<div class="res-ficha-title">' + pedEscRes(entrega) + '</div>' +
+                            '<div class="res-ficha-sub">Entrega estimada</div>' +
+                        '</div>' +
+                    '</div>' +
+                    '<div class="res-ficha-divider"></div>' +
+                    '<div class="res-ficha-rows">' +
+                        pedFichaRow('ri-calendar-line', 'Fecha pedido', pedEscRes(fecha)) +
+                        '<div class="res-ficha-row">' +
+                            '<span class="res-ficha-row-label"><i class="ri-flag-line"></i>Prioridad</span>' +
+                            '<span class="res-ficha-row-value">' + prioBadge + '</span></div>' +
+                    '</div>' +
+                '</div>'
+            );
         }
 
         // Renderizar tabla de productos
         function pedRenderResProductos() {
             var items = (window.pedProdState && window.pedProdState.items) || [];
-            var total = (window.pedProdState && window.pedProdState.total) || 0;
             $('#ped-res-lineas').text(items.length);
-            $('#ped-res-total').text(pedFmtRes(total));
             if (!items.length) {
-                $('#ped-res-productos-tbody').html(
-                    '<tr><td colspan="6" class="text-center text-muted py-3 small">Sin productos</td></tr>'
+                $('#ped-res-productos-list').html(
+                    '<div class="cot-lineas-empty text-center text-muted py-3 small">Sin productos</div>'
                 );
                 return;
             }
+            // Escape local (este scope no comparte pedEscHtml de la IIFE de productos).
+            var esc = function (s) {
+                return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+                    return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c];
+                });
+            };
             var rows = items.map(function (it) {
                 var badge = it.heredado_cotizacion_id
-                    ? ' <span class="ped-inherited-badge">Heredado #' + it.heredado_cotizacion_id + '</span>'
+                    ? '<span class="ped-inherited-badge">Heredado #' + it.heredado_cotizacion_id + '</span>'
                     : '';
-                return '<tr>' +
-                    '<td class="small">' + it.nombre + badge + '</td>' +
-                    '<td class="text-center small">' + it.cantidad + '</td>' +
-                    '<td class="small">' + (it.talla_label || '—') + '</td>' +
-                    '<td class="small">' + (it.color_label || '—') + '</td>' +
-                    '<td class="text-end small">' + pedFmtRes(it.precio_unitario) + '</td>' +
-                    '<td class="text-end small fw-semibold">' + pedFmtRes(it.subtotal) + '</td>' +
-                    '</tr>';
+                var hex = it.color_hex || '#cbd5e1';
+                var colorChip = it.color_label
+                    ? '<span class="cot-linea-chip"><span class="cot-linea-swatch" style="background:' + hex + '"></span>' + esc(it.color_label) + '</span>'
+                    : '';
+                var bordadoChip = it.lleva_bordado
+                    ? '<span class="cot-resumen-bordado-pill"><i class="ri-scissors-cut-line"></i> bordado</span>'
+                    : '';
+                var tallaPill = '<span class="cot-linea-talla">' + esc(it.talla_label || 'Única') + '<b>×' + it.cantidad + '</b></span>';
+                var thumb = it.imagen_url
+                    ? '<img src="' + esc(it.imagen_url) + '" alt="" class="ped-prod-thumb-img">'
+                    : '<div class="ped-prod-thumb-ph"><i class="ri-t-shirt-2-line"></i></div>';
+                var codeChip = it.sku ? '<span class="ped-prod-code">' + esc(it.sku) + '</span>' : '';
+                return '<div class="ped-prod-line">' +
+                        '<div class="ped-prod-thumb">' + thumb + '</div>' +
+                        '<div class="ped-prod-body">' +
+                            ((codeChip || badge) ? '<div class="ped-prod-top">' + codeChip + badge + '</div>' : '') +
+                            '<div class="ped-prod-name">' + esc(it.nombre) + '</div>' +
+                            '<div class="ped-prod-meta">' + colorChip + tallaPill + bordadoChip + '</div>' +
+                        '</div>' +
+                        '<div class="ped-prod-price">' +
+                            '<div class="ped-prod-qxu">' + it.cantidad + ' × ' + pedFmtRes(it.precio_unitario) + '</div>' +
+                            '<div class="ped-prod-sub">' + pedFmtRes(it.subtotal) + '</div>' +
+                        '</div>' +
+                    '</div>';
             }).join('');
-            $('#ped-res-productos-tbody').html(rows);
+            $('#ped-res-productos-list').html(rows);
         }
 
         // Renderizar bloque pago (multi-método)
@@ -1482,53 +1545,46 @@ $(document).ready(function () {
             var bsLbl = (typeof window.bsEquivalente === 'function') ? window.bsEquivalente(total) : null;
             $('#ped-res-total-bs-hero').text(bsLbl || 'Sin tasa BCV');
 
-            // KPI figures
-            var kpis = '<div class="d-flex gap-2 mb-3 flex-wrap">' +
-                '<div class="flex-fill text-center px-2 py-2 rounded bg-light">' +
-                '<small class="text-muted d-block fs-12 mb-1">Total</small>' +
-                '<span class="fw-bold text-dark fs-13">' + pedFmtRes(total) + '</span></div>' +
-                '<div class="flex-fill text-center px-2 py-2 rounded" style="background:rgba(22,163,74,.08)">' +
-                '<small class="text-muted d-block fs-12 mb-1">Abonado</small>' +
-                '<span class="fw-bold text-success fs-13">' + pedFmtRes(abono) + '</span></div>' +
-                '<div class="flex-fill text-center px-2 py-2 rounded" style="background:rgba(30,60,114,.07)">' +
-                '<small class="text-muted d-block fs-12 mb-1">Restante</small>' +
-                '<span class="fw-bold text-atlantico-dark fs-13">' + pedFmtRes(restante) + '</span></div>' +
-                '</div>';
+            // Estado de pago (pill) según el progreso
+            var estadoTxt, estadoCls;
+            if (pct >= 100)     { estadoTxt = 'Pagado';    estadoCls = 'bg-success'; }
+            else if (abono > 0) { estadoTxt = 'Parcial';   estadoCls = 'bg-warning'; }
+            else                { estadoTxt = 'Pendiente'; estadoCls = 'bg-secondary'; }
 
-            // Progress bar
-            var barColor = pct >= 100 ? '#16a34a' : pct > 0 ? '#1e3c72' : '#e2e8f0';
-            var progress = '<div class="mb-3">' +
-                '<div class="d-flex justify-content-between mb-1">' +
-                '<small class="text-muted fs-12">Progreso del pago</small>' +
-                '<small class="fw-semibold fs-12">' + pctInt + '%</small></div>' +
-                '<div class="progress" style="height:6px;border-radius:3px;">' +
-                '<div class="progress-bar" style="width:' + pctInt + '%;background:' + barColor + ';border-radius:3px;" role="progressbar"></div>' +
-                '</div></div>';
+            // Progreso: abonado de total + estado + barra (los KPIs viven en la card hero)
+            var barColor = pct >= 100 ? '#16a34a' : pct > 0 ? '#1e3c72' : '#cbd5e1';
+            var progress = '<div class="ped-pago-progress">' +
+                '<div class="d-flex align-items-center justify-content-between mb-2">' +
+                    '<span class="ped-pago-progress-label"><strong>' + pedFmtRes(abono) + '</strong> de ' + pedFmtRes(total) + '</span>' +
+                    '<span class="badge ' + estadoCls + '">' + estadoTxt + ' · ' + pctInt + '%</span>' +
+                '</div>' +
+                '<div class="ped-pago-bar"><div class="ped-pago-bar-fill" style="width:' + pctInt + '%;background:' + barColor + ';"></div></div>' +
+            '</div>';
 
-            // Methods
+            // Métodos de pago en tarjetas
             var metodosHtml;
             if (!pagos.length) {
-                metodosHtml = '<div class="text-center py-2">' +
-                    '<i class="ri-wallet-3-line text-muted fs-5 d-block mb-1"></i>' +
-                    '<p class="text-muted small mb-0">Sin pagos registrados — se salda después.</p></div>';
+                metodosHtml = '<div class="ped-pago-empty text-center text-muted py-3">' +
+                    '<i class="ri-wallet-3-line d-block mb-1" style="font-size:1.4rem;opacity:.5"></i>' +
+                    '<span class="small">Sin pagos registrados — se salda después.</span></div>';
             } else {
-                metodosHtml = '<div class="vstack gap-1">' +
-                pagos.map(function (p) {
-                    var label = METODO_LABELS[p.metodo] || p.metodo;
-                    var icon  = METODO_ICONS[p.metodo] || 'ri-money-dollar-circle-line';
-                    var extra = '';
-                    if ((p.metodo === 'transferencia' || p.metodo === 'pago_movil') && (p.banco_nombre || p.referencia)) {
-                        extra = '<small class="text-muted d-block fs-12">' + (p.banco_nombre || '—') + ' · Ref: ' + (p.referencia || '—') + '</small>';
-                    }
-                    return '<div class="d-flex align-items-center justify-content-between py-2 px-2 rounded" style="background:rgba(30,60,114,.05)">' +
-                        '<div class="d-flex align-items-center gap-2">' +
-                        '<i class="' + icon + ' text-atlantico-dark fs-5"></i>' +
-                        '<div><span class="fw-semibold fs-13">' + label + '</span>' + extra + '</div></div>' +
-                        '<span class="fw-bold fs-13 text-atlantico-dark">' + pedFmtRes(p.monto) + '</span>' +
+                metodosHtml = '<div class="ped-pago-metodos-title">Métodos de pago</div>' +
+                    '<div class="ped-pago-metodos">' +
+                    pagos.map(function (p) {
+                        var label = METODO_LABELS[p.metodo] || p.metodo;
+                        var icon  = METODO_ICONS[p.metodo] || 'ri-money-dollar-circle-line';
+                        var extra = '';
+                        if ((p.metodo === 'transferencia' || p.metodo === 'pago_movil') && (p.banco_nombre || p.referencia)) {
+                            extra = '<small class="ped-metodo-extra">' + pedEscRes(p.banco_nombre || '—') + ' · Ref: ' + pedEscRes(p.referencia || '—') + '</small>';
+                        }
+                        return '<div class="ped-metodo-row">' +
+                            '<div class="ped-metodo-ico"><i class="' + icon + '"></i></div>' +
+                            '<div class="ped-metodo-info"><span class="ped-metodo-label">' + pedEscRes(label) + '</span>' + extra + '</div>' +
+                            '<span class="ped-metodo-monto">' + pedFmtRes(p.monto) + '</span>' +
                         '</div>';
-                }).join('') + '</div>';
+                    }).join('') + '</div>';
             }
-            $('#ped-res-pago-bloque').html(kpis + progress + metodosHtml);
+            $('#ped-res-pago-bloque').html(progress + metodosHtml);
         }
 
         // Render completo del resumen
@@ -1568,6 +1624,13 @@ $(document).ready(function () {
                         // que la regla `boolean` de Laravel rechaza (solo acepta 1/0/"1"/"0").
                         lleva_bordado:   bordados.length > 0 ? 1 : 0
                     };
+                    // Línea dinámica (sin producto_id): enviar la variante (tipo + tela + atributos)
+                    // para que PedidoService la persista con sus snapshots.
+                    if (!it.producto_id && it.tipo_producto_id) {
+                        prod.tipo_producto_id   = it.tipo_producto_id;
+                        if (it.insumo_tela_id) prod.insumo_tela_id = it.insumo_tela_id;
+                        prod.atributo_valor_ids = Array.isArray(it.atributo_valor_ids) ? it.atributo_valor_ids : [];
+                    }
                     if (bordados.length) {
                         prod.bordados = bordados.map(function (b) {
                             return {
@@ -1854,8 +1917,14 @@ $(document).ready(function () {
             if (data.productos && data.productos.length && typeof window.pedHidratarProductosDesde === 'function') {
                 var prods = data.productos.map(function (d) {
                     return {
-                        producto_id:     d.producto_id,
-                        producto_nombre: (d.producto && d.producto.nombre) ? d.producto.nombre : ('Producto #' + d.producto_id),
+                        producto_id:        d.producto_id,
+                        // Variante dinámica: el backend (show) ya enriquece estos campos.
+                        tipo_producto_id:   d.tipo_producto_id || null,
+                        insumo_tela_id:     d.insumo_tela_id || null,
+                        atributo_valor_ids: Array.isArray(d.atributo_valor_ids) ? d.atributo_valor_ids : [],
+                        producto_nombre:    d.producto_nombre || ((d.producto && d.producto.nombre) ? d.producto.nombre : 'Variante'),
+                        sku:                d.sku || '',
+                        imagen_url:         d.imagen_url || '',
                         cantidad:        d.cantidad,
                         talla_id:        d.talla_id || null,
                         color_id:        d.color_id || null,
