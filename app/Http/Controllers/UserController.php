@@ -24,9 +24,10 @@ class UserController extends Controller
             $users->where('role', $request->input('filter_role'));
         }
 
-        if ($request->filled('filter_estado')) {
-            $users->where('estado', $request->input('filter_estado'));
-        }
+        // Activos vs Historial: lo define la página (no un filtro). La principal
+        // muestra solo usuarios activos; el historial (?historial=true) solo los
+        // inhabilitados (estado=0, sin acceso al sistema).
+        $users->where('estado', $request->boolean('historial') ? 0 : 1);
 
         $users->orderBy('created_at', 'desc'); // más reciente primero (estándar del sistema)
 

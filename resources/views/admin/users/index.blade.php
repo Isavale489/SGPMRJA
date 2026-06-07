@@ -78,7 +78,7 @@
                         <div class="collapse" id="filters-collapse-body">
                             <div class="navy-filter-body">
                                 <div class="row g-3">
-                                    <div class="col-12 col-md-6">
+                                    <div class="col-12">
                                         <label class="navy-filter-label" for="filter-role">
                                             <i class="ri-shield-user-line"></i> Rol
                                         </label>
@@ -87,16 +87,6 @@
                                             <option value="Administrador">Administrador</option>
                                             <option value="Supervisor">Supervisor</option>
                                             <option value="Usuario">Usuario</option>
-                                        </select>
-                                    </div>
-                                    <div class="col-12 col-md-6">
-                                        <label class="navy-filter-label" for="filter-estado">
-                                            <i class="ri-shield-check-line"></i> Estado
-                                        </label>
-                                        <select class="form-select navy-filter-select" id="filter-estado">
-                                            <option value="">Todos los estados</option>
-                                            <option value="1" selected>Activo</option>
-                                            <option value="0">Inactivo</option>
                                         </select>
                                     </div>
                                 </div>
@@ -112,7 +102,6 @@
                                 <th>Nombre</th>
                                 <th>Email</th>
                                 <th>Rol</th>
-                                <th>Estado</th>
                                 <th>Acciones</th>
                             </tr>
                         </thead>
@@ -405,13 +394,7 @@
             function updateFilterBadge() {
                 let count = 0;
                 $('.navy-filter-select').each(function () {
-                    var v = $(this).val();
-                    // filter-estado='1' (Activo) es el default → no cuenta como filtro activo
-                    if (this.id === 'filter-estado') {
-                        if (v && v !== '1') count++;
-                    } else if (v && v !== '') {
-                        count++;
-                    }
+                    if ($(this).val() && $(this).val() !== '') count++;
                 });
                 $('#active-filter-count').text(count).toggleClass('d-none', count === 0);
             }
@@ -477,7 +460,7 @@
                     url: "{{ route('users.data') }}",
                     data: function (d) {
                         d.filter_role = $('#filter-role').val();
-                        d.filter_estado = $('#filter-estado').val();
+                        d.historial = @json($historial);
                     }
                 },
                 columns: [
@@ -514,14 +497,6 @@
                         }
                     },
                     {
-                        data: 'estado',
-                        render: function (data, type, row) {
-                            return data == 1
-                                ? '<span class="badge-status badge-status-activo"><i class="ri-checkbox-circle-line"></i> Activo</span>'
-                                : '<span class="badge-status badge-status-inactivo"><i class="ri-close-circle-line"></i> Inactivo</span>';
-                        }
-                    },
-                    {
                         data: null,
                         orderable: false,
                         searchable: false,
@@ -550,7 +525,6 @@
 
             $('#btn-clear-filters').on('click', function () {
                 $('.navy-filter-select').val('');
-                $('#filter-estado').val('1'); // default: solo activos (los inhabilitados van al historial)
                 $('#custom-search-input').val('');
                 table.search('').draw();
                 table.ajax.reload(null, true);
@@ -560,12 +534,6 @@
             updateFilterBadge();
 
             // ── Si se llegó por toggle historial (?historial=true) → mostrar inhabilitados ──
-            @if($historial)
-                $('#filter-estado').val('0');
-                table.ajax.reload(null, true);
-                updateFilterBadge();
-            @endif
-
             function validarFormularioUsuario() {
                 let esValido = true;
                 let esCreacion = $('#id-field').val() === '';
