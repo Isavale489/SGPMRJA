@@ -241,6 +241,16 @@ class PedidoService
             throw new \InvalidArgumentException('La cotización seleccionada no está aprobada para crear pedido.');
         }
 
+        // Vigencia de precios: no permitir crear pedido desde una cotización vencida
+        // (más de DIAS_VIGENCIA días desde la emisión). Se marca como 'Vencida'.
+        if ($cotizacion->estaVencidaPorVigencia()) {
+            $cotizacion->update(['estado' => 'Vencida']);
+            throw new \InvalidArgumentException(
+                'La cotización venció: pasaron más de ' . Cotizacion::DIAS_VIGENCIA .
+                ' días desde su emisión. Reactívala para actualizar los precios antes de convertirla a pedido.'
+            );
+        }
+
         $pedidoExistente = Pedido::where('cotizacion_id', $cotizacionId)->lockForUpdate()->exists();
         if ($pedidoExistente) {
             throw new \InvalidArgumentException('Esta cotización ya tiene un pedido asociado.');

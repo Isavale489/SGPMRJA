@@ -132,6 +132,16 @@ class CotizacionService
                 throw new \InvalidArgumentException('Solo se pueden convertir cotizaciones con estado Aprobada.');
             }
 
+            // 2.b Vigencia de precios: bloquear si pasaron más de DIAS_VIGENCIA días
+            //     desde la emisión. La marca como 'Vencida' para reflejarlo en el listado.
+            if ($cotizacion->estaVencidaPorVigencia()) {
+                $cotizacion->update(['estado' => 'Vencida']);
+                throw new \InvalidArgumentException(
+                    'La cotización venció: pasaron más de ' . Cotizacion::DIAS_VIGENCIA .
+                    ' días desde su emisión. Reactívala para actualizar los precios antes de convertirla a pedido.'
+                );
+            }
+
             // 3. Verificar que no exista ya un pedido asociado (doble protección + índice único en BD)
             if ($cotizacion->yaFueConvertida()) {
                 throw new \InvalidArgumentException('Esta cotización ya fue convertida a pedido anteriormente.');
