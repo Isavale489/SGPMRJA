@@ -55,6 +55,45 @@ class Pedido extends Model
     }
 
     /**
+     * Porcentaje mínimo de abono (sobre el total) requerido para que el pedido
+     * pueda avanzar a producción / generar órdenes. Configurable (default 50%).
+     */
+    public static function porcentajeAbonoMinimo(): float
+    {
+        return (float) config('pedidos.abono_minimo_porcentaje', 50);
+    }
+
+    /**
+     * Monto mínimo de abono requerido para pasar a producción.
+     */
+    public function montoAbonoMinimo(): float
+    {
+        return round((float) $this->total * self::porcentajeAbonoMinimo() / 100, 2);
+    }
+
+    /**
+     * Porcentaje del total efectivamente abonado (pagos validados).
+     */
+    public function porcentajeAbonado(): float
+    {
+        $total = (float) $this->total;
+        if ($total <= 0) {
+            return 0.0;
+        }
+
+        return round((float) $this->abono / $total * 100, 2);
+    }
+
+    /**
+     * ¿El pedido cumple el abono mínimo para avanzar a producción?
+     * Compara el abono validado contra el monto mínimo (con tolerancia de centavo).
+     */
+    public function cumpleAbonoMinimo(): bool
+    {
+        return (float) $this->abono + 0.001 >= $this->montoAbonoMinimo();
+    }
+
+    /**
      * Relación con los productos del pedido
      */
     public function productos()
@@ -173,6 +212,18 @@ class Pedido extends Model
     public function tieneProduccionActiva(): bool
     {
         return $this->ordenes()->where('estado', '!=', 'Cancelado')->exists();
+    }
+
+    /**
+     * ¿El pedido tiene producción en curso? (alguna orden vinculada activa o en
+     * proceso, es decir aún no finalizada ni cancelada). Bloquea la cancelación
+     * del pedido: primero hay que cancelar/finalizar esas órdenes.
+     */
+    public function tieneProduccionEnCurso(): bool
+    {
+        return $this->ordenes()
+            ->whereIn('estado', ['Pendiente', 'En Proceso'])
+            ->exists();
     }
 
     // ============================================

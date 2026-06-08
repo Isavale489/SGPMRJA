@@ -32,6 +32,14 @@ class Cotizacion extends Model
         'tasa_cambio_valor'  => 'decimal:4',
     ];
 
+    /**
+     * Vigencia de precios: una cotización deja de ser convertible a pedido si
+     * han pasado más de N días continuos desde su fecha de emisión
+     * (fecha_cotizacion). Es la regla de negocio autoritativa; el estado
+     * 'Vencida' es solo el reflejo persistido de esta misma condición.
+     */
+    public const DIAS_VIGENCIA = 15;
+
     public function user()
     {
         return $this->belongsTo(User::class);
@@ -56,11 +64,46 @@ class Cotizacion extends Model
     }
 
     /**
+     * Fecha límite de vigencia de precios (emisión + DIAS_VIGENCIA).
+     */
+    public function fechaLimiteVigencia(): ?\Illuminate\Support\Carbon
+    {
+        return $this->fecha_cotizacion
+            ? $this->fecha_cotizacion->copy()->addDays(self::DIAS_VIGENCIA)
+            : null;
+    }
+
+    /**
+     * ¿La cotización está vencida por vigencia de precios?
+     * True si pasaron más de DIAS_VIGENCIA días continuos desde la emisión.
+     * Cálculo dinámico: no depende de que el job ya haya marcado el estado.
+     */
+    public function estaVencidaPorVigencia(): bool
+    {
+        $limite = $this->fechaLimiteVigencia();
+
+        return $limite !== null && $limite->endOfDay()->isPast();
+    }
+
+    /**
+     * Scope: cotizaciones cuya vigencia de precios ya expiró (emitidas hace
+     * más de DIAS_VIGENCIA días). Útil para el job que marca 'Vencida'.
+     */
+    public function scopeVigenciaExpirada($query)
+    {
+        return $query->whereNotNull('fecha_cotizacion')
+            ->whereDate('fecha_cotizacion', '<', now()->subDays(self::DIAS_VIGENCIA)->toDateString());
+    }
+
+    /**
      * Verificar si la cotización puede ser convertida a pedido.
+     * Requiere estar Aprobada, no convertida y con la vigencia de precios vigente.
      */
     public function puedeConvertirse(): bool
     {
-        return $this->estado === 'Aprobada' && !$this->yaFueConvertida();
+        return $this->estado === 'Aprobada'
+            && !$this->yaFueConvertida()
+            && !$this->estaVencidaPorVigencia();
     }
 
     /**
@@ -72,16 +115,22 @@ class Cotizacion extends Model
     }
 
     /**
-     * Actualizar automáticamente cotizaciones vencidas
-     * Este método revisa todas las cotizaciones que están en estado Pendiente o Aprobada
-     * y las marca como Vencida si su fecha_validez ya pasó
+     * Actualizar automáticamente cotizaciones vencidas.
+     * Marca como 'Vencida' toda cotización Pendiente/Aprobada cuya vigencia de
+     * precios ya expiró (más de DIAS_VIGENCIA días desde la emisión) o cuya
+     * fecha_validez explícita ya pasó. Idempotente; lo invoca el scheduler y la
+     * carga del listado.
      */
     public static function actualizarCotizacionesVencidas()
     {
-        $hoy = now()->format('Y-m-d');
+        $hoy    = now()->toDateString();
+        $limite = now()->subDays(self::DIAS_VIGENCIA)->toDateString();
 
         self::whereIn('estado', ['Pendiente', 'Aprobada'])
-            ->where('fecha_validez', '<', $hoy)
+            ->where(function ($q) use ($hoy, $limite) {
+                $q->whereDate('fecha_cotizacion', '<', $limite)
+                  ->orWhere('fecha_validez', '<', $hoy);
+            })
             ->update(['estado' => 'Vencida']);
     }
 }

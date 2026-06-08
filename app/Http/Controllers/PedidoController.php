@@ -262,6 +262,14 @@ class PedidoController extends Controller
         if ($pedido->estado === 'Cancelado') {
             return response()->json(['success' => 'El pedido ya estaba cancelado.']);
         }
+        // Bloqueo: no se puede cancelar un pedido con producción en curso.
+        // Hay que cancelar primero sus órdenes activas o en proceso.
+        if ($pedido->tieneProduccionEnCurso()) {
+            return response()->json([
+                'error' => 'No se puede cancelar el pedido: tiene órdenes de producción activas o en proceso. '
+                    . 'Cancela primero esas órdenes desde el módulo de Producción.',
+            ], 422);
+        }
 
         $pedido->update(['estado' => 'Cancelado']);
 

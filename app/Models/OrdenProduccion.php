@@ -117,4 +117,12 @@ class OrdenProduccion extends Model
     {
         return $this->belongsTo(Pedido::class);
     }
+
+    /**
+     * Sub-órdenes de producción (etapas/tareas) que dependen de esta orden.
+     */
+    public function subordenes()
+    {
+        return $this->hasMany(SubOrdenProduccion::class);
+    }
 }
