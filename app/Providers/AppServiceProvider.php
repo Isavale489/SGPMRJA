@@ -10,6 +10,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\Facades\Cache;
 use App\Models\TasaCambio;
+use App\Models\OrdenProduccion;
+use App\Observers\OrdenProduccionObserver;
 use App\Services\TasaBcvService;
 use Carbon\Carbon;
 
@@ -29,6 +31,9 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Schema::defaultStringLength(191);
+
+        // Herencia de estatus Pedido → OP y bloqueo de OP bajo pedido cancelado.
+        OrdenProduccion::observe(OrdenProduccionObserver::class);
 
         try {
             Type::addType('enum', 'Doctrine\DBAL\Types\StringType');

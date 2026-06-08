@@ -214,6 +214,18 @@ class Pedido extends Model
         return $this->ordenes()->where('estado', '!=', 'Cancelado')->exists();
     }
 
+    /**
+     * ¿El pedido tiene producción en curso? (alguna orden vinculada activa o en
+     * proceso, es decir aún no finalizada ni cancelada). Bloquea la cancelación
+     * del pedido: primero hay que cancelar/finalizar esas órdenes.
+     */
+    public function tieneProduccionEnCurso(): bool
+    {
+        return $this->ordenes()
+            ->whereIn('estado', ['Pendiente', 'En Proceso'])
+            ->exists();
+    }
+
     // ============================================
     // ACCESSORS para obtener datos del cliente
     // ============================================

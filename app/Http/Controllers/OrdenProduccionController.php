@@ -449,7 +449,15 @@ class OrdenProduccionController extends Controller
      */
     public function registrarAvance(Request $request, $id)
     {
-        $orden = OrdenProduccion::findOrFail($id);
+        $orden = OrdenProduccion::with('pedido')->findOrFail($id);
+
+        // Bloqueo cruzado: si el pedido padre está cancelado, no se admite
+        // ningún avance ni movimiento sobre sus órdenes.
+        if ($orden->pedido && $orden->pedido->estado === 'Cancelado') {
+            return response()->json([
+                'message' => 'El pedido asociado está cancelado: no se pueden registrar avances en sus órdenes de producción.'
+            ], 422);
+        }
 
         if (in_array($orden->estado, ['Finalizado', 'Cancelado'])) {
             return response()->json([
