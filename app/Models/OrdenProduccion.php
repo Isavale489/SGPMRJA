@@ -25,6 +25,7 @@ class OrdenProduccion extends Model
         'fecha_fin_real',
         'estado',
         'notas',
+        'motivo_cancelacion',
         'created_by',
     ];
 

@@ -248,6 +248,7 @@ Route::middleware(['auth', 'throttle:60,1', 'active.user', 'recovery.questions.r
         Route::get('ordenes-data', [OrdenProduccionController::class, 'getOrdenes'])->name('ordenes.data');
         Route::post('ordenes/batch', [OrdenProduccionController::class, 'storeBatch'])->name('ordenes.batch');
         Route::post('ordenes/{orden}/avance', [OrdenProduccionController::class, 'registrarAvance'])->name('ordenes.avance');
+        Route::patch('ordenes/{orden}/cancelar', [OrdenProduccionController::class, 'cancelar'])->name('ordenes.cancelar');
         // Sub-órdenes de producción (etapas con empleados asignados)
         Route::get('ordenes/{orden}/subordenes', [OrdenProduccionController::class, 'subordenes'])->name('ordenes.subordenes');
         Route::post('ordenes/{orden}/subordenes', [OrdenProduccionController::class, 'storeSubOrden'])->name('ordenes.subordenes.store');
