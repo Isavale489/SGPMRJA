@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\OrdenProduccion;
+use App\Models\SubOrdenProduccion;
 use App\Models\Insumo;
 use App\Models\Pedido;
 use App\Models\DetallePedido;
@@ -108,6 +109,7 @@ class OrdenProduccionController extends Controller
             ->addColumn('actions', function ($orden) {
                 $actions = '<div class="d-flex gap-2 justify-content-center">';
                 $actions .= '<button type="button" class="btn btn-sm btn-soft-info view-btn" data-id="' . $orden->id . '" title="Ver detalles"><i class="ri-eye-fill"></i></button>';
+                $actions .= '<button type="button" class="btn btn-sm btn-soft-primary subordenes-btn" data-id="' . $orden->id . '" title="Sub-órdenes y empleados"><i class="ri-node-tree"></i></button>';
                 $actions .= '<button type="button" class="btn btn-sm btn-soft-success edit-btn" data-id="' . $orden->id . '" title="Editar orden"><i class="ri-pencil-fill"></i></button>';
 
                 if ($orden->estado === 'Pendiente') {
@@ -575,5 +577,102 @@ class OrdenProduccionController extends Controller
         $orden->delete();
         Pedido::find($pedidoId)?->recalcularEstado();
         return response()->json(['message' => 'Orden de producción eliminada exitosamente.']);
+    }
+
+    // ══════════════════════════════════════════════════════════════════════
+    //  SUB-ÓRDENES DE PRODUCCIÓN (etapas con múltiples empleados asignados)
+    // ══════════════════════════════════════════════════════════════════════
+
+    /**
+     * Sub-órdenes que dependen de la OP principal, con los empleados asignados
+     * a cada una. Alimenta el modal dinámico de la vista de Producción.
+     */
+    public function subordenes($id)
+    {
+        $orden = OrdenProduccion::with([
+                'subordenes.empleados.persona',
+                'pedido',
+            ])->findOrFail($id);
+        $orden->append('nombre_producto');
+
+        return response()->json([
+            'orden' => [
+                'id'        => $orden->id,
+                'producto'  => $orden->nombre_producto,
+                'pedido_id' => $orden->pedido_id,
+                'estado'    => $orden->estado,
+            ],
+            'subordenes' => $orden->subordenes->map(fn($s) => [
+                'id'                => $s->id,
+                'nombre'            => $s->nombre,
+                'cantidad_asignada' => $s->cantidad_asignada,
+                'estado'            => $s->estado,
+                'notas'             => $s->notas,
+                'empleados'         => $s->empleados->map(fn($e) => [
+                    'id'     => $e->id,
+                    'nombre' => $e->persona->nombre_completo ?? ('Empleado #' . $e->id),
+                    'rol'    => $e->pivot->rol,
+                ])->values(),
+            ])->values(),
+        ]);
+    }
+
+    /**
+     * Crear una sub-orden de la OP y asignarle uno o varios empleados.
+     */
+    public function storeSubOrden(Request $request, $id)
+    {
+        $orden = OrdenProduccion::findOrFail($id);
+
+        $validated = $request->validate([
+            'nombre'            => 'required|string|max:120',
+            'cantidad_asignada' => 'nullable|integer|min:1',
+            'notas'             => 'nullable|string|max:500',
+            'empleados'         => 'required|array|min:1',
+            'empleados.*.id'    => 'required|integer|exists:empleado,id',
+            'empleados.*.rol'   => 'nullable|string|max:80',
+        ], [
+            'empleados.required' => 'Asigna al menos un empleado a la sub-orden.',
+            'empleados.min'      => 'Asigna al menos un empleado a la sub-orden.',
+        ]);
+
+        // Sin empleados duplicados en la misma sub-orden
+        $ids = array_column($validated['empleados'], 'id');
+        if (count($ids) !== count(array_unique($ids))) {
+            return response()->json(['message' => 'Hay empleados repetidos en la asignación.'], 422);
+        }
+
+        $sub = DB::transaction(function () use ($orden, $validated) {
+            $sub = $orden->subordenes()->create([
+                'nombre'            => $validated['nombre'],
+                'cantidad_asignada' => $validated['cantidad_asignada'] ?? null,
+                'estado'            => 'Pendiente',
+                'notas'             => $validated['notas'] ?? null,
+            ]);
+
+            $attach = [];
+            foreach ($validated['empleados'] as $e) {
+                $attach[$e['id']] = ['rol' => $e['rol'] ?? null];
+            }
+            $sub->empleados()->sync($attach);
+
+            return $sub;
+        });
+
+        return response()->json([
+            'message'      => 'Sub-orden creada y empleados asignados.',
+            'sub_orden_id' => $sub->id,
+        ]);
+    }
+
+    /**
+     * Eliminar una sub-orden (y sus asignaciones por cascade en el pivot).
+     */
+    public function destroySubOrden($id, $subId)
+    {
+        $sub = SubOrdenProduccion::where('orden_produccion_id', $id)->findOrFail($subId);
+        $sub->delete();
+
+        return response()->json(['message' => 'Sub-orden eliminada.']);
     }
 }
