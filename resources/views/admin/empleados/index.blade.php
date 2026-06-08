@@ -50,7 +50,7 @@
                             @else
                                 <a href="{{ route('empleados.index', ['historial' => true]) }}"
                                     class="btn-historial btn-historial-ver">
-                                    <i class="ri-time-line"></i> Ver Historial
+                                    <i class="ri-archive-line"></i> Inhabilitados
                                 </a>
                             @endif
                             <div class="d-flex gap-2">

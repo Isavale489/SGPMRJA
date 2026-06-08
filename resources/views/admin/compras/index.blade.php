@@ -41,7 +41,7 @@
                                     </a>
                                 @else
                                     <a href="{{ route('compras.index', ['anuladas' => true]) }}" class="btn-historial btn-historial-ver">
-                                        <i class="ri-close-circle-line"></i> Ver anuladas
+                                        <i class="ri-archive-line"></i> Anuladas
                                     </a>
                                 @endif
 
