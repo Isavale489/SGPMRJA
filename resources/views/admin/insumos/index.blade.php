@@ -504,7 +504,7 @@
                         </button>
                     </div>
 
-                    <div style="max-height: 340px; overflow-y: auto;">
+                    <div class="ti-table-wrap">
                         <table class="ti-table" id="tipos-insumo-table">
                             <thead>
                                 <tr>

@@ -5373,20 +5373,31 @@ header#page-topbar,
 .ti-seg-btn:hover { color: #1e3c72; }
 .ti-seg-btn.active { background: #fff; color: #1e3c72; box-shadow: 0 1px 3px rgba(16,24,40,.12); }
 
-/* Tabla liviana de tipos */
-.ti-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-.ti-table thead th {
-    background: #f1f5f9; color: #1e3c72; font-size: 11px; font-weight: 700;
-    text-transform: uppercase; letter-spacing: .03em; padding: 9px 14px; text-align: left;
-    border-bottom: 1px solid #e2e8f0; position: sticky; top: 0; z-index: 1;
+/* Zona de tabla: ALTURA FIJA → el modal no cambia de tamaño entre tabs/registros */
+.ti-table-wrap {
+    height: 340px; overflow-y: auto;
+    border: 1px solid #e3e8f0; border-radius: 12px;
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.4);
 }
-.ti-table tbody td { padding: 10px 14px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
+.ti-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 13px; }
+.ti-table thead th {
+    background: linear-gradient(180deg, #eef2f9, #e7edf6); color: #1e3c72;
+    font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em;
+    padding: 11px 16px; text-align: left;
+    border-bottom: 2px solid #d7e0ee; position: sticky; top: 0; z-index: 1;
+}
+.ti-table tbody td { padding: 11px 16px; border-bottom: 1px solid #eef1f6; vertical-align: middle; }
+.ti-table tbody tr:nth-child(even) td { background: #f9fbfe; }
+.ti-table tbody tr:hover td { background: #eef4ff; }
 .ti-table tbody tr:last-child td { border-bottom: 0; }
-.ti-table tbody tr:hover td { background: #f8fafc; }
-.ti-name { display: inline-flex; align-items: center; gap: 7px; font-weight: 600; color: #0f172a; }
-.ti-name i { color: #2a5298; font-size: 15px; }
-.ti-empty { text-align: center; padding: 22px 14px; color: #94a3b8; }
-.ti-empty i { display: block; font-size: 1.8rem; opacity: .5; margin-bottom: 4px; }
+.ti-name { display: inline-flex; align-items: center; gap: 9px; font-weight: 600; color: #0f172a; font-size: 13.5px; }
+.ti-name i {
+    color: #2a5298; font-size: 15px; width: 28px; height: 28px; flex: 0 0 28px;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: rgba(42,82,152,.10); border-radius: 8px;
+}
+.ti-empty { text-align: center; padding: 40px 14px; color: #94a3b8; }
+.ti-empty i { display: block; font-size: 2rem; opacity: .5; margin-bottom: 6px; }
 .ti-empty span { font-size: 12.5px; }
 
 /* Dark mode */
@@ -5395,11 +5406,13 @@ header#page-topbar,
 [data-bs-theme="dark"] .ti-segment { background: #0f172a; }
 [data-bs-theme="dark"] .ti-seg-btn { color: #94a3b8; }
 [data-bs-theme="dark"] .ti-seg-btn.active { background: #1e293b; color: #cbd5e1; }
-[data-bs-theme="dark"] .ti-table thead th { background: #172033; color: #93c5fd; border-bottom-color: #334155; }
+[data-bs-theme="dark"] .ti-table-wrap { border-color: #334155; box-shadow: none; }
+[data-bs-theme="dark"] .ti-table thead th { background: linear-gradient(180deg, #1c2840, #172033); color: #93c5fd; border-bottom-color: #334155; }
 [data-bs-theme="dark"] .ti-table tbody td { border-bottom-color: #1f2a3d; color: #e2e8f0; }
-[data-bs-theme="dark"] .ti-table tbody tr:hover td { background: #172033; }
+[data-bs-theme="dark"] .ti-table tbody tr:nth-child(even) td { background: #1b2435; }
+[data-bs-theme="dark"] .ti-table tbody tr:hover td { background: #1e293b; }
 [data-bs-theme="dark"] .ti-name { color: #e2e8f0; }
-[data-bs-theme="dark"] .ti-name i { color: #93c5fd; }
+[data-bs-theme="dark"] .ti-name i { color: #93c5fd; background: rgba(147,197,253,.14); }
 
 /* ============================================================
    PRODUCTOS — MODAL VER (Detalle del Tipo) #viewTipoModal
