@@ -5720,9 +5720,14 @@
                         var tallasPills = g.cards.map(function (c) {
                             return '<span class="cot-linea-talla">' + escHtmlW(c.tallaLabel) + '<b>×' + c.qty + '</b></span>';
                         }).join('');
+                        var imgUrl = (g.producto && g.producto.imagen) ? g.producto.imagen : '';
+                        var thumb = imgUrl
+                            ? '<div class="cot-linea-thumb"><img src="' + escHtmlW(imgUrl) + '" alt="" class="cot-linea-thumb-img"></div>'
+                            : '<div class="cot-linea-thumb"><span class="cot-linea-thumb-ph"><i class="ri-t-shirt-2-line"></i></span></div>';
 
                         rows.push(
                             '<div class="cot-linea-card">' +
+                                thumb +
                                 '<div class="cot-linea-info">' +
                                     '<div class="cot-linea-top">' +
                                         (codigo ? '<span class="cot-linea-codigo">' + escHtmlW(codigo) + '</span>' : '') +
@@ -5760,6 +5765,7 @@
                         var bits = [colorName, tallaName].filter(Boolean).join(' · ');
                         rows.push(
                             '<div class="cot-linea-card">' +
+                                '<div class="cot-linea-thumb"><span class="cot-linea-thumb-ph"><i class="ri-t-shirt-2-line"></i></span></div>' +
                                 '<div class="cot-linea-info">' +
                                     '<div class="cot-linea-top">' +
                                         '<span class="cot-linea-nombre">' + escHtmlW(prodName) + '</span>' +

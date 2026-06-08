@@ -122,17 +122,6 @@
                                             <option value="gubernamental">Gubernamental</option>
                                         </select>
                                     </div>
-                                    {{-- Filtro 2: Estatus --}}
-                                    <div>
-                                        <label class="navy-filter-label" for="filter-estatus">
-                                            <i class="ri-shield-check-line"></i> Estatus
-                                        </label>
-                                        <select class="form-select navy-filter-select" id="filter-estatus" data-col-index="7">
-                                            <option value="">Todos</option>
-                                            <option value="1" selected>Activo</option>
-                                            <option value="0">Inactivo</option>
-                                        </select>
-                                    </div>
                                     {{-- Filtro 3: Estado Territorial (Venezuela) --}}
                                     <div>
                                         <label class="navy-filter-label" for="filter-estado-territorial">
@@ -602,19 +591,6 @@
                         </div>
                     </div>
 
-                    <div class="modal-form-section mb-0">
-                        <div class="modal-form-section-title"><i class="ri-shield-check-line"></i>Estatus</div>
-                        {{-- Switch de solo lectura: activado = Activo. Lo gobierna Inhabilitar/Restaurar, no es editable aquí. --}}
-                        <div class="form-check form-switch estatus-switch ms-2" title="Solo lectura — se gestiona con Inhabilitar / Restaurar">
-                            <input class="form-check-input" type="checkbox" role="switch" id="estatus-display" checked disabled>
-                            <label class="form-check-label" for="estatus-display" id="estatus-display-label">Activo</label>
-                            <i class="ri-lock-line estatus-lock" aria-hidden="true"></i>
-                        </div>
-                        <small class="text-muted d-block mt-1 lh-sm">
-                            El estatus se gestiona mediante las acciones <strong>Inhabilitar</strong> y <strong>Restaurar</strong>.
-                        </small>
-                    </div>
-
                 </div>
                 <div class="modal-footer bg-light border-0">
                     <div class="hstack gap-2 justify-content-end">
@@ -1021,11 +997,6 @@
                 return '<div class="d-flex gap-1 justify-content-center align-items-center">' + sVer + menu + '</div>';
             }
 
-            function setEstatusPill(activo) {
-                $("#estatus-display").prop('checked', !!activo);
-                $("#estatus-display-label").text(activo ? 'Activo' : 'Inhabilitado');
-            }
-
             function formatDate(dateStr) {
                 if (!dateStr) return 'N/A';
 
@@ -1054,7 +1025,7 @@
                     data: function (d) {
                         // ── Filtros avanzados: enviar valores al server ──
                         d.filter_tipo_cliente        = $('#filter-tipo-cliente').val();
-                        d.filter_estatus             = $('#filter-estatus').val();
+                        d.historial                  = @json($historial);
                         d.filter_estado_territorial  = $('#filter-estado-territorial').val();
                         d.filter_orden               = $('#filter-orden').val();
                     }
@@ -1106,7 +1077,6 @@
             function updateFilterBadge() {
                 var count = 0;
                 if ($('#filter-tipo-cliente').val() !== '')                          count++;
-                if ($('#filter-estatus').val() !== '1')                              count++;
                 if ($('#filter-estado-territorial').val() !== '')                    count++;
                 if ($('#filter-orden').val() !== 'recientes')                        count++;
                 var $badge = $('#active-filter-count');
@@ -1143,17 +1113,9 @@
                 updateFilterBadge();
             });
 
-            // ── Si se llegó por toggle historial (?historial=true) ──
-            @if($historial)
-                $('#filter-estatus').val('0');
-                table.ajax.reload();
-                updateFilterBadge();
-            @endif
-
             // ── Botón limpiar: resetea búsqueda + filtros + orden ──
             $('#btn-clear-filters').on('click', function () {
                 $('#filter-tipo-cliente').val('');
-                $('#filter-estatus').val('1');
                 $('#filter-estado-territorial').val('');
                 $('#filter-orden').val('recientes');
                 $('#custom-search-input').val('');
@@ -1182,7 +1144,6 @@
                 $("#documento-prefix-field").prop('disabled', false).removeClass('campo-protegido');
                 $("#documento-number-field").val("");
                 $("#documento-number-field").prop('disabled', false).removeClass('campo-protegido');
-                setEstatusPill(true);
                 // Reset teléfono
                 $("#telefono-prefix-field").val("0424");
                 $("#telefono-number-field").val("");
@@ -1437,8 +1398,6 @@
 
                     // Ahora seleccionar el municipio guardado
                     $("#ciudad-field").val(data.ciudad || '');
-                    // Estatus: display de solo lectura (siempre Activo al editar, los inhabilitados no se editan)
-                    setEstatusPill(!data.trashed);
                     $("#showModal").modal("show");
                 });
             });

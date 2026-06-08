@@ -133,17 +133,6 @@
                                             @endforeach
                                         </select>
                                     </div>
-                                    {{-- Filtro 3: Estatus --}}
-                                    <div>
-                                        <label class="navy-filter-label" for="filter-estatus">
-                                            <i class="ri-shield-check-line"></i> Estatus
-                                        </label>
-                                        <select class="form-select navy-filter-select" id="filter-estatus">
-                                            <option value="">Todos</option>
-                                            <option value="1" selected>Activo</option>
-                                            <option value="0">Inactivo</option>
-                                        </select>
-                                    </div>
                                     {{-- Filtro 4: Ordenar por --}}
                                     <div>
                                         <label class="navy-filter-label" for="filter-orden">
@@ -178,7 +167,6 @@
                                 <th>Teléfono</th>
                                 <th>Cargo</th>
                                 <th>Departamento</th>
-                                <th>Estado</th>
                                 <th>Acciones</th>
                             </tr>
                         </thead>
@@ -596,21 +584,6 @@
 
                             <input type="hidden" id="field-codigo_empleado" name="codigo_empleado" />
 
-                            {{-- Estado Laboral: solo lectura. Lo gobierna Inhabilitar/Restaurar, no es editable aquí. --}}
-                            <div class="row mb-0">
-                                <div class="col-md-6">
-                                    <label class="form-label d-inline-flex align-items-center mb-0">Estado Laboral</label>
-                                    {{-- Switch de solo lectura: activado = Activo. Lo gobierna Inhabilitar/Restaurar, no es editable aquí. --}}
-                                    <div class="form-check form-switch estatus-switch ms-2" title="Solo lectura — se gestiona con Inhabilitar / Restaurar">
-                                        <input class="form-check-input" type="checkbox" role="switch" id="field-estado-display" checked disabled>
-                                        <label class="form-check-label" for="field-estado-display" id="field-estado-display-label">Activo</label>
-                                        <i class="ri-lock-line estatus-lock" aria-hidden="true"></i>
-                                    </div>
-                                    <small class="text-muted d-block mt-1 lh-sm">
-                                        El estatus se gestiona mediante las acciones <strong>Inhabilitar</strong> y <strong>Restaurar</strong>.
-                                    </small>
-                                </div>
-                            </div>
                         </div>
 
                     </div>
@@ -943,12 +916,6 @@
                 return '<span title="' + value + '" style="cursor:default;">' + value + '</span>';
             }
 
-            // Switch de solo lectura del Estado Laboral (activado = Activo).
-            function setEstatusSwitch(activo) {
-                $("#field-estado-display").prop('checked', !!activo);
-                $("#field-estado-display-label").text(activo ? 'Activo' : 'Inhabilitado');
-            }
-
             function formatDate(dateStr) {
                 if (!dateStr) return 'N/A';
                 if (typeof dateStr === 'string') {
@@ -974,7 +941,7 @@
                         // ── Filtros avanzados: enviar valores al server ──
                         d.filter_departamento   = $('#filter-departamento').val();
                         d.filter_cargo          = $('#filter-cargo').val();
-                        d.filter_estatus        = $('#filter-estatus').val();
+                        d.historial             = @json($historial);
                         d.filter_orden          = $('#filter-orden').val();
                     }
                 },
@@ -1011,13 +978,6 @@
                         }
                     },
                     {
-                        data: 'trashed', render: function (data) {
-                            return data
-                                ? '<span class="badge-status badge-status-inactivo"><i class="ri-close-circle-line"></i> Inhabilitado</span>'
-                                : '<span class="badge-status badge-status-activo"><i class="ri-checkbox-circle-line"></i> Activo</span>';
-                        }
-                    },
-                    {
                         data: null,
                         orderable: false,
                         searchable: false,
@@ -1041,7 +1001,6 @@
                 var count = 0;
                 if ($('#filter-departamento').val() !== '')                          count++;
                 if ($('#filter-cargo').val() !== '')                                 count++;
-                if ($('#filter-estatus').val() !== '1')                              count++;
                 if ($('#filter-orden').val() !== 'recientes')                        count++;
                 var $badge = $('#active-filter-count');
                 var $dot   = $('#filter-dot-indicator');
@@ -1077,18 +1036,10 @@
                 updateFilterBadge();
             });
 
-            // ── Si se llegó por toggle historial (?historial=true) → mostrar inhabilitados ──
-            @if($historial)
-                $('#filter-estatus').val('0');
-                table.ajax.reload();
-                updateFilterBadge();
-            @endif
-
             // ── Botón limpiar: resetea búsqueda + filtros + orden ──
             $('#btn-clear-filters').on('click', function () {
                 $('#filter-departamento').val('');
                 $('#filter-cargo').val('');
-                $('#filter-estatus').val('1');
                 $('#filter-orden').val('recientes');
                 $('#custom-search-input').val('');
                 updateFilterBadge();
@@ -1107,7 +1058,6 @@
                 $("#field-codigo_empleado").val("");
                 $("#tipo-documento-field").val("V-").prop('disabled', false).removeClass('campo-protegido');
                 $("#field-documento_identidad").prop('disabled', false).removeClass('campo-protegido');
-                setEstatusSwitch(true);
                 // Resetear teléfono
                 $("#telefono-prefix-field").val("0424");
                 $("#telefono-number-field").val("");
@@ -1326,7 +1276,6 @@
                     $("#field-genero").val(data.persona.genero);
                     $("#field-codigo_empleado").val(data.codigo_empleado);
                     $("#field-fecha_ingreso").val(data.fecha_ingreso);
-                    setEstatusSwitch(!data.trashed);
 
                     // Departamento → cargo en cascada
                     var $deptoSel = $('#field-departamento_id');

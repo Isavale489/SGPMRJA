@@ -85,7 +85,8 @@ class MovimientoInsumoController extends Controller
     {
         $query = Insumo::where('estado', true)
             ->where('is_inventoriable', true)
-            ->select('id', 'nombre', 'codigo', 'tipo', 'unidad_medida', 'stock_minimo', 'stock_actual', 'stock_maximo');
+            ->select('id', 'nombre', 'codigo', 'tipo', 'unidad_medida', 'stock_minimo', 'stock_actual', 'stock_maximo')
+            ->orderBy('id', 'desc'); // más reciente primero (estándar del sistema)
 
         if ($request->filled('filter_tipo')) {
             $query->where('tipo', $request->input('filter_tipo'));

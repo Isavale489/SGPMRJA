@@ -115,17 +115,6 @@
                                             <option value="juridico">Jurídico</option>
                                         </select>
                                     </div>
-                                    {{-- Filtro 2: Estatus --}}
-                                    <div>
-                                        <label class="navy-filter-label" for="filter-estatus">
-                                            <i class="ri-shield-check-line"></i> Estatus
-                                        </label>
-                                        <select class="form-select navy-filter-select" id="filter-estatus">
-                                            <option value="">Todos</option>
-                                            <option value="1" selected>Activo</option>
-                                            <option value="0">Inactivo</option>
-                                        </select>
-                                    </div>
                                     {{-- Filtro 3: Estado Territorial (Venezuela) --}}
                                     <div>
                                         <label class="navy-filter-label" for="filter-estado-territorial">
@@ -705,19 +694,6 @@
                             </div>
                         </div>
 
-                        <div class="modal-form-section mb-0">
-                            <div class="modal-form-section-title"><i class="ri-shield-check-line"></i>Estatus</div>
-                            {{-- Switch de solo lectura: activado = Activo. Lo gobierna Inhabilitar/Restaurar, no es editable aquí. --}}
-                            <div class="form-check form-switch estatus-switch ms-2" title="Solo lectura — se gestiona con Inhabilitar / Restaurar">
-                                <input class="form-check-input" type="checkbox" role="switch" id="estado-display" checked disabled>
-                                <label class="form-check-label" for="estado-display" id="estado-display-label">Activo</label>
-                                <i class="ri-lock-line estatus-lock" aria-hidden="true"></i>
-                            </div>
-                            <small class="text-muted d-block mt-1 lh-sm">
-                                El estatus se gestiona mediante las acciones <strong>Inhabilitar</strong> y <strong>Restaurar</strong>.
-                            </small>
-                        </div>
-
                     </div>
                     <div class="modal-footer bg-light border-0">
                         <div class="hstack gap-2 justify-content-end">
@@ -811,12 +787,6 @@
             // Los selectores incluyen tanto los bloques grandes (#campos-juridico/#campos-natural)
             // como los wrappers del RIF/Documento dentro de la sección Identificación
             // (.js-tipo-juridico/.js-tipo-natural).
-            // Switch de solo lectura del Estatus (activado = Activo).
-            function setEstatusSwitch(activo) {
-                $("#estado-display").prop('checked', !!activo);
-                $("#estado-display-label").text(activo ? 'Activo' : 'Inhabilitado');
-            }
-
             function toggleCampos() {
                 var tipo = $('#tipo-proveedor-field').val();
                 var $jur = $('#campos-juridico, .js-tipo-juridico');
@@ -898,7 +868,7 @@
                     data: function (d) {
                         // ── Filtros avanzados: enviar valores al server ──
                         d.filter_tipo_proveedor      = $('#filter-tipo-proveedor').val();
-                        d.filter_estatus             = $('#filter-estatus').val();
+                        d.historial                  = @json($historial);
                         d.filter_estado_territorial  = $('#filter-estado-territorial').val();
                         d.filter_orden               = $('#filter-orden').val();
                     }
@@ -949,7 +919,6 @@
             function updateFilterBadge() {
                 var count = 0;
                 if ($('#filter-tipo-proveedor').val() !== '')                        count++;
-                if ($('#filter-estatus').val() !== '1')                              count++;
                 if ($('#filter-estado-territorial').val() !== '')                    count++;
                 if ($('#filter-orden').val() !== 'recientes')                        count++;
                 var $badge = $('#active-filter-count');
@@ -986,17 +955,9 @@
                 updateFilterBadge();
             });
 
-            // ── Si se llegó por toggle historial (?historial=true) ──
-            @if($historial)
-                $('#filter-estatus').val('0');
-                table.ajax.reload();
-                updateFilterBadge();
-            @endif
-
             // ── Botón limpiar: resetea búsqueda + filtros + orden ──
             $('#btn-clear-filters').on('click', function () {
                 $('#filter-tipo-proveedor').val('');
-                $('#filter-estatus').val('1');
                 $('#filter-estado-territorial').val('');
                 $('#filter-orden').val('recientes');
                 $('#custom-search-input').val('');
@@ -1061,7 +1022,6 @@
                     $("#modalTitle").text("Editar Proveedor");
                     $("#id-field").val(data.id);
                     $("#tipo-proveedor-field").val(data.tipo_proveedor || 'juridico');
-                    setEstatusSwitch(!data.trashed);
 
                     toggleCampos();
 
@@ -1368,7 +1328,6 @@
                 $("#proveedorForm")[0].reset();
                 $("#id-field").val("");
                 $("#tipo-proveedor-field").val("juridico");
-                setEstatusSwitch(true);
                 toggleCampos();
                 $("#add-btn").show().prop('disabled', false);
                 $("#edit-btn").hide();

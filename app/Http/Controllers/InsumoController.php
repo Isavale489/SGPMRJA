@@ -27,6 +27,11 @@ class InsumoController extends Controller
     {
         $query = Insumo::query();
 
+        // Historial: mostrar solo los inhabilitados (soft-deleted).
+        if ($request->boolean('historial')) {
+            $query->onlyTrashed();
+        }
+
         // ══════════════════════════════════════════════════════════
         // FILTROS AVANZADOS — Server-Side (Patrón Maestro S-07)
         // ══════════════════════════════════════════════════════════
@@ -74,6 +79,7 @@ class InsumoController extends Controller
                     return 'normal';
                 }
             })
+            ->addColumn('trashed', fn($insumo) => $insumo->trashed())
             ->make(true);
     }
 
@@ -103,7 +109,9 @@ class InsumoController extends Controller
         ]);
 
         $inventoriable = $request->boolean('is_inventoriable', true);
-        $data = $request->only(['nombre', 'tipo', 'unidad_medida', 'costo_unitario', 'estado']);
+        $data = $request->only(['nombre', 'tipo', 'unidad_medida', 'costo_unitario']);
+        // Todo insumo nace habilitado; el estatus se gobierna con Inhabilitar/Habilitar.
+        $data['estado']           = true;
         $data['codigo']           = $request->filled('codigo') ? strtoupper(trim($request->codigo)) : null;
         $data['is_inventoriable'] = $inventoriable;
         $data['stock_actual']     = $inventoriable ? ($request->input('stock_actual', 0)) : 0;
@@ -117,8 +125,11 @@ class InsumoController extends Controller
 
     public function show($id)
     {
-        $insumo = Insumo::findOrFail($id);
-        return response()->json($insumo);
+        // withTrashed: permite ver el detalle de un insumo inhabilitado desde el historial.
+        $insumo = Insumo::withTrashed()->findOrFail($id);
+        $data = $insumo->toArray();
+        $data['trashed'] = $insumo->trashed();
+        return response()->json($data);
     }
 
     public function update(Request $request, $id)
@@ -148,7 +159,8 @@ class InsumoController extends Controller
         ]);
 
         $inventoriable = $request->boolean('is_inventoriable', true);
-        $data = $request->only(['nombre', 'tipo', 'unidad_medida', 'costo_unitario', 'estado']);
+        // 'estado' NO se edita aquí: lo gobiernan Inhabilitar/Habilitar.
+        $data = $request->only(['nombre', 'tipo', 'unidad_medida', 'costo_unitario']);
         $data['is_inventoriable'] = $inventoriable;
         $data['stock_actual']     = $inventoriable ? ($request->input('stock_actual', 0)) : 0;
         $data['stock_minimo']     = $inventoriable ? ($request->input('stock_minimo', 0)) : 0;
@@ -165,8 +177,22 @@ class InsumoController extends Controller
     public function destroy($id)
     {
         $insumo = Insumo::findOrFail($id);
+        // Inhabilitar = estado=false (lo respetan los selectores `where('estado',true)`)
+        // + soft delete (queda en el historial, reversible con Habilitar).
+        $insumo->update(['estado' => false]);
         $insumo->delete();
-        return response()->json(['success' => 'Insumo eliminado exitosamente.']);
+        return response()->json(['success' => 'Insumo inhabilitado exitosamente.']);
+    }
+
+    /**
+     * Habilitar un insumo inhabilitado (soft-deleted): lo restaura y reactiva su estado.
+     */
+    public function restore($id)
+    {
+        $insumo = Insumo::onlyTrashed()->findOrFail($id);
+        $insumo->restore();
+        $insumo->update(['estado' => true]);
+        return response()->json(['success' => 'Insumo habilitado exitosamente.']);
     }
 
     public function checkNombre(Request $request)

@@ -38,9 +38,12 @@
             <div class="card card-maestros">
                 <div class="card-header">
                     <div class="d-flex align-items-center">
-                        <h5 class="card-title mb-0 flex-grow-1">Listado de Insumos</h5>
+                        <h5 class="card-title mb-0 flex-grow-1" id="insumos-card-title">Listado de Insumos</h5>
                         <div class="flex-shrink-0 d-flex align-items-center gap-3">
                             <div class="d-flex gap-2">
+                                <button type="button" class="btn-historial btn-historial-ver" id="ins-toggle-historial">
+                                    <i class="ri-time-line"></i> <span>Ver Historial</span>
+                                </button>
                                 <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal"
                                     data-bs-target="#tiposInsumoModal">
                                     <i class="ri-settings-3-line align-bottom me-1"></i> Gestionar Tipos
@@ -294,15 +297,18 @@
                             {{-- Tarjeta de Registro --}}
                             <div class="card border-0 shadow-sm">
                                 <div class="card-body py-2 px-3">
-                                    <div class="d-flex align-items-center">
-                                        <div class="rounded-circle me-2 d-flex align-items-center justify-content-center flex-shrink-0"
-                                            style="width:28px;height:28px;background:rgba(30,60,114,0.08);">
-                                            <i class="ri-calendar-line" style="color:#1e3c72;font-size:12px;"></i>
+                                    <div class="d-flex align-items-center justify-content-between gap-2">
+                                        <div class="d-flex align-items-center">
+                                            <div class="rounded-circle me-2 d-flex align-items-center justify-content-center flex-shrink-0"
+                                                style="width:28px;height:28px;background:rgba(30,60,114,0.08);">
+                                                <i class="ri-calendar-line" style="color:#1e3c72;font-size:12px;"></i>
+                                            </div>
+                                            <div>
+                                                <small class="text-muted d-block" style="font-size:11px;">Fecha de Registro</small>
+                                                <small class="fw-semibold" id="view-created">-</small>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <small class="text-muted d-block" style="font-size:11px;">Fecha de Registro</small>
-                                            <small class="fw-semibold" id="view-created">-</small>
-                                        </div>
+                                        <span class="badge rounded-pill" id="view-estatus">-</span>
                                     </div>
                                 </div>
                             </div>
@@ -399,10 +405,6 @@
                                     <x-forms.input name="costo_unitario" label="Costo Unitario" type="number" step="0.01" min="0"
                                         required />
                                 </div>
-                                <div class="col-md-6">
-                                    <x-forms.select name="estado" label="Estado" required
-                                        :options="['1' => 'Activo', '0' => 'Inactivo']" placeholder="" value="1" />
-                                </div>
                             </div>
                         </div>
                     </div>
@@ -469,47 +471,52 @@
                     <h5 class="modal-title"><i class="ri-price-tag-3-line me-2"></i>Tipos de Insumo</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body">
-                    <p class="text-muted small mb-3">
-                        Categorías para clasificar los insumos (Tela, Hilo, Botón, Cinta…). Agrega las que necesites;
-                        aparecerán al crear/editar un insumo. No se puede inhabilitar un tipo si hay insumos usándolo.
-                    </p>
+                <div class="modal-body p-3 p-md-4">
+                    <div class="ti-hint mb-3">
+                        <i class="ri-information-line"></i>
+                        <span>Categorías para clasificar los insumos (Tela, Hilo, Botón, Cinta…). Aparecen al crear/editar un insumo. No se puede inhabilitar un tipo si hay insumos usándolo.</span>
+                    </div>
 
                     {{-- Alta rápida --}}
-                    <form id="tipoInsumoForm" class="row g-2 align-items-start mb-3" novalidate>
-                        <div class="col">
-                            <input type="hidden" id="ti-id-field">
+                    <form id="tipoInsumoForm" novalidate>
+                        <input type="hidden" id="ti-id-field">
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="ri-price-tag-3-line"></i></span>
                             <input type="text" id="ti-nombre-field" class="form-control" maxlength="100"
                                 placeholder="Nuevo tipo (ej: Cinta, Elástico, Broche)…" autocomplete="off">
-                            <div class="invalid-feedback" id="ti-nombre-error"></div>
-                        </div>
-                        <div class="col-auto">
                             <button type="submit" class="btn btn-success" id="ti-save-btn">
                                 <i class="ri-add-line me-1"></i><span id="ti-save-label">Agregar</span>
                             </button>
-                            <button type="button" class="btn btn-light d-none" id="ti-cancel-btn">Cancelar</button>
+                            <button type="button" class="btn btn-light d-none" id="ti-cancel-btn" title="Cancelar edición">
+                                <i class="ri-close-line"></i>
+                            </button>
                         </div>
+                        <div class="invalid-feedback d-block" id="ti-nombre-error"></div>
                     </form>
 
-                    {{-- Toggle activos/historial --}}
-                    <div class="btn-group btn-group-sm mb-2" role="group">
-                        <button type="button" class="btn btn-outline-primary active" id="ti-btn-activos">Activos</button>
-                        <button type="button" class="btn btn-outline-secondary" id="ti-btn-historial">Historial (Inhabilitados)</button>
+                    {{-- Toggle activos / historial (segmentado) --}}
+                    <div class="ti-segment my-3" role="group">
+                        <button type="button" class="ti-seg-btn active" id="ti-btn-activos">
+                            <i class="ri-checkbox-circle-line"></i> Activos
+                        </button>
+                        <button type="button" class="ti-seg-btn" id="ti-btn-historial">
+                            <i class="ri-time-line"></i> Inhabilitados
+                        </button>
                     </div>
 
-                    <div class="tipo-check-scroll" style="max-height: 320px;">
-                        <table class="table table-sm table-hover align-middle mb-0" id="tipos-insumo-table">
+                    <div class="ti-table-wrap">
+                        <table class="ti-table" id="tipos-insumo-table">
                             <thead>
                                 <tr>
                                     <th>Tipo</th>
                                     <th class="text-center" style="width: 22%;">Insumos</th>
-                                    <th class="text-center" style="width: 22%;">Acciones</th>
+                                    <th class="text-center" style="width: 26%;">Acciones</th>
                                 </tr>
                             </thead>
                             <tbody id="tipos-insumo-tbody"></tbody>
                         </table>
-                        <div class="text-muted small text-center py-3 d-none" id="tipos-insumo-empty">
-                            <i class="ri-inbox-line me-1"></i>Sin tipos en esta vista.
+                        <div class="ti-empty d-none" id="tipos-insumo-empty">
+                            <i class="ri-inbox-line"></i><span>Sin tipos en esta vista.</span>
                         </div>
                     </div>
                 </div>
@@ -541,11 +548,12 @@
 
     <script>
         $(document).ready(function () {
-            function generateButtons(insumoId) {
+            function generateButtons(insumoId, isTrashed) {
                 var sVer = `<button class="btn btn-sm btn-soft-info view-item-btn" data-id="${insumoId}" title="Ver"><i class="ri-eye-fill"></i></button>`;
-                var items =
-                    `<li><button type="button" class="dropdown-item act-item act-edit edit-item-btn" data-id="${insumoId}"><span class="act-ic"><i class="ri-pencil-fill"></i></span>Editar</button></li>` +
-                    `<li><button type="button" class="dropdown-item act-item act-del remove-item-btn" data-id="${insumoId}"><span class="act-ic"><i class="ri-delete-bin-fill"></i></span>Eliminar</button></li>`;
+                var items = isTrashed
+                    ? `<li><button type="button" class="dropdown-item act-item act-restore restore-item-btn" data-id="${insumoId}"><span class="act-ic"><i class="ri-arrow-go-back-line"></i></span>Habilitar</button></li>`
+                    : `<li><button type="button" class="dropdown-item act-item act-edit edit-item-btn" data-id="${insumoId}"><span class="act-ic"><i class="ri-pencil-fill"></i></span>Editar</button></li>` +
+                      `<li><button type="button" class="dropdown-item act-item act-warn remove-item-btn" data-id="${insumoId}"><span class="act-ic"><i class="ri-forbid-line"></i></span>Inhabilitar</button></li>`;
                 var menu =
                     `<div class="dropdown d-inline-block">` +
                         `<button class="btn btn-sm btn-soft-secondary" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Más acciones"><i class="ri-more-2-fill"></i></button>` +
@@ -559,6 +567,9 @@
                 return '<span title="' + value + '" style="cursor:default;">' + value + '</span>';
             }
 
+            // Toggle de historial (insumos inhabilitados). Lo lee ajax.data.
+            var insHistorial = false;
+
             var table = $('#insumos-table').DataTable({
                 processing: true,
                 serverSide: true,
@@ -570,6 +581,7 @@
                         d.filter_tipo   = $('#filter-tipo').val();
                         d.filter_stock  = $('#filter-stock').val();
                         d.filter_orden  = $('#filter-orden').val();
+                        d.historial     = insHistorial ? 1 : 0;
                     }
                 },
                 dom: 'rtip',
@@ -668,14 +680,26 @@
                         width: '19%',
                         orderable: false,
                         searchable: false,
-                        render: function (data) {
-                            return generateButtons(data);
+                        render: function (data, type, row) {
+                            return generateButtons(data, row.trashed);
                         }
                     }
                 ],
                 order: [],
                 ordering: false,
                 language: lenguajeData
+            });
+
+            // ── Toggle Activos / Historial (Inhabilitados) ──
+            $('#ins-toggle-historial').on('click', function () {
+                insHistorial = !insHistorial;
+                var $btn = $(this);
+                $btn.toggleClass('btn-historial-ver', !insHistorial)
+                    .toggleClass('btn-historial-volver', insHistorial);
+                $btn.find('i').attr('class', insHistorial ? 'ri-arrow-left-line' : 'ri-time-line');
+                $btn.find('span').text(insHistorial ? 'Solo Activos' : 'Ver Historial');
+                $('#insumos-card-title').text(insHistorial ? 'Insumos inhabilitados (historial)' : 'Listado de Insumos');
+                table.ajax.reload();
             });
 
             // ══════════════════════════════════════════════════
@@ -770,6 +794,10 @@
                     $("#view-stock-maximo").text(parseFloat(data.stock_maximo).toFixed(2));
                     $("#view-costo-unitario").text('$/ ' + parseFloat(data.costo_unitario).toFixed(2));
                     $("#view-created").text(formatDate(data.created_at));
+                    $("#view-estatus")
+                        .text(data.trashed ? 'Inhabilitado' : 'Activo')
+                        .removeClass('badge-soft-success badge-soft-danger')
+                        .addClass(data.trashed ? 'badge-soft-danger' : 'badge-soft-success');
                     $("#viewModal").modal('show');
                 });
             });
@@ -792,7 +820,6 @@
                     $("#field-stock_minimo").val(data.stock_minimo);
                     $("#field-stock_maximo").val(data.stock_maximo);
                     $("#field-costo_unitario").val(data.costo_unitario);
-                    $("#field-estado").val(data.estado ? '1' : '0');
 
                     $("#add-btn").hide();
                     $("#edit-btn").show();
@@ -863,15 +890,15 @@
                 });
             });
 
-            // Eliminar
+            // Inhabilitar (soft delete → historial, reversible con Habilitar)
             $(document).on("click", ".remove-item-btn", function () {
                 var id = $(this).data("id");
                 Swal.fire({
-                    title: '¿Estás seguro?',
-                    text: "¡No podrás revertir esto!",
+                    title: '¿Inhabilitar este insumo?',
+                    text: "Se moverá al historial y dejará de estar disponible en compras y órdenes. Podrás habilitarlo de nuevo.",
                     icon: 'warning',
                     showCancelButton: true,
-                    confirmButtonText: 'Sí, eliminar',
+                    confirmButtonText: 'Sí, inhabilitar',
                     cancelButtonText: 'Cancelar',
                     customClass: {
                         confirmButton: 'btn btn-primary w-xs me-2',
@@ -891,7 +918,7 @@
                                 table.draw();
                                 Swal.fire({
                                     icon: 'success',
-                                    title: '¡Eliminado!',
+                                    title: '¡Inhabilitado!',
                                     text: response.success,
                                     showConfirmButton: false,
                                     customClass: {
@@ -907,7 +934,7 @@
                                 Swal.fire({
                                     icon: 'error',
                                     title: 'Error',
-                                    text: 'No se pudo eliminar el insumo',
+                                    text: 'No se pudo inhabilitar el insumo',
                                     customClass: {
                                         confirmButton: 'btn btn-primary w-xs me-2',
                                         cancelButton: 'btn btn-danger w-xs'
@@ -915,6 +942,48 @@
                                     buttonsStyling: false,
                                     showCloseButton: true
                                 });
+                            }
+                        });
+                    }
+                });
+            });
+
+            // Habilitar (restaurar desde el historial)
+            $(document).on("click", ".restore-item-btn", function () {
+                var id = $(this).data("id");
+                Swal.fire({
+                    title: '¿Habilitar este insumo?',
+                    text: "Volverá a estar disponible en compras y órdenes.",
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonText: 'Sí, habilitar',
+                    cancelButtonText: 'Cancelar',
+                    customClass: {
+                        confirmButton: 'btn btn-success w-xs me-2',
+                        cancelButton: 'btn btn-light w-xs'
+                    },
+                    buttonsStyling: false,
+                    showCloseButton: true
+                }).then(function (result) {
+                    if (result.value) {
+                        $.ajax({
+                            url: "{{ url('insumos') }}/" + id + "/restore",
+                            method: "POST",
+                            headers: {
+                                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                            },
+                            success: function (response) {
+                                table.ajax.reload();
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: '¡Habilitado!',
+                                    text: response.success,
+                                    showConfirmButton: false,
+                                    timer: 1500
+                                });
+                            },
+                            error: function () {
+                                Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo habilitar el insumo.' });
                             }
                         });
                     }
@@ -1168,15 +1237,19 @@
                 var $tb = $('#tipos-insumo-tbody').empty();
                 $('#tipos-insumo-empty').toggleClass('d-none', rows.length > 0);
                 rows.forEach(function (t) {
+                    var n = t.insumos_count || 0;
                     var acciones = tiHistorial
-                        ? '<button class="btn btn-sm btn-outline-success ti-restore" data-id="' + t.id + '" title="Restaurar"><i class="ri-refresh-line"></i></button>'
-                        : '<button class="btn btn-sm btn-outline-primary ti-edit me-1" data-id="' + t.id + '" data-nombre="' + escHtml(t.nombre) + '" title="Renombrar"><i class="ri-pencil-line"></i></button>' +
-                          '<button class="btn btn-sm btn-outline-danger ti-delete" data-id="' + t.id + '" data-count="' + (t.insumos_count || 0) + '" title="Inhabilitar"><i class="ri-delete-bin-line"></i></button>';
+                        ? '<button class="btn btn-sm btn-soft-success ti-restore" data-id="' + t.id + '" title="Habilitar"><i class="ri-arrow-go-back-line"></i></button>'
+                        : '<button class="btn btn-sm btn-soft-primary ti-edit me-1" data-id="' + t.id + '" data-nombre="' + escHtml(t.nombre) + '" title="Renombrar"><i class="ri-pencil-line"></i></button>' +
+                          '<button class="btn btn-sm btn-soft-danger ti-delete" data-id="' + t.id + '" data-count="' + n + '" title="Inhabilitar"><i class="ri-forbid-line"></i></button>';
+                    var badge = n > 0
+                        ? '<span class="badge rounded-pill badge-soft-info">' + n + ' en uso</span>'
+                        : '<span class="badge rounded-pill badge-soft-secondary">0</span>';
                     $tb.append(
                         '<tr>' +
-                            '<td>' + escHtml(t.nombre) + '</td>' +
-                            '<td class="text-center"><span class="badge bg-info">' + (t.insumos_count || 0) + '</span></td>' +
-                            '<td class="text-center">' + acciones + '</td>' +
+                            '<td><span class="ti-name"><i class="ri-price-tag-3-line"></i>' + escHtml(t.nombre) + '</span></td>' +
+                            '<td class="text-center">' + badge + '</td>' +
+                            '<td class="text-center text-nowrap">' + acciones + '</td>' +
                         '</tr>'
                     );
                 });

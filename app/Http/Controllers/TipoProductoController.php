@@ -88,8 +88,10 @@ class TipoProductoController extends Controller
     /**
      * Mostrar un tipo de producto
      */
-    public function show(TipoProducto $tipoProducto): JsonResponse
+    public function show($id): JsonResponse
     {
+        // withTrashed: permite ver el detalle de un tipo inhabilitado desde el historial.
+        $tipoProducto = TipoProducto::withTrashed()->findOrFail($id);
         $tipoProducto->load([
             'atributos' => function ($q) {
                 $q->orderBy('tipo_producto_atributo.orden');

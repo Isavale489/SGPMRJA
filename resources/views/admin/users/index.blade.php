@@ -78,7 +78,7 @@
                         <div class="collapse" id="filters-collapse-body">
                             <div class="navy-filter-body">
                                 <div class="row g-3">
-                                    <div class="col-12 col-md-6">
+                                    <div class="col-12">
                                         <label class="navy-filter-label" for="filter-role">
                                             <i class="ri-shield-user-line"></i> Rol
                                         </label>
@@ -87,16 +87,6 @@
                                             <option value="Administrador">Administrador</option>
                                             <option value="Supervisor">Supervisor</option>
                                             <option value="Usuario">Usuario</option>
-                                        </select>
-                                    </div>
-                                    <div class="col-12 col-md-6">
-                                        <label class="navy-filter-label" for="filter-estado">
-                                            <i class="ri-shield-check-line"></i> Estado
-                                        </label>
-                                        <select class="form-select navy-filter-select" id="filter-estado">
-                                            <option value="">Todos los estados</option>
-                                            <option value="1" selected>Activo</option>
-                                            <option value="0">Inactivo</option>
                                         </select>
                                     </div>
                                 </div>
@@ -112,7 +102,6 @@
                                 <th>Nombre</th>
                                 <th>Email</th>
                                 <th>Rol</th>
-                                <th>Estado</th>
                                 <th>Acciones</th>
                             </tr>
                         </thead>
@@ -200,6 +189,18 @@
                                         </div>
                                     </div>
                                 </div>
+                                <div class="col-12">
+                                    <div class="d-flex align-items-center">
+                                        <div class="rounded-circle me-2 d-flex align-items-center justify-content-center"
+                                            style="width: 32px; height: 32px; background: rgba(30, 60, 114, 0.1);">
+                                            <i class="ri-shield-check-line" style="color: #1e3c72;"></i>
+                                        </div>
+                                        <div>
+                                            <small class="text-muted d-block">Estado (acceso al sistema)</small>
+                                            <span class="badge rounded-pill" id="view-estado">-</span>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -255,19 +256,10 @@
                             <div class="modal-form-section-title"><i class="ri-user-settings-line"></i>Perfil de Usuario</div>
 
                             <div class="row mb-3">
-                                <div class="col-md-6">
+                                <div class="col-md-12">
                                     <x-forms.select name="role" label="Rol" required
                                         :options="['Administrador' => 'Administrador', 'Supervisor' => 'Supervisor']"
                                         placeholder="Seleccione un rol" />
-                                </div>
-                                <div class="col-md-6">
-                                    {{-- Estado: switch de solo lectura. Lo gobierna Inhabilitar/Habilitar (controla el acceso al login). --}}
-                                    <label class="form-label d-block">Estado</label>
-                                    <div class="form-check form-switch estatus-switch" title="Solo lectura — se gestiona con Inhabilitar / Habilitar">
-                                        <input class="form-check-input" type="checkbox" role="switch" id="estado-display" checked disabled>
-                                        <label class="form-check-label" for="estado-display" id="estado-display-label">Activo</label>
-                                        <i class="ri-lock-line estatus-lock" aria-hidden="true"></i>
-                                    </div>
                                 </div>
                             </div>
                             <div class="d-flex align-items-start gap-2 mb-3 p-2 rounded-3 bg-info-subtle border border-info-subtle">
@@ -402,13 +394,7 @@
             function updateFilterBadge() {
                 let count = 0;
                 $('.navy-filter-select').each(function () {
-                    var v = $(this).val();
-                    // filter-estado='1' (Activo) es el default → no cuenta como filtro activo
-                    if (this.id === 'filter-estado') {
-                        if (v && v !== '1') count++;
-                    } else if (v && v !== '') {
-                        count++;
-                    }
+                    if ($(this).val() && $(this).val() !== '') count++;
                 });
                 $('#active-filter-count').text(count).toggleClass('d-none', count === 0);
             }
@@ -474,7 +460,7 @@
                     url: "{{ route('users.data') }}",
                     data: function (d) {
                         d.filter_role = $('#filter-role').val();
-                        d.filter_estado = $('#filter-estado').val();
+                        d.historial = @json($historial);
                     }
                 },
                 columns: [
@@ -511,14 +497,6 @@
                         }
                     },
                     {
-                        data: 'estado',
-                        render: function (data, type, row) {
-                            return data == 1
-                                ? '<span class="badge-status badge-status-activo"><i class="ri-checkbox-circle-line"></i> Activo</span>'
-                                : '<span class="badge-status badge-status-inactivo"><i class="ri-close-circle-line"></i> Inactivo</span>';
-                        }
-                    },
-                    {
                         data: null,
                         orderable: false,
                         searchable: false,
@@ -547,7 +525,6 @@
 
             $('#btn-clear-filters').on('click', function () {
                 $('.navy-filter-select').val('');
-                $('#filter-estado').val('1'); // default: solo activos (los inhabilitados van al historial)
                 $('#custom-search-input').val('');
                 table.search('').draw();
                 table.ajax.reload(null, true);
@@ -557,12 +534,6 @@
             updateFilterBadge();
 
             // ── Si se llegó por toggle historial (?historial=true) → mostrar inhabilitados ──
-            @if($historial)
-                $('#filter-estado').val('0');
-                table.ajax.reload(null, true);
-                updateFilterBadge();
-            @endif
-
             function validarFormularioUsuario() {
                 let esValido = true;
                 let esCreacion = $('#id-field').val() === '';
@@ -632,17 +603,10 @@
                 return esValido;
             }
 
-            // Switch de solo lectura del Estado (activado = Activo).
-            function setEstatusSwitch(activo) {
-                $("#estado-display").prop('checked', !!activo);
-                $("#estado-display-label").text(activo ? 'Activo' : 'Inhabilitado');
-            }
-
             function resetForm() {
                 $('#modalTitle').text('Agregar Usuario');
                 $('#userForm')[0].reset();
                 $('#userForm input[type="hidden"]').val('');
-                setEstatusSwitch(true);
                 $('#avatar-preview').hide().find('img').attr('src', '');
                 $('#add-btn').show();
                 $('#edit-btn').hide();
@@ -760,6 +724,11 @@
                     $("#view-email").text(data.email);
                     $("#view-role").text(data.role || 'Sin rol');
                     $("#view-created").text(data.created_at);
+                    var _activo = (data.estado == 1 || data.estado === true);
+                    $("#view-estado")
+                        .text(_activo ? 'Activo' : 'Inhabilitado')
+                        .removeClass('bg-success bg-danger')
+                        .addClass(_activo ? 'bg-success' : 'bg-danger');
 
                     // Mostrar avatar
                     if (data.avatar) {
@@ -781,7 +750,6 @@
                     $("#field-name").val(data.name);
                     $("#field-email").val(data.email);
                     $("#field-role").val(data.role);
-                    setEstatusSwitch(data.estado == 1);
 
                     // Mostrar las imágenes existentes si las hay
                     if (data.avatar) {

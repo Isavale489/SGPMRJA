@@ -97,59 +97,40 @@
                                     placeholder="Buscar tipo de producto..."
                                     autocomplete="off">
                             </div>
-                            {{-- Filtros de productos retirados: el catálogo es por Tipo (Fase 3).
-                                 Se conserva solo la búsqueda global. --}}
+                            <div class="navy-header-divider"></div>
+                            <button class="navy-filter-btn collapsed" type="button"
+                                data-bs-toggle="collapse" data-bs-target="#filters-collapse-body"
+                                aria-expanded="false" aria-controls="filters-collapse-body">
+                                <i class="ri-filter-3-line"></i>
+                                <span>Filtros</span>
+                                <span class="navy-filter-badge d-none" id="active-filter-count"></span>
+                                <i class="ri-arrow-down-s-line navy-filter-chevron"></i>
+                            </button>
                         </div>
                         {{-- Body: colapsable, oculto (filtros de producto no aplican a Tipos) --}}
-                        <div class="collapse d-none" id="filters-collapse-body">
+                        <div class="collapse" id="filters-collapse-body">
                             <div class="navy-filter-body">
-                                <div style="display: grid; grid-template-columns: 1fr; gap: 0.75rem;" class="navy-filter-grid">
-                                    {{-- Filtro 1: Tipo de Producto (dinámico desde $tiposProducto) --}}
+                                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.75rem;" class="navy-filter-grid">
+                                    {{-- Filtro 1: Producción (fabricado vs reventa) --}}
                                     <div>
-                                        <label class="navy-filter-label" for="filter-tipo-producto">
-                                            <i class="ri-price-tag-3-line"></i> Tipo de Producto
+                                        <label class="navy-filter-label" for="filter-produccion">
+                                            <i class="ri-hammer-line"></i> Producción
                                         </label>
-                                        <select class="form-select navy-filter-select" id="filter-tipo-producto">
+                                        <select class="form-select navy-filter-select" id="filter-produccion">
                                             <option value="">Todos</option>
-                                            @foreach($tiposProducto as $tipo)
-                                                <option value="{{ $tipo->id }}">{{ $tipo->nombre }}</option>
-                                            @endforeach
+                                            <option value="1">Fabricado</option>
+                                            <option value="0">Reventa</option>
                                         </select>
                                     </div>
-                                    {{-- Filtro 2: Tela (dinámico desde $telasDisponibles) --}}
+                                    {{-- Filtro 2: ¿Requiere tela? --}}
                                     <div>
-                                        <label class="navy-filter-label" for="filter-tela">
-                                            <i class="ri-shirt-line"></i> Tela
+                                        <label class="navy-filter-label" for="filter-requiere-tela">
+                                            <i class="ri-shirt-line"></i> ¿Requiere tela?
                                         </label>
-                                        <select class="form-select navy-filter-select" id="filter-tela">
+                                        <select class="form-select navy-filter-select" id="filter-requiere-tela">
                                             <option value="">Todas</option>
-                                            @foreach($telasDisponibles as $tela)
-                                                <option value="{{ $tela->id }}">{{ $tela->nombre }}</option>
-                                            @endforeach
-                                        </select>
-                                    </div>
-                                    {{-- Filtro 3: Estatus --}}
-                                    <div>
-                                        <label class="navy-filter-label" for="filter-estatus">
-                                            <i class="ri-shield-check-line"></i> Estatus
-                                        </label>
-                                        <select class="form-select navy-filter-select" id="filter-estatus">
-                                            <option value="">Todos</option>
-                                            <option value="1" selected>Activo</option>
-                                            <option value="0">Inactivo</option>
-                                        </select>
-                                    </div>
-                                    {{-- Filtro 4: Ordenar por --}}
-                                    <div>
-                                        <label class="navy-filter-label" for="filter-orden">
-                                            <i class="ri-sort-asc"></i> Ordenar por
-                                        </label>
-                                        <select class="form-select navy-filter-select" id="filter-orden">
-                                            <option value="recientes">Más recientes primero</option>
-                                            <option value="codigo_asc">Código (A-Z)</option>
-                                            <option value="codigo_desc">Código (Z-A)</option>
-                                            <option value="precio_mayor">Mayor Precio Base</option>
-                                            <option value="precio_menor">Menor Precio Base</option>
+                                            <option value="1">Sí</option>
+                                            <option value="0">No</option>
                                         </select>
                                     </div>
                                 </div>
@@ -176,7 +157,6 @@
                                 <th>Precio Confección</th>
                                 <th>Telas</th>
                                 <th>Atributos</th>
-                                <th>Estado</th>
                                 <th>Acciones</th>
                             </tr>
                         </thead>
@@ -400,6 +380,93 @@
             </div>
         </div>
     </div>
+
+    {{-- ═══════════ MODAL VER — Detalle del Tipo (solo lectura) ═══════════ --}}
+    <div class="modal fade atlantico-modal" id="viewTipoModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="ri-eye-line me-2"></i>Detalle del Tipo</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body p-3 p-md-4 vt-body">
+                    {{-- Hero: imagen + identidad --}}
+                    <div class="vt-hero">
+                        <div class="vt-hero-media">
+                            <img id="vt-imagen" src="" alt="Imagen del tipo" class="vt-img">
+                            <div id="vt-imagen-empty" class="vt-img-empty" hidden>
+                                <i class="ri-image-line"></i><span>Sin imagen</span>
+                            </div>
+                        </div>
+                        <div class="vt-hero-info">
+                            <div class="vt-title-row">
+                                <h3 class="vt-name" id="vt-nombre">—</h3>
+                                <span class="vt-prefijo" id="vt-prefijo">—</span>
+                                <span class="badge rounded-pill" id="vt-estatus">—</span>
+                            </div>
+                            <div id="vt-descripcion-wrap" class="vt-desc">
+                                <span id="vt-descripcion">—</span>
+                            </div>
+
+                            {{-- Stat tiles --}}
+                            <div class="vt-stats">
+                                <div class="vt-stat">
+                                    <span class="vt-stat-ic"><i class="ri-price-tag-3-line"></i></span>
+                                    <div><span class="vt-stat-label">Precio confección</span>
+                                        <span class="vt-stat-val" id="vt-precio">—</span></div>
+                                </div>
+                                <div class="vt-stat">
+                                    <span class="vt-stat-ic"><i class="ri-hammer-line"></i></span>
+                                    <div><span class="vt-stat-label">Producción</span>
+                                        <span class="vt-stat-val" id="vt-produccion">—</span></div>
+                                </div>
+                                <div class="vt-stat">
+                                    <span class="vt-stat-ic"><i class="ri-shirt-line"></i></span>
+                                    <div><span class="vt-stat-label">¿Requiere tela?</span>
+                                        <span class="vt-stat-val" id="vt-requiere-tela">—</span></div>
+                                </div>
+                                <div class="vt-stat" id="vt-consumo-wrap">
+                                    <span class="vt-stat-ic"><i class="ri-ruler-line"></i></span>
+                                    <div><span class="vt-stat-label">Consumo de tela / u</span>
+                                        <span class="vt-stat-val" id="vt-consumo">—</span></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Secciones --}}
+                    <div class="row g-3 mt-1">
+                        <div class="col-md-6">
+                            <div class="vt-section h-100">
+                                <div class="vt-section-head"><i class="ri-shirt-line"></i>Telas permitidas <span class="vt-section-count" id="vt-telas-count"></span></div>
+                                <div id="vt-telas" class="d-flex flex-wrap gap-1"></div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="vt-section h-100">
+                                <div class="vt-section-head"><i class="ri-list-settings-line"></i>Atributos <span class="vt-section-count" id="vt-atributos-count"></span></div>
+                                <div id="vt-atributos" class="d-flex flex-wrap gap-1"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="vt-section mt-3">
+                        <div class="vt-section-head"><i class="ri-tools-line"></i>Insumos por defecto <span class="vt-section-count" id="vt-insumos-count"></span></div>
+                        <div id="vt-insumos-empty" class="text-muted small">Sin insumos por defecto.</div>
+                        <div id="vt-insumos-wrap" hidden>
+                            <table class="vt-ins-table">
+                                <thead><tr><th>Insumo</th><th class="text-end">Cantidad</th></tr></thead>
+                                <tbody id="vt-insumos"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light border-0">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal"><i class="ri-close-line me-1"></i>Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
 @endsection
 
 @push('scripts')
@@ -503,27 +570,20 @@
                         }
                     },
                     {
-                        data: null,
-                        orderable: false,
-                        searchable: false,
-                        render: function () {
-                            return esHistorial
-                                ? '<span class="badge badge-status status-inactivo"><i class="ri-close-circle-line"></i> Inactivo</span>'
-                                : '<span class="badge badge-status status-activo"><i class="ri-checkbox-circle-line"></i> Activo</span>';
-                        }
-                    },
-                    {
                         data: 'id',
                         orderable: false,
                         searchable: false,
                         render: function (data) {
-                            if (esHistorial) {
-                                return '<button class="btn btn-sm btn-outline-success restore-tipo-btn" data-id="' + data + '" title="Restaurar"><i class="ri-refresh-line"></i></button>';
-                            }
-                            return '<div class="d-inline-flex gap-1">' +
-                                '<button class="btn btn-sm btn-outline-primary edit-tipo-btn" data-id="' + data + '" title="Editar"><i class="ri-pencil-line"></i></button>' +
-                                '<button class="btn btn-sm btn-outline-danger delete-tipo-btn" data-id="' + data + '" title="Inhabilitar"><i class="ri-delete-bin-line"></i></button>' +
+                            var sVer = '<button class="btn btn-sm btn-soft-info view-tipo-btn" data-id="' + data + '" title="Ver"><i class="ri-eye-fill"></i></button>';
+                            var items = esHistorial
+                                ? '<li><button type="button" class="dropdown-item act-item act-restore restore-tipo-btn" data-id="' + data + '"><span class="act-ic"><i class="ri-arrow-go-back-line"></i></span>Habilitar</button></li>'
+                                : '<li><button type="button" class="dropdown-item act-item act-edit edit-tipo-btn" data-id="' + data + '"><span class="act-ic"><i class="ri-pencil-fill"></i></span>Editar</button></li>' +
+                                  '<li><button type="button" class="dropdown-item act-item act-warn delete-tipo-btn" data-id="' + data + '"><span class="act-ic"><i class="ri-forbid-line"></i></span>Inhabilitar</button></li>';
+                            var menu = '<div class="dropdown d-inline-block">' +
+                                '<button class="btn btn-sm btn-soft-secondary" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Más acciones"><i class="ri-more-2-fill"></i></button>' +
+                                '<ul class="dropdown-menu dropdown-menu-end actions-menu">' + items + '</ul>' +
                                 '</div>';
+                            return '<div class="d-flex gap-1 justify-content-center align-items-center">' + sVer + menu + '</div>';
                         }
                     }
                 ],
@@ -538,23 +598,33 @@
             // Filtros: server-side (ajax.reload con filter_tipo_producto_id)
             // ══════════════════════════════════════════════════════
 
-            // ── Badge: actualizar contador de filtros activos + punto rojo ──
+            // ── Badge: contador de filtros activos ──
             function updateFilterBadge() {
                 var count = 0;
-                if ($('#filter-tipo-producto').val() !== '')                         count++;
-                if ($('#filter-tela').val() !== '')                                  count++;
-                if ($('#filter-estatus').val() !== '1')                              count++;
-                if ($('#filter-orden').val() !== 'recientes')                        count++;
+                if ($('#filter-produccion').val() !== '')     count++;
+                if ($('#filter-requiere-tela').val() !== '')  count++;
                 var $badge = $('#active-filter-count');
-                var $dot   = $('#filter-dot-indicator');
-                if (count > 0) {
-                    $badge.text(count).removeClass('d-none');
-                    $dot.removeClass('d-none');
-                } else {
-                    $badge.addClass('d-none');
-                    $dot.addClass('d-none');
-                }
+                if (count > 0) { $badge.text(count).removeClass('d-none'); }
+                else           { $badge.addClass('d-none'); }
             }
+
+            // ── Filtro client-side por Producción y Requiere tela (sobre #productos-table) ──
+            $.fn.dataTable.ext.search.push(function (settings, searchData, dataIndex, rowData) {
+                if (settings.nTable.id !== 'productos-table') return true;
+                var prod = $('#filter-produccion').val();
+                var tela = $('#filter-requiere-tela').val();
+                if (prod !== '') {
+                    var esFabricado = rowData.requiere_produccion !== false && rowData.requiere_produccion != 0;
+                    if (prod === '1' && !esFabricado) return false;
+                    if (prod === '0' &&  esFabricado) return false;
+                }
+                if (tela !== '') {
+                    var reqTela = rowData.requiere_tela === true || rowData.requiere_tela == 1;
+                    if (tela === '1' && !reqTela) return false;
+                    if (tela === '0' &&  reqTela) return false;
+                }
+                return true;
+            });
 
             // ── Sincronizar clase is-collapsed con el collapse ──
             $('#filters-collapse-body').on('show.bs.collapse', function () {
@@ -573,30 +643,19 @@
                 }, 300);
             });
 
-            // ── Filtros de select: recargar al cambiar ──
+            // ── Filtros de select: redibujar al cambiar (client-side) ──
             $('.navy-filter-select').on('change', function () {
-                table.ajax.reload();
+                table.draw();
                 updateFilterBadge();
             });
 
-            // ── Si se llegó por toggle historial (?historial=true) ──
-            @if($historial)
-                $('#filter-estatus').val('0');
-                table.ajax.reload();
-                updateFilterBadge();
-            @endif
-
-            // ── Botón limpiar: resetea búsqueda + filtros + orden ──
+            // ── Botón limpiar: resetea búsqueda + filtros ──
             $('#btn-clear-filters').on('click', function () {
-                $('#filter-tipo-producto').val('');
-                $('#filter-tela').val('');
-                $('#filter-estatus').val('1');
-                $('#filter-orden').val('recientes');
+                $('#filter-produccion').val('');
+                $('#filter-requiere-tela').val('');
                 $('#custom-search-input').val('');
                 updateFilterBadge();
-                table.search('').ajax.reload(function () {
-                    updateFilterBadge();
-                });
+                table.search('').draw();
             });
 
             // Sincronizar switch de estado con hidden input
@@ -1206,6 +1265,76 @@
                         renderAtributosLista(asociados);
                         renderTipoInsumos();
                     });
+                });
+            });
+
+            // Ver tipo (detalle de solo lectura)
+            function vtEsc(s) {
+                return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+            }
+            $(document).on("click", ".view-tipo-btn", function () {
+                var id = $(this).data("id");
+                $.getJSON("{{ url('tipo-productos') }}/" + id, function (tipo) {
+                    if (tipo.imagen_url) {
+                        $('#vt-imagen').attr('src', tipo.imagen_url);
+                        $('#vt-imagen-wrap').show();
+                        $('#vt-imagen-empty').attr('hidden', true);
+                    } else {
+                        $('#vt-imagen-wrap').hide();
+                        $('#vt-imagen-empty').removeAttr('hidden');
+                    }
+                    $('#vt-nombre').text(tipo.nombre || '—');
+                    $('#vt-prefijo').text(tipo.prefijo || '—');
+
+                    var trashed = !!tipo.deleted_at || ((typeof esHistorial !== 'undefined') && esHistorial);
+                    $('#vt-estatus').text(trashed ? 'Inhabilitado' : 'Activo')
+                        .removeClass('badge-soft-success badge-soft-danger')
+                        .addClass(trashed ? 'badge-soft-danger' : 'badge-soft-success');
+
+                    $('#vt-precio').text('$ ' + parseFloat(tipo.precio_confeccion || 0).toFixed(2));
+                    $('#vt-produccion').html(tipo.requiere_produccion === false
+                        ? '<span class="badge badge-soft-warning">Reventa</span>'
+                        : '<span class="badge badge-soft-success">Fabricado</span>');
+
+                    var reqTela = !!tipo.requiere_tela;
+                    $('#vt-requiere-tela').text(reqTela ? 'Sí' : 'No');
+                    $('#vt-consumo-wrap').toggle(reqTela);
+                    $('#vt-consumo').text(parseFloat(tipo.consumo_tela_por_unidad || 0).toFixed(2) + ' por unidad');
+
+                    if (tipo.descripcion) {
+                        $('#vt-descripcion').text(tipo.descripcion);
+                        $('#vt-descripcion-wrap').show();
+                    } else {
+                        $('#vt-descripcion-wrap').hide();
+                    }
+
+                    var telas = tipo.telas || [];
+                    $('#vt-telas-count').text('(' + telas.length + ')');
+                    $('#vt-telas').html(telas.length
+                        ? telas.map(function (t) { return '<span class="vt-chip vt-chip--tela"><i class="ri-shirt-line"></i>' + vtEsc(t.nombre) + '</span>'; }).join('')
+                        : '<span class="text-muted small">' + (reqTela ? 'Sin telas asignadas' : 'No usa tela') + '</span>');
+
+                    var attrs = tipo.atributos || [];
+                    $('#vt-atributos-count').text('(' + attrs.length + ')');
+                    $('#vt-atributos').html(attrs.length
+                        ? attrs.map(function (a) { return '<span class="vt-chip vt-chip--attr"><i class="ri-price-tag-3-line"></i>' + vtEsc(a.nombre) + '</span>'; }).join('')
+                        : '<span class="text-muted small">Sin atributos</span>');
+
+                    var ins = tipo.insumos_default || [];
+                    $('#vt-insumos-count').text('(' + ins.length + ')');
+                    if (ins.length) {
+                        $('#vt-insumos').html(ins.map(function (i) {
+                            var cant = i.pivot ? parseFloat(i.pivot.cantidad_estimada || 0).toFixed(2) : '—';
+                            return '<tr><td>' + vtEsc(i.nombre) + '</td><td class="text-end">' + cant + ' ' + vtEsc(i.unidad_medida || '') + '</td></tr>';
+                        }).join(''));
+                        $('#vt-insumos-wrap').removeAttr('hidden');
+                        $('#vt-insumos-empty').hide();
+                    } else {
+                        $('#vt-insumos-wrap').attr('hidden', true);
+                        $('#vt-insumos-empty').show();
+                    }
+
+                    $('#viewTipoModal').modal('show');
                 });
             });
 
