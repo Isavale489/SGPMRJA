@@ -97,6 +97,22 @@ class ClienteController extends Controller
         }
 
         return DataTables::of($query)
+            // Búsqueda estricta: solo por la identidad del cliente (nombre/apellido,
+            // documento y email de la persona). Sobrescribe el buscador global de
+            // DataTables para no romper sobre columnas derivadas de relaciones.
+            ->filter(function ($query) use ($request) {
+                $keyword = trim((string) $request->input('search.value'));
+                if ($keyword === '') {
+                    return;
+                }
+                $query->whereHas('persona', function ($p) use ($keyword) {
+                    $p->where('nombre', 'like', "%{$keyword}%")
+                      ->orWhere('apellido', 'like', "%{$keyword}%")
+                      ->orWhere('email', 'like', "%{$keyword}%")
+                      ->orWhereRaw("CONCAT(nombre, ' ', apellido) like ?", ["%{$keyword}%"])
+                      ->orWhereRaw("CONCAT(tipo_documento, documento_identidad) like ?", ["%{$keyword}%"]);
+                });
+            }, true)
             ->addColumn('nombre', fn($c) => $c->nombre ?? 'N/A')
             ->addColumn('apellido', fn($c) => $c->apellido ?? '')
             ->addColumn('tipo_cliente', fn($c) => $c->tipo_cliente)

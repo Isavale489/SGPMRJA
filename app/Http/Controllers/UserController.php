@@ -32,6 +32,20 @@ class UserController extends Controller
         $users->orderBy('created_at', 'desc'); // más reciente primero (estándar del sistema)
 
         return DataTables::of($users)
+            // Búsqueda estricta: solo por nombre, email y rol del usuario. Sobrescribe
+            // el buscador global para no romper sobre las columnas computadas (estado
+            // de recuperación) ni matchear datos no indicados en la barra.
+            ->filter(function ($query) use ($request) {
+                $keyword = trim((string) $request->input('search.value'));
+                if ($keyword === '') {
+                    return;
+                }
+                $query->where(function ($q) use ($keyword) {
+                    $q->where('name', 'like', "%{$keyword}%")
+                      ->orWhere('email', 'like', "%{$keyword}%")
+                      ->orWhere('role', 'like', "%{$keyword}%");
+                });
+            }, true)
             ->editColumn('avatar', function ($user) {
                 return $user->avatar ? asset('storage/' . $user->avatar) : null;
             })

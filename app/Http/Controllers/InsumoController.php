@@ -70,6 +70,20 @@ class InsumoController extends Controller
         }
 
         return DataTables::of($query)
+            // Búsqueda estricta: solo por nombre, código y tipo del insumo. Sobrescribe
+            // el buscador global para no matchear contra las columnas numéricas (stock,
+            // costo) que también son "searchable" por defecto.
+            ->filter(function ($query) use ($request) {
+                $keyword = trim((string) $request->input('search.value'));
+                if ($keyword === '') {
+                    return;
+                }
+                $query->where(function ($q) use ($keyword) {
+                    $q->where('insumo.nombre', 'like', "%{$keyword}%")
+                      ->orWhere('insumo.codigo', 'like', "%{$keyword}%")
+                      ->orWhere('insumo.tipo', 'like', "%{$keyword}%");
+                });
+            }, true)
             ->addColumn('stock_status', function ($insumo) {
                 if ($insumo->stock_actual <= $insumo->stock_minimo) {
                     return 'bajo';

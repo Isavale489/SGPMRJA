@@ -53,6 +53,22 @@ class MovimientoInsumoController extends Controller
         }
 
         return DataTables::of($movimientos)
+            // Búsqueda estricta: por el insumo (nombre o código) y el motivo del
+            // movimiento. Sobrescribe el buscador global para no romper sobre la
+            // columna derivada del insumo.
+            ->filter(function ($query) use ($request) {
+                $keyword = trim((string) $request->input('search.value'));
+                if ($keyword === '') {
+                    return;
+                }
+                $query->where(function ($q) use ($keyword) {
+                    $q->where('movimiento_insumo.motivo', 'like', "%{$keyword}%")
+                      ->orWhereHas('insumo', function ($i) use ($keyword) {
+                          $i->where('nombre', 'like', "%{$keyword}%")
+                            ->orWhere('codigo', 'like', "%{$keyword}%");
+                      });
+                });
+            }, true)
             ->addColumn('insumo_nombre', function ($movimiento) {
                 return $movimiento->insumo ? $movimiento->insumo->nombre : 'N/A';
             })

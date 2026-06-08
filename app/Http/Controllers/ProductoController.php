@@ -86,6 +86,22 @@ class ProductoController extends Controller
         }
 
         return DataTables::of($query)
+            // Búsqueda estricta: por las columnas que componen el producto (código,
+            // descripción, atributos) y por su tipo y tela. Sobrescribe el buscador
+            // global porque "nombre_completo" es un accessor, no una columna real.
+            ->filter(function ($query) use ($request) {
+                $keyword = trim((string) $request->input('search.value'));
+                if ($keyword === '') {
+                    return;
+                }
+                $query->where(function ($q) use ($keyword) {
+                    $q->where('producto.codigo', 'like', "%{$keyword}%")
+                      ->orWhere('producto.descripcion', 'like', "%{$keyword}%")
+                      ->orWhere('producto.atributos_snapshot', 'like', "%{$keyword}%")
+                      ->orWhereHas('tipoProducto', fn($t) => $t->where('nombre', 'like', "%{$keyword}%"))
+                      ->orWhereHas('tela', fn($t) => $t->where('nombre', 'like', "%{$keyword}%"));
+                });
+            }, true)
             ->addColumn('tipo_nombre', function ($p) {
                 return $p->tipoProducto ? $p->tipoProducto->nombre : 'Sin tipo';
             })

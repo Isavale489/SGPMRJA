@@ -83,6 +83,26 @@ class EmpleadoController extends Controller
         }
 
         return DataTables::of($query)
+            // Búsqueda estricta: identidad del empleado (nombre/apellido, documento
+            // y email de la persona) más su cargo y departamento. Sobrescribe el
+            // buscador global para filtrar exactamente por esas columnas.
+            ->filter(function ($query) use ($request) {
+                $keyword = trim((string) $request->input('search.value'));
+                if ($keyword === '') {
+                    return;
+                }
+                $query->where(function ($q) use ($keyword) {
+                    $q->whereHas('persona', function ($p) use ($keyword) {
+                        $p->where('nombre', 'like', "%{$keyword}%")
+                          ->orWhere('apellido', 'like', "%{$keyword}%")
+                          ->orWhere('email', 'like', "%{$keyword}%")
+                          ->orWhereRaw("CONCAT(nombre, ' ', apellido) like ?", ["%{$keyword}%"])
+                          ->orWhereRaw("CONCAT(tipo_documento, documento_identidad) like ?", ["%{$keyword}%"]);
+                    })
+                    ->orWhereHas('cargo', fn($c) => $c->where('nombre', 'like', "%{$keyword}%"))
+                    ->orWhereHas('departamento', fn($d) => $d->where('nombre', 'like', "%{$keyword}%"));
+                });
+            }, true)
             ->addColumn('nombre_completo', function ($emp) {
                 return $emp->persona ? $emp->persona->nombre_completo : 'N/A';
             })

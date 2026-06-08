@@ -263,6 +263,24 @@ class CompraController extends Controller
         $query->orderBy('compra.id', 'desc'); // más reciente primero (servidor autoritativo)
 
         return DataTables::of($query)
+            // Búsqueda estricta: solo por proveedor (nombre/razón social y documento)
+            // y número de factura, tal como indica la barra. Sobrescribe el buscador
+            // global para no romper sobre la columna derivada del proveedor.
+            ->filter(function ($query) use ($request) {
+                $keyword = trim((string) $request->input('search.value'));
+                if ($keyword === '') {
+                    return;
+                }
+                $query->where(function ($q) use ($keyword) {
+                    $q->where('compra.numero_factura', 'like', "%{$keyword}%")
+                      ->orWhereHas('proveedor.persona', function ($p) use ($keyword) {
+                          $p->where('nombre', 'like', "%{$keyword}%")
+                            ->orWhere('apellido', 'like', "%{$keyword}%")
+                            ->orWhereRaw("CONCAT(nombre, ' ', apellido) like ?", ["%{$keyword}%"])
+                            ->orWhereRaw("CONCAT(tipo_documento, documento_identidad) like ?", ["%{$keyword}%"]);
+                      });
+                });
+            }, true)
             ->addColumn('proveedor_nombre', fn($c) => $c->proveedor?->nombre_completo ?? 'N/A')
             ->addColumn('registrado_por', fn($c) => $c->registradoPor?->name ?? 'Sistema')
             ->addColumn('fecha_formateada', fn($c) => $c->fecha_compra?->format('d/m/Y') ?? '')

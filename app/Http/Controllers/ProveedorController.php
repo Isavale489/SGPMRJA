@@ -118,6 +118,22 @@ class ProveedorController extends Controller
         }
 
         return DataTables::of($query)
+            // Búsqueda estricta: identidad del proveedor (nombre/razón social,
+            // documento y email de la persona). Sobrescribe el buscador global
+            // para no romper sobre columnas derivadas de relaciones.
+            ->filter(function ($query) use ($request) {
+                $keyword = trim((string) $request->input('search.value'));
+                if ($keyword === '') {
+                    return;
+                }
+                $query->whereHas('persona', function ($p) use ($keyword) {
+                    $p->where('nombre', 'like', "%{$keyword}%")
+                      ->orWhere('apellido', 'like', "%{$keyword}%")
+                      ->orWhere('email', 'like', "%{$keyword}%")
+                      ->orWhereRaw("CONCAT(nombre, ' ', apellido) like ?", ["%{$keyword}%"])
+                      ->orWhereRaw("CONCAT(tipo_documento, documento_identidad) like ?", ["%{$keyword}%"]);
+                });
+            }, true)
             ->addColumn('nombre_display', fn($p) => $p->nombre_completo ?? 'N/A')
             ->addColumn('documento_display', fn($p) => $p->documento ?? 'N/A')
             ->addColumn('tipo_proveedor', fn($p) => $p->tipo_proveedor ?? 'juridico')
