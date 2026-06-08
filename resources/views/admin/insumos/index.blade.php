@@ -42,7 +42,7 @@
                         <div class="flex-shrink-0 d-flex align-items-center gap-3">
                             <div class="d-flex gap-2">
                                 <button type="button" class="btn-historial btn-historial-ver" id="ins-toggle-historial">
-                                    <i class="ri-time-line"></i> <span>Ver Historial</span>
+                                    <i class="ri-archive-line"></i> <span>Inhabilitados</span>
                                 </button>
                                 <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal"
                                     data-bs-target="#tiposInsumoModal">
@@ -500,7 +500,7 @@
                             <i class="ri-checkbox-circle-line"></i> Activos
                         </button>
                         <button type="button" class="ti-seg-btn" id="ti-btn-historial">
-                            <i class="ri-time-line"></i> Inhabilitados
+                            <i class="ri-archive-line"></i> Inhabilitados
                         </button>
                     </div>
 
@@ -696,8 +696,8 @@
                 var $btn = $(this);
                 $btn.toggleClass('btn-historial-ver', !insHistorial)
                     .toggleClass('btn-historial-volver', insHistorial);
-                $btn.find('i').attr('class', insHistorial ? 'ri-arrow-left-line' : 'ri-time-line');
-                $btn.find('span').text(insHistorial ? 'Solo Activos' : 'Ver Historial');
+                $btn.find('i').attr('class', insHistorial ? 'ri-arrow-left-line' : 'ri-archive-line');
+                $btn.find('span').text(insHistorial ? 'Solo Activos' : 'Inhabilitados');
                 $('#insumos-card-title').text(insHistorial ? 'Insumos inhabilitados (historial)' : 'Listado de Insumos');
                 table.ajax.reload();
             });
