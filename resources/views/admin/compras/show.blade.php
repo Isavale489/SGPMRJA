@@ -115,24 +115,6 @@
                                 <small class="text-muted d-block mb-1"><i class="ri-calendar-event-line me-1"></i>Fecha de Compra</small>
                                 <span>{{ $compra->fecha_compra?->format('d/m/Y') }}</span>
                             </div>
-                            <div class="col-md-4">
-                                <small class="text-muted d-block mb-1"><i class="ri-bank-card-line me-1"></i>Tipo de Pago</small>
-                                @if($compra->tipo_pago === 'credito')
-                                    <span class="badge bg-soft-primary text-primary">
-                                        <i class="ri-calendar-schedule-line me-1"></i>Crédito
-                                    </span>
-                                @else
-                                    <span class="badge bg-soft-success text-success">
-                                        <i class="ri-money-dollar-circle-line me-1"></i>Contado
-                                    </span>
-                                @endif
-                            </div>
-                            @if($compra->fecha_vencimiento)
-                            <div class="col-md-4">
-                                <small class="text-muted d-block mb-1"><i class="ri-calendar-close-line me-1"></i>Vencimiento</small>
-                                <span>{{ $compra->fecha_vencimiento->format('d/m/Y') }}</span>
-                            </div>
-                            @endif
                             @if($compra->observaciones)
                             <div class="col-12">
                                 <small class="text-muted d-block mb-1"><i class="ri-sticky-note-line me-1"></i>Observaciones</small>

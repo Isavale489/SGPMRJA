@@ -7,9 +7,8 @@
     .col-nro    { width: 7%;  text-align: center; }
     .col-prov   { width: 25%; font-weight: 600; }
     .col-fact   { width: 12%; }
-    .col-fecha  { width: 11%; text-align: center; }
-    .col-pago   { width: 11%; text-align: center; }
-    .col-total  { width: 13%; text-align: right; }
+    .col-fecha  { width: 13%; text-align: center; }
+    .col-total  { width: 18%; text-align: right; }
     .col-estado { width: 11%; text-align: center; }
 
     .data-table tbody td.text-center { text-align: center; }
@@ -40,7 +39,6 @@
                 <th class="col-prov">Proveedor</th>
                 <th class="col-fact">N° Factura</th>
                 <th class="col-fecha">Fecha</th>
-                <th class="col-pago">Tipo Pago</th>
                 <th class="col-total">Total</th>
                 <th class="col-estado">Estado</th>
             </tr>
@@ -53,7 +51,6 @@
                     <td class="col-prov">{{ $compra->proveedor?->nombre_completo ?? 'N/A' }}</td>
                     <td class="col-fact">{{ $compra->numero_factura ?: 'S/N' }}</td>
                     <td class="col-fecha">{{ $compra->fecha_compra?->format('d/m/Y') }}</td>
-                    <td class="col-pago">{{ $compra->tipo_pago === 'credito' ? 'Crédito' : 'Contado' }}</td>
                     <td class="col-total">{{ number_format($compra->total, 2) }}</td>
                     <td class="col-estado">
                         <span class="estado-{{ $compra->estado }}">{{ ucfirst($compra->estado) }}</span>
@@ -61,7 +58,7 @@
                 </tr>
             @empty
                 <tr>
-                    <td colspan="8" style="text-align:center; padding:14px; color:#888;">
+                    <td colspan="7" style="text-align:center; padding:14px; color:#888;">
                         No se encontraron compras con los filtros seleccionados.
                     </td>
                 </tr>

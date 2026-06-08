@@ -6,6 +6,7 @@ use App\Http\Requests\StoreCompraRequest;
 use App\Models\Compra;
 use App\Models\Insumo;
 use App\Models\Proveedor;
+use App\Models\TipoInsumo;
 use App\Services\CompraService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -33,7 +34,10 @@ class CompraController extends Controller
             ->orderBy('nombre')
             ->get(['id', 'nombre', 'codigo', 'tipo', 'unidad_medida', 'costo_unitario']);
 
-        return view('admin.compras.index', compact('proveedores', 'insumos', 'verAnuladas'));
+        // Catálogo de tipos para el quick-create de insumos (mini-modal del wizard).
+        $tiposInsumo = TipoInsumo::where('activo', true)->orderBy('nombre')->get(['id', 'nombre']);
+
+        return view('admin.compras.index', compact('proveedores', 'insumos', 'tiposInsumo', 'verAnuladas'));
     }
 
     public function store(StoreCompraRequest $request)
@@ -153,8 +157,6 @@ class CompraController extends Controller
             'proveedor_id'      => $compra->proveedor_id,
             'numero_factura'    => $compra->numero_factura,
             'fecha_compra'      => $compra->fecha_compra?->format('Y-m-d'),
-            'fecha_vencimiento' => $compra->fecha_vencimiento?->format('Y-m-d'),
-            'tipo_pago'         => $compra->tipo_pago,
             'observaciones'     => $compra->observaciones,
             'iva_porcentaje'    => $compra->subtotal > 0
                 ? round(($compra->iva / $compra->subtotal) * 100)
@@ -201,8 +203,6 @@ class CompraController extends Controller
             'estado'           => $compra->estado,
             'numero_factura'   => $compra->numero_factura ?? 'S/N',
             'fecha_compra'     => $compra->fecha_compra?->format('d/m/Y') ?? '—',
-            'fecha_vencimiento'=> $compra->fecha_vencimiento?->format('d/m/Y'),
-            'tipo_pago'        => $compra->tipo_pago,
             'observaciones'    => $compra->observaciones,
             'subtotal'         => number_format($compra->subtotal, 2),
             'iva'              => number_format($compra->iva, 2),
@@ -252,9 +252,6 @@ class CompraController extends Controller
             $query->where('estado', $request->filter_estado);
         } else {
             $query->whereIn('estado', ['borrador', 'recibida']);
-        }
-        if ($request->filled('filter_tipo_pago')) {
-            $query->where('tipo_pago', $request->filter_tipo_pago);
         }
         if ($request->filled('filter_fecha_desde')) {
             $query->whereDate('fecha_compra', '>=', $request->filter_fecha_desde);
@@ -321,9 +318,6 @@ class CompraController extends Controller
 
         if ($request->filled('estado')) {
             $query->where('estado', $request->estado);
-        }
-        if ($request->filled('tipo_pago')) {
-            $query->where('tipo_pago', $request->tipo_pago);
         }
         if ($request->filled('proveedor_id')) {
             $query->where('proveedor_id', $request->proveedor_id);

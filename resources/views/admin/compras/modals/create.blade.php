@@ -205,41 +205,13 @@
                                                         class="form-control" maxlength="30" placeholder="Ej: 0001-000456">
                                                 </div>
                                             </div>
-                                            <div class="col-sm-6">
+                                            <div class="col-12">
                                                 <label class="form-label small fw-semibold mb-1" for="c-fecha">Fecha de Compra <span class="text-danger">*</span></label>
                                                 <div class="input-group">
                                                     <span class="input-group-text"><i class="ri-calendar-event-line"></i></span>
                                                     <input type="date" id="c-fecha" name="fecha_compra"
                                                         class="form-control" required value="{{ date('Y-m-d') }}">
                                                 </div>
-                                            </div>
-                                            <div class="col-sm-6">
-                                                <label class="form-label small fw-semibold mb-1">Tipo de Pago</label>
-                                                <div class="seg-control" id="c-pago-seg" role="radiogroup" aria-label="Tipo de pago">
-                                                    <button type="button" class="seg-option is-active" data-value="contado"
-                                                        role="radio" aria-checked="true">
-                                                        <i class="ri-money-dollar-circle-line"></i>Contado
-                                                    </button>
-                                                    <button type="button" class="seg-option" data-value="credito"
-                                                        role="radio" aria-checked="false">
-                                                        <i class="ri-calendar-schedule-line"></i>Crédito
-                                                    </button>
-                                                </div>
-                                                <select id="c-tipo-pago" name="tipo_pago" class="d-none" tabindex="-1">
-                                                    <option value="contado" selected>Contado</option>
-                                                    <option value="credito">Crédito</option>
-                                                </select>
-                                            </div>
-                                            <div class="col-12" id="c-vencimiento-wrap" style="display:none;">
-                                                <label class="form-label small fw-semibold mb-1" id="c-vencimiento-label" for="c-vencimiento">Fecha de Vencimiento <span class="text-danger">*</span></label>
-                                                <div class="input-group">
-                                                    <span class="input-group-text"><i class="ri-calendar-close-line"></i></span>
-                                                    <input type="date" id="c-vencimiento" name="fecha_vencimiento"
-                                                        class="form-control">
-                                                </div>
-                                                <small class="c-field-hint">
-                                                    <i class="ri-alarm-warning-line me-1"></i>Fecha límite de pago acordada con el proveedor.
-                                                </small>
                                             </div>
                                         </div>
                                     </div>
@@ -337,10 +309,6 @@
                                                 <small class="text-muted d-block mb-1"><i class="ri-calendar-line me-1"></i>Fecha</small>
                                                 <span id="c-recap-fecha">—</span>
                                             </div>
-                                            <div class="col-sm-6">
-                                                <small class="text-muted d-block mb-1"><i class="ri-bank-card-line me-1"></i>Tipo de Pago</small>
-                                                <span id="c-recap-pago">—</span>
-                                            </div>
                                             <div class="col-12">
                                                 <small class="text-muted d-block mb-1"><i class="ri-archive-line me-1"></i>Ítems</small>
                                                 <span id="c-recap-items">0 insumo(s)</span>
@@ -434,6 +402,87 @@
 </div>
 
 @include('admin.compras.modals.buscar-proveedor')
+
+{{-- ═══════════════════════════════════════════════════════════════════════════
+     MINI-MODAL: Crear insumo nuevo (inline, "extensión" del maestro Insumos)
+     Alta rápida vía AJAX → se auto-selecciona en la fila que disparó el "+".
+     Prefijo de IDs: cir-  ·  navy (atlantico-modal) porque pertenece al maestro.
+═══════════════════════════════════════════════════════════════════════════ --}}
+<div class="modal fade atlantico-modal" id="crearInsumoRapidoModal" tabindex="-1" aria-hidden="true"
+    data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-light p-3">
+                <h5 class="modal-title"><i class="ri-archive-line me-2"></i>Agregar Insumo</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="cirForm" novalidate>
+                <div class="modal-body">
+                    <p class="text-muted small mb-3">
+                        <i class="ri-information-line me-1"></i>Alta rápida: el insumo se creará como inventariable
+                        (stock inicial 0) y quedará seleccionado en la fila de la compra.
+                    </p>
+
+                    <div class="modal-form-section">
+                        <div class="modal-form-section-title"><i class="ri-box-3-line"></i>Datos del Insumo</div>
+                        <div class="row mb-0">
+                            <div class="col-md-7 mb-3">
+                                <label for="cir-nombre-field" class="form-label">Nombre <span class="text-danger">*</span></label>
+                                <input type="text" id="cir-nombre-field" class="form-control" maxlength="100"
+                                    placeholder="Ej: Tela Oxford" autocomplete="off">
+                            </div>
+                            <div class="col-md-5 mb-3">
+                                <label for="cir-codigo-field" class="form-label">Código <span class="text-muted">(opcional)</span></label>
+                                <input type="text" id="cir-codigo-field" class="form-control text-uppercase"
+                                    maxlength="8" placeholder="Ej: OXF" style="font-family: monospace;">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="cir-tipo-field" class="form-label">Tipo <span class="text-danger">*</span></label>
+                                <select id="cir-tipo-field" class="form-select">
+                                    <option value="">Seleccione...</option>
+                                    @foreach ($tiposInsumo as $ti)
+                                        <option value="{{ $ti->nombre }}">{{ $ti->nombre }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="cir-unidad-field" class="form-label">Unidad de Medida <span class="text-danger">*</span></label>
+                                <select id="cir-unidad-field" class="form-select">
+                                    <option value="">Seleccione...</option>
+                                    <option value="Metro">Metro (m)</option>
+                                    <option value="Kg">Kilogramo (Kg)</option>
+                                    <option value="Gramo">Gramo (g)</option>
+                                    <option value="Unidad">Unidad (Und)</option>
+                                    <option value="Rollo">Rollo</option>
+                                    <option value="Cono">Cono</option>
+                                    <option value="Docena">Docena</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-0">
+                                <label for="cir-costo-field" class="form-label">Costo Unitario <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <span class="input-group-text">$/</span>
+                                    <input type="number" id="cir-costo-field" class="form-control"
+                                        step="0.01" min="0.01" placeholder="0.00">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light border-0">
+                    <div class="hstack gap-2 justify-content-end">
+                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">
+                            <i class="ri-close-line me-1"></i>Cerrar
+                        </button>
+                        <button type="submit" class="btn btn-success" id="cir-submit-btn">
+                            <i class="ri-save-line me-1"></i>Guardar y seleccionar
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 
 {{-- ═══════════════════════════════════════════════════════════════════════════
      MINI-MODAL: Crear proveedor nuevo (inline, "extensión" del maestro Proveedores)

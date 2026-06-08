@@ -93,10 +93,6 @@
             <td>
                 <span class="label">N° de Factura:</span> {{ $compra->numero_factura ?: 'S/N' }}<br>
                 <span class="label">Fecha de Compra:</span> {{ $compra->fecha_compra?->format('d/m/Y') }}<br>
-                <span class="label">Tipo de Pago:</span> {{ $compra->tipo_pago === 'credito' ? 'Crédito' : 'Contado' }}
-                @if($compra->tipo_pago === 'credito' && $compra->fecha_vencimiento)
-                    (vence {{ $compra->fecha_vencimiento->format('d/m/Y') }})
-                @endif<br>
                 <span class="label">Estado:</span>
                 <span class="estado-{{ $compra->estado }}">{{ ucfirst($compra->estado) }}</span><br>
                 <span class="label">Registrado por:</span> {{ $compra->registradoPor?->name ?? 'Sistema' }}

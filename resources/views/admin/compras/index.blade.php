@@ -99,16 +99,6 @@
                                         </div>
                                         @endunless
                                         <div class="col-12 col-md-3">
-                                            <label class="navy-filter-label" for="filter-tipo-pago">
-                                                <i class="ri-bank-card-line"></i> Tipo de Pago
-                                            </label>
-                                            <select class="form-select navy-filter-select" id="filter-tipo-pago">
-                                                <option value="">Todos</option>
-                                                <option value="contado">Contado</option>
-                                                <option value="credito">Crédito</option>
-                                            </select>
-                                        </div>
-                                        <div class="col-12 col-md-3">
                                             <label class="navy-filter-label" for="filter-fecha-desde">
                                                 <i class="ri-calendar-line"></i> Desde
                                             </label>
@@ -135,7 +125,6 @@
                                     <th>Proveedor</th>
                                     <th>N° Factura</th>
                                     <th>Fecha</th>
-                                    <th>Tipo Pago</th>
                                     <th class="text-end">Total</th>
                                     <th>Estado</th>
                                     <th>Acciones</th>
@@ -179,14 +168,6 @@
                                 <option value="recibida">Recibida</option>
                                 <option value="borrador">Borrador</option>
                                 <option value="anulada">Anulada</option>
-                            </select>
-                        </div>
-                        <div class="col-6">
-                            <label class="form-label fw-semibold" for="pdf-tipo-pago">Tipo de Pago</label>
-                            <select class="form-select" id="pdf-tipo-pago">
-                                <option value="">Todos</option>
-                                <option value="contado">Contado</option>
-                                <option value="credito">Crédito</option>
                             </select>
                         </div>
                         <div class="col-6">
@@ -234,19 +215,17 @@
             var params  = [];
             var prov    = $('#pdf-proveedor').val();
             var estado  = $('#pdf-estado').val();
-            var pago    = $('#pdf-tipo-pago').val();
             var desde   = $('#pdf-fecha-desde').val();
             var hasta   = $('#pdf-fecha-hasta').val();
             if (prov)   params.push('proveedor_id=' + encodeURIComponent(prov));
             if (estado) params.push('estado='       + encodeURIComponent(estado));
-            if (pago)   params.push('tipo_pago='     + encodeURIComponent(pago));
             if (desde)  params.push('fecha_desde='   + encodeURIComponent(desde));
             if (hasta)  params.push('fecha_hasta='   + encodeURIComponent(hasta));
             window.open(baseUrl + (params.length ? '?' + params.join('&') : ''), '_blank');
             bootstrap.Modal.getInstance(document.getElementById('pdfExportModal'))?.hide();
         });
         $('#pdfExportModal').on('show.bs.modal', function () {
-            $('#pdf-proveedor, #pdf-estado, #pdf-tipo-pago, #pdf-fecha-desde, #pdf-fecha-hasta').val('');
+            $('#pdf-proveedor, #pdf-estado, #pdf-fecha-desde, #pdf-fecha-hasta').val('');
         });
     </script>
 @endpush

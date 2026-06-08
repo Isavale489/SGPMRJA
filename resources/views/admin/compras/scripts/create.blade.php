@@ -6,30 +6,6 @@ $(document).ready(function () {
 
     // (El proveedor ahora se elige por búsqueda de documento — ver IIFE abajo)
 
-    // ── Mostrar / ocultar fecha de vencimiento (requerida en crédito) ─────────
-    $('#c-tipo-pago').on('change', function () {
-        if ($(this).val() === 'credito') {
-            $('#c-vencimiento-wrap').slideDown(150);
-            $('#c-vencimiento').attr('required', true);
-        } else {
-            $('#c-vencimiento-wrap').slideUp(150);
-            $('#c-vencimiento').val('').removeAttr('required');
-        }
-    });
-
-    // ── Control segmentado de Tipo de Pago (el <select> oculto es la verdad) ──
-    function syncPagoSeg(value) {
-        $('#c-pago-seg .seg-option').each(function () {
-            var active = $(this).data('value') === value;
-            $(this).toggleClass('is-active', active).attr('aria-checked', active ? 'true' : 'false');
-        });
-    }
-    $('#c-pago-seg').on('click', '.seg-option', function () {
-        var value = $(this).data('value');
-        syncPagoSeg(value);
-        $('#c-tipo-pago').val(value).trigger('change');
-    });
-
     // ── Utilidades ──────────────────────────────────────────────────────────
     function fmt(n) {
         return parseFloat(n || 0).toFixed(2);
@@ -47,6 +23,15 @@ $(document).ready(function () {
                 + '</option>';
         });
         return html;
+    }
+
+    // Reconstruye TODOS los <select> de insumo (tras un alta rápida), preservando
+    // la selección actual de cada fila para no perder ítems ya elegidos.
+    function rebuildAllInsumoSelects() {
+        $('#c-items-tbody tr').each(function () {
+            var $sel = $(this).find('.c-insumo');
+            $sel.html(buildInsumoOptions($sel.val()));
+        });
     }
 
     function recalcular() {
@@ -96,10 +81,14 @@ $(document).ready(function () {
 
         var row = '<tr id="c-row-' + idx + '">'
             + '<td class="c-row-num text-center text-muted cot-col-num">' + num + '</td>'
-            + '<td style="min-width:160px;">'
-            +   '<select class="form-select form-select-sm c-insumo" id="c-ins-' + idx + '">'
-            +     buildInsumoOptions('')
-            +   '</select>'
+            + '<td style="min-width:200px;">'
+            +   '<div class="input-group input-group-sm">'
+            +     '<select class="form-select form-select-sm c-insumo" id="c-ins-' + idx + '">'
+            +       buildInsumoOptions('')
+            +     '</select>'
+            +     '<button type="button" class="btn btn-soft-success c-add-insumo-btn"'
+            +     ' data-row="' + idx + '" title="Crear insumo nuevo"><i class="ri-add-line"></i></button>'
+            +   '</div>'
             + '</td>'
             + '<td class="text-center">'
             +   '<div class="input-group input-group-sm" style="max-width:128px;margin:0 auto;">'
@@ -261,12 +250,6 @@ $(document).ready(function () {
             } else {
                 $('#c-recap-fecha').text('—');
             }
-            var pago = $('#c-tipo-pago').val() === 'credito' ? 'Crédito' : 'Contado';
-            if ($('#c-tipo-pago').val() === 'credito' && $('#c-vencimiento').val()) {
-                var v = $('#c-vencimiento').val().split('-');
-                pago += ' · vence ' + v[2] + '/' + v[1] + '/' + v[0];
-            }
-            $('#c-recap-pago').text(pago);
             var n = $('#c-items-tbody tr').length;
             $('#c-recap-items').text(n + ' insumo' + (n === 1 ? '' : 's'));
         }
@@ -315,10 +298,6 @@ $(document).ready(function () {
                 }
                 if (!$('#c-fecha').val()) {
                     Swal.fire({ title: 'Campo requerido', text: 'Ingrese la fecha de compra.', icon: 'warning', confirmButtonText: 'Entendido' });
-                    return false;
-                }
-                if ($('#c-tipo-pago').val() === 'credito' && !$('#c-vencimiento').val()) {
-                    Swal.fire({ title: 'Campo requerido', text: 'Ingrese la fecha de vencimiento para pagos a crédito.', icon: 'warning', confirmButtonText: 'Entendido' });
                     return false;
                 }
                 return true;
@@ -527,8 +506,6 @@ $(document).ready(function () {
             $('#c-prov-doc-number').val('');
             $('#c-prov-doc-prefix').val('J-');
             $('#c-prov-autocomplete').empty().hide();
-            syncPagoSeg('contado');
-            $('#c-tipo-pago').val('contado').trigger('change');
             $('#c-fecha').val('{{ date("Y-m-d") }}');
             $('#c-iva').val(16);
             $('#c-items-tbody').empty();
@@ -553,13 +530,6 @@ $(document).ready(function () {
             $('#c-fecha').val(data.fecha_compra || '');
             $('#c-iva').val(data.iva_porcentaje || 16);
             $('#c-observaciones').val(data.observaciones || '');
-
-            var pago = data.tipo_pago || 'contado';
-            syncPagoSeg(pago);
-            $('#c-tipo-pago').val(pago).trigger('change');
-            if (pago === 'credito' && data.fecha_vencimiento) {
-                $('#c-vencimiento').val(data.fecha_vencimiento);
-            }
 
             $('#c-items-tbody').empty();
             rowCount = 0;
@@ -603,8 +573,6 @@ $(document).ready(function () {
                 proveedor_id:      $('#c-proveedor').val(),
                 numero_factura:    $('#c-factura').val() || null,
                 fecha_compra:      $('#c-fecha').val(),
-                fecha_vencimiento: $('#c-vencimiento').val() || null,
-                tipo_pago:         $('#c-tipo-pago').val(),
                 iva_porcentaje:    $('#c-iva').val(),
                 observaciones:     $('#c-observaciones').val() || null,
                 items:             items
@@ -769,6 +737,96 @@ $(document).ready(function () {
                     $btn.removeAttr('disabled').html('<i class="ri-save-line me-1"></i>Guardar y seleccionar');
                     var json = xhr.responseJSON;
                     var msg = 'No se pudo crear el proveedor.';
+                    if (json && json.errors) { msg = Object.values(json.errors).flat().join('<br>'); }
+                    else if (json && json.message) { msg = json.message; }
+                    Swal.fire({ title: 'Error', html: msg, icon: 'error', confirmButtonText: 'Entendido' });
+                }
+            });
+        });
+
+        // ════════════════════════════════════════════════════════════════════
+        //  MINI-MODAL: crear insumo nuevo inline (alta rápida del maestro)
+        // ════════════════════════════════════════════════════════════════════
+        var cirTargetSelect = null;
+
+        // Abrir desde el "+" de una fila — recuerda el <select> a auto-seleccionar
+        $(document).on('click', '.c-add-insumo-btn', function () {
+            cirTargetSelect = $('#c-ins-' + $(this).data('row'));
+            $('#cirForm')[0].reset();
+            $('#cir-nombre-field, #cir-codigo-field, #cir-tipo-field, #cir-unidad-field, #cir-costo-field')
+                .removeClass('is-invalid');
+            $('#crearInsumoRapidoModal').modal('show');
+        });
+
+        // Código: solo MAYÚSCULAS y alfanumérico (text-uppercase es solo visual)
+        $('#cir-codigo-field').on('input', function () {
+            this.value = this.value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+        });
+
+        $('#cirForm').on('submit', function (e) {
+            e.preventDefault();
+
+            var nombre = $('#cir-nombre-field').val().trim();
+            var codigo = $('#cir-codigo-field').val().trim();
+            var tipo   = $('#cir-tipo-field').val();
+            var unidad = $('#cir-unidad-field').val();
+            var costo  = parseFloat($('#cir-costo-field').val());
+
+            var ok = true;
+            function flag(sel, bad) { $(sel).toggleClass('is-invalid', bad); if (bad) ok = false; }
+            flag('#cir-nombre-field', nombre.length < 3);
+            flag('#cir-tipo-field', !tipo);
+            flag('#cir-unidad-field', !unidad);
+            flag('#cir-costo-field', isNaN(costo) || costo <= 0);
+            if (!ok) return;
+
+            var payload = {
+                _token:           CSRF,
+                nombre:           nombre,
+                tipo:             tipo,
+                unidad_medida:    unidad,
+                costo_unitario:   costo,
+                is_inventoriable: 1,
+                stock_actual:     0,
+                stock_minimo:     0,
+                stock_maximo:     0
+            };
+            if (codigo) payload.codigo = codigo;
+
+            var $btn = $('#cir-submit-btn');
+            $btn.attr('disabled', true).html('<i class="ri-loader-4-line me-1"></i>Guardando...');
+
+            $.ajax({
+                url:    "{{ route('insumos.store') }}",
+                method: 'POST',
+                data:   payload,
+                success: function (resp) {
+                    $btn.removeAttr('disabled').html('<i class="ri-save-line me-1"></i>Guardar y seleccionar');
+                    var ins = resp.insumo;
+                    if (ins) {
+                        // Disponible para esta y futuras filas, sin recargar
+                        INSUMOS.push({
+                            id:             ins.id,
+                            nombre:         ins.nombre,
+                            codigo:         ins.codigo,
+                            tipo:           ins.tipo,
+                            unidad_medida:  ins.unidad_medida,
+                            costo_unitario: ins.costo_unitario
+                        });
+                        rebuildAllInsumoSelects();
+                        if (cirTargetSelect && cirTargetSelect.length) {
+                            cirTargetSelect.val(ins.id).trigger('change');
+                        }
+                    }
+                    $('#crearInsumoRapidoModal').modal('hide');
+                    Swal.fire({ icon: 'success', title: 'Insumo creado',
+                        text: 'Se agregó "' + (ins ? ins.nombre : '') + '" y quedó seleccionado.',
+                        showConfirmButton: false, timer: 1600 });
+                },
+                error: function (xhr) {
+                    $btn.removeAttr('disabled').html('<i class="ri-save-line me-1"></i>Guardar y seleccionar');
+                    var json = xhr.responseJSON;
+                    var msg  = 'No se pudo crear el insumo.';
                     if (json && json.errors) { msg = Object.values(json.errors).flat().join('<br>'); }
                     else if (json && json.message) { msg = json.message; }
                     Swal.fire({ title: 'Error', html: msg, icon: 'error', confirmButtonText: 'Entendido' });

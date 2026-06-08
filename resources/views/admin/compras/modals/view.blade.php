@@ -89,14 +89,6 @@
                                         <small class="text-muted d-block mb-1"><i class="ri-calendar-event-line me-1"></i>Fecha de Compra</small>
                                         <span id="cv-fecha">—</span>
                                     </div>
-                                    <div class="col-md-4">
-                                        <small class="text-muted d-block mb-1"><i class="ri-bank-card-line me-1"></i>Tipo de Pago</small>
-                                        <span id="cv-tipo-pago">—</span>
-                                    </div>
-                                    <div class="col-md-4 d-none" id="cv-vencimiento-wrap">
-                                        <small class="text-muted d-block mb-1"><i class="ri-calendar-close-line me-1"></i>Vencimiento</small>
-                                        <span id="cv-vencimiento">—</span>
-                                    </div>
                                     <div class="col-12 d-none" id="cv-obs-wrap">
                                         <small class="text-muted d-block mb-1"><i class="ri-sticky-note-line me-1"></i>Observaciones</small>
                                         <span class="fst-italic" id="cv-observaciones">—</span>

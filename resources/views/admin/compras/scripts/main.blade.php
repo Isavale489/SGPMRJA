@@ -34,7 +34,6 @@ $(document).ready(function () {
             data: function (d) {
                 d.ver_anuladas       = window.VER_ANULADAS ? 1 : 0;
                 d.filter_estado      = $('#filter-estado').val();
-                d.filter_tipo_pago   = $('#filter-tipo-pago').val();
                 d.filter_fecha_desde = $('#filter-fecha-desde').val();
                 d.filter_fecha_hasta = $('#filter-fecha-hasta').val();
             }
@@ -56,18 +55,9 @@ $(document).ready(function () {
                         : '<span class="text-muted fst-italic">S/N</span>';
                 }
             },
-            { data: 'fecha_formateada', name: 'fecha_compra', width: '10%' },
+            { data: 'fecha_formateada', name: 'fecha_compra', width: '12%' },
             {
-                data: 'tipo_pago', name: 'tipo_pago', width: '10%',
-                render: function (data) {
-                    if (data === 'credito') {
-                        return '<span class="badge bg-secondary">Crédito</span>';
-                    }
-                    return '<span class="badge bg-info text-dark">Contado</span>';
-                }
-            },
-            {
-                data: 'total', name: 'total', width: '12%', className: 'text-end',
+                data: 'total', name: 'total', width: '14%', className: 'text-end',
                 render: function (data) {
                     return parseFloat(data).toFixed(2);
                 }
@@ -99,7 +89,6 @@ $(document).ready(function () {
 
     $('#btn-clear-filters').on('click', function () {
         $('#filter-estado').val('');   // 'Activas (todas)'
-        $('#filter-tipo-pago').val('');
         $('#filter-fecha-desde').val('');
         $('#filter-fecha-hasta').val('');
         $('#custom-search-input').val('');
@@ -149,18 +138,6 @@ $(document).ready(function () {
                 // Comprobante
                 $('#cv-factura').text(d.numero_factura);
                 $('#cv-fecha').text(d.fecha_compra);
-
-                var pagoHtml = d.tipo_pago === 'credito'
-                    ? '<span class="badge bg-soft-primary text-primary"><i class="ri-calendar-schedule-line me-1"></i>Crédito</span>'
-                    : '<span class="badge bg-soft-success text-success"><i class="ri-money-dollar-circle-line me-1"></i>Contado</span>';
-                $('#cv-tipo-pago').html(pagoHtml);
-
-                if (d.fecha_vencimiento) {
-                    $('#cv-vencimiento').text(d.fecha_vencimiento);
-                    $('#cv-vencimiento-wrap').removeClass('d-none');
-                } else {
-                    $('#cv-vencimiento-wrap').addClass('d-none');
-                }
 
                 if (d.observaciones) {
                     $('#cv-observaciones').text(d.observaciones);

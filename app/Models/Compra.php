@@ -17,8 +17,6 @@ class Compra extends Model
         'user_id',
         'numero_factura',
         'fecha_compra',
-        'fecha_vencimiento',
-        'tipo_pago',
         'subtotal',
         'iva',
         'total',
@@ -31,7 +29,6 @@ class Compra extends Model
 
     protected $casts = [
         'fecha_compra'      => 'date',
-        'fecha_vencimiento' => 'date',
         'subtotal'          => 'decimal:2',
         'iva'               => 'decimal:2',
         'total'             => 'decimal:2',
