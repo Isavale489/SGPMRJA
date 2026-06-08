@@ -35,7 +35,7 @@
                                 </a>
                             @else
                                 <a href="{{ route('departamentos.index', ['historial' => true]) }}" class="btn-historial btn-historial-ver">
-                                    <i class="ri-time-line"></i> Ver Historial
+                                    <i class="ri-archive-line"></i> Inhabilitados
                                 </a>
                                 <button type="button" class="btn btn-success add-btn" id="create-btn">
                                     <i class="ri-add-line align-bottom me-1"></i> Agregar Departamento
