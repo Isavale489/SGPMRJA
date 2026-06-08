@@ -262,6 +262,8 @@
             $cont.empty();
 
             pedidos.forEach(function (p) {
+                // Regla de negocio: sin abono mínimo no se pueden generar órdenes.
+                const abonoOk = p.cumple_abono !== false;
                 const lineasHtml = p.lineas.map(function (l) {
                     const meta = [l.cantidad + ' u', l.color || 'Sin color', l.talla || 'Talla única'].join(' · ');
                     const bordadoBadge = l.lleva_bordado
@@ -278,6 +280,17 @@
                                 <span class="badge bg-secondary"><i class="ri-check-line"></i> Orden #${l.orden_id}</span>
                             </div>`;
                     }
+                    // Sin abono mínimo: línea visible pero no seleccionable (bloqueo de negocio).
+                    if (!abonoOk) {
+                        return `
+                            <div class="list-group-item d-flex align-items-center gap-2 flex-wrap opacity-75">
+                                <i class="ri-lock-2-line text-warning"></i>
+                                <div class="flex-grow-1">
+                                    <div class="fw-semibold">${escHtml(l.producto_nombre)}${bordadoBadge}</div>
+                                    <small class="text-muted">${escHtml(meta)}</small>
+                                </div>
+                            </div>`;
+                    }
                     // Líneas pendientes → checkbox seleccionable
                     return `
                         <label class="list-group-item d-flex align-items-center gap-2 flex-wrap" style="cursor: pointer;">
@@ -289,6 +302,12 @@
                             </div>
                         </label>`;
                 }).join('');
+
+                const abonoBanner = abonoOk ? '' : `
+                        <div class="alert alert-warning d-flex align-items-center gap-2 py-1 px-2 small mb-2">
+                            <i class="ri-lock-2-line"></i>
+                            <span>Abono ${p.porcentaje_abonado}% — requiere ${p.abono_minimo_pct}% para iniciar producción.</span>
+                        </div>`;
 
                 const hayPendientes = p.lineas_pendientes > 0;
                 const inicialCliente = (p.cliente_nombre || '?').trim().charAt(0).toUpperCase() || '?';
@@ -316,6 +335,7 @@
                             </div>
                             <small class="text-muted fw-semibold" style="white-space: nowrap;">Progreso ${p.progreso}%</small>
                         </div>
+                        ${abonoBanner}
                         <div class="list-group">${lineasHtml}</div>
                     </div>`;
                 $cont.append(card);
@@ -366,6 +386,15 @@
             const pid = $checked.first().data('pedido-id');
             const pedido = pedidosOrdenData.find(p => p.id == pid);
             if (!pedido) return false;
+            if (pedido.cumple_abono === false) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Abono insuficiente',
+                    html: `El Pedido #${pedido.id} tiene ${pedido.porcentaje_abonado}% abonado y requiere `
+                        + `${pedido.abono_minimo_pct}% para iniciar producción.<br>Registra el abono en el pedido antes de generar órdenes.`,
+                });
+                return false;
+            }
             const detalleIds = $checked.map(function () { return parseInt($(this).data('detalle-id'), 10); }).get();
 
             // Si la selección no cambió, conservar lo ya capturado (asignación/insumos)

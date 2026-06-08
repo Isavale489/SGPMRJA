@@ -14,6 +14,27 @@ use Illuminate\Support\Facades\DB;
 
 class OrdenProduccionController extends Controller
 {
+    /**
+     * Devuelve el payload de error 422 si el pedido no alcanza el abono mínimo
+     * requerido para producir, o null si lo cumple. Centraliza la regla para
+     * store() y storeBatch().
+     */
+    private function bloqueoPorAbonoMinimo(Pedido $pedido): ?array
+    {
+        if ($pedido->cumpleAbonoMinimo()) {
+            return null;
+        }
+
+        $pct = rtrim(rtrim(number_format(Pedido::porcentajeAbonoMinimo(), 2, '.', ''), '0'), '.');
+
+        return [
+            'message' => "El pedido #{$pedido->id} no alcanza el abono mínimo del {$pct}% requerido para "
+                . 'iniciar producción. Abono validado: ' . number_format($pedido->porcentajeAbonado(), 1) . '% ('
+                . number_format((float) $pedido->abono, 2) . ' de ' . number_format((float) $pedido->total, 2) . '). '
+                . 'Registra el abono en el pedido antes de generar sus órdenes.',
+        ];
+    }
+
     public function index()
     {
         $insumos = Insumo::where('estado', true)->get();
@@ -200,6 +221,12 @@ class OrdenProduccionController extends Controller
                 'total_lineas'      => $lineas->count(),
                 'lineas_pendientes' => $lineas->whereNull('orden_id')->count(),
                 'progreso'          => $pedido->progreso_produccion,
+                // Abono mínimo (regla de negocio): el front bloquea/avisa si no se cumple.
+                'total'              => (float) $pedido->total,
+                'abono'              => (float) $pedido->abono,
+                'porcentaje_abonado' => $pedido->porcentajeAbonado(),
+                'abono_minimo_pct'   => Pedido::porcentajeAbonoMinimo(),
+                'cumple_abono'       => $pedido->cumpleAbonoMinimo(),
                 'lineas'            => $lineas,
             ];
         })
@@ -262,6 +289,12 @@ class OrdenProduccionController extends Controller
         ]);
 
         $detalle = DetallePedido::findOrFail($validated['detalle_pedido_id']);
+
+        // Regla de negocio: el pedido debe alcanzar el abono mínimo para producir.
+        $pedido = Pedido::findOrFail($detalle->pedido_id);
+        if ($error = $this->bloqueoPorAbonoMinimo($pedido)) {
+            return response()->json($error, 422);
+        }
 
         // Una línea de pedido solo puede tener una orden activa a la vez
         $yaTieneOrden = OrdenProduccion::where('detalle_pedido_id', $detalle->id)
@@ -336,6 +369,12 @@ class OrdenProduccionController extends Controller
             return response()->json([
                 'message' => 'Una o más líneas no pertenecen al pedido indicado.'
             ], 422);
+        }
+
+        // Regla de negocio: el pedido debe alcanzar el abono mínimo para producir.
+        $pedido = Pedido::findOrFail($validated['pedido_id']);
+        if ($error = $this->bloqueoPorAbonoMinimo($pedido)) {
+            return response()->json($error, 422);
         }
 
         // Ninguna línea debe tener ya orden activa (no Cancelada)
