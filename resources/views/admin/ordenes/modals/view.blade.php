@@ -20,33 +20,31 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
 
-            <!-- ══ Stepper ════════════════════════════════════════════ -->
-            <div class="wiz-stepper-wrapper">
-                <div class="wiz-stepper-side wiz-stepper-side--left"></div>
-                <div class="wiz-stepper" role="tablist">
-                    <button type="button" class="wiz-step-marker is-active" data-step="1" role="tab">
-                        <span class="wiz-step-dot">1</span>
-                        <span class="wiz-step-label">Orden</span>
+            <!-- ══ Pestañas (lectura: navegación libre, sin secuencia) ══ -->
+            <ul class="nav nav-tabs px-3 pt-1" id="viewOrdTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="view-tab-orden" data-bs-toggle="tab" data-bs-target="#view-pane-orden" type="button" role="tab" aria-controls="view-pane-orden" aria-selected="true">
+                        <i class="ri-file-list-3-line me-1"></i>Orden
                     </button>
-                    <span class="wiz-step-line"><span class="wiz-step-line-fill" data-line="1"></span></span>
-                    <button type="button" class="wiz-step-marker" data-step="2" role="tab">
-                        <span class="wiz-step-dot">2</span>
-                        <span class="wiz-step-label">Insumos</span>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="view-tab-insumos" data-bs-toggle="tab" data-bs-target="#view-pane-insumos" type="button" role="tab" aria-controls="view-pane-insumos" aria-selected="false">
+                        <i class="ri-box-3-line me-1"></i>Insumos
                     </button>
-                    <span class="wiz-step-line"><span class="wiz-step-line-fill" data-line="2"></span></span>
-                    <button type="button" class="wiz-step-marker" data-step="3" role="tab">
-                        <span class="wiz-step-dot">3</span>
-                        <span class="wiz-step-label">Progreso</span>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="view-tab-progreso" data-bs-toggle="tab" data-bs-target="#view-pane-progreso" type="button" role="tab" aria-controls="view-pane-progreso" aria-selected="false">
+                        <i class="ri-line-chart-line me-1"></i>Progreso
                     </button>
-                </div>
-                <div class="wiz-stepper-side wiz-stepper-side--right"></div>
-            </div>
+                </li>
+            </ul>
 
-            <!-- ══ Body del wizard ════════════════════════════════════ -->
-            <div class="modal-body wiz-wizard-body p-3">
+            <!-- ══ Body — contenido por pestañas ═══════════════════════ -->
+            <div class="modal-body p-0">
+                <div class="tab-content p-3">
 
-                <!-- ─ Paso 1: Datos de la Orden ─────────────────────── -->
-                <section class="wiz-step-content is-active" data-step="1">
+                <!-- ─ Pestaña: Datos de la Orden ─────────────────────── -->
+                <div class="tab-pane fade show active" id="view-pane-orden" role="tabpanel" aria-labelledby="view-tab-orden">
                     <div class="row g-3">
 
                         <!-- Metadata en emp-icon-box -->
@@ -140,10 +138,10 @@
                         </div>
 
                     </div>
-                </section>
+                </div>
 
-                <!-- ─ Paso 2: Insumos ────────────────────────────────── -->
-                <section class="wiz-step-content" data-step="2">
+                <!-- ─ Pestaña: Insumos ───────────────────────────────── -->
+                <div class="tab-pane fade" id="view-pane-insumos" role="tabpanel" aria-labelledby="view-tab-insumos">
                     <div class="card border-0 shadow-sm mb-0">
                         <div class="card-body p-0">
                             <div class="table-responsive" id="view-insumos-tablewrap">
@@ -165,10 +163,10 @@
                             </div>
                         </div>
                     </div>
-                </section>
+                </div>
 
-                <!-- ─ Paso 3: Progreso ───────────────────────────────── -->
-                <section class="wiz-step-content" data-step="3">
+                <!-- ─ Pestaña: Progreso ──────────────────────────────── -->
+                <div class="tab-pane fade" id="view-pane-progreso" role="tabpanel" aria-labelledby="view-tab-progreso">
                     <div class="row g-3">
 
                         <!-- Hero card de progreso -->
@@ -210,24 +208,16 @@
                         </div>
 
                     </div>
-                </section>
+                </div>
 
+                </div>{{-- /tab-content --}}
             </div>{{-- /modal-body --}}
 
-            <!-- ══ Footer del wizard ══════════════════════════════════ -->
-            <div class="modal-footer wiz-wizard-footer py-2 px-3">
-                <div class="wiz-wizard-footer-info"></div>
-                <div class="wiz-wizard-footer-actions">
-                    <button type="button" class="btn btn-sm btn-light border" id="btn-view-ord-prev" style="display:none;">
-                        <i class="ri-arrow-left-line me-1"></i>Anterior
-                    </button>
-                    <button type="button" class="btn btn-sm btn-primary" id="btn-view-ord-next">
-                        Siguiente<i class="ri-arrow-right-line ms-1"></i>
-                    </button>
-                    <button type="button" class="btn btn-sm btn-light border" data-bs-dismiss="modal" id="btn-view-ord-close" style="display:none;">
-                        <i class="ri-close-line me-1"></i>Cerrar
-                    </button>
-                </div>
+            <!-- ══ Footer ══════════════════════════════════════════════ -->
+            <div class="modal-footer py-2 px-3">
+                <button type="button" class="btn btn-sm btn-light border" data-bs-dismiss="modal">
+                    <i class="ri-close-line me-1"></i>Cerrar
+                </button>
             </div>
 
         </div>

@@ -1506,44 +1506,15 @@
         });
 
         // ══════════════════════════════════════════════════════
-        // Wizard navegación — viewModal (read-only)
+        // viewModal (lectura) — pestañas Bootstrap: navegación libre.
+        // viewOrdShowStep() ahora solo resetea a la primera pestaña (se
+        // conserva el nombre para no tocar las llamadas existentes).
         // ══════════════════════════════════════════════════════
-        (function () {
-            var TOTAL = 3;
-            var currentStep = 1;
-
-            window.viewOrdShowStep = function (step) {
-                currentStep = step;
-                // Contenido de pasos
-                $('#viewModal .wiz-step-content').removeClass('is-active');
-                $('#viewModal .wiz-step-content[data-step="' + step + '"]').addClass('is-active');
-                // Markers
-                $('#viewModal .wiz-step-marker').removeClass('is-active is-complete');
-                $('#viewModal .wiz-step-marker').each(function () {
-                    var s = parseInt($(this).data('step'));
-                    if (s < step) $(this).addClass('is-complete');
-                    else if (s === step) $(this).addClass('is-active');
-                });
-                // Line fills
-                for (var i = 1; i < TOTAL; i++) {
-                    $('#viewModal .wiz-step-line-fill[data-line="' + i + '"]')
-                        .css('width', i < step ? '100%' : '0%');
-                }
-                // Botones
-                $('#btn-view-ord-prev').toggle(step > 1);
-                $('#btn-view-ord-next').toggle(step < TOTAL);
-                $('#btn-view-ord-close').toggle(step === TOTAL);
-            };
-
-            $(document).on('click', '#btn-view-ord-next', function () {
-                if (currentStep < TOTAL) viewOrdShowStep(currentStep + 1);
-            });
-            $(document).on('click', '#btn-view-ord-prev', function () {
-                if (currentStep > 1) viewOrdShowStep(currentStep - 1);
-            });
-            $('#viewModal').on('click', '.wiz-step-marker', function () {
-                viewOrdShowStep(parseInt($(this).data('step')));
-            });
-        }());
+        window.viewOrdShowStep = function () {
+            $('#viewModal .nav-link').removeClass('active').attr('aria-selected', 'false');
+            $('#viewModal #view-tab-orden').addClass('active').attr('aria-selected', 'true');
+            $('#viewModal .tab-pane').removeClass('show active');
+            $('#viewModal #view-pane-orden').addClass('show active');
+        };
     });
 </script>
