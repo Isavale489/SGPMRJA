@@ -4515,7 +4515,7 @@
                 cfgState.producto = p;
                 cfgState.cartItemId = opts.cartItemId || null;
                 // Si veníamos editando un bloque de un producto distinto (cambio de variante),
-                // recordá el id original para que el patcher de guardado pueda borrar las cards correctas.
+                // recuerda el id original para que el patcher de guardado pueda borrar las cards correctas.
                 cfgState.productoIdOriginal = (opts.productoIdOriginal != null)
                     ? opts.productoIdOriginal
                     : p.id;

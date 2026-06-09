@@ -10,6 +10,8 @@ $(document).ready(function () {
 
         var TOTAL_STEPS = 4;
         var currentStep = 1;
+        // % mínimo del total que debe estar abonado para registrar el pedido
+        var ABONO_MIN_PCT = {{ (float) \App\Models\Pedido::porcentajeAbonoMinimo() }};
 
         function isEditMode() { return !!$('#ped-wiz-id-field').val(); }
 
@@ -111,7 +113,16 @@ $(document).ready(function () {
                     return false;
                 }
                 var entrega = $('#ped-fecha-entrega-field').val();
-                if (entrega && entrega < fecha) {
+                if (!entrega) {
+                    Swal.fire({
+                        icon: 'warning', title: 'Entrega estimada requerida',
+                        text: 'Elige la fecha de entrega estimada (puedes usar los accesos Hoy / +15 / +30 / +60 días).',
+                        timer: 2600, showConfirmButton: false
+                    });
+                    $('#ped-fecha-entrega-field').trigger('focus');
+                    return false;
+                }
+                if (entrega < fecha) {
                     Swal.fire({
                         icon: 'warning', title: 'Fechas inconsistentes',
                         text: 'La fecha de entrega no puede ser anterior a la del pedido.',
@@ -146,7 +157,11 @@ $(document).ready(function () {
             }
             if (n === 3) {
                 var PED_METODO_LABELS = { efectivo: 'Efectivo', transferencia: 'Transferencia', pago_movil: 'Pago Móvil' };
-                var total3 = parseFloat($('#ped-pago-total-display').val()) || 0;
+                // Total desde el estado de productos (fuente de verdad): el display
+                // solo se sincroniza al entrar al paso 3 y puede estar vacío si se
+                // salta de paso con los markers del stepper.
+                var total3 = (window.pedProdState && window.pedProdState.total)
+                    || parseFloat($('#ped-pago-total-display').val()) || 0;
                 var pagos3 = (window.pedPagoState && window.pedPagoState.pagos) || [];
                 var abono3 = pagos3.reduce(function (a, p) { return a + (p.monto || 0); }, 0);
 
@@ -156,7 +171,7 @@ $(document).ready(function () {
                     if (!(p3.monto > 0)) {
                         Swal.fire({
                             icon: 'warning', title: 'Monto requerido',
-                            text: 'Ingresá un monto mayor a 0 para ' + label3 + ', o quitá ese pago.',
+                            text: 'Ingresa un monto mayor a 0 para ' + label3 + ', o quita ese pago.',
                             timer: 2600, showConfirmButton: false
                         });
                         $('#ped-pay-list .ped-pay-monto').eq(i).trigger('focus');
@@ -166,7 +181,7 @@ $(document).ready(function () {
                         if (!p3.banco_id) {
                             Swal.fire({
                                 icon: 'warning', title: 'Banco requerido',
-                                text: 'Seleccioná el banco para ' + label3 + '.',
+                                text: 'Selecciona el banco para ' + label3 + '.',
                                 timer: 2400, showConfirmButton: false
                             });
                             return false;
@@ -174,7 +189,7 @@ $(document).ready(function () {
                         if (!p3.referencia) {
                             Swal.fire({
                                 icon: 'warning', title: 'Referencia requerida',
-                                text: 'Ingresá la referencia para ' + label3 + '.',
+                                text: 'Ingresa la referencia para ' + label3 + '.',
                                 timer: 2400, showConfirmButton: false
                             });
                             return false;
@@ -186,6 +201,21 @@ $(document).ready(function () {
                         icon: 'warning', title: 'Abono inválido',
                         text: 'La suma de los métodos ($' + abono3.toFixed(2) + ') no puede superar el total ($' + total3.toFixed(2) + ').',
                         timer: 2800, showConfirmButton: false
+                    });
+                    return false;
+                }
+                // Abono mínimo (% configurable del total). Al crear es estricto;
+                // al editar no se exige subir pedidos legacy al mínimo, pero el
+                // abono no puede quedar por debajo de lo que ya estaba registrado.
+                var minimo3 = total3 * ABONO_MIN_PCT / 100;
+                var piso3 = isEditMode() ? Math.min(minimo3, window.pedAbonoOriginal || 0) : minimo3;
+                if (total3 > 0 && abono3 + 0.001 < piso3) {
+                    Swal.fire({
+                        icon: 'warning', title: 'Abono insuficiente',
+                        text: isEditMode()
+                            ? 'El abono no puede quedar por debajo de $' + piso3.toFixed(2) + '. Ajusta los pagos antes de continuar.'
+                            : 'Para registrar el pedido debes abonar al menos el ' + ABONO_MIN_PCT + '% del total (mínimo $' + minimo3.toFixed(2) + ').',
+                        timer: 3200, showConfirmButton: false
                     });
                     return false;
                 }
@@ -233,7 +263,7 @@ $(document).ready(function () {
         $wizModal.on('hidden.bs.modal', function () { currentStep = 1; });
 
         // API global
-        window.pedWizard = { show: showStep, next: nextStep, prev: prevStep };
+        window.pedWizard = { show: showStep, next: nextStep, prev: prevStep, validate: validateStep };
 
         // Modo protegido: cliente + fecha del pedido de solo lectura, oculta acciones de
         // producto y "cambiar cliente" (vía clase .ped-wiz-locked en CSS). Lo usan tanto
@@ -1331,6 +1361,7 @@ $(document).ready(function () {
 
         function pedResetPaso3() {
             $('#ped-pay-list').empty();
+            window.pedAbonoOriginal = 0;
             pedRecalcularPago();
         }
 
@@ -1370,6 +1401,9 @@ $(document).ready(function () {
                 if (!PED_METODOS[p.metodo]) return;
                 pedAgregarFila(p.metodo, { monto: p.monto, banco_id: p.banco_id, referencia: p.referencia });
             });
+            // Piso para validateStep(3): al editar, el abono no puede quedar
+            // por debajo de lo que el pedido ya tenía registrado.
+            window.pedAbonoOriginal = pedAbonoTotal();
             pedRecalcularPago();
         };
 
@@ -1566,7 +1600,7 @@ $(document).ready(function () {
             if (!pagos.length) {
                 metodosHtml = '<div class="ped-pago-empty text-center text-muted py-3">' +
                     '<i class="ri-wallet-3-line d-block mb-1" style="font-size:1.4rem;opacity:.5"></i>' +
-                    '<span class="small">Sin pagos registrados — se salda después.</span></div>';
+                    '<span class="small">Sin pagos registrados.</span></div>';
             } else {
                 metodosHtml = '<div class="ped-pago-metodos-title">Métodos de pago</div>' +
                     '<div class="ped-pago-metodos">' +
@@ -1662,6 +1696,19 @@ $(document).ready(function () {
         $(document).on('click', '#ped-wiz-add-btn, #ped-wiz-edit-btn', function (e) {
             e.preventDefault(); // los botones son type=submit dentro del form → evitar submit nativo
             var $btn = $(this).prop('disabled', true);
+
+            // Red de seguridad: re-validar los pasos 1-3 antes de enviar
+            // (la navegación ya valida, pero el usuario pudo volver atrás y editar)
+            if (window.pedWizard && window.pedWizard.validate) {
+                for (var s = 1; s <= 3; s++) {
+                    if (!window.pedWizard.validate(s)) {
+                        window.pedWizard.show(s);
+                        $btn.prop('disabled', false);
+                        return;
+                    }
+                }
+            }
+
             var payload = pedConstruirPayload();
 
             // Modo edición: id presente → PUT a pedidos.update con estado
@@ -1949,7 +1996,7 @@ $(document).ready(function () {
             }
 
             // ── Banner de formalización: informa que las líneas están congeladas
-            //    y muestra la fecha de entrega calculada (formalización + 30 hábiles).
+            //    y muestra la fecha de entrega estimada del pedido.
             (function () {
                 var $banner = $('#ped-formalizado-banner');
                 if (!data.esta_formalizado) { $banner.addClass('d-none'); return; }
@@ -1960,7 +2007,7 @@ $(document).ready(function () {
                 };
                 $('#ped-formalizado-fechas').text(
                     'Formalizado el ' + fmt(data.fecha_formalizacion) +
-                    ' · Entrega estimada: ' + fmt(data.fecha_entrega_estimada) + ' (30 días hábiles).'
+                    ' · Entrega estimada: ' + fmt(data.fecha_entrega_estimada) + '.'
                 );
                 $banner.removeClass('d-none');
             })();

@@ -217,9 +217,9 @@ class PedidoController extends Controller
             return response()->json(['error' => 'No se puede editar un pedido cancelado.'], 403);
         }
 
-        // Una vez formalizado (abono ≥ 70%), con producción iniciada o completado,
+        // Una vez formalizado (abono ≥ 50%), con producción iniciada o completado,
         // las líneas quedan congeladas: solo se permiten cambios de pagos (p. ej.
-        // registrar el 30% restante a la entrega).
+        // registrar el saldo restante a la entrega).
         $soloPagos = $pedido->lineasBloqueadas();
 
         try {
