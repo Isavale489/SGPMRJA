@@ -11,7 +11,7 @@
     <style>
         @media (min-width: 768px) {
             .navy-filter-grid {
-                grid-template-columns: repeat(4, 1fr) !important;
+                grid-template-columns: repeat(2, 1fr) !important;
             }
         }
     </style>
@@ -110,7 +110,7 @@
                         {{-- Body: colapsable, oculto (filtros de producto no aplican a Tipos) --}}
                         <div class="collapse" id="filters-collapse-body">
                             <div class="navy-filter-body">
-                                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.75rem;" class="navy-filter-grid">
+                                <div style="display: grid; grid-template-columns: 1fr; gap: 0.75rem;" class="navy-filter-grid">
                                     {{-- Filtro 1: Producción (fabricado vs reventa) --}}
                                     <div>
                                         <label class="navy-filter-label" for="filter-produccion">
