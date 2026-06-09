@@ -120,6 +120,16 @@ class OrdenProduccion extends Model
     }
 
     /**
+     * Empleados asignados a esta orden (puede ser más de uno).
+     * empleado_id sigue siendo el responsable principal (FK de solo lectura).
+     */
+    public function empleadosAsignados()
+    {
+        return $this->belongsToMany(Empleado::class, 'orden_produccion_empleado')
+            ->withTimestamps();
+    }
+
+    /**
      * Sub-órdenes de producción (etapas/tareas) que dependen de esta orden.
      */
     public function subordenes()

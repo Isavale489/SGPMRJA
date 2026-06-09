@@ -286,13 +286,14 @@ class OrdenProduccionController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'detalle_pedido_id' => 'required|exists:detalle_pedido,id',
-            'empleado_id' => 'required|exists:empleado,id',
-            'fecha_inicio' => 'required|date',
+            'detalle_pedido_id'  => 'required|exists:detalle_pedido,id',
+            'empleados'          => 'required|array|min:1',
+            'empleados.*'        => 'required|exists:empleado,id',
+            'fecha_inicio'       => 'required|date',
             'fecha_fin_estimada' => 'required|date|after:fecha_inicio',
-            'notas' => 'nullable|string',
-            'insumos' => 'required|array|min:1',
-            'insumos.*.id' => 'required|exists:insumo,id',
+            'notas'              => 'nullable|string',
+            'insumos'            => 'required|array|min:1',
+            'insumos.*.id'       => 'required|exists:insumo,id',
             'insumos.*.cantidad_estimada' => 'required|numeric|min:0.01',
         ]);
 
@@ -318,20 +319,21 @@ class OrdenProduccionController extends Controller
             // Crear la orden, asociar insumos y descontar stock en una sola
             // transacción: si falta stock, no se crea nada (rollback total).
             DB::transaction(function () use ($validated, $detalle, $request) {
-                // producto y cantidad se derivan de la línea (autoritativo, no del cliente)
                 $orden = OrdenProduccion::create([
-                    'pedido_id' => $detalle->pedido_id,
-                    'detalle_pedido_id' => $detalle->id,
-                    'producto_id' => $detalle->producto_id,
-                    'empleado_id' => $validated['empleado_id'],
+                    'pedido_id'           => $detalle->pedido_id,
+                    'detalle_pedido_id'   => $detalle->id,
+                    'producto_id'         => $detalle->producto_id,
+                    'empleado_id'         => $validated['empleados'][0], // responsable principal
                     'cantidad_solicitada' => $detalle->cantidad,
-                    'cantidad_producida' => 0,
-                    'fecha_inicio' => $validated['fecha_inicio'],
-                    'fecha_fin_estimada' => $validated['fecha_fin_estimada'],
-                    'estado' => 'Pendiente',
-                    'notas' => $validated['notas'] ?? null,
-                    'created_by' => Auth::id(),
+                    'cantidad_producida'  => 0,
+                    'fecha_inicio'        => $validated['fecha_inicio'],
+                    'fecha_fin_estimada'  => $validated['fecha_fin_estimada'],
+                    'estado'              => 'Pendiente',
+                    'notas'               => $validated['notas'] ?? null,
+                    'created_by'          => Auth::id(),
                 ]);
+
+                $orden->empleadosAsignados()->sync($validated['empleados']);
 
                 foreach ($request->insumos as $insumo) {
                     $orden->insumos()->attach($insumo['id'], [
@@ -340,7 +342,6 @@ class OrdenProduccionController extends Controller
                     ]);
                 }
 
-                // Descuenta stock de los insumos inventariables (valida antes).
                 $this->inventario->validarYDescontar($orden, Auth::id());
             });
         } catch (\InvalidArgumentException $e) {
@@ -360,15 +361,16 @@ class OrdenProduccionController extends Controller
     public function storeBatch(Request $request)
     {
         $validated = $request->validate([
-            'pedido_id' => 'required|exists:pedido,id',
-            'ordenes' => 'required|array|min:1',
-            'ordenes.*.detalle_pedido_id' => 'required|exists:detalle_pedido,id',
-            'ordenes.*.empleado_id' => 'required|exists:empleado,id',
-            'ordenes.*.fecha_inicio' => 'required|date',
-            'ordenes.*.fecha_fin_estimada' => 'required|date|after:ordenes.*.fecha_inicio',
-            'ordenes.*.notas' => 'nullable|string',
-            'ordenes.*.insumos' => 'required|array|min:1',
-            'ordenes.*.insumos.*.id' => 'required|exists:insumo,id',
+            'pedido_id'                           => 'required|exists:pedido,id',
+            'ordenes'                             => 'required|array|min:1',
+            'ordenes.*.detalle_pedido_id'         => 'required|exists:detalle_pedido,id',
+            'ordenes.*.empleados'                 => 'required|array|min:1',
+            'ordenes.*.empleados.*'               => 'required|exists:empleado,id',
+            'ordenes.*.fecha_inicio'              => 'required|date',
+            'ordenes.*.fecha_fin_estimada'        => 'required|date|after:ordenes.*.fecha_inicio',
+            'ordenes.*.notas'                     => 'nullable|string',
+            'ordenes.*.insumos'                   => 'required|array|min:1',
+            'ordenes.*.insumos.*.id'              => 'required|exists:insumo,id',
             'ordenes.*.insumos.*.cantidad_estimada' => 'required|numeric|min:0.01',
         ]);
 
@@ -415,7 +417,7 @@ class OrdenProduccionController extends Controller
                         'pedido_id'           => $detalle->pedido_id,
                         'detalle_pedido_id'   => $detalle->id,
                         'producto_id'         => $detalle->producto_id,
-                        'empleado_id'         => $o['empleado_id'],
+                        'empleado_id'         => $o['empleados'][0], // responsable principal
                         'cantidad_solicitada' => $detalle->cantidad,
                         'cantidad_producida'  => 0,
                         'cantidad_defectuosa' => 0,
@@ -425,6 +427,9 @@ class OrdenProduccionController extends Controller
                         'notas'               => $o['notas'] ?? null,
                         'created_by'          => Auth::id(),
                     ]);
+
+                    $orden->empleadosAsignados()->sync($o['empleados']);
+
                     foreach ($o['insumos'] as $ins) {
                         $orden->insumos()->attach($ins['id'], [
                             'cantidad_estimada' => $ins['cantidad_estimada'],
@@ -432,8 +437,6 @@ class OrdenProduccionController extends Controller
                         ]);
                     }
 
-                    // Descuenta stock de los insumos inventariables (valida antes).
-                    // Si alguna orden no tiene stock, el batch completo hace rollback.
                     $this->inventario->validarYDescontar($orden, Auth::id());
 
                     $creadas[] = $orden->id;
@@ -456,6 +459,7 @@ class OrdenProduccionController extends Controller
         $orden = OrdenProduccion::with([
                 'producto.tipoProducto',
                 'empleado.persona',
+                'empleadosAsignados.persona',
                 'detallePedido.tipoProducto',
                 'detallePedido.bordados.logo',
                 'detallePedido.color',
@@ -464,7 +468,6 @@ class OrdenProduccionController extends Controller
                 'creadoPor:id,name',
             ])->findOrFail($id);
 
-        // Expone el nombre legible (legacy o dinámico desde snapshot) al front.
         $orden->append('nombre_producto');
 
         return response()->json($orden);
@@ -522,6 +525,7 @@ class OrdenProduccionController extends Controller
                 'insumos',
                 'producto',
                 'empleado.persona',
+                'empleadosAsignados.persona',
                 'pedido.cliente',
                 'detallePedido.tipoProducto',
                 'detallePedido.color',
@@ -551,11 +555,12 @@ class OrdenProduccionController extends Controller
         // 'Cancelado' no se setea aquí: la cancelación tiene su propio endpoint
         // (cancelar) porque define la reposición de stock y exige motivo de merma.
         $validated = $request->validate([
-            'empleado_id' => 'required|exists:empleado,id',
-            'fecha_inicio' => 'required|date',
+            'empleados'          => 'required|array|min:1',
+            'empleados.*'        => 'required|exists:empleado,id',
+            'fecha_inicio'       => 'required|date',
             'fecha_fin_estimada' => 'required|date|after:fecha_inicio',
-            'estado' => 'required|in:Pendiente,En Proceso,Finalizado',
-            'notas' => 'nullable|string',
+            'estado'             => 'required|in:Pendiente,En Proceso,Finalizado',
+            'notas'              => 'nullable|string',
         ]);
 
         $fechaFinReal = $orden->fecha_fin_real;
@@ -569,13 +574,15 @@ class OrdenProduccionController extends Controller
         // ligados a la línea del pedido y los insumos ya comprometieron stock al
         // crear la orden (editarlos exigiría reconciliar inventario → cancelar+recrear).
         $orden->update([
-            'empleado_id' => $validated['empleado_id'],
-            'fecha_inicio' => $validated['fecha_inicio'],
-            'fecha_fin_estimada' => $validated['fecha_fin_estimada'],
-            'estado' => $validated['estado'],
-            'fecha_fin_real' => $fechaFinReal,
-            'notas' => $validated['notas'] ?? null,
+            'empleado_id'         => $validated['empleados'][0], // responsable principal
+            'fecha_inicio'        => $validated['fecha_inicio'],
+            'fecha_fin_estimada'  => $validated['fecha_fin_estimada'],
+            'estado'              => $validated['estado'],
+            'fecha_fin_real'      => $fechaFinReal,
+            'notas'               => $validated['notas'] ?? null,
         ]);
+
+        $orden->empleadosAsignados()->sync($validated['empleados']);
 
         Pedido::find($orden->pedido_id)?->recalcularEstado();
 
