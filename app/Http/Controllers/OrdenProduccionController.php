@@ -774,4 +774,33 @@ class OrdenProduccionController extends Controller
             'estado'  => $sub->estado,
         ]);
     }
+
+    // ══════════════════════════════════════════════════════════════════════
+    //  EXPORTACIÓN PDF
+    // ══════════════════════════════════════════════════════════════════════
+
+    /**
+     * Exportar las órdenes de producción a PDF, con filtros por estado y rango
+     * de fecha estimada de entrega (fecha_fin_estimada).
+     */
+    public function reportePdf(Request $request)
+    {
+        $query = OrdenProduccion::with(['producto', 'pedido', 'detallePedido.tipoProducto'])
+            ->orderBy('created_at', 'desc');
+
+        if ($request->filled('estado')) {
+            $query->where('estado', $request->estado);
+        }
+        if ($request->filled('fecha_desde')) {
+            $query->whereDate('fecha_fin_estimada', '>=', $request->fecha_desde);
+        }
+        if ($request->filled('fecha_hasta')) {
+            $query->whereDate('fecha_fin_estimada', '<=', $request->fecha_hasta);
+        }
+
+        $ordenes = $query->get();
+        $pdf = \PDF::loadView('admin.ordenes.reporte_pdf', compact('ordenes'))
+            ->setPaper('a4', 'landscape');
+        return $pdf->download('ordenes_produccion_' . now()->format('Y-m-d_H-i-s') . '.pdf');
+    }
 }
