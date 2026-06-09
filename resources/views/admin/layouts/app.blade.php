@@ -933,6 +933,7 @@
                 if (sel.multiple || sel.size > 1) return false;             // listbox/multiple
                 if ($s.is('[data-no-afs]')) return false;                   // opt-out explícito
                 if ($s.hasClass('select2-hidden-accessible')) return false; // gestionado por Select2
+                if ($s.closest('.input-group').length) return false;        // dentro de input-group: el .afs-wrap rompería el layout flex/bordes de Bootstrap
                 if ($s.closest('.afs-wrap').length) return false;           // ya realzado
                 if (!sel.options || sel.options.length === 0) return false; // aún sin opciones
                 return true;
