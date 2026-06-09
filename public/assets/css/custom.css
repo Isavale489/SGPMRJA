@@ -6370,6 +6370,108 @@ header#page-topbar,
    nativos en un input-group (evita el doble borde de 2px). */
 .input-group > .afs-wrap--ig:not(:first-child) { margin-left: -1px; }
 
+/* ── AtlanticoMultiSelect: multi-selección compacta (chips + checkboxes) ──
+   Reemplaza a Select2 multiple dentro de modales (atributos → tipos de
+   producto). In-house: sin CDN ni bugs de posicionamiento/altura en
+   .atlantico-modal. El <select multiple> nativo queda oculto (.afs-native)
+   como fuente de verdad; este control refleja y edita su selección. */
+.ams-wrap { position: relative; width: 100%; }
+/* .ams-control reutiliza .form-select (borde, radio, caret) pero crece en alto
+   para acomodar los chips en varias líneas en vez de una caja rígida. */
+.ams-control {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.3rem;
+    height: auto !important;
+    min-height: calc(1.5em + 0.75rem + 2px);
+    padding: 0.3rem 2.25rem 0.3rem 0.6rem !important;
+    border-color: rgba(30, 60, 114, 0.25) !important;
+    color: #2c3e50 !important;
+    background-color: #ffffff !important;
+    cursor: pointer;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease !important;
+}
+.ams-control:hover { border-color: rgba(30, 60, 114, 0.4) !important; }
+.ams-control:focus,
+.ams-control.show {
+    border-color: #1e3c72 !important;
+    box-shadow: 0 0 0 0.2rem rgba(30, 60, 114, 0.15) !important;
+}
+.ams-placeholder { color: #98a2b3; font-size: 0.9rem; }
+.ams-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    max-width: 100%;
+    background-color: rgba(30, 60, 114, 0.08);
+    color: #1e3c72;
+    border: 1px solid rgba(30, 60, 114, 0.18);
+    border-radius: 1rem;
+    padding: 0.08rem 0.25rem 0.08rem 0.6rem;
+    font-size: 0.78rem;
+    line-height: 1.5;
+}
+.ams-chip-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ams-chip-remove {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.05rem;
+    height: 1.05rem;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: #1e3c72;
+    font-size: 0.95rem;
+    line-height: 1;
+    padding: 0;
+    cursor: pointer;
+    opacity: 0.65;
+    transition: opacity 0.15s ease, background-color 0.15s ease;
+}
+.ams-chip-remove:hover { opacity: 1; background-color: rgba(30, 60, 114, 0.15); }
+.ams-menu {
+    max-height: 12rem;
+    overflow-y: auto;
+    min-width: 100%;
+    padding: 0.25rem;
+    font-size: 0.85rem;
+}
+.ams-option {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    margin: 0;
+    padding: 0.4rem 0.55rem;
+    border-radius: 0.35rem;
+    white-space: normal;
+    cursor: pointer;
+}
+.ams-option:hover { background-color: rgba(30, 60, 114, 0.07); }
+.ams-option input { pointer-events: none; flex: 0 0 auto; }
+.ams-empty { padding: 0.5rem 0.6rem; color: #98a2b3; font-size: 0.82rem; list-style: none; }
+
+[data-bs-theme="dark"] .ams-control {
+    background-color: #1f2229 !important;
+    border-color: rgba(78, 122, 199, 0.3) !important;
+    color: #c8cbd0 !important;
+}
+[data-bs-theme="dark"] .ams-control:focus,
+[data-bs-theme="dark"] .ams-control.show {
+    border-color: #4e7ac7 !important;
+    box-shadow: 0 0 0 0.2rem rgba(78, 122, 199, 0.2) !important;
+}
+[data-bs-theme="dark"] .ams-placeholder { color: #7a828e; }
+[data-bs-theme="dark"] .ams-chip {
+    background-color: rgba(78, 122, 199, 0.18);
+    color: #c8d4ea;
+    border-color: rgba(78, 122, 199, 0.35);
+}
+[data-bs-theme="dark"] .ams-chip-remove { color: #c8d4ea; }
+[data-bs-theme="dark"] .ams-chip-remove:hover { background-color: rgba(78, 122, 199, 0.3); }
+[data-bs-theme="dark"] .ams-option:hover { background-color: rgba(78, 122, 199, 0.15); }
+
 /* ── Select2 alineado a AtlanticoSelect ──────────────────────────────
    Los selects buscables/múltiples (producto, insumo, tipos) usan Select2
    y NO los toca el realce .afs-*. Para que el sistema luzca consistente,

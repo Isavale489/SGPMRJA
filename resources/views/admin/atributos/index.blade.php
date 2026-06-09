@@ -2,8 +2,6 @@
 
 @push('styles')
     <link href="{{ URL::asset('assets/libs/sweetalert2/sweetalert2.min.css') }}" rel="stylesheet" type="text/css" />
-    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-    <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
     <style>
         .atributo-row { cursor: pointer; }
         .atributo-row.is-selected td { background-color: rgba(30, 60, 114, .08) !important; }
@@ -216,7 +214,6 @@
 
 @push('scripts')
     <script src="{{ URL::asset('/assets/libs/sweetalert2/sweetalert2.min.js') }}"></script>
-    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script>
     (function() {
         'use strict';
@@ -232,15 +229,73 @@
         let atributosCache = [];
         let selectedAtributo = null;
 
-        // Tipos de Producto: dropdown multi-selección (Select2) — sin necesidad de Ctrl.
-        // dropdownParent en el modal para que el desplegable quede por encima del backdrop.
-        $('#atr-tipos-producto').select2({
-            theme: 'bootstrap-5',
-            dropdownParent: $('#atributoModal'),
-            placeholder: 'Selecciona uno o varios tipos…',
-            closeOnSelect: false,
-            width: '100%'
+        // Tipos de Producto: multi-selección compacta in-house (AtlanticoMultiSelect).
+        // Reemplaza a Select2 para evitar bugs de posicionamiento/altura dentro del
+        // modal. El <select multiple> nativo queda oculto (.afs-native) como fuente de
+        // verdad: el resto del JS sigue leyendo/escribiendo con .val()/.trigger('change').
+        const $tiposNative = $('#atr-tipos-producto');
+        const $amsWrap     = $('<div class="ams-wrap dropdown"></div>');
+        const $amsControl  = $('<div class="ams-control form-select" data-bs-toggle="dropdown" tabindex="0" role="button" aria-expanded="false"></div>');
+        const $amsMenu     = $('<ul class="dropdown-menu ams-menu w-100"></ul>');
+
+        // Construye un ítem por cada <option> (checkbox + etiqueta, sin inyección de HTML).
+        $tiposNative.find('option').each(function () {
+            const $cb    = $('<input type="checkbox" class="form-check-input m-0">').val(this.value);
+            const $label = $('<label class="ams-option"></label>').append($cb).append($('<span></span>').text(this.text));
+            $amsMenu.append($('<li></li>').append($label));
         });
+        if (!$amsMenu.children().length) {
+            $amsMenu.append('<li class="ams-empty">No hay tipos de producto registrados.</li>');
+        }
+
+        $tiposNative.addClass('afs-native').after($amsWrap);
+        $amsWrap.append($amsControl, $amsMenu);
+
+        function renderAmsControl() {
+            const $selected = $tiposNative.find('option:selected');
+            $amsControl.empty();
+            if (!$selected.length) {
+                $amsControl.append('<span class="ams-placeholder">Selecciona uno o varios tipos…</span>');
+                return;
+            }
+            $selected.each(function () {
+                $amsControl.append(
+                    $('<span class="ams-chip"></span>')
+                        .append($('<span class="ams-chip-label"></span>').text(this.text))
+                        .append($('<button type="button" class="ams-chip-remove" aria-label="Quitar">&times;</button>').attr('data-val', this.value))
+                );
+            });
+        }
+
+        function syncAmsCheckboxes() {
+            $amsMenu.find('input[type="checkbox"]').each(function () {
+                this.checked = $tiposNative.find('option[value="' + this.value + '"]').prop('selected');
+            });
+        }
+
+        // Toggle desde el menú (checkbox). El click en el <label> ya togglea el input.
+        $amsMenu.on('change', 'input[type="checkbox"]', function () {
+            $tiposNative.find('option[value="' + this.value + '"]').prop('selected', this.checked);
+            renderAmsControl();
+        });
+        // Mantener el dropdown abierto al elegir varios (closeOnSelect: false).
+        $amsMenu.on('click', '.ams-option', function (e) { e.stopPropagation(); });
+
+        // Quitar un chip sin abrir/cerrar el dropdown.
+        $amsControl.on('click', '.ams-chip-remove', function (e) {
+            e.stopPropagation();
+            $tiposNative.find('option[value="' + $(this).data('val') + '"]').prop('selected', false);
+            renderAmsControl();
+            syncAmsCheckboxes();
+        });
+
+        // Reflejar en la UI cuando el JS externo hace .val(ids).trigger('change').
+        $tiposNative.on('change', function () {
+            renderAmsControl();
+            syncAmsCheckboxes();
+        });
+
+        renderAmsControl();
 
         // ----------- ATRIBUTOS -----------
         function loadAtributos() {
