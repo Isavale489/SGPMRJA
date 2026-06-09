@@ -202,19 +202,25 @@ class Pedido extends Model
 
     public function getProgresoProduccionAttribute(): float
     {
-        $totalLineas = $this->lineasProducibles()->count();
+        // Ponderado por unidades: una línea puede repartirse en varias órdenes
+        // (cada una con su cantidad parcial), así que promediar por línea ya no
+        // refleja el avance real.
+        $totalUnidades = (int) $this->lineasProducibles()->sum('cantidad');
 
-        if ($totalLineas === 0) {
+        if ($totalUnidades <= 0) {
             return 0.0;
         }
 
-        $ordenes = $this->relationLoaded('ordenes')
-            ? $this->ordenes
-            : $this->ordenes()->get();
+        $ordenes = ($this->relationLoaded('ordenes') ? $this->ordenes : $this->ordenes()->get())
+            ->where('estado', '!=', 'Cancelado');
 
-        $suma = $ordenes->sum(fn ($orden) => $orden->progreso); // fracción 0..1 por orden
+        // Una orden Finalizada cuenta completa aunque el kanban de sub-órdenes la
+        // haya cerrado sin registrar todos los avances unidad a unidad.
+        $producidas = $ordenes->sum(fn ($o) => $o->estado === 'Finalizado'
+            ? $o->cantidad_solicitada
+            : min($o->cantidad_producida, $o->cantidad_solicitada));
 
-        return round(min(1.0, $suma / $totalLineas) * 100, 1);
+        return round(min(1.0, $producidas / $totalUnidades) * 100, 1);
     }
 
     /**
@@ -223,7 +229,9 @@ class Pedido extends Model
      * Reglas:
      *   - Cancelado es terminal/manual: nunca se auto-recalcula.
      *   - Sin órdenes activas (o todas canceladas) → Pendiente.
-     *   - Todas las líneas con orden Finalizada → Completado.
+     *   - Todas las líneas COMPLETAS → Completado. Una línea está completa
+     *     cuando sus órdenes activas cubren todas sus unidades (el reparto
+     *     entre varias órdenes/empleados es válido) y todas están Finalizadas.
      *   - Al menos una orden En Proceso o Finalizada → Procesando.
      *   - Solo órdenes Pendientes → Pendiente.
      *
@@ -236,16 +244,24 @@ class Pedido extends Model
             return; // terminal y manual
         }
 
-        $totalLineas = $this->lineasProducibles()->count();
+        $lineas  = $this->lineasProducibles();
         $activas = $this->ordenes()->get()->where('estado', '!=', 'Cancelado');
 
-        if ($totalLineas === 0 || $activas->isEmpty()) {
+        if ($lineas->isEmpty() || $activas->isEmpty()) {
             $nuevo = 'Pendiente';
         } else {
-            $finalizadas = $activas->where('estado', 'Finalizado')->count();
-            $enMarcha    = $activas->whereIn('estado', ['En Proceso', 'Finalizado'])->count();
+            $porLinea = $activas->groupBy('detalle_pedido_id');
 
-            if ($finalizadas >= $totalLineas) {
+            $lineasCompletas = $lineas->filter(function ($d) use ($porLinea) {
+                $ords = $porLinea->get($d->id, collect());
+                return $ords->isNotEmpty()
+                    && $ords->sum('cantidad_solicitada') >= $d->cantidad
+                    && $ords->every(fn ($o) => $o->estado === 'Finalizado');
+            })->count();
+
+            $enMarcha = $activas->whereIn('estado', ['En Proceso', 'Finalizado'])->count();
+
+            if ($lineasCompletas >= $lineas->count()) {
                 $nuevo = 'Completado';
             } elseif ($enMarcha > 0) {
                 $nuevo = 'Procesando';

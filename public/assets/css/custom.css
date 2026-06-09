@@ -5349,6 +5349,16 @@ header#page-topbar,
 }
 .ord-asig-dur.is-bad { color: #b42318; background: #fee4e2; }
 .ord-asig-dur:empty { display: none; }
+/* Reparto de una línea entre varias órdenes: chip de cobertura + botones Dividir/Quitar */
+.ord-asig-resto {
+    flex: 0 0 auto; font-size: 12px; font-weight: 600; border-radius: 999px;
+    padding: 3px 10px; white-space: nowrap;
+}
+.ord-asig-resto.is-ok   { color: #067647; background: #dcfce7; }
+.ord-asig-resto.is-warn { color: #b54708; background: #fef0c7; }
+.ord-asig-resto:empty { display: none; }
+.ord-asig-split-btns { flex: 0 0 auto; display: flex; gap: 4px; }
+.ord-asig-split-btns .btn { padding: 2px 8px; font-size: 12px; }
 .ord-asig-card-body { padding: 14px; }
 .ord-asig-card .input-group-text { background: #f1f5f9; border-color: #e2e8f0; color: #1e3c72; }
 
@@ -5523,6 +5533,8 @@ header#page-topbar,
 [data-bs-theme="dark"] .ord-asig-card .input-group-text { background: #0f172a; border-color: #334155; color: #93c5fd; }
 [data-bs-theme="dark"] .ord-asig-dur { background: #0c3a52; color: #7dd3fc; }
 [data-bs-theme="dark"] .ord-asig-dur.is-bad { background: #4c1d1a; color: #fca5a5; }
+[data-bs-theme="dark"] .ord-asig-resto.is-ok   { background: #103e2b; color: #6ee7b7; }
+[data-bs-theme="dark"] .ord-asig-resto.is-warn { background: #4a3413; color: #fcd34d; }
 
 /* ============================================================
    MÓDULO ÓRDENES DE PRODUCCIÓN — MODAL DETALLES (#viewModal)

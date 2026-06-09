@@ -156,13 +156,51 @@
             return chips.join('');
         }
 
-        // Construye una "línea" del wizard desde una línea del pedido disponible
+        // Insumos de una orden a partir del consumo POR UNIDAD × unidades asignadas.
+        // `por_unidad` se conserva para reescalar sin deriva de redondeo.
+        function insumosDesdeUnitarios(unitarios, unidades) {
+            return (unitarios || []).map(function (i) {
+                const pu = parseFloat(i.cantidad_unitaria) || 0;
+                return { id: i.id, nombre: i.nombre, unidad: i.unidad || '', por_unidad: pu, cantidad: +(pu * unidades).toFixed(2) };
+            });
+        }
+
+        // Cambia las unidades de una orden reescalando sus insumos en proporción
+        // (preserva agregados/ediciones manuales del paso 3 vía su por_unidad).
+        // En edición NO se tocan los insumos: ya comprometieron stock al crear.
+        function setCantidadOrden(l, nueva) {
+            nueva = Math.max(1, parseInt(nueva, 10) || 1);
+            const previa = parseInt(l.cantidad, 10) || 0;
+            if (nueva === previa) return;
+            if (!isEditMode()) {
+                (l.insumos || []).forEach(function (i) {
+                    if (!(i.por_unidad > 0) && previa > 0) i.por_unidad = i.cantidad / previa;
+                    i.cantidad = +((i.por_unidad || 0) * nueva).toFixed(2);
+                });
+            }
+            l.cantidad = nueva;
+        }
+
+        // Entradas del wizard que reparten la MISMA línea del pedido (cada entrada = una orden)
+        function grupoLinea(detalleId) {
+            return ordWiz.lineas.filter(function (x) { return x.detalle_id === detalleId; });
+        }
+        function unidadesUsadasGrupo(detalleId) {
+            return grupoLinea(detalleId).reduce(function (s, x) { return s + (parseInt(x.cantidad, 10) || 0); }, 0);
+        }
+
+        // Construye una "línea" del wizard (= una orden) desde una línea del pedido
+        // disponible. Arranca con todas las unidades aún sin asignar de la línea;
+        // "Dividir" la reparte en más órdenes.
         function makeLineaDesde(pedido, l) {
+            const pendiente = (l.cantidad_pendiente != null) ? l.cantidad_pendiente : l.cantidad;
             return {
                 detalle_id: l.detalle_id,
                 producto_id: l.producto_id,
                 producto_nombre: l.producto_nombre,
-                cantidad: l.cantidad,
+                linea_cantidad: l.cantidad,
+                cantidad_pendiente: pendiente,
+                cantidad: pendiente,
                 color: l.color,
                 talla: l.talla,
                 lleva_bordado: l.lleva_bordado,
@@ -171,11 +209,30 @@
                 fecha_inicio: hoyISO(),
                 fecha_fin_estimada: finEstimadoDefault(pedido.fecha_entrega, hoyISO()),
                 estado: 'Pendiente',
-                insumos: Array.isArray(l.insumos_default)
-                    ? l.insumos_default.map(function (i) {
-                        return { id: i.id, nombre: i.nombre, unidad: i.unidad || '', cantidad: parseFloat(i.cantidad) || 0 };
-                    })
-                    : []
+                insumos_unitarios: Array.isArray(l.insumos_default) ? l.insumos_default : [],
+                insumos: insumosDesdeUnitarios(l.insumos_default, pendiente)
+            };
+        }
+
+        // Clona una entrada como nueva "parte" de la misma línea (otra orden)
+        function makeParteDesde(l, unidades) {
+            return {
+                detalle_id: l.detalle_id,
+                producto_id: l.producto_id,
+                producto_nombre: l.producto_nombre,
+                linea_cantidad: l.linea_cantidad,
+                cantidad_pendiente: l.cantidad_pendiente,
+                cantidad: unidades,
+                color: l.color,
+                talla: l.talla,
+                lleva_bordado: l.lleva_bordado,
+                bordados_count: l.bordados_count,
+                empleado_ids: [],
+                fecha_inicio: l.fecha_inicio,
+                fecha_fin_estimada: l.fecha_fin_estimada,
+                estado: 'Pendiente',
+                insumos_unitarios: l.insumos_unitarios,
+                insumos: insumosDesdeUnitarios(l.insumos_unitarios, unidades)
             };
         }
 
@@ -273,15 +330,18 @@
                     const bordadoBadge = l.lleva_bordado
                         ? `<span class="badge bg-info-subtle text-info ms-1"><i class="ri-scissors-cut-line"></i> ${l.bordados_count} bordado(s)</span>`
                         : '';
-                    // Líneas con orden activa → solo badge informativo
-                    if (l.orden_id) {
+                    const pendiente = (l.cantidad_pendiente != null) ? l.cantidad_pendiente : l.cantidad;
+                    const asignada  = l.cantidad_asignada || 0;
+                    // Línea con TODAS sus unidades en órdenes activas → solo informativa
+                    if (!(pendiente > 0)) {
+                        const nOrd = l.ordenes_activas || 1;
                         return `
                             <div class="list-group-item d-flex justify-content-between align-items-center gap-2 flex-wrap">
                                 <div>
                                     <div class="fw-semibold text-muted">${escHtml(l.producto_nombre)}${bordadoBadge}</div>
                                     <small class="text-muted">${escHtml(meta)}</small>
                                 </div>
-                                <span class="badge bg-secondary"><i class="ri-check-line"></i> Orden #${l.orden_id}</span>
+                                <span class="badge bg-secondary"><i class="ri-check-line"></i> ${nOrd > 1 ? nOrd + ' órdenes activas' : 'Orden activa'}</span>
                             </div>`;
                     }
                     // Sin abono mínimo: línea visible pero no seleccionable (bloqueo de negocio).
@@ -295,13 +355,17 @@
                                 </div>
                             </div>`;
                     }
-                    // Líneas pendientes → checkbox seleccionable
+                    // Reparto previo parcial: se informa cuánto queda por asignar
+                    const parcialBadge = asignada > 0
+                        ? `<span class="badge bg-warning-subtle text-warning ms-1"><i class="ri-scales-3-line"></i> ${pendiente} de ${l.cantidad} u por asignar</span>`
+                        : '';
+                    // Líneas con unidades por asignar → checkbox seleccionable
                     return `
                         <label class="list-group-item d-flex align-items-center gap-2 flex-wrap" style="cursor: pointer;">
                             <input type="checkbox" class="form-check-input linea-check"
                                 data-pedido-id="${p.id}" data-detalle-id="${l.detalle_id}">
                             <div class="flex-grow-1">
-                                <div class="fw-semibold">${escHtml(l.producto_nombre)}${bordadoBadge}</div>
+                                <div class="fw-semibold">${escHtml(l.producto_nombre)}${bordadoBadge}${parcialBadge}</div>
                                 <small class="text-muted">${escHtml(meta)}</small>
                             </div>
                         </label>`;
@@ -320,7 +384,7 @@
                         <div class="cotizacion-header">
                             <span class="cotizacion-numero"><i class="ri-shopping-bag-line"></i> Pedido #${p.id}</span>
                             <span class="badge ${hayPendientes ? 'bg-success-subtle text-success' : 'bg-secondary'}">
-                                ${p.lineas_pendientes} de ${p.total_lineas} sin orden
+                                ${p.lineas_pendientes} de ${p.total_lineas} por asignar
                             </span>
                         </div>
                         <div class="d-flex align-items-center gap-2 flex-wrap mt-1 mb-2">
@@ -401,8 +465,9 @@
             }
             const detalleIds = $checked.map(function () { return parseInt($(this).data('detalle-id'), 10); }).get();
 
-            // Si la selección no cambió, conservar lo ya capturado (asignación/insumos)
-            const prev = ordWiz.lineas.map(l => l.detalle_id).slice().sort().join(',');
+            // Si la selección no cambió, conservar lo ya capturado (asignación/insumos/
+            // divisiones). Con líneas divididas hay detalle_id repetidos → comparar únicos.
+            const prev = Array.from(new Set(ordWiz.lineas.map(l => l.detalle_id))).sort().join(',');
             const now = detalleIds.slice().sort().join(',');
             if (ordWiz.pedido && ordWiz.pedido.id == pid && prev === now && ordWiz.lineas.length) return true;
 
@@ -521,7 +586,7 @@
         function asignacionCardHtml(l, idx) {
             const meta      = lineaMetaChips(l);
             const edit      = isEditMode();
-            const fechaCol  = edit ? 'col-md-4' : 'col-md-5';
+            const fechaCol  = edit ? 'col-md-3' : 'col-md-5';
             // 'Cancelado' no se ofrece aquí: la cancelación va por su propia acción
             // (define reposición de stock condicional y exige motivo de merma).
             const estadoBlock = edit
@@ -530,14 +595,38 @@
                   + '<option value="Pendiente">Pendiente</option><option value="En Proceso">En Proceso</option>'
                   + '<option value="Finalizado">Finalizado</option></select></div>'
                 : '';
+
+            // Reparto: una línea puede dividirse en varias órdenes (partes)
+            const grupo = grupoLinea(l.detalle_id);
+            const gn = grupo.length, gi = grupo.indexOf(l);
+            const parteChip = gn > 1
+                ? '<span class="badge badge-soft-info ord-asig-parte"><i class="ri-git-branch-line me-1"></i>Parte ' + (gi + 1) + ' de ' + gn + '</span>'
+                : '';
+            const splitBtns = !edit
+                ? '<div class="ord-asig-split-btns">'
+                  + '<button type="button" class="btn btn-sm btn-soft-primary ord-asig-split" data-idx="' + idx + '" title="Dividir estas unidades en otra orden (otro empleado)"><i class="ri-scissors-line"></i><span class="d-none d-lg-inline ms-1">Dividir</span></button>'
+                  + (gn > 1 ? '<button type="button" class="btn btn-sm btn-soft-danger ord-asig-unsplit" data-idx="' + idx + '" title="Quitar esta parte (devuelve sus unidades)"><i class="ri-close-line"></i></button>' : '')
+                  + '</div>'
+                : '';
+
+            // Unidades de ESTA orden. En edición solo es editable con la orden Pendiente.
+            const cantMax = edit ? (l.cantidad_maxima || l.cantidad) : (l.cantidad_pendiente || l.cantidad);
+            const cantDisabled = (edit && l.estado !== 'Pendiente')
+                ? ' disabled title="Solo editable con la orden Pendiente"' : '';
+            const cantBlock = '<div class="col-6 col-md-2"><label class="form-label form-label-sm required mb-1" for="ord-asig-cant-' + idx + '"><i class="ri-stack-line me-1"></i>Unidades</label>'
+                + '<input type="number" inputmode="numeric" class="form-control form-control-sm ord-asig-cant" id="ord-asig-cant-' + idx + '" data-idx="' + idx + '" min="1" max="' + cantMax + '" value="' + l.cantidad + '"' + cantDisabled + '>'
+                + '</div>';
+
             return '<div class="ord-asig-card" data-idx="' + idx + '">'
                 + '<div class="ord-asig-card-head">'
                 +   '<span class="ord-asig-num">' + (idx + 1) + '</span>'
                 +   '<div class="ord-asig-prod">'
                 +     '<div class="ord-asig-prod-name">' + escHtml(l.producto_nombre) + ' <span class="ord-asig-qty">· ' + l.cantidad + ' u</span></div>'
-                +     '<div class="ord-asig-chips">' + meta + '</div>'
+                +     '<div class="ord-asig-chips">' + meta + parteChip + '</div>'
                 +   '</div>'
+                +   '<span class="ord-asig-resto" id="ord-asig-resto-' + idx + '"></span>'
                 +   '<span class="ord-asig-dur" id="ord-asig-dur-' + idx + '"></span>'
+                +   splitBtns
                 + '</div>'
                 + '<div class="ord-asig-card-body"><div class="row g-2">'
                 +   '<div class="col-12">'
@@ -547,6 +636,7 @@
                 +     '</div>'
                 +     '<div class="ord-emp-feedback">Selecciona al menos un empleado.</div>'
                 +   '</div>'
+                +   cantBlock
                 +   '<div class="' + fechaCol + '"><label class="form-label form-label-sm required mb-1" for="ord-asig-inicio-' + idx + '">Inicio</label>'
                 +     '<div class="input-group input-group-sm"><span class="input-group-text"><i class="ri-calendar-event-line"></i></span>'
                 +     '<input type="date" class="form-control ord-asig-inicio" id="ord-asig-inicio-' + idx + '" data-idx="' + idx + '" value="' + (l.fecha_inicio || '') + '"></div></div>'
@@ -564,8 +654,8 @@
             $('#ord-porlinea-sep').attr('hidden', !multi);
             $('#ord-porlinea-count').text(multi ? ordWiz.lineas.length : '');
             $('#ord-asignacion-desc').text(multi
-                ? 'Asigna empleado y fechas a cada línea. Usa "Aplicar a todas" para ir más rápido.'
-                : 'Define quién produce la orden y sus fechas.');
+                ? 'Asigna empleados, unidades y fechas a cada orden. Usa "Aplicar a todas" para ir más rápido, o "Dividir" para repartir una línea entre varios empleados.'
+                : 'Define quién produce la orden, cuántas unidades y sus fechas. Con "Dividir" puedes repartir la línea entre varios empleados.');
 
             if (multi) {
                 if (!$('#ord-default-empleado-wrap .ord-default-emp-chk').length) {
@@ -583,7 +673,90 @@
                 if (isEditMode()) $('#ord-asig-estado-' + idx).val(l.estado || 'Pendiente');
                 actualizarDur($('#ord-asig-dur-' + idx), l.fecha_inicio, l.fecha_fin_estimada);
             });
+            actualizarChipsReparto();
         }
+
+        // Chip de cobertura por card: ¿la línea quedará completa tras guardar o
+        // quedarán unidades sin asignar (asignación parcial diferida, permitida)?
+        function actualizarChipsReparto() {
+            if (isEditMode()) { $('.ord-asig-resto').empty(); return; }
+            ordWiz.lineas.forEach(function (l, idx) {
+                const $chip = $('#ord-asig-resto-' + idx);
+                if (!$chip.length) return;
+                const resto = (l.cantidad_pendiente || 0) - unidadesUsadasGrupo(l.detalle_id);
+                if (resto > 0) {
+                    $chip.html('<i class="ri-error-warning-line me-1"></i>' + resto + ' u sin asignar')
+                        .attr('title', 'Podrás asignarlas luego creando otra orden para esta línea')
+                        .addClass('is-warn').removeClass('is-ok');
+                } else {
+                    $chip.html('<i class="ri-checkbox-circle-line me-1"></i>Línea completa')
+                        .attr('title', 'Todas las unidades de la línea quedarán asignadas')
+                        .addClass('is-ok').removeClass('is-warn');
+                }
+            });
+        }
+
+        // Unidades de una orden: tope vivo = pendiente de la línea menos lo que
+        // usan las otras partes (nunca se puede sobre-asignar desde la UI).
+        $(document).on('input', '.ord-asig-cant', function () {
+            const idx = parseInt($(this).data('idx'), 10);
+            const l = ordWiz.lineas[idx];
+            if (!l) return;
+            let v = parseInt(this.value, 10);
+            if (isNaN(v)) return; // permitir seguir escribiendo
+            if (v < 1) v = 1;
+            if (isEditMode()) {
+                const tope = l.cantidad_maxima || v;
+                if (v > tope) v = tope;
+            } else {
+                const otras = unidadesUsadasGrupo(l.detalle_id) - (parseInt(l.cantidad, 10) || 0);
+                const tope = Math.max(1, (l.cantidad_pendiente || 0) - otras);
+                if (v > tope) v = tope;
+            }
+            if (String(v) !== this.value) this.value = v;
+            setCantidadOrden(l, v);
+            $(this).closest('.ord-asig-card').find('.ord-asig-qty').first().text('· ' + v + ' u');
+            actualizarChipsReparto();
+        });
+
+        // Si el campo queda vacío al salir, restaurar las unidades del estado
+        $(document).on('blur', '.ord-asig-cant', function () {
+            const idx = parseInt($(this).data('idx'), 10);
+            const l = ordWiz.lineas[idx];
+            if (l && (!this.value || parseInt(this.value, 10) < 1)) this.value = l.cantidad;
+        });
+
+        // Dividir: crea otra orden (parte) para la misma línea. Si quedan unidades
+        // libres se las lleva; si no, parte las de esta orden a la mitad.
+        $(document).on('click', '.ord-asig-split', function () {
+            syncAsignacion();
+            const idx = parseInt($(this).data('idx'), 10);
+            const l = ordWiz.lineas[idx];
+            if (!l) return;
+            const libre = (l.cantidad_pendiente || 0) - unidadesUsadasGrupo(l.detalle_id);
+            let unidades;
+            if (libre >= 1) {
+                unidades = libre;
+            } else if ((parseInt(l.cantidad, 10) || 0) >= 2) {
+                unidades = Math.floor(l.cantidad / 2);
+                setCantidadOrden(l, l.cantidad - unidades);
+            } else {
+                Swal.fire({ icon: 'info', title: 'Nada que dividir', text: 'Esta parte tiene 1 unidad y la línea no tiene unidades libres.', toast: true, position: 'top-end', showConfirmButton: false, timer: 2200 });
+                return;
+            }
+            ordWiz.lineas.splice(idx + 1, 0, makeParteDesde(l, unidades));
+            renderAsignacion();
+        });
+
+        // Quitar una parte: sus unidades vuelven a quedar libres (chip ámbar)
+        $(document).on('click', '.ord-asig-unsplit', function () {
+            syncAsignacion();
+            const idx = parseInt($(this).data('idx'), 10);
+            const l = ordWiz.lineas[idx];
+            if (!l || grupoLinea(l.detalle_id).length < 2) return;
+            ordWiz.lineas.splice(idx, 1);
+            renderAsignacion();
+        });
 
         // Duración en vivo al cambiar fechas de una línea
         $(document).on('change', '.ord-asig-inicio, .ord-asig-fin', function () {
@@ -600,6 +773,8 @@
                 $(this).find('.ord-asig-emp-chk:checked').each(function () {
                     l.empleado_ids.push($(this).val());
                 });
+                const v = parseInt($(this).find('.ord-asig-cant').val(), 10);
+                if (!isNaN(v) && v >= 1) setCantidadOrden(l, v);
                 l.fecha_inicio = $(this).find('.ord-asig-inicio').val() || '';
                 l.fecha_fin_estimada = $(this).find('.ord-asig-fin').val() || '';
                 const $est = $(this).find('.ord-asig-estado');
@@ -644,17 +819,52 @@
                 const $chks = $('#ord-asig-emp-chks-' + idx);
                 const $ini  = $('#ord-asig-inicio-' + idx);
                 const $fin  = $('#ord-asig-fin-' + idx);
+                const $cant = $('#ord-asig-cant-' + idx);
                 if (!l.empleado_ids || !l.empleado_ids.length) {
                     $chks.addClass('is-invalid-group');
                     ok = false; $first = $first || $chks;
                 } else {
                     $chks.removeClass('is-invalid-group');
                 }
+                if (!l.cantidad || l.cantidad < 1) { marcarInvalido($cant, 'Al menos 1 unidad.'); ok = false; $first = $first || $cant; } else marcarValido($cant);
                 if (!l.fecha_inicio) { marcarInvalido($ini, 'Fecha de inicio requerida.'); ok = false; $first = $first || $ini; } else marcarValido($ini);
                 if (!l.fecha_fin_estimada) { marcarInvalido($fin, 'Fecha fin requerida.'); ok = false; $first = $first || $fin; }
                 else if (l.fecha_inicio && l.fecha_fin_estimada <= l.fecha_inicio) { marcarInvalido($fin, 'El fin debe ser posterior al inicio.'); ok = false; $first = $first || $fin; }
                 else marcarValido($fin);
             });
+
+            // Sobre-asignación por línea (los inputs se capan en vivo; red de seguridad)
+            if (ok && !isEditMode()) {
+                const vistos = {};
+                ordWiz.lineas.forEach(function (l) {
+                    if (vistos[l.detalle_id]) return;
+                    vistos[l.detalle_id] = true;
+                    if (unidadesUsadasGrupo(l.detalle_id) > (l.cantidad_pendiente || 0)) {
+                        ok = false;
+                        Swal.fire({ icon: 'warning', title: 'Reparto excedido', text: '"' + l.producto_nombre + '" tiene asignadas más unidades de las disponibles. Ajusta las partes.' });
+                    }
+                });
+            }
+
+            // Asignación parcial diferida: permitida, solo se informa una vez
+            if (ok && !isEditMode()) {
+                const restos = [], vistos2 = {};
+                ordWiz.lineas.forEach(function (l) {
+                    if (vistos2[l.detalle_id]) return;
+                    vistos2[l.detalle_id] = true;
+                    const resto = (l.cantidad_pendiente || 0) - unidadesUsadasGrupo(l.detalle_id);
+                    if (resto > 0) restos.push(l.producto_nombre + ': ' + resto + ' u');
+                });
+                if (restos.length) {
+                    Swal.fire({
+                        icon: 'info',
+                        title: 'Quedarán unidades sin asignar',
+                        text: restos.join(' · ') + ' — podrás asignarlas luego creando más órdenes.',
+                        toast: true, position: 'top-end', showConfirmButton: false, timer: 3200
+                    });
+                }
+            }
+
             if (!ok && $first) $first[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
             return ok;
         }
@@ -691,12 +901,17 @@
             const addBtn = ro
                 ? '<span class="badge rounded-pill badge-soft-secondary flex-shrink-0"><i class="ri-lock-line me-1"></i>Insumos fijos</span>'
                 : '<button type="button" class="btn btn-sm btn-soft-primary ord-ins-add flex-shrink-0" data-l="' + idx + '"><i class="ri-add-line me-1"></i>Agregar insumo</button>';
+            const grupo = grupoLinea(l.detalle_id);
+            const parteChip = grupo.length > 1
+                ? '<span class="badge badge-soft-info ord-asig-parte"><i class="ri-git-branch-line me-1"></i>Parte ' + (grupo.indexOf(l) + 1) + ' de ' + grupo.length
+                  + ' · ' + escHtml(empNames(l.empleado_ids)) + '</span>'
+                : '';
             return '<div class="ord-asig-card ord-ins-card" data-idx="' + idx + '">'
                 + '<div class="ord-asig-card-head">'
                 +   '<span class="ord-asig-num">' + (idx + 1) + '</span>'
                 +   '<div class="ord-asig-prod">'
                 +     '<div class="ord-asig-prod-name">' + escHtml(l.producto_nombre) + ' <span class="ord-asig-qty">· ' + l.cantidad + ' u a producir</span></div>'
-                +     '<div class="ord-asig-chips">' + lineaMetaChips(l)
+                +     '<div class="ord-asig-chips">' + lineaMetaChips(l) + parteChip
                 +       '<span class="badge rounded-pill badge-soft-info"><i class="ri-tools-line me-1"></i>' + nIns + ' insumo' + (nIns === 1 ? '' : 's') + '</span></div>'
                 +   '</div>'
                 +   addBtn
@@ -748,20 +963,29 @@
             if (isNaN(cantidad) || cantidad <= 0) { marcarInvalido($('#insumo-add-cantidad'), 'La cantidad debe ser mayor a cero.'); return; }
 
             const $opt = $sel.find('option:selected');
+            const L = ordWiz.lineas[ordInsLineIdx];
+            if (!L) { $('#insumoAddModal').modal('hide'); return; }
+            const unidadesOrden = parseInt(L.cantidad, 10) || 1;
             const item = {
                 id: parseInt(id, 10),
                 nombre: $opt.data('nombre') || $opt.text().replace(/\s*\(.*\)\s*$/, ''),
                 unidad: $opt.data('unidad') || '',
+                // por_unidad permite reescalar el insumo si luego cambian las
+                // unidades de la orden (división de la línea entre empleados)
+                por_unidad: cantidad / unidadesOrden,
                 cantidad: +cantidad.toFixed(2)
             };
-            const L = ordWiz.lineas[ordInsLineIdx];
-            if (!L) { $('#insumoAddModal').modal('hide'); return; }
             if (ordInsEditIdx != null) {
                 L.insumos[ordInsEditIdx] = item;
             } else {
                 const existing = L.insumos.findIndex(x => x.id === item.id);
-                if (existing !== -1) L.insumos[existing].cantidad = +(L.insumos[existing].cantidad + item.cantidad).toFixed(2);
-                else L.insumos.push(item);
+                if (existing !== -1) {
+                    const tot = +(L.insumos[existing].cantidad + item.cantidad).toFixed(2);
+                    L.insumos[existing].cantidad = tot;
+                    L.insumos[existing].por_unidad = tot / unidadesOrden;
+                } else {
+                    L.insumos.push(item);
+                }
             }
             renderInsumosAcc();
             $('#insumoAddModal').modal('hide');
@@ -807,9 +1031,13 @@
             const estadoTh = isEditMode() ? '<th class="text-center">Estado</th>' : '';
             const rows = ordWiz.lineas.map(function (l, idx) {
                 const estadoTd = isEditMode() ? '<td class="text-center"><span class="badge badge-soft-secondary">' + escHtml(l.estado || 'Pendiente') + '</span></td>' : '';
+                const grupo = grupoLinea(l.detalle_id);
+                const parteChip = grupo.length > 1
+                    ? '<span class="badge badge-soft-info"><i class="ri-git-branch-line me-1"></i>Parte ' + (grupo.indexOf(l) + 1) + ' de ' + grupo.length + '</span>'
+                    : '';
                 return '<tr>'
                     + '<td class="cot-col-num">' + (idx + 1) + '</td>'
-                    + '<td><div class="fw-semibold">' + escHtml(l.producto_nombre) + '</div><div class="d-flex flex-wrap gap-1 mt-1">' + lineaMetaChips(l) + '</div></td>'
+                    + '<td><div class="fw-semibold">' + escHtml(l.producto_nombre) + '</div><div class="d-flex flex-wrap gap-1 mt-1">' + lineaMetaChips(l) + parteChip + '</div></td>'
                     + '<td class="text-center fw-semibold">' + l.cantidad + '</td>'
                     + '<td>' + escHtml(empNames(l.empleado_ids)) + '</td>'
                     + '<td class="text-center fs-12">' + (l.fecha_inicio || '—') + '<br><span class="text-muted">→ ' + (l.fecha_fin_estimada || '—') + '</span></td>'
@@ -892,6 +1120,9 @@
                     producto_id: data.producto_id,
                     producto_nombre: data.nombre_producto || (data.producto ? data.producto.nombre : (data.producto_id ? 'Producto #' + data.producto_id : 'Producto')),
                     cantidad: data.cantidad_solicitada,
+                    linea_cantidad: data.linea_cantidad || data.cantidad_solicitada,
+                    // Tope al editar: sus unidades + las que la línea tiene sin asignar
+                    cantidad_maxima: data.cantidad_maxima || data.cantidad_solicitada,
                     color: det.color ? det.color.nombre : null,
                     talla: det.talla ? (det.talla.etiqueta || det.talla.nombre) : null,
                     lleva_bordado: !!(det.bordados && det.bordados.length),
@@ -941,7 +1172,8 @@
             }
             for (let i = 0; i < ordWiz.lineas.length; i++) {
                 const l = ordWiz.lineas[i];
-                if (!l.empleado_ids || !l.empleado_ids.length || !l.fecha_inicio || !l.fecha_fin_estimada || l.fecha_fin_estimada <= l.fecha_inicio) {
+                if (!l.empleado_ids || !l.empleado_ids.length || !l.cantidad || l.cantidad < 1
+                    || !l.fecha_inicio || !l.fecha_fin_estimada || l.fecha_fin_estimada <= l.fecha_inicio) {
                     ordShowStep(2); validateStep2(); return false;
                 }
                 if (!l.insumos || !l.insumos.length) {
@@ -968,7 +1200,8 @@
                 url = "{{ route('ordenes.update', ':id') }}".replace(':id', ordWiz.editId);
                 payload = {
                     _token: '{{ csrf_token() }}', _method: 'PUT',
-                    empleados: l.empleado_ids, fecha_inicio: l.fecha_inicio, fecha_fin_estimada: l.fecha_fin_estimada,
+                    empleados: l.empleado_ids, cantidad: l.cantidad,
+                    fecha_inicio: l.fecha_inicio, fecha_fin_estimada: l.fecha_fin_estimada,
                     estado: l.estado || 'Pendiente', notas: notas, insumos: mapInsumos(l.insumos)
                 };
             } else if (ordWiz.lineas.length === 1) {
@@ -976,7 +1209,7 @@
                 url = "{{ route('ordenes.store') }}";
                 payload = {
                     _token: '{{ csrf_token() }}',
-                    detalle_pedido_id: l.detalle_id, empleados: l.empleado_ids,
+                    detalle_pedido_id: l.detalle_id, empleados: l.empleado_ids, cantidad: l.cantidad,
                     fecha_inicio: l.fecha_inicio, fecha_fin_estimada: l.fecha_fin_estimada,
                     notas: notas, insumos: mapInsumos(l.insumos)
                 };
@@ -986,7 +1219,7 @@
                     _token: '{{ csrf_token() }}',
                     pedido_id: ordWiz.pedido.id,
                     ordenes: ordWiz.lineas.map(l => ({
-                        detalle_pedido_id: l.detalle_id, empleados: l.empleado_ids,
+                        detalle_pedido_id: l.detalle_id, empleados: l.empleado_ids, cantidad: l.cantidad,
                         fecha_inicio: l.fecha_inicio, fecha_fin_estimada: l.fecha_fin_estimada,
                         notas: notas, insumos: mapInsumos(l.insumos)
                     }))

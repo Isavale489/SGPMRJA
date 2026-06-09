@@ -217,8 +217,8 @@
                                 <div class="ord-apply-head">
                                     <span class="ord-apply-icon"><i class="ri-flashlight-line"></i></span>
                                     <div>
-                                        <div class="ord-apply-title">Aplicar a todas las líneas</div>
-                                        <div class="ord-apply-sub">Define empleado y fechas una vez y cópialos a cada orden.</div>
+                                        <div class="ord-apply-title">Aplicar a todas las órdenes</div>
+                                        <div class="ord-apply-sub">Define empleados y fechas una vez y cópialos a cada orden.</div>
                                     </div>
                                 </div>
                                 <div class="row g-2 align-items-end">
@@ -249,7 +249,7 @@
                             <div class="ord-section-divider">
                                 <span class="ord-section-divider-line"></span>
                                 <span class="ord-section-divider-label">
-                                    <i class="ri-list-check-2 me-1"></i>Asignación por línea
+                                    <i class="ri-list-check-2 me-1"></i>Asignación por orden
                                     <span class="ord-section-divider-count" id="ord-porlinea-count"></span>
                                 </span>
                                 <span class="ord-section-divider-line"></span>

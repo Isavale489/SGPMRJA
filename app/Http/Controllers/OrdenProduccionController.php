@@ -148,29 +148,35 @@ class OrdenProduccionController extends Controller
             ->orderBy('created_at', 'desc')
             ->get();
 
-        // [detalle_pedido_id => orden_id] de las líneas con orden activa (no cancelada)
-        $detallesConOrden = OrdenProduccion::whereIn('pedido_id', $pedidos->pluck('id'))
+        // Unidades comprometidas por línea en órdenes activas (no canceladas).
+        // Una línea admite VARIAS órdenes (reparto entre empleados) y sigue
+        // disponible mientras le queden unidades sin asignar.
+        $asignadoPorDetalle = OrdenProduccion::whereIn('pedido_id', $pedidos->pluck('id'))
             ->whereNotNull('detalle_pedido_id')
             ->where('estado', '!=', 'Cancelado')
-            ->pluck('id', 'detalle_pedido_id');
+            ->selectRaw('detalle_pedido_id, SUM(cantidad_solicitada) as asignado, COUNT(*) as ordenes')
+            ->groupBy('detalle_pedido_id')
+            ->get()
+            ->keyBy('detalle_pedido_id');
 
-        $data = $pedidos->map(function ($pedido) use ($detallesConOrden) {
+        $data = $pedidos->map(function ($pedido) use ($asignadoPorDetalle) {
             $lineas = $pedido->productos
                 // Solo líneas fabricables: los productos de reventa
                 // (tipo->requiere_produccion = false) se venden pero no se producen.
                 ->filter(fn($d) => $d->requiereProduccion())
-                ->map(function ($d) use ($detallesConOrden) {
+                ->map(function ($d) use ($asignadoPorDetalle) {
                 // Tipo: legacy desde el producto; dinámico desde la relación directa.
                 $tipo = $d->producto ? $d->producto->tipoProducto : $d->tipoProducto;
 
                 // Insumos por defecto del tipo de producto (template para la orden).
-                // Cantidad pivote = consumo por unidad → multiplicar por las unidades de la línea.
+                // Se envía el consumo POR UNIDAD: el wizard lo multiplica por las
+                // unidades asignadas a cada orden (la línea puede repartirse).
                 $insumosDefault = $tipo
                     ? $tipo->insumosDefault->map(fn($i) => [
-                        'id'        => $i->id,
-                        'nombre'    => $i->nombre,
-                        'unidad'    => $i->unidad_medida,
-                        'cantidad'  => round((float) $i->pivot->cantidad_estimada * $d->cantidad, 2),
+                        'id'                => $i->id,
+                        'nombre'            => $i->nombre,
+                        'unidad'            => $i->unidad_medida,
+                        'cantidad_unitaria' => (float) $i->pivot->cantidad_estimada,
                     ])->values()
                     : collect();
 
@@ -186,14 +192,14 @@ class OrdenProduccionController extends Controller
                     $telaUnidad = $d->tela_snapshot['unidad_medida'] ?? '';
                 }
 
-                // Auto-prefill de la tela: si el tipo requiere tela y define consumo por
-                // unidad, se agrega con cantidad = consumo × unidades de la línea.
+                // Auto-prefill de la tela: si el tipo requiere tela y define consumo
+                // por unidad, se agrega (también como consumo unitario).
                 if ($tipo && $tipo->requiere_tela && $tipo->consumo_tela_por_unidad > 0 && $telaId) {
                     $insumosDefault->prepend([
-                        'id'        => $telaId,
-                        'nombre'    => $telaNombre,
-                        'unidad'    => $telaUnidad,
-                        'cantidad'  => round((float) $tipo->consumo_tela_por_unidad * $d->cantidad, 2),
+                        'id'                => $telaId,
+                        'nombre'            => $telaNombre,
+                        'unidad'            => $telaUnidad,
+                        'cantidad_unitaria' => (float) $tipo->consumo_tela_por_unidad,
                     ]);
                 }
 
@@ -203,19 +209,23 @@ class OrdenProduccionController extends Controller
                     : (trim(($tipo->nombre ?? '') . ' ' . ($telaNombre ?? ''))
                         ?: ($d->sku_snapshot ?? ('Producto #' . $d->id)));
 
+                $asignado = (int) ($asignadoPorDetalle[$d->id]->asignado ?? 0);
+
                 return [
-                    'detalle_id'      => $d->id,
-                    'producto_id'     => $d->producto_id,
-                    'producto_nombre' => $productoNombre,
-                    'cantidad'        => $d->cantidad,
-                    'color'           => $d->color->nombre ?? null,
-                    'talla'           => $d->talla ? ($d->talla->etiqueta ?: $d->talla->nombre) : null,
-                    'precio_unitario' => (float) $d->precio_unitario,
-                    'subtotal'        => round($d->cantidad * $d->precio_unitario, 2),
-                    'lleva_bordado'   => (bool) $d->lleva_bordado,
-                    'bordados_count'  => $d->bordados->count(),
-                    'orden_id'        => $detallesConOrden[$d->id] ?? null,
-                    'insumos_default' => $insumosDefault,
+                    'detalle_id'         => $d->id,
+                    'producto_id'        => $d->producto_id,
+                    'producto_nombre'    => $productoNombre,
+                    'cantidad'           => $d->cantidad,
+                    'cantidad_asignada'  => min($asignado, $d->cantidad),
+                    'cantidad_pendiente' => max(0, $d->cantidad - $asignado),
+                    'ordenes_activas'    => (int) ($asignadoPorDetalle[$d->id]->ordenes ?? 0),
+                    'color'              => $d->color->nombre ?? null,
+                    'talla'              => $d->talla ? ($d->talla->etiqueta ?: $d->talla->nombre) : null,
+                    'precio_unitario'    => (float) $d->precio_unitario,
+                    'subtotal'           => round($d->cantidad * $d->precio_unitario, 2),
+                    'lleva_bordado'      => (bool) $d->lleva_bordado,
+                    'bordados_count'     => $d->bordados->count(),
+                    'insumos_default'    => $insumosDefault,
                 ];
             })->values();
 
@@ -227,7 +237,7 @@ class OrdenProduccionController extends Controller
                 'fecha_entrega'     => optional($pedido->fecha_entrega_estimada)->format('Y-m-d'),
                 'estado'            => $pedido->estado,
                 'total_lineas'      => $lineas->count(),
-                'lineas_pendientes' => $lineas->whereNull('orden_id')->count(),
+                'lineas_pendientes' => $lineas->where('cantidad_pendiente', '>', 0)->count(),
                 'progreso'          => $pedido->progreso_produccion,
                 // Abono mínimo (regla de negocio): el front bloquea/avisa si no se cumple.
                 'total'              => (float) $pedido->total,
@@ -283,12 +293,26 @@ class OrdenProduccionController extends Controller
         ]);
     }
 
+    /**
+     * Unidades de la línea ya comprometidas en órdenes activas (no canceladas).
+     * Para validar con seguridad, llamar dentro de una transacción después de
+     * un lockForUpdate sobre la línea (serializa asignaciones concurrentes).
+     */
+    private function cantidadAsignadaActiva(int $detalleId, ?int $excluirOrdenId = null): int
+    {
+        return (int) OrdenProduccion::where('detalle_pedido_id', $detalleId)
+            ->where('estado', '!=', 'Cancelado')
+            ->when($excluirOrdenId, fn ($q) => $q->where('id', '!=', $excluirOrdenId))
+            ->sum('cantidad_solicitada');
+    }
+
     public function store(Request $request)
     {
         $validated = $request->validate([
             'detalle_pedido_id'  => 'required|exists:detalle_pedido,id',
             'empleados'          => 'required|array|min:1',
             'empleados.*'        => 'required|exists:empleado,id',
+            'cantidad'           => 'nullable|integer|min:1',
             'fecha_inicio'       => 'required|date',
             'fecha_fin_estimada' => 'required|date|after:fecha_inicio',
             'notas'              => 'nullable|string',
@@ -305,26 +329,29 @@ class OrdenProduccionController extends Controller
             return response()->json($error, 422);
         }
 
-        // Una línea de pedido solo puede tener una orden activa a la vez
-        $yaTieneOrden = OrdenProduccion::where('detalle_pedido_id', $detalle->id)
-            ->where('estado', '!=', 'Cancelado')
-            ->exists();
-        if ($yaTieneOrden) {
-            return response()->json([
-                'message' => 'Este producto del pedido ya tiene una orden de producción activa.'
-            ], 422);
-        }
-
         try {
             // Crear la orden, asociar insumos y descontar stock en una sola
             // transacción: si falta stock, no se crea nada (rollback total).
             DB::transaction(function () use ($validated, $detalle, $request) {
+                // Lock sobre la línea: serializa asignaciones concurrentes para que
+                // la suma de órdenes activas nunca supere las unidades de la línea.
+                $detalle = DetallePedido::whereKey($detalle->id)->lockForUpdate()->firstOrFail();
+
+                $disponible = $detalle->cantidad - $this->cantidadAsignadaActiva($detalle->id);
+                $cantidad   = (int) ($validated['cantidad'] ?? $disponible);
+                if ($disponible < 1) {
+                    throw new \InvalidArgumentException('Esta línea del pedido ya tiene todas sus unidades asignadas a órdenes activas.');
+                }
+                if ($cantidad > $disponible) {
+                    throw new \InvalidArgumentException("Solo quedan {$disponible} unidades sin asignar en esta línea (se intentó asignar {$cantidad}).");
+                }
+
                 $orden = OrdenProduccion::create([
                     'pedido_id'           => $detalle->pedido_id,
                     'detalle_pedido_id'   => $detalle->id,
                     'producto_id'         => $detalle->producto_id,
                     'empleado_id'         => $validated['empleados'][0], // responsable principal
-                    'cantidad_solicitada' => $detalle->cantidad,
+                    'cantidad_solicitada' => $cantidad,
                     'cantidad_producida'  => 0,
                     'fecha_inicio'        => $validated['fecha_inicio'],
                     'fecha_fin_estimada'  => $validated['fecha_fin_estimada'],
@@ -366,6 +393,7 @@ class OrdenProduccionController extends Controller
             'ordenes.*.detalle_pedido_id'         => 'required|exists:detalle_pedido,id',
             'ordenes.*.empleados'                 => 'required|array|min:1',
             'ordenes.*.empleados.*'               => 'required|exists:empleado,id',
+            'ordenes.*.cantidad'                  => 'required|integer|min:1',
             'ordenes.*.fecha_inicio'              => 'required|date',
             'ordenes.*.fecha_fin_estimada'        => 'required|date|after:ordenes.*.fecha_inicio',
             'ordenes.*.notas'                     => 'nullable|string',
@@ -374,13 +402,10 @@ class OrdenProduccionController extends Controller
             'ordenes.*.insumos.*.cantidad_estimada' => 'required|numeric|min:0.01',
         ]);
 
-        // Detectar duplicados dentro del mismo batch (mismo detalle_pedido_id dos veces)
-        $detalleIds = collect($validated['ordenes'])->pluck('detalle_pedido_id');
-        if ($detalleIds->count() !== $detalleIds->unique()->count()) {
-            return response()->json([
-                'message' => 'El batch contiene líneas duplicadas. Cada línea del pedido debe aparecer una sola vez.'
-            ], 422);
-        }
+        // Una misma línea PUEDE aparecer varias veces: su producción se reparte
+        // entre varias órdenes/empleados. La integridad la da la validación de
+        // suma de cantidades dentro de la transacción (con lock por línea).
+        $detalleIds = collect($validated['ordenes'])->pluck('detalle_pedido_id')->unique()->values();
 
         // Todas las líneas deben pertenecer al mismo pedido_id (anti-tampering)
         $detalles = DetallePedido::whereIn('id', $detalleIds)
@@ -398,19 +423,28 @@ class OrdenProduccionController extends Controller
             return response()->json($error, 422);
         }
 
-        // Ninguna línea debe tener ya orden activa (no Cancelada)
-        $yaConOrden = OrdenProduccion::whereIn('detalle_pedido_id', $detalleIds)
-            ->where('estado', '!=', 'Cancelado')
-            ->pluck('detalle_pedido_id');
-        if ($yaConOrden->isNotEmpty()) {
-            return response()->json([
-                'message' => 'Algunas líneas seleccionadas ya tienen orden activa. Recarga e intenta de nuevo.',
-            ], 422);
-        }
-
         $creadas = [];
         try {
-            DB::transaction(function () use ($validated, $detalles, &$creadas) {
+            DB::transaction(function () use ($validated, $detalleIds, &$creadas) {
+                // Lock por línea: la suma de cantidades de órdenes activas (las
+                // previas + las de este batch) no puede superar las unidades de
+                // la línea, incluso con asignaciones concurrentes.
+                $detalles = DetallePedido::whereIn('id', $detalleIds)
+                    ->lockForUpdate()->get()->keyBy('id');
+
+                foreach ($detalles as $detalle) {
+                    $solicitado = collect($validated['ordenes'])
+                        ->where('detalle_pedido_id', $detalle->id)
+                        ->sum('cantidad');
+                    $disponible = $detalle->cantidad - $this->cantidadAsignadaActiva($detalle->id);
+                    if ($solicitado > $disponible) {
+                        $nombre = $detalle->producto->nombre ?? $detalle->sku_snapshot ?? ('línea #' . $detalle->id);
+                        throw new \InvalidArgumentException(
+                            "\"{$nombre}\" solo tiene {$disponible} unidades sin asignar y se intentó asignar {$solicitado}. Recarga e intenta de nuevo."
+                        );
+                    }
+                }
+
                 foreach ($validated['ordenes'] as $o) {
                     $detalle = $detalles[$o['detalle_pedido_id']];
                     $orden = OrdenProduccion::create([
@@ -418,7 +452,7 @@ class OrdenProduccionController extends Controller
                         'detalle_pedido_id'   => $detalle->id,
                         'producto_id'         => $detalle->producto_id,
                         'empleado_id'         => $o['empleados'][0], // responsable principal
-                        'cantidad_solicitada' => $detalle->cantidad,
+                        'cantidad_solicitada' => (int) $o['cantidad'],
                         'cantidad_producida'  => 0,
                         'cantidad_defectuosa' => 0,
                         'fecha_inicio'        => $o['fecha_inicio'],
@@ -545,6 +579,13 @@ class OrdenProduccionController extends Controller
             'avatar_url' => $orden->creadoPor->avatar_url,
         ] : null;
 
+        // Reparto de la línea: tope al que puede crecer la cantidad de ESTA
+        // orden = sus unidades + las que la línea aún tiene sin asignar.
+        $data['linea_cantidad'] = $orden->detallePedido?->cantidad;
+        $data['cantidad_maxima'] = $orden->detallePedido
+            ? max(0, $orden->detallePedido->cantidad - $this->cantidadAsignadaActiva($orden->detalle_pedido_id, $orden->id))
+            : $orden->cantidad_solicitada;
+
         return response()->json($data);
     }
 
@@ -557,11 +598,43 @@ class OrdenProduccionController extends Controller
         $validated = $request->validate([
             'empleados'          => 'required|array|min:1',
             'empleados.*'        => 'required|exists:empleado,id',
+            'cantidad'           => 'nullable|integer|min:1',
             'fecha_inicio'       => 'required|date',
             'fecha_fin_estimada' => 'required|date|after:fecha_inicio',
             'estado'             => 'required|in:Pendiente,En Proceso,Finalizado',
             'notas'              => 'nullable|string',
         ]);
+
+        // Cantidad: solo se puede rebalancear con la orden Pendiente (la tela no
+        // se ha cortado y los insumos no se ajustan; en marcha → cancelar+recrear).
+        // El tope es lo que la línea tenga sin asignar en otras órdenes activas.
+        $nuevaCantidad = (int) ($validated['cantidad'] ?? $orden->cantidad_solicitada);
+        if ($nuevaCantidad !== (int) $orden->cantidad_solicitada) {
+            if ($orden->estado !== 'Pendiente') {
+                return response()->json([
+                    'message' => 'La cantidad solo puede cambiarse mientras la orden está Pendiente.'
+                ], 422);
+            }
+            if (!$orden->detalle_pedido_id) {
+                return response()->json([
+                    'message' => 'La orden no está ligada a una línea de pedido; su cantidad no puede cambiarse.'
+                ], 422);
+            }
+            try {
+                DB::transaction(function () use ($orden, $nuevaCantidad) {
+                    $detalle = DetallePedido::whereKey($orden->detalle_pedido_id)->lockForUpdate()->firstOrFail();
+                    $maximo = $detalle->cantidad - $this->cantidadAsignadaActiva($detalle->id, $orden->id);
+                    if ($nuevaCantidad > $maximo) {
+                        throw new \InvalidArgumentException(
+                            "La línea solo admite hasta {$maximo} unidades para esta orden (el resto está asignado a otras órdenes activas)."
+                        );
+                    }
+                    $orden->update(['cantidad_solicitada' => $nuevaCantidad]);
+                });
+            } catch (\InvalidArgumentException $e) {
+                return response()->json(['message' => $e->getMessage()], 422);
+            }
+        }
 
         $fechaFinReal = $orden->fecha_fin_real;
         if ($validated['estado'] === 'Finalizado' && is_null($fechaFinReal)) {
@@ -570,9 +643,9 @@ class OrdenProduccionController extends Controller
             $fechaFinReal = null;
         }
 
-        // producto, cantidad e insumos quedan fijos: el producto/cantidad están
-        // ligados a la línea del pedido y los insumos ya comprometieron stock al
-        // crear la orden (editarlos exigiría reconciliar inventario → cancelar+recrear).
+        // producto e insumos quedan fijos: el producto está ligado a la línea del
+        // pedido y los insumos ya comprometieron stock al crear la orden
+        // (editarlos exigiría reconciliar inventario → cancelar+recrear).
         $orden->update([
             'empleado_id'         => $validated['empleados'][0], // responsable principal
             'fecha_inicio'        => $validated['fecha_inicio'],
