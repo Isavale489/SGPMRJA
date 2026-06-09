@@ -222,22 +222,22 @@
                                     </div>
                                 </div>
                                 <div class="row g-2 align-items-end">
-                                    <div class="col-md-4">
-                                        <label for="ord-default-empleado" class="form-label form-label-sm mb-1"><i class="ri-user-star-line me-1"></i>Empleado</label>
-                                        <select id="ord-default-empleado" class="form-select form-select-sm"></select>
+                                    <div class="col-12">
+                                        <label class="form-label form-label-sm mb-1"><i class="ri-team-line me-1"></i>Empleados</label>
+                                        <div id="ord-default-empleado-wrap" class="ord-asig-emp-checks"></div>
                                     </div>
-                                    <div class="col-md-3">
+                                    <div class="col-md-4">
                                         <label for="ord-default-inicio" class="form-label form-label-sm mb-1"><i class="ri-calendar-event-line me-1"></i>Inicio</label>
                                         <input type="date" id="ord-default-inicio" class="form-control form-control-sm" />
                                     </div>
-                                    <div class="col-md-3">
+                                    <div class="col-md-4">
                                         <label for="ord-default-fin" class="form-label form-label-sm mb-1"><i class="ri-calendar-check-line me-1"></i>Fin estimado</label>
                                         <input type="date" id="ord-default-fin" class="form-control form-control-sm" />
                                     </div>
-                                    <div class="col-md-2 d-grid">
+                                    <div class="col-md-4 d-grid align-self-end">
                                         <button type="button" class="btn btn-sm btn-atlantico-brand" id="ord-apply-defaults"
                                             title="Copia estos valores a todas las líneas">
-                                            <i class="ri-arrow-down-double-line me-1"></i>Aplicar
+                                            <i class="ri-arrow-down-double-line me-1"></i>Aplicar a todas
                                         </button>
                                     </div>
                                 </div>
