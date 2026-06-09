@@ -1948,6 +1948,23 @@ $(document).ready(function () {
                 window.pedAplicarModoProtegido();
             }
 
+            // ── Banner de formalización: informa que las líneas están congeladas
+            //    y muestra la fecha de entrega calculada (formalización + 30 hábiles).
+            (function () {
+                var $banner = $('#ped-formalizado-banner');
+                if (!data.esta_formalizado) { $banner.addClass('d-none'); return; }
+                var fmt = function (iso) {
+                    if (!iso) return '—';
+                    var p = String(iso).substring(0, 10).split('-');
+                    return p.length === 3 ? (p[2] + '/' + p[1] + '/' + p[0]) : iso;
+                };
+                $('#ped-formalizado-fechas').text(
+                    'Formalizado el ' + fmt(data.fecha_formalizacion) +
+                    ' · Entrega estimada: ' + fmt(data.fecha_entrega_estimada) + ' (30 días hábiles).'
+                );
+                $banner.removeClass('d-none');
+            })();
+
             // Título según estado
             var titulo = (data.estado === 'Pendiente')
                 ? ('Completar Pedido #' + data.id)
@@ -1967,6 +1984,7 @@ $(document).ready(function () {
         $('#showModal').on('hidden.bs.modal', function () {
             $('#ped-wiz-id-field').val('');
             $('#ped-estado-field-wrapper').hide();
+            $('#ped-formalizado-banner').addClass('d-none');
             if (typeof window.pedQuitarModoProtegido === 'function') {
                 window.pedQuitarModoProtegido();
             }

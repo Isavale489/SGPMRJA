@@ -79,6 +79,16 @@
 
                 <div class="modal-body p-0 wiz-wizard-body">
 
+                    {{-- Banner de formalización (solo al editar un pedido formalizado):
+                         las líneas quedan congeladas; solo se permite registrar pagos. --}}
+                    <div id="ped-formalizado-banner" class="alert alert-warning d-flex align-items-start gap-2 m-3 mb-0 d-none" role="alert">
+                        <i class="ri-lock-2-line fs-5 lh-1 mt-1"></i>
+                        <div class="small">
+                            <strong>Pedido formalizado</strong> — las líneas (productos, tallas, cantidades y diseño) están congeladas. Solo puedes registrar pagos.
+                            <span id="ped-formalizado-fechas" class="d-block text-muted mt-1"></span>
+                        </div>
+                    </div>
+
                     {{-- ════════════════════════ PASO 1 — CLIENTE ════════════════════════ --}}
                     <section class="wiz-step-content is-active" id="ped-wiz-step-1" data-step="1">
                         <div class="wiz-step-header wiz-step-header--with-aside">

@@ -202,6 +202,10 @@ class PedidoController extends Controller
             'avatar_url' => $pedido->user->avatar_url,
         ] : null;
 
+        // Formalización: el front congela las líneas y deja editar solo pagos.
+        $data['esta_formalizado']  = $pedido->estaFormalizado();
+        $data['lineas_bloqueadas'] = $pedido->lineasBloqueadas();
+
         return response()->json($data);
     }
 
@@ -209,20 +213,30 @@ class PedidoController extends Controller
     {
         $pedido = Pedido::findOrFail($id);
 
-        if (in_array($pedido->estado, ['Completado', 'Cancelado'])) {
-            return response()->json(['error' => 'No se puede editar un pedido completado o cancelado.'], 403);
-        }
-        if ($pedido->tieneProduccionActiva()) {
-            return response()->json(['error' => 'No se puede editar un pedido con producción iniciada. Cancela primero sus órdenes de producción.'], 403);
+        if ($pedido->estado === 'Cancelado') {
+            return response()->json(['error' => 'No se puede editar un pedido cancelado.'], 403);
         }
 
+        // Una vez formalizado (abono ≥ 70%), con producción iniciada o completado,
+        // las líneas quedan congeladas: solo se permiten cambios de pagos (p. ej.
+        // registrar el 30% restante a la entrega).
+        $soloPagos = $pedido->lineasBloqueadas();
+
         try {
-            $this->pedidoService->actualizar($pedido, $request->validated());
+            if ($soloPagos) {
+                $this->pedidoService->actualizarSoloPagos($pedido, $request->validated());
+            } else {
+                $this->pedidoService->actualizar($pedido, $request->validated());
+            }
         } catch (\InvalidArgumentException $e) {
             return response()->json(['error' => $e->getMessage()], 422);
         }
 
-        return response()->json(['success' => 'Pedido actualizado exitosamente.']);
+        return response()->json([
+            'success' => $soloPagos
+                ? 'Pagos del pedido actualizados.'
+                : 'Pedido actualizado exitosamente.',
+        ]);
     }
 
     public function destroy($id)
