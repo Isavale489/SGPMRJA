@@ -6252,8 +6252,22 @@ header#page-topbar,
    Bootstrap cuyo menú (.afs-menu) limita la altura a ~4 opciones con scroll.
    El componente lo construye el IIFE global en admin/layouts/app.blade.php;
    el select sigue en el DOM como fuente de verdad para el JS de filtros. */
-.afs-wrap { position: relative; }
-.afs-native { display: none !important; }
+.afs-wrap { position: relative; width: 100%; }
+/* Oculto pero presente (sr-only): el <select> nativo sigue siendo la fuente de
+   verdad y conserva validación nativa (required) y envío de formularios. */
+.afs-native {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    padding: 0 !important;
+    margin: -1px !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+    white-space: nowrap !important;
+    border: 0 !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+}
 .afs-toggle {
     width: 100% !important;
     text-align: left !important;

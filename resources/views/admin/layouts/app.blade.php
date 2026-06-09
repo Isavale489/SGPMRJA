@@ -914,38 +914,32 @@
         });
 
         // ──────────────────────────────────────────────────────────────────
-        // AtlanticoFilterSelect — realza los <select class="navy-filter-select">
-        // a un dropdown Bootstrap cuyo menú muestra ~4 ítems con scroll (el
-        // <select> nativo no permite limitar la altura de su lista). El select
-        // se conserva oculto como fuente de verdad: el JS de filtros existente
-        // (lectura de .val() y evento change) sigue funcionando sin cambios.
+        // AtlanticoSelect — realza los <select> a un dropdown Bootstrap cuyo menú
+        // muestra ~4 ítems con scroll (el <select> nativo no permite limitar la
+        // altura de su lista). Aplica a TODO el sistema con resguardos:
+        //   · omite Select2, multiple, size>1, sin opciones y [data-no-afs]
+        //   · el <select> nativo se conserva (oculto sr-only) como fuente de verdad
+        //     → required/validación nativa y envío de formularios siguen OK
+        //   · reconstruye el menú si las opciones cambian por JS (MutationObserver)
+        //   · re-sincroniza la etiqueta al abrir modales (tras poblarse los valores)
+        // El JS existente (lectura de .val() y evento change) sigue igual.
         // ──────────────────────────────────────────────────────────────────
         (function () {
             'use strict';
 
-            function syncToggle($select, $wrap) {
-                var sel = $select[0];
-                var opt = sel.options[sel.selectedIndex];
-                $wrap.find('.afs-label').text(opt ? opt.text : '');
-                $wrap.find('.afs-option').each(function () {
-                    $(this).toggleClass('active', this.getAttribute('data-value') === sel.value);
-                });
+            function isEligible(sel) {
+                var $s = $(sel);
+                if ($s.data('afsEnhanced')) return false;
+                if (sel.multiple || sel.size > 1) return false;             // listbox/multiple
+                if ($s.is('[data-no-afs]')) return false;                   // opt-out explícito
+                if ($s.hasClass('select2-hidden-accessible')) return false; // gestionado por Select2
+                if ($s.closest('.afs-wrap').length) return false;           // ya realzado
+                if (!sel.options || sel.options.length === 0) return false; // aún sin opciones
+                return true;
             }
 
-            function enhance(sel) {
-                var $select = $(sel);
-                if ($select.data('afsEnhanced')) return;
-                $select.data('afsEnhanced', true);
-
-                // El select nativo se mueve dentro del wrap y se oculta (sigue
-                // siendo la fuente de verdad para value/change).
-                var $wrap = $('<div class="dropdown afs-wrap"></div>');
-                $select.before($wrap);
-                $wrap.append($select);
-
-                var $toggle = $('<button type="button" class="afs-toggle form-select" data-bs-toggle="dropdown" aria-expanded="false"><span class="afs-label"></span></button>');
-                var $menu = $('<ul class="dropdown-menu afs-menu w-100"></ul>');
-
+            function rebuildMenu(sel, $menu) {
+                $menu.empty();
                 $.each(sel.options, function (i, opt) {
                     $('<li></li>').append(
                         $('<button type="button" class="dropdown-item afs-option"></button>')
@@ -953,31 +947,83 @@
                             .text(opt.text)
                     ).appendTo($menu);
                 });
+            }
 
+            function syncToggle(sel, $wrap) {
+                var opt = sel.options[sel.selectedIndex];
+                $wrap.children('.afs-toggle').find('.afs-label').text(opt ? opt.text : '');
+                $wrap.find('.afs-option').each(function () {
+                    $(this).toggleClass('active', this.getAttribute('data-value') === sel.value);
+                });
+            }
+
+            function enhance(sel) {
+                if (!isEligible(sel)) return;
+                var $select = $(sel);
+                $select.data('afsEnhanced', true);
+
+                var $wrap = $('<div class="dropdown afs-wrap"></div>');
+                $select.before($wrap);
+                $wrap.append($select);
+
+                var $toggle = $('<button type="button" class="afs-toggle form-select" data-bs-toggle="dropdown" aria-expanded="false"><span class="afs-label"></span></button>');
+                var $menu = $('<ul class="dropdown-menu afs-menu w-100"></ul>');
+                rebuildMenu(sel, $menu);
                 $wrap.append($toggle).append($menu);
-                syncToggle($select, $wrap);
+                syncToggle(sel, $wrap);
 
-                // Elegir opción del dropdown → refleja en el select + dispara change
+                // Elegir opción → refleja en el select + dispara change
                 $menu.on('click', '.afs-option', function () {
                     var val = this.getAttribute('data-value');
-                    if (sel.value !== val) {
-                        $select.val(val).trigger('change');
-                    }
-                    syncToggle($select, $wrap);
+                    if (sel.value !== val) { $select.val(val).trigger('change'); }
+                    syncToggle(sel, $wrap);
                 });
-
-                // Cambios del select (incl. programáticos: "Limpiar filtros") → re-sincroniza
-                $select.on('change', function () { syncToggle($select, $wrap); });
+                // Cambios del select (incl. programáticos con change) → re-sincroniza
+                $select.on('change', function () { syncToggle(sel, $wrap); });
                 // Al abrir, re-sincroniza por si el valor cambió sin disparar change
-                $wrap.on('show.bs.dropdown', function () { syncToggle($select, $wrap); });
+                $wrap.on('show.bs.dropdown', function () { syncToggle(sel, $wrap); });
 
-                // Recién aquí se oculta el nativo: si algo fallara arriba, el
-                // <select> sigue visible y usable (degradación elegante).
+                // Si el JS cambia las opciones del select, reconstruye el menú.
+                if (window.MutationObserver) {
+                    new MutationObserver(function () {
+                        rebuildMenu(sel, $menu);
+                        syncToggle(sel, $wrap);
+                    }).observe(sel, { childList: true });
+                }
+
+                // Recién aquí se oculta el nativo (degradación elegante si algo falló).
                 $select.addClass('afs-native');
             }
 
+            function enhanceVisible(ctx) {
+                $(ctx || document).find('select').each(function () {
+                    // En el barrido general omite los no visibles (plantillas y
+                    // selects de modales cerrados): se realzan al mostrarse el modal.
+                    if (!$(this).is(':visible')) return;
+                    enhance(this);
+                });
+            }
+
+            // Filtros: al ready (sin parpadeo en barras visibles, aunque estén en
+            // un panel colapsado).
             $(document).ready(function () {
                 $('select.navy-filter-select').each(function () { enhance(this); });
+            });
+
+            // Resto del sistema: tras load, cuando Select2 (init en ready) ya es
+            // detectable y se puede omitir.
+            $(window).on('load', function () { enhanceVisible(document); });
+
+            // Selects dentro de modales: realzar y re-sincronizar etiquetas DESPUÉS
+            // de que el modal inicialice Select2 y pueble sus valores (defer 0ms).
+            $(document).on('shown.bs.modal', function (e) {
+                var modal = e.target;
+                setTimeout(function () {
+                    enhanceVisible(modal);
+                    $(modal).find('select.afs-native').each(function () {
+                        syncToggle(this, $(this).closest('.afs-wrap'));
+                    });
+                }, 0);
             });
         })();
     </script>
