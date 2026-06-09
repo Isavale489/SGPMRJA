@@ -847,9 +847,30 @@ class OrdenProduccionController extends Controller
         ]);
 
         $sub = SubOrdenProduccion::where('orden_produccion_id', $id)->findOrFail($subId);
+        $orden = OrdenProduccion::findOrFail($id);
+
+        // Regla de integridad: finalizar la ÚLTIMA etapa activa finalizaría la
+        // orden completa, y eso solo es válido si la producción registrada
+        // (avances) ya cubre todas las unidades solicitadas. Evita órdenes
+        // "Finalizadas" con 0 piezas registradas (reportes y pedido mentirosos).
+        if ($validated['estado'] === 'Finalizado'
+            && $orden->cantidad_producida < $orden->cantidad_solicitada) {
+            $seriaUltima = $orden->subordenes()
+                ->where('id', '!=', $sub->id)
+                ->where('estado', '!=', 'Cancelado')
+                ->get()
+                ->every(fn ($s) => $s->estado === 'Finalizado');
+
+            if ($seriaUltima) {
+                $faltan = $orden->cantidad_solicitada - $orden->cantidad_producida;
+                return response()->json([
+                    'message' => "No puedes finalizar la última etapa: la orden tiene {$faltan} de {$orden->cantidad_solicitada} unidades sin registrar. Registra el avance de producción primero."
+                ], 422);
+            }
+        }
+
         $sub->update(['estado' => $validated['estado']]);
 
-        $orden = OrdenProduccion::findOrFail($id);
         $orden->recalcularEstadoDesdeSubordenes();
         $orden->refresh();
 

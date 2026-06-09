@@ -157,10 +157,15 @@ class OrdenProduccion extends Model
         $todosFinalizados = $activas->every(fn($s) => $s->estado === 'Finalizado');
         $hayAvance        = $activas->contains(fn($s) => in_array($s->estado, ['En Proceso', 'Finalizado']));
 
+        // Las etapas no pueden finalizar la OP si los avances registrados aún no
+        // cubren las unidades solicitadas (el endpoint ya lo bloquea; esto es
+        // defensa en profundidad para cualquier otro flujo que recalcule).
+        $produccionCompleta = $this->cantidad_producida >= $this->cantidad_solicitada;
+
         $nuevoEstado = match (true) {
-            $todosFinalizados => 'Finalizado',
-            $hayAvance        => 'En Proceso',
-            default           => 'Pendiente',
+            $todosFinalizados && $produccionCompleta => 'Finalizado',
+            $todosFinalizados || $hayAvance          => 'En Proceso',
+            default                                  => 'Pendiente',
         };
 
         if ($this->estado !== $nuevoEstado) {

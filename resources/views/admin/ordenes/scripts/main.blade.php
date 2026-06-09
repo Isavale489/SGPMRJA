@@ -1929,7 +1929,7 @@
                                         if (table) table.ajax.reload(null, false);
                                     }
                                 },
-                                error: function () {
+                                error: function (xhr) {
                                     // Revierte moviendo el ticket de vuelta a la columna original
                                     var $fromCol = $('#kanban-col-' + colSlug(viejoEstado));
                                     if (evt.oldIndex === 0) {
@@ -1937,7 +1937,12 @@
                                     } else {
                                         $fromCol.append($ticket);
                                     }
-                                    Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo actualizar el estado.', timer: 2500, showConfirmButton: false });
+                                    // 422 con motivo (p. ej. faltan avances por registrar) → mostrarlo
+                                    var msg = (xhr.responseJSON && xhr.responseJSON.message) || 'No se pudo actualizar el estado.';
+                                    var esBloqueo = xhr.status === 422 && xhr.responseJSON && xhr.responseJSON.message;
+                                    Swal.fire(esBloqueo
+                                        ? { icon: 'warning', title: 'Etapa bloqueada', text: msg }
+                                        : { icon: 'error', title: 'Error', text: msg, timer: 2500, showConfirmButton: false });
                                 }
                             });
                         }
