@@ -284,6 +284,7 @@ Route::middleware(['auth', 'throttle:60,1', 'active.user', 'recovery.questions.r
         Route::get('movimiento-insumo/data', [MovimientoInsumoController::class, 'getMovimientos'])->name('movimiento-insumo.data');
         Route::get('movimiento-insumo/existencias-data', [MovimientoInsumoController::class, 'getExistencias'])->name('movimiento-insumo.existencias.data');
         Route::get('movimiento-insumo/reporte', [MovimientoInsumoController::class, 'reporteExistencia'])->name('movimiento-insumo.reporte');
+        Route::get('movimiento-insumo/reporte/pdf', [MovimientoInsumoController::class, 'reportePdf'])->name('movimiento-insumo.reporte.pdf');
         Route::get('movimiento-insumo/alertas', [MovimientoInsumoController::class, 'alertasStock'])->name('movimiento-insumo.alertas');
         Route::get('movimiento-insumo/historial/{id}', [MovimientoInsumoController::class, 'historialInsumo'])->name('movimiento-insumo.historial');
         Route::post('movimiento-insumo', [MovimientoInsumoController::class, 'store'])->name('movimiento-insumo.store');
