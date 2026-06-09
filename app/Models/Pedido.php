@@ -63,11 +63,11 @@ class Pedido extends Model
 
     /**
      * Porcentaje mínimo de abono (sobre el total) requerido para que el pedido
-     * pueda avanzar a producción / generar órdenes. Configurable (default 50%).
+     * pueda avanzar a producción / generar órdenes. Configurable (default 70%).
      */
     public static function porcentajeAbonoMinimo(): float
     {
-        return (float) config('pedidos.abono_minimo_porcentaje', 50);
+        return (float) config('pedidos.abono_minimo_porcentaje', 70);
     }
 
     /**
