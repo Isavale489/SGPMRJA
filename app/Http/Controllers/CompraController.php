@@ -272,12 +272,12 @@ class CompraController extends Controller
                     return;
                 }
                 $query->where(function ($q) use ($keyword) {
-                    $q->where('compra.numero_factura', 'like', "%{$keyword}%")
+                    $q->where('compra.numero_factura', 'like', "{$keyword}%")
                       ->orWhereHas('proveedor.persona', function ($p) use ($keyword) {
-                          $p->where('nombre', 'like', "%{$keyword}%")
-                            ->orWhere('apellido', 'like', "%{$keyword}%")
-                            ->orWhereRaw("CONCAT(nombre, ' ', apellido) like ?", ["%{$keyword}%"])
-                            ->orWhereRaw("CONCAT(tipo_documento, documento_identidad) like ?", ["%{$keyword}%"]);
+                          $p->where('nombre', 'like', "{$keyword}%")
+                            ->orWhere('apellido', 'like', "{$keyword}%")
+                            ->orWhereRaw("CONCAT(nombre, ' ', apellido) like ?", ["{$keyword}%"])
+                            ->orWhereRaw("CONCAT(tipo_documento, documento_identidad) like ?", ["{$keyword}%"]);
                       });
                 });
             }, true)

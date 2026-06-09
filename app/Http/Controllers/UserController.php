@@ -41,9 +41,9 @@ class UserController extends Controller
                     return;
                 }
                 $query->where(function ($q) use ($keyword) {
-                    $q->where('name', 'like', "%{$keyword}%")
-                      ->orWhere('email', 'like', "%{$keyword}%")
-                      ->orWhere('role', 'like', "%{$keyword}%");
+                    $q->where('name', 'like', "{$keyword}%")
+                      ->orWhere('email', 'like', "{$keyword}%")
+                      ->orWhere('role', 'like', "{$keyword}%");
                 });
             }, true)
             ->editColumn('avatar', function ($user) {

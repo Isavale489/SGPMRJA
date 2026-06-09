@@ -62,10 +62,10 @@ class MovimientoInsumoController extends Controller
                     return;
                 }
                 $query->where(function ($q) use ($keyword) {
-                    $q->where('movimiento_insumo.motivo', 'like', "%{$keyword}%")
+                    $q->where('movimiento_insumo.motivo', 'like', "{$keyword}%")
                       ->orWhereHas('insumo', function ($i) use ($keyword) {
-                          $i->where('nombre', 'like', "%{$keyword}%")
-                            ->orWhere('codigo', 'like', "%{$keyword}%");
+                          $i->where('nombre', 'like', "{$keyword}%")
+                            ->orWhere('codigo', 'like', "{$keyword}%");
                       });
                 });
             }, true)

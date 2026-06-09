@@ -40,7 +40,7 @@ class PersonaController extends Controller
                 'telefonos',
                 'direcciones',
             ])
-            ->where('documento_identidad', 'LIKE', "%{$escaped}%")
+            ->where('documento_identidad', 'LIKE', "{$escaped}%")
             ->limit(10)
             ->get();
 

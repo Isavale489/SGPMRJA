@@ -83,9 +83,9 @@ class PedidoController extends Controller
             })
             ->filterColumn('cliente_nombre_display', function ($query, $keyword) {
                 $query->where(function ($q) use ($keyword) {
-                    $q->where('persona.nombre', 'like', "%{$keyword}%")
-                        ->orWhere('persona.apellido', 'like', "%{$keyword}%")
-                        ->orWhereRaw("CONCAT(persona.nombre, ' ', persona.apellido) like ?", ["%{$keyword}%"]);
+                    $q->where('persona.nombre', 'like', "{$keyword}%")
+                        ->orWhere('persona.apellido', 'like', "{$keyword}%")
+                        ->orWhereRaw("CONCAT(persona.nombre, ' ', persona.apellido) like ?", ["{$keyword}%"]);
                 });
             })
 

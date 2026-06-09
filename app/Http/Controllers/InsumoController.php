@@ -79,9 +79,9 @@ class InsumoController extends Controller
                     return;
                 }
                 $query->where(function ($q) use ($keyword) {
-                    $q->where('insumo.nombre', 'like', "%{$keyword}%")
-                      ->orWhere('insumo.codigo', 'like', "%{$keyword}%")
-                      ->orWhere('insumo.tipo', 'like', "%{$keyword}%");
+                    $q->where('insumo.nombre', 'like', "{$keyword}%")
+                      ->orWhere('insumo.codigo', 'like', "{$keyword}%")
+                      ->orWhere('insumo.tipo', 'like', "{$keyword}%");
                 });
             }, true)
             ->addColumn('stock_status', function ($insumo) {
