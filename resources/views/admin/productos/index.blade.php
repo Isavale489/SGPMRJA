@@ -169,7 +169,8 @@
     </div>
 
     <!-- Modal para agregar/editar Tipo de Producto -->
-    <div class="modal fade atlantico-modal" id="addTipoModal" tabindex="-1" aria-hidden="true">
+    <div class="modal fade atlantico-modal" id="addTipoModal" tabindex="-1" aria-hidden="true"
+        data-guard-id-field="tipo-id-field">
         <div class="modal-dialog modal-dialog-centered modal-xl">
             <div class="modal-content">
                 <div class="modal-header bg-light p-3">
