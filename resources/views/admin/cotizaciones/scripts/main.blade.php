@@ -5301,7 +5301,9 @@
             // Eliminar bloque entero
             $(document).on('click', '.cot-action-delete', function () {
                 var $blk = $(this).closest('.cot-grouped-row');
-                var indices = String($blk.data('card-indices') || '').split(',').filter(Boolean);
+                // .attr() (no .data()): jQuery coacciona data-card-indices="0" al numero 0,
+                // y `0 || ''` daria '' (0 es falsy) dejando sin indices al primer producto.
+                var indices = String($blk.attr('data-card-indices') || '').split(',').filter(Boolean);
                 Swal.fire({
                     icon: 'warning',
                     title: '¿Eliminar bloque?',
