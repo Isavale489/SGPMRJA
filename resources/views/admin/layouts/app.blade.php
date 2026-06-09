@@ -933,7 +933,6 @@
                 if (sel.multiple || sel.size > 1) return false;             // listbox/multiple
                 if ($s.is('[data-no-afs]')) return false;                   // opt-out explícito
                 if ($s.hasClass('select2-hidden-accessible')) return false; // gestionado por Select2
-                if ($s.closest('.input-group').length) return false;        // dentro de input-group: el .afs-wrap rompería el layout flex/bordes de Bootstrap
                 if ($s.closest('.afs-wrap').length) return false;           // ya realzado
                 if (!sel.options || sel.options.length === 0) return false; // aún sin opciones
                 return true;
@@ -952,7 +951,9 @@
 
             function syncToggle(sel, $wrap) {
                 var opt = sel.options[sel.selectedIndex];
-                $wrap.children('.afs-toggle').find('.afs-label').text(opt ? opt.text : '');
+                $wrap.children('.afs-toggle')
+                    .find('.afs-label').text(opt ? opt.text : '').end()
+                    .prop('disabled', !!sel.disabled);   // refleja disabled (p.ej. cargo en cascada)
                 $wrap.find('.afs-option').each(function () {
                     $(this).toggleClass('active', this.getAttribute('data-value') === sel.value);
                 });
@@ -966,6 +967,18 @@
                 var $wrap = $('<div class="dropdown afs-wrap"></div>');
                 $select.before($wrap);
                 $wrap.append($select);
+
+                // Dentro de input-group: el wrap actúa como flex item de Bootstrap y
+                // hereda las restricciones de ancho del <select> nativo (prefijos
+                // V-/J-, 0424… usan .tipo-doc-select/.phone-prefix-select con max-width;
+                // dept/cargo no las tienen y crecen para llenar). Así no se rompe el
+                // layout flex ni la continuidad de bordes (el CSS .afs-wrap--ig remata).
+                if ($select.closest('.input-group').length) {
+                    $wrap.addClass('afs-wrap--ig');
+                    var cs = window.getComputedStyle(sel);
+                    if (cs.maxWidth && cs.maxWidth !== 'none') $wrap.css('max-width', cs.maxWidth);
+                    if (cs.minWidth && cs.minWidth !== '0px') $wrap.css('min-width', cs.minWidth);
+                }
 
                 var $toggle = $('<button type="button" class="afs-toggle form-select" data-bs-toggle="dropdown" aria-expanded="false"><span class="afs-label"></span></button>');
                 var $menu = $('<ul class="dropdown-menu afs-menu w-100"></ul>');
@@ -984,12 +997,13 @@
                 // Al abrir, re-sincroniza por si el valor cambió sin disparar change
                 $wrap.on('show.bs.dropdown', function () { syncToggle(sel, $wrap); });
 
-                // Si el JS cambia las opciones del select, reconstruye el menú.
+                // Si el JS cambia las opciones (childList) o habilita/deshabilita el
+                // select (attributes → disabled), reconstruye el menú y re-sincroniza.
                 if (window.MutationObserver) {
                     new MutationObserver(function () {
                         rebuildMenu(sel, $menu);
                         syncToggle(sel, $wrap);
-                    }).observe(sel, { childList: true });
+                    }).observe(sel, { childList: true, attributes: true, attributeFilter: ['disabled'] });
                 }
 
                 // Recién aquí se oculta el nativo (degradación elegante si algo falló).

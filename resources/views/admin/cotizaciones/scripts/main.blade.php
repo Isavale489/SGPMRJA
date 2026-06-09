@@ -3330,15 +3330,6 @@
             }
         });
 
-        // Listener para actualizar label del checkbox de estatus
-        $(document).on('change', '#estatus-field-cliente', function () {
-            if ($(this).is(':checked')) {
-                $('#estatus-label-cliente').text('Activo');
-            } else {
-                $('#estatus-label-cliente').text('Inactivo');
-            }
-        });
-
         // Dropdown dependiente: Poblar municipios cuando cambia el estado
         $(document).on('change', '#estado_territorial-field-cliente', function () {
             const estado = $(this).val();
@@ -3422,8 +3413,6 @@
             // Reset valores por defecto
             $('#documento-prefix-field-cliente').val('V-');
             $('#telefono-prefix-field-cliente').val('0424');
-            $('#estatus-field-cliente').prop('checked', true);
-            $('#estatus-label-cliente').text('Activo');
             $('#ciudad-field-cliente').html('<option value="">Primero seleccione un estado</option>');
             $('#tipo_cliente-field-cliente').val('');
             toggleClienteFieldsCotizacion();

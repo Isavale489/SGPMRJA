@@ -780,9 +780,13 @@ header#page-topbar,
 
 /* Focus en inputs */
 .form-control:focus,
+/* Focus navy unificado con AtlanticoSelect (.afs-toggle). Cubre los <select>
+   que NO se realzan (prefijos V-/J- en input-group, departamento/cargo con
+   botón "+", filtros de PDF, etc.) para que el control cerrado luzca igual
+   en todo el sistema. Los selects realzados ya pintan navy vía .afs-toggle. */
 .form-select:focus {
-  border-color: #00d9a5;
-  box-shadow: 0 0 0 0.2rem rgba(0, 217, 165, 0.25);
+  border-color: #1e3c72;
+  box-shadow: 0 0 0 0.2rem rgba(30, 60, 114, 0.15);
 }
 
 /* ============================================
@@ -2336,7 +2340,20 @@ header#page-topbar,
 .cot-search-doc-group {
     box-shadow: 0 1px 3px rgba(30, 60, 114, 0.06);
     border-radius: 10px;
-    overflow: hidden;
+    /* Sin overflow:hidden: recortaba el dropdown realzado (.afs-menu) del
+       prefijo V-/J- (el <select> nativo dibujaba su lista fuera del flujo, los
+       realzados no). El look de píldora se conserva redondeando los extremos. */
+}
+/* Redondea el extremo izquierdo (lupa) y el campo de texto visible. El último
+   hijo del DOM es un <input type="hidden"> (no se ve), por eso no se usa
+   :last-child sino el .form-control directamente. */
+.cot-search-doc-group > .input-group-text:first-child {
+    border-top-left-radius: 10px !important;
+    border-bottom-left-radius: 10px !important;
+}
+.cot-search-doc-group > .form-control {
+    border-top-right-radius: 10px !important;
+    border-bottom-right-radius: 10px !important;
 }
 .cot-search-doc-icon {
     background: #f3f6fc;
@@ -6057,7 +6074,7 @@ header#page-topbar,
 [data-bs-theme="dark"] .form-control:focus,
 [data-bs-theme="dark"] .form-select:focus {
     background-color: #242832 !important;
-    border-color: #60a5fa !important;
+    border-color: #4e7ac7 !important;   /* navy de AtlanticoSelect (.afs-toggle dark) */
     color: #ffffff !important;
 }
 
@@ -6318,6 +6335,110 @@ header#page-topbar,
 [data-bs-theme="dark"] .afs-toggle:focus {
     border-color: #4e7ac7 !important;
     box-shadow: 0 0 0 0.2rem rgba(78, 122, 199, 0.2) !important;
+}
+
+/* ── AtlanticoSelect dentro de input-group ───────────────────────────
+   Antes los <select> en .input-group se excluían del realce; ahora SÍ se
+   realzan (prefijos de documento/teléfono, departamento/cargo con botón "+").
+   El .afs-wrap debe portarse como flex item de Bootstrap y rematar la
+   continuidad de bordes con sus vecinos (input, botón, lupa). El ancho fijo
+   de los prefijos lo hereda el wrap vía JS (max-width/min-width del nativo). */
+.input-group > .afs-wrap--ig {
+    flex: 1 1 auto;
+    width: 1%;
+    min-width: 0;
+    display: flex;            /* el toggle (único hijo en flujo) estira a la altura de la celda */
+    flex-direction: column;
+}
+/* En input-group el toggle se pega a un .form-control de tamaño normal (1rem);
+   iguala su altura/tipografía para que los bordes alineen (los filtros sueltos
+   conservan su 0.82rem compacto). */
+.input-group > .afs-wrap--ig .afs-toggle {
+    font-size: 1rem !important;
+    padding: 0.375rem 1.75rem 0.375rem 0.75rem !important;
+    height: 100% !important;   /* estira a la altura de la celda del input-group (lupa/input vecinos) */
+}
+.input-group > .afs-wrap--ig:not(:first-child) .afs-toggle {
+    border-top-left-radius: 0 !important;
+    border-bottom-left-radius: 0 !important;
+}
+.input-group > .afs-wrap--ig:not(:last-child) .afs-toggle {
+    border-top-right-radius: 0 !important;
+    border-bottom-right-radius: 0 !important;
+}
+/* Solapa el borde con el vecino izquierdo, como hacen .form-control/.form-select
+   nativos en un input-group (evita el doble borde de 2px). */
+.input-group > .afs-wrap--ig:not(:first-child) { margin-left: -1px; }
+
+/* ── Select2 alineado a AtlanticoSelect ──────────────────────────────
+   Los selects buscables/múltiples (producto, insumo, tipos) usan Select2
+   y NO los toca el realce .afs-*. Para que el sistema luzca consistente,
+   el tema bootstrap-5 de Select2 se reviste con el mismo borde navy, foco,
+   altura, tipografía y opción activa navy que .afs-toggle / .afs-menu.
+   No se altera su funcionalidad (búsqueda y multiple siguen igual). */
+.select2-container--bootstrap-5 .select2-selection {
+    border-color: rgba(30, 60, 114, 0.25) !important;
+    color: #2c3e50 !important;
+    background-color: #ffffff !important;
+    font-size: 0.82rem !important;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease !important;
+}
+.select2-container--bootstrap-5 .select2-selection:hover {
+    border-color: rgba(30, 60, 114, 0.4) !important;
+}
+.select2-container--bootstrap-5.select2-container--focus .select2-selection,
+.select2-container--bootstrap-5.select2-container--open .select2-selection {
+    border-color: #1e3c72 !important;
+    box-shadow: 0 0 0 0.2rem rgba(30, 60, 114, 0.15) !important;
+}
+/* Dropdown + opciones: igual borde/tipografía y opción activa/hover navy */
+.select2-container--bootstrap-5 .select2-dropdown {
+    border-color: #1e3c72 !important;
+}
+.select2-container--bootstrap-5 .select2-results__option {
+    font-size: 0.82rem !important;
+    border-radius: 0.35rem !important;
+    padding: 0.4rem 0.6rem !important;
+}
+.select2-container--bootstrap-5 .select2-results__option--highlighted[aria-selected],
+.select2-container--bootstrap-5 .select2-results__option--selected,
+.select2-container--bootstrap-5 .select2-results__option[aria-selected="true"] {
+    background-color: #1e3c72 !important;
+    color: #ffffff !important;
+}
+/* Chips de selección múltiple (p.ej. tipos de producto en atributos) */
+.select2-container--bootstrap-5 .select2-selection--multiple .select2-selection__choice {
+    background-color: rgba(30, 60, 114, 0.1) !important;
+    border-color: rgba(30, 60, 114, 0.25) !important;
+    color: #1e3c72 !important;
+}
+.select2-container--bootstrap-5 .select2-search--inline .select2-search__field {
+    font-size: 0.82rem !important;
+}
+
+/* Dark mode: mismo tratamiento que .afs-toggle en oscuro */
+[data-bs-theme="dark"] .select2-container--bootstrap-5 .select2-selection {
+    background-color: #1f2229 !important;
+    border-color: rgba(78, 122, 199, 0.3) !important;
+    color: #c8cbd0 !important;
+}
+[data-bs-theme="dark"] .select2-container--bootstrap-5.select2-container--focus .select2-selection,
+[data-bs-theme="dark"] .select2-container--bootstrap-5.select2-container--open .select2-selection {
+    border-color: #4e7ac7 !important;
+    box-shadow: 0 0 0 0.2rem rgba(78, 122, 199, 0.2) !important;
+}
+[data-bs-theme="dark"] .select2-container--bootstrap-5 .select2-dropdown {
+    background-color: #1f2229 !important;
+    border-color: #4e7ac7 !important;
+}
+[data-bs-theme="dark"] .select2-container--bootstrap-5 .select2-results__option {
+    color: #c8cbd0 !important;
+}
+[data-bs-theme="dark"] .select2-container--bootstrap-5 .select2-results__option--highlighted[aria-selected],
+[data-bs-theme="dark"] .select2-container--bootstrap-5 .select2-results__option--selected,
+[data-bs-theme="dark"] .select2-container--bootstrap-5 .select2-results__option[aria-selected="true"] {
+    background-color: #4e7ac7 !important;
+    color: #ffffff !important;
 }
 
 /* ── Input de filtro (texto) ─────────────────────────────────── */
