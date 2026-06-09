@@ -753,4 +753,25 @@ class OrdenProduccionController extends Controller
 
         return response()->json(['message' => 'Sub-orden eliminada.']);
     }
+
+    /**
+     * Cambiar el estado de una sub-orden
+     * (Pendiente / En Proceso / Finalizado / Cancelado), validado contra el ENUM.
+     */
+    public function updateSubOrdenEstado(Request $request, $id, $subId)
+    {
+        $validated = $request->validate([
+            'estado' => 'required|in:Pendiente,En Proceso,Finalizado,Cancelado',
+        ], [
+            'estado.in' => 'Estado de sub-orden no válido.',
+        ]);
+
+        $sub = SubOrdenProduccion::where('orden_produccion_id', $id)->findOrFail($subId);
+        $sub->update(['estado' => $validated['estado']]);
+
+        return response()->json([
+            'message' => 'Estado de la sub-orden actualizado.',
+            'estado'  => $sub->estado,
+        ]);
+    }
 }
