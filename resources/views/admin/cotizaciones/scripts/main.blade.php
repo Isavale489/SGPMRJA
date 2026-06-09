@@ -673,7 +673,7 @@
                     var codigo = (p.codigo || '').toLowerCase();
                     var modelo = (p.modelo || '').toLowerCase();
                     var tipo = p.tipo_producto ? p.tipo_producto.nombre.toLowerCase() : '';
-                    matchFiltro = codigo.includes(busqueda) || modelo.includes(busqueda) || tipo.includes(busqueda);
+                    matchFiltro = codigo.startsWith(busqueda) || modelo.startsWith(busqueda) || tipo.startsWith(busqueda);
                 }
                 if (tipoId) {
                     matchTipo = p.tipo_producto && p.tipo_producto.id == tipoId;
@@ -3810,8 +3810,9 @@
                 var q = (catState.search || '').toLowerCase().trim();
                 list = list.filter(function (t) {
                     if (q) {
-                        var hay = ((t.nombre || '') + ' ' + (t.prefijo || '')).toLowerCase();
-                        if (!hay.includes(q)) return false;
+                        var nombre = (t.nombre || '').toLowerCase();
+                        var prefijo = (t.prefijo || '').toLowerCase();
+                        if (!nombre.startsWith(q) && !prefijo.startsWith(q)) return false;
                     }
                     if (catState.tipos.size && !catState.tipos.has(t.id)) return false;
                     return true;
