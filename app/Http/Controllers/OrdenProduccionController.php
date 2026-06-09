@@ -769,9 +769,14 @@ class OrdenProduccionController extends Controller
         $sub = SubOrdenProduccion::where('orden_produccion_id', $id)->findOrFail($subId);
         $sub->update(['estado' => $validated['estado']]);
 
+        $orden = OrdenProduccion::findOrFail($id);
+        $orden->recalcularEstadoDesdeSubordenes();
+        $orden->refresh();
+
         return response()->json([
-            'message' => 'Estado de la sub-orden actualizado.',
-            'estado'  => $sub->estado,
+            'message'   => 'Estado de la sub-orden actualizado.',
+            'estado'    => $sub->estado,
+            'op_estado' => $orden->estado,
         ]);
     }
 

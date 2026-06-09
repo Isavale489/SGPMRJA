@@ -126,4 +126,35 @@ class OrdenProduccion extends Model
     {
         return $this->hasMany(SubOrdenProduccion::class);
     }
+
+    /**
+     * Recalcula el estado de la OP en función de las sub-órdenes activas
+     * (excluye Canceladas). Solo actúa cuando hay sub-órdenes no canceladas.
+     * No modifica la OP si ella misma está Cancelada.
+     */
+    public function recalcularEstadoDesdeSubordenes(): void
+    {
+        if ($this->estado === 'Cancelado') {
+            return;
+        }
+
+        $activas = $this->subordenes()->whereNotIn('estado', ['Cancelado'])->get();
+
+        if ($activas->isEmpty()) {
+            return;
+        }
+
+        $todosFinalizados = $activas->every(fn($s) => $s->estado === 'Finalizado');
+        $hayAvance        = $activas->contains(fn($s) => in_array($s->estado, ['En Proceso', 'Finalizado']));
+
+        $nuevoEstado = match (true) {
+            $todosFinalizados => 'Finalizado',
+            $hayAvance        => 'En Proceso',
+            default           => 'Pendiente',
+        };
+
+        if ($this->estado !== $nuevoEstado) {
+            $this->update(['estado' => $nuevoEstado]);
+        }
+    }
 }
