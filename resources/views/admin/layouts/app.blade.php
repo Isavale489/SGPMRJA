@@ -912,6 +912,74 @@
         $(document).ready(function () {
             AtlanticoGuard.init();
         });
+
+        // ──────────────────────────────────────────────────────────────────
+        // AtlanticoFilterSelect — realza los <select class="navy-filter-select">
+        // a un dropdown Bootstrap cuyo menú muestra ~4 ítems con scroll (el
+        // <select> nativo no permite limitar la altura de su lista). El select
+        // se conserva oculto como fuente de verdad: el JS de filtros existente
+        // (lectura de .val() y evento change) sigue funcionando sin cambios.
+        // ──────────────────────────────────────────────────────────────────
+        (function () {
+            'use strict';
+
+            function syncToggle($select, $wrap) {
+                var sel = $select[0];
+                var opt = sel.options[sel.selectedIndex];
+                $wrap.find('.afs-label').text(opt ? opt.text : '');
+                $wrap.find('.afs-option').each(function () {
+                    $(this).toggleClass('active', this.getAttribute('data-value') === sel.value);
+                });
+            }
+
+            function enhance(sel) {
+                var $select = $(sel);
+                if ($select.data('afsEnhanced')) return;
+                $select.data('afsEnhanced', true);
+
+                // El select nativo se mueve dentro del wrap y se oculta (sigue
+                // siendo la fuente de verdad para value/change).
+                var $wrap = $('<div class="dropdown afs-wrap"></div>');
+                $select.before($wrap);
+                $wrap.append($select);
+
+                var $toggle = $('<button type="button" class="afs-toggle form-select" data-bs-toggle="dropdown" aria-expanded="false"><span class="afs-label"></span></button>');
+                var $menu = $('<ul class="dropdown-menu afs-menu w-100"></ul>');
+
+                $.each(sel.options, function (i, opt) {
+                    $('<li></li>').append(
+                        $('<button type="button" class="dropdown-item afs-option"></button>')
+                            .attr('data-value', opt.value)
+                            .text(opt.text)
+                    ).appendTo($menu);
+                });
+
+                $wrap.append($toggle).append($menu);
+                syncToggle($select, $wrap);
+
+                // Elegir opción del dropdown → refleja en el select + dispara change
+                $menu.on('click', '.afs-option', function () {
+                    var val = this.getAttribute('data-value');
+                    if (sel.value !== val) {
+                        $select.val(val).trigger('change');
+                    }
+                    syncToggle($select, $wrap);
+                });
+
+                // Cambios del select (incl. programáticos: "Limpiar filtros") → re-sincroniza
+                $select.on('change', function () { syncToggle($select, $wrap); });
+                // Al abrir, re-sincroniza por si el valor cambió sin disparar change
+                $wrap.on('show.bs.dropdown', function () { syncToggle($select, $wrap); });
+
+                // Recién aquí se oculta el nativo: si algo fallara arriba, el
+                // <select> sigue visible y usable (degradación elegante).
+                $select.addClass('afs-native');
+            }
+
+            $(document).ready(function () {
+                $('select.navy-filter-select').each(function () { enhance(this); });
+            });
+        })();
     </script>
     @stack('scripts')
 </body>
