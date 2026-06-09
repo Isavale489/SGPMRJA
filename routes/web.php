@@ -64,6 +64,7 @@ Route::middleware(['auth', 'throttle:60,1', 'active.user', 'recovery.questions.r
         Route::resource('users', UserController::class);
         Route::post('users/{id}/restore', [UserController::class, 'restore'])->name('users.restore');
         Route::get('users-data', [UserController::class, 'getUsers'])->name('users.data');
+        Route::get('users/reporte/pdf', [UserController::class, 'reportePdf'])->name('users.reporte.pdf');
         Route::get('users-check-email', [UserController::class, 'checkEmail'])->name('users.check-email');
         Route::post('users/{id}/unlock-recovery', [UserController::class, 'unlockRecovery'])->name('users.unlock-recovery');
         Route::post('users/{id}/reset-password', [UserController::class, 'resetPassword'])->name('users.reset-password');

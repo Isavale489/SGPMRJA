@@ -188,9 +188,26 @@ class UserController extends Controller
         ]);
     }
 
-    public function reportePdf()
+    public function reportePdf(Request $request)
     {
-        $users = User::all();
+        $query = User::query();
+        if ($request->filled('role')) {
+            $query->where('role', $request->role);
+        }
+        // Estatus: 1 = activos, 0 = inhabilitados; sin valor = todos.
+        if ($request->input('estatus') === '1') {
+            $query->where('estado', 1);
+        } elseif ($request->input('estatus') === '0') {
+            $query->where('estado', 0);
+        }
+        // Rango por fecha de registro (created_at)
+        if ($request->filled('fecha_desde')) {
+            $query->whereDate('created_at', '>=', $request->fecha_desde);
+        }
+        if ($request->filled('fecha_hasta')) {
+            $query->whereDate('created_at', '<=', $request->fecha_hasta);
+        }
+        $users = $query->orderBy('name')->get();
         $pdf = \PDF::loadView('admin.users.reporte_pdf', compact('users'))
             ->setPaper('a4', 'landscape');
         return $pdf->download('usuarios_' . now()->format('Y-m-d_H-i-s') . '.pdf');
