@@ -38,6 +38,11 @@
                         <span class="wiz-step-dot">3</span>
                         <span class="wiz-step-label">Progreso</span>
                     </button>
+                    <span class="wiz-step-line"><span class="wiz-step-line-fill" data-line="3"></span></span>
+                    <button type="button" class="wiz-step-marker" data-step="4" role="tab">
+                        <span class="wiz-step-dot"><i class="ri-layout-grid-line" style="font-size:11px;"></i></span>
+                        <span class="wiz-step-label">Kanban</span>
+                    </button>
                 </div>
                 <div class="wiz-stepper-side wiz-stepper-side--right"></div>
             </div>
@@ -210,6 +215,22 @@
                         </div>
 
                     </div>
+                </section>
+
+                <!-- ─ Paso 4: Kanban ─────────────────────────────────── -->
+                <section class="wiz-step-content" data-step="4">
+                    <div id="kanban-loading" class="text-center py-4">
+                        <div class="spinner-border spinner-border-sm text-primary" role="status">
+                            <span class="visually-hidden">Cargando…</span>
+                        </div>
+                        <p class="text-muted fs-13 mt-2 mb-0">Cargando tablero…</p>
+                    </div>
+                    <div id="kanban-empty" class="text-center py-4" style="display:none;">
+                        <i class="ri-layout-grid-line text-muted" style="font-size:2rem;opacity:.4;"></i>
+                        <p class="text-muted fs-13 mt-2 mb-0">No hay sub-órdenes para esta orden.</p>
+                        <p class="text-muted fs-12 mb-0">Usa el botón <i class="ri-node-tree"></i> en la tabla para agregar etapas.</p>
+                    </div>
+                    <div id="kanban-board" class="kanban-board" style="display:none;"></div>
                 </section>
 
             </div>{{-- /modal-body --}}
