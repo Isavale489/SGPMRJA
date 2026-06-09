@@ -17,6 +17,7 @@ class Pedido extends Model
         'cliente_id',
         'fecha_pedido',
         'fecha_entrega_estimada',
+        'fecha_formalizacion',
         'estado',
         'total',
         'user_id',
@@ -27,8 +28,14 @@ class Pedido extends Model
     protected $casts = [
         'fecha_pedido' => 'date:Y-m-d',
         'fecha_entrega_estimada' => 'date:Y-m-d',
+        'fecha_formalizacion' => 'date:Y-m-d',
         'total' => 'decimal:2',
     ];
+
+    /**
+     * Días hábiles (lun-vie) de plazo de entrega contados desde la formalización.
+     */
+    public const DIAS_HABILES_ENTREGA = 30;
 
     /**
      * Relación con el usuario que creó el pedido
@@ -56,11 +63,11 @@ class Pedido extends Model
 
     /**
      * Porcentaje mínimo de abono (sobre el total) requerido para que el pedido
-     * pueda avanzar a producción / generar órdenes. Configurable (default 50%).
+     * pueda avanzar a producción / generar órdenes. Configurable (default 70%).
      */
     public static function porcentajeAbonoMinimo(): float
     {
-        return (float) config('pedidos.abono_minimo_porcentaje', 50);
+        return (float) config('pedidos.abono_minimo_porcentaje', 70);
     }
 
     /**
@@ -91,6 +98,51 @@ class Pedido extends Model
     public function cumpleAbonoMinimo(): bool
     {
         return (float) $this->abono + 0.001 >= $this->montoAbonoMinimo();
+    }
+
+    /**
+     * ¿El pedido está formalizado? La formalización es un hito permanente: se
+     * marca cuando el abono alcanza por primera vez el mínimo (70%) y no se
+     * revierte aunque luego se editen los pagos.
+     */
+    public function estaFormalizado(): bool
+    {
+        return !is_null($this->fecha_formalizacion);
+    }
+
+    /**
+     * Marca la formalización si el pedido acaba de alcanzar el abono mínimo y aún
+     * no estaba formalizado. Fija la fecha de formalización (hoy) y recalcula la
+     * fecha de entrega = formalización + DIAS_HABILES_ENTREGA días hábiles
+     * (lun-vie). Idempotente: una vez formalizado no recalcula.
+     *
+     * Lo invoca PedidoService::syncPagos() tras recalcular el abono.
+     */
+    public function marcarFormalizacionSiCorresponde(): void
+    {
+        if ($this->estaFormalizado() || !$this->cumpleAbonoMinimo()) {
+            return;
+        }
+
+        $hoy = now();
+
+        $this->update([
+            'fecha_formalizacion'    => $hoy->toDateString(),
+            // addWeekdays() avanza solo días hábiles (salta sábado y domingo).
+            'fecha_entrega_estimada' => $hoy->copy()->addWeekdays(self::DIAS_HABILES_ENTREGA)->toDateString(),
+        ]);
+    }
+
+    /**
+     * ¿Las líneas del pedido (productos, tallas, cantidades, diseño) están
+     * congeladas? Ocurre una vez formalizado, con producción iniciada o
+     * completado. En ese estado solo se permiten cambios de pagos.
+     */
+    public function lineasBloqueadas(): bool
+    {
+        return $this->estaFormalizado()
+            || $this->tieneProduccionActiva()
+            || $this->estado === 'Completado';
     }
 
     /**

@@ -46,6 +46,9 @@
                                     <a href="{{ route('movimiento-insumo.reporte') }}" class="btn btn-danger">
                                         <i class="ri-file-list-3-line align-bottom me-1"></i> Reporte de Insumos
                                     </a>
+                                    <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#pdfExportModal">
+                                        <i class="ri-file-pdf-fill align-bottom me-1"></i> Exportar Movimientos
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -222,6 +225,46 @@
     @include('admin.movimiento-insumo.movimientos.modals.view')
     @include('admin.movimiento-insumo.movimientos.modals.create_insumo')
 
+    {{-- Modal: Exportar Movimientos (PDF) --}}
+    <div class="modal fade atlantico-modal" id="pdfExportModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" style="max-width: 380px;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="ri-file-pdf-line me-2"></i>Exportar Movimientos</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <p class="text-muted small mb-3">Filtra qué movimientos incluir en el reporte.</p>
+                    <div class="mb-0">
+                        <label class="form-label fw-semibold" for="pdf-filter-tipo">Tipo de movimiento</label>
+                        <select class="form-select" id="pdf-filter-tipo">
+                            <option value="">Todos</option>
+                            <option value="Entrada">Entrada</option>
+                            <option value="Salida">Salida</option>
+                        </select>
+                    </div>
+                    <div class="row g-2 mt-3">
+                        <div class="col-6">
+                            <label class="form-label fw-semibold" for="pdf-fecha-desde">Fecha desde</label>
+                            <input type="date" class="form-control" id="pdf-fecha-desde">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label fw-semibold" for="pdf-fecha-hasta">Fecha hasta</label>
+                            <input type="date" class="form-control" id="pdf-fecha-hasta">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light border-0">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">
+                        <i class="ri-close-line me-1"></i>Cancelar
+                    </button>
+                    <button type="button" class="btn btn-danger" id="btn-generar-pdf">
+                        <i class="ri-file-pdf-fill me-1"></i>Generar PDF
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 @endsection
 
 @push('scripts')
@@ -236,4 +279,22 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.1.3/jszip.min.js"></script>
     @include('admin.movimiento-insumo.movimientos.scripts.main')
+    <script>
+        // Exportar Movimientos — PDF
+        $('#btn-generar-pdf').on('click', function () {
+            var baseUrl = '{{ route('movimiento-insumo.reporte.pdf') }}';
+            var params = [];
+            var tipo   = $('#pdf-filter-tipo').val();
+            var fdesde = $('#pdf-fecha-desde').val();
+            var fhasta = $('#pdf-fecha-hasta').val();
+            if (tipo)   params.push('tipo_movimiento=' + encodeURIComponent(tipo));
+            if (fdesde) params.push('fecha_desde=' + encodeURIComponent(fdesde));
+            if (fhasta) params.push('fecha_hasta=' + encodeURIComponent(fhasta));
+            window.open(baseUrl + (params.length ? '?' + params.join('&') : ''), '_blank');
+            bootstrap.Modal.getInstance(document.getElementById('pdfExportModal'))?.hide();
+        });
+        $('#pdfExportModal').on('show.bs.modal', function () {
+            $('#pdf-filter-tipo, #pdf-fecha-desde, #pdf-fecha-hasta').val('');
+        });
+    </script>
 @endpush

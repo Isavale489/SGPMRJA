@@ -8,6 +8,7 @@ use App\Models\Insumo;
 use App\Models\Pedido;
 use App\Models\DetallePedido;
 use App\Models\Empleado;
+use App\Services\ProduccionInventarioService;
 use Illuminate\Http\Request;
 use Yajra\DataTables\DataTables;
 use Illuminate\Support\Facades\Auth;
@@ -15,6 +16,11 @@ use Illuminate\Support\Facades\DB;
 
 class OrdenProduccionController extends Controller
 {
+    public function __construct(
+        private ProduccionInventarioService $inventario
+    ) {
+    }
+
     /**
      * Devuelve el payload de error 422 si el pedido no alcanza el abono mínimo
      * requerido para producir, o null si lo cumple. Centraliza la regla para
@@ -308,26 +314,37 @@ class OrdenProduccionController extends Controller
             ], 422);
         }
 
-        // producto y cantidad se derivan de la línea (autoritativo, no del cliente)
-        $orden = OrdenProduccion::create([
-            'pedido_id' => $detalle->pedido_id,
-            'detalle_pedido_id' => $detalle->id,
-            'producto_id' => $detalle->producto_id,
-            'empleado_id' => $validated['empleado_id'],
-            'cantidad_solicitada' => $detalle->cantidad,
-            'cantidad_producida' => 0,
-            'fecha_inicio' => $validated['fecha_inicio'],
-            'fecha_fin_estimada' => $validated['fecha_fin_estimada'],
-            'estado' => 'Pendiente',
-            'notas' => $validated['notas'] ?? null,
-            'created_by' => Auth::id(),
-        ]);
+        try {
+            // Crear la orden, asociar insumos y descontar stock en una sola
+            // transacción: si falta stock, no se crea nada (rollback total).
+            DB::transaction(function () use ($validated, $detalle, $request) {
+                // producto y cantidad se derivan de la línea (autoritativo, no del cliente)
+                $orden = OrdenProduccion::create([
+                    'pedido_id' => $detalle->pedido_id,
+                    'detalle_pedido_id' => $detalle->id,
+                    'producto_id' => $detalle->producto_id,
+                    'empleado_id' => $validated['empleado_id'],
+                    'cantidad_solicitada' => $detalle->cantidad,
+                    'cantidad_producida' => 0,
+                    'fecha_inicio' => $validated['fecha_inicio'],
+                    'fecha_fin_estimada' => $validated['fecha_fin_estimada'],
+                    'estado' => 'Pendiente',
+                    'notas' => $validated['notas'] ?? null,
+                    'created_by' => Auth::id(),
+                ]);
 
-        foreach ($request->insumos as $insumo) {
-            $orden->insumos()->attach($insumo['id'], [
-                'cantidad_estimada' => $insumo['cantidad_estimada'],
-                'cantidad_utilizada' => 0,
-            ]);
+                foreach ($request->insumos as $insumo) {
+                    $orden->insumos()->attach($insumo['id'], [
+                        'cantidad_estimada' => $insumo['cantidad_estimada'],
+                        'cantidad_utilizada' => 0,
+                    ]);
+                }
+
+                // Descuenta stock de los insumos inventariables (valida antes).
+                $this->inventario->validarYDescontar($orden, Auth::id());
+            });
+        } catch (\InvalidArgumentException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
         }
 
         Pedido::find($detalle->pedido_id)?->recalcularEstado();
@@ -390,32 +407,41 @@ class OrdenProduccionController extends Controller
         }
 
         $creadas = [];
-        DB::transaction(function () use ($validated, $detalles, &$creadas) {
-            foreach ($validated['ordenes'] as $o) {
-                $detalle = $detalles[$o['detalle_pedido_id']];
-                $orden = OrdenProduccion::create([
-                    'pedido_id'           => $detalle->pedido_id,
-                    'detalle_pedido_id'   => $detalle->id,
-                    'producto_id'         => $detalle->producto_id,
-                    'empleado_id'         => $o['empleado_id'],
-                    'cantidad_solicitada' => $detalle->cantidad,
-                    'cantidad_producida'  => 0,
-                    'cantidad_defectuosa' => 0,
-                    'fecha_inicio'        => $o['fecha_inicio'],
-                    'fecha_fin_estimada'  => $o['fecha_fin_estimada'],
-                    'estado'              => 'Pendiente',
-                    'notas'               => $o['notas'] ?? null,
-                    'created_by'          => Auth::id(),
-                ]);
-                foreach ($o['insumos'] as $ins) {
-                    $orden->insumos()->attach($ins['id'], [
-                        'cantidad_estimada' => $ins['cantidad_estimada'],
-                        'cantidad_utilizada' => 0,
+        try {
+            DB::transaction(function () use ($validated, $detalles, &$creadas) {
+                foreach ($validated['ordenes'] as $o) {
+                    $detalle = $detalles[$o['detalle_pedido_id']];
+                    $orden = OrdenProduccion::create([
+                        'pedido_id'           => $detalle->pedido_id,
+                        'detalle_pedido_id'   => $detalle->id,
+                        'producto_id'         => $detalle->producto_id,
+                        'empleado_id'         => $o['empleado_id'],
+                        'cantidad_solicitada' => $detalle->cantidad,
+                        'cantidad_producida'  => 0,
+                        'cantidad_defectuosa' => 0,
+                        'fecha_inicio'        => $o['fecha_inicio'],
+                        'fecha_fin_estimada'  => $o['fecha_fin_estimada'],
+                        'estado'              => 'Pendiente',
+                        'notas'               => $o['notas'] ?? null,
+                        'created_by'          => Auth::id(),
                     ]);
+                    foreach ($o['insumos'] as $ins) {
+                        $orden->insumos()->attach($ins['id'], [
+                            'cantidad_estimada' => $ins['cantidad_estimada'],
+                            'cantidad_utilizada' => 0,
+                        ]);
+                    }
+
+                    // Descuenta stock de los insumos inventariables (valida antes).
+                    // Si alguna orden no tiene stock, el batch completo hace rollback.
+                    $this->inventario->validarYDescontar($orden, Auth::id());
+
+                    $creadas[] = $orden->id;
                 }
-                $creadas[] = $orden->id;
-            }
-        });
+            });
+        } catch (\InvalidArgumentException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
 
         Pedido::find($validated['pedido_id'])?->recalcularEstado();
 
@@ -522,15 +548,14 @@ class OrdenProduccionController extends Controller
     {
         $orden = OrdenProduccion::findOrFail($id);
 
+        // 'Cancelado' no se setea aquí: la cancelación tiene su propio endpoint
+        // (cancelar) porque define la reposición de stock y exige motivo de merma.
         $validated = $request->validate([
             'empleado_id' => 'required|exists:empleado,id',
             'fecha_inicio' => 'required|date',
             'fecha_fin_estimada' => 'required|date|after:fecha_inicio',
-            'estado' => 'required|in:Pendiente,En Proceso,Finalizado,Cancelado',
+            'estado' => 'required|in:Pendiente,En Proceso,Finalizado',
             'notas' => 'nullable|string',
-            'insumos' => 'required|array|min:1',
-            'insumos.*.id' => 'required|exists:insumo,id',
-            'insumos.*.cantidad_estimada' => 'required|numeric|min:0.01',
         ]);
 
         $fechaFinReal = $orden->fecha_fin_real;
@@ -540,7 +565,9 @@ class OrdenProduccionController extends Controller
             $fechaFinReal = null;
         }
 
-        // producto y cantidad quedan ligados a la línea del pedido (no se editan aquí)
+        // producto, cantidad e insumos quedan fijos: el producto/cantidad están
+        // ligados a la línea del pedido y los insumos ya comprometieron stock al
+        // crear la orden (editarlos exigiría reconciliar inventario → cancelar+recrear).
         $orden->update([
             'empleado_id' => $validated['empleado_id'],
             'fecha_inicio' => $validated['fecha_inicio'],
@@ -549,14 +576,6 @@ class OrdenProduccionController extends Controller
             'fecha_fin_real' => $fechaFinReal,
             'notas' => $validated['notas'] ?? null,
         ]);
-
-        $orden->insumos()->sync([]);
-        foreach ($request->insumos as $insumo) {
-            $orden->insumos()->attach($insumo['id'], [
-                'cantidad_estimada' => $insumo['cantidad_estimada'],
-                'cantidad_utilizada' => 0,
-            ]);
-        }
 
         Pedido::find($orden->pedido_id)?->recalcularEstado();
 
@@ -574,9 +593,68 @@ class OrdenProduccionController extends Controller
         }
 
         $pedidoId = $orden->pedido_id;
-        $orden->delete();
+
+        DB::transaction(function () use ($orden) {
+            // La OP solo se puede eliminar estando 'Pendiente' (tela sin cortar):
+            // se devuelve al inventario el stock comprometido al crearla.
+            $this->inventario->reponer($orden, Auth::id());
+            $orden->delete();
+        });
+
         Pedido::find($pedidoId)?->recalcularEstado();
         return response()->json(['message' => 'Orden de producción eliminada exitosamente.']);
+    }
+
+    /**
+     * Cancelar una orden de producción.
+     *
+     * Reposición de stock condicional al estatus al momento de cancelar (merma
+     * en confección textil):
+     *  - 'Pendiente': la tela no se ha cortado → se repone el stock comprometido.
+     *  - 'En Proceso' / 'Finalizado': la tela ya se cortó (merma) → NO se repone
+     *    y se exige un motivo que justifique la pérdida del material.
+     */
+    public function cancelar(Request $request, $id)
+    {
+        $orden = OrdenProduccion::findOrFail($id);
+
+        if ($orden->estado === 'Cancelado') {
+            return response()->json(['message' => 'La orden ya está cancelada.'], 422);
+        }
+
+        // Solo la cancelación temprana (Pendiente) repone stock.
+        $reponeStock = $orden->estado === 'Pendiente';
+
+        $validated = $request->validate(
+            [
+                'motivo_cancelacion' => ($reponeStock ? 'nullable' : 'required') . '|string|max:500',
+            ],
+            [
+                'motivo_cancelacion.required' =>
+                    'La orden ya está en producción (material cortado): indica el motivo de la cancelación para justificar la merma.',
+            ]
+        );
+
+        $pedidoId = $orden->pedido_id;
+
+        DB::transaction(function () use ($orden, $validated, $reponeStock) {
+            if ($reponeStock) {
+                $this->inventario->reponer($orden, Auth::id());
+            }
+
+            $orden->update([
+                'estado'             => 'Cancelado',
+                'motivo_cancelacion' => $validated['motivo_cancelacion'] ?? null,
+            ]);
+        });
+
+        Pedido::find($pedidoId)?->recalcularEstado();
+
+        return response()->json([
+            'message' => $reponeStock
+                ? 'Orden cancelada. Se repuso el stock de los insumos al inventario.'
+                : 'Orden cancelada. El material se registró como merma (sin reposición de stock).',
+        ]);
     }
 
     // ══════════════════════════════════════════════════════════════════════
@@ -674,5 +752,55 @@ class OrdenProduccionController extends Controller
         $sub->delete();
 
         return response()->json(['message' => 'Sub-orden eliminada.']);
+    }
+
+    /**
+     * Cambiar el estado de una sub-orden
+     * (Pendiente / En Proceso / Finalizado / Cancelado), validado contra el ENUM.
+     */
+    public function updateSubOrdenEstado(Request $request, $id, $subId)
+    {
+        $validated = $request->validate([
+            'estado' => 'required|in:Pendiente,En Proceso,Finalizado,Cancelado',
+        ], [
+            'estado.in' => 'Estado de sub-orden no válido.',
+        ]);
+
+        $sub = SubOrdenProduccion::where('orden_produccion_id', $id)->findOrFail($subId);
+        $sub->update(['estado' => $validated['estado']]);
+
+        return response()->json([
+            'message' => 'Estado de la sub-orden actualizado.',
+            'estado'  => $sub->estado,
+        ]);
+    }
+
+    // ══════════════════════════════════════════════════════════════════════
+    //  EXPORTACIÓN PDF
+    // ══════════════════════════════════════════════════════════════════════
+
+    /**
+     * Exportar las órdenes de producción a PDF, con filtros por estado y rango
+     * de fecha estimada de entrega (fecha_fin_estimada).
+     */
+    public function reportePdf(Request $request)
+    {
+        $query = OrdenProduccion::with(['producto', 'pedido', 'detallePedido.tipoProducto'])
+            ->orderBy('created_at', 'desc');
+
+        if ($request->filled('estado')) {
+            $query->where('estado', $request->estado);
+        }
+        if ($request->filled('fecha_desde')) {
+            $query->whereDate('fecha_fin_estimada', '>=', $request->fecha_desde);
+        }
+        if ($request->filled('fecha_hasta')) {
+            $query->whereDate('fecha_fin_estimada', '<=', $request->fecha_hasta);
+        }
+
+        $ordenes = $query->get();
+        $pdf = \PDF::loadView('admin.ordenes.reporte_pdf', compact('ordenes'))
+            ->setPaper('a4', 'landscape');
+        return $pdf->download('ordenes_produccion_' . now()->format('Y-m-d_H-i-s') . '.pdf');
     }
 }

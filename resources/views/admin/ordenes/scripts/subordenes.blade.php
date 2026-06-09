@@ -4,7 +4,13 @@
 // ══════════════════════════════════════════════════════════════════════════
 $(document).ready(function () {
     var CSRF = $('meta[name="csrf-token"]').attr('content');
-    var SO_BADGE = { 'Pendiente': 'warning', 'En Proceso': 'info', 'Finalizado': 'success', 'Cancelado': 'danger' };
+    var SO_ESTADOS = ['Pendiente', 'En Proceso', 'Finalizado', 'Cancelado'];
+    var SO_HEX = { 'Pendiente': '#9a6700', 'En Proceso': '#0d6efd', 'Finalizado': '#1a7f5a', 'Cancelado': '#b42318' };
+    function soEstadoOptions(current) {
+        return SO_ESTADOS.map(function (st) {
+            return '<option value="' + st + '"' + (st === current ? ' selected' : '') + '>' + st + '</option>';
+        }).join('');
+    }
 
     function soEsc(s) {
         return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
@@ -45,12 +51,14 @@ $(document).ready(function () {
                     + (e.rol ? (' · ' + soEsc(e.rol)) : '') + '</span>';
             }).join('') || '<span class="text-muted small fst-italic">Sin empleados asignados</span>';
 
-            var color = SO_BADGE[s.estado] || 'secondary';
+            var hex = SO_HEX[s.estado] || '#6c757d';
             return '<div class="card border-0 shadow-sm mb-2"><div class="card-body py-2 px-3">'
                 + '<div class="d-flex justify-content-between align-items-start gap-2">'
                 + '<div class="flex-grow-1">'
-                + '<div class="fw-semibold">' + soEsc(s.nombre)
-                + ' <span class="badge bg-' + color + ' ms-1">' + soEsc(s.estado) + '</span></div>'
+                + '<div class="fw-semibold d-flex align-items-center flex-wrap gap-2">' + soEsc(s.nombre)
+                + '<select class="form-select form-select-sm so-estado-select w-auto" data-id="' + s.id + '" data-prev="' + soEsc(s.estado) + '" title="Cambiar estado de la sub-orden" style="min-width:130px;border-color:' + hex + ';color:' + hex + ';font-weight:600;">'
+                + soEstadoOptions(s.estado)
+                + '</select></div>'
                 + (s.cantidad_asignada ? ('<small class="text-muted">Cantidad: ' + s.cantidad_asignada + '</small>') : '')
                 + (s.notas ? ('<div class="small text-muted fst-italic">' + soEsc(s.notas) + '</div>') : '')
                 + '<div class="mt-1">' + emps + '</div>'
@@ -148,6 +156,31 @@ $(document).ready(function () {
                     Swal.fire({ icon: 'error', title: 'Error', text: (xhr.responseJSON && xhr.responseJSON.message) || 'No se pudo eliminar.' });
                 }
             });
+        });
+    });
+
+    // Cambiar estado de una sub-orden (Pendiente / En Proceso / Finalizado / Cancelado).
+    $(document).on('change', '.so-estado-select', function () {
+        var $sel = $(this);
+        var subId = $sel.data('id');
+        var ordenId = $('#so-orden-id').val();
+        var nuevo = $sel.val();
+        var previo = $sel.data('prev');
+        if (nuevo === previo) return;
+
+        $sel.prop('disabled', true);
+        $.ajax({
+            url: '/ordenes/' + ordenId + '/subordenes/' + subId + '/estado',
+            method: 'POST',
+            data: { _method: 'PATCH', _token: CSRF, estado: nuevo },
+            success: function () {
+                soCargar(ordenId);   // recarga la lista (refresca color y data-prev)
+                Swal.fire({ icon: 'success', title: 'Estado actualizado', toast: true, position: 'top-end', showConfirmButton: false, timer: 1200 });
+            },
+            error: function (xhr) {
+                $sel.val(previo).prop('disabled', false);   // revertir selección
+                Swal.fire({ icon: 'error', title: 'Error', text: (xhr.responseJSON && xhr.responseJSON.message) || 'No se pudo actualizar el estado.' });
+            }
         });
     });
 });

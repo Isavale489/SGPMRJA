@@ -6246,6 +6246,80 @@ header#page-topbar,
     border-color: rgba(30, 60, 114, 0.4) !important;
 }
 
+/* ── Filtro select realzado: dropdown con máx ~4 ítems + scroll ───────
+   El <select.navy-filter-select> nativo no permite limitar la altura de su
+   lista, así que se oculta (.afs-native) y se reemplaza por un dropdown
+   Bootstrap cuyo menú (.afs-menu) limita la altura a ~4 opciones con scroll.
+   El componente lo construye el IIFE global en admin/layouts/app.blade.php;
+   el select sigue en el DOM como fuente de verdad para el JS de filtros. */
+.afs-wrap { position: relative; width: 100%; }
+/* Oculto pero presente (sr-only): el <select> nativo sigue siendo la fuente de
+   verdad y conserva validación nativa (required) y envío de formularios. */
+.afs-native {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    padding: 0 !important;
+    margin: -1px !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+    white-space: nowrap !important;
+    border: 0 !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+}
+.afs-toggle {
+    width: 100% !important;
+    text-align: left !important;
+    font-size: 0.82rem !important;
+    padding: 0.35rem 2rem 0.35rem 0.6rem !important;
+    height: auto !important;
+    border-color: rgba(30, 60, 114, 0.25) !important;
+    color: #2c3e50 !important;
+    background-color: #ffffff !important;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease !important;
+}
+.afs-toggle:hover { border-color: rgba(30, 60, 114, 0.4) !important; }
+.afs-toggle:focus {
+    border-color: #1e3c72 !important;
+    box-shadow: 0 0 0 0.2rem rgba(30, 60, 114, 0.15) !important;
+}
+.afs-toggle .afs-label {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.afs-menu {
+    max-height: 8.75rem;          /* ≈ 4 ítems visibles; el resto con scroll */
+    overflow-y: auto;
+    min-width: 100%;
+    padding: 0.25rem;
+    font-size: 0.82rem;
+}
+.afs-menu .dropdown-item {
+    font-size: 0.82rem;
+    padding: 0.4rem 0.6rem;
+    border-radius: 0.35rem;
+    white-space: normal;
+    cursor: pointer;
+}
+.afs-menu .dropdown-item.active,
+.afs-menu .dropdown-item:active {
+    background-color: #1e3c72;
+    color: #ffffff;
+}
+
+[data-bs-theme="dark"] .afs-toggle {
+    background-color: #1f2229 !important;
+    border-color: rgba(78, 122, 199, 0.3) !important;
+    color: #c8cbd0 !important;
+}
+[data-bs-theme="dark"] .afs-toggle:focus {
+    border-color: #4e7ac7 !important;
+    box-shadow: 0 0 0 0.2rem rgba(78, 122, 199, 0.2) !important;
+}
+
 /* ── Input de filtro (texto) ─────────────────────────────────── */
 .navy-filter-input {
     font-size: 0.82rem !important;

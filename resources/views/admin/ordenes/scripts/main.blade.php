@@ -501,11 +501,13 @@
             const edit = isEditMode();
             const empCol = edit ? 'col-md-3' : 'col-md-4';
             const fechaCol = edit ? 'col-md-3' : 'col-md-4';
+            // 'Cancelado' no se ofrece aquí: la cancelación va por su propia acción
+            // (define reposición de stock condicional y exige motivo de merma).
             const estadoBlock = edit
                 ? '<div class="col-md-3"><label class="form-label form-label-sm required mb-1" for="ord-asig-estado-' + idx + '"><i class="ri-flag-line me-1"></i>Estado</label>'
                   + '<select class="form-select form-select-sm ord-asig-estado" id="ord-asig-estado-' + idx + '" data-idx="' + idx + '">'
                   + '<option value="Pendiente">Pendiente</option><option value="En Proceso">En Proceso</option>'
-                  + '<option value="Finalizado">Finalizado</option><option value="Cancelado">Cancelado</option></select></div>'
+                  + '<option value="Finalizado">Finalizado</option></select></div>'
                 : '';
             return '<div class="ord-asig-card" data-idx="' + idx + '">'
                 + '<div class="ord-asig-card-head">'
@@ -618,25 +620,34 @@
         // PASO 3 — Insumos por línea
         // ══════════════════════════════════════════════════════
         function insumosPanelHtml(l, idx) {
+            // Al EDITAR, los insumos quedan fijos: ya comprometieron stock al crear
+            // la orden. Solo lectura (corregirlos = cancelar la orden y recrearla).
+            const ro = isEditMode();
             const nIns = l.insumos ? l.insumos.length : 0;
             const rows = (l.insumos || []).map(function (it, j) {
+                const accionesTd = ro
+                    ? '<td class="text-center text-muted"><i class="ri-lock-line" title="Insumos fijos tras crear la orden"></i></td>'
+                    : '<td class="text-center text-nowrap">'
+                      + '<button type="button" class="btn btn-sm btn-soft-primary ord-ins-edit me-1" data-l="' + idx + '" data-i="' + j + '" title="Editar"><i class="ri-pencil-line"></i></button>'
+                      + '<button type="button" class="btn btn-sm btn-soft-danger ord-ins-del" data-l="' + idx + '" data-i="' + j + '" title="Quitar"><i class="ri-delete-bin-line"></i></button>'
+                      + '</td>';
                 return '<tr>'
                     + '<td class="ord-ins-c-num">' + (j + 1) + '</td>'
                     + '<td><div class="fw-semibold">' + escHtml(it.nombre) + '</div>'
                         + (it.unidad ? '<small class="text-muted">' + escHtml(it.unidad) + '</small>' : '') + '</td>'
                     + '<td class="text-end fw-semibold">' + parseFloat(it.cantidad).toFixed(2) + '</td>'
-                    + '<td class="text-center text-nowrap">'
-                    +   '<button type="button" class="btn btn-sm btn-soft-primary ord-ins-edit me-1" data-l="' + idx + '" data-i="' + j + '" title="Editar"><i class="ri-pencil-line"></i></button>'
-                    +   '<button type="button" class="btn btn-sm btn-soft-danger ord-ins-del" data-l="' + idx + '" data-i="' + j + '" title="Quitar"><i class="ri-delete-bin-line"></i></button>'
-                    + '</td></tr>';
+                    + accionesTd + '</tr>';
             }).join('');
             const cuerpo = nIns
                 ? '<table class="ord-ins-table"><thead><tr>'
                   + '<th class="ord-ins-c-num">#</th><th>Insumo</th>'
-                  + '<th class="text-end">Cantidad</th><th class="text-center">Acciones</th>'
+                  + '<th class="text-end">Cantidad</th><th class="text-center">' + (ro ? '' : 'Acciones') + '</th>'
                   + '</tr></thead><tbody>' + rows + '</tbody></table>'
                 : '<div class="ord-ins-empty"><i class="ri-tools-line"></i>'
-                  + '<span>Sin insumos. Agrégalos con el botón “Agregar insumo”.</span></div>';
+                  + '<span>Sin insumos registrados.</span></div>';
+            const addBtn = ro
+                ? '<span class="badge rounded-pill badge-soft-secondary flex-shrink-0"><i class="ri-lock-line me-1"></i>Insumos fijos</span>'
+                : '<button type="button" class="btn btn-sm btn-soft-primary ord-ins-add flex-shrink-0" data-l="' + idx + '"><i class="ri-add-line me-1"></i>Agregar insumo</button>';
             return '<div class="ord-asig-card ord-ins-card" data-idx="' + idx + '">'
                 + '<div class="ord-asig-card-head">'
                 +   '<span class="ord-asig-num">' + (idx + 1) + '</span>'
@@ -645,7 +656,7 @@
                 +     '<div class="ord-asig-chips">' + lineaMetaChips(l)
                 +       '<span class="badge rounded-pill badge-soft-info"><i class="ri-tools-line me-1"></i>' + nIns + ' insumo' + (nIns === 1 ? '' : 's') + '</span></div>'
                 +   '</div>'
-                +   '<button type="button" class="btn btn-sm btn-soft-primary ord-ins-add flex-shrink-0" data-l="' + idx + '"><i class="ri-add-line me-1"></i>Agregar insumo</button>'
+                +   addBtn
                 + '</div>'
                 + '<div class="ord-ins-card-body">' + cuerpo + '</div>'
                 + '</div>';
@@ -1158,7 +1169,9 @@
                     className: 'align-middle text-center',
                     width: '16%',
                     render: function (data, type, row) {
-                        const estadoActivo = ['Pendiente', 'En Proceso'].includes(row.estado);
+                        const estado = row.estado;
+                        const estadoActivo = ['Pendiente', 'En Proceso'].includes(estado);
+                        const esCancelado = estado === 'Cancelado';
 
                         const sVer = `<button class="btn btn-sm btn-soft-info view-btn" data-id="${data}" title="Ver detalle"><i class="ri-eye-fill"></i></button>`;
 
@@ -1166,8 +1179,17 @@
                         if (estadoActivo) {
                             items += `<li><button type="button" class="dropdown-item act-item act-primary avance-btn" data-id="${data}"><span class="act-ic"><i class="ri-add-circle-line"></i></span>Registrar avance</button></li>`;
                         }
-                        items += `<li><button type="button" class="dropdown-item act-item act-edit edit-btn" data-id="${data}"><span class="act-ic"><i class="ri-pencil-fill"></i></span>Editar</button></li>`;
-                        items += `<li><button type="button" class="dropdown-item act-item act-del remove-btn" data-id="${data}"><span class="act-ic"><i class="ri-delete-bin-fill"></i></span>Eliminar</button></li>`;
+                        if (!esCancelado) {
+                            items += `<li><button type="button" class="dropdown-item act-item act-edit edit-btn" data-id="${data}"><span class="act-ic"><i class="ri-pencil-fill"></i></span>Editar</button></li>`;
+                        }
+                        // Cancelar (Pendiente/En Proceso): reposición de stock condicional + merma.
+                        if (estadoActivo) {
+                            items += `<li><button type="button" class="dropdown-item act-item act-warning cancelar-btn" data-id="${data}" data-estado="${estado}"><span class="act-ic"><i class="ri-close-circle-line"></i></span>Cancelar orden</button></li>`;
+                        }
+                        // Eliminar (hard delete) solo aplica a órdenes Pendientes.
+                        if (estado === 'Pendiente') {
+                            items += `<li><button type="button" class="dropdown-item act-item act-del remove-btn" data-id="${data}"><span class="act-ic"><i class="ri-delete-bin-fill"></i></span>Eliminar</button></li>`;
+                        }
 
                         const menu = `
                             <div class="dropdown d-inline-block">
@@ -1300,7 +1322,10 @@
                     });
                 }
 
-                $('#view-notas').text(data.notas || 'Sin notas adicionales.');
+                const motivoCancel = (data.estado === 'Cancelado' && data.motivo_cancelacion)
+                    ? '<div class="alert alert-danger py-2 px-3 mt-2 mb-0 fs-12"><i class="ri-close-circle-line me-1"></i><b>Motivo de cancelación:</b> ' + escHtml(data.motivo_cancelacion) + '</div>'
+                    : '';
+                $('#view-notas').html(escHtml(data.notas || 'Sin notas adicionales.') + motivoCancel);
                 const formatDateTime = (dateString) => {
                     if (!dateString) return 'N/A';
                     const date = new Date(dateString);
@@ -1346,6 +1371,70 @@
                     });
                 }
             });
+        });
+
+        // ══════════════════════════════════════════════════════
+        // Cancelar orden (reposición de stock condicional / merma textil)
+        // ══════════════════════════════════════════════════════
+        $(document).on('click', '.cancelar-btn', function () {
+            const id = $(this).data('id');
+            const estado = String($(this).data('estado'));
+            const enProduccion = estado !== 'Pendiente';   // tela ya cortada = merma
+
+            const enviar = function (motivo) {
+                $.ajax({
+                    url: "{{ route('ordenes.cancelar', ':id') }}".replace(':id', id),
+                    method: 'POST',
+                    data: { _token: '{{ csrf_token() }}', _method: 'PATCH', motivo_cancelacion: motivo || null },
+                    success: function (resp) {
+                        table.ajax.reload(null, false);
+                        if (misOrdenesEmpleadoId) { cargarMisOrdenes(misOrdenesEmpleadoId); }
+                        Swal.fire({ icon: 'success', title: 'Orden cancelada', text: resp.message, timer: 2800, showConfirmButton: false });
+                    },
+                    error: function (xhr) {
+                        let msg = 'No se pudo cancelar la orden.';
+                        if (xhr.responseJSON) {
+                            if (xhr.responseJSON.errors) { msg = Object.values(xhr.responseJSON.errors).flat().join('\n'); }
+                            else if (xhr.responseJSON.message) { msg = xhr.responseJSON.message; }
+                        }
+                        Swal.fire({ icon: 'error', title: 'Error', text: msg });
+                    }
+                });
+            };
+
+            if (enProduccion) {
+                // Cancelación tardía: la tela ya se cortó → merma. Motivo obligatorio.
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Cancelar orden en producción',
+                    html: 'El material ya está en producción (cortado). Al cancelar <b>no se repone el stock</b> (se registra como merma).<br>Indica el motivo de la cancelación:',
+                    input: 'textarea',
+                    inputPlaceholder: 'Motivo / justificación de la pérdida del material...',
+                    inputAttributes: { maxlength: 500 },
+                    showCancelButton: true,
+                    confirmButtonText: 'Cancelar orden',
+                    cancelButtonText: 'Volver',
+                    confirmButtonColor: '#d33',
+                    inputValidator: function (value) {
+                        if (!value || !value.trim()) return 'El motivo es obligatorio para justificar la merma.';
+                    }
+                }).then(function (r) {
+                    if (r.isConfirmed) enviar(r.value.trim());
+                });
+            } else {
+                // Cancelación temprana (Pendiente): tela sin cortar → se repone el stock.
+                Swal.fire({
+                    icon: 'question',
+                    title: '¿Cancelar la orden?',
+                    text: 'La orden aún no inicia producción: se repondrá el stock de los insumos al inventario.',
+                    showCancelButton: true,
+                    confirmButtonText: 'Sí, cancelar',
+                    cancelButtonText: 'Volver',
+                    confirmButtonColor: '#d33'
+                }).then(function (r) {
+                    if (r.isConfirmed) enviar(null);
+                });
+            }
         });
 
         // ══════════════════════════════════════════════════════

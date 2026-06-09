@@ -1,7 +1,7 @@
 # CLAUDE.md — Contexto de proyecto para Claude Code
 
 > Leído automáticamente por Claude Code al iniciar sesión.
-> Última actualización: 2026-06-03 · Rama activa: `enmanuel`
+> Última actualización: 2026-06-03 (dump SQL limpio · commit `caa618b`) · Rama activa: `enmanuel`
 
 ---
 
@@ -130,6 +130,26 @@ Migraciones relevantes recientes:
 - `2026_06_01_142640_add_tasa_y_condiciones_to_cotizacion_table` — columnas `tasa_cambio_valor` y `condiciones_terminos` en `cotizacion`
 - `2026_06_02_000001_create_compra_table` — tabla `compra`
 - `2026_06_02_000002_create_compra_detalle_table` — tabla `compra_detalle`
+- `2026_06_03_000001_add_auditoria_anulacion_to_compra_table` — columnas `anulado_por_id` (FK a `user`) y `fecha_anulacion` en `compra`
+- `2026_06_03_000002_add_clonada_to_compra_table` — columna `clonada` (tinyint) en `compra`
+
+---
+
+## Dump SQL — `database/sistema_atlantico.sql`
+
+> El sistema corre sobre **MySQL 8** (no MariaDB; el local es solo el motor de desarrollo). El dump debe quedar siempre en formato MySQL nativo.
+
+**Estado al 2026-06-03** (commit `caa618b` en `enmanuel`): dump limpio y funcional, listo para importar directamente en cualquier gestor de DB.
+
+- Header MySQL nativo (`MySQL dump 10.13 Distrib 8.0.46`), DB `sistema_atlantico5`
+- 43 tablas, datos sin basura de testeo
+- `compra`: 2 filas reales (ambas `recibida`); incluye las 3 columnas nuevas (`clonada`, `anulado_por_id`, `fecha_anulacion`) + FK `compra_anulado_por_id_foreign`
+- Migraciones registradas hasta la `121` (batch 68)
+
+**Para regenerar el dump** (cuidando compatibilidad MySQL):
+- Preferir partir del dump de referencia MySQL nativo + aplicar solo el delta de esquema, en vez de re-dumpear desde la MariaDB local (arrastra header "MariaDB dump", `current_timestamp()`, anchos `bigint(20)` y data de prueba).
+- Cliente/dump en `C:\xampp\mysql\bin\`. **Bash tool**: la redirección `<`/`>` funciona bien. **PowerShell**: NO usar `>` (genera UTF-16/BOM y rompe el archivo) — usar `--result-file`.
+- Validar siempre importando en una BD temporal antes de commitear, y hacer `DROP` al terminar.
 
 ---
 

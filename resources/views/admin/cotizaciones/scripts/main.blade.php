@@ -673,7 +673,7 @@
                     var codigo = (p.codigo || '').toLowerCase();
                     var modelo = (p.modelo || '').toLowerCase();
                     var tipo = p.tipo_producto ? p.tipo_producto.nombre.toLowerCase() : '';
-                    matchFiltro = codigo.includes(busqueda) || modelo.includes(busqueda) || tipo.includes(busqueda);
+                    matchFiltro = codigo.startsWith(busqueda) || modelo.startsWith(busqueda) || tipo.startsWith(busqueda);
                 }
                 if (tipoId) {
                     matchTipo = p.tipo_producto && p.tipo_producto.id == tipoId;
@@ -2225,7 +2225,7 @@
             $('#cotizacionForm')[0].reset();
             $('#id-field').val('');
             $('#cliente-id-field').val('').prop('disabled', false).removeClass('campo-protegido');
-            $('#fecha-cotizacion-field').val('').prop('readonly', false).removeClass('campo-protegido');
+            $('#fecha-cotizacion-field').val(new Date().toISOString().slice(0, 10)).prop('readonly', false).removeClass('campo-protegido');
             $('#prioridad-field').val('Normal');
 
             $('#productos-container').empty();
@@ -3810,8 +3810,9 @@
                 var q = (catState.search || '').toLowerCase().trim();
                 list = list.filter(function (t) {
                     if (q) {
-                        var hay = ((t.nombre || '') + ' ' + (t.prefijo || '')).toLowerCase();
-                        if (!hay.includes(q)) return false;
+                        var nombre = (t.nombre || '').toLowerCase();
+                        var prefijo = (t.prefijo || '').toLowerCase();
+                        if (!nombre.startsWith(q) && !prefijo.startsWith(q)) return false;
                     }
                     if (catState.tipos.size && !catState.tipos.has(t.id)) return false;
                     return true;
@@ -5300,7 +5301,9 @@
             // Eliminar bloque entero
             $(document).on('click', '.cot-action-delete', function () {
                 var $blk = $(this).closest('.cot-grouped-row');
-                var indices = String($blk.data('card-indices') || '').split(',').filter(Boolean);
+                // .attr() (no .data()): jQuery coacciona data-card-indices="0" al numero 0,
+                // y `0 || ''` daria '' (0 es falsy) dejando sin indices al primer producto.
+                var indices = String($blk.attr('data-card-indices') || '').split(',').filter(Boolean);
                 Swal.fire({
                     icon: 'warning',
                     title: '¿Eliminar bloque?',

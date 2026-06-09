@@ -33,9 +33,9 @@ class ProveedorController extends Controller
 
         if ($q) {
             $query->whereHas('persona', function ($sub) use ($q) {
-                $sub->where('nombre', 'like', "%{$q}%")
-                    ->orWhere('apellido', 'like', "%{$q}%")
-                    ->orWhere('documento_identidad', 'like', "%{$q}%");
+                $sub->where('nombre', 'like', "{$q}%")
+                    ->orWhere('apellido', 'like', "{$q}%")
+                    ->orWhere('documento_identidad', 'like', "{$q}%");
             });
         }
 
@@ -127,11 +127,11 @@ class ProveedorController extends Controller
                     return;
                 }
                 $query->whereHas('persona', function ($p) use ($keyword) {
-                    $p->where('nombre', 'like', "%{$keyword}%")
-                      ->orWhere('apellido', 'like', "%{$keyword}%")
-                      ->orWhere('email', 'like', "%{$keyword}%")
-                      ->orWhereRaw("CONCAT(nombre, ' ', apellido) like ?", ["%{$keyword}%"])
-                      ->orWhereRaw("CONCAT(tipo_documento, documento_identidad) like ?", ["%{$keyword}%"]);
+                    $p->where('nombre', 'like', "{$keyword}%")
+                      ->orWhere('apellido', 'like', "{$keyword}%")
+                      ->orWhere('email', 'like', "{$keyword}%")
+                      ->orWhereRaw("CONCAT(nombre, ' ', apellido) like ?", ["{$keyword}%"])
+                      ->orWhereRaw("CONCAT(tipo_documento, documento_identidad) like ?", ["{$keyword}%"]);
                 });
             }, true)
             ->addColumn('nombre_display', fn($p) => $p->nombre_completo ?? 'N/A')
@@ -383,6 +383,13 @@ class ProveedorController extends Controller
         // Estatus: 1 = activos (default), 0 = inhabilitados (trashed) — estándar de inhabilitación
         if ($request->input('estatus') === '0') {
             $query->onlyTrashed();
+        }
+        // Rango por fecha de registro (created_at)
+        if ($request->filled('fecha_desde')) {
+            $query->whereDate('created_at', '>=', $request->fecha_desde);
+        }
+        if ($request->filled('fecha_hasta')) {
+            $query->whereDate('created_at', '<=', $request->fecha_hasta);
         }
         $proveedores = $query->get();
         $pdf = \PDF::loadView('admin.proveedores.reporte_pdf', compact('proveedores'))

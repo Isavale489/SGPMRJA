@@ -187,6 +187,30 @@ $(document).ready(function () {
         verDetalleCompra($(this).data('id'));
     });
 
+    // ── Detalle de compra: navegación del wizard de solo lectura ─────────────
+    (function () {
+        var TOTAL = 3, step = 1;
+        window.viewCompraShowStep = function (n) {
+            step = n;
+            $('#viewCompraModal .wiz-step-content').removeClass('is-active').attr('hidden', true);
+            $('#viewCompraModal .wiz-step-content[data-step="' + n + '"]').removeAttr('hidden').addClass('is-active');
+            $('#viewCompraModal .wiz-step-marker').each(function () {
+                var s = parseInt($(this).data('step'), 10);
+                $(this).toggleClass('is-active', s === n).toggleClass('is-complete', s < n);
+            });
+            $('#viewCompraModal .wiz-step-line-fill').each(function () {
+                $(this).css('width', parseInt($(this).data('line'), 10) < n ? '100%' : '0%');
+            });
+            $('#cv-prev').toggle(n > 1);
+            $('#cv-next').toggle(n < TOTAL);
+            $('#cv-close').toggle(n === TOTAL);
+        };
+        $(document).on('click', '#cv-next', function () { if (step < TOTAL) window.viewCompraShowStep(step + 1); });
+        $(document).on('click', '#cv-prev', function () { if (step > 1) window.viewCompraShowStep(step - 1); });
+        $('#viewCompraModal').on('click', '.wiz-step-marker', function () { window.viewCompraShowStep(parseInt($(this).data('step'), 10)); });
+        $('#viewCompraModal').on('show.bs.modal', function () { window.viewCompraShowStep(1); });
+    }());
+
     // ── Procesar borrador ────────────────────────────────────────────────────
     $(document).on('click', '.procesar-btn', function () {
         var compraId = $(this).data('id');

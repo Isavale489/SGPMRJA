@@ -2,6 +2,8 @@
 
 @push('styles')
     <link href="{{ URL::asset('assets/libs/sweetalert2/sweetalert2.min.css') }}" rel="stylesheet" type="text/css" />
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
     <style>
         .atributo-row { cursor: pointer; }
         .atributo-row.is-selected td { background-color: rgba(30, 60, 114, .08) !important; }
@@ -144,12 +146,12 @@
                         </div>
                         <div class="mb-0">
                             <label for="atr-tipos-producto" class="form-label">Tipos de Producto</label>
-                            <select id="atr-tipos-producto" class="form-select" multiple style="min-height: 90px;">
+                            <select id="atr-tipos-producto" class="form-select" multiple>
                                 @foreach($tiposProducto as $tp)
                                     <option value="{{ $tp->id }}">{{ $tp->nombre }}</option>
                                 @endforeach
                             </select>
-                            <small class="text-muted">Selecciona uno o varios. Mantén <kbd>Ctrl</kbd> para selección múltiple.</small>
+                            <small class="text-muted">Selecciona uno o varios desde el desplegable.</small>
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -214,6 +216,7 @@
 
 @push('scripts')
     <script src="{{ URL::asset('/assets/libs/sweetalert2/sweetalert2.min.js') }}"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script>
     (function() {
         'use strict';
@@ -228,6 +231,16 @@
 
         let atributosCache = [];
         let selectedAtributo = null;
+
+        // Tipos de Producto: dropdown multi-selección (Select2) — sin necesidad de Ctrl.
+        // dropdownParent en el modal para que el desplegable quede por encima del backdrop.
+        $('#atr-tipos-producto').select2({
+            theme: 'bootstrap-5',
+            dropdownParent: $('#atributoModal'),
+            placeholder: 'Selecciona uno o varios tipos…',
+            closeOnSelect: false,
+            width: '100%'
+        });
 
         // ----------- ATRIBUTOS -----------
         function loadAtributos() {
@@ -311,11 +324,9 @@
             $('#atr-nombre').val(atr?.nombre || '').removeClass('is-invalid');
             $('#atr-codigo').val(atr?.codigo || '').removeClass('is-invalid').prop('readonly', isEdit);
             $('#atr-descripcion').val(atr?.descripcion || '');
-            // Pre-seleccionar tipos de producto asociados
+            // Pre-seleccionar tipos de producto asociados (Select2 refleja el valor al disparar change)
             const ids = (atr?.tipos_producto_ids || []).map(String);
-            $('#atr-tipos-producto option').each(function() {
-                $(this).prop('selected', ids.includes($(this).val()));
-            });
+            $('#atr-tipos-producto').val(ids).trigger('change');
             $('#btn-save-atributo .btn-label').text(isEdit ? 'Actualizar' : 'Crear');
             new bootstrap.Modal('#atributoModal').show();
         }

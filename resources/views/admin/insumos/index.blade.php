@@ -450,6 +450,16 @@
                             <option value="agotado">Agotados</option>
                         </select>
                     </div>
+                    <div class="row g-2 mt-3">
+                        <div class="col-6">
+                            <label class="form-label fw-semibold" for="pdf-fecha-desde">Registro desde</label>
+                            <input type="date" class="form-control" id="pdf-fecha-desde">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label fw-semibold" for="pdf-fecha-hasta">Registro hasta</label>
+                            <input type="date" class="form-control" id="pdf-fecha-hasta">
+                        </div>
+                    </div>
                 </div>
                 <div class="modal-footer bg-light border-0">
                     <button type="button" class="btn btn-light" data-bs-dismiss="modal">
@@ -870,14 +880,20 @@
                         });
                     },
                     error: function (xhr) {
-                        var errors = xhr.responseJSON.errors;
                         var errorMessage = '';
-                        $.each(errors, function (key, value) {
-                            errorMessage += value[0] + '<br>';
-                        });
+                        if (xhr.status === 422 && xhr.responseJSON && xhr.responseJSON.errors) {
+                            // 422: listar cada mensaje de validación con precisión
+                            $.each(xhr.responseJSON.errors, function (key, value) {
+                                errorMessage += value[0] + '<br>';
+                            });
+                        } else {
+                            errorMessage = (xhr.responseJSON && xhr.responseJSON.message)
+                                ? xhr.responseJSON.message
+                                : 'Ocurrió un error al guardar el insumo. Intenta nuevamente.';
+                        }
                         Swal.fire({
                             icon: 'error',
-                            title: 'Error',
+                            title: xhr.status === 422 ? 'Revisa los datos' : 'Error',
                             html: errorMessage,
                             customClass: {
                                 confirmButton: 'btn btn-primary w-xs me-2',
@@ -1207,12 +1223,17 @@
             var stock = $('#pdf-filter-stock').val();
             if (tipo)  params.push('tipo='  + encodeURIComponent(tipo));
             if (stock) params.push('stock=' + encodeURIComponent(stock));
+            var fdesde = $('#pdf-fecha-desde').val();
+            var fhasta = $('#pdf-fecha-hasta').val();
+            if (fdesde) params.push('fecha_desde=' + encodeURIComponent(fdesde));
+            if (fhasta) params.push('fecha_hasta=' + encodeURIComponent(fhasta));
             window.open(baseUrl + (params.length ? '?' + params.join('&') : ''), '_blank');
             bootstrap.Modal.getInstance(document.getElementById('pdfExportModal'))?.hide();
         });
         $('#pdfExportModal').on('show.bs.modal', function () {
             $('#pdf-filter-tipo').val('');
             $('#pdf-filter-stock').val('');
+            $('#pdf-fecha-desde, #pdf-fecha-hasta').val('');
         });
 
         // ══════════════════════════════════════════════════════════

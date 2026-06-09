@@ -93,14 +93,14 @@ class EmpleadoController extends Controller
                 }
                 $query->where(function ($q) use ($keyword) {
                     $q->whereHas('persona', function ($p) use ($keyword) {
-                        $p->where('nombre', 'like', "%{$keyword}%")
-                          ->orWhere('apellido', 'like', "%{$keyword}%")
-                          ->orWhere('email', 'like', "%{$keyword}%")
-                          ->orWhereRaw("CONCAT(nombre, ' ', apellido) like ?", ["%{$keyword}%"])
-                          ->orWhereRaw("CONCAT(tipo_documento, documento_identidad) like ?", ["%{$keyword}%"]);
+                        $p->where('nombre', 'like', "{$keyword}%")
+                          ->orWhere('apellido', 'like', "{$keyword}%")
+                          ->orWhere('email', 'like', "{$keyword}%")
+                          ->orWhereRaw("CONCAT(nombre, ' ', apellido) like ?", ["{$keyword}%"])
+                          ->orWhereRaw("CONCAT(tipo_documento, documento_identidad) like ?", ["{$keyword}%"]);
                     })
-                    ->orWhereHas('cargo', fn($c) => $c->where('nombre', 'like', "%{$keyword}%"))
-                    ->orWhereHas('departamento', fn($d) => $d->where('nombre', 'like', "%{$keyword}%"));
+                    ->orWhereHas('cargo', fn($c) => $c->where('nombre', 'like', "{$keyword}%"))
+                    ->orWhereHas('departamento', fn($d) => $d->where('nombre', 'like', "{$keyword}%"));
                 });
             }, true)
             ->addColumn('nombre_completo', function ($emp) {
@@ -344,6 +344,13 @@ class EmpleadoController extends Controller
         // Estatus: 1 = activos (default), 0 = inhabilitados (trashed) — estándar Clientes/Proveedores
         if ($request->input('estatus') === '0') {
             $query->onlyTrashed();
+        }
+        // Rango por fecha de ingreso
+        if ($request->filled('fecha_desde')) {
+            $query->whereDate('fecha_ingreso', '>=', $request->fecha_desde);
+        }
+        if ($request->filled('fecha_hasta')) {
+            $query->whereDate('fecha_ingreso', '<=', $request->fecha_hasta);
         }
         $empleados = $query->get();
         $pdf = \PDF::loadView('admin.empleados.reporte_pdf', compact('empleados'))

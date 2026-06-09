@@ -227,6 +227,28 @@ class PedidoService
         }
 
         $pedido->recalcularAbono();
+
+        // Si con estos pagos el abono alcanzó el mínimo (70%), formaliza el pedido
+        // y calcula la fecha de entrega (formalización + 30 días hábiles).
+        $pedido->marcarFormalizacionSiCorresponde();
+    }
+
+    /**
+     * Actualiza únicamente los pagos de un pedido con líneas congeladas
+     * (formalizado / en producción / completado). No toca productos, cliente ni
+     * total: solo permite registrar pagos, p. ej. el saldo del 30% a la entrega.
+     */
+    public function actualizarSoloPagos(Pedido $pedido, array $data): void
+    {
+        DB::transaction(function () use ($pedido, $data) {
+            $this->syncPagos($pedido, $data['pagos'] ?? []);
+        });
+
+        Log::info('Pagos de pedido actualizados (líneas congeladas)', [
+            'pedido_id' => $pedido->id,
+            'abono'     => $pedido->fresh()->abono,
+            'user_id'   => Auth::id(),
+        ]);
     }
 
     private function validarCotizacionParaCrearPedido(?int $cotizacionId): ?Cotizacion

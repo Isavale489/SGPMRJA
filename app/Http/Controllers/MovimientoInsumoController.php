@@ -24,6 +24,34 @@ class MovimientoInsumoController extends Controller
         return view('admin.movimiento-insumo.movimientos.index', compact('insumos', 'insumosInventariables'));
     }
 
+    /**
+     * Exportar el historial de movimientos a PDF, con filtros por tipo, insumo
+     * y rango de fecha del movimiento (created_at).
+     */
+    public function reportePdf(Request $request)
+    {
+        $query = MovimientoInsumo::with(['insumo', 'creadoPor'])
+            ->orderBy('created_at', 'desc');
+
+        if ($request->filled('tipo_movimiento')) {
+            $query->where('tipo_movimiento', $request->tipo_movimiento);
+        }
+        if ($request->filled('insumo_id')) {
+            $query->where('insumo_id', $request->insumo_id);
+        }
+        if ($request->filled('fecha_desde')) {
+            $query->where('created_at', '>=', $request->fecha_desde . ' 00:00:00');
+        }
+        if ($request->filled('fecha_hasta')) {
+            $query->where('created_at', '<=', $request->fecha_hasta . ' 23:59:59');
+        }
+
+        $movimientos = $query->get();
+        $pdf = \PDF::loadView('admin.movimiento-insumo.movimientos.reporte_pdf', compact('movimientos'))
+            ->setPaper('a4', 'landscape');
+        return $pdf->download('movimientos_insumo_' . now()->format('Y-m-d_H-i-s') . '.pdf');
+    }
+
     public function getMovimientos(Request $request)
     {
         $movimientos = MovimientoInsumo::with(['insumo', 'creadoPor'])
@@ -62,10 +90,10 @@ class MovimientoInsumoController extends Controller
                     return;
                 }
                 $query->where(function ($q) use ($keyword) {
-                    $q->where('movimiento_insumo.motivo', 'like', "%{$keyword}%")
+                    $q->where('movimiento_insumo.motivo', 'like', "{$keyword}%")
                       ->orWhereHas('insumo', function ($i) use ($keyword) {
-                          $i->where('nombre', 'like', "%{$keyword}%")
-                            ->orWhere('codigo', 'like', "%{$keyword}%");
+                          $i->where('nombre', 'like', "{$keyword}%")
+                            ->orWhere('codigo', 'like', "{$keyword}%");
                       });
                 });
             }, true)

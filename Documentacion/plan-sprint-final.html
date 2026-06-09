@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sprint Final — SGPMRJA</title>
+<style>
+  :root{
+    --navy:#1e2a44; --accent:#0d6efd; --green:#1a7f5a; --amber:#9a6700;
+    --red:#b42318; --bg:#f6f7f9; --card:#fff; --border:#e3e6ea; --muted:#5b6571;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+       background:var(--bg);color:#1c2430;line-height:1.55;font-size:15px}
+  .wrap{max-width:920px;margin:0 auto;padding:32px 22px 80px}
+  header{border-bottom:3px solid var(--navy);padding-bottom:14px;margin-bottom:26px}
+  h1{margin:0 0 4px;font-size:26px;color:var(--navy)}
+  .sub{color:var(--muted);font-size:13px}
+  h2{margin:34px 0 12px;font-size:19px;color:var(--navy);
+     border-left:5px solid var(--accent);padding-left:10px}
+  h3{margin:20px 0 8px;font-size:15px;color:var(--navy)}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:10px;
+        padding:16px 18px;margin:14px 0;box-shadow:0 1px 2px rgba(0,0,0,.03)}
+  ul{margin:6px 0 6px 0;padding-left:22px}
+  li{margin:4px 0}
+  code{background:#eef1f4;padding:1px 6px;border-radius:5px;font-size:13px;
+       font-family:Consolas,Monaco,monospace;color:#0b3a66}
+  .pill{display:inline-block;font-size:11px;font-weight:700;padding:2px 9px;border-radius:20px;
+        text-transform:uppercase;letter-spacing:.04em;vertical-align:middle;margin-left:8px}
+  .p-a{background:#e7f0ff;color:var(--accent)}
+  .p-b{background:#e7f7ef;color:var(--green)}
+  .p-c{background:#fff4e0;color:var(--amber)}
+  .p-d{background:#f0e9ff;color:#6b3fa0}
+  .rule{background:#fbfcfd;border:1px solid var(--border);border-left:4px solid var(--green);
+        border-radius:8px;padding:12px 14px;margin:10px 0}
+  .rule b{color:var(--navy)}
+  .warn{border-left-color:var(--amber);background:#fffdf6}
+  .danger{border-left-color:var(--red);background:#fdf6f5}
+  table{width:100%;border-collapse:collapse;margin:10px 0;font-size:14px}
+  th,td{border:1px solid var(--border);padding:8px 10px;text-align:left;vertical-align:top}
+  th{background:var(--navy);color:#fff;font-weight:600}
+  tr:nth-child(even) td{background:#fafbfc}
+  .files{font-size:13px;color:var(--muted)}
+  .step{counter-reset:none;font-weight:700;color:var(--accent)}
+  .tag-out{background:#fdecea;color:var(--red);border-radius:6px;padding:10px 12px;font-size:14px}
+  footer{margin-top:40px;padding-top:16px;border-top:1px solid var(--border);
+         color:var(--muted);font-size:13px}
+  .legend span{display:inline-block;margin-right:14px;font-size:12px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>Sprint Final — SGPMRJA</h1>
+  <div class="sub">Reglas de pedido/OP + ajustes UI · Rama <code>enmanuel</code> · Auditoría 2026-06-08</div>
+</header>
+
+<h2>Contexto</h2>
+<div class="card">
+  Implementación de los puntos <code>[-]</code> / <code>[ ]</code> del backlog auditado, con las
+  reglas de negocio confirmadas:
+  <div class="rule"><b>Formalización:</b> abono ≥ <b>70%</b> del total formaliza el pedido y habilita producción.</div>
+  <div class="rule"><b>Entrega:</b> fecha del abono del 70% <b>+ 30 días hábiles</b> (lun-vie, sin feriados).</div>
+  <div class="rule"><b>Tras formalizar:</b> se congelan tallas/cantidades/diseño; los <b>pagos siguen editables</b> (saldo 30% a la entrega).</div>
+  <div class="rule"><b>Inventario en OP:</b> el stock se descuenta <b>al crear la OP</b>. Si falta stock → se <b>bloquea</b> la creación (422).</div>
+  <div class="rule danger"><b>Cancelación de OP (merma textil), condicional al estatus:</b>
+    <ul>
+      <li><code>Pendiente</code> → tela sin cortar → <b>repone</b> stock (MovimientoInsumo <code>Entrada</code>).</li>
+      <li><code>En Proceso</code>/<code>Finalizado</code> → tela cortada → <b>no repone</b> (merma) + exige <code>motivo_cancelacion</code>.</li>
+    </ul>
+  </div>
+</div>
+
+<h3>Alcance</h3>
+<table>
+  <tr><th>#</th><th>Ítem</th><th>Backlog</th></tr>
+  <tr><td><span class="pill p-a">A</span></td><td>Formalización 70% + entrega 30 días hábiles + bloqueo de líneas</td><td>3</td></tr>
+  <tr><td><span class="pill p-b">B</span></td><td>Inventario en OP: descuento al crear + reposición condicional + merma</td><td>4.4</td></tr>
+  <tr><td><span class="pill p-c">C</span></td><td>Filtros <code>&lt;select&gt;</code>: máx 4 ítems visibles + scroll</td><td>1.1</td></tr>
+  <tr><td><span class="pill p-d">D</span></td><td>Vistas de detalle (lectura): wizard → tabs</td><td>1.5</td></tr>
+</table>
+<div class="tag-out"><b>Fuera de alcance:</b> 4.3 (UI/endpoint para cambiar estado de sub-órdenes) está marcado <code>[x]</code>; queda como follow-up, no entra en este sprint.</div>
+
+<h2><span class="pill p-a">A</span> Formalización 70% + entrega + bloqueo de líneas</h2>
+<div class="card">
+  <p><b>Punto de enganche:</b> <code>PedidoService::syncPagos()</code> — único lugar donde se
+  materializan pagos y se llama <code>recalcularAbono()</code> (en <code>crear()</code> y <code>actualizar()</code>).</p>
+  <ol>
+    <li><span class="step">Config</span> — <code>config/pedidos.php</code>: <code>abono_minimo_porcentaje</code> <code>50</code> → <b><code>70</code></b>.</li>
+    <li><span class="step">Migración</span> — agregar <code>fecha_formalizacion</code> (DATE, nullable) a <code>pedido</code> (+ <code>$fillable</code>/<code>$casts</code>).</li>
+    <li><span class="step">Modelo Pedido</span>:
+      <ul>
+        <li><code>estaFormalizado()</code> → <code>fecha_formalizacion</code> no nula (flag <i>sticky</i>).</li>
+        <li><code>marcarFormalizacionSiCorresponde()</code> → si <code>cumpleAbonoMinimo()</code> y aún no formalizado: setea <code>fecha_formalizacion = hoy</code> y <code>fecha_entrega_estimada = Carbon::parse(hoy)->addWeekdays(30)</code> (reutiliza <code>addWeekdays()</code>, que salta sáb/dom).</li>
+        <li><code>lineasBloqueadas()</code> → <code>estaFormalizado() || tieneProduccionActiva() || estado==='Completado'</code>.</li>
+      </ul>
+    </li>
+    <li><span class="step">PedidoService</span>: en <code>syncPagos()</code> llamar <code>marcarFormalizacionSiCorresponde()</code>; nuevo <code>actualizarSoloPagos()</code> (solo pagos).</li>
+    <li><span class="step">Bloqueo de líneas con pagos abiertos</span> — <code>PedidoController::update()</code>:
+      <ul>
+        <li><code>Cancelado</code> → bloqueado total.</li>
+        <li><code>lineasBloqueadas()</code> → <code>actualizarSoloPagos()</code>; 422 anti-tampering si el payload de productos difiere de lo guardado.</li>
+        <li>Caso normal → <code>actualizar()</code>.</li>
+        <li>Esto <b>relaja</b> el bloqueo total actual por producción activa, para poder registrar el 30% a la entrega.</li>
+      </ul>
+    </li>
+    <li><span class="step">Front pedidos</span> (<span class="files"><code>pedidos/modals.blade.php</code>, <code>scripts/main.blade.php</code></span>): exponer <code>lineas_bloqueadas</code>/<code>fecha_formalizacion</code> en <code>show()</code>; deshabilitar campos de líneas + banner "Pedido formalizado"; mantener paso de pagos activo; mostrar fechas.</li>
+  </ol>
+</div>
+
+<h2><span class="pill p-b">B</span> Inventario en OP (descuento + reposición condicional + merma)</h2>
+<div class="card">
+  <p>Reutiliza el patrón de <code>CompraService::procesar()/anular()</code> (<code>lockForUpdate()</code> + <code>MovimientoInsumo</code> + transacción). Solo mueven stock los insumos con <code>is_inventoriable = true</code>.</p>
+  <ol>
+    <li><span class="step">Migración</span> — agregar <code>motivo_cancelacion</code> (TEXT, nullable) a <code>orden_produccion</code> (+ <code>$fillable</code>).</li>
+    <li><span class="step">Servicio nuevo</span> <code>ProduccionInventarioService</code>:
+      <ul>
+        <li><code>validarYDescontar()</code> — pre-valida stock (insuficiente → <code>InvalidArgumentException</code> con faltantes → 422); descuenta + <code>MovimientoInsumo</code> <code>Salida</code>; pivot <code>cantidad_utilizada = cantidad_estimada</code>.</li>
+        <li><code>reponer()</code> — suma <code>cantidad_estimada</code> + <code>MovimientoInsumo</code> <code>Entrada</code> (motivo "Reposición por cancelación OP #id").</li>
+      </ul>
+    </li>
+    <li><span class="step">OrdenProduccionController</span>:
+      <ul>
+        <li><code>store()</code> / <code>storeBatch()</code>: llamar <code>validarYDescontar()</code> dentro de la transacción (envolver <code>store()</code> en <code>DB::transaction</code>). Falla → 422, no se crea nada.</li>
+        <li><b>Endpoint dedicado de cancelación</b> <code>PATCH ordenes/{orden}/cancelar</code>:
+          <ul>
+            <li><code>Pendiente</code> → <code>reponer()</code>; motivo opcional.</li>
+            <li><code>En Proceso</code>/<code>Finalizado</code> → no repone; <code>motivo_cancelacion</code> <b>required</b>.</li>
+            <li>Setea <code>estado='Cancelado'</code> + <code>recalcularEstado()</code> del pedido.</li>
+          </ul>
+        </li>
+        <li>Quitar <code>Cancelado</code> de las opciones de <code>update()</code> (cancelación ya no pasa por el form).</li>
+        <li><code>destroy()</code> (solo <code>Pendiente</code>): <code>reponer()</code> antes de borrar.</li>
+        <li><b>Insumos read-only al editar</b>: <code>update()</code> deja de re-sincronizar insumos (stock ya comprometido). Corregir insumos = cancelar + recrear.</li>
+      </ul>
+    </li>
+    <li><span class="step">Front órdenes</span> (<span class="files"><code>ordenes/modals/*</code>, <code>scripts/main.blade.php</code></span>): botón "Cancelar orden" → modal que exige motivo si <code>En Proceso</code>+; manejar 422 de stock insuficiente con SweetAlert; lista de insumos en modo lectura.</li>
+  </ol>
+</div>
+
+<h2><span class="pill p-c">C</span> Filtros <code>&lt;select&gt;</code> máx 4 ítems + scroll</h2>
+<div class="card">
+  <p>Los filtros usan <code>&lt;select class="form-select navy-filter-select"&gt;</code> nativo (su dropdown no acepta <code>max-height</code> por CSS). <b>No se usa Tailwind/Alpine</b> (stack = Bootstrap 5 + jQuery).</p>
+  <ul>
+    <li>IIFE global en <code>layouts/app.blade.php</code> (patrón <code>AtlanticoGuard</code>) que realza cada <code>select.navy-filter-select</code> a un dropdown Bootstrap, manteniendo el <code>&lt;select&gt;</code> oculto como fuente de verdad (el JS de filtros existente sigue funcionando).</li>
+    <li>CSS en <code>custom.css</code>: menú con <code>max-height</code> ≈ 4 ítems + <code>overflow-y:auto</code>.</li>
+    <li>Solo <code>select.navy-filter-select</code> (excluye los <code>input[type=date]</code>). Aplica a todos los módulos automáticamente.</li>
+  </ul>
+</div>
+
+<h2><span class="pill p-d">D</span> Vistas de detalle: wizard → tabs</h2>
+<div class="card">
+  <p>Convertir las vistas <b>de lectura</b> ("Ver/Detalle") que hoy usan stepper secuencial (<code>wiz-stepper</code> + Anterior/Siguiente) a <b>tabs</b> Bootstrap (<code>nav-tabs</code> + <code>tab-pane</code>). Los wizards de <b>creación/edición</b> se mantienen.</p>
+  <ul>
+    <li>Confirmado: <code>ordenes/modals/view.blade.php</code> (Orden/Insumos/Progreso) + su JS en <code>ordenes/scripts/main.blade.php</code>.</li>
+    <li>Revisar y convertir, si son de lectura: "Ver detalle" de pedidos, cotizaciones y compras.</li>
+    <li>Patrón: reemplazar stepper por nav-tabs, eliminar navegación secuencial y su JS, conservar el contenido de cada paso como pane.</li>
+  </ul>
+</div>
+
+<h2>Orden de ejecución</h2>
+<div class="card">
+  <ol>
+    <li><b>B</b> — inventario OP + merma (el más autocontenido y de mayor riesgo).</li>
+    <li><b>A</b> — formalización (migración + config 70% + bloqueo líneas + front).</li>
+    <li><b>C</b> — filtros (componente global).</li>
+    <li><b>D</b> — tabs (refactor de vistas de lectura).</li>
+  </ol>
+  <p class="files">Commit atómico por bloque. Sin rama nueva (trabajo sobre la rama actual). Pausa de confirmación tras cada bloque.</p>
+</div>
+
+<h2>Verificación end-to-end</h2>
+<div class="card warn rule">Requiere XAMPP/MariaDB arriba y <code>php artisan migrate</code>.</div>
+<div class="card">
+  <ul>
+    <li><b>B/descuento:</b> crear OP con insumos inventariables → baja <code>stock_actual</code> + <code>MovimientoInsumo</code> Salida. Sin stock → 422 con faltantes, sin cambios.</li>
+    <li><b>B/merma:</b> cancelar OP <code>Pendiente</code> → stock repuesto, sin motivo. Cancelar <code>En Proceso</code> → exige motivo, no repone, guarda <code>motivo_cancelacion</code>.</li>
+    <li><b>A:</b> abono &lt; 70% → no formaliza. ≥ 70% → <code>fecha_formalizacion</code>=hoy y entrega = hoy + 30 hábiles (validar lun-vie). Editar formalizado → líneas 422, pagos sí.</li>
+    <li><b>C:</b> filtro con &gt; 4 opciones → 4 + scroll; filtra igual que antes.</li>
+    <li><b>D:</b> "Ver" de OP → tabs clicables sin secuencia; contenido intacto.</li>
+    <li><b>Regresión:</b> <code>php artisan test</code> si hay suite; revisar flujo de compras (no debe cambiar).</li>
+  </ul>
+</div>
+
+<h2>Notas / recomendaciones</h2>
+<div class="card">
+  <ul>
+    <li>El registro del <b>30% a la entrega</b> se hace editando los pagos del pedido (no hay pantalla dedicada). Funciona; a futuro convendría un endpoint "registrar pago".</li>
+    <li><b>4.3</b> (cambiar estado de sub-órdenes) sigue pendiente como follow-up fuera de este sprint.</li>
+  </ul>
+</div>
+
+<footer>
+  <div class="legend">
+    <span><span class="pill p-a">A</span> Formalización</span>
+    <span><span class="pill p-b">B</span> Inventario OP</span>
+    <span><span class="pill p-c">C</span> Filtros</span>
+    <span><span class="pill p-d">D</span> Tabs</span>
+  </div>
+  Plan generado para el Sprint Final · SGPMRJA · revisar y aprobar antes de implementar.
+</footer>
+
+</div>
+</body>
+</html>

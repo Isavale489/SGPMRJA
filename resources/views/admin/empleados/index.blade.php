@@ -11,7 +11,7 @@
     <style>
         @media (min-width: 768px) {
             .navy-filter-grid {
-                grid-template-columns: repeat(4, 1fr) !important;
+                grid-template-columns: repeat(3, 1fr) !important;
             }
         }
     </style>
@@ -692,6 +692,16 @@
                             <option value="1">Activo</option>
                             <option value="0">Inactivo</option>
                         </select>
+                    </div>
+                    <div class="row g-2 mt-3">
+                        <div class="col-6">
+                            <label class="form-label fw-semibold" for="pdf-fecha-desde">Ingreso desde</label>
+                            <input type="date" class="form-control" id="pdf-fecha-desde">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label fw-semibold" for="pdf-fecha-hasta">Ingreso hasta</label>
+                            <input type="date" class="form-control" id="pdf-fecha-hasta">
+                        </div>
                     </div>
                 </div>
                 <div class="modal-footer bg-light border-0">
@@ -1556,6 +1566,10 @@
             if (dep)            params.push('departamento_id=' + encodeURIComponent(dep));
             if (cargo)          params.push('cargo_id='        + encodeURIComponent(cargo));
             if (estatus !== '') params.push('estatus='         + encodeURIComponent(estatus));
+            var fdesde = $('#pdf-fecha-desde').val();
+            var fhasta = $('#pdf-fecha-hasta').val();
+            if (fdesde) params.push('fecha_desde=' + encodeURIComponent(fdesde));
+            if (fhasta) params.push('fecha_hasta=' + encodeURIComponent(fhasta));
             window.open(baseUrl + (params.length ? '?' + params.join('&') : ''), '_blank');
             bootstrap.Modal.getInstance(document.getElementById('pdfExportModal'))?.hide();
         });
@@ -1563,6 +1577,7 @@
             $('#pdf-filter-departamento').val('');
             $('#pdf-filter-cargo').val('');
             $('#pdf-filter-estatus').val('');
+            $('#pdf-fecha-desde, #pdf-fecha-hasta').val('');
         });
     </script>
 @endpush
