@@ -2225,7 +2225,7 @@
             $('#cotizacionForm')[0].reset();
             $('#id-field').val('');
             $('#cliente-id-field').val('').prop('disabled', false).removeClass('campo-protegido');
-            $('#fecha-cotizacion-field').val('').prop('readonly', false).removeClass('campo-protegido');
+            $('#fecha-cotizacion-field').val(new Date().toISOString().slice(0, 10)).prop('readonly', false).removeClass('campo-protegido');
             $('#prioridad-field').val('Normal');
 
             $('#productos-container').empty();
