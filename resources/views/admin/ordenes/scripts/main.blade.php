@@ -167,7 +167,7 @@
                 talla: l.talla,
                 lleva_bordado: l.lleva_bordado,
                 bordados_count: l.bordados_count,
-                empleado_id: '',
+                empleado_ids: [],
                 fecha_inicio: hoyISO(),
                 fecha_fin_estimada: finEstimadoDefault(pedido.fecha_entrega, hoyISO()),
                 estado: 'Pendiente',
@@ -500,15 +500,32 @@
             $el.html('<i class="ri-time-line me-1"></i>' + dias + (dias === 1 ? ' día' : ' días')).removeClass('is-bad');
         }
 
+        // Pills-checkbox de empleados: para una card (idx entero) o la barra global (idx null)
+        function empleadoCheckboxesHtml(idx, selectedIds) {
+            selectedIds = (selectedIds || []).map(String);
+            var nameAttr = idx !== null ? 'data-idx="' + idx + '"' : '';
+            var chkClass = idx !== null ? 'ord-asig-emp-chk' : 'ord-default-emp-chk';
+            var html = '';
+            $('#ord-empleados-tpl option').each(function () {
+                var val = $(this).val();
+                if (!val) return;
+                var checked = selectedIds.indexOf(val) !== -1 ? ' checked' : '';
+                html += '<label class="ord-emp-check-item">'
+                    + '<input type="checkbox" class="' + chkClass + '" value="' + val + '" ' + nameAttr + checked + '>'
+                    + '<span>' + escHtml($(this).text()) + '</span>'
+                    + '</label>';
+            });
+            return html;
+        }
+
         function asignacionCardHtml(l, idx) {
-            const meta = lineaMetaChips(l);
-            const edit = isEditMode();
-            const empCol = edit ? 'col-md-3' : 'col-md-4';
-            const fechaCol = edit ? 'col-md-3' : 'col-md-4';
+            const meta      = lineaMetaChips(l);
+            const edit      = isEditMode();
+            const fechaCol  = edit ? 'col-md-4' : 'col-md-5';
             // 'Cancelado' no se ofrece aquí: la cancelación va por su propia acción
             // (define reposición de stock condicional y exige motivo de merma).
             const estadoBlock = edit
-                ? '<div class="col-md-3"><label class="form-label form-label-sm required mb-1" for="ord-asig-estado-' + idx + '"><i class="ri-flag-line me-1"></i>Estado</label>'
+                ? '<div class="col-md-4"><label class="form-label form-label-sm required mb-1" for="ord-asig-estado-' + idx + '"><i class="ri-flag-line me-1"></i>Estado</label>'
                   + '<select class="form-select form-select-sm ord-asig-estado" id="ord-asig-estado-' + idx + '" data-idx="' + idx + '">'
                   + '<option value="Pendiente">Pendiente</option><option value="En Proceso">En Proceso</option>'
                   + '<option value="Finalizado">Finalizado</option></select></div>'
@@ -523,9 +540,13 @@
                 +   '<span class="ord-asig-dur" id="ord-asig-dur-' + idx + '"></span>'
                 + '</div>'
                 + '<div class="ord-asig-card-body"><div class="row g-2">'
-                +   '<div class="' + empCol + '"><label class="form-label form-label-sm required mb-1" for="ord-asig-emp-' + idx + '">Empleado asignado</label>'
-                +     '<div class="input-group input-group-sm"><span class="input-group-text"><i class="ri-user-star-line"></i></span>'
-                +     '<select class="form-select ord-asig-emp" id="ord-asig-emp-' + idx + '" data-idx="' + idx + '">' + empleadoOptionsHtml() + '</select></div></div>'
+                +   '<div class="col-12">'
+                +     '<label class="form-label form-label-sm required mb-1"><i class="ri-team-line me-1"></i>Empleados asignados</label>'
+                +     '<div class="ord-asig-emp-checks" id="ord-asig-emp-chks-' + idx + '">'
+                +       empleadoCheckboxesHtml(idx, l.empleado_ids || [])
+                +     '</div>'
+                +     '<div class="ord-emp-feedback">Selecciona al menos un empleado.</div>'
+                +   '</div>'
                 +   '<div class="' + fechaCol + '"><label class="form-label form-label-sm required mb-1" for="ord-asig-inicio-' + idx + '">Inicio</label>'
                 +     '<div class="input-group input-group-sm"><span class="input-group-text"><i class="ri-calendar-event-line"></i></span>'
                 +     '<input type="date" class="form-control ord-asig-inicio" id="ord-asig-inicio-' + idx + '" data-idx="' + idx + '" value="' + (l.fecha_inicio || '') + '"></div></div>'
@@ -547,7 +568,9 @@
                 : 'Define quién produce la orden y sus fechas.');
 
             if (multi) {
-                if (!$('#ord-default-empleado option').length) $('#ord-default-empleado').html(empleadoOptionsHtml());
+                if (!$('#ord-default-empleado-wrap .ord-default-emp-chk').length) {
+                    $('#ord-default-empleado-wrap').html(empleadoCheckboxesHtml(null, []));
+                }
                 $('#ord-default-inicio').val(hoyISO());
                 $('#ord-default-fin').val(ordWiz.lineas[0].fecha_fin_estimada || '');
             }
@@ -557,7 +580,6 @@
             }).join(''));
 
             ordWiz.lineas.forEach(function (l, idx) {
-                $('#ord-asig-emp-' + idx).val(l.empleado_id || '');
                 if (isEditMode()) $('#ord-asig-estado-' + idx).val(l.estado || 'Pendiente');
                 actualizarDur($('#ord-asig-dur-' + idx), l.fecha_inicio, l.fecha_fin_estimada);
             });
@@ -574,7 +596,10 @@
                 const idx = parseInt($(this).data('idx'), 10);
                 const l = ordWiz.lineas[idx];
                 if (!l) return;
-                l.empleado_id = $(this).find('.ord-asig-emp').val() || '';
+                l.empleado_ids = [];
+                $(this).find('.ord-asig-emp-chk:checked').each(function () {
+                    l.empleado_ids.push($(this).val());
+                });
                 l.fecha_inicio = $(this).find('.ord-asig-inicio').val() || '';
                 l.fecha_fin_estimada = $(this).find('.ord-asig-fin').val() || '';
                 const $est = $(this).find('.ord-asig-estado');
@@ -583,12 +608,19 @@
         }
 
         $(document).on('click', '#ord-apply-defaults', function () {
-            const emp = $('#ord-default-empleado').val();
+            const selEmpIds = [];
+            $('#ord-default-empleado-wrap .ord-default-emp-chk:checked').each(function () {
+                selEmpIds.push($(this).val());
+            });
             const ini = $('#ord-default-inicio').val();
             const fin = $('#ord-default-fin').val();
             $('#ord-asignacion-cards .ord-asig-card').each(function () {
                 const idx = parseInt($(this).data('idx'), 10);
-                if (emp) $(this).find('.ord-asig-emp').val(emp);
+                if (selEmpIds.length) {
+                    $(this).find('.ord-asig-emp-chk').each(function () {
+                        $(this).prop('checked', selEmpIds.indexOf($(this).val()) !== -1);
+                    });
+                }
                 if (ini) $(this).find('.ord-asig-inicio').val(ini);
                 if (fin) $(this).find('.ord-asig-fin').val(fin);
                 actualizarDur($('#ord-asig-dur-' + idx), $('#ord-asig-inicio-' + idx).val(), $('#ord-asig-fin-' + idx).val());
@@ -609,14 +641,21 @@
             syncAsignacion();
             let ok = true, $first = null;
             ordWiz.lineas.forEach(function (l, idx) {
-                const $emp = $('#ord-asig-emp-' + idx), $ini = $('#ord-asig-inicio-' + idx), $fin = $('#ord-asig-fin-' + idx);
-                if (!l.empleado_id) { marcarInvalido($emp, 'Selecciona el empleado.'); ok = false; $first = $first || $emp; } else marcarValido($emp);
+                const $chks = $('#ord-asig-emp-chks-' + idx);
+                const $ini  = $('#ord-asig-inicio-' + idx);
+                const $fin  = $('#ord-asig-fin-' + idx);
+                if (!l.empleado_ids || !l.empleado_ids.length) {
+                    $chks.addClass('is-invalid-group');
+                    ok = false; $first = $first || $chks;
+                } else {
+                    $chks.removeClass('is-invalid-group');
+                }
                 if (!l.fecha_inicio) { marcarInvalido($ini, 'Fecha de inicio requerida.'); ok = false; $first = $first || $ini; } else marcarValido($ini);
                 if (!l.fecha_fin_estimada) { marcarInvalido($fin, 'Fecha fin requerida.'); ok = false; $first = $first || $fin; }
                 else if (l.fecha_inicio && l.fecha_fin_estimada <= l.fecha_inicio) { marcarInvalido($fin, 'El fin debe ser posterior al inicio.'); ok = false; $first = $first || $fin; }
                 else marcarValido($fin);
             });
-            if (!ok && $first) $first.trigger('focus');
+            if (!ok && $first) $first[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
             return ok;
         }
 
@@ -752,6 +791,10 @@
             const t = $('#ord-empleados-tpl option[value="' + id + '"]').text();
             return t || '—';
         }
+        function empNames(ids) {
+            if (!ids || !ids.length) return '—';
+            return ids.map(function (id) { return empName(id); }).join(', ');
+        }
 
         function renderResumen() {
             const multi = ordWiz.lineas.length > 1;
@@ -768,7 +811,7 @@
                     + '<td class="cot-col-num">' + (idx + 1) + '</td>'
                     + '<td><div class="fw-semibold">' + escHtml(l.producto_nombre) + '</div><div class="d-flex flex-wrap gap-1 mt-1">' + lineaMetaChips(l) + '</div></td>'
                     + '<td class="text-center fw-semibold">' + l.cantidad + '</td>'
-                    + '<td>' + escHtml(empName(l.empleado_id)) + '</td>'
+                    + '<td>' + escHtml(empNames(l.empleado_ids)) + '</td>'
                     + '<td class="text-center fs-12">' + (l.fecha_inicio || '—') + '<br><span class="text-muted">→ ' + (l.fecha_fin_estimada || '—') + '</span></td>'
                     + '<td class="text-center"><span class="badge badge-soft-info">' + ((l.insumos || []).length) + ' insumo(s)</span></td>'
                     + estadoTd
@@ -853,7 +896,7 @@
                     talla: det.talla ? (det.talla.etiqueta || det.talla.nombre) : null,
                     lleva_bordado: !!(det.bordados && det.bordados.length),
                     bordados_count: det.bordados ? det.bordados.length : 0,
-                    empleado_id: data.empleado_id || '',
+                    empleado_ids: (data.empleados_asignados || []).map(function (e) { return String(e.id); }),
                     fecha_inicio: formatDateForInput(data.fecha_inicio),
                     fecha_fin_estimada: formatDateForInput(data.fecha_fin_estimada),
                     estado: data.estado || 'Pendiente',
@@ -898,7 +941,7 @@
             }
             for (let i = 0; i < ordWiz.lineas.length; i++) {
                 const l = ordWiz.lineas[i];
-                if (!l.empleado_id || !l.fecha_inicio || !l.fecha_fin_estimada || l.fecha_fin_estimada <= l.fecha_inicio) {
+                if (!l.empleado_ids || !l.empleado_ids.length || !l.fecha_inicio || !l.fecha_fin_estimada || l.fecha_fin_estimada <= l.fecha_inicio) {
                     ordShowStep(2); validateStep2(); return false;
                 }
                 if (!l.insumos || !l.insumos.length) {
@@ -925,7 +968,7 @@
                 url = "{{ route('ordenes.update', ':id') }}".replace(':id', ordWiz.editId);
                 payload = {
                     _token: '{{ csrf_token() }}', _method: 'PUT',
-                    empleado_id: l.empleado_id, fecha_inicio: l.fecha_inicio, fecha_fin_estimada: l.fecha_fin_estimada,
+                    empleados: l.empleado_ids, fecha_inicio: l.fecha_inicio, fecha_fin_estimada: l.fecha_fin_estimada,
                     estado: l.estado || 'Pendiente', notas: notas, insumos: mapInsumos(l.insumos)
                 };
             } else if (ordWiz.lineas.length === 1) {
@@ -933,7 +976,7 @@
                 url = "{{ route('ordenes.store') }}";
                 payload = {
                     _token: '{{ csrf_token() }}',
-                    detalle_pedido_id: l.detalle_id, empleado_id: l.empleado_id,
+                    detalle_pedido_id: l.detalle_id, empleados: l.empleado_ids,
                     fecha_inicio: l.fecha_inicio, fecha_fin_estimada: l.fecha_fin_estimada,
                     notas: notas, insumos: mapInsumos(l.insumos)
                 };
@@ -943,7 +986,7 @@
                     _token: '{{ csrf_token() }}',
                     pedido_id: ordWiz.pedido.id,
                     ordenes: ordWiz.lineas.map(l => ({
-                        detalle_pedido_id: l.detalle_id, empleado_id: l.empleado_id,
+                        detalle_pedido_id: l.detalle_id, empleados: l.empleado_ids,
                         fecha_inicio: l.fecha_inicio, fecha_fin_estimada: l.fecha_fin_estimada,
                         notas: notas, insumos: mapInsumos(l.insumos)
                     }))
