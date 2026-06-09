@@ -2568,17 +2568,37 @@
             });
         });
 
-        // ── viewModal cotización (lectura): pestañas Bootstrap, navegación libre.
-        // viewCotShowStep() resetea a la primera pestaña (nombre conservado para
-        // no tocar las llamadas existentes). ──────────────────────────────────
+        // Botón de ver detalles
+        // ── Wizard de solo lectura — navegación ──────────────────────────
         (function () {
-            window.viewCotShowStep = function () {
-                $('#viewModal .nav-link').removeClass('active').attr('aria-selected', 'false');
-                $('#viewModal #view-cot-tab-1').addClass('active').attr('aria-selected', 'true');
-                $('#viewModal .tab-pane').removeClass('show active');
-                $('#viewModal #view-cot-pane-1').addClass('show active');
-            };
-            $('#viewModal').on('show.bs.modal', function () { window.viewCotShowStep(); });
+            var VIEW_TOTAL_STEPS = 3;
+            var viewCurrentStep  = 1;
+
+            function viewShowStep(n) {
+                viewCurrentStep = n;
+                $('#viewModal .wiz-step-content').each(function () {
+                    var s = parseInt($(this).data('step'));
+                    $(this).toggleClass('is-active', s === n);
+                    s === n ? $(this).removeAttr('hidden') : $(this).attr('hidden', '');
+                });
+                $('#viewModal .wiz-step-marker').each(function () {
+                    var s = parseInt($(this).data('step'));
+                    $(this).toggleClass('is-active', s === n).toggleClass('is-done', s < n);
+                    $(this).attr('aria-selected', s === n ? 'true' : 'false');
+                });
+                $('#viewModal .wiz-step-line-fill').each(function () {
+                    $(this).toggleClass('is-filled', parseInt($(this).data('line')) < n);
+                });
+                $('#btn-view-prev').toggle(n > 1);
+                $('#btn-view-next').toggle(n < VIEW_TOTAL_STEPS);
+            }
+
+            window.viewCotShowStep = viewShowStep;
+
+            $('#viewModal').on('show.bs.modal', function () { viewShowStep(1); });
+            $(document).on('click', '#btn-view-next',  function () { if (viewCurrentStep < VIEW_TOTAL_STEPS) viewShowStep(viewCurrentStep + 1); });
+            $(document).on('click', '#btn-view-prev',  function () { if (viewCurrentStep > 1) viewShowStep(viewCurrentStep - 1); });
+            $(document).on('click', '#viewModal .wiz-step-marker', function () { viewShowStep(parseInt($(this).data('step'))); });
         }());
 
         // ── Render grilla de productos (solo lectura) ─────────────────

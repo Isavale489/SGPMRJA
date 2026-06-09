@@ -595,30 +595,32 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
             </div>
 
-            {{-- Pestañas (lectura: navegación libre, sin secuencia) --}}
-            <ul class="nav nav-tabs px-3 pt-1" role="tablist">
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link active" id="view-ped-tab-1" data-bs-toggle="tab" data-bs-target="#view-ped-pane-1" type="button" role="tab" aria-controls="view-ped-pane-1" aria-selected="true">
-                        <i class="ri-user-line me-1"></i>Cliente
+            {{-- Stepper visual — 3 pasos --}}
+            <div class="wiz-stepper-wrapper">
+                <div class="wiz-stepper-side wiz-stepper-side--left"></div>
+                <div class="wiz-stepper" role="tablist">
+                    <button type="button" class="wiz-step-marker is-active" data-step="1">
+                        <span class="wiz-step-dot">1</span>
+                        <span class="wiz-step-label">Cliente</span>
                     </button>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="view-ped-tab-2" data-bs-toggle="tab" data-bs-target="#view-ped-pane-2" type="button" role="tab" aria-controls="view-ped-pane-2" aria-selected="false">
-                        <i class="ri-shopping-bag-3-line me-1"></i>Productos
+                    <span class="wiz-step-line"><span class="wiz-step-line-fill" data-line="1"></span></span>
+                    <button type="button" class="wiz-step-marker" data-step="2">
+                        <span class="wiz-step-dot">2</span>
+                        <span class="wiz-step-label">Productos</span>
                     </button>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="view-ped-tab-3" data-bs-toggle="tab" data-bs-target="#view-ped-pane-3" type="button" role="tab" aria-controls="view-ped-pane-3" aria-selected="false">
-                        <i class="ri-file-list-3-line me-1"></i>Resumen
+                    <span class="wiz-step-line"><span class="wiz-step-line-fill" data-line="2"></span></span>
+                    <button type="button" class="wiz-step-marker" data-step="3">
+                        <span class="wiz-step-dot">3</span>
+                        <span class="wiz-step-label">Resumen</span>
                     </button>
-                </li>
-            </ul>
+                </div>
+                <div class="wiz-stepper-side wiz-stepper-side--right"></div>
+            </div>
 
-            <div class="modal-body p-0">
-                <div class="tab-content p-3">
+            <div class="modal-body p-0 wiz-wizard-body">
 
-                {{-- ════════════════════ Pestaña — CLIENTE ════════════════════ --}}
-                <div class="tab-pane fade show active" id="view-ped-pane-1" role="tabpanel" aria-labelledby="view-ped-tab-1">
+                {{-- ════════════════════ PASO 1 — CLIENTE ════════════════════ --}}
+                <section class="wiz-step-content is-active" id="view-ped-step-1" data-step="1">
                     <div class="wiz-step-header">
                         <h4 class="wiz-step-title">Información del cliente</h4>
                         <p class="wiz-step-desc">Datos del cliente y del pedido.</p>
@@ -714,10 +716,10 @@
                             </div>
                         </div>
                     </div>
-                </div>
+                </section>
 
-                {{-- ════════════════════ Pestaña — PRODUCTOS ════════════════════ --}}
-                <div class="tab-pane fade" id="view-ped-pane-2" role="tabpanel" aria-labelledby="view-ped-tab-2">
+                {{-- ════════════════════ PASO 2 — PRODUCTOS ════════════════════ --}}
+                <section class="wiz-step-content" id="view-ped-step-2" data-step="2" hidden>
                     <div class="wiz-step-header">
                         <h4 class="wiz-step-title">Productos del pedido</h4>
                         <p class="wiz-step-desc">Lista de productos, tallas, colores y bordados incluidos.</p>
@@ -742,10 +744,10 @@
                         <p class="cot-empty-desc">Este pedido no tiene productos registrados.</p>
                     </div>
                     <div id="view-productos-container"></div>
-                </div>
+                </section>
 
-                {{-- ════════════════════ Pestaña — RESUMEN ════════════════════ --}}
-                <div class="tab-pane fade" id="view-ped-pane-3" role="tabpanel" aria-labelledby="view-ped-tab-3">
+                {{-- ════════════════════ PASO 3 — RESUMEN ════════════════════ --}}
+                <section class="wiz-step-content" id="view-ped-step-3" data-step="3" hidden>
                     <div class="wiz-step-header">
                         <h4 class="wiz-step-title">Resumen y pago</h4>
                         <p class="wiz-step-desc">Totales, equivalencia en Bs y métodos de pago registrados.</p>
@@ -798,15 +800,23 @@
                             </div>
                         </div>
                     </div>
-                </div>
+                </section>
 
-                </div>{{-- /tab-content --}}
             </div>{{-- /modal-body --}}
 
-            <div class="modal-footer">
-                <button type="button" class="btn btn-light" data-bs-dismiss="modal">
-                    <i class="ri-close-line me-1"></i>Cerrar
-                </button>
+            <div class="modal-footer wiz-wizard-footer">
+                <div class="wiz-wizard-footer-info"></div>
+                <div class="wiz-wizard-footer-actions">
+                    <button type="button" class="btn btn-light wiz-wizard-btn-prev" id="btn-view-ped-prev" style="display:none;">
+                        <i class="ri-arrow-left-line me-1"></i>Anterior
+                    </button>
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">
+                        <i class="ri-close-line me-1"></i>Cerrar
+                    </button>
+                    <button type="button" class="btn btn-atlantico-brand wiz-wizard-btn-next" id="btn-view-ped-next">
+                        Continuar<i class="ri-arrow-right-line ms-1"></i>
+                    </button>
+                </div>
             </div>
 
         </div>

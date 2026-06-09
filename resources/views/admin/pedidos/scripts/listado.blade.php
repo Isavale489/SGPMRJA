@@ -241,15 +241,34 @@
                 'El estado volverá a calcularse según el avance de producción.', 'Sí, reactivar');
         });
 
-        // ── viewModal pedidos (lectura): pestañas Bootstrap, navegación libre ─
-        // Al abrir, vuelve siempre a la primera pestaña.
+        // ── Navegación wizard viewModal pedidos (solo lectura, 3 pasos) ──────
         (function () {
-            $('#viewModal').on('show.bs.modal', function () {
-                $('#viewModal .nav-link').removeClass('active').attr('aria-selected', 'false');
-                $('#viewModal #view-ped-tab-1').addClass('active').attr('aria-selected', 'true');
-                $('#viewModal .tab-pane').removeClass('show active');
-                $('#viewModal #view-ped-pane-1').addClass('show active');
-            });
+            var VIEW_PED_STEPS = 3;
+            var viewPedStep = 1;
+
+            function viewPedShowStep(n) {
+                viewPedStep = n;
+                $('#viewModal .wiz-step-content').each(function () {
+                    var s = parseInt($(this).data('step'));
+                    if (s === n) { $(this).addClass('is-active').removeAttr('hidden'); }
+                    else         { $(this).removeClass('is-active').attr('hidden', ''); }
+                });
+                $('#viewModal .wiz-step-marker').each(function () {
+                    var s = parseInt($(this).data('step'));
+                    $(this).toggleClass('is-active', s === n).toggleClass('is-done', s < n);
+                });
+                $('#viewModal .wiz-step-line-fill').each(function () {
+                    var l = parseInt($(this).data('line'));
+                    $(this).toggleClass('is-filled', l < n);
+                });
+                $('#btn-view-ped-prev').toggle(n > 1);
+                $('#btn-view-ped-next').toggle(n < VIEW_PED_STEPS);
+            }
+
+            $('#viewModal').on('show.bs.modal', function () { viewPedShowStep(1); });
+            $(document).on('click', '#btn-view-ped-next',  function () { if (viewPedStep < VIEW_PED_STEPS) viewPedShowStep(viewPedStep + 1); });
+            $(document).on('click', '#btn-view-ped-prev',  function () { if (viewPedStep > 1)             viewPedShowStep(viewPedStep - 1); });
+            $(document).on('click', '#viewModal .wiz-step-marker', function () { viewPedShowStep(parseInt($(this).data('step'))); });
         }());
 
         // ── Grilla de productos del pedido (solo lectura, cot-grouped-table) ─
