@@ -971,7 +971,8 @@ INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES
 (130, '2026_06_07_000001_drop_tipo_pago_y_vencimiento_from_compra_table', 73),
 (131, '2026_06_07_000002_create_sub_orden_produccion_tables', 74),
 (132, '2026_06_08_000001_add_motivo_cancelacion_to_orden_produccion_table', 75),
-(133, '2026_06_08_000002_add_fecha_formalizacion_to_pedido_table', 76);
+(133, '2026_06_08_000002_add_fecha_formalizacion_to_pedido_table', 76),
+(134, '2026_06_09_000001_create_orden_produccion_empleado_table', 77);
 
 -- --------------------------------------------------------
 
@@ -1352,6 +1353,30 @@ INSERT INTO `recovery_attempt` (`id`, `user_id`, `email`, `ip`, `user_agent`, `t
 (7, NULL, 'emman6321@gmail.com', '127.0.0.1', 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', 'preguntas', 'fallo', '2026-04-28 13:20:17');
 
 -- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `orden_produccion_empleado`
+--
+
+CREATE TABLE `orden_produccion_empleado` (
+  `id` bigint UNSIGNED NOT NULL,
+  `orden_produccion_id` bigint UNSIGNED NOT NULL,
+  `empleado_id` bigint UNSIGNED NOT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Índices para tablas volcadas
+--
+
+ALTER TABLE `orden_produccion_empleado`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `op_emp_unique` (`orden_produccion_id`,`empleado_id`),
+  ADD KEY `orden_produccion_empleado_id_foreign` (`empleado_id`);
+
+ALTER TABLE `orden_produccion_empleado`
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
 -- Estructura de tabla para la tabla `sub_orden_empleado`
@@ -2653,6 +2678,13 @@ ALTER TABLE `proveedor`
 --
 ALTER TABLE `recovery_attempt`
   ADD CONSTRAINT `recovery_attempt_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `user` (`id`) ON DELETE SET NULL;
+
+--
+-- Filtros para la tabla `orden_produccion_empleado`
+--
+ALTER TABLE `orden_produccion_empleado`
+  ADD CONSTRAINT `op_emp_orden_foreign` FOREIGN KEY (`orden_produccion_id`) REFERENCES `orden_produccion` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `orden_produccion_empleado_id_foreign` FOREIGN KEY (`empleado_id`) REFERENCES `empleado` (`id`) ON DELETE CASCADE;
 
 --
 -- Filtros para la tabla `sub_orden_empleado`
