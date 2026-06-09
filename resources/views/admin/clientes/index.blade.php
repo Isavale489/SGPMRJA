@@ -635,6 +635,16 @@
                             <option value="gubernamental">Gubernamental</option>
                         </select>
                     </div>
+                    <div class="row g-2 mt-3">
+                        <div class="col-6">
+                            <label class="form-label fw-semibold" for="pdf-fecha-desde">Registro desde</label>
+                            <input type="date" class="form-control" id="pdf-fecha-desde">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label fw-semibold" for="pdf-fecha-hasta">Registro hasta</label>
+                            <input type="date" class="form-control" id="pdf-fecha-hasta">
+                        </div>
+                    </div>
                 </div>
                 <div class="modal-footer bg-light border-0">
                     <button type="button" class="btn btn-light" data-bs-dismiss="modal">
@@ -1522,6 +1532,10 @@
             var tipo   = $('#pdf-filter-tipo').val();
             if (estado !== '') params.push('estado=' + encodeURIComponent(estado));
             if (tipo   !== '') params.push('tipo_cliente=' + encodeURIComponent(tipo));
+            var fdesde = $('#pdf-fecha-desde').val();
+            var fhasta = $('#pdf-fecha-hasta').val();
+            if (fdesde) params.push('fecha_desde=' + encodeURIComponent(fdesde));
+            if (fhasta) params.push('fecha_hasta=' + encodeURIComponent(fhasta));
             var url = baseUrl + (params.length ? '?' + params.join('&') : '');
             window.open(url, '_blank');
             bootstrap.Modal.getInstance(document.getElementById('pdfExportModal'))?.hide();
@@ -1529,6 +1543,7 @@
         $('#pdfExportModal').on('show.bs.modal', function () {
             $('#pdf-filter-estado').val('');
             $('#pdf-filter-tipo').val('');
+            $('#pdf-fecha-desde, #pdf-fecha-hasta').val('');
         });
     </script>
 @endpush

@@ -232,6 +232,13 @@ class InsumoController extends Controller
             if ($request->stock === 'con_stock') $query->where('stock_actual', '>', 0);
             elseif ($request->stock === 'agotado') $query->where('stock_actual', '<=', 0);
         }
+        // Rango por fecha de registro (created_at)
+        if ($request->filled('fecha_desde')) {
+            $query->whereDate('created_at', '>=', $request->fecha_desde);
+        }
+        if ($request->filled('fecha_hasta')) {
+            $query->whereDate('created_at', '<=', $request->fecha_hasta);
+        }
         $insumos = $query->get();
         $pdf = \PDF::loadView('admin.insumos.reporte_pdf', compact('insumos'))
             ->setPaper('a4', 'landscape');

@@ -736,6 +736,16 @@
                             <option value="0">Inactivo</option>
                         </select>
                     </div>
+                    <div class="row g-2 mt-3">
+                        <div class="col-6">
+                            <label class="form-label fw-semibold" for="pdf-fecha-desde">Registro desde</label>
+                            <input type="date" class="form-control" id="pdf-fecha-desde">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label fw-semibold" for="pdf-fecha-hasta">Registro hasta</label>
+                            <input type="date" class="form-control" id="pdf-fecha-hasta">
+                        </div>
+                    </div>
                 </div>
                 <div class="modal-footer bg-light border-0">
                     <button type="button" class="btn btn-light" data-bs-dismiss="modal">
@@ -1620,12 +1630,17 @@
             var estatus = $('#pdf-filter-estatus').val();
             if (tipo)    params.push('tipo_proveedor=' + encodeURIComponent(tipo));
             if (estatus !== '') params.push('estatus=' + encodeURIComponent(estatus));
+            var fdesde = $('#pdf-fecha-desde').val();
+            var fhasta = $('#pdf-fecha-hasta').val();
+            if (fdesde) params.push('fecha_desde=' + encodeURIComponent(fdesde));
+            if (fhasta) params.push('fecha_hasta=' + encodeURIComponent(fhasta));
             window.open(baseUrl + (params.length ? '?' + params.join('&') : ''), '_blank');
             bootstrap.Modal.getInstance(document.getElementById('pdfExportModal'))?.hide();
         });
         $('#pdfExportModal').on('show.bs.modal', function () {
             $('#pdf-filter-tipo').val('');
             $('#pdf-filter-estatus').val('');
+            $('#pdf-fecha-desde, #pdf-fecha-hasta').val('');
         });
     </script>
 @endpush

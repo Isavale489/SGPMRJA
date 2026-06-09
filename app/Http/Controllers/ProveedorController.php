@@ -384,6 +384,13 @@ class ProveedorController extends Controller
         if ($request->input('estatus') === '0') {
             $query->onlyTrashed();
         }
+        // Rango por fecha de registro (created_at)
+        if ($request->filled('fecha_desde')) {
+            $query->whereDate('created_at', '>=', $request->fecha_desde);
+        }
+        if ($request->filled('fecha_hasta')) {
+            $query->whereDate('created_at', '<=', $request->fecha_hasta);
+        }
         $proveedores = $query->get();
         $pdf = \PDF::loadView('admin.proveedores.reporte_pdf', compact('proveedores'))
             ->setPaper('a4', 'landscape');

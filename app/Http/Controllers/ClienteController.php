@@ -335,6 +335,13 @@ class ClienteController extends Controller
         if ($request->filled('tipo_cliente')) {
             $query->where('tipo_cliente', $request->tipo_cliente);
         }
+        // Rango por fecha de registro (created_at)
+        if ($request->filled('fecha_desde')) {
+            $query->whereDate('created_at', '>=', $request->fecha_desde);
+        }
+        if ($request->filled('fecha_hasta')) {
+            $query->whereDate('created_at', '<=', $request->fecha_hasta);
+        }
         $clientes = $query->get();
         $pdf = Pdf::loadView('admin.clientes.reporte_pdf', compact('clientes'))->setPaper('a4', 'landscape');
         return $pdf->download('reporte_clientes_' . now()->format('Ymd_His') . '.pdf');

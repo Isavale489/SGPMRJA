@@ -345,6 +345,13 @@ class EmpleadoController extends Controller
         if ($request->input('estatus') === '0') {
             $query->onlyTrashed();
         }
+        // Rango por fecha de ingreso
+        if ($request->filled('fecha_desde')) {
+            $query->whereDate('fecha_ingreso', '>=', $request->fecha_desde);
+        }
+        if ($request->filled('fecha_hasta')) {
+            $query->whereDate('fecha_ingreso', '<=', $request->fecha_hasta);
+        }
         $empleados = $query->get();
         $pdf = \PDF::loadView('admin.empleados.reporte_pdf', compact('empleados'))
             ->setPaper('a4', 'landscape');
