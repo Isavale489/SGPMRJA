@@ -105,6 +105,10 @@ class InsumoController extends Controller
             $request->merge(['codigo' => strtoupper(trim($request->input('codigo')))]);
         }
 
+        // El checkbox desmarcado no se envía: normalizamos el flag a 0/1 explícito ANTES
+        // de validar, para capturar el apagado (false) y excluir el stock de la validación.
+        $request->merge(['is_inventoriable' => $request->boolean('is_inventoriable') ? 1 : 0]);
+
         $request->validate([
             'nombre'          => 'required|string|max:100',
             'codigo'          => 'nullable|string|min:2|max:8|regex:/^[A-Z0-9]+$/|unique:insumo,codigo',
@@ -112,9 +116,9 @@ class InsumoController extends Controller
             'unidad_medida'   => 'required|in:Metro,Kg,Gramo,Unidad,Rollo,Cono,Docena',
             'is_inventoriable'=> 'nullable|boolean',
             'costo_unitario'  => 'required|numeric|min:0.01',
-            'stock_actual'    => 'nullable|numeric|min:0',
-            'stock_minimo'    => 'nullable|numeric|min:0',
-            'stock_maximo'    => 'nullable|numeric|min:0|gte:stock_minimo',
+            'stock_actual'    => 'exclude_if:is_inventoriable,0|nullable|numeric|min:0',
+            'stock_minimo'    => 'exclude_if:is_inventoriable,0|nullable|numeric|min:0',
+            'stock_maximo'    => 'exclude_if:is_inventoriable,0|nullable|numeric|min:0|gte:stock_minimo',
             'estado'          => 'nullable|boolean',
         ], [
             'codigo.regex'  => 'El código solo admite letras mayúsculas y números.',
@@ -122,7 +126,7 @@ class InsumoController extends Controller
             'stock_maximo.gte' => 'La existencia máxima no puede ser menor que la mínima.',
         ]);
 
-        $inventoriable = $request->boolean('is_inventoriable', true);
+        $inventoriable = $request->boolean('is_inventoriable');
         $data = $request->only(['nombre', 'tipo', 'unidad_medida', 'costo_unitario']);
         // Todo insumo nace habilitado; el estatus se gobierna con Inhabilitar/Habilitar.
         $data['estado']           = true;
@@ -155,6 +159,10 @@ class InsumoController extends Controller
             $request->merge(['codigo' => strtoupper(trim($request->input('codigo')))]);
         }
 
+        // El checkbox desmarcado no se envía: normalizamos el flag a 0/1 explícito ANTES
+        // de validar, para capturar el apagado (false) y excluir el stock de la validación.
+        $request->merge(['is_inventoriable' => $request->boolean('is_inventoriable') ? 1 : 0]);
+
         $request->validate([
             'nombre'          => 'required|string|max:100',
             'codigo'          => 'nullable|string|min:2|max:8|regex:/^[A-Z0-9]+$/|unique:insumo,codigo,' . $insumo->id,
@@ -162,9 +170,9 @@ class InsumoController extends Controller
             'unidad_medida'   => 'required|in:Metro,Kg,Gramo,Unidad,Rollo,Cono,Docena',
             'is_inventoriable'=> 'nullable|boolean',
             'costo_unitario'  => 'required|numeric|min:0.01',
-            'stock_actual'    => 'nullable|numeric|min:0',
-            'stock_minimo'    => 'nullable|numeric|min:0',
-            'stock_maximo'    => 'nullable|numeric|min:0|gte:stock_minimo',
+            'stock_actual'    => 'exclude_if:is_inventoriable,0|nullable|numeric|min:0',
+            'stock_minimo'    => 'exclude_if:is_inventoriable,0|nullable|numeric|min:0',
+            'stock_maximo'    => 'exclude_if:is_inventoriable,0|nullable|numeric|min:0|gte:stock_minimo',
             'estado'          => 'nullable|boolean',
         ], [
             'codigo.regex'  => 'El código solo admite letras mayúsculas y números.',
@@ -172,7 +180,7 @@ class InsumoController extends Controller
             'stock_maximo.gte' => 'La existencia máxima no puede ser menor que la mínima.',
         ]);
 
-        $inventoriable = $request->boolean('is_inventoriable', true);
+        $inventoriable = $request->boolean('is_inventoriable');
         // 'estado' NO se edita aquí: lo gobiernan Inhabilitar/Habilitar.
         $data = $request->only(['nombre', 'tipo', 'unidad_medida', 'costo_unitario']);
         $data['is_inventoriable'] = $inventoriable;

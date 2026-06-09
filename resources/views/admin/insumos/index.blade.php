@@ -880,14 +880,20 @@
                         });
                     },
                     error: function (xhr) {
-                        var errors = xhr.responseJSON.errors;
                         var errorMessage = '';
-                        $.each(errors, function (key, value) {
-                            errorMessage += value[0] + '<br>';
-                        });
+                        if (xhr.status === 422 && xhr.responseJSON && xhr.responseJSON.errors) {
+                            // 422: listar cada mensaje de validación con precisión
+                            $.each(xhr.responseJSON.errors, function (key, value) {
+                                errorMessage += value[0] + '<br>';
+                            });
+                        } else {
+                            errorMessage = (xhr.responseJSON && xhr.responseJSON.message)
+                                ? xhr.responseJSON.message
+                                : 'Ocurrió un error al guardar el insumo. Intenta nuevamente.';
+                        }
                         Swal.fire({
                             icon: 'error',
-                            title: 'Error',
+                            title: xhr.status === 422 ? 'Revisa los datos' : 'Error',
                             html: errorMessage,
                             customClass: {
                                 confirmButton: 'btn btn-primary w-xs me-2',
