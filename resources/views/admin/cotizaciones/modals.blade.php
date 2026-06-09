@@ -1230,19 +1230,9 @@
                     </div>
                 </div>
 
-                {{-- 5. Estatus --}}
-                <div class="modal-form-section mb-0">
-                    <div class="modal-form-section-title">
-                        <i class="ri-shield-check-line"></i>Estatus
-                    </div>
-                    <div class="form-check form-switch form-switch-success">
-                        <input type="hidden" name="estatus" value="0" />
-                        <input class="form-check-input" type="checkbox" role="switch" id="estatus-field-cliente"
-                            name="estatus" value="1" checked />
-                        <label class="form-check-label" for="estatus-field-cliente"
-                            id="estatus-label-cliente">Activo</label>
-                    </div>
-                </div>
+                {{-- Estatus removido: el cliente nace activo (estatus=1 por defecto en
+                     ClienteService::crear). La inhabilitación se gestiona desde el módulo
+                     de Clientes, igual que su modal de "Agregar Cliente". --}}
             </div>
 
             <div class="modal-footer bg-light border-0">

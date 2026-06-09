@@ -400,7 +400,7 @@ $(document).ready(function () {
                 });
                 $('#c-prov-autocomplete').data('personas', personas);
             } else {
-                html = '<div class="list-group-item disabled">No se encontraron registros. Podés crear un proveedor nuevo abajo.</div>';
+                html = '<div class="list-group-item disabled">No se encontraron registros. Puedes crear un proveedor nuevo abajo.</div>';
                 $('#c-prov-autocomplete').removeData('personas');
             }
             $('#c-prov-autocomplete').html(html).show();

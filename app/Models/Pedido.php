@@ -63,11 +63,11 @@ class Pedido extends Model
 
     /**
      * Porcentaje mínimo de abono (sobre el total) requerido para que el pedido
-     * pueda avanzar a producción / generar órdenes. Configurable (default 70%).
+     * pueda avanzar a producción / generar órdenes. Configurable (default 50%).
      */
     public static function porcentajeAbonoMinimo(): float
     {
-        return (float) config('pedidos.abono_minimo_porcentaje', 70);
+        return (float) config('pedidos.abono_minimo_porcentaje', 50);
     }
 
     /**
@@ -102,7 +102,7 @@ class Pedido extends Model
 
     /**
      * ¿El pedido está formalizado? La formalización es un hito permanente: se
-     * marca cuando el abono alcanza por primera vez el mínimo (70%) y no se
+     * marca cuando el abono alcanza por primera vez el mínimo (50%) y no se
      * revierte aunque luego se editen los pagos.
      */
     public function estaFormalizado(): bool
@@ -112,9 +112,10 @@ class Pedido extends Model
 
     /**
      * Marca la formalización si el pedido acaba de alcanzar el abono mínimo y aún
-     * no estaba formalizado. Fija la fecha de formalización (hoy) y recalcula la
-     * fecha de entrega = formalización + DIAS_HABILES_ENTREGA días hábiles
-     * (lun-vie). Idempotente: una vez formalizado no recalcula.
+     * no estaba formalizado. Fija la fecha de formalización (hoy). La fecha de
+     * entrega elegida en el wizard MANDA: solo se autocalcula (formalización +
+     * DIAS_HABILES_ENTREGA días hábiles, lun-vie) si el pedido no la tiene
+     * (pedidos legacy). Idempotente: una vez formalizado no recalcula.
      *
      * Lo invoca PedidoService::syncPagos() tras recalcular el abono.
      */
@@ -125,12 +126,14 @@ class Pedido extends Model
         }
 
         $hoy = now();
+        $datos = ['fecha_formalizacion' => $hoy->toDateString()];
 
-        $this->update([
-            'fecha_formalizacion'    => $hoy->toDateString(),
+        if (empty($this->fecha_entrega_estimada)) {
             // addWeekdays() avanza solo días hábiles (salta sábado y domingo).
-            'fecha_entrega_estimada' => $hoy->copy()->addWeekdays(self::DIAS_HABILES_ENTREGA)->toDateString(),
-        ]);
+            $datos['fecha_entrega_estimada'] = $hoy->copy()->addWeekdays(self::DIAS_HABILES_ENTREGA)->toDateString();
+        }
+
+        $this->update($datos);
     }
 
     /**

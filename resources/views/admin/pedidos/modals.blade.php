@@ -221,11 +221,11 @@
                                             <div class="col-md-6">
                                                 <label for="ped-fecha-entrega-field"
                                                     class="form-label small fw-semibold mb-1">
-                                                    Entrega estimada
+                                                    Entrega estimada <span class="text-danger">*</span>
                                                 </label>
                                                 <input type="date" id="ped-fecha-entrega-field"
                                                     name="fecha_entrega_estimada"
-                                                    class="form-control form-control-sm" />
+                                                    class="form-control form-control-sm" required />
                                             </div>
                                             <div class="col-12">
                                                 <div class="cot-date-shortcuts" id="ped-date-shortcuts">
@@ -289,7 +289,7 @@
                                         {{-- Estado gobernado por producción; el campo solo refleja el actual --}}
                                         <input type="hidden" id="ped-estado-field" name="estado" value="Pendiente" />
                                         <small class="text-muted d-block mt-2">
-                                            <i class="ri-information-line me-1"></i>Para anular el pedido usá el botón
+                                            <i class="ri-information-line me-1"></i>Para anular el pedido usa el botón
                                             <strong>Cancelar</strong> del listado.
                                         </small>
                                     </div>
@@ -348,7 +348,7 @@
                     <section class="wiz-step-content" id="ped-wiz-step-3" data-step="3" hidden>
                         <div class="wiz-step-header">
                             <h4 class="wiz-step-title">Pago</h4>
-                            <p class="wiz-step-desc">Registra uno o varios pagos para abonar al pedido. Podés combinar métodos y registrar pagos parciales; también podés continuar sin abono.</p>
+                            <p class="wiz-step-desc">Registra uno o varios pagos para abonar al pedido. Puedes combinar métodos; para registrar el pedido se requiere un abono mínimo del {{ \App\Models\Pedido::porcentajeAbonoMinimo() }}% del total.</p>
                         </div>
                         {{-- Resumen / progreso de pago --}}
                         <div class="ped-pay-summary is-empty" id="ped-pay-summary">
@@ -401,7 +401,7 @@
                                 {{-- Estado vacío --}}
                                 <div class="ped-pay-empty" id="ped-pay-empty">
                                     <i class="ri-wallet-3-line"></i>
-                                    <p>Aún no registras pagos. Usá los botones de arriba para agregar uno, o continuá sin abono.</p>
+                                    <p>Aún no registras pagos. Usa los botones de arriba para agregar uno; el pedido requiere un abono mínimo del {{ \App\Models\Pedido::porcentajeAbonoMinimo() }}%.</p>
                                 </div>
                             </div>
                         </div>

@@ -5,6 +5,7 @@
     Estilos: .cot-terminos-accordion en custom.css (compartido).
 --}}
 @php($tcPrefix = $prefix ?? 'tc')
+@php($tcAbonoPct = \App\Models\Pedido::porcentajeAbonoMinimo())
 <div class="card border-0 shadow-sm">
     <div class="card-header border-0 bg-soft-primary">
         <h6 class="mb-0 text-atlantico-dark">
@@ -25,11 +26,11 @@
                     aria-labelledby="{{ $tcPrefix }}TermPedidosHead" data-bs-parent="#{{ $tcPrefix }}TerminosAccordion">
                     <div class="accordion-body">
                         <ul>
-                            <li><strong>Formalización del Pedido:</strong> para iniciar la producción, el cliente debe abonar el 70% del costo total.</li>
+                            <li><strong>Formalización del Pedido:</strong> para iniciar la producción, el cliente debe abonar el {{ $tcAbonoPct }}% del costo total.</li>
                             <li><strong>Tiempo de Ejecución:</strong> <strong>30 días hábiles</strong>, contados desde la confirmación del pago inicial.</li>
-                            <li><strong>Saldo Restante:</strong> el 30% restante se cancela al momento de la <strong>entrega</strong>.</li>
+                            <li><strong>Saldo Restante:</strong> el {{ 100 - $tcAbonoPct }}% restante se cancela al momento de la <strong>entrega</strong>.</li>
                             <li><strong>Modificaciones:</strong> una vez formalizado el pedido, <strong>no se aceptan cambios</strong> en tallas, cantidades ni diseño.</li>
-                            <li><strong>Entrega:</strong> el plazo comienza a contarse <strong>desde el abono del 70% inicial</strong>.</li>
+                            <li><strong>Entrega:</strong> el plazo comienza a contarse <strong>desde el abono del {{ $tcAbonoPct }}% inicial</strong>.</li>
                         </ul>
                     </div>
                 </div>
