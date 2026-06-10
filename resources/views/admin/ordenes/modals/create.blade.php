@@ -211,17 +211,21 @@
                             <p class="wiz-step-desc" id="ord-asignacion-desc">Define quién produce cada orden y sus fechas.</p>
                         </div>
 
-                        {{-- Barra "aplicar a todas" — solo visible con 2+ líneas --}}
+                        {{-- Barra "aplicar a todas" — solo visible con 2+ líneas; colapsada por defecto --}}
                         <div class="px-3" id="ord-apply-bar" hidden>
-                            <div class="ord-apply-card mb-3">
-                                <div class="ord-apply-head">
+                            <div class="ord-apply-card ord-apply-card--collapsible mb-3">
+                                <div class="ord-apply-head" role="button" tabindex="0"
+                                     data-bs-toggle="collapse" data-bs-target="#ord-apply-collapse"
+                                     aria-expanded="false" aria-controls="ord-apply-collapse">
                                     <span class="ord-apply-icon"><i class="ri-flashlight-line"></i></span>
-                                    <div>
+                                    <div class="flex-grow-1">
                                         <div class="ord-apply-title">Aplicar a todas las órdenes</div>
                                         <div class="ord-apply-sub">Define empleados y fechas una vez y cópialos a cada orden.</div>
                                     </div>
+                                    <i class="ri-arrow-down-s-line ord-apply-chevron"></i>
                                 </div>
-                                <div class="row g-2 align-items-end">
+                                <div class="collapse" id="ord-apply-collapse">
+                                <div class="row g-2 align-items-end pt-2">
                                     <div class="col-12">
                                         <label class="form-label form-label-sm mb-1"><i class="ri-team-line me-1"></i>Empleados</label>
                                         <div id="ord-default-empleado-wrap" class="ord-asig-emp-checks"></div>
@@ -240,6 +244,7 @@
                                             <i class="ri-arrow-down-double-line me-1"></i>Aplicar a todas
                                         </button>
                                     </div>
+                                </div>
                                 </div>
                             </div>
                         </div>

@@ -1254,6 +1254,9 @@
             ordWiz = { mode: 'create', editId: null, pedido: null, lineas: [] };
             $('#ord-wiz-id-field').val('');
             $('#ordenForm').find('.is-invalid, .is-valid').removeClass('is-invalid is-valid');
+            // "Aplicar a todas" siempre reabre colapsada (no estorba a la vista)
+            $('#ord-apply-collapse').removeClass('show');
+            $('#ord-apply-bar .ord-apply-head').attr('aria-expanded', 'false');
             $('#ord-asignacion-cards').empty();
             $('#ord-insumos-acc').empty();
             $('#ord-resumen').empty();

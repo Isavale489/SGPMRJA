@@ -5302,6 +5302,18 @@ header#page-topbar,
 .ord-apply-title { font-weight: 700; color: #1e3c72; font-size: 14px; line-height: 1.15; }
 .ord-apply-sub   { font-size: 12px; color: #64748b; }
 
+/* Variante colapsable: cerrada por defecto queda como una fila mínima
+   (icono + título + chevron); el subtítulo y los campos solo al expandir. */
+.ord-apply-card--collapsible { padding: 8px 14px; }
+.ord-apply-card--collapsible .ord-apply-head { margin-bottom: 0; cursor: pointer; user-select: none; }
+.ord-apply-card--collapsible .ord-apply-icon {
+    width: 30px; height: 30px; flex: 0 0 30px; font-size: 15px; border-radius: 8px;
+}
+.ord-apply-card--collapsible .ord-apply-head[aria-expanded="false"] .ord-apply-sub { display: none; }
+.ord-apply-chevron { font-size: 18px; color: #1e3c72; transition: transform .2s ease; }
+.ord-apply-head[aria-expanded="true"] .ord-apply-chevron { transform: rotate(180deg); }
+[data-bs-theme="dark"] .ord-apply-chevron { color: #cbd5e1; }
+
 /* Separador entre "Aplicar a todas" y la asignación individual por línea */
 .ord-section-divider { display: flex; align-items: center; gap: 12px; margin: 4px 0 14px; }
 .ord-section-divider-line {
