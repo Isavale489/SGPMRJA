@@ -853,39 +853,43 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
             </div>
             <div class="modal-body p-4">
-                <div class="d-flex align-items-center justify-content-between gap-2 mb-3">
+                <div class="d-flex align-items-center justify-content-between gap-2 mb-2">
                     <p class="text-muted small mb-0">
                         Elige la combinación que vas a cotizar. El SKU se resuelve automáticamente.
                     </p>
                     <span class="vs-progress" id="vs-progress" hidden></span>
                 </div>
 
-                {{-- Sección Tela --}}
-                <div class="vs-section" id="vs-tela-section" style="display:none;">
-                    <div class="vs-section-head">
-                        <span class="vs-section-status" id="vs-status-tela"><i class="ri-check-line"></i></span>
-                        <span class="vs-section-title"><i class="ri-shirt-line"></i>Tela</span>
-                        <span class="vs-section-pick" id="vs-pick-tela"></span>
-                        @if(Auth::user()->hasRole(['Administrador', 'Supervisor']))
-                            <button type="button" class="cfg-newcolor-btn ms-auto" id="vs-add-tela-btn">
-                                <i class="ri-add-line"></i><span>Nueva tela</span>
-                            </button>
-                        @endif
+                {{-- Secciones (tela + atributos): altura acotada con scroll interno
+                     para que el modal no crezca infinito con muchos atributos --}}
+                <div class="vs-scroll">
+                    {{-- Sección Tela --}}
+                    <div class="vs-section" id="vs-tela-section" style="display:none;">
+                        <div class="vs-section-head">
+                            <span class="vs-section-status" id="vs-status-tela"><i class="ri-check-line"></i></span>
+                            <span class="vs-section-title"><i class="ri-shirt-line"></i>Tela</span>
+                            <span class="vs-section-pick" id="vs-pick-tela"></span>
+                            @if(Auth::user()->hasRole(['Administrador', 'Supervisor']))
+                                <button type="button" class="cfg-newcolor-btn ms-auto" id="vs-add-tela-btn">
+                                    <i class="ri-add-line"></i><span>Nueva tela</span>
+                                </button>
+                            @endif
+                        </div>
+                        <div id="vs-tela-options" class="vs-chip-group">
+                            {{-- Render dinámico --}}
+                        </div>
                     </div>
-                    <div id="vs-tela-options" class="vs-chip-group">
-                        {{-- Render dinámico --}}
-                    </div>
-                </div>
 
-                {{-- Sección Atributos (chips por atributo) --}}
-                <div id="vs-atributos-section">
-                    <div class="text-muted small text-center py-3">
-                        <span class="spinner-border spinner-border-sm me-2"></span>Cargando variantes…
+                    {{-- Sección Atributos (chips por atributo) --}}
+                    <div id="vs-atributos-section">
+                        <div class="text-muted small text-center py-3">
+                            <span class="spinner-border spinner-border-sm me-2"></span>Cargando variantes…
+                        </div>
                     </div>
                 </div>
 
                 {{-- Resultado de resolución --}}
-                <div id="vs-result-found" class="vs-result-card mt-3" style="display:none;">
+                <div id="vs-result-found" class="vs-result-card mt-2" style="display:none;">
                     <span class="vs-result-icon"><i class="ri-checkbox-circle-fill"></i></span>
                     <div class="vs-result-main">
                         <span class="vs-result-label">Variante encontrada</span>
@@ -896,7 +900,7 @@
                         <span class="vs-result-amount" id="vs-result-precio">—</span>
                     </div>
                 </div>
-                <div id="vs-result-missing" class="vs-result-warn mt-3" style="display:none;">
+                <div id="vs-result-missing" class="vs-result-warn mt-2" style="display:none;">
                     <i class="ri-error-warning-line"></i>
                     <div>
                         Esta combinación no existe en el catálogo. Crea el producto en
