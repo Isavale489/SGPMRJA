@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 
 class StoreCompraRequest extends FormRequest
@@ -16,7 +17,16 @@ class StoreCompraRequest extends FormRequest
     {
         return [
             'proveedor_id'                => ['required', 'integer', 'exists:proveedor,id'],
-            'numero_factura'              => ['nullable', 'string', 'max:30'],
+            'numero_factura'              => [
+                'nullable', 'string', 'max:30',
+                // Una misma factura no puede repetirse para el mismo proveedor.
+                // Ignora la compra en edición y los borradores con factura vacía (null).
+                Rule::unique('compra', 'numero_factura')
+                    ->where(fn($q) => $q
+                        ->where('proveedor_id', $this->input('proveedor_id'))
+                        ->whereNull('deleted_at'))
+                    ->ignore($this->route('compra')),
+            ],
             'fecha_compra'                => ['required', 'date', 'before_or_equal:today'],
             'observaciones'               => ['nullable', 'string', 'max:500'],
             'items'                       => ['required', 'array', 'min:1'],
@@ -43,6 +53,7 @@ class StoreCompraRequest extends FormRequest
         return [
             'proveedor_id.required'            => 'Seleccione un proveedor.',
             'proveedor_id.exists'              => 'El proveedor seleccionado no existe.',
+            'numero_factura.unique'            => 'Ya existe una compra de este proveedor con ese número de factura.',
             'fecha_compra.required'            => 'La fecha de compra es obligatoria.',
             'fecha_compra.before_or_equal'     => 'La fecha de compra no puede ser futura.',
             'items.required'                   => 'Debe agregar al menos un insumo.',
