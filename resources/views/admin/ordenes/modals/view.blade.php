@@ -17,7 +17,7 @@
                         <i class="ri-file-list-2-line opacity-50 me-1"></i><span id="view-pedido-info"></span>
                     </p>
                 </div>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
 
             <!-- ══ Stepper ════════════════════════════════════════════ -->
@@ -63,7 +63,7 @@
                                             <i class="ri-user-star-line emp-icon--navy"></i>
                                         </div>
                                         <div>
-                                            <p class="text-muted mb-0 fs-11 text-uppercase">Empleado</p>
+                                            <p class="text-muted mb-0 fs-11 text-uppercase" id="view-empleado-label">Empleado</p>
                                             <p class="fw-semibold fs-13 mb-0" id="view-empleado"></p>
                                         </div>
                                     </div>
@@ -125,7 +125,8 @@
                                             <div class="rounded-circle flex-shrink-0 timeline-dot timeline-dot-end"></div>
                                         </div>
                                         <div>
-                                            <p class="text-muted mb-0 fst-italic timeline-date-label">Fin de producción</p>
+                                            <p class="text-muted mb-0 timeline-date-label">Fin de producción</p>
+                                            <span id="view-fecha-fin-real" class="fw-semibold timeline-date-value fst-italic text-muted">Aún en curso</span>
                                         </div>
                                     </div>
                                 </div>
@@ -179,6 +180,7 @@
                         <!-- Hero card de progreso -->
                         <div class="col-12">
                             <div class="cot-resumen-card">
+                                <div class="cot-resumen-card-body">
                                 <div class="d-flex justify-content-between align-items-start mb-3">
                                     <p class="text-uppercase opacity-75 mb-0 fs-11" style="letter-spacing:.08em;">Progreso de producción</p>
                                     <span class="fw-bold" style="font-size:2rem;line-height:1;"><span id="view-progreso-pct">0</span>%</span>
@@ -198,6 +200,7 @@
                                         <p class="fw-bold mb-0" style="font-size:2rem;" id="view-cantidad-producida"></p>
                                         <p class="opacity-60 fs-11 mb-0">unidades</p>
                                     </div>
+                                </div>
                                 </div>
                             </div>
                         </div>

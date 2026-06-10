@@ -4764,6 +4764,15 @@ header#page-topbar,
     background: linear-gradient(135deg, #10b981 0%, #0891b2 50%, #0d6efd 100%) !important;
 }
 
+/* Header del modal "Ver orden": el gradiente --op es claro, así que los
+   textos navy/muted del título y subtítulo se pierden → siempre blancos.
+   Scoped a #viewModal para no tocar los chips del wizard de creación. */
+#viewModal .modal-header .text-atlantico-dark { color: #ffffff !important; }
+#viewModal .modal-header .text-muted { color: rgba(255, 255, 255, 0.88) !important; }
+#viewModal .modal-header .opacity-50 { opacity: 0.8 !important; }
+/* El badge de estado (soft) gana fondo blanco sólido para leerse sobre el gradiente */
+#viewModal .modal-header .badge-status { background: rgba(255, 255, 255, 0.95) !important; }
+
 /* ── .modal-form-section ─────────────────────────────────────────
    Sección agrupada dentro de un modal CRUD con borde navy sutil.  */
 .modal-form-section {

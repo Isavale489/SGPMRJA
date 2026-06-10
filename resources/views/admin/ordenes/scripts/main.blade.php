@@ -1538,7 +1538,8 @@
                     'Cancelado':  'status-cancelado badge-soft-danger'
                 };
 
-                $('#view-producto').text(data.producto ? data.producto.nombre : 'N/A');
+                // Nombre legible: cubre líneas dinámicas (producto_id null) vía accessor
+                $('#view-producto').text(data.nombre_producto || (data.producto ? data.producto.nombre : 'Producto'));
                 $('#view-cantidad-solicitada').text(data.cantidad_solicitada);
                 $('#view-cantidad-producida').text(data.cantidad_producida);
 
@@ -1555,12 +1556,28 @@
 
                 $('#view-fecha-inicio').text(formatDate(data.fecha_inicio));
                 $('#view-fecha-fin-estimada').text(formatDate(data.fecha_fin_estimada));
+                if (data.fecha_fin_real) {
+                    $('#view-fecha-fin-real').text(formatDate(data.fecha_fin_real)).removeClass('fst-italic text-muted');
+                } else {
+                    $('#view-fecha-fin-real').text('Aún en curso').addClass('fst-italic text-muted');
+                }
                 $('#view-estado').html(`<span class="badge badge-status ${estadoClases[data.estado] || 'badge-soft-secondary'} rounded-pill"><i class="${iconEstadoOrden(data.estado)} me-1"></i>${data.estado}</span>`);
                 $('#view-creado-por').text(data.creado_por ? data.creado_por.name : 'Sin especificar');
-                $('#view-empleado').text(
-                    data.empleado && data.empleado.persona ? data.empleado.persona.nombre_completo : 'Sin asignar'
-                );
-                $('#view-pedido-info').text(data.pedido_id ? 'Pedido #' + data.pedido_id : 'Orden Manual');
+
+                // Equipo completo (multi-empleado); fallback al responsable legacy
+                const empNoms = (data.empleados_asignados && data.empleados_asignados.length)
+                    ? data.empleados_asignados.map(e => (e.persona && e.persona.nombre_completo) || ('Empleado #' + e.id))
+                    : (data.empleado && data.empleado.persona ? [data.empleado.persona.nombre_completo] : []);
+                $('#view-empleado').text(empNoms.length ? empNoms.join(', ') : 'Sin asignar');
+                $('#view-empleado-label').text(empNoms.length > 1 ? 'Empleados (' + empNoms.length + ')' : 'Empleado');
+
+                // Subtítulo del header: pedido + unidades + variante (color/talla)
+                const detSub = data.detalle_pedido || {};
+                const subInfo = [data.pedido_id ? 'Pedido #' + data.pedido_id : 'Orden manual',
+                                 data.cantidad_solicitada + (data.cantidad_solicitada === 1 ? ' unidad' : ' unidades')];
+                if (detSub.color && detSub.color.nombre) subInfo.push(detSub.color.nombre);
+                if (detSub.talla) subInfo.push(detSub.talla.etiqueta || detSub.talla.nombre);
+                $('#view-pedido-info').text(subInfo.join(' · '));
 
                 // Diseño / Bordado — desde la línea del pedido (los bordados se definen por producto)
                 const bordados = (data.detalle_pedido && data.detalle_pedido.bordados) || [];
