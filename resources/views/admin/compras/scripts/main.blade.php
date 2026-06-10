@@ -46,7 +46,7 @@ $(document).ready(function () {
                     return '<span class="text-muted">#' + data + '</span>';
                 }
             },
-            { data: 'proveedor_nombre', name: 'proveedor_nombre', width: '25%' },
+            { data: 'proveedor_nombre', name: 'proveedor_nombre', width: '25%', orderable: false },
             {
                 data: 'numero_factura', name: 'numero_factura', width: '12%',
                 render: function (data) {

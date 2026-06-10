@@ -260,8 +260,8 @@ class CompraController extends Controller
             $query->whereDate('fecha_compra', '<=', $request->filter_fecha_hasta);
         }
 
-        $query->orderBy('compra.id', 'desc'); // más reciente primero (servidor autoritativo)
-
+        // El orden lo gobierna DataTables (encabezados clicables). El default
+        // "más reciente primero" se declara en el front (order: [[0,'desc']]).
         return DataTables::of($query)
             // Búsqueda estricta: solo por proveedor (nombre/razón social y documento)
             // y número de factura, tal como indica la barra. Sobrescribe el buscador
