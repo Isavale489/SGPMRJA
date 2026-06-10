@@ -116,12 +116,26 @@ class CompraService
         }
 
         DB::transaction(function () use ($compra, $userId) {
-            $compra->load('detalles');
+            $compra->load('detalles.insumo');
 
             foreach ($compra->detalles as $detalle) {
                 $insumo        = $this->insumoBloqueado($detalle->insumo_id);
                 $stockAnterior = (float) $insumo->stock_actual;
-                $stockNuevo    = max(0, $stockAnterior - (float) $detalle->cantidad);
+                $cantidad      = (float) $detalle->cantidad;
+
+                // No se puede revertir mercancía que ya salió de inventario: si el
+                // stock actual no alcanza, bloqueamos en vez de clampar a 0 en silencio.
+                if ($stockAnterior < $cantidad) {
+                    throw new \RuntimeException(
+                        "No se puede anular: el insumo «{$insumo->nombre}» tiene "
+                        . rtrim(rtrim(number_format($stockAnterior, 2), '0'), '.') . ' en existencia, '
+                        . 'menos que las ' . rtrim(rtrim(number_format($cantidad, 2), '0'), '.')
+                        . ' unidades de esta compra. Parte del stock ya fue consumido; '
+                        . 'realizá un ajuste de inventario manual.'
+                    );
+                }
+
+                $stockNuevo = $stockAnterior - $cantidad;
 
                 $insumo->update(['stock_actual' => $stockNuevo]);
 
