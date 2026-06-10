@@ -25,6 +25,7 @@ class OrdenProduccion extends Model
         'fecha_fin_real',
         'estado',
         'notas',
+        'motivo_cancelacion',
         'created_by',
     ];
 
@@ -116,5 +117,59 @@ class OrdenProduccion extends Model
     public function pedido()
     {
         return $this->belongsTo(Pedido::class);
+    }
+
+    /**
+     * Empleados asignados a esta orden (puede ser más de uno).
+     * empleado_id sigue siendo el responsable principal (FK de solo lectura).
+     */
+    public function empleadosAsignados()
+    {
+        return $this->belongsToMany(Empleado::class, 'orden_produccion_empleado')
+            ->withTimestamps();
+    }
+
+    /**
+     * Sub-órdenes de producción (etapas/tareas) que dependen de esta orden.
+     */
+    public function subordenes()
+    {
+        return $this->hasMany(SubOrdenProduccion::class);
+    }
+
+    /**
+     * Recalcula el estado de la OP en función de las sub-órdenes activas
+     * (excluye Canceladas). Solo actúa cuando hay sub-órdenes no canceladas.
+     * No modifica la OP si ella misma está Cancelada.
+     */
+    public function recalcularEstadoDesdeSubordenes(): void
+    {
+        if ($this->estado === 'Cancelado') {
+            return;
+        }
+
+        $activas = $this->subordenes()->whereNotIn('estado', ['Cancelado'])->get();
+
+        if ($activas->isEmpty()) {
+            return;
+        }
+
+        $todosFinalizados = $activas->every(fn($s) => $s->estado === 'Finalizado');
+        $hayAvance        = $activas->contains(fn($s) => in_array($s->estado, ['En Proceso', 'Finalizado']));
+
+        // Las etapas no pueden finalizar la OP si los avances registrados aún no
+        // cubren las unidades solicitadas (el endpoint ya lo bloquea; esto es
+        // defensa en profundidad para cualquier otro flujo que recalcule).
+        $produccionCompleta = $this->cantidad_producida >= $this->cantidad_solicitada;
+
+        $nuevoEstado = match (true) {
+            $todosFinalizados && $produccionCompleta => 'Finalizado',
+            $todosFinalizados || $hayAvance          => 'En Proceso',
+            default                                  => 'Pendiente',
+        };
+
+        if ($this->estado !== $nuevoEstado) {
+            $this->update(['estado' => $nuevoEstado]);
+        }
     }
 }

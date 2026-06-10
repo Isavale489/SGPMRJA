@@ -95,11 +95,11 @@ class ProductoController extends Controller
                     return;
                 }
                 $query->where(function ($q) use ($keyword) {
-                    $q->where('producto.codigo', 'like', "%{$keyword}%")
-                      ->orWhere('producto.descripcion', 'like', "%{$keyword}%")
-                      ->orWhere('producto.atributos_snapshot', 'like', "%{$keyword}%")
-                      ->orWhereHas('tipoProducto', fn($t) => $t->where('nombre', 'like', "%{$keyword}%"))
-                      ->orWhereHas('tela', fn($t) => $t->where('nombre', 'like', "%{$keyword}%"));
+                    $q->where('producto.codigo', 'like', "{$keyword}%")
+                      ->orWhere('producto.descripcion', 'like', "{$keyword}%")
+                      ->orWhere('producto.atributos_snapshot', 'like', "{$keyword}%")
+                      ->orWhereHas('tipoProducto', fn($t) => $t->where('nombre', 'like', "{$keyword}%"))
+                      ->orWhereHas('tela', fn($t) => $t->where('nombre', 'like', "{$keyword}%"));
                 });
             }, true)
             ->addColumn('tipo_nombre', function ($p) {

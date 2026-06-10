@@ -211,35 +211,40 @@
                             <p class="wiz-step-desc" id="ord-asignacion-desc">Define quién produce cada orden y sus fechas.</p>
                         </div>
 
-                        {{-- Barra "aplicar a todas" — solo visible con 2+ líneas --}}
+                        {{-- Barra "aplicar a todas" — solo visible con 2+ líneas; colapsada por defecto --}}
                         <div class="px-3" id="ord-apply-bar" hidden>
-                            <div class="ord-apply-card mb-3">
-                                <div class="ord-apply-head">
+                            <div class="ord-apply-card ord-apply-card--collapsible mb-3">
+                                <div class="ord-apply-head" role="button" tabindex="0"
+                                     data-bs-toggle="collapse" data-bs-target="#ord-apply-collapse"
+                                     aria-expanded="false" aria-controls="ord-apply-collapse">
                                     <span class="ord-apply-icon"><i class="ri-flashlight-line"></i></span>
-                                    <div>
-                                        <div class="ord-apply-title">Aplicar a todas las líneas</div>
-                                        <div class="ord-apply-sub">Define empleado y fechas una vez y cópialos a cada orden.</div>
+                                    <div class="flex-grow-1">
+                                        <div class="ord-apply-title">Aplicar a todas las órdenes</div>
+                                        <div class="ord-apply-sub">Define empleados y fechas una vez y cópialos a cada orden.</div>
                                     </div>
+                                    <i class="ri-arrow-down-s-line ord-apply-chevron"></i>
                                 </div>
-                                <div class="row g-2 align-items-end">
-                                    <div class="col-md-4">
-                                        <label for="ord-default-empleado" class="form-label form-label-sm mb-1"><i class="ri-user-star-line me-1"></i>Empleado</label>
-                                        <select id="ord-default-empleado" class="form-select form-select-sm"></select>
+                                <div class="collapse" id="ord-apply-collapse">
+                                <div class="row g-2 align-items-end pt-2">
+                                    <div class="col-12">
+                                        <label class="form-label form-label-sm mb-1"><i class="ri-team-line me-1"></i>Empleados</label>
+                                        <div id="ord-default-empleado-wrap" class="ord-asig-emp-checks"></div>
                                     </div>
-                                    <div class="col-md-3">
+                                    <div class="col-md-4">
                                         <label for="ord-default-inicio" class="form-label form-label-sm mb-1"><i class="ri-calendar-event-line me-1"></i>Inicio</label>
                                         <input type="date" id="ord-default-inicio" class="form-control form-control-sm" />
                                     </div>
-                                    <div class="col-md-3">
+                                    <div class="col-md-4">
                                         <label for="ord-default-fin" class="form-label form-label-sm mb-1"><i class="ri-calendar-check-line me-1"></i>Fin estimado</label>
                                         <input type="date" id="ord-default-fin" class="form-control form-control-sm" />
                                     </div>
-                                    <div class="col-md-2 d-grid">
+                                    <div class="col-md-4 d-grid align-self-end">
                                         <button type="button" class="btn btn-sm btn-atlantico-brand" id="ord-apply-defaults"
                                             title="Copia estos valores a todas las líneas">
-                                            <i class="ri-arrow-down-double-line me-1"></i>Aplicar
+                                            <i class="ri-arrow-down-double-line me-1"></i>Aplicar a todas
                                         </button>
                                     </div>
+                                </div>
                                 </div>
                             </div>
                         </div>
@@ -249,7 +254,7 @@
                             <div class="ord-section-divider">
                                 <span class="ord-section-divider-line"></span>
                                 <span class="ord-section-divider-label">
-                                    <i class="ri-list-check-2 me-1"></i>Asignación por línea
+                                    <i class="ri-list-check-2 me-1"></i>Asignación por orden
                                     <span class="ord-section-divider-count" id="ord-porlinea-count"></span>
                                 </span>
                                 <span class="ord-section-divider-line"></span>

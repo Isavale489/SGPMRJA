@@ -106,9 +106,9 @@
         }
 
         const filtradas = cotizacionesDisponibles.filter(function (cot) {
-            return cot.cliente_nombre.toLowerCase().includes(searchTerm) ||
-                cot.cliente_documento.toLowerCase().includes(searchTerm) ||
-                cot.id.toString().includes(searchTerm);
+            return cot.cliente_nombre.toLowerCase().startsWith(searchTerm) ||
+                cot.cliente_documento.toLowerCase().startsWith(searchTerm) ||
+                cot.id.toString().startsWith(searchTerm);
         });
 
         renderCotizaciones(filtradas);

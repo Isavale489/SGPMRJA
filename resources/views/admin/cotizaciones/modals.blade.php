@@ -853,43 +853,59 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
             </div>
             <div class="modal-body p-4">
-                <p class="text-muted small mb-3">
-                    Elige la combinación que vas a cotizar. El SKU se resuelve automáticamente.
-                </p>
-
-                {{-- Sección Tela --}}
-                <div class="mb-3" id="vs-tela-section">
-                    <div class="d-flex align-items-center justify-content-between mb-2">
-                        <label class="form-label small fw-semibold mb-0">
-                            <i class="ri-shirt-line me-1"></i>Tela
-                        </label>
-                        @if(Auth::user()->hasRole(['Administrador', 'Supervisor']))
-                            <button type="button" class="cfg-newcolor-btn" id="vs-add-tela-btn">
-                                <i class="ri-add-line"></i><span>Nueva tela</span>
-                            </button>
-                        @endif
-                    </div>
-                    <div id="vs-tela-options" class="d-flex flex-wrap gap-2">
-                        {{-- Render dinámico --}}
-                    </div>
+                <div class="d-flex align-items-center justify-content-between gap-2 mb-2">
+                    <p class="text-muted small mb-0">
+                        Elige la combinación que vas a cotizar. El SKU se resuelve automáticamente.
+                    </p>
+                    <span class="vs-progress" id="vs-progress" hidden></span>
                 </div>
 
-                {{-- Sección Atributos (chips por atributo) --}}
-                <div id="vs-atributos-section">
-                    <div class="text-muted small text-center py-3">
-                        <span class="spinner-border spinner-border-sm me-2"></span>Cargando variantes…
+                {{-- Secciones (tela + atributos): altura acotada con scroll interno
+                     para que el modal no crezca infinito con muchos atributos --}}
+                <div class="vs-scroll">
+                    {{-- Sección Tela --}}
+                    <div class="vs-section" id="vs-tela-section" style="display:none;">
+                        <div class="vs-section-head">
+                            <span class="vs-section-status" id="vs-status-tela"><i class="ri-check-line"></i></span>
+                            <span class="vs-section-title"><i class="ri-shirt-line"></i>Tela</span>
+                            <span class="vs-section-pick" id="vs-pick-tela"></span>
+                            @if(Auth::user()->hasRole(['Administrador', 'Supervisor']))
+                                <button type="button" class="cfg-newcolor-btn ms-auto" id="vs-add-tela-btn">
+                                    <i class="ri-add-line"></i><span>Nueva tela</span>
+                                </button>
+                            @endif
+                        </div>
+                        <div id="vs-tela-options" class="vs-chip-group">
+                            {{-- Render dinámico --}}
+                        </div>
+                    </div>
+
+                    {{-- Sección Atributos (chips por atributo) --}}
+                    <div id="vs-atributos-section">
+                        <div class="text-muted small text-center py-3">
+                            <span class="spinner-border spinner-border-sm me-2"></span>Cargando variantes…
+                        </div>
                     </div>
                 </div>
 
                 {{-- Resultado de resolución --}}
-                <div id="vs-result-found" class="alert alert-success py-2 small mt-3 mb-0" style="display:none;">
-                    <i class="ri-check-line me-1"></i>
-                    <strong id="vs-result-codigo">—</strong> · <span id="vs-result-precio">—</span>
+                <div id="vs-result-found" class="vs-result-card mt-2" style="display:none;">
+                    <span class="vs-result-icon"><i class="ri-checkbox-circle-fill"></i></span>
+                    <div class="vs-result-main">
+                        <span class="vs-result-label">Variante encontrada</span>
+                        <strong class="vs-result-sku" id="vs-result-codigo">—</strong>
+                    </div>
+                    <div class="vs-result-price">
+                        <span class="vs-result-label">Precio base</span>
+                        <span class="vs-result-amount" id="vs-result-precio">—</span>
+                    </div>
                 </div>
-                <div id="vs-result-missing" class="alert alert-warning py-2 small mt-3 mb-0" style="display:none;">
-                    <i class="ri-error-warning-line me-1"></i>
-                    Esta combinación no existe en el catálogo. Crea el producto en
-                    <a href="{{ url('productos') }}" target="_blank">/productos</a> primero.
+                <div id="vs-result-missing" class="vs-result-warn mt-2" style="display:none;">
+                    <i class="ri-error-warning-line"></i>
+                    <div>
+                        Esta combinación no existe en el catálogo. Crea el producto en
+                        <a href="{{ url('productos') }}" target="_blank">/productos</a> primero.
+                    </div>
                 </div>
             </div>
             <div class="modal-footer">
@@ -1230,19 +1246,9 @@
                     </div>
                 </div>
 
-                {{-- 5. Estatus --}}
-                <div class="modal-form-section mb-0">
-                    <div class="modal-form-section-title">
-                        <i class="ri-shield-check-line"></i>Estatus
-                    </div>
-                    <div class="form-check form-switch form-switch-success">
-                        <input type="hidden" name="estatus" value="0" />
-                        <input class="form-check-input" type="checkbox" role="switch" id="estatus-field-cliente"
-                            name="estatus" value="1" checked />
-                        <label class="form-check-label" for="estatus-field-cliente"
-                            id="estatus-label-cliente">Activo</label>
-                    </div>
-                </div>
+                {{-- Estatus removido: el cliente nace activo (estatus=1 por defecto en
+                     ClienteService::crear). La inhabilitación se gestiona desde el módulo
+                     de Clientes, igual que su modal de "Agregar Cliente". --}}
             </div>
 
             <div class="modal-footer bg-light border-0">

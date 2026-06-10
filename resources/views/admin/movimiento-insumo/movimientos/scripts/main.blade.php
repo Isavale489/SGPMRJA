@@ -355,6 +355,30 @@
             });
         });
 
+        // ── Detalle de movimiento: navegación del wizard de solo lectura ─────
+        (function () {
+            var TOTAL = 2, step = 1;
+            window.viewMovShowStep = function (n) {
+                step = n;
+                $('#viewModal .wiz-step-content').removeClass('is-active').attr('hidden', true);
+                $('#viewModal .wiz-step-content[data-step="' + n + '"]').removeAttr('hidden').addClass('is-active');
+                $('#viewModal .wiz-step-marker').each(function () {
+                    var s = parseInt($(this).data('step'), 10);
+                    $(this).toggleClass('is-active', s === n).toggleClass('is-complete', s < n);
+                });
+                $('#viewModal .wiz-step-line-fill').each(function () {
+                    $(this).css('width', parseInt($(this).data('line'), 10) < n ? '100%' : '0%');
+                });
+                $('#mv-prev').toggle(n > 1);
+                $('#mv-next').toggle(n < TOTAL);
+                $('#mv-close').toggle(n === TOTAL);
+            };
+            $(document).on('click', '#mv-next', function () { if (step < TOTAL) window.viewMovShowStep(step + 1); });
+            $(document).on('click', '#mv-prev', function () { if (step > 1) window.viewMovShowStep(step - 1); });
+            $('#viewModal').on('click', '.wiz-step-marker', function () { window.viewMovShowStep(parseInt($(this).data('step'), 10)); });
+            $('#viewModal').on('show.bs.modal', function () { window.viewMovShowStep(1); });
+        }());
+
         // --- NUEVO: Abrir modal y seleccionar insumo si viene insumo_id en la URL, esperando si es necesario ---
         function getUrlParameter(name) {
             name = name.replace(/[\[]/, '\\[').replace(/[\]]/, '\\]');

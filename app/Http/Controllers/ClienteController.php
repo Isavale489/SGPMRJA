@@ -106,11 +106,11 @@ class ClienteController extends Controller
                     return;
                 }
                 $query->whereHas('persona', function ($p) use ($keyword) {
-                    $p->where('nombre', 'like', "%{$keyword}%")
-                      ->orWhere('apellido', 'like', "%{$keyword}%")
-                      ->orWhere('email', 'like', "%{$keyword}%")
-                      ->orWhereRaw("CONCAT(nombre, ' ', apellido) like ?", ["%{$keyword}%"])
-                      ->orWhereRaw("CONCAT(tipo_documento, documento_identidad) like ?", ["%{$keyword}%"]);
+                    $p->where('nombre', 'like', "{$keyword}%")
+                      ->orWhere('apellido', 'like', "{$keyword}%")
+                      ->orWhere('email', 'like', "{$keyword}%")
+                      ->orWhereRaw("CONCAT(nombre, ' ', apellido) like ?", ["{$keyword}%"])
+                      ->orWhereRaw("CONCAT(tipo_documento, documento_identidad) like ?", ["{$keyword}%"]);
                 });
             }, true)
             ->addColumn('nombre', fn($c) => $c->nombre ?? 'N/A')
@@ -260,9 +260,9 @@ class ClienteController extends Controller
         $clientes = Cliente::with(['persona.telefonos', 'persona.direcciones'])
             ->when($query !== '', function ($q) use ($escaped) {
                 $q->whereHas('persona', function ($sub) use ($escaped) {
-                    $sub->where('documento_identidad', 'LIKE', "%{$escaped}%")
-                        ->orWhere('nombre', 'LIKE', "%{$escaped}%")
-                        ->orWhere('apellido', 'LIKE', "%{$escaped}%");
+                    $sub->where('documento_identidad', 'LIKE', "{$escaped}%")
+                        ->orWhere('nombre', 'LIKE', "{$escaped}%")
+                        ->orWhere('apellido', 'LIKE', "{$escaped}%");
                 });
             })
             ->where('estatus', 1)
@@ -334,6 +334,13 @@ class ClienteController extends Controller
         }
         if ($request->filled('tipo_cliente')) {
             $query->where('tipo_cliente', $request->tipo_cliente);
+        }
+        // Rango por fecha de registro (created_at)
+        if ($request->filled('fecha_desde')) {
+            $query->whereDate('created_at', '>=', $request->fecha_desde);
+        }
+        if ($request->filled('fecha_hasta')) {
+            $query->whereDate('created_at', '<=', $request->fecha_hasta);
         }
         $clientes = $query->get();
         $pdf = Pdf::loadView('admin.clientes.reporte_pdf', compact('clientes'))->setPaper('a4', 'landscape');

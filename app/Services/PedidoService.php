@@ -30,6 +30,7 @@ class PedidoService
         $pedido = DB::transaction(function () use ($data) {
             $cotizacion = $this->validarCotizacionParaCrearPedido($data['cotizacion_id'] ?? null);
             $total_pedido = $this->calcularTotal($data['productos']);
+            $this->validarAbonoMinimo($total_pedido, $data['pagos'] ?? []);
 
             $pedido = Pedido::create([
                 'cotizacion_id' => $data['cotizacion_id'] ?? null,
@@ -70,10 +71,11 @@ class PedidoService
     public function actualizar(Pedido $pedido, array $data): void
     {
         DB::transaction(function () use ($data, $pedido) {
+            $total_pedido = $this->calcularTotal($data['productos']);
+            $this->validarAbonoMinimo($total_pedido, $data['pagos'] ?? [], $pedido);
+
             // Eliminar detalles anteriores
             $pedido->productos()->delete();
-
-            $total_pedido = $this->calcularTotal($data['productos']);
 
             $pedido->update([
                 'cliente_id' => $data['cliente_id'],
@@ -227,6 +229,60 @@ class PedidoService
         }
 
         $pedido->recalcularAbono();
+
+        // Si con estos pagos el abono alcanzó el mínimo (50%), formaliza el pedido
+        // y calcula la fecha de entrega (formalización + 30 días hábiles).
+        $pedido->marcarFormalizacionSiCorresponde();
+    }
+
+    /**
+     * Valida que los pagos cubran el abono mínimo (% configurable del total).
+     * Al crear, el mínimo es estricto. Al actualizar se tolera el abono que el
+     * pedido ya tenía: un pedido legacy con abono bajo puede seguir recibiendo
+     * pagos parciales, pero el abono nunca puede quedar por debajo del mínimo
+     * ni de lo que ya estaba abonado (lo que sea menor).
+     *
+     * @throws \InvalidArgumentException
+     */
+    private function validarAbonoMinimo(float $total, array $pagos, ?Pedido $pedidoExistente = null): void
+    {
+        $minimo = round($total * Pedido::porcentajeAbonoMinimo() / 100, 2);
+        if ($pedidoExistente) {
+            $minimo = min($minimo, (float) $pedidoExistente->abono);
+        }
+
+        $abono = 0.0;
+        foreach ($pagos as $pago) {
+            $abono += (float) ($pago['monto'] ?? 0);
+        }
+
+        if ($abono + 0.001 < $minimo) {
+            throw new \InvalidArgumentException(sprintf(
+                'El abono registrado ($%s) no alcanza el mínimo requerido de $%s (%s%% del total del pedido).',
+                number_format($abono, 2),
+                number_format($minimo, 2),
+                rtrim(rtrim(number_format(Pedido::porcentajeAbonoMinimo(), 2), '0'), '.')
+            ));
+        }
+    }
+
+    /**
+     * Actualiza únicamente los pagos de un pedido con líneas congeladas
+     * (formalizado / en producción / completado). No toca productos, cliente ni
+     * total: solo permite registrar pagos, p. ej. el saldo restante a la entrega.
+     */
+    public function actualizarSoloPagos(Pedido $pedido, array $data): void
+    {
+        DB::transaction(function () use ($pedido, $data) {
+            $this->validarAbonoMinimo((float) $pedido->total, $data['pagos'] ?? [], $pedido);
+            $this->syncPagos($pedido, $data['pagos'] ?? []);
+        });
+
+        Log::info('Pagos de pedido actualizados (líneas congeladas)', [
+            'pedido_id' => $pedido->id,
+            'abono'     => $pedido->fresh()->abono,
+            'user_id'   => Auth::id(),
+        ]);
     }
 
     private function validarCotizacionParaCrearPedido(?int $cotizacionId): ?Cotizacion
@@ -239,6 +295,16 @@ class PedidoService
 
         if ($cotizacion->estado !== 'Aprobada') {
             throw new \InvalidArgumentException('La cotización seleccionada no está aprobada para crear pedido.');
+        }
+
+        // Vigencia de precios: no permitir crear pedido desde una cotización vencida
+        // (más de DIAS_VIGENCIA días desde la emisión). Se marca como 'Vencida'.
+        if ($cotizacion->estaVencidaPorVigencia()) {
+            $cotizacion->update(['estado' => 'Vencida']);
+            throw new \InvalidArgumentException(
+                'La cotización venció: pasaron más de ' . Cotizacion::DIAS_VIGENCIA .
+                ' días desde su emisión. Reactívala para actualizar los precios antes de convertirla a pedido.'
+            );
         }
 
         $pedidoExistente = Pedido::where('cotizacion_id', $cotizacionId)->lockForUpdate()->exists();

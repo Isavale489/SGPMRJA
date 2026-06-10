@@ -780,9 +780,13 @@ header#page-topbar,
 
 /* Focus en inputs */
 .form-control:focus,
+/* Focus navy unificado con AtlanticoSelect (.afs-toggle). Cubre los <select>
+   que NO se realzan (prefijos V-/J- en input-group, departamento/cargo con
+   botón "+", filtros de PDF, etc.) para que el control cerrado luzca igual
+   en todo el sistema. Los selects realzados ya pintan navy vía .afs-toggle. */
 .form-select:focus {
-  border-color: #00d9a5;
-  box-shadow: 0 0 0 0.2rem rgba(0, 217, 165, 0.25);
+  border-color: #1e3c72;
+  box-shadow: 0 0 0 0.2rem rgba(30, 60, 114, 0.15);
 }
 
 /* ============================================
@@ -2336,7 +2340,20 @@ header#page-topbar,
 .cot-search-doc-group {
     box-shadow: 0 1px 3px rgba(30, 60, 114, 0.06);
     border-radius: 10px;
-    overflow: hidden;
+    /* Sin overflow:hidden: recortaba el dropdown realzado (.afs-menu) del
+       prefijo V-/J- (el <select> nativo dibujaba su lista fuera del flujo, los
+       realzados no). El look de píldora se conserva redondeando los extremos. */
+}
+/* Redondea el extremo izquierdo (lupa) y el campo de texto visible. El último
+   hijo del DOM es un <input type="hidden"> (no se ve), por eso no se usa
+   :last-child sino el .form-control directamente. */
+.cot-search-doc-group > .input-group-text:first-child {
+    border-top-left-radius: 10px !important;
+    border-bottom-left-radius: 10px !important;
+}
+.cot-search-doc-group > .form-control {
+    border-top-right-radius: 10px !important;
+    border-bottom-right-radius: 10px !important;
 }
 .cot-search-doc-icon {
     background: #f3f6fc;
@@ -4747,6 +4764,206 @@ header#page-topbar,
     background: linear-gradient(135deg, #10b981 0%, #0891b2 50%, #0d6efd 100%) !important;
 }
 
+/* Header del modal "Ver orden": el gradiente --op es claro, así que los
+   textos navy/muted del título y subtítulo se pierden → siempre blancos.
+   Scoped a #viewModal para no tocar los chips del wizard de creación. */
+#viewModal .modal-header .text-atlantico-dark { color: #ffffff !important; }
+#viewModal .modal-header .text-muted { color: rgba(255, 255, 255, 0.88) !important; }
+#viewModal .modal-header .opacity-50 { opacity: 0.8 !important; }
+/* El badge de estado (soft) gana fondo blanco sólido para leerse sobre el gradiente */
+#viewModal .modal-header .badge-status { background: rgba(255, 255, 255, 0.95) !important; }
+
+/* ── Selector de Variante (cotizaciones) ─────────────────────────
+   Secciones con indicador de completitud + chips seleccionables con
+   gradiente navy y check animado + panel de resultado tipo hero.   */
+/* Área scrolleable: el modal no crece infinito con muchos atributos; las
+   secciones scrollean y el resultado/progreso quedan siempre visibles. */
+.vs-scroll {
+    max-height: min(46vh, 30rem);
+    overflow-y: auto;
+    margin-right: -0.5rem;       /* compensa el carril del scrollbar */
+    padding-right: 0.5rem;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(30, 60, 114, 0.35) transparent;
+}
+.vs-scroll::-webkit-scrollbar { width: 6px; }
+.vs-scroll::-webkit-scrollbar-thumb { background: rgba(30, 60, 114, 0.3); border-radius: 999px; }
+.vs-scroll::-webkit-scrollbar-track { background: transparent; }
+
+.vs-section {
+    border: 1px solid rgba(30, 60, 114, 0.12);
+    border-radius: 0.7rem;
+    padding: 0.55rem 0.75rem;
+    background: rgba(30, 60, 114, 0.02);
+    margin-bottom: 0.5rem;
+    transition: border-color 0.25s ease, background-color 0.25s ease;
+}
+.vs-section:last-child, #vs-atributos-section > .vs-section:last-child { margin-bottom: 0; }
+.vs-section.is-done {
+    border-color: rgba(16, 185, 129, 0.45);
+    background: rgba(16, 185, 129, 0.04);
+}
+.vs-section-head {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.4rem;
+}
+.vs-section-title {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: #1e3c72;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+.vs-section-status {
+    width: 1.05rem; height: 1.05rem;
+    flex: 0 0 auto;
+    border-radius: 50%;
+    border: 1.5px solid rgba(30, 60, 114, 0.3);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    color: transparent;
+    background: transparent;
+    transition: all 0.25s ease;
+}
+.vs-section.is-done .vs-section-status {
+    border-color: #10b981;
+    background: #10b981;
+    color: #fff;
+}
+.vs-section-pick {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #059669;
+}
+.vs-section-pick:empty { display: none; }
+.vs-chip-group { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.vs-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    border: 1.5px solid rgba(30, 60, 114, 0.22);
+    border-radius: 999px;
+    padding: 0.28rem 0.75rem;
+    background: #ffffff;
+    color: #2c3e50;
+    font-size: 0.82rem;
+    font-weight: 500;
+    cursor: pointer;
+    user-select: none;
+    transition: border-color 0.18s ease, background 0.18s ease, color 0.18s ease,
+                box-shadow 0.18s ease, transform 0.18s ease;
+}
+.vs-chip:hover {
+    border-color: rgba(30, 60, 114, 0.55);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 10px -4px rgba(30, 60, 114, 0.35);
+}
+.vs-chip-check {
+    font-size: 0.95rem;
+    width: 0;
+    overflow: hidden;
+    opacity: 0;
+    transition: width 0.18s ease, opacity 0.18s ease;
+}
+.vs-chip-code {
+    font-family: 'JetBrains Mono', 'Consolas', monospace;
+    font-size: 0.68rem;
+    opacity: 0.55;
+    letter-spacing: 0.03em;
+}
+.btn-check:checked + .vs-chip {
+    background: linear-gradient(135deg, #1e3c72, #2a5298);
+    border-color: #1e3c72;
+    color: #ffffff;
+    box-shadow: 0 6px 16px -6px rgba(30, 60, 114, 0.55);
+}
+.btn-check:checked + .vs-chip .vs-chip-check { width: 1rem; opacity: 1; }
+.btn-check:checked + .vs-chip .vs-chip-code { opacity: 0.8; }
+.btn-check:focus-visible + .vs-chip { box-shadow: 0 0 0 0.2rem rgba(30, 60, 114, 0.2); }
+
+.vs-progress {
+    flex: 0 0 auto;
+    font-size: 0.74rem;
+    font-weight: 700;
+    border-radius: 999px;
+    padding: 0.25rem 0.7rem;
+    white-space: nowrap;
+    color: #1e3c72;
+    background: rgba(30, 60, 114, 0.08);
+    transition: background-color 0.25s ease, color 0.25s ease;
+}
+.vs-progress.is-complete { color: #067647; background: #dcfce7; }
+
+@keyframes vsSlideUp {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+.vs-result-card {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    background: linear-gradient(135deg, #1e3c72 0%, #2a5298 75%);
+    color: #ffffff;
+    border-radius: 0.75rem;
+    padding: 0.6rem 0.95rem;
+    box-shadow: 0 12px 24px -12px rgba(30, 60, 114, 0.55);
+    animation: vsSlideUp 0.3s ease;
+}
+.vs-result-icon { font-size: 1.4rem; color: #34d399; line-height: 1; }
+.vs-result-main { flex: 1 1 auto; min-width: 0; }
+.vs-result-label {
+    display: block;
+    font-size: 0.66rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    opacity: 0.7;
+}
+.vs-result-sku {
+    font-family: 'JetBrains Mono', 'Consolas', monospace;
+    font-size: 0.95rem;
+    letter-spacing: 0.04em;
+    word-break: break-all;
+}
+.vs-result-price { text-align: right; flex: 0 0 auto; }
+.vs-result-amount { font-size: 1.15rem; font-weight: 700; line-height: 1.1; }
+.vs-result-warn {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.6rem;
+    border: 1px solid rgba(180, 83, 9, 0.35);
+    background: #fef9ec;
+    color: #92400e;
+    border-radius: 0.75rem;
+    padding: 0.6rem 0.85rem;
+    font-size: 0.8rem;
+    animation: vsSlideUp 0.3s ease;
+}
+.vs-result-warn i { font-size: 1.15rem; line-height: 1.2; }
+.vs-result-warn a { color: #92400e; font-weight: 700; }
+
+[data-bs-theme="dark"] .vs-scroll { scrollbar-color: rgba(78, 122, 199, 0.45) transparent; }
+[data-bs-theme="dark"] .vs-scroll::-webkit-scrollbar-thumb { background: rgba(78, 122, 199, 0.4); }
+[data-bs-theme="dark"] .vs-section { background: rgba(78, 122, 199, 0.05); border-color: rgba(78, 122, 199, 0.2); }
+[data-bs-theme="dark"] .vs-section.is-done { background: rgba(16, 185, 129, 0.08); border-color: rgba(16, 185, 129, 0.4); }
+[data-bs-theme="dark"] .vs-section-title { color: #c8d4ea; }
+[data-bs-theme="dark"] .vs-section-status { border-color: rgba(78, 122, 199, 0.45); }
+[data-bs-theme="dark"] .vs-section-pick { color: #6ee7b7; }
+[data-bs-theme="dark"] .vs-chip { background: #1f2229; border-color: rgba(78, 122, 199, 0.35); color: #c8cbd0; }
+[data-bs-theme="dark"] .vs-chip:hover { border-color: rgba(126, 165, 232, 0.7); }
+[data-bs-theme="dark"] .btn-check:checked + .vs-chip {
+    background: linear-gradient(135deg, #2a5298, #4e7ac7);
+    border-color: #4e7ac7;
+}
+[data-bs-theme="dark"] .vs-progress { color: #aecbfa; background: rgba(78, 122, 199, 0.18); }
+[data-bs-theme="dark"] .vs-progress.is-complete { color: #6ee7b7; background: rgba(16, 185, 129, 0.18); }
+[data-bs-theme="dark"] .vs-result-warn { background: rgba(180, 83, 9, 0.12); color: #fcd34d; border-color: rgba(180, 83, 9, 0.4); }
+[data-bs-theme="dark"] .vs-result-warn a { color: #fcd34d; }
+
 /* ── .modal-form-section ─────────────────────────────────────────
    Sección agrupada dentro de un modal CRUD con borde navy sutil.  */
 .modal-form-section {
@@ -5285,6 +5502,18 @@ header#page-topbar,
 .ord-apply-title { font-weight: 700; color: #1e3c72; font-size: 14px; line-height: 1.15; }
 .ord-apply-sub   { font-size: 12px; color: #64748b; }
 
+/* Variante colapsable: cerrada por defecto queda como una fila mínima
+   (icono + título + chevron); el subtítulo y los campos solo al expandir. */
+.ord-apply-card--collapsible { padding: 8px 14px; }
+.ord-apply-card--collapsible .ord-apply-head { margin-bottom: 0; cursor: pointer; user-select: none; }
+.ord-apply-card--collapsible .ord-apply-icon {
+    width: 30px; height: 30px; flex: 0 0 30px; font-size: 15px; border-radius: 8px;
+}
+.ord-apply-card--collapsible .ord-apply-head[aria-expanded="false"] .ord-apply-sub { display: none; }
+.ord-apply-chevron { font-size: 18px; color: #1e3c72; transition: transform .2s ease; }
+.ord-apply-head[aria-expanded="true"] .ord-apply-chevron { transform: rotate(180deg); }
+[data-bs-theme="dark"] .ord-apply-chevron { color: #cbd5e1; }
+
 /* Separador entre "Aplicar a todas" y la asignación individual por línea */
 .ord-section-divider { display: flex; align-items: center; gap: 12px; margin: 4px 0 14px; }
 .ord-section-divider-line {
@@ -5332,6 +5561,16 @@ header#page-topbar,
 }
 .ord-asig-dur.is-bad { color: #b42318; background: #fee4e2; }
 .ord-asig-dur:empty { display: none; }
+/* Reparto de una línea entre varias órdenes: chip de cobertura + botones Dividir/Quitar */
+.ord-asig-resto {
+    flex: 0 0 auto; font-size: 12px; font-weight: 600; border-radius: 999px;
+    padding: 3px 10px; white-space: nowrap;
+}
+.ord-asig-resto.is-ok   { color: #067647; background: #dcfce7; }
+.ord-asig-resto.is-warn { color: #b54708; background: #fef0c7; }
+.ord-asig-resto:empty { display: none; }
+.ord-asig-split-btns { flex: 0 0 auto; display: flex; gap: 4px; }
+.ord-asig-split-btns .btn { padding: 2px 8px; font-size: 12px; }
 .ord-asig-card-body { padding: 14px; }
 .ord-asig-card .input-group-text { background: #f1f5f9; border-color: #e2e8f0; color: #1e3c72; }
 
@@ -5506,6 +5745,8 @@ header#page-topbar,
 [data-bs-theme="dark"] .ord-asig-card .input-group-text { background: #0f172a; border-color: #334155; color: #93c5fd; }
 [data-bs-theme="dark"] .ord-asig-dur { background: #0c3a52; color: #7dd3fc; }
 [data-bs-theme="dark"] .ord-asig-dur.is-bad { background: #4c1d1a; color: #fca5a5; }
+[data-bs-theme="dark"] .ord-asig-resto.is-ok   { background: #103e2b; color: #6ee7b7; }
+[data-bs-theme="dark"] .ord-asig-resto.is-warn { background: #4a3413; color: #fcd34d; }
 
 /* ============================================================
    MÓDULO ÓRDENES DE PRODUCCIÓN — MODAL DETALLES (#viewModal)
@@ -6057,7 +6298,7 @@ header#page-topbar,
 [data-bs-theme="dark"] .form-control:focus,
 [data-bs-theme="dark"] .form-select:focus {
     background-color: #242832 !important;
-    border-color: #60a5fa !important;
+    border-color: #4e7ac7 !important;   /* navy de AtlanticoSelect (.afs-toggle dark) */
     color: #ffffff !important;
 }
 
@@ -6244,6 +6485,286 @@ header#page-topbar,
 
 .navy-filter-select:hover {
     border-color: rgba(30, 60, 114, 0.4) !important;
+}
+
+/* ── Filtro select realzado: dropdown con máx ~4 ítems + scroll ───────
+   El <select.navy-filter-select> nativo no permite limitar la altura de su
+   lista, así que se oculta (.afs-native) y se reemplaza por un dropdown
+   Bootstrap cuyo menú (.afs-menu) limita la altura a ~4 opciones con scroll.
+   El componente lo construye el IIFE global en admin/layouts/app.blade.php;
+   el select sigue en el DOM como fuente de verdad para el JS de filtros. */
+.afs-wrap { position: relative; width: 100%; }
+/* Oculto pero presente (sr-only): el <select> nativo sigue siendo la fuente de
+   verdad y conserva validación nativa (required) y envío de formularios. */
+.afs-native {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    padding: 0 !important;
+    margin: -1px !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+    white-space: nowrap !important;
+    border: 0 !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+}
+.afs-toggle {
+    width: 100% !important;
+    text-align: left !important;
+    font-size: 0.82rem !important;
+    padding: 0.35rem 2rem 0.35rem 0.6rem !important;
+    height: auto !important;
+    border-color: rgba(30, 60, 114, 0.25) !important;
+    color: #2c3e50 !important;
+    background-color: #ffffff !important;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease !important;
+}
+.afs-toggle:hover { border-color: rgba(30, 60, 114, 0.4) !important; }
+.afs-toggle:focus {
+    border-color: #1e3c72 !important;
+    box-shadow: 0 0 0 0.2rem rgba(30, 60, 114, 0.15) !important;
+}
+.afs-toggle .afs-label {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.afs-menu {
+    max-height: 8.75rem;          /* ≈ 4 ítems visibles; el resto con scroll */
+    overflow-y: auto;
+    min-width: 100%;
+    padding: 0.25rem;
+    font-size: 0.82rem;
+}
+.afs-menu .dropdown-item {
+    font-size: 0.82rem;
+    padding: 0.4rem 0.6rem;
+    border-radius: 0.35rem;
+    white-space: normal;
+    cursor: pointer;
+}
+.afs-menu .dropdown-item.active,
+.afs-menu .dropdown-item:active {
+    background-color: #1e3c72;
+    color: #ffffff;
+}
+
+[data-bs-theme="dark"] .afs-toggle {
+    background-color: #1f2229 !important;
+    border-color: rgba(78, 122, 199, 0.3) !important;
+    color: #c8cbd0 !important;
+}
+[data-bs-theme="dark"] .afs-toggle:focus {
+    border-color: #4e7ac7 !important;
+    box-shadow: 0 0 0 0.2rem rgba(78, 122, 199, 0.2) !important;
+}
+
+/* ── AtlanticoSelect dentro de input-group ───────────────────────────
+   Antes los <select> en .input-group se excluían del realce; ahora SÍ se
+   realzan (prefijos de documento/teléfono, departamento/cargo con botón "+").
+   El .afs-wrap debe portarse como flex item de Bootstrap y rematar la
+   continuidad de bordes con sus vecinos (input, botón, lupa). El ancho fijo
+   de los prefijos lo hereda el wrap vía JS (max-width/min-width del nativo). */
+.input-group > .afs-wrap--ig {
+    flex: 1 1 auto;
+    width: 1%;
+    min-width: 0;
+    display: flex;            /* el toggle (único hijo en flujo) estira a la altura de la celda */
+    flex-direction: column;
+}
+/* En input-group el toggle se pega a un .form-control de tamaño normal (1rem);
+   iguala su altura/tipografía para que los bordes alineen (los filtros sueltos
+   conservan su 0.82rem compacto). */
+.input-group > .afs-wrap--ig .afs-toggle {
+    font-size: 1rem !important;
+    padding: 0.375rem 1.75rem 0.375rem 0.75rem !important;
+    height: 100% !important;   /* estira a la altura de la celda del input-group (lupa/input vecinos) */
+}
+.input-group > .afs-wrap--ig:not(:first-child) .afs-toggle {
+    border-top-left-radius: 0 !important;
+    border-bottom-left-radius: 0 !important;
+}
+.input-group > .afs-wrap--ig:not(:last-child) .afs-toggle {
+    border-top-right-radius: 0 !important;
+    border-bottom-right-radius: 0 !important;
+}
+/* Solapa el borde con el vecino izquierdo, como hacen .form-control/.form-select
+   nativos en un input-group (evita el doble borde de 2px). */
+.input-group > .afs-wrap--ig:not(:first-child) { margin-left: -1px; }
+
+/* ── AtlanticoMultiSelect: multi-selección compacta (chips + checkboxes) ──
+   Reemplaza a Select2 multiple dentro de modales (atributos → tipos de
+   producto). In-house: sin CDN ni bugs de posicionamiento/altura en
+   .atlantico-modal. El <select multiple> nativo queda oculto (.afs-native)
+   como fuente de verdad; este control refleja y edita su selección. */
+.ams-wrap { position: relative; width: 100%; }
+/* .ams-control reutiliza .form-select (borde, radio, caret) pero crece en alto
+   para acomodar los chips en varias líneas en vez de una caja rígida. */
+.ams-control {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.3rem;
+    height: auto !important;
+    min-height: calc(1.5em + 0.75rem + 2px);
+    padding: 0.3rem 2.25rem 0.3rem 0.6rem !important;
+    border-color: rgba(30, 60, 114, 0.25) !important;
+    color: #2c3e50 !important;
+    background-color: #ffffff !important;
+    cursor: pointer;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease !important;
+}
+.ams-control:hover { border-color: rgba(30, 60, 114, 0.4) !important; }
+.ams-control:focus,
+.ams-control.show {
+    border-color: #1e3c72 !important;
+    box-shadow: 0 0 0 0.2rem rgba(30, 60, 114, 0.15) !important;
+}
+.ams-placeholder { color: #98a2b3; font-size: 0.9rem; }
+.ams-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    max-width: 100%;
+    background-color: rgba(30, 60, 114, 0.08);
+    color: #1e3c72;
+    border: 1px solid rgba(30, 60, 114, 0.18);
+    border-radius: 1rem;
+    padding: 0.08rem 0.25rem 0.08rem 0.6rem;
+    font-size: 0.78rem;
+    line-height: 1.5;
+}
+.ams-chip-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ams-chip-remove {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.05rem;
+    height: 1.05rem;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: #1e3c72;
+    font-size: 0.95rem;
+    line-height: 1;
+    padding: 0;
+    cursor: pointer;
+    opacity: 0.65;
+    transition: opacity 0.15s ease, background-color 0.15s ease;
+}
+.ams-chip-remove:hover { opacity: 1; background-color: rgba(30, 60, 114, 0.15); }
+.ams-menu {
+    max-height: 12rem;
+    overflow-y: auto;
+    min-width: 100%;
+    padding: 0.25rem;
+    font-size: 0.85rem;
+}
+.ams-option {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    margin: 0;
+    padding: 0.4rem 0.55rem;
+    border-radius: 0.35rem;
+    white-space: normal;
+    cursor: pointer;
+}
+.ams-option:hover { background-color: rgba(30, 60, 114, 0.07); }
+.ams-option input { pointer-events: none; flex: 0 0 auto; }
+.ams-empty { padding: 0.5rem 0.6rem; color: #98a2b3; font-size: 0.82rem; list-style: none; }
+
+[data-bs-theme="dark"] .ams-control {
+    background-color: #1f2229 !important;
+    border-color: rgba(78, 122, 199, 0.3) !important;
+    color: #c8cbd0 !important;
+}
+[data-bs-theme="dark"] .ams-control:focus,
+[data-bs-theme="dark"] .ams-control.show {
+    border-color: #4e7ac7 !important;
+    box-shadow: 0 0 0 0.2rem rgba(78, 122, 199, 0.2) !important;
+}
+[data-bs-theme="dark"] .ams-placeholder { color: #7a828e; }
+[data-bs-theme="dark"] .ams-chip {
+    background-color: rgba(78, 122, 199, 0.18);
+    color: #c8d4ea;
+    border-color: rgba(78, 122, 199, 0.35);
+}
+[data-bs-theme="dark"] .ams-chip-remove { color: #c8d4ea; }
+[data-bs-theme="dark"] .ams-chip-remove:hover { background-color: rgba(78, 122, 199, 0.3); }
+[data-bs-theme="dark"] .ams-option:hover { background-color: rgba(78, 122, 199, 0.15); }
+
+/* ── Select2 alineado a AtlanticoSelect ──────────────────────────────
+   Los selects buscables/múltiples (producto, insumo, tipos) usan Select2
+   y NO los toca el realce .afs-*. Para que el sistema luzca consistente,
+   el tema bootstrap-5 de Select2 se reviste con el mismo borde navy, foco,
+   altura, tipografía y opción activa navy que .afs-toggle / .afs-menu.
+   No se altera su funcionalidad (búsqueda y multiple siguen igual). */
+.select2-container--bootstrap-5 .select2-selection {
+    border-color: rgba(30, 60, 114, 0.25) !important;
+    color: #2c3e50 !important;
+    background-color: #ffffff !important;
+    font-size: 0.82rem !important;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease !important;
+}
+.select2-container--bootstrap-5 .select2-selection:hover {
+    border-color: rgba(30, 60, 114, 0.4) !important;
+}
+.select2-container--bootstrap-5.select2-container--focus .select2-selection,
+.select2-container--bootstrap-5.select2-container--open .select2-selection {
+    border-color: #1e3c72 !important;
+    box-shadow: 0 0 0 0.2rem rgba(30, 60, 114, 0.15) !important;
+}
+/* Dropdown + opciones: igual borde/tipografía y opción activa/hover navy */
+.select2-container--bootstrap-5 .select2-dropdown {
+    border-color: #1e3c72 !important;
+}
+.select2-container--bootstrap-5 .select2-results__option {
+    font-size: 0.82rem !important;
+    border-radius: 0.35rem !important;
+    padding: 0.4rem 0.6rem !important;
+}
+.select2-container--bootstrap-5 .select2-results__option--highlighted[aria-selected],
+.select2-container--bootstrap-5 .select2-results__option--selected,
+.select2-container--bootstrap-5 .select2-results__option[aria-selected="true"] {
+    background-color: #1e3c72 !important;
+    color: #ffffff !important;
+}
+/* Chips de selección múltiple (p.ej. tipos de producto en atributos) */
+.select2-container--bootstrap-5 .select2-selection--multiple .select2-selection__choice {
+    background-color: rgba(30, 60, 114, 0.1) !important;
+    border-color: rgba(30, 60, 114, 0.25) !important;
+    color: #1e3c72 !important;
+}
+.select2-container--bootstrap-5 .select2-search--inline .select2-search__field {
+    font-size: 0.82rem !important;
+}
+
+/* Dark mode: mismo tratamiento que .afs-toggle en oscuro */
+[data-bs-theme="dark"] .select2-container--bootstrap-5 .select2-selection {
+    background-color: #1f2229 !important;
+    border-color: rgba(78, 122, 199, 0.3) !important;
+    color: #c8cbd0 !important;
+}
+[data-bs-theme="dark"] .select2-container--bootstrap-5.select2-container--focus .select2-selection,
+[data-bs-theme="dark"] .select2-container--bootstrap-5.select2-container--open .select2-selection {
+    border-color: #4e7ac7 !important;
+    box-shadow: 0 0 0 0.2rem rgba(78, 122, 199, 0.2) !important;
+}
+[data-bs-theme="dark"] .select2-container--bootstrap-5 .select2-dropdown {
+    background-color: #1f2229 !important;
+    border-color: #4e7ac7 !important;
+}
+[data-bs-theme="dark"] .select2-container--bootstrap-5 .select2-results__option {
+    color: #c8cbd0 !important;
+}
+[data-bs-theme="dark"] .select2-container--bootstrap-5 .select2-results__option--highlighted[aria-selected],
+[data-bs-theme="dark"] .select2-container--bootstrap-5 .select2-results__option--selected,
+[data-bs-theme="dark"] .select2-container--bootstrap-5 .select2-results__option[aria-selected="true"] {
+    background-color: #4e7ac7 !important;
+    color: #ffffff !important;
 }
 
 /* ── Input de filtro (texto) ─────────────────────────────────── */
@@ -7690,3 +8211,215 @@ header#page-topbar,
 
 /* Utilidad de ancho mínimo 0 — evita desbordamiento de texto en flex items */
 .min-w-0 { min-width: 0; }
+
+/* ═══════════════════════════════════════════════════════════════
+   MÓDULO ÓRDENES — Checkboxes de empleados (paso 2 wizard)
+   ═══════════════════════════════════════════════════════════════ */
+
+.ord-asig-emp-checks {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 6px 0 2px;
+}
+
+.ord-emp-check-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px 4px 8px;
+    border: 1.5px solid #dee2e6;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 500;
+    color: #495057;
+    background: #fff;
+    transition: border-color .15s, background .15s, color .15s;
+    user-select: none;
+    line-height: 1.3;
+}
+.ord-emp-check-item:hover {
+    border-color: #0d6efd;
+    background: #f0f5ff;
+    color: #0d6efd;
+}
+.ord-emp-check-item input[type="checkbox"] {
+    width: 13px;
+    height: 13px;
+    margin: 0;
+    accent-color: #0d6efd;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+.ord-emp-check-item:has(input:checked) {
+    border-color: #0d6efd;
+    background: #e7f0ff;
+    color: #0d6efd;
+    font-weight: 600;
+}
+[data-bs-theme="dark"] .ord-emp-check-item {
+    border-color: #3d4a5c;
+    background: #1e2837;
+    color: #cbd5e1;
+}
+[data-bs-theme="dark"] .ord-emp-check-item:hover {
+    border-color: #74a8fc;
+    background: #1e3058;
+    color: #74a8fc;
+}
+[data-bs-theme="dark"] .ord-emp-check-item:has(input:checked) {
+    border-color: #74a8fc;
+    background: #1e3058;
+    color: #74a8fc;
+}
+
+/* Mensaje de error cuando no se selecciona ningún empleado */
+.ord-asig-emp-checks.is-invalid-group {
+    padding: 5px 8px;
+    border: 1.5px solid #dc3545;
+    border-radius: 8px;
+}
+.ord-asig-emp-checks.is-invalid-group + .ord-emp-feedback {
+    display: block;
+}
+.ord-emp-feedback {
+    display: none;
+    font-size: 0.75rem;
+    color: #dc3545;
+    margin-top: 3px;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   MÓDULO ÓRDENES — Tablero Kanban (viewModal paso 4)
+   ═══════════════════════════════════════════════════════════════ */
+
+.kanban-board {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    padding-bottom: 6px;
+    align-items: flex-start;
+}
+
+.kanban-col {
+    flex: 1 1 0;
+    min-width: 148px;
+    background: #f0f4f8;
+    border-radius: 10px;
+    padding: 10px 8px 6px;
+    display: flex;
+    flex-direction: column;
+}
+[data-bs-theme="dark"] .kanban-col { background: #1e2837; }
+
+.kanban-col-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    padding: 0 2px;
+}
+
+.kanban-col-title {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+}
+
+.kanban-col-count {
+    font-size: 11px;
+    font-weight: 700;
+    min-width: 20px;
+    text-align: center;
+    border-radius: 20px;
+    padding: 1px 7px;
+}
+
+.kanban-col-body {
+    flex: 1;
+    min-height: 72px;
+}
+
+/* colores de encabezado por estado */
+.kanban-col--pendiente  .kanban-col-title  { color: #9a6700; }
+.kanban-col--pendiente  .kanban-col-count  { background: #fff4e0; color: #9a6700; }
+.kanban-col--en-proceso .kanban-col-title  { color: #0d6efd; }
+.kanban-col--en-proceso .kanban-col-count  { background: #e7f0ff; color: #0d6efd; }
+.kanban-col--finalizado .kanban-col-title  { color: #1a7f5a; }
+.kanban-col--finalizado .kanban-col-count  { background: #e7f7ef; color: #1a7f5a; }
+.kanban-col--cancelado  .kanban-col-title  { color: #b42318; }
+.kanban-col--cancelado  .kanban-col-count  { background: #fdecea; color: #b42318; }
+
+/* Tickets */
+.kanban-ticket {
+    background: #fff;
+    border-radius: 8px;
+    padding: 9px 10px;
+    margin-bottom: 7px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.07);
+    cursor: grab;
+    border-left: 3px solid transparent;
+    user-select: none;
+}
+[data-bs-theme="dark"] .kanban-ticket { background: #243043; }
+.kanban-ticket:active { cursor: grabbing; }
+
+.kanban-ticket--pendiente  { border-left-color: #9a6700; }
+.kanban-ticket--en-proceso { border-left-color: #0d6efd; }
+.kanban-ticket--finalizado { border-left-color: #1a7f5a; }
+.kanban-ticket--cancelado  { border-left-color: #b42318; }
+
+.kanban-ticket-nombre {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--vz-heading-color, #1c2430);
+    margin-bottom: 5px;
+    line-height: 1.3;
+}
+[data-bs-theme="dark"] .kanban-ticket-nombre { color: #e2e8f0; }
+
+.kanban-ticket-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    align-items: center;
+}
+
+.kanban-ticket-cant {
+    font-size: 11px;
+    color: #6c757d;
+    background: #f0f4f8;
+    border-radius: 4px;
+    padding: 1px 6px;
+}
+[data-bs-theme="dark"] .kanban-ticket-cant { background: #1e2837; }
+
+.kanban-ticket-emp {
+    font-size: 10px;
+    background: #e7f0ff;
+    color: #0d6efd;
+    border-radius: 20px;
+    padding: 1px 7px;
+    font-weight: 600;
+}
+[data-bs-theme="dark"] .kanban-ticket-emp { background: #1e3058; color: #74a8fc; }
+
+/* Estados de arrastre */
+.kanban-ghost {
+    opacity: .35 !important;
+    background: #dde3ed !important;
+    border-radius: 8px;
+}
+.kanban-drag {
+    box-shadow: 0 6px 18px rgba(0,0,0,.18) !important;
+    transform: rotate(1.5deg);
+}
+
+/* Zona de soltar vacía — resalta al arrastrar sobre una columna */
+.kanban-col-body.sortable-over {
+    background: rgba(13,110,253,.07);
+    border-radius: 6px;
+    transition: background .15s;
+}

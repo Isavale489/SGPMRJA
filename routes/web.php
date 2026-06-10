@@ -64,6 +64,7 @@ Route::middleware(['auth', 'throttle:60,1', 'active.user', 'recovery.questions.r
         Route::resource('users', UserController::class);
         Route::post('users/{id}/restore', [UserController::class, 'restore'])->name('users.restore');
         Route::get('users-data', [UserController::class, 'getUsers'])->name('users.data');
+        Route::get('users/reporte/pdf', [UserController::class, 'reportePdf'])->name('users.reporte.pdf');
         Route::get('users-check-email', [UserController::class, 'checkEmail'])->name('users.check-email');
         Route::post('users/{id}/unlock-recovery', [UserController::class, 'unlockRecovery'])->name('users.unlock-recovery');
         Route::post('users/{id}/reset-password', [UserController::class, 'resetPassword'])->name('users.reset-password');
@@ -248,6 +249,13 @@ Route::middleware(['auth', 'throttle:60,1', 'active.user', 'recovery.questions.r
         Route::get('ordenes-data', [OrdenProduccionController::class, 'getOrdenes'])->name('ordenes.data');
         Route::post('ordenes/batch', [OrdenProduccionController::class, 'storeBatch'])->name('ordenes.batch');
         Route::post('ordenes/{orden}/avance', [OrdenProduccionController::class, 'registrarAvance'])->name('ordenes.avance');
+        Route::patch('ordenes/{orden}/cancelar', [OrdenProduccionController::class, 'cancelar'])->name('ordenes.cancelar');
+        // Sub-órdenes de producción (etapas con empleados asignados)
+        Route::get('ordenes/{orden}/subordenes', [OrdenProduccionController::class, 'subordenes'])->name('ordenes.subordenes');
+        Route::post('ordenes/{orden}/subordenes', [OrdenProduccionController::class, 'storeSubOrden'])->name('ordenes.subordenes.store');
+        Route::delete('ordenes/{orden}/subordenes/{subId}', [OrdenProduccionController::class, 'destroySubOrden'])->name('ordenes.subordenes.destroy');
+        Route::patch('ordenes/{orden}/subordenes/{subId}/estado', [OrdenProduccionController::class, 'updateSubOrdenEstado'])->name('ordenes.subordenes.estado');
+        Route::get('ordenes/reporte/pdf', [OrdenProduccionController::class, 'reportePdf'])->name('ordenes.reporte.pdf');
         Route::resource('ordenes', OrdenProduccionController::class);
 
         // Control de Insumos por Orden
@@ -277,6 +285,7 @@ Route::middleware(['auth', 'throttle:60,1', 'active.user', 'recovery.questions.r
         Route::get('movimiento-insumo/data', [MovimientoInsumoController::class, 'getMovimientos'])->name('movimiento-insumo.data');
         Route::get('movimiento-insumo/existencias-data', [MovimientoInsumoController::class, 'getExistencias'])->name('movimiento-insumo.existencias.data');
         Route::get('movimiento-insumo/reporte', [MovimientoInsumoController::class, 'reporteExistencia'])->name('movimiento-insumo.reporte');
+        Route::get('movimiento-insumo/reporte/pdf', [MovimientoInsumoController::class, 'reportePdf'])->name('movimiento-insumo.reporte.pdf');
         Route::get('movimiento-insumo/alertas', [MovimientoInsumoController::class, 'alertasStock'])->name('movimiento-insumo.alertas');
         Route::get('movimiento-insumo/historial/{id}', [MovimientoInsumoController::class, 'historialInsumo'])->name('movimiento-insumo.historial');
         Route::post('movimiento-insumo', [MovimientoInsumoController::class, 'store'])->name('movimiento-insumo.store');

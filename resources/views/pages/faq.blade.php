@@ -23,16 +23,17 @@
                         </h3>
                         <div class="accordion-collapse collapse show" id="collapseOne" aria-labelledby="headingOne" data-bs-parent="#accordionExample">
                             <div class="accordion-body text-justify-custom">
+                                @php($abonoPct = \App\Models\Pedido::porcentajeAbonoMinimo())
                                 <ul>
-                                    <li><strong>Formalización del Pedido:</strong> Para iniciar la producción, el cliente debe abonar el 70% del costo total del pedido. Este pago representa la formalización del mismo.</li><br>
-                                    
+                                    <li><strong>Formalización del Pedido:</strong> Para iniciar la producción, el cliente debe abonar el {{ $abonoPct }}% del costo total del pedido. Este pago representa la formalización del mismo.</li><br>
+
                                     <li><strong>Tiempo de Ejecución:</strong> El tiempo estimado para la ejecución del trabajo es de <strong>30 días hábiles</strong>, contados a partir de la confirmación del pago inicial.</li><br>
-                                    
-                                    <li><strong>Saldo Restante:</strong> El 30% restante deberá ser cancelado al momento de la <strong>entrega del pedido</strong>.</li><br>
-                                    
+
+                                    <li><strong>Saldo Restante:</strong> El {{ 100 - $abonoPct }}% restante deberá ser cancelado al momento de la <strong>entrega del pedido</strong>.</li><br>
+
                                     <li><strong>Modificaciones:</strong> Una vez formalizado el pedido, <strong>no se aceptan modificaciones</strong> en tallas, cantidades o diseño. Se recomienda revisar cuidadosamente toda la información antes de realizar el pago.</li><br>
-                                    
-                                    <li><strong>Entrega:</strong> El plazo de entrega comienza a contarse <strong>únicamente desde la fecha en que se realiza el abono del 70% inicial</strong>.</li>
+
+                                    <li><strong>Entrega:</strong> El plazo de entrega comienza a contarse <strong>únicamente desde la fecha en que se realiza el abono del {{ $abonoPct }}% inicial</strong>.</li>
                                 </ul>
                             </div>
                         </div>

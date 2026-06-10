@@ -43,7 +43,7 @@
                             @else
                                 <a href="{{ route('users.index', ['historial' => true]) }}"
                                     class="btn-historial btn-historial-ver">
-                                    <i class="ri-time-line"></i> Ver Historial
+                                    <i class="ri-archive-line"></i> Inhabilitados
                                 </a>
                             @endif
                             <div class="d-flex gap-2">
@@ -53,6 +53,9 @@
                                         <i class="ri-add-line align-bottom me-1"></i> Agregar Usuario
                                     </button>
                                 @endif
+                                <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#pdfExportModal">
+                                    <i class="ri-file-pdf-fill align-bottom me-1"></i> Exportar PDF
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -362,6 +365,55 @@
                             </span>
                         </button>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {{-- Modal: Exportar PDF --}}
+    <div class="modal fade atlantico-modal" id="pdfExportModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" style="max-width: 380px;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="ri-file-pdf-line me-2"></i>Exportar PDF</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <p class="text-muted small mb-3">Filtra qué usuarios incluir en el reporte.</p>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold" for="pdf-filter-role">Rol</label>
+                        <select class="form-select" id="pdf-filter-role">
+                            <option value="">Todos los roles</option>
+                            <option value="Administrador">Administrador</option>
+                            <option value="Supervisor">Supervisor</option>
+                            <option value="Usuario">Usuario</option>
+                        </select>
+                    </div>
+                    <div class="mb-0">
+                        <label class="form-label fw-semibold" for="pdf-filter-estatus">Estatus</label>
+                        <select class="form-select" id="pdf-filter-estatus">
+                            <option value="">Todos</option>
+                            <option value="1">Activo</option>
+                            <option value="0">Inactivo</option>
+                        </select>
+                    </div>
+                    <div class="row g-2 mt-3">
+                        <div class="col-6">
+                            <label class="form-label fw-semibold" for="pdf-fecha-desde">Registro desde</label>
+                            <input type="date" class="form-control" id="pdf-fecha-desde">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label fw-semibold" for="pdf-fecha-hasta">Registro hasta</label>
+                            <input type="date" class="form-control" id="pdf-fecha-hasta">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light border-0">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">
+                        <i class="ri-close-line me-1"></i>Cancelar
+                    </button>
+                    <button type="button" class="btn btn-danger" id="btn-generar-pdf">
+                        <i class="ri-file-pdf-fill me-1"></i>Generar PDF
+                    </button>
                 </div>
             </div>
         </div>
@@ -1037,6 +1089,25 @@
                     }
                 });
             });
+        });
+
+        // Exportar PDF — Usuarios
+        $('#btn-generar-pdf').on('click', function () {
+            var baseUrl = '{{ route('users.reporte.pdf') }}';
+            var params = [];
+            var role    = $('#pdf-filter-role').val();
+            var estatus = $('#pdf-filter-estatus').val();
+            var fdesde  = $('#pdf-fecha-desde').val();
+            var fhasta  = $('#pdf-fecha-hasta').val();
+            if (role)            params.push('role=' + encodeURIComponent(role));
+            if (estatus !== '')  params.push('estatus=' + encodeURIComponent(estatus));
+            if (fdesde)          params.push('fecha_desde=' + encodeURIComponent(fdesde));
+            if (fhasta)          params.push('fecha_hasta=' + encodeURIComponent(fhasta));
+            window.open(baseUrl + (params.length ? '?' + params.join('&') : ''), '_blank');
+            bootstrap.Modal.getInstance(document.getElementById('pdfExportModal'))?.hide();
+        });
+        $('#pdfExportModal').on('show.bs.modal', function () {
+            $('#pdf-filter-role, #pdf-filter-estatus, #pdf-fecha-desde, #pdf-fecha-hasta').val('');
         });
     </script>
 @endpush

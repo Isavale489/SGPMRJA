@@ -17,7 +17,7 @@ class UpdatePedidoRequest extends FormRequest
         return [
             'cliente_id' => 'required|exists:cliente,id',
             'fecha_pedido' => 'required|date',
-            'fecha_entrega_estimada' => 'nullable|date|after_or_equal:fecha_pedido',
+            'fecha_entrega_estimada' => 'required|date|after_or_equal:fecha_pedido',
             'estado' => 'required|in:Pendiente,Procesando,Completado,Cancelado',
             'pagos' => 'nullable|array',
             'pagos.*.metodo' => 'required|in:efectivo,transferencia,pago_movil',

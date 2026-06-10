@@ -1,4 +1,4 @@
-{{-- Modal de detalle de compra — solo lectura
+{{-- Modal de detalle de compra — wizard de solo lectura
      Clase: atlantico-modal--op (transaccional)
      Prefijo de IDs: cv- (compra-view)
 --}}
@@ -14,10 +14,9 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
 
-            <div class="modal-body p-4">
-
-                {{-- Hero: número + estado + total --}}
-                <div class="card border-0 shadow-sm mb-3">
+            {{-- Hero persistente: número + estado + total (visible en todos los pasos) --}}
+            <div class="px-3 pt-3">
+                <div class="card border-0 shadow-sm mb-0">
                     <div class="card-body d-flex flex-wrap align-items-center justify-content-between gap-3 p-3">
                         <div class="d-flex align-items-center gap-3">
                             <div class="c-show-hero-icon"><i class="ri-shopping-bag-3-line"></i></div>
@@ -39,157 +38,198 @@
                         </div>
                     </div>
                 </div>
+            </div>
 
-                <div class="row g-3">
-                    {{-- Columna principal --}}
-                    <div class="col-lg-8">
+            {{-- Stepper visual — 3 pasos --}}
+            <div class="wiz-stepper-wrapper">
+                <div class="wiz-stepper-side wiz-stepper-side--left"></div>
+                <div class="wiz-stepper" role="tablist">
+                    <button type="button" class="wiz-step-marker is-active" data-step="1" role="tab">
+                        <span class="wiz-step-dot">1</span>
+                        <span class="wiz-step-label">Proveedor</span>
+                    </button>
+                    <span class="wiz-step-line"><span class="wiz-step-line-fill" data-line="1"></span></span>
+                    <button type="button" class="wiz-step-marker" data-step="2" role="tab">
+                        <span class="wiz-step-dot">2</span>
+                        <span class="wiz-step-label">Ítems</span>
+                    </button>
+                    <span class="wiz-step-line"><span class="wiz-step-line-fill" data-line="2"></span></span>
+                    <button type="button" class="wiz-step-marker" data-step="3" role="tab">
+                        <span class="wiz-step-dot">3</span>
+                        <span class="wiz-step-label">Totales</span>
+                    </button>
+                </div>
+                <div class="wiz-stepper-side wiz-stepper-side--right"></div>
+            </div>
 
-                        {{-- Card: Información del proveedor + comprobante --}}
-                        <div class="card border-0 shadow-sm mb-3">
-                            <div class="card-header border-0 bg-soft-primary">
-                                <h6 class="mb-0 text-atlantico-dark">
-                                    <i class="ri-file-list-3-line me-2"></i>Información de la Compra
-                                </h6>
-                            </div>
-                            <div class="card-body">
-                                {{-- Card proveedor --}}
-                                <div class="cot-cliente-card mb-3">
-                                    <div class="cot-cliente-avatar" id="cv-prov-ini">—</div>
-                                    <div class="cot-cliente-info flex-grow-1">
-                                        <div class="cot-cliente-name-row">
-                                            <h5 class="cot-cliente-name" id="cv-prov-nombre">—</h5>
-                                            <span class="cot-cliente-roles">
-                                                <span class="cot-role-pill cot-role-proveedor" id="cv-prov-tipo">Proveedor</span>
-                                            </span>
-                                        </div>
-                                        <p class="cot-cliente-doc">
-                                            <i class="ri-bank-card-line"></i>
-                                            <span id="cv-prov-doc">—</span>
-                                        </p>
-                                        <div class="cot-cliente-contact-row">
-                                            <span class="cot-cliente-contact-item" id="cv-prov-tel-wrap">
-                                                <i class="ri-phone-line"></i>
-                                                <span id="cv-prov-tel">—</span>
-                                            </span>
-                                            <span class="cot-cliente-contact-item" id="cv-prov-email-wrap">
-                                                <i class="ri-mail-line"></i>
-                                                <span id="cv-prov-email">—</span>
-                                            </span>
-                                        </div>
+            <div class="modal-body wiz-wizard-body p-3">
+
+                {{-- ─ Paso 1: Proveedor y registro ─────────────────────── --}}
+                <section class="wiz-step-content is-active" data-step="1">
+
+                    {{-- Información de la compra (proveedor + comprobante) --}}
+                    <div class="card border-0 shadow-sm mb-3">
+                        <div class="card-header border-0 bg-soft-primary">
+                            <h6 class="mb-0 text-atlantico-dark">
+                                <i class="ri-file-list-3-line me-2"></i>Información de la Compra
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            {{-- Card proveedor --}}
+                            <div class="cot-cliente-card mb-3">
+                                <div class="cot-cliente-avatar" id="cv-prov-ini">—</div>
+                                <div class="cot-cliente-info flex-grow-1">
+                                    <div class="cot-cliente-name-row">
+                                        <h5 class="cot-cliente-name" id="cv-prov-nombre">—</h5>
+                                        <span class="cot-cliente-roles">
+                                            <span class="cot-role-pill cot-role-proveedor" id="cv-prov-tipo">Proveedor</span>
+                                        </span>
+                                    </div>
+                                    <p class="cot-cliente-doc">
+                                        <i class="ri-bank-card-line"></i>
+                                        <span id="cv-prov-doc">—</span>
+                                    </p>
+                                    <div class="cot-cliente-contact-row">
+                                        <span class="cot-cliente-contact-item" id="cv-prov-tel-wrap">
+                                            <i class="ri-phone-line"></i>
+                                            <span id="cv-prov-tel">—</span>
+                                        </span>
+                                        <span class="cot-cliente-contact-item" id="cv-prov-email-wrap">
+                                            <i class="ri-mail-line"></i>
+                                            <span id="cv-prov-email">—</span>
+                                        </span>
                                     </div>
                                 </div>
+                            </div>
 
-                                {{-- Datos del comprobante --}}
-                                <div class="row g-3">
-                                    <div class="col-md-4">
-                                        <small class="text-muted d-block mb-1"><i class="ri-receipt-line me-1"></i>N° de Factura</small>
-                                        <span class="fw-semibold" id="cv-factura">—</span>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <small class="text-muted d-block mb-1"><i class="ri-calendar-event-line me-1"></i>Fecha de Compra</small>
-                                        <span id="cv-fecha">—</span>
-                                    </div>
-                                    <div class="col-12 d-none" id="cv-obs-wrap">
-                                        <small class="text-muted d-block mb-1"><i class="ri-sticky-note-line me-1"></i>Observaciones</small>
-                                        <span class="fst-italic" id="cv-observaciones">—</span>
-                                    </div>
+                            {{-- Datos del comprobante --}}
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <small class="text-muted d-block mb-1"><i class="ri-receipt-line me-1"></i>N° de Factura</small>
+                                    <span class="fw-semibold" id="cv-factura">—</span>
+                                </div>
+                                <div class="col-md-4">
+                                    <small class="text-muted d-block mb-1"><i class="ri-calendar-event-line me-1"></i>Fecha de Compra</small>
+                                    <span id="cv-fecha">—</span>
+                                </div>
+                                <div class="col-12 d-none" id="cv-obs-wrap">
+                                    <small class="text-muted d-block mb-1"><i class="ri-sticky-note-line me-1"></i>Observaciones</small>
+                                    <span class="fst-italic" id="cv-observaciones">—</span>
                                 </div>
                             </div>
                         </div>
-
-                        {{-- Card: Ítems --}}
-                        <div class="card border-0 shadow-sm">
-                            <div class="card-header border-0 bg-soft-primary">
-                                <h6 class="mb-0 text-atlantico-dark">
-                                    <i class="ri-archive-line me-2"></i>Ítems de la Compra
-                                    <span class="text-muted fw-normal ms-1" id="cv-items-count">(0)</span>
-                                </h6>
-                            </div>
-                            <div class="card-body p-0">
-                                <div class="cot-grouped-tablewrap">
-                                    <table class="cot-grouped-table">
-                                        <thead>
-                                            <tr>
-                                                <th class="cot-col-num text-center" style="width:40px;">#</th>
-                                                <th>Insumo</th>
-                                                <th class="text-center" style="width:110px;">Tipo</th>
-                                                <th class="text-center" style="width:90px;">Unidad</th>
-                                                <th class="text-end" style="width:100px;">Cantidad</th>
-                                                <th class="text-end" style="width:110px;">Costo Unit.</th>
-                                                <th class="text-end" style="width:110px;">Subtotal</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="cv-items-tbody"></tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        </div>
-
                     </div>
 
-                    {{-- Columna lateral --}}
-                    <div class="col-lg-4">
-
-                        {{-- Registro --}}
-                        <div class="card border-0 shadow-sm mb-3">
-                            <div class="card-header border-0 bg-soft-primary">
-                                <h6 class="mb-0 text-atlantico-dark">
-                                    <i class="ri-user-line me-2"></i>Registro
-                                </h6>
-                            </div>
-                            <div class="card-body">
-                                <div class="d-flex align-items-center gap-2 mb-3">
-                                    <img id="cv-reg-avatar" src="" alt=""
-                                        class="rounded-circle" width="40" height="40" style="object-fit:cover;">
-                                    <div>
-                                        <small class="text-muted d-block">Registrado por</small>
-                                        <span class="fw-semibold" id="cv-reg-nombre">—</span>
+                    {{-- Registro --}}
+                    <div class="card border-0 shadow-sm mb-0">
+                        <div class="card-header border-0 bg-soft-primary">
+                            <h6 class="mb-0 text-atlantico-dark">
+                                <i class="ri-user-line me-2"></i>Registro
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row g-3 align-items-center">
+                                <div class="col-md-6">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <img id="cv-reg-avatar" src="" alt=""
+                                            class="rounded-circle" width="40" height="40" style="object-fit:cover;">
+                                        <div>
+                                            <small class="text-muted d-block">Registrado por</small>
+                                            <span class="fw-semibold" id="cv-reg-nombre">—</span>
+                                        </div>
                                     </div>
                                 </div>
-                                <div>
+                                <div class="col-md-6">
                                     <small class="text-muted d-block mb-1"><i class="ri-time-line me-1"></i>Fecha de registro</small>
                                     <span id="cv-reg-fecha">—</span>
                                 </div>
                             </div>
                         </div>
+                    </div>
 
-                        {{-- Totales --}}
-                        <div class="card border-0 shadow-sm">
-                            <div class="card-header border-0 bg-soft-primary">
-                                <h6 class="mb-0 text-atlantico-dark">
-                                    <i class="ri-calculator-line me-2"></i>Totales
-                                </h6>
+                </section>
+
+                {{-- ─ Paso 2: Ítems ─────────────────────────────────────── --}}
+                <section class="wiz-step-content" data-step="2" hidden>
+                    <div class="card border-0 shadow-sm mb-0">
+                        <div class="card-header border-0 bg-soft-primary">
+                            <h6 class="mb-0 text-atlantico-dark">
+                                <i class="ri-archive-line me-2"></i>Ítems de la Compra
+                                <span class="text-muted fw-normal ms-1" id="cv-items-count">(0)</span>
+                            </h6>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="cot-grouped-tablewrap">
+                                <table class="cot-grouped-table">
+                                    <thead>
+                                        <tr>
+                                            <th class="cot-col-num text-center" style="width:40px;">#</th>
+                                            <th>Insumo</th>
+                                            <th class="text-center" style="width:110px;">Tipo</th>
+                                            <th class="text-center" style="width:90px;">Unidad</th>
+                                            <th class="text-end" style="width:100px;">Cantidad</th>
+                                            <th class="text-end" style="width:110px;">Costo Unit.</th>
+                                            <th class="text-end" style="width:110px;">Subtotal</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="cv-items-tbody"></tbody>
+                                </table>
                             </div>
-                            <div class="card-body">
-                                <div class="c-ticket">
-                                    <div class="d-flex justify-content-between mb-2">
-                                        <span class="text-muted">Subtotal</span>
-                                        <span class="fw-semibold" id="cv-subtotal">0.00</span>
-                                    </div>
-                                    <div class="d-flex justify-content-between mb-2">
-                                        <span class="text-muted">IVA</span>
-                                        <span class="fw-semibold" id="cv-iva">0.00</span>
-                                    </div>
-                                    <hr class="my-2">
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <span class="fw-bold fs-15">Total</span>
-                                        <span class="fw-bold fs-18 text-atlantico-emerald" id="cv-total-ticket">0.00</span>
+                        </div>
+                    </div>
+                </section>
+
+                {{-- ─ Paso 3: Totales ───────────────────────────────────── --}}
+                <section class="wiz-step-content" data-step="3" hidden>
+                    <div class="row justify-content-center">
+                        <div class="col-md-7 col-lg-6">
+                            <div class="card border-0 shadow-sm mb-0">
+                                <div class="card-header border-0 bg-soft-primary">
+                                    <h6 class="mb-0 text-atlantico-dark">
+                                        <i class="ri-calculator-line me-2"></i>Totales
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="c-ticket">
+                                        <div class="d-flex justify-content-between mb-2">
+                                            <span class="text-muted">Subtotal</span>
+                                            <span class="fw-semibold" id="cv-subtotal">0.00</span>
+                                        </div>
+                                        <div class="d-flex justify-content-between mb-2">
+                                            <span class="text-muted">IVA</span>
+                                            <span class="fw-semibold" id="cv-iva">0.00</span>
+                                        </div>
+                                        <hr class="my-2">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <span class="fw-bold fs-15">Total</span>
+                                            <span class="fw-bold fs-18 text-atlantico-emerald" id="cv-total-ticket">0.00</span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
-
                     </div>
-                </div>
-            </div>
+                </section>
 
-            <div class="modal-footer bg-light border-0">
-                <a id="cv-pdf-btn" href="#" target="_blank" class="btn btn-success btn-sm">
-                    <i class="ri-file-pdf-2-line me-1"></i>Descargar PDF
-                </a>
-                <button type="button" class="btn btn-light" data-bs-dismiss="modal">
-                    <i class="ri-close-line me-1"></i>Cerrar
-                </button>
+            </div>{{-- /modal-body --}}
+
+            <div class="modal-footer wiz-wizard-footer py-2 px-3">
+                <div class="wiz-wizard-footer-info">
+                    <a id="cv-pdf-btn" href="#" target="_blank" class="btn btn-success btn-sm">
+                        <i class="ri-file-pdf-2-line me-1"></i>Descargar PDF
+                    </a>
+                </div>
+                <div class="wiz-wizard-footer-actions">
+                    <button type="button" class="btn btn-sm btn-light border" id="cv-prev" style="display:none;">
+                        <i class="ri-arrow-left-line me-1"></i>Anterior
+                    </button>
+                    <button type="button" class="btn btn-sm btn-primary" id="cv-next">
+                        Siguiente<i class="ri-arrow-right-line ms-1"></i>
+                    </button>
+                    <button type="button" class="btn btn-sm btn-light border" data-bs-dismiss="modal" id="cv-close" style="display:none;">
+                        <i class="ri-close-line me-1"></i>Cerrar
+                    </button>
+                </div>
             </div>
 
         </div>

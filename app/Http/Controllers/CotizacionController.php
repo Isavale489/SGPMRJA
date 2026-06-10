@@ -88,9 +88,9 @@ class CotizacionController extends Controller
             ->filterColumn('cliente_nombre', function ($query, $keyword) {
                 $query->whereHas('cliente', function ($clienteQuery) use ($keyword) {
                     $clienteQuery->withTrashed()->whereHas('persona', function ($personaQuery) use ($keyword) {
-                        $personaQuery->where('nombre', 'like', "%{$keyword}%")
-                            ->orWhere('apellido', 'like', "%{$keyword}%")
-                            ->orWhereRaw("CONCAT(nombre, ' ', apellido) like ?", ["%{$keyword}%"]);
+                        $personaQuery->where('nombre', 'like', "{$keyword}%")
+                            ->orWhere('apellido', 'like', "{$keyword}%")
+                            ->orWhereRaw("CONCAT(nombre, ' ', apellido) like ?", ["{$keyword}%"]);
                     });
                 });
             })

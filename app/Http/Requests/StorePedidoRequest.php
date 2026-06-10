@@ -22,7 +22,7 @@ class StorePedidoRequest extends FormRequest
             ],
             'cliente_id' => 'required|exists:cliente,id',
             'fecha_pedido' => 'required|date',
-            'fecha_entrega_estimada' => 'nullable|date|after_or_equal:fecha_pedido',
+            'fecha_entrega_estimada' => 'required|date|after_or_equal:fecha_pedido',
             'pagos' => 'nullable|array',
             'pagos.*.metodo' => 'required|in:efectivo,transferencia,pago_movil',
             'pagos.*.monto' => 'required|numeric|min:0',

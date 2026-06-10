@@ -83,9 +83,9 @@ class PedidoController extends Controller
             })
             ->filterColumn('cliente_nombre_display', function ($query, $keyword) {
                 $query->where(function ($q) use ($keyword) {
-                    $q->where('persona.nombre', 'like', "%{$keyword}%")
-                        ->orWhere('persona.apellido', 'like', "%{$keyword}%")
-                        ->orWhereRaw("CONCAT(persona.nombre, ' ', persona.apellido) like ?", ["%{$keyword}%"]);
+                    $q->where('persona.nombre', 'like', "{$keyword}%")
+                        ->orWhere('persona.apellido', 'like', "{$keyword}%")
+                        ->orWhereRaw("CONCAT(persona.nombre, ' ', persona.apellido) like ?", ["{$keyword}%"]);
                 });
             })
 
@@ -202,6 +202,10 @@ class PedidoController extends Controller
             'avatar_url' => $pedido->user->avatar_url,
         ] : null;
 
+        // Formalización: el front congela las líneas y deja editar solo pagos.
+        $data['esta_formalizado']  = $pedido->estaFormalizado();
+        $data['lineas_bloqueadas'] = $pedido->lineasBloqueadas();
+
         return response()->json($data);
     }
 
@@ -209,20 +213,30 @@ class PedidoController extends Controller
     {
         $pedido = Pedido::findOrFail($id);
 
-        if (in_array($pedido->estado, ['Completado', 'Cancelado'])) {
-            return response()->json(['error' => 'No se puede editar un pedido completado o cancelado.'], 403);
-        }
-        if ($pedido->tieneProduccionActiva()) {
-            return response()->json(['error' => 'No se puede editar un pedido con producción iniciada. Cancela primero sus órdenes de producción.'], 403);
+        if ($pedido->estado === 'Cancelado') {
+            return response()->json(['error' => 'No se puede editar un pedido cancelado.'], 403);
         }
 
+        // Una vez formalizado (abono ≥ 50%), con producción iniciada o completado,
+        // las líneas quedan congeladas: solo se permiten cambios de pagos (p. ej.
+        // registrar el saldo restante a la entrega).
+        $soloPagos = $pedido->lineasBloqueadas();
+
         try {
-            $this->pedidoService->actualizar($pedido, $request->validated());
+            if ($soloPagos) {
+                $this->pedidoService->actualizarSoloPagos($pedido, $request->validated());
+            } else {
+                $this->pedidoService->actualizar($pedido, $request->validated());
+            }
         } catch (\InvalidArgumentException $e) {
             return response()->json(['error' => $e->getMessage()], 422);
         }
 
-        return response()->json(['success' => 'Pedido actualizado exitosamente.']);
+        return response()->json([
+            'success' => $soloPagos
+                ? 'Pagos del pedido actualizados.'
+                : 'Pedido actualizado exitosamente.',
+        ]);
     }
 
     public function destroy($id)
@@ -261,6 +275,14 @@ class PedidoController extends Controller
         }
         if ($pedido->estado === 'Cancelado') {
             return response()->json(['success' => 'El pedido ya estaba cancelado.']);
+        }
+        // Bloqueo: no se puede cancelar un pedido con producción en curso.
+        // Hay que cancelar primero sus órdenes activas o en proceso.
+        if ($pedido->tieneProduccionEnCurso()) {
+            return response()->json([
+                'error' => 'No se puede cancelar el pedido: tiene órdenes de producción activas o en proceso. '
+                    . 'Cancela primero esas órdenes desde el módulo de Producción.',
+            ], 422);
         }
 
         $pedido->update(['estado' => 'Cancelado']);

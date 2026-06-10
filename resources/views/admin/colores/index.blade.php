@@ -114,7 +114,7 @@
                             </select>
                             <input type="text" id="form-color-grupo-nuevo" class="form-control mt-2 d-none"
                                 placeholder="Nombre del nuevo grupo" maxlength="100" />
-                            <small class="text-muted d-block mt-1">Elegí un grupo existente para mantener el catálogo ordenado, o creá uno nuevo solo si hace falta.</small>
+                            <small class="text-muted d-block mt-1">Elige un grupo existente para mantener el catálogo ordenado, o crea uno nuevo solo si hace falta.</small>
                         </div>
 
                         <div class="mb-0">
@@ -123,13 +123,13 @@
                             </label>
                             <div class="d-flex align-items-center gap-2">
                                 <input type="color" id="form-color-hex" value="#1B3A5C"
-                                    class="form-control form-control-color" style="max-width:56px;" title="Elegí una tonalidad" />
+                                    class="form-control form-control-color" style="max-width:56px;" title="Elige una tonalidad" />
                                 <input type="text" id="form-color-hex-text" class="form-control" maxlength="7"
                                     placeholder="#1B3A5C" style="max-width:140px;text-transform:uppercase;font-family:monospace;" />
                             </div>
                             <div id="form-color-hex-error" class="invalid-feedback d-block" style="display:none;"></div>
                             <small class="text-muted d-block mt-1">
-                                Referencia visual del color (no es exacto al hilo/tela). Elegí con la paleta o escribí el HEX.
+                                Referencia visual del color (no es exacto al hilo/tela). Elige con la paleta o escribe el HEX.
                             </small>
                         </div>
                     </div>

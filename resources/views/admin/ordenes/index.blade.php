@@ -43,6 +43,9 @@
                             <button type="button" class="btn btn-success add-btn" id="create-btn">
                                 <i class="ri-add-line align-bottom me-1"></i> Nueva Orden
                             </button>
+                            <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#pdfExportModal">
+                                <i class="ri-file-pdf-fill align-bottom me-1"></i> Exportar PDF
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -133,6 +136,55 @@
     @include('admin.ordenes.modals.insumo_add')
     @include('admin.ordenes.modals.view')
     @include('admin.ordenes.modals.avance')
+    @include('admin.ordenes.modals.subordenes')
+
+    {{-- Modal: Exportar PDF --}}
+    <div class="modal fade atlantico-modal" id="pdfExportModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" style="max-width: 380px;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="ri-file-pdf-line me-2"></i>Exportar PDF</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <p class="text-muted small mb-3">Filtra qué órdenes incluir en el reporte.</p>
+                    <div class="mb-0">
+                        <label class="form-label fw-semibold" for="pdf-filter-estado">Estado</label>
+                        <select class="form-select" id="pdf-filter-estado">
+                            <option value="">Todos los estados</option>
+                            <option value="Pendiente">Pendiente</option>
+                            <option value="En Proceso">En Proceso</option>
+                            <option value="Finalizado">Finalizado</option>
+                            <option value="Cancelado">Cancelado</option>
+                        </select>
+                    </div>
+                    <div class="row g-2 mt-3">
+                        <div class="col-6">
+                            <label class="form-label fw-semibold" for="pdf-fecha-desde">Fecha est. desde</label>
+                            <input type="date" class="form-control" id="pdf-fecha-desde">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label fw-semibold" for="pdf-fecha-hasta">Fecha est. hasta</label>
+                            <input type="date" class="form-control" id="pdf-fecha-hasta">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light border-0">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">
+                        <i class="ri-close-line me-1"></i>Cancelar
+                    </button>
+                    <button type="button" class="btn btn-danger" id="btn-generar-pdf">
+                        <i class="ri-file-pdf-fill me-1"></i>Generar PDF
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Empleados de Producción asignables a las sub-órdenes.
+        window.OP_EMPLEADOS = @json($empleados);
+    </script>
 @endsection
 
 @push('scripts')
@@ -152,4 +204,23 @@
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
     @include('admin.ordenes.scripts.main')
+    @include('admin.ordenes.scripts.subordenes')
+    <script>
+        // Exportar PDF — Órdenes de Producción
+        $('#btn-generar-pdf').on('click', function () {
+            var baseUrl = '{{ route('ordenes.reporte.pdf') }}';
+            var params = [];
+            var estado = $('#pdf-filter-estado').val();
+            var fdesde = $('#pdf-fecha-desde').val();
+            var fhasta = $('#pdf-fecha-hasta').val();
+            if (estado) params.push('estado=' + encodeURIComponent(estado));
+            if (fdesde) params.push('fecha_desde=' + encodeURIComponent(fdesde));
+            if (fhasta) params.push('fecha_hasta=' + encodeURIComponent(fhasta));
+            window.open(baseUrl + (params.length ? '?' + params.join('&') : ''), '_blank');
+            bootstrap.Modal.getInstance(document.getElementById('pdfExportModal'))?.hide();
+        });
+        $('#pdfExportModal').on('show.bs.modal', function () {
+            $('#pdf-filter-estado, #pdf-fecha-desde, #pdf-fecha-hasta').val('');
+        });
+    </script>
 @endpush
