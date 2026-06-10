@@ -151,6 +151,7 @@ class CompraController extends Controller
         }
 
         $compra->load(['detalles.insumo', 'proveedor.persona']);
+        $compra->proveedor?->loadCount('compras')->loadMax('compras', 'fecha_compra');
 
         return response()->json([
             'id'                => $compra->id,
@@ -165,8 +166,8 @@ class CompraController extends Controller
                 'tel'    => $compra->proveedor?->telefono_unificado ?? '',
                 'email'  => $compra->proveedor?->email_unificado ?? '',
                 'tipo'   => $compra->proveedor?->tipo_proveedor ?? '',
-                'compras' => 0,
-                'ultima'  => null,
+                'compras' => $compra->proveedor?->compras_count ?? 0,
+                'ultima'  => $compra->proveedor?->compras_max_fecha_compra,
             ],
             'items'             => $compra->detalles->map(fn($d) => [
                 'insumo_id'      => $d->insumo_id,
@@ -177,13 +178,6 @@ class CompraController extends Controller
                 'subtotal'       => $d->subtotal,
             ]),
         ]);
-    }
-
-    public function show(Compra $compra)
-    {
-        $compra->load(['proveedor.persona', 'detalles.insumo', 'registradoPor']);
-
-        return view('admin.compras.show', compact('compra'));
     }
 
     public function getDetalle(Compra $compra)
