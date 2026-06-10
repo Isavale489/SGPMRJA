@@ -4071,6 +4071,19 @@
                 });
             }
 
+            // Chip seleccionable (radio oculto + label estilizada con check animado)
+            function vsChipHtml(opts) {
+                return '' +
+                    '<input type="radio" class="btn-check ' + opts.radioClass + '" name="' + opts.name + '" ' +
+                        'id="' + opts.id + '" value="' + opts.value + '"' + (opts.data || '') +
+                        (opts.checked ? ' checked' : '') + '>' +
+                    '<label class="vs-chip" for="' + opts.id + '">' +
+                        '<i class="ri-check-line vs-chip-check"></i>' +
+                        '<span>' + escapeForHtml(opts.label) + '</span>' +
+                        (opts.code ? '<span class="vs-chip-code">' + escapeForHtml(opts.code) + '</span>' : '') +
+                    '</label>';
+            }
+
             function vsRenderTelas() {
                 var telas = telasDelTipo();
                 var $cont = $('#vs-tela-options');
@@ -4080,14 +4093,12 @@
                 }
                 $('#vs-tela-section').show();
                 $cont.html(telas.map(function (t) {
-                    var checked = vsState.telaId == t.id;
-                    return '' +
-                        '<input type="radio" class="btn-check vs-tela-radio" name="vs-tela" ' +
-                            'id="vs-tela-' + t.id + '" value="' + t.id + '"' + (checked ? ' checked' : '') + '>' +
-                        '<label class="btn btn-outline-primary btn-sm" for="vs-tela-' + t.id + '">' +
-                            escapeForHtml(t.nombre) +
-                            (t.codigo ? ' <small class="text-muted">' + escapeForHtml(t.codigo) + '</small>' : '') +
-                        '</label>';
+                    return vsChipHtml({
+                        radioClass: 'vs-tela-radio', name: 'vs-tela',
+                        id: 'vs-tela-' + t.id, value: t.id,
+                        checked: vsState.telaId == t.id,
+                        label: t.nombre, code: t.codigo || ''
+                    });
                 }).join(''));
             }
 
@@ -4095,33 +4106,71 @@
                 var $cont = $('#vs-atributos-section');
                 if (!vsState.tipo || !vsState.tipo.atributos || !vsState.tipo.atributos.length) {
                     $cont.html('<p class="text-muted small mb-0">Este tipo no tiene atributos asociados.</p>');
+                    vsRefrescarUI();
                     return;
                 }
                 var html = vsState.tipo.atributos.map(function (atr) {
                     if (!atr.valores || !atr.valores.length) {
-                        return '<div class="mb-3"><label class="form-label small fw-semibold mb-2">' +
-                            escapeForHtml(atr.nombre) + '</label>' +
+                        return '<div class="vs-section"><div class="vs-section-head">' +
+                            '<span class="vs-section-title">' + escapeForHtml(atr.nombre) + '</span></div>' +
                             '<p class="text-muted small fst-italic mb-0">Sin valores definidos.</p></div>';
                     }
                     var seleccionado = vsState.valoresPorAtributo[atr.id];
                     var chips = atr.valores.map(function (v) {
-                        var checked = seleccionado == v.id;
-                        return '' +
-                            '<input type="radio" class="btn-check vs-atributo-radio" name="vs-atr-' + atr.id + '" ' +
-                                'id="vs-val-' + v.id + '" value="' + v.id + '" data-atr-id="' + atr.id + '"' +
-                                (checked ? ' checked' : '') + '>' +
-                            '<label class="btn btn-outline-primary btn-sm" for="vs-val-' + v.id + '">' +
-                                escapeForHtml(v.nombre) +
-                            '</label>';
+                        return vsChipHtml({
+                            radioClass: 'vs-atributo-radio', name: 'vs-atr-' + atr.id,
+                            id: 'vs-val-' + v.id, value: v.id,
+                            data: ' data-atr-id="' + atr.id + '"',
+                            checked: seleccionado == v.id,
+                            label: v.nombre, code: ''
+                        });
                     }).join('');
-                    return '<div class="mb-3">' +
-                        '<label class="form-label small fw-semibold mb-2">' +
-                            escapeForHtml(atr.nombre) +
-                        '</label>' +
-                        '<div class="d-flex flex-wrap gap-2">' + chips + '</div>' +
+                    return '<div class="vs-section" data-vs-atr="' + atr.id + '">' +
+                        '<div class="vs-section-head">' +
+                            '<span class="vs-section-status" id="vs-status-atr-' + atr.id + '"><i class="ri-check-line"></i></span>' +
+                            '<span class="vs-section-title">' + escapeForHtml(atr.nombre) + '</span>' +
+                            '<span class="vs-section-pick" id="vs-pick-atr-' + atr.id + '"></span>' +
+                        '</div>' +
+                        '<div class="vs-chip-group">' + chips + '</div>' +
                     '</div>';
                 }).join('');
                 $cont.html(html);
+                vsRefrescarUI();
+            }
+
+            // Estado vivo del selector: marca secciones completas (check verde +
+            // valor elegido en la cabecera) y actualiza el contador de progreso.
+            function vsRefrescarUI() {
+                var total = 0, hechos = 0;
+                var telas = telasDelTipo();
+
+                if (telas.length) {
+                    total++;
+                    var tela = telas.find(function (t) { return t.id == vsState.telaId; });
+                    var done = !!tela;
+                    if (done) hechos++;
+                    $('#vs-tela-section').toggleClass('is-done', done);
+                    $('#vs-pick-tela').text(done ? tela.nombre : '');
+                }
+
+                ((vsState.tipo && vsState.tipo.atributos) || []).forEach(function (atr) {
+                    if (!atr.valores || !atr.valores.length) return;
+                    total++;
+                    var vid = vsState.valoresPorAtributo[atr.id];
+                    var val = (atr.valores || []).find(function (v) { return v.id == vid; });
+                    var done = !!val;
+                    if (done) hechos++;
+                    $('[data-vs-atr="' + atr.id + '"]').toggleClass('is-done', done);
+                    $('#vs-pick-atr-' + atr.id).text(done ? val.nombre : '');
+                });
+
+                var $prog = $('#vs-progress');
+                if (!total) { $prog.attr('hidden', true); return; }
+                $prog.removeAttr('hidden')
+                    .toggleClass('is-complete', hechos >= total)
+                    .html(hechos >= total
+                        ? '<i class="ri-checkbox-circle-fill me-1"></i>Combinación completa'
+                        : '<i class="ri-focus-2-line me-1"></i>' + hechos + ' de ' + total + ' elegidos');
             }
 
             function vsResolverVariante() {
@@ -4275,6 +4324,7 @@
 
                 $('#vs-tipo-nombre').text(vsState.productos[0]?.tipo_producto?.nombre || 'Variante');
                 $('#vs-result-found, #vs-result-missing').hide();
+                $('#vs-progress').attr('hidden', true);
                 $('#vs-confirm').prop('disabled', true).removeData('producto-id');
 
                 // Cargar info del tipo (atributos con sus valores)
@@ -4361,6 +4411,7 @@
                                 vsState.tipo.telas.push(resp.tela);
                                 vsState.telaId = resp.tela.id;      // auto-seleccionar la nueva tela
                                 vsRenderTelas();
+                                vsRefrescarUI();
                                 vsResolverVariante();
                             }
                             Swal.fire({ icon: 'success', title: 'Tela creada', text: resp.message, showConfirmButton: false, timer: 1600 });
@@ -4382,11 +4433,13 @@
             // Listeners del selector
             $(document).on('change', '.vs-tela-radio', function () {
                 vsState.telaId = parseInt(this.value);
+                vsRefrescarUI();
                 vsResolverVariante();
             });
             $(document).on('change', '.vs-atributo-radio', function () {
                 var atrId = $(this).data('atr-id');
                 vsState.valoresPorAtributo[atrId] = parseInt(this.value);
+                vsRefrescarUI();
                 vsResolverVariante();
             });
             $(document).on('click', '#vs-confirm', function () {
