@@ -4,7 +4,7 @@
             <div class="col-sm-6">
                 <script>
                     document.write(new Date().getFullYear())
-                </script> © Grupo Textil 536 Informatica
+                </script> © Grupo Textil 636 Informatica
             </div>
             <div class="col-sm-6">
                 <div class="text-sm-end d-none d-sm-block">

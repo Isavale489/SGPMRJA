@@ -5481,6 +5481,20 @@ header#page-topbar,
 #ordenes-table td:last-child { overflow: visible; text-overflow: clip; text-align: center; }
 
 /* ============================================================
+   MÓDULO COMPRAS — Anchos de columna
+   Nro. · Proveedor · N° Factura · Fecha · Total · Estado · Acciones
+   ============================================================ */
+#compras-table th:nth-child(1) { width: 5%;  text-align: center; } /* Nro. */
+#compras-table th:nth-child(2) { width: 25%; }                     /* Proveedor */
+#compras-table th:nth-child(3) { width: 13%; }                     /* N° Factura */
+#compras-table th:nth-child(4) { width: 12%; }                     /* Fecha */
+#compras-table th:nth-child(5) { width: 14%; text-align: right;  } /* Total */
+#compras-table th:nth-child(6) { width: 11%; text-align: center; } /* Estado */
+#compras-table th:nth-child(7) { width: 20%; text-align: center; } /* Acciones */
+
+#compras-table td:last-child { overflow: visible; text-overflow: clip; text-align: center; }
+
+/* ============================================================
    MÓDULO ÓRDENES — WIZARD: PASO ASIGNACIÓN (#showModal)
    ============================================================ */
 

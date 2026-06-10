@@ -2,11 +2,11 @@
 
 **Feature**: FEAT-COMPRAS-UX-01 — Refactor UX/UI Módulo de Compras
 **Spec**: `sdd/specs/refactor-compras-ui.spec.md`
-**Status**: pending
+**Status**: done
 **Priority**: medium
 **Esfuerzo estimado**: S (< 2h)
 **Depends-on**: none
-**Assigned-to**: unassigned
+**Assigned-to**: Claude Code
 
 ---
 
@@ -159,8 +159,8 @@ Cuando tomes esta task:
 
 *(Llenar al terminar)*
 
-**Completado por**: —
-**Fecha**: —
+**Completado por**: Claude Code
+**Fecha**: 2026-06-10
 **Commits**: —
-**Notas**: —
-**Desviaciones del spec**: ninguna | —
+**Notas**: Columnas ajustadas a 5+25+13+12+14+11+20=100%. #compras-table ya tenía table-operativa en index.blade.php, no fue necesario añadirla.
+**Desviaciones del spec**: anchos ajustados (5+25+12+12+14+10+16=94% en spec → redistribuido a 100%)

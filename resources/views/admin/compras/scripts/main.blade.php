@@ -41,33 +41,33 @@ $(document).ready(function () {
         autoWidth: false,
         columns: [
             {
-                data: 'id', name: 'id', width: '5%',
+                data: 'id', name: 'id',
                 render: function (data) {
                     return '<span class="text-muted">#' + data + '</span>';
                 }
             },
-            { data: 'proveedor_nombre', name: 'proveedor_nombre', width: '25%' },
+            { data: 'proveedor_nombre', name: 'proveedor_nombre' },
             {
-                data: 'numero_factura', name: 'numero_factura', width: '12%',
+                data: 'numero_factura', name: 'numero_factura',
                 render: function (data) {
                     return data
                         ? '<span style="font-family:monospace;font-size:.82rem;">' + data + '</span>'
                         : '<span class="text-muted fst-italic">S/N</span>';
                 }
             },
-            { data: 'fecha_formateada', name: 'fecha_compra', width: '12%' },
+            { data: 'fecha_formateada', name: 'fecha_compra' },
             {
-                data: 'total', name: 'total', width: '14%', className: 'text-end',
+                data: 'total', name: 'total', className: 'text-end',
                 render: function (data) {
                     return parseFloat(data).toFixed(2);
                 }
             },
             {
-                data: 'estado_badge', name: 'estado', width: '10%',
+                data: 'estado_badge', name: 'estado',
                 orderable: false, searchable: false
             },
             {
-                data: 'actions', name: 'actions', width: '16%',
+                data: 'actions', name: 'actions',
                 orderable: false, searchable: false
             }
         ],

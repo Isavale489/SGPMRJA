@@ -2,11 +2,11 @@
 
 **Feature**: FEAT-COMPRAS-UX-01 — Refactor UX/UI Módulo de Compras
 **Spec**: `sdd/specs/refactor-compras-ui.spec.md`
-**Status**: pending
+**Status**: done
 **Priority**: high
 **Esfuerzo estimado**: M (2-4h)
 **Depends-on**: TASK-030
-**Assigned-to**: unassigned
+**Assigned-to**: Claude Code
 
 ---
 
@@ -216,8 +216,8 @@ Cuando tomes esta task:
 
 *(Llenar al terminar)*
 
-**Completado por**: —
-**Fecha**: —
+**Completado por**: Claude Code
+**Fecha**: 2026-06-10
 **Commits**: —
-**Notas**: —
-**Desviaciones del spec**: ninguna | —
+**Notas**: cirForm — reemplazado el bloque flag/is-invalid por validarCirForm() + blur/change handlers + hidden.bs.modal cleanup. cprForm — añadido validarCprForm() con lógica condicional por tipo (jurídico/natural), blur handlers que guardan el tipo activo antes de validar, y hidden.bs.modal cleanup. Tres edits quirúrgicos al mismo archivo scripts/create.blade.php.
+**Desviaciones del spec**: ninguna

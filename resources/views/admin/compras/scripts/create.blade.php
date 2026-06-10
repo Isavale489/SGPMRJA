@@ -293,13 +293,17 @@ $(document).ready(function () {
         function validateStep(n) {
             if (n === 1) {
                 if (!$('#c-proveedor').val()) {
-                    Swal.fire({ title: 'Campo requerido', text: 'Seleccione un proveedor.', icon: 'warning', confirmButtonText: 'Entendido' });
+                    marcarInvalido($('#c-proveedor'), 'Seleccione un proveedor.');
+                    $('#c-proveedor').parent().find('.select2-selection').trigger('focus');
                     return false;
                 }
+                marcarValido($('#c-proveedor'));
                 if (!$('#c-fecha').val()) {
-                    Swal.fire({ title: 'Campo requerido', text: 'Ingrese la fecha de compra.', icon: 'warning', confirmButtonText: 'Entendido' });
+                    marcarInvalido($('#c-fecha'), 'Ingrese la fecha de compra.');
+                    $('#c-fecha').trigger('focus');
                     return false;
                 }
+                marcarValido($('#c-fecha'));
                 return true;
             }
             if (n === 2) {
@@ -313,34 +317,40 @@ $(document).ready(function () {
             var items     = [];
             var insumoIds = [];
             var err       = null;
+            var $errField = null;
+            var errMsg    = null;
 
             $('#c-items-tbody tr').each(function () {
-                var insumoId = $(this).find('.c-insumo').val();
-                var cantidad = $(this).find('.c-cantidad').val();
-                var costo    = $(this).find('.c-costo').val();
+                if (err) return false;
+                var $tr      = $(this);
+                var insumoId = $tr.find('.c-insumo').val();
+                var cantidad = $tr.find('.c-cantidad').val();
+                var costo    = $tr.find('.c-costo').val();
 
                 if (!insumoId || !cantidad || parseFloat(cantidad) <= 0 || !costo || parseFloat(costo) <= 0) {
                     err = 'incompleto';
+                    if (!insumoId)                                      { $errField = $tr.find('.c-insumo');   errMsg = 'Seleccione un insumo para esta fila.'; }
+                    else if (!cantidad || parseFloat(cantidad) <= 0)    { $errField = $tr.find('.c-cantidad'); errMsg = 'Ingrese una cantidad válida (mayor a 0).'; }
+                    else                                                 { $errField = $tr.find('.c-costo');    errMsg = 'Ingrese un costo válido (mayor a 0).'; }
                     return false;
                 }
                 if (insumoIds.indexOf(insumoId) !== -1) {
                     err = 'dup';
+                    $errField = $tr.find('.c-insumo');
+                    errMsg = 'Este insumo ya está en la lista. Cada insumo puede aparecer una sola vez.';
                     return false;
                 }
                 insumoIds.push(insumoId);
                 items.push({ insumo_id: insumoId, cantidad: cantidad, costo_unitario: costo });
             });
 
-            if (items.length === 0) {
+            if (items.length === 0 && !err) {
                 Swal.fire({ title: 'Sin ítems', text: 'Agregue al menos un insumo a la compra.', icon: 'warning', confirmButtonText: 'Entendido' });
                 return false;
             }
-            if (err === 'dup') {
-                Swal.fire({ title: 'Insumo duplicado', text: 'Hay insumos repetidos en la lista. Cada insumo puede aparecer una sola vez.', icon: 'warning', confirmButtonText: 'Entendido' });
-                return false;
-            }
-            if (err === 'incompleto') {
-                Swal.fire({ title: 'Datos incompletos', text: 'Complete todos los campos de cada ítem (insumo, cantidad y costo).', icon: 'warning', confirmButtonText: 'Entendido' });
+            if (err) {
+                marcarInvalido($errField, errMsg);
+                $errField.trigger('focus');
                 return false;
             }
             return items;
@@ -358,6 +368,17 @@ $(document).ready(function () {
             if (target < currentStep) { showStep(target); return; }
             for (var s = currentStep; s < target; s++) if (!validateStep(s)) return;
             showStep(target);
+        });
+
+        // ── Feedback en tiempo real — paso 1 ────────────────────────────────
+        $('#c-proveedor').on('select2:close', function () {
+            if (!$(this).val()) marcarInvalido($(this), 'Seleccione un proveedor.');
+            else marcarValido($(this));
+        });
+
+        $('#c-fecha').on('blur', function () {
+            if (!$(this).val()) marcarInvalido($(this), 'Ingrese la fecha de compra.');
+            else marcarValido($(this));
         });
 
         // ════════════════════════════════════════════════════════════════════
@@ -667,6 +688,71 @@ $(document).ready(function () {
         }
         $('#cpr-tipo-proveedor-field').on('change', cprToggleCampos);
 
+        function validarCprForm() {
+            var valido = true;
+            var tipo = $('#cpr-tipo-proveedor-field').val();
+            if (!tipo) {
+                marcarInvalido($('#cpr-tipo-proveedor-field'), 'Seleccione el tipo de proveedor.'); valido = false;
+            } else { marcarValido($('#cpr-tipo-proveedor-field')); }
+            if (tipo === 'juridico') {
+                if (!$('#cpr-razon-social-field').val().trim()) {
+                    marcarInvalido($('#cpr-razon-social-field'), 'La razón social es requerida.'); valido = false;
+                } else { marcarValido($('#cpr-razon-social-field')); }
+                if (!$('#cpr-telefono-jur-number-field').val().trim()) {
+                    marcarInvalido($('#cpr-telefono-jur-number-field'), 'El teléfono es requerido.'); valido = false;
+                } else { marcarValido($('#cpr-telefono-jur-number-field')); }
+            } else if (tipo === 'natural') {
+                if (!$('#cpr-nombre-field').val().trim()) {
+                    marcarInvalido($('#cpr-nombre-field'), 'El nombre es requerido.'); valido = false;
+                } else { marcarValido($('#cpr-nombre-field')); }
+                if (!$('#cpr-apellido-field').val().trim()) {
+                    marcarInvalido($('#cpr-apellido-field'), 'El apellido es requerido.'); valido = false;
+                } else { marcarValido($('#cpr-apellido-field')); }
+                if (!$('#cpr-telefono-nat-number-field').val().trim()) {
+                    marcarInvalido($('#cpr-telefono-nat-number-field'), 'El teléfono es requerido.'); valido = false;
+                } else { marcarValido($('#cpr-telefono-nat-number-field')); }
+            }
+            return valido;
+        }
+
+        // Blur/change en tiempo real — cprForm (solo valida campos del tipo activo)
+        $('#cpr-tipo-proveedor-field').on('change', function () {
+            if (!$(this).val()) marcarInvalido($(this), 'Seleccione el tipo de proveedor.');
+            else marcarValido($(this));
+        });
+        $('#cpr-razon-social-field').on('blur', function () {
+            if ($('#cpr-tipo-proveedor-field').val() !== 'juridico') return;
+            if (!$(this).val().trim()) marcarInvalido($(this), 'La razón social es requerida.');
+            else marcarValido($(this));
+        });
+        $('#cpr-telefono-jur-number-field').on('blur', function () {
+            if ($('#cpr-tipo-proveedor-field').val() !== 'juridico') return;
+            if (!$(this).val().trim()) marcarInvalido($(this), 'El teléfono es requerido.');
+            else marcarValido($(this));
+        });
+        $('#cpr-nombre-field').on('blur', function () {
+            if ($('#cpr-tipo-proveedor-field').val() !== 'natural') return;
+            if (!$(this).val().trim()) marcarInvalido($(this), 'El nombre es requerido.');
+            else marcarValido($(this));
+        });
+        $('#cpr-apellido-field').on('blur', function () {
+            if ($('#cpr-tipo-proveedor-field').val() !== 'natural') return;
+            if (!$(this).val().trim()) marcarInvalido($(this), 'El apellido es requerido.');
+            else marcarValido($(this));
+        });
+        $('#cpr-telefono-nat-number-field').on('blur', function () {
+            if ($('#cpr-tipo-proveedor-field').val() !== 'natural') return;
+            if (!$(this).val().trim()) marcarInvalido($(this), 'El teléfono es requerido.');
+            else marcarValido($(this));
+        });
+
+        $('#crearProveedorRapidoModal').on('hidden.bs.modal', function () {
+            $('#cpr-tipo-proveedor-field, #cpr-razon-social-field, #cpr-telefono-jur-number-field, ' +
+              '#cpr-nombre-field, #cpr-apellido-field, #cpr-telefono-nat-number-field').each(function () {
+                limpiarValidacion($(this));
+            });
+        });
+
         // Abrir el mini-modal, prellenando el documento escrito en el buscador
         $('#c-prov-create-btn').on('click', function () {
             $('#cprForm')[0].reset();
@@ -691,6 +777,7 @@ $(document).ready(function () {
 
         $('#cprForm').on('submit', function (e) {
             e.preventDefault();
+            if (!validarCprForm()) return;
             var tipo = $('#cpr-tipo-proveedor-field').val();
             var payload = { _token: CSRF, tipo_proveedor: tipo };
 
@@ -753,9 +840,16 @@ $(document).ready(function () {
         $(document).on('click', '.c-add-insumo-btn', function () {
             cirTargetSelect = $('#c-ins-' + $(this).data('row'));
             $('#cirForm')[0].reset();
-            $('#cir-nombre-field, #cir-codigo-field, #cir-tipo-field, #cir-unidad-field, #cir-costo-field')
-                .removeClass('is-invalid');
+            $('#cir-nombre-field, #cir-tipo-field, #cir-unidad-field, #cir-costo-field').each(function () {
+                limpiarValidacion($(this));
+            });
             $('#crearInsumoRapidoModal').modal('show');
+        });
+
+        $('#crearInsumoRapidoModal').on('hidden.bs.modal', function () {
+            $('#cir-nombre-field, #cir-tipo-field, #cir-unidad-field, #cir-costo-field').each(function () {
+                limpiarValidacion($(this));
+            });
         });
 
         // Código: solo MAYÚSCULAS y alfanumérico (text-uppercase es solo visual)
@@ -763,22 +857,53 @@ $(document).ready(function () {
             this.value = this.value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
         });
 
+        // Blur/change en tiempo real — cirForm
+        $('#cir-nombre-field').on('blur', function () {
+            if ($(this).val().trim().length < 3) marcarInvalido($(this), 'El nombre debe tener al menos 3 caracteres.');
+            else marcarValido($(this));
+        });
+        $('#cir-tipo-field').on('change', function () {
+            if (!$(this).val()) marcarInvalido($(this), 'Seleccione el tipo de insumo.');
+            else marcarValido($(this));
+        });
+        $('#cir-unidad-field').on('change', function () {
+            if (!$(this).val()) marcarInvalido($(this), 'Seleccione la unidad de medida.');
+            else marcarValido($(this));
+        });
+        $('#cir-costo-field').on('blur', function () {
+            var v = parseFloat($(this).val());
+            if (isNaN(v) || v <= 0) marcarInvalido($(this), 'Ingrese un costo válido (mayor a 0).');
+            else marcarValido($(this));
+        });
+
+        function validarCirForm() {
+            var valido = true;
+            if ($('#cir-nombre-field').val().trim().length < 3) {
+                marcarInvalido($('#cir-nombre-field'), 'El nombre debe tener al menos 3 caracteres.'); valido = false;
+            } else { marcarValido($('#cir-nombre-field')); }
+            if (!$('#cir-tipo-field').val()) {
+                marcarInvalido($('#cir-tipo-field'), 'Seleccione el tipo de insumo.'); valido = false;
+            } else { marcarValido($('#cir-tipo-field')); }
+            if (!$('#cir-unidad-field').val()) {
+                marcarInvalido($('#cir-unidad-field'), 'Seleccione la unidad de medida.'); valido = false;
+            } else { marcarValido($('#cir-unidad-field')); }
+            var costo = parseFloat($('#cir-costo-field').val());
+            if (isNaN(costo) || costo <= 0) {
+                marcarInvalido($('#cir-costo-field'), 'Ingrese un costo válido (mayor a 0).'); valido = false;
+            } else { marcarValido($('#cir-costo-field')); }
+            return valido;
+        }
+
         $('#cirForm').on('submit', function (e) {
             e.preventDefault();
+
+            if (!validarCirForm()) return;
 
             var nombre = $('#cir-nombre-field').val().trim();
             var codigo = $('#cir-codigo-field').val().trim();
             var tipo   = $('#cir-tipo-field').val();
             var unidad = $('#cir-unidad-field').val();
             var costo  = parseFloat($('#cir-costo-field').val());
-
-            var ok = true;
-            function flag(sel, bad) { $(sel).toggleClass('is-invalid', bad); if (bad) ok = false; }
-            flag('#cir-nombre-field', nombre.length < 3);
-            flag('#cir-tipo-field', !tipo);
-            flag('#cir-unidad-field', !unidad);
-            flag('#cir-costo-field', isNaN(costo) || costo <= 0);
-            if (!ok) return;
 
             var payload = {
                 _token:           CSRF,

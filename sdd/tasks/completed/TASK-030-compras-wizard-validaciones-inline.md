@@ -2,11 +2,11 @@
 
 **Feature**: FEAT-COMPRAS-UX-01 — Refactor UX/UI Módulo de Compras
 **Spec**: `sdd/specs/refactor-compras-ui.spec.md`
-**Status**: pending
+**Status**: done
 **Priority**: high
 **Esfuerzo estimado**: M (2-4h)
 **Depends-on**: none
-**Assigned-to**: unassigned
+**Assigned-to**: Claude Code
 
 ---
 
@@ -176,8 +176,8 @@ Cuando tomes esta task:
 
 *(Llenar al terminar)*
 
-**Completado por**: —
-**Fecha**: —
+**Completado por**: Claude Code
+**Fecha**: 2026-06-10
 **Commits**: —
-**Notas**: —
-**Desviaciones del spec**: ninguna | —
+**Notas**: collectItems refactorizado para trackear la primera fila con error y llamar marcarInvalido en el campo específico (insumo/cantidad/costo). Swal conservado solo para "Sin ítems" (tabla vacía). Blur handler en #c-fecha y select2:close en #c-proveedor añadidos.
+**Desviaciones del spec**: ninguna
