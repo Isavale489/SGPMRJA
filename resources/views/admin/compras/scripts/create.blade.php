@@ -3,6 +3,7 @@ $(document).ready(function () {
 
     var rowCount = 0;
     var INSUMOS  = window.INSUMOS_DATA || [];
+    var IVA_TASA = parseFloat(window.IVA_TASA) || 16;
 
     // (El proveedor ahora se elige por búsqueda de documento — ver IIFE abajo)
 
@@ -15,9 +16,13 @@ $(document).ready(function () {
         var html = '<option value="">Seleccione insumo...</option>';
         INSUMOS.forEach(function (ins) {
             var sel = (ins.id == selectedId) ? ' selected' : '';
+            // aplica_iva puede venir como 1/0/true/false desde el backend
+            var grav = (ins.aplica_iva === undefined || ins.aplica_iva === null)
+                ? 1 : (Number(ins.aplica_iva) ? 1 : 0);
             html += '<option value="' + ins.id + '"'
                 + ' data-costo="' + ins.costo_unitario + '"'
                 + ' data-unidad="' + ins.unidad_medida + '"'
+                + ' data-iva="' + grav + '"'
                 + sel + '>'
                 + ins.nombre + ' (' + ins.tipo + ')'
                 + '</option>';
@@ -35,20 +40,28 @@ $(document).ready(function () {
     }
 
     function recalcular() {
-        var subtotal = 0;
+        var subtotal = 0, baseGravada = 0;
         $('#c-items-tbody tr').each(function () {
             var cantidad = parseFloat($(this).find('.c-cantidad').val()) || 0;
             var costo    = parseFloat($(this).find('.c-costo').val())    || 0;
             var sub      = cantidad * costo;
             $(this).find('.c-subtotal').text(fmt(sub));
             subtotal += sub;
+            if ($(this).find('.c-iva-check').is(':checked')) baseGravada += sub;
         });
-        var ivaPct = parseFloat($('#c-iva').val()) || 0;
-        var iva    = subtotal * ivaPct / 100;
+        var iva    = baseGravada * IVA_TASA / 100;
+        var exento = subtotal - baseGravada;
         $('#c-resumen-subtotal').text(fmt(subtotal));
         $('#c-resumen-iva').text(fmt(iva));
         $('#c-resumen-total').text(fmt(subtotal + iva));
-        $('#c-resumen-iva-pct').text(ivaPct);
+        $('#c-resumen-iva-pct').text(IVA_TASA);
+        // Base exenta: solo se muestra si hay líneas exentas
+        if (exento > 0.0001) {
+            $('#c-resumen-exento').text(fmt(exento));
+            $('#c-resumen-exento-wrap').removeAttr('hidden');
+        } else {
+            $('#c-resumen-exento-wrap').attr('hidden', true);
+        }
         // Pie en vivo del paso 2
         $('#c-items-footer-subtotal').text(fmt(subtotal));
     }
@@ -101,6 +114,12 @@ $(document).ready(function () {
             +   '<input type="number" class="form-control form-control-sm c-costo text-end"'
             +   ' min="0.01" step="0.01" placeholder="0.00" style="max-width:105px;margin:0 auto;">'
             + '</td>'
+            + '<td class="text-center">'
+            +   '<div class="form-check d-inline-block m-0">'
+            +     '<input class="form-check-input c-iva-check" type="checkbox" checked'
+            +     ' title="Gravable con IVA — destildá si es exento">'
+            +   '</div>'
+            + '</td>'
             + '<td class="text-end fw-semibold c-subtotal pe-2">0.00</td>'
             + '<td class="text-center">'
             +   '<button type="button" class="btn btn-sm btn-soft-danger py-0 px-1 c-remove-btn"'
@@ -118,6 +137,10 @@ $(document).ready(function () {
             var $tr   = $(this).closest('tr');
             if (costo) { $tr.find('.c-costo').val(fmt(costo)); }
             $tr.find('.c-unit-addon').text(unid ? String(unid).substring(0, 4) : '—');
+            // Heredar gravable/exento del insumo elegido (data-iva = 1/0)
+            if (opt.val()) {
+                $tr.find('.c-iva-check').prop('checked', Number(opt.data('iva')) !== 0);
+            }
             recalcular();
         }).trigger('focus');
     }
@@ -134,7 +157,7 @@ $(document).ready(function () {
 
     // ── Recalcular al editar ────────────────────────────────────────────────
     $(document).on('input', '.c-cantidad, .c-costo', recalcular);
-    $('#c-iva').on('input', recalcular);
+    $(document).on('change', '.c-iva-check', recalcular);
 
     // ══════════════════════════════════════════════════════════════════════
     //  WIZARD — navegación 3 pasos (scaffold .wiz-*)
@@ -318,6 +341,7 @@ $(document).ready(function () {
                 var insumoId = $(this).find('.c-insumo').val();
                 var cantidad = $(this).find('.c-cantidad').val();
                 var costo    = $(this).find('.c-costo').val();
+                var aplicaIva = $(this).find('.c-iva-check').is(':checked');
 
                 if (!insumoId || !cantidad || parseFloat(cantidad) <= 0 || !costo || parseFloat(costo) <= 0) {
                     err = 'incompleto';
@@ -328,7 +352,7 @@ $(document).ready(function () {
                     return false;
                 }
                 insumoIds.push(insumoId);
-                items.push({ insumo_id: insumoId, cantidad: cantidad, costo_unitario: costo });
+                items.push({ insumo_id: insumoId, cantidad: cantidad, costo_unitario: costo, aplica_iva: aplicaIva });
             });
 
             if (items.length === 0) {
@@ -507,7 +531,6 @@ $(document).ready(function () {
             $('#c-prov-doc-prefix').val('J-');
             $('#c-prov-autocomplete').empty().hide();
             $('#c-fecha').val('{{ date("Y-m-d") }}');
-            $('#c-iva').val(16);
             $('#c-items-tbody').empty();
             updateEmpty();
             recalcular();
@@ -528,7 +551,6 @@ $(document).ready(function () {
 
             $('#c-factura').val(data.numero_factura || '');
             $('#c-fecha').val(data.fecha_compra || '');
-            $('#c-iva').val(data.iva_porcentaje || 16);
             $('#c-observaciones').val(data.observaciones || '');
 
             $('#c-items-tbody').empty();
@@ -543,6 +565,8 @@ $(document).ready(function () {
                     $row.find('.c-unit-addon').text(unid ? String(unid).substring(0, 4) : '—');
                     $row.find('.c-cantidad').val(parseFloat(item.cantidad));
                     $row.find('.c-costo').val(parseFloat(item.costo_unitario).toFixed(2));
+                    // Restaurar el flag IVA guardado en la línea (no el del insumo)
+                    $row.find('.c-iva-check').prop('checked', item.aplica_iva !== false);
                 });
                 updateEmpty();
                 recalcular();
@@ -573,7 +597,6 @@ $(document).ready(function () {
                 proveedor_id:      $('#c-proveedor').val(),
                 numero_factura:    $('#c-factura').val() || null,
                 fecha_compra:      $('#c-fecha').val(),
-                iva_porcentaje:    $('#c-iva').val(),
                 observaciones:     $('#c-observaciones').val() || null,
                 items:             items
             };
@@ -786,6 +809,7 @@ $(document).ready(function () {
                 tipo:             tipo,
                 unidad_medida:    unidad,
                 costo_unitario:   costo,
+                aplica_iva:       $('#cir-aplica-iva-field').is(':checked') ? 1 : 0,
                 is_inventoriable: 1,
                 stock_actual:     0,
                 stock_minimo:     0,
@@ -811,7 +835,8 @@ $(document).ready(function () {
                             codigo:         ins.codigo,
                             tipo:           ins.tipo,
                             unidad_medida:  ins.unidad_medida,
-                            costo_unitario: ins.costo_unitario
+                            costo_unitario: ins.costo_unitario,
+                            aplica_iva:     ins.aplica_iva
                         });
                         rebuildAllInsumoSelects();
                         if (cirTargetSelect && cirTargetSelect.length) {

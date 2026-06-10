@@ -17,7 +17,8 @@ class CompraService
     public function registrar(array $data, int $userId): Compra
     {
         return DB::transaction(function () use ($data, $userId) {
-            [$subtotal, $iva, $total] = $this->calcularTotales($data['items'], $data['iva_porcentaje'] ?? 0);
+            $tasa = $this->tasaIva();
+            [$subtotal, $iva, $total] = $this->calcularTotales($data['items'], $tasa);
 
             $compra = Compra::create([
                 'proveedor_id'      => $data['proveedor_id'],
@@ -26,6 +27,7 @@ class CompraService
                 'fecha_compra'      => $data['fecha_compra'],
                 'subtotal'          => $subtotal,
                 'iva'               => $iva,
+                'iva_porcentaje'    => $tasa,
                 'total'             => $total,
                 'observaciones'     => $data['observaciones'] ?? null,
                 'estado'            => 'borrador',
@@ -48,7 +50,8 @@ class CompraService
         }
 
         DB::transaction(function () use ($compra, $data) {
-            [$subtotal, $iva, $total] = $this->calcularTotales($data['items'], $data['iva_porcentaje'] ?? 0);
+            $tasa = $this->tasaIva();
+            [$subtotal, $iva, $total] = $this->calcularTotales($data['items'], $tasa);
 
             $compra->update([
                 'proveedor_id'      => $data['proveedor_id'],
@@ -56,6 +59,7 @@ class CompraService
                 'fecha_compra'      => $data['fecha_compra'],
                 'subtotal'          => $subtotal,
                 'iva'               => $iva,
+                'iva_porcentaje'    => $tasa,
                 'total'             => $total,
                 'observaciones'     => $data['observaciones'] ?? null,
             ]);
@@ -78,7 +82,7 @@ class CompraService
             $compra->load('detalles');
 
             foreach ($compra->detalles as $detalle) {
-                $insumo        = Insumo::lockForUpdate()->findOrFail($detalle->insumo_id);
+                $insumo        = $this->insumoBloqueado($detalle->insumo_id);
                 $stockAnterior = (float) $insumo->stock_actual;
                 $stockNuevo    = $stockAnterior + (float) $detalle->cantidad;
 
@@ -112,12 +116,26 @@ class CompraService
         }
 
         DB::transaction(function () use ($compra, $userId) {
-            $compra->load('detalles');
+            $compra->load('detalles.insumo');
 
             foreach ($compra->detalles as $detalle) {
-                $insumo        = Insumo::lockForUpdate()->findOrFail($detalle->insumo_id);
+                $insumo        = $this->insumoBloqueado($detalle->insumo_id);
                 $stockAnterior = (float) $insumo->stock_actual;
-                $stockNuevo    = max(0, $stockAnterior - (float) $detalle->cantidad);
+                $cantidad      = (float) $detalle->cantidad;
+
+                // No se puede revertir mercancía que ya salió de inventario: si el
+                // stock actual no alcanza, bloqueamos en vez de clampar a 0 en silencio.
+                if ($stockAnterior < $cantidad) {
+                    throw new \RuntimeException(
+                        "No se puede anular: el insumo «{$insumo->nombre}» tiene "
+                        . rtrim(rtrim(number_format($stockAnterior, 2), '0'), '.') . ' en existencia, '
+                        . 'menos que las ' . rtrim(rtrim(number_format($cantidad, 2), '0'), '.')
+                        . ' unidades de esta compra. Parte del stock ya fue consumido; '
+                        . 'realizá un ajuste de inventario manual.'
+                    );
+                }
+
+                $stockNuevo = $stockAnterior - $cantidad;
 
                 $insumo->update(['stock_actual' => $stockNuevo]);
 
@@ -163,6 +181,7 @@ class CompraService
                 'fecha_compra'      => now()->toDateString(),
                 'subtotal'          => $compra->subtotal,
                 'iva'               => $compra->iva,
+                'iva_porcentaje'    => $compra->iva_porcentaje,
                 'total'             => $compra->total,
                 'observaciones'     => 'Clonada de Compra #' . $compra->id . ($compra->observaciones ? '. ' . $compra->observaciones : ''),
                 'estado'            => 'borrador',
@@ -174,6 +193,7 @@ class CompraService
                     'insumo_id'      => $detalle->insumo_id,
                     'cantidad'       => $detalle->cantidad,
                     'costo_unitario' => $detalle->costo_unitario,
+                    'aplica_iva'     => $detalle->aplica_iva,
                     'subtotal'       => $detalle->subtotal,
                 ]);
             }
@@ -202,11 +222,53 @@ class CompraService
 
     // ── Helpers privados ─────────────────────────────────────────────────────
 
-    private function calcularTotales(array $items, float $ivaPorcentaje): array
+    /**
+     * Recupera y bloquea (lockForUpdate) un insumo para mover su stock.
+     * Incluye soft-deleted para poder nombrar el insumo en el mensaje de error
+     * en vez de un 500 opaco si fue inhabilitado tras crear el borrador.
+     */
+    private function insumoBloqueado(int $insumoId): Insumo
     {
-        $subtotal = collect($items)->sum(fn($i) => $i['cantidad'] * $i['costo_unitario']);
-        $iva      = round($subtotal * ($ivaPorcentaje / 100), 2);
-        return [$subtotal, $iva, $subtotal + $iva];
+        $insumo = Insumo::withTrashed()->lockForUpdate()->find($insumoId);
+
+        if (!$insumo) {
+            throw new \RuntimeException('Uno de los insumos de la compra ya no existe en el sistema.');
+        }
+        if ($insumo->trashed()) {
+            throw new \RuntimeException("El insumo «{$insumo->nombre}» está inhabilitado. Habilítalo antes de procesar o anular esta compra.");
+        }
+
+        return $insumo;
+    }
+
+    /**
+     * Tasa de IVA general vigente (%). Centralizada en config/impuestos.php.
+     */
+    private function tasaIva(): float
+    {
+        return (float) config('impuestos.iva', 16);
+    }
+
+    /**
+     * Calcula totales con IVA por línea: solo las líneas gravables
+     * (aplica_iva = true) suman a la base sobre la que se aplica la tasa.
+     */
+    private function calcularTotales(array $items, float $tasaIva): array
+    {
+        $subtotal    = 0.0;
+        $baseGravada = 0.0;
+
+        foreach ($items as $item) {
+            $lineaSubtotal = (float) $item['cantidad'] * (float) $item['costo_unitario'];
+            $subtotal     += $lineaSubtotal;
+            if ($this->lineaGravada($item)) {
+                $baseGravada += $lineaSubtotal;
+            }
+        }
+
+        $iva = round($baseGravada * ($tasaIva / 100), 2);
+
+        return [round($subtotal, 2), $iva, round($subtotal + $iva, 2)];
     }
 
     private function sincronizarDetalles(Compra $compra, array $items): void
@@ -217,8 +279,18 @@ class CompraService
                 'insumo_id'      => $item['insumo_id'],
                 'cantidad'       => $item['cantidad'],
                 'costo_unitario' => $item['costo_unitario'],
+                'aplica_iva'     => $this->lineaGravada($item),
                 'subtotal'       => $item['cantidad'] * $item['costo_unitario'],
             ]);
         }
+    }
+
+    /**
+     * Una línea es gravable salvo que venga explícitamente marcada como exenta.
+     * Default true para mantener compatibilidad si el flag no se envía.
+     */
+    private function lineaGravada(array $item): bool
+    {
+        return filter_var($item['aplica_iva'] ?? true, FILTER_VALIDATE_BOOLEAN);
     }
 }

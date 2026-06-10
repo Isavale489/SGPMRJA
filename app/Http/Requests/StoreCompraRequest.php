@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 
 class StoreCompraRequest extends FormRequest
@@ -16,14 +17,23 @@ class StoreCompraRequest extends FormRequest
     {
         return [
             'proveedor_id'                => ['required', 'integer', 'exists:proveedor,id'],
-            'numero_factura'              => ['nullable', 'string', 'max:30'],
-            'fecha_compra'                => ['required', 'date'],
-            'iva_porcentaje'              => ['required', 'numeric', 'min:0', 'max:100'],
+            'numero_factura'              => [
+                'nullable', 'string', 'max:30',
+                // Una misma factura no puede repetirse para el mismo proveedor.
+                // Ignora la compra en edición y los borradores con factura vacía (null).
+                Rule::unique('compra', 'numero_factura')
+                    ->where(fn($q) => $q
+                        ->where('proveedor_id', $this->input('proveedor_id'))
+                        ->whereNull('deleted_at'))
+                    ->ignore($this->route('compra')),
+            ],
+            'fecha_compra'                => ['required', 'date', 'before_or_equal:today'],
             'observaciones'               => ['nullable', 'string', 'max:500'],
             'items'                       => ['required', 'array', 'min:1'],
             'items.*.insumo_id'           => ['required', 'integer', 'exists:insumo,id'],
             'items.*.cantidad'            => ['required', 'numeric', 'min:0.01'],
             'items.*.costo_unitario'      => ['required', 'numeric', 'min:0.01'],
+            'items.*.aplica_iva'          => ['sometimes', 'boolean'],
         ];
     }
 
@@ -43,10 +53,9 @@ class StoreCompraRequest extends FormRequest
         return [
             'proveedor_id.required'            => 'Seleccione un proveedor.',
             'proveedor_id.exists'              => 'El proveedor seleccionado no existe.',
+            'numero_factura.unique'            => 'Ya existe una compra de este proveedor con ese número de factura.',
             'fecha_compra.required'            => 'La fecha de compra es obligatoria.',
-            'iva_porcentaje.required'           => 'Indique el porcentaje de IVA.',
-            'iva_porcentaje.min'                => 'El IVA no puede ser negativo.',
-            'iva_porcentaje.max'                => 'El IVA no puede superar 100%.',
+            'fecha_compra.before_or_equal'     => 'La fecha de compra no puede ser futura.',
             'items.required'                   => 'Debe agregar al menos un insumo.',
             'items.min'                        => 'Debe agregar al menos un insumo.',
             'items.*.insumo_id.required'       => 'Seleccione el insumo en cada fila.',

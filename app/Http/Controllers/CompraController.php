@@ -32,7 +32,7 @@ class CompraController extends Controller
         $insumos = Insumo::where('estado', 1)
             ->where('is_inventoriable', 1)
             ->orderBy('nombre')
-            ->get(['id', 'nombre', 'codigo', 'tipo', 'unidad_medida', 'costo_unitario']);
+            ->get(['id', 'nombre', 'codigo', 'tipo', 'unidad_medida', 'costo_unitario', 'aplica_iva']);
 
         // Catálogo de tipos para el quick-create de insumos (mini-modal del wizard).
         $tiposInsumo = TipoInsumo::where('activo', true)->orderBy('nombre')->get(['id', 'nombre']);
@@ -151,6 +151,7 @@ class CompraController extends Controller
         }
 
         $compra->load(['detalles.insumo', 'proveedor.persona']);
+        $compra->proveedor?->loadCount('compras')->loadMax('compras', 'fecha_compra');
 
         return response()->json([
             'id'                => $compra->id,
@@ -158,9 +159,6 @@ class CompraController extends Controller
             'numero_factura'    => $compra->numero_factura,
             'fecha_compra'      => $compra->fecha_compra?->format('Y-m-d'),
             'observaciones'     => $compra->observaciones,
-            'iva_porcentaje'    => $compra->subtotal > 0
-                ? round(($compra->iva / $compra->subtotal) * 100)
-                : 16,
             'proveedor_data'    => [
                 'id'     => $compra->proveedor_id,
                 'nombre' => $compra->proveedor?->nombre_completo ?? '—',
@@ -168,24 +166,18 @@ class CompraController extends Controller
                 'tel'    => $compra->proveedor?->telefono_unificado ?? '',
                 'email'  => $compra->proveedor?->email_unificado ?? '',
                 'tipo'   => $compra->proveedor?->tipo_proveedor ?? '',
-                'compras' => 0,
-                'ultima'  => null,
+                'compras' => $compra->proveedor?->compras_count ?? 0,
+                'ultima'  => $compra->proveedor?->compras_max_fecha_compra,
             ],
             'items'             => $compra->detalles->map(fn($d) => [
                 'insumo_id'      => $d->insumo_id,
                 'nombre'         => $d->insumo?->nombre,
                 'cantidad'       => $d->cantidad,
                 'costo_unitario' => $d->costo_unitario,
+                'aplica_iva'     => (bool) $d->aplica_iva,
                 'subtotal'       => $d->subtotal,
             ]),
         ]);
-    }
-
-    public function show(Compra $compra)
-    {
-        $compra->load(['proveedor.persona', 'detalles.insumo', 'registradoPor']);
-
-        return view('admin.compras.show', compact('compra'));
     }
 
     public function getDetalle(Compra $compra)
@@ -206,6 +198,7 @@ class CompraController extends Controller
             'observaciones'    => $compra->observaciones,
             'subtotal'         => number_format($compra->subtotal, 2),
             'iva'              => number_format($compra->iva, 2),
+            'iva_porcentaje'   => rtrim(rtrim(number_format($compra->iva_porcentaje, 2, '.', ''), '0'), '.'),
             'total'            => number_format($compra->total, 2),
             'created_at'       => $compra->created_at?->format('d/m/Y H:i') ?? '—',
             'proveedor'        => [
@@ -230,6 +223,7 @@ class CompraController extends Controller
                 'unidad'         => $d->insumo?->unidad_medida ?? '—',
                 'cantidad'       => number_format($d->cantidad, 2),
                 'costo_unitario' => number_format($d->costo_unitario, 2),
+                'aplica_iva'     => (bool) $d->aplica_iva,
                 'subtotal'       => number_format($d->subtotal, 2),
             ]),
         ]);
@@ -260,8 +254,8 @@ class CompraController extends Controller
             $query->whereDate('fecha_compra', '<=', $request->filter_fecha_hasta);
         }
 
-        $query->orderBy('compra.id', 'desc'); // más reciente primero (servidor autoritativo)
-
+        // El orden lo gobierna DataTables (encabezados clicables). El default
+        // "más reciente primero" se declara en el front (order: [[0,'desc']]).
         return DataTables::of($query)
             // Búsqueda estricta: solo por proveedor (nombre/razón social y documento)
             // y número de factura, tal como indica la barra. Sobrescribe el buscador
@@ -272,12 +266,12 @@ class CompraController extends Controller
                     return;
                 }
                 $query->where(function ($q) use ($keyword) {
-                    $q->where('compra.numero_factura', 'like', "{$keyword}%")
+                    $q->where('compra.numero_factura', 'like', "%{$keyword}%")
                       ->orWhereHas('proveedor.persona', function ($p) use ($keyword) {
-                          $p->where('nombre', 'like', "{$keyword}%")
-                            ->orWhere('apellido', 'like', "{$keyword}%")
-                            ->orWhereRaw("CONCAT(nombre, ' ', apellido) like ?", ["{$keyword}%"])
-                            ->orWhereRaw("CONCAT(tipo_documento, documento_identidad) like ?", ["{$keyword}%"]);
+                          $p->where('nombre', 'like', "%{$keyword}%")
+                            ->orWhere('apellido', 'like', "%{$keyword}%")
+                            ->orWhereRaw("CONCAT(nombre, ' ', apellido) like ?", ["%{$keyword}%"])
+                            ->orWhereRaw("CONCAT(tipo_documento, documento_identidad) like ?", ["%{$keyword}%"]);
                       });
                 });
             }, true)

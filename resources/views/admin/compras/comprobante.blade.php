@@ -17,12 +17,17 @@
     .info-block .label { font-weight: bold; color: #1e3c72; }
 
     /* ── Anchos de columnas de la tabla de ítems ── */
-    .col-ins   { width: 30%; }
-    .col-tipo  { width: 14%; }
-    .col-und   { width: 12%; text-align: center; }
-    .col-cant  { width: 12%; text-align: right; }
-    .col-punit { width: 14%; text-align: right; }
+    .col-ins   { width: 28%; }
+    .col-tipo  { width: 13%; }
+    .col-und   { width: 10%; text-align: center; }
+    .col-cant  { width: 11%; text-align: right; }
+    .col-punit { width: 13%; text-align: right; }
+    .col-iva   { width: 11%; text-align: center; }
     .col-sub   { width: 14%; text-align: right; }
+
+    /* ── Marca IVA por línea ── */
+    .iva-grav { color: #155724; font-weight: 600; }
+    .iva-exento { color: #6c757d; font-size: 8px; text-transform: uppercase; letter-spacing: 0.4px; }
 
     .data-table tbody td.text-center { text-align: center; }
     .data-table tbody td.text-right  { text-align: right; }
@@ -110,6 +115,7 @@
                 <th class="col-und">Unidad</th>
                 <th class="col-cant">Cantidad</th>
                 <th class="col-punit">Costo Unit.</th>
+                <th class="col-iva">IVA</th>
                 <th class="col-sub">Subtotal</th>
             </tr>
         </thead>
@@ -124,6 +130,13 @@
                     <td class="col-und text-center">{{ $detalle->insumo?->unidad_medida ?? '—' }}</td>
                     <td class="col-cant text-right">{{ number_format($detalle->cantidad, 2) }}</td>
                     <td class="col-punit text-right">{{ number_format($detalle->costo_unitario, 2) }}</td>
+                    <td class="col-iva">
+                        @if($detalle->aplica_iva)
+                            <span class="iva-grav">{{ rtrim(rtrim(number_format($compra->iva_porcentaje, 2), '0'), '.') }}%</span>
+                        @else
+                            <span class="iva-exento">Exento</span>
+                        @endif
+                    </td>
                     <td class="col-sub text-right">{{ number_format($detalle->subtotal, 2) }}</td>
                 </tr>
             @endforeach
@@ -135,13 +148,23 @@
         <tr>
             <td>&nbsp;</td>
             <td style="width: 240px;">
+                @php
+                    $baseExenta = $compra->detalles->where('aplica_iva', false)->sum('subtotal');
+                    $ivaPctTxt  = rtrim(rtrim(number_format($compra->iva_porcentaje, 2), '0'), '.');
+                @endphp
                 <table class="totals-inner">
                     <tr>
                         <td class="t-label">Subtotal:</td>
                         <td class="t-value">{{ number_format($compra->subtotal, 2) }}</td>
                     </tr>
+                    @if($baseExenta > 0)
                     <tr>
-                        <td class="t-label">IVA:</td>
+                        <td class="t-label">Base exenta:</td>
+                        <td class="t-value">{{ number_format($baseExenta, 2) }}</td>
+                    </tr>
+                    @endif
+                    <tr>
+                        <td class="t-label">IVA ({{ $ivaPctTxt }}%):</td>
                         <td class="t-value">{{ number_format($compra->iva, 2) }}</td>
                     </tr>
                     <tr>

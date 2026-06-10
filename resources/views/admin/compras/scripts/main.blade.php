@@ -46,7 +46,7 @@ $(document).ready(function () {
                     return '<span class="text-muted">#' + data + '</span>';
                 }
             },
-            { data: 'proveedor_nombre', name: 'proveedor_nombre', width: '25%' },
+            { data: 'proveedor_nombre', name: 'proveedor_nombre', width: '25%', orderable: false },
             {
                 data: 'numero_factura', name: 'numero_factura', width: '12%',
                 render: function (data) {
@@ -149,6 +149,9 @@ $(document).ready(function () {
                 // Items
                 var itemsHtml = '';
                 (d.items || []).forEach(function (item, i) {
+                    var ivaBadge = item.aplica_iva
+                        ? '<span class="badge bg-soft-success text-success">' + d.iva_porcentaje + '%</span>'
+                        : '<span class="badge bg-soft-secondary text-muted">Exento</span>';
                     itemsHtml += '<tr>'
                         + '<td class="text-center cot-col-num">' + (i + 1) + '</td>'
                         + '<td class="fw-semibold">' + item.nombre + '</td>'
@@ -156,6 +159,7 @@ $(document).ready(function () {
                         + '<td class="text-center text-muted">' + item.unidad + '</td>'
                         + '<td class="text-end">' + item.cantidad + '</td>'
                         + '<td class="text-end">' + item.costo_unitario + '</td>'
+                        + '<td class="text-center">' + ivaBadge + '</td>'
                         + '<td class="text-end fw-semibold">' + item.subtotal + '</td>'
                         + '</tr>';
                 });
@@ -170,7 +174,18 @@ $(document).ready(function () {
                 // Totales
                 $('#cv-subtotal').text(d.subtotal);
                 $('#cv-iva').text(d.iva);
+                $('#cv-iva-pct').text(d.iva_porcentaje);
                 $('#cv-total-ticket').text(d.total);
+                // Base exenta = suma de subtotales de líneas no gravadas
+                var exento = (d.items || []).reduce(function (acc, it) {
+                    return acc + (it.aplica_iva ? 0 : parseFloat(String(it.subtotal).replace(/,/g, '')) || 0);
+                }, 0);
+                if (exento > 0.0001) {
+                    $('#cv-exento').text(exento.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+                    $('#cv-exento-wrap').removeAttr('hidden');
+                } else {
+                    $('#cv-exento-wrap').attr('hidden', true);
+                }
 
                 // PDF
                 $('#cv-pdf-btn').attr('href', '/compras/' + d.id + '/pdf');
