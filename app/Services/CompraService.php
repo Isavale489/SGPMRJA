@@ -78,7 +78,7 @@ class CompraService
             $compra->load('detalles');
 
             foreach ($compra->detalles as $detalle) {
-                $insumo        = Insumo::lockForUpdate()->findOrFail($detalle->insumo_id);
+                $insumo        = $this->insumoBloqueado($detalle->insumo_id);
                 $stockAnterior = (float) $insumo->stock_actual;
                 $stockNuevo    = $stockAnterior + (float) $detalle->cantidad;
 
@@ -115,7 +115,7 @@ class CompraService
             $compra->load('detalles');
 
             foreach ($compra->detalles as $detalle) {
-                $insumo        = Insumo::lockForUpdate()->findOrFail($detalle->insumo_id);
+                $insumo        = $this->insumoBloqueado($detalle->insumo_id);
                 $stockAnterior = (float) $insumo->stock_actual;
                 $stockNuevo    = max(0, $stockAnterior - (float) $detalle->cantidad);
 
@@ -201,6 +201,25 @@ class CompraService
     }
 
     // ── Helpers privados ─────────────────────────────────────────────────────
+
+    /**
+     * Recupera y bloquea (lockForUpdate) un insumo para mover su stock.
+     * Incluye soft-deleted para poder nombrar el insumo en el mensaje de error
+     * en vez de un 500 opaco si fue inhabilitado tras crear el borrador.
+     */
+    private function insumoBloqueado(int $insumoId): Insumo
+    {
+        $insumo = Insumo::withTrashed()->lockForUpdate()->find($insumoId);
+
+        if (!$insumo) {
+            throw new \RuntimeException('Uno de los insumos de la compra ya no existe en el sistema.');
+        }
+        if ($insumo->trashed()) {
+            throw new \RuntimeException("El insumo «{$insumo->nombre}» está inhabilitado. Habilítalo antes de procesar o anular esta compra.");
+        }
+
+        return $insumo;
+    }
 
     private function calcularTotales(array $items, float $ivaPorcentaje): array
     {
