@@ -17,7 +17,8 @@ class CompraService
     public function registrar(array $data, int $userId): Compra
     {
         return DB::transaction(function () use ($data, $userId) {
-            [$subtotal, $iva, $total] = $this->calcularTotales($data['items'], $data['iva_porcentaje'] ?? 0);
+            $tasa = $this->tasaIva();
+            [$subtotal, $iva, $total] = $this->calcularTotales($data['items'], $tasa);
 
             $compra = Compra::create([
                 'proveedor_id'      => $data['proveedor_id'],
@@ -26,6 +27,7 @@ class CompraService
                 'fecha_compra'      => $data['fecha_compra'],
                 'subtotal'          => $subtotal,
                 'iva'               => $iva,
+                'iva_porcentaje'    => $tasa,
                 'total'             => $total,
                 'observaciones'     => $data['observaciones'] ?? null,
                 'estado'            => 'borrador',
@@ -48,7 +50,8 @@ class CompraService
         }
 
         DB::transaction(function () use ($compra, $data) {
-            [$subtotal, $iva, $total] = $this->calcularTotales($data['items'], $data['iva_porcentaje'] ?? 0);
+            $tasa = $this->tasaIva();
+            [$subtotal, $iva, $total] = $this->calcularTotales($data['items'], $tasa);
 
             $compra->update([
                 'proveedor_id'      => $data['proveedor_id'],
@@ -56,6 +59,7 @@ class CompraService
                 'fecha_compra'      => $data['fecha_compra'],
                 'subtotal'          => $subtotal,
                 'iva'               => $iva,
+                'iva_porcentaje'    => $tasa,
                 'total'             => $total,
                 'observaciones'     => $data['observaciones'] ?? null,
             ]);
@@ -163,6 +167,7 @@ class CompraService
                 'fecha_compra'      => now()->toDateString(),
                 'subtotal'          => $compra->subtotal,
                 'iva'               => $compra->iva,
+                'iva_porcentaje'    => $compra->iva_porcentaje,
                 'total'             => $compra->total,
                 'observaciones'     => 'Clonada de Compra #' . $compra->id . ($compra->observaciones ? '. ' . $compra->observaciones : ''),
                 'estado'            => 'borrador',
@@ -174,6 +179,7 @@ class CompraService
                     'insumo_id'      => $detalle->insumo_id,
                     'cantidad'       => $detalle->cantidad,
                     'costo_unitario' => $detalle->costo_unitario,
+                    'aplica_iva'     => $detalle->aplica_iva,
                     'subtotal'       => $detalle->subtotal,
                 ]);
             }
@@ -221,11 +227,34 @@ class CompraService
         return $insumo;
     }
 
-    private function calcularTotales(array $items, float $ivaPorcentaje): array
+    /**
+     * Tasa de IVA general vigente (%). Centralizada en config/impuestos.php.
+     */
+    private function tasaIva(): float
     {
-        $subtotal = collect($items)->sum(fn($i) => $i['cantidad'] * $i['costo_unitario']);
-        $iva      = round($subtotal * ($ivaPorcentaje / 100), 2);
-        return [$subtotal, $iva, $subtotal + $iva];
+        return (float) config('impuestos.iva', 16);
+    }
+
+    /**
+     * Calcula totales con IVA por línea: solo las líneas gravables
+     * (aplica_iva = true) suman a la base sobre la que se aplica la tasa.
+     */
+    private function calcularTotales(array $items, float $tasaIva): array
+    {
+        $subtotal    = 0.0;
+        $baseGravada = 0.0;
+
+        foreach ($items as $item) {
+            $lineaSubtotal = (float) $item['cantidad'] * (float) $item['costo_unitario'];
+            $subtotal     += $lineaSubtotal;
+            if ($this->lineaGravada($item)) {
+                $baseGravada += $lineaSubtotal;
+            }
+        }
+
+        $iva = round($baseGravada * ($tasaIva / 100), 2);
+
+        return [round($subtotal, 2), $iva, round($subtotal + $iva, 2)];
     }
 
     private function sincronizarDetalles(Compra $compra, array $items): void
@@ -236,8 +265,18 @@ class CompraService
                 'insumo_id'      => $item['insumo_id'],
                 'cantidad'       => $item['cantidad'],
                 'costo_unitario' => $item['costo_unitario'],
+                'aplica_iva'     => $this->lineaGravada($item),
                 'subtotal'       => $item['cantidad'] * $item['costo_unitario'],
             ]);
         }
+    }
+
+    /**
+     * Una línea es gravable salvo que venga explícitamente marcada como exenta.
+     * Default true para mantener compatibilidad si el flag no se envía.
+     */
+    private function lineaGravada(array $item): bool
+    {
+        return filter_var($item['aplica_iva'] ?? true, FILTER_VALIDATE_BOOLEAN);
     }
 }

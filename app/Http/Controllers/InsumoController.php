@@ -115,6 +115,7 @@ class InsumoController extends Controller
             'tipo'            => $this->tipoRule(),
             'unidad_medida'   => 'required|in:Metro,Kg,Gramo,Unidad,Rollo,Cono,Docena',
             'is_inventoriable'=> 'nullable|boolean',
+            'aplica_iva'      => 'nullable|boolean',
             'costo_unitario'  => 'required|numeric|min:0.01',
             'stock_actual'    => 'exclude_if:is_inventoriable,0|nullable|numeric|min:0',
             'stock_minimo'    => 'exclude_if:is_inventoriable,0|nullable|numeric|min:0',
@@ -132,6 +133,8 @@ class InsumoController extends Controller
         $data['estado']           = true;
         $data['codigo']           = $request->filled('codigo') ? strtoupper(trim($request->codigo)) : null;
         $data['is_inventoriable'] = $inventoriable;
+        // Gravable con IVA por defecto; el form puede marcarlo exento.
+        $data['aplica_iva']       = $request->boolean('aplica_iva', true);
         $data['stock_actual']     = $inventoriable ? ($request->input('stock_actual', 0)) : 0;
         $data['stock_minimo']     = $inventoriable ? ($request->input('stock_minimo', 0)) : 0;
         $data['stock_maximo']     = $inventoriable ? ($request->input('stock_maximo', 0)) : 0;
@@ -169,6 +172,7 @@ class InsumoController extends Controller
             'tipo'            => $this->tipoRule(),
             'unidad_medida'   => 'required|in:Metro,Kg,Gramo,Unidad,Rollo,Cono,Docena',
             'is_inventoriable'=> 'nullable|boolean',
+            'aplica_iva'      => 'nullable|boolean',
             'costo_unitario'  => 'required|numeric|min:0.01',
             'stock_actual'    => 'exclude_if:is_inventoriable,0|nullable|numeric|min:0',
             'stock_minimo'    => 'exclude_if:is_inventoriable,0|nullable|numeric|min:0',
@@ -184,6 +188,7 @@ class InsumoController extends Controller
         // 'estado' NO se edita aquí: lo gobiernan Inhabilitar/Habilitar.
         $data = $request->only(['nombre', 'tipo', 'unidad_medida', 'costo_unitario']);
         $data['is_inventoriable'] = $inventoriable;
+        $data['aplica_iva']       = $request->boolean('aplica_iva', true);
         $data['stock_actual']     = $inventoriable ? ($request->input('stock_actual', 0)) : 0;
         $data['stock_minimo']     = $inventoriable ? ($request->input('stock_minimo', 0)) : 0;
         $data['stock_maximo']     = $inventoriable ? ($request->input('stock_maximo', 0)) : 0;

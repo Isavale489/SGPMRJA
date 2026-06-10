@@ -400,10 +400,22 @@
                                 </div>
                             </div>
 
-                            <div class="row mb-0">
+                            <div class="row mb-0 align-items-center">
                                 <div class="col-md-6">
                                     <x-forms.input name="costo_unitario" label="Costo Unitario" type="number" step="0.01" min="0"
                                         required />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label d-block mb-1">Impuesto</label>
+                                    <div class="form-check form-switch">
+                                        {{-- Hidden previo: garantiza que FormData envíe 0 cuando el switch va destildado --}}
+                                        <input type="hidden" name="aplica_iva" value="0">
+                                        <input class="form-check-input" type="checkbox" id="aplica-iva-switch"
+                                            name="aplica_iva" value="1" checked>
+                                        <label class="form-check-label" for="aplica-iva-switch">
+                                            Gravable con IVA <small class="text-muted">(destildá si es exento)</small>
+                                        </label>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -826,6 +838,8 @@
                     var inventoriable = data.is_inventoriable !== false && data.is_inventoriable !== 0;
                     $("#is-inventoriable-switch").prop('checked', inventoriable);
                     $("#stock-fields-wrapper").toggle(inventoriable);
+                    var gravable = data.aplica_iva !== false && data.aplica_iva !== 0;
+                    $("#aplica-iva-switch").prop('checked', gravable);
                     $("#field-stock_actual").val(data.stock_actual);
                     $("#field-stock_minimo").val(data.stock_minimo);
                     $("#field-stock_maximo").val(data.stock_maximo);
@@ -1025,6 +1039,7 @@
                 $("#id-field").val("");
                 $("#codigo-field").prop('readonly', false);
                 $("#is-inventoriable-switch").prop('checked', true);
+                $("#aplica-iva-switch").prop('checked', true);
                 $("#stock-fields-wrapper").show();
                 $("#add-btn").show();
                 $("#edit-btn").hide();

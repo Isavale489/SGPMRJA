@@ -32,7 +32,7 @@ class CompraController extends Controller
         $insumos = Insumo::where('estado', 1)
             ->where('is_inventoriable', 1)
             ->orderBy('nombre')
-            ->get(['id', 'nombre', 'codigo', 'tipo', 'unidad_medida', 'costo_unitario']);
+            ->get(['id', 'nombre', 'codigo', 'tipo', 'unidad_medida', 'costo_unitario', 'aplica_iva']);
 
         // Catálogo de tipos para el quick-create de insumos (mini-modal del wizard).
         $tiposInsumo = TipoInsumo::where('activo', true)->orderBy('nombre')->get(['id', 'nombre']);
@@ -158,9 +158,6 @@ class CompraController extends Controller
             'numero_factura'    => $compra->numero_factura,
             'fecha_compra'      => $compra->fecha_compra?->format('Y-m-d'),
             'observaciones'     => $compra->observaciones,
-            'iva_porcentaje'    => $compra->subtotal > 0
-                ? round(($compra->iva / $compra->subtotal) * 100)
-                : 16,
             'proveedor_data'    => [
                 'id'     => $compra->proveedor_id,
                 'nombre' => $compra->proveedor?->nombre_completo ?? '—',
@@ -176,6 +173,7 @@ class CompraController extends Controller
                 'nombre'         => $d->insumo?->nombre,
                 'cantidad'       => $d->cantidad,
                 'costo_unitario' => $d->costo_unitario,
+                'aplica_iva'     => (bool) $d->aplica_iva,
                 'subtotal'       => $d->subtotal,
             ]),
         ]);
@@ -206,6 +204,7 @@ class CompraController extends Controller
             'observaciones'    => $compra->observaciones,
             'subtotal'         => number_format($compra->subtotal, 2),
             'iva'              => number_format($compra->iva, 2),
+            'iva_porcentaje'   => rtrim(rtrim(number_format($compra->iva_porcentaje, 2, '.', ''), '0'), '.'),
             'total'            => number_format($compra->total, 2),
             'created_at'       => $compra->created_at?->format('d/m/Y H:i') ?? '—',
             'proveedor'        => [
@@ -230,6 +229,7 @@ class CompraController extends Controller
                 'unidad'         => $d->insumo?->unidad_medida ?? '—',
                 'cantidad'       => number_format($d->cantidad, 2),
                 'costo_unitario' => number_format($d->costo_unitario, 2),
+                'aplica_iva'     => (bool) $d->aplica_iva,
                 'subtotal'       => number_format($d->subtotal, 2),
             ]),
         ]);

@@ -257,6 +257,7 @@
                                                 <th>Insumo</th>
                                                 <th class="text-center" style="width:140px;">Cantidad</th>
                                                 <th class="text-center" style="width:125px;">Costo Unit.</th>
+                                                <th class="text-center" style="width:64px;" title="Marcá si la línea es gravable con IVA">IVA</th>
                                                 <th class="text-end" style="width:110px;">Subtotal</th>
                                                 <th class="text-center" style="width:48px;"></th>
                                             </tr>
@@ -340,18 +341,14 @@
                                         </h6>
                                     </div>
                                     <div class="card-body">
-                                        <div class="mb-3">
-                                            <label class="form-label small fw-semibold mb-1" for="c-iva">% IVA</label>
-                                            <div class="input-group">
-                                                <input type="number" id="c-iva" name="iva_porcentaje"
-                                                    class="form-control" value="16" min="0" max="100" step="0.01">
-                                                <span class="input-group-text">%</span>
-                                            </div>
-                                        </div>
                                         <div class="c-ticket">
                                             <div class="d-flex justify-content-between mb-2">
                                                 <span class="text-muted">Subtotal</span>
                                                 <span class="fw-semibold" id="c-resumen-subtotal">0.00</span>
+                                            </div>
+                                            <div class="d-flex justify-content-between mb-2" id="c-resumen-exento-wrap" hidden>
+                                                <span class="text-muted">Base exenta</span>
+                                                <span class="fw-semibold text-muted" id="c-resumen-exento">0.00</span>
                                             </div>
                                             <div class="d-flex justify-content-between mb-2">
                                                 <span class="text-muted">IVA (<span id="c-resumen-iva-pct">16</span>%)</span>
@@ -362,6 +359,9 @@
                                                 <span class="fw-bold fs-15">Total</span>
                                                 <span class="fw-bold fs-18 text-atlantico-emerald" id="c-resumen-total">0.00</span>
                                             </div>
+                                            <p class="text-muted small mb-0 mt-2">
+                                                <i class="ri-information-line me-1"></i>El IVA ({{ (float) config('impuestos.iva', 16) }}%) se aplica solo a las líneas gravables marcadas en el paso anterior.
+                                            </p>
                                         </div>
                                     </div>
                                 </div>
@@ -464,6 +464,15 @@
                                     <span class="input-group-text">$/</span>
                                     <input type="number" id="cir-costo-field" class="form-control"
                                         step="0.01" min="0.01" placeholder="0.00">
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-0 d-flex align-items-end">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="cir-aplica-iva-field" checked>
+                                    <label class="form-check-label" for="cir-aplica-iva-field">
+                                        Gravable con IVA
+                                        <i class="ri-information-line text-muted" title="Destildá si el insumo es exento de IVA"></i>
+                                    </label>
                                 </div>
                             </div>
                         </div>

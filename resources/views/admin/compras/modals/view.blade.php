@@ -169,6 +169,7 @@
                                             <th class="text-center" style="width:90px;">Unidad</th>
                                             <th class="text-end" style="width:100px;">Cantidad</th>
                                             <th class="text-end" style="width:110px;">Costo Unit.</th>
+                                            <th class="text-center" style="width:80px;">IVA</th>
                                             <th class="text-end" style="width:110px;">Subtotal</th>
                                         </tr>
                                     </thead>
@@ -195,8 +196,12 @@
                                             <span class="text-muted">Subtotal</span>
                                             <span class="fw-semibold" id="cv-subtotal">0.00</span>
                                         </div>
+                                        <div class="d-flex justify-content-between mb-2" id="cv-exento-wrap" hidden>
+                                            <span class="text-muted">Base exenta</span>
+                                            <span class="fw-semibold text-muted" id="cv-exento">0.00</span>
+                                        </div>
                                         <div class="d-flex justify-content-between mb-2">
-                                            <span class="text-muted">IVA</span>
+                                            <span class="text-muted">IVA (<span id="cv-iva-pct">—</span>%)</span>
                                             <span class="fw-semibold" id="cv-iva">0.00</span>
                                         </div>
                                         <hr class="my-2">
