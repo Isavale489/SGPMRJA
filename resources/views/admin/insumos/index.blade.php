@@ -413,7 +413,7 @@
                                         <input class="form-check-input" type="checkbox" id="aplica-iva-switch"
                                             name="aplica_iva" value="1" checked>
                                         <label class="form-check-label" for="aplica-iva-switch">
-                                            Gravable con IVA <small class="text-muted">(destildá si es exento)</small>
+                                            Gravable con IVA <small class="text-muted">(desmarca si es exento)</small>
                                         </label>
                                     </div>
                                 </div>

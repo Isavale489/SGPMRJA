@@ -117,7 +117,7 @@ $(document).ready(function () {
             + '<td class="text-center">'
             +   '<div class="form-check d-inline-block m-0">'
             +     '<input class="form-check-input c-iva-check" type="checkbox" checked'
-            +     ' title="Gravable con IVA — destildá si es exento">'
+            +     ' title="Gravable con IVA — desmarca si es exento">'
             +   '</div>'
             + '</td>'
             + '<td class="text-end fw-semibold c-subtotal pe-2">0.00</td>'

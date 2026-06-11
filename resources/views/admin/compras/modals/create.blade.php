@@ -471,7 +471,7 @@
                                     <input class="form-check-input" type="checkbox" id="cir-aplica-iva-field" checked>
                                     <label class="form-check-label" for="cir-aplica-iva-field">
                                         Gravable con IVA
-                                        <i class="ri-information-line text-muted" title="Destildá si el insumo es exento de IVA"></i>
+                                        <i class="ri-information-line text-muted" title="Desmarca si el insumo es exento de IVA"></i>
                                     </label>
                                 </div>
                             </div>

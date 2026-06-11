@@ -138,7 +138,7 @@ class CompraService
                         . rtrim(rtrim(number_format($stockAnterior, 2), '0'), '.') . ' en existencia, '
                         . 'menos que las ' . rtrim(rtrim(number_format($cantidad, 2), '0'), '.')
                         . ' unidades de esta compra. Parte del stock ya fue consumido; '
-                        . 'realizá un ajuste de inventario manual.'
+                        . 'realiza un ajuste de inventario manual.'
                     );
                 }
 
