@@ -202,7 +202,8 @@
                                                 <div class="input-group">
                                                     <span class="input-group-text"><i class="ri-receipt-line"></i></span>
                                                     <input type="text" id="c-factura" name="numero_factura"
-                                                        class="form-control" maxlength="30" placeholder="Ej: 0001-000456">
+                                                        class="form-control" maxlength="10" inputmode="numeric"
+                                                        placeholder="Ej: 0001-0456">
                                                 </div>
                                             </div>
                                             <div class="col-12">
@@ -271,10 +272,10 @@
                                             <tr>
                                                 <th class="cot-col-num text-center" style="width:36px;">#</th>
                                                 <th>Insumo</th>
-                                                <th class="text-center" style="width:140px;">Cantidad</th>
+                                                <th class="text-center" style="width:130px;">Cantidad</th>
                                                 <th class="text-center" style="width:130px;">Costo Unit. (Bs)</th>
-                                                <th class="text-center" style="width:64px;" title="Marcá si la línea es gravable con IVA">IVA</th>
-                                                <th class="text-end" style="width:120px;">Subtotal (Bs)</th>
+                                                <th class="text-center" style="width:140px;">Total (Bs)</th>
+                                                <th class="text-center" style="width:60px;" title="Marcá si la línea es gravable con IVA">IVA</th>
                                                 <th class="text-center" style="width:48px;"></th>
                                             </tr>
                                         </thead>
@@ -283,8 +284,8 @@
                                 </div>
                             </div>
                             {{-- Pie: subtotal en vivo --}}
-                            <div class="card-footer border-0 bg-transparent d-flex align-items-center justify-content-between py-2 px-3"
-                                id="c-items-footer" hidden>
+                            <div class="card-footer border-0 bg-transparent align-items-center justify-content-between py-2 px-3 d-none"
+                                id="c-items-footer">
                                 <span class="text-muted small">
                                     <i class="ri-stack-line me-1"></i><span id="c-items-footer-count">0</span> ítem(s)
                                 </span>
@@ -359,33 +360,37 @@
                                     </div>
                                     <div class="card-body">
                                         <div class="c-ticket">
-                                            <div class="d-flex justify-content-between mb-2">
-                                                <span class="text-muted">Subtotal</span>
-                                                <span class="fw-semibold">Bs <span id="c-resumen-subtotal">0.00</span></span>
+                                            <div class="c-ticket-row">
+                                                <span class="c-ticket-label">Subtotal</span>
+                                                <span class="c-ticket-val">Bs <span id="c-resumen-subtotal">0,00</span></span>
                                             </div>
-                                            <div class="d-flex justify-content-between mb-2" id="c-resumen-exento-wrap" hidden>
-                                                <span class="text-muted">Base exenta</span>
-                                                <span class="fw-semibold text-muted">Bs <span id="c-resumen-exento">0.00</span></span>
+                                            <div class="c-ticket-row d-none" id="c-resumen-exento-wrap">
+                                                <span class="c-ticket-label">Base exenta</span>
+                                                <span class="c-ticket-val text-muted">Bs <span id="c-resumen-exento">0,00</span></span>
                                             </div>
-                                            <div class="d-flex justify-content-between mb-2">
-                                                <span class="text-muted">IVA (<span id="c-resumen-iva-pct">16</span>%)</span>
-                                                <span class="fw-semibold">Bs <span id="c-resumen-iva">0.00</span></span>
+                                            <div class="c-ticket-row">
+                                                <span class="c-ticket-label">IVA (<span id="c-resumen-iva-pct">16</span>%)</span>
+                                                <span class="c-ticket-val">Bs <span id="c-resumen-iva">0,00</span></span>
                                             </div>
-                                            <hr class="my-2">
-                                            <div class="d-flex justify-content-between align-items-center">
-                                                <span class="fw-bold fs-15">Total</span>
-                                                <span class="fw-bold fs-18 text-atlantico-emerald">Bs <span id="c-resumen-total">0.00</span></span>
+
+                                            <div class="c-ticket-total">
+                                                <span class="c-ticket-total-label">Total a pagar</span>
+                                                <span class="c-ticket-total-val">Bs <span id="c-resumen-total">0,00</span></span>
                                             </div>
-                                            <div class="d-flex justify-content-between align-items-center mt-2 pt-2 border-top">
-                                                <span class="text-muted small"><i class="ri-exchange-dollar-line me-1"></i>Tasa aplicada</span>
-                                                <span class="small">Bs <span id="c-resumen-tasa">0.0000</span> / USD</span>
+
+                                            <div class="c-ticket-conv">
+                                                <div class="c-ticket-conv-row">
+                                                    <span><i class="ri-exchange-dollar-line me-1"></i>Tasa aplicada</span>
+                                                    <span>Bs <span id="c-resumen-tasa">0,0000</span> / USD</span>
+                                                </div>
+                                                <div class="c-ticket-conv-row">
+                                                    <span>Equivalente en USD</span>
+                                                    <span class="c-conv-usd">$ <span id="c-resumen-total-usd">0,00</span></span>
+                                                </div>
                                             </div>
-                                            <div class="d-flex justify-content-between align-items-center">
-                                                <span class="text-muted small">Equivalente USD</span>
-                                                <span class="fw-semibold small">$ <span id="c-resumen-total-usd">0.00</span></span>
-                                            </div>
-                                            <p class="text-muted small mb-0 mt-2">
-                                                <i class="ri-information-line me-1"></i>Los costos se cargan en bolívares; el equivalente en USD usa la tasa indicada en el paso 1. El IVA ({{ (float) config('impuestos.iva', 16) }}%) se aplica solo a las líneas gravables.
+
+                                            <p class="c-ticket-note">
+                                                <i class="ri-information-line me-1"></i>Los costos se cargan en bolívares; el equivalente en USD usa la tasa del paso 1. El IVA ({{ (float) config('impuestos.iva', 16) }}%) aplica solo a las líneas gravables.
                                             </p>
                                         </div>
                                     </div>

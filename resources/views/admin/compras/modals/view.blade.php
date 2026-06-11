@@ -196,30 +196,33 @@
                                 </div>
                                 <div class="card-body">
                                     <div class="c-ticket">
-                                        <div class="d-flex justify-content-between mb-2">
-                                            <span class="text-muted">Subtotal</span>
-                                            <span class="fw-semibold">Bs <span id="cv-subtotal">0.00</span></span>
+                                        <div class="c-ticket-row">
+                                            <span class="c-ticket-label">Subtotal</span>
+                                            <span class="c-ticket-val">Bs <span id="cv-subtotal">0,00</span></span>
                                         </div>
-                                        <div class="d-flex justify-content-between mb-2" id="cv-exento-wrap" hidden>
-                                            <span class="text-muted">Base exenta</span>
-                                            <span class="fw-semibold text-muted">Bs <span id="cv-exento">0.00</span></span>
+                                        <div class="c-ticket-row d-none" id="cv-exento-wrap">
+                                            <span class="c-ticket-label">Base exenta</span>
+                                            <span class="c-ticket-val text-muted">Bs <span id="cv-exento">0,00</span></span>
                                         </div>
-                                        <div class="d-flex justify-content-between mb-2">
-                                            <span class="text-muted">IVA (<span id="cv-iva-pct">—</span>%)</span>
-                                            <span class="fw-semibold">Bs <span id="cv-iva">0.00</span></span>
+                                        <div class="c-ticket-row">
+                                            <span class="c-ticket-label">IVA (<span id="cv-iva-pct">—</span>%)</span>
+                                            <span class="c-ticket-val">Bs <span id="cv-iva">0,00</span></span>
                                         </div>
-                                        <hr class="my-2">
-                                        <div class="d-flex justify-content-between align-items-center">
-                                            <span class="fw-bold fs-15">Total</span>
-                                            <span class="fw-bold fs-18 text-atlantico-emerald">Bs <span id="cv-total-ticket">0.00</span></span>
+
+                                        <div class="c-ticket-total">
+                                            <span class="c-ticket-total-label">Total a pagar</span>
+                                            <span class="c-ticket-total-val">Bs <span id="cv-total-ticket">0,00</span></span>
                                         </div>
-                                        <div class="d-flex justify-content-between align-items-center mt-2 pt-2 border-top">
-                                            <span class="text-muted small"><i class="ri-exchange-dollar-line me-1"></i>Tasa aplicada</span>
-                                            <span class="small">Bs <span id="cv-tasa-ticket">0.0000</span> / USD</span>
-                                        </div>
-                                        <div class="d-flex justify-content-between align-items-center">
-                                            <span class="text-muted small">Equivalente USD</span>
-                                            <span class="fw-semibold small">$ <span id="cv-total-usd">0.00</span></span>
+
+                                        <div class="c-ticket-conv">
+                                            <div class="c-ticket-conv-row">
+                                                <span><i class="ri-exchange-dollar-line me-1"></i>Tasa aplicada</span>
+                                                <span>Bs <span id="cv-tasa-ticket">0,0000</span> / USD</span>
+                                            </div>
+                                            <div class="c-ticket-conv-row">
+                                                <span>Equivalente en USD</span>
+                                                <span class="c-conv-usd">$ <span id="cv-total-usd">0,00</span></span>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>

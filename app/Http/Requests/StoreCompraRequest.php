@@ -18,7 +18,9 @@ class StoreCompraRequest extends FormRequest
         return [
             'proveedor_id'                => ['required', 'integer', 'exists:proveedor,id'],
             'numero_factura'              => [
-                'nullable', 'string', 'max:30',
+                'nullable', 'string', 'max:10',
+                // Solo dígitos y guiones (ej. 0001-0456).
+                'regex:/^[0-9\-]+$/',
                 // Una misma factura no puede repetirse para el mismo proveedor.
                 // Ignora la compra en edición y los borradores con factura vacía (null).
                 Rule::unique('compra', 'numero_factura')
@@ -65,6 +67,8 @@ class StoreCompraRequest extends FormRequest
             'proveedor_id.required'            => 'Seleccione un proveedor.',
             'proveedor_id.exists'              => 'El proveedor seleccionado no existe.',
             'numero_factura.unique'            => 'Ya existe una compra de este proveedor con ese número de factura.',
+            'numero_factura.regex'             => 'El número de factura solo puede contener dígitos y guiones.',
+            'numero_factura.max'               => 'El número de factura no puede superar los 10 caracteres.',
             'fecha_compra.required'            => 'La fecha de compra es obligatoria.',
             'fecha_compra.before_or_equal'     => 'La fecha de compra no puede ser futura.',
             'tasa_cambio.required'             => 'Ingrese la tasa de cambio (Bs por USD) de la compra.',
