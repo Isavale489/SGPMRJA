@@ -187,9 +187,9 @@ $(document).ready(function () {
                 }, 0);
                 if (exento > 0.0001) {
                     $('#cv-exento').text(exento.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
-                    $('#cv-exento-wrap').removeAttr('hidden');
+                    $('#cv-exento-wrap').removeClass('d-none');
                 } else {
-                    $('#cv-exento-wrap').attr('hidden', true);
+                    $('#cv-exento-wrap').addClass('d-none');
                 }
 
                 // PDF

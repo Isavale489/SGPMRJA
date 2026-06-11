@@ -100,12 +100,13 @@ $(document).ready(function () {
         $('#c-resumen-iva-pct').text(IVA_TASA);
         $('#c-resumen-tasa').text(tasa ? formatBs(tasa, 4) : '0,0000');
         $('#c-resumen-total-usd').text(formatBs(totalUsd));
-        // Base exenta: solo se muestra si hay líneas exentas
+        // Base exenta: solo se muestra si hay líneas exentas. Se alterna con
+        // d-none (no con [hidden], que .d-flex !important anularía).
         if (exento > 0.0001) {
             $('#c-resumen-exento').text(formatBs(exento));
-            $('#c-resumen-exento-wrap').removeAttr('hidden');
+            $('#c-resumen-exento-wrap').removeClass('d-none');
         } else {
-            $('#c-resumen-exento-wrap').attr('hidden', true);
+            $('#c-resumen-exento-wrap').addClass('d-none');
         }
         // Pie en vivo del paso 2 (Bs + equivalente USD)
         $('#c-items-footer-subtotal').text(formatBs(subtotal));
@@ -125,11 +126,11 @@ $(document).ready(function () {
         if (count === 0) {
             $('#c-items-empty').show();
             $('#c-items-table-wrap').attr('hidden', true);
-            $('#c-items-footer').attr('hidden', true);
+            $('#c-items-footer').removeClass('d-flex').addClass('d-none');
         } else {
             $('#c-items-empty').hide();
             $('#c-items-table-wrap').removeAttr('hidden');
-            $('#c-items-footer').removeAttr('hidden');
+            $('#c-items-footer').removeClass('d-none').addClass('d-flex');
         }
     }
 
