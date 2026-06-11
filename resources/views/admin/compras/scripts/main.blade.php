@@ -179,9 +179,11 @@ $(document).ready(function () {
                 $('#cv-total-ticket').text(d.total_bs);
                 $('#cv-tasa-ticket').text(d.tasa_cambio || '0.0000');
                 $('#cv-total-usd').text(d.total);
-                // Base exenta = suma de subtotales en Bs de líneas no gravadas
+                // Base exenta = suma de subtotales en Bs de líneas no gravadas.
+                // subtotal_bs viene en formato venezolano ("1.234,56").
                 var exento = (d.items || []).reduce(function (acc, it) {
-                    return acc + (it.aplica_iva ? 0 : parseFloat(String(it.subtotal_bs).replace(/,/g, '')) || 0);
+                    var n = parseFloat(String(it.subtotal_bs).replace(/\./g, '').replace(',', '.')) || 0;
+                    return acc + (it.aplica_iva ? 0 : n);
                 }, 0);
                 if (exento > 0.0001) {
                     $('#cv-exento').text(exento.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));

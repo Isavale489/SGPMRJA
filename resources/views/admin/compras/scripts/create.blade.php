@@ -12,6 +12,43 @@ $(document).ready(function () {
         return parseFloat(n || 0).toFixed(2);
     }
 
+    // Formato venezolano: miles con '.', decimales con ','  (ej. 1.234.567,89)
+    function formatBs(n, dec) {
+        dec = (dec === undefined) ? 2 : dec;
+        var v = parseFloat(n);
+        if (isNaN(v)) v = 0;
+        var parts = v.toFixed(dec).split('.');
+        parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+        return dec > 0 ? parts.join(',') : parts[0];
+    }
+
+    // Parsea un monto en formato venezolano ("1.234,56") a número (1234.56).
+    function parseBs(str) {
+        if (str === null || str === undefined) return 0;
+        var s = String(str).trim();
+        if (s === '') return 0;
+        s = s.replace(/\./g, '').replace(',', '.');
+        var n = parseFloat(s);
+        return isNaN(n) ? 0 : n;
+    }
+
+    // Mantiene en sincronía costo unitario ↔ total de la línea. La cantidad
+    // (número simple) usa parseFloat; los montos en Bs usan parseBs.
+    // source: 'total' → recalcula el unitario; cualquier otro → recalcula el total.
+    function recomputeRow($tr, source) {
+        var qty = parseFloat($tr.find('.c-cantidad').val()) || 0;
+        if (source === 'total') {
+            var total = parseBs($tr.find('.c-total').val());
+            var unit  = qty > 0 ? total / qty : 0;
+            $tr.find('.c-costo').val(unit ? formatBs(unit) : '');
+        } else {
+            var unit2  = parseBs($tr.find('.c-costo').val());
+            var total2 = qty * unit2;
+            $tr.find('.c-total').val(total2 ? formatBs(total2) : '');
+        }
+        recalcular();
+    }
+
     function buildInsumoOptions(selectedId) {
         var html = '<option value="">Seleccione insumo...</option>';
         INSUMOS.forEach(function (ins) {
@@ -44,9 +81,8 @@ $(document).ready(function () {
         var subtotal = 0, baseGravada = 0; // en Bs
         $('#c-items-tbody tr').each(function () {
             var cantidad = parseFloat($(this).find('.c-cantidad').val()) || 0;
-            var costo    = parseFloat($(this).find('.c-costo').val())    || 0; // Bs
+            var costo    = parseBs($(this).find('.c-costo').val()); // Bs unitario
             var sub      = cantidad * costo;
-            $(this).find('.c-subtotal').text(fmt(sub));
             subtotal += sub;
             if ($(this).find('.c-iva-check').is(':checked')) baseGravada += sub;
         });
@@ -58,22 +94,22 @@ $(document).ready(function () {
         var subtotalUsd = tasa > 0 ? subtotal / tasa : 0;
         var totalUsd    = tasa > 0 ? total / tasa : 0;
 
-        $('#c-resumen-subtotal').text(fmt(subtotal));
-        $('#c-resumen-iva').text(fmt(iva));
-        $('#c-resumen-total').text(fmt(total));
+        $('#c-resumen-subtotal').text(formatBs(subtotal));
+        $('#c-resumen-iva').text(formatBs(iva));
+        $('#c-resumen-total').text(formatBs(total));
         $('#c-resumen-iva-pct').text(IVA_TASA);
-        $('#c-resumen-tasa').text(tasa ? tasa.toFixed(4) : '0.0000');
-        $('#c-resumen-total-usd').text(fmt(totalUsd));
+        $('#c-resumen-tasa').text(tasa ? formatBs(tasa, 4) : '0,0000');
+        $('#c-resumen-total-usd').text(formatBs(totalUsd));
         // Base exenta: solo se muestra si hay líneas exentas
         if (exento > 0.0001) {
-            $('#c-resumen-exento').text(fmt(exento));
+            $('#c-resumen-exento').text(formatBs(exento));
             $('#c-resumen-exento-wrap').removeAttr('hidden');
         } else {
             $('#c-resumen-exento-wrap').attr('hidden', true);
         }
         // Pie en vivo del paso 2 (Bs + equivalente USD)
-        $('#c-items-footer-subtotal').text(fmt(subtotal));
-        $('#c-items-footer-subtotal-usd').text(fmt(subtotalUsd));
+        $('#c-items-footer-subtotal').text(formatBs(subtotal));
+        $('#c-items-footer-subtotal-usd').text(formatBs(subtotalUsd));
     }
 
     function renumber() {
@@ -121,8 +157,12 @@ $(document).ready(function () {
             +   '</div>'
             + '</td>'
             + '<td class="text-center">'
-            +   '<input type="number" class="form-control form-control-sm c-costo text-end"'
-            +   ' min="0.01" step="0.01" placeholder="0.00" style="max-width:105px;margin:0 auto;">'
+            +   '<input type="text" inputmode="decimal" class="form-control form-control-sm c-costo text-end"'
+            +   ' placeholder="0,00" style="max-width:120px;margin:0 auto;">'
+            + '</td>'
+            + '<td class="text-center">'
+            +   '<input type="text" inputmode="decimal" class="form-control form-control-sm c-total text-end"'
+            +   ' placeholder="0,00" style="max-width:130px;margin:0 auto;">'
             + '</td>'
             + '<td class="text-center">'
             +   '<div class="form-check d-inline-block m-0">'
@@ -130,7 +170,6 @@ $(document).ready(function () {
             +     ' title="Gravable con IVA — desmarca si es exento">'
             +   '</div>'
             + '</td>'
-            + '<td class="text-end fw-semibold c-subtotal pe-2">0.00</td>'
             + '<td class="text-center">'
             +   '<button type="button" class="btn btn-sm btn-soft-danger py-0 px-1 c-remove-btn"'
             +   ' data-row="' + idx + '" title="Quitar"><i class="ri-delete-bin-6-line"></i></button>'
@@ -149,14 +188,16 @@ $(document).ready(function () {
             // con la tasa de la compra (editable por el usuario).
             if (costo) {
                 var tasa = parseFloat($('#c-tasa').val()) || 0;
-                $tr.find('.c-costo').val(tasa > 0 ? (parseFloat(costo) * tasa).toFixed(2) : fmt(costo));
+                var unitBs = tasa > 0 ? parseFloat(costo) * tasa : parseFloat(costo);
+                $tr.find('.c-costo').val(formatBs(unitBs));
             }
             $tr.find('.c-unit-addon').text(unid ? String(unid).substring(0, 4) : '—');
             // Heredar gravable/exento del insumo elegido (data-iva = 1/0)
             if (opt.val()) {
                 $tr.find('.c-iva-check').prop('checked', Number(opt.data('iva')) !== 0);
             }
-            recalcular();
+            // Recalcular el total de la línea a partir del unitario precargado.
+            recomputeRow($tr, 'unit');
         }).trigger('focus');
     }
 
@@ -170,9 +211,19 @@ $(document).ready(function () {
         recalcular();
     });
 
-    // ── Recalcular al editar ────────────────────────────────────────────────
-    $(document).on('input', '.c-cantidad, .c-costo', recalcular);
+    // ── Sincronización costo unitario ↔ total al editar ──────────────────────
+    // Escribís el unitario → calcula el total; escribís el total → calcula el
+    // unitario; cambiás la cantidad → recalcula el total con el unitario actual.
+    $(document).on('input', '.c-costo', function () { recomputeRow($(this).closest('tr'), 'unit'); });
+    $(document).on('input', '.c-total', function () { recomputeRow($(this).closest('tr'), 'total'); });
+    $(document).on('input', '.c-cantidad', function () { recomputeRow($(this).closest('tr'), 'unit'); });
     $(document).on('change', '.c-iva-check', recalcular);
+
+    // Al salir del campo, reformatea el monto tecleado al formato venezolano.
+    $(document).on('blur', '.c-costo, .c-total', function () {
+        var v = parseBs($(this).val());
+        $(this).val(v ? formatBs(v) : '');
+    });
 
     // ── Tasa de cambio: autocompletar según la fecha de compra ───────────────
     // Busca la tasa BCV del día (o la vigente anterior) en la DB. Es editable:
@@ -206,6 +257,11 @@ $(document).ready(function () {
 
     $('#c-fecha').on('change', function () { aplicarTasaPorFecha($(this).val()); });
     $('#c-tasa').on('input', recalcular);
+
+    // N° de factura: solo dígitos y guiones (formato 0001-000456).
+    $('#c-factura').on('input', function () {
+        this.value = this.value.replace(/[^0-9\-]/g, '');
+    });
 
     // ══════════════════════════════════════════════════════════════════════
     //  WIZARD — navegación 3 pasos (scaffold .wiz-*)
@@ -371,6 +427,10 @@ $(document).ready(function () {
                     Swal.fire({ title: 'Campo requerido', text: 'Ingrese el número de factura.', icon: 'warning', confirmButtonText: 'Entendido' });
                     return false;
                 }
+                if (!/^[0-9\-]+$/.test($('#c-factura').val().trim())) {
+                    Swal.fire({ title: 'Formato inválido', text: 'El número de factura solo puede contener dígitos y guiones.', icon: 'warning', confirmButtonText: 'Entendido' });
+                    return false;
+                }
                 if (!$('#c-fecha').val()) {
                     Swal.fire({ title: 'Campo requerido', text: 'Ingrese la fecha de compra.', icon: 'warning', confirmButtonText: 'Entendido' });
                     return false;
@@ -402,10 +462,10 @@ $(document).ready(function () {
             $('#c-items-tbody tr').each(function () {
                 var insumoId = $(this).find('.c-insumo').val();
                 var cantidad = $(this).find('.c-cantidad').val();
-                var costo    = $(this).find('.c-costo').val();
+                var costo    = parseBs($(this).find('.c-costo').val()); // Bs unitario
                 var aplicaIva = $(this).find('.c-iva-check').is(':checked');
 
-                if (!insumoId || !cantidad || parseFloat(cantidad) <= 0 || !costo || parseFloat(costo) <= 0) {
+                if (!insumoId || !cantidad || parseFloat(cantidad) <= 0 || !costo || costo <= 0) {
                     err = 'incompleto';
                     return false;
                 }
@@ -638,10 +698,12 @@ $(document).ready(function () {
                     var unid = $sel.find('option:selected').data('unidad') || '';
                     $row.find('.c-unit-addon').text(unid ? String(unid).substring(0, 4) : '—');
                     $row.find('.c-cantidad').val(parseFloat(item.cantidad));
-                    // Mostrar el costo en Bs tal como se tecleó al crear la compra.
-                    $row.find('.c-costo').val(parseFloat(item.costo_unitario_bs).toFixed(2));
+                    // Mostrar el costo en Bs (formato venezolano) tal como se tecleó.
+                    $row.find('.c-costo').val(formatBs(item.costo_unitario_bs));
                     // Restaurar el flag IVA guardado en la línea (no el del insumo)
                     $row.find('.c-iva-check').prop('checked', item.aplica_iva !== false);
+                    // Rellenar el total de la línea a partir del unitario.
+                    recomputeRow($row, 'unit');
                 });
                 updateEmpty();
                 recalcular();

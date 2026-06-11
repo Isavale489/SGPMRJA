@@ -202,7 +202,8 @@
                                                 <div class="input-group">
                                                     <span class="input-group-text"><i class="ri-receipt-line"></i></span>
                                                     <input type="text" id="c-factura" name="numero_factura"
-                                                        class="form-control" maxlength="30" placeholder="Ej: 0001-000456">
+                                                        class="form-control" maxlength="20" inputmode="numeric"
+                                                        placeholder="Ej: 0001-000456">
                                                 </div>
                                             </div>
                                             <div class="col-12">
@@ -271,10 +272,10 @@
                                             <tr>
                                                 <th class="cot-col-num text-center" style="width:36px;">#</th>
                                                 <th>Insumo</th>
-                                                <th class="text-center" style="width:140px;">Cantidad</th>
+                                                <th class="text-center" style="width:130px;">Cantidad</th>
                                                 <th class="text-center" style="width:130px;">Costo Unit. (Bs)</th>
-                                                <th class="text-center" style="width:64px;" title="Marcá si la línea es gravable con IVA">IVA</th>
-                                                <th class="text-end" style="width:120px;">Subtotal (Bs)</th>
+                                                <th class="text-center" style="width:140px;">Total (Bs)</th>
+                                                <th class="text-center" style="width:60px;" title="Marcá si la línea es gravable con IVA">IVA</th>
                                                 <th class="text-center" style="width:48px;"></th>
                                             </tr>
                                         </thead>
