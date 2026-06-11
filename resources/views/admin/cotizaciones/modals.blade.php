@@ -153,6 +153,7 @@
                         <div class="cot-kpi cot-kpi--total">
                             <span class="cot-kpi-label">Total</span>
                             <span class="cot-kpi-value" id="view-kpi-total">$0.00</span>
+                            <span class="money-bs-eq" id="view-kpi-total-bs"></span>
                         </div>
                     </div>
                     <div class="cot-empty-state" id="view-productos-empty" hidden>
@@ -558,10 +559,12 @@
                             <div class="cot-kpi">
                                 <span class="cot-kpi-label">Subtotal</span>
                                 <span class="cot-kpi-value" id="cot-kpi-subtotal">$0,00</span>
+                                <span class="money-bs-eq" id="cot-kpi-subtotal-bs"></span>
                             </div>
                             <div class="cot-kpi cot-kpi--total">
                                 <span class="cot-kpi-label">Total</span>
                                 <span class="cot-kpi-value" id="cot-kpi-total">$0,00</span>
+                                <span class="money-bs-eq" id="cot-kpi-total-bs"></span>
                                 <input type="hidden" id="total-display-field" />
                                 <span id="total-display-value" hidden>$0,00</span>
                             </div>
@@ -730,6 +733,16 @@
                         <p class="cat-eyebrow mb-0" id="cat-eyebrow">Catálogo de productos</p>
                         <h5 class="modal-title m-0" id="catalogoProductosLabel">Selecciona productos</h5>
                     </div>
+                    <div class="wiz-body-datetime wiz-body-datetime--sm wiz-body-bcv ms-2" data-bcv-pill
+                        title="Tasa oficial BCV del día">
+                        <span class="wiz-body-dt-item">
+                            <i class="ri-money-dollar-circle-line"></i>
+                            <span class="wiz-body-bcv-text">
+                                <span class="wiz-body-bcv-label">BCV <span data-bcv-fecha>—</span></span>
+                                <span class="wiz-body-bcv-val" data-bcv-val>—</span>
+                            </span>
+                        </span>
+                    </div>
                 </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
             </div>
@@ -819,6 +832,10 @@
                             <span class="cat-cart-total-label">Estimado</span>
                             <span class="cat-cart-total-value" id="cat-cart-total">$0,00</span>
                         </div>
+                        <div class="cat-cart-total-row cat-cart-total-row--bs">
+                            <span class="cat-cart-total-label">Equivalente Bs</span>
+                            <span class="cat-cart-total-value" id="cat-cart-total-bs">—</span>
+                        </div>
                         <button type="button" class="btn btn-atlantico-brand w-100" id="btn-cat-confirmar" disabled>
                             <i class="ri-check-line me-1"></i>Agregar a la cotización
                         </button>
@@ -848,6 +865,16 @@
                     <div>
                         <p class="cat-eyebrow mb-0">Selecciona la variante</p>
                         <h5 class="modal-title m-0" id="vs-tipo-nombre">—</h5>
+                    </div>
+                    <div class="wiz-body-datetime wiz-body-datetime--sm wiz-body-bcv ms-2" data-bcv-pill
+                        title="Tasa oficial BCV del día">
+                        <span class="wiz-body-dt-item">
+                            <i class="ri-money-dollar-circle-line"></i>
+                            <span class="wiz-body-bcv-text">
+                                <span class="wiz-body-bcv-label">BCV <span data-bcv-fecha>—</span></span>
+                                <span class="wiz-body-bcv-val" data-bcv-val>—</span>
+                            </span>
+                        </span>
                     </div>
                 </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
@@ -898,6 +925,7 @@
                     <div class="vs-result-price">
                         <span class="vs-result-label">Precio base</span>
                         <span class="vs-result-amount" id="vs-result-precio">—</span>
+                        <span class="money-bs-eq" id="vs-result-precio-bs"></span>
                     </div>
                 </div>
                 <div id="vs-result-missing" class="vs-result-warn mt-2" style="display:none;">
@@ -939,6 +967,16 @@
                         <p class="cfg-eyebrow mb-0" id="cfg-eyebrow">Configurar producto</p>
                         <h5 class="modal-title m-0" id="cfg-title">—</h5>
                     </div>
+                    <div class="wiz-body-datetime wiz-body-datetime--sm wiz-body-bcv ms-2" data-bcv-pill
+                        title="Tasa oficial BCV del día">
+                        <span class="wiz-body-dt-item">
+                            <i class="ri-money-dollar-circle-line"></i>
+                            <span class="wiz-body-bcv-text">
+                                <span class="wiz-body-bcv-label">BCV <span data-bcv-fecha>—</span></span>
+                                <span class="wiz-body-bcv-val" data-bcv-val>—</span>
+                            </span>
+                        </span>
+                    </div>
                 </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
             </div>
@@ -960,6 +998,7 @@
                             <div class="cfg-info-price-block">
                                 <span class="cfg-info-price-label">Precio base</span>
                                 <span class="cfg-info-price-value" id="cfg-info-precio">$0,00</span>
+                                <span class="money-bs-eq" id="cfg-info-precio-bs"></span>
                             </div>
                             <button type="button" class="btn btn-sm btn-outline-secondary w-100 mt-2" id="cfg-cambiar-variante" style="display:none;">
                                 <i class="ri-shape-2-line me-1"></i>Cambiar variante
@@ -1054,10 +1093,12 @@
                         <div class="cfg-summary-item">
                             <span class="cfg-summary-label">Precio unitario</span>
                             <span class="cfg-summary-value" id="cfg-summary-unit">$0,00</span>
+                            <span class="money-bs-eq" id="cfg-summary-unit-bs"></span>
                         </div>
                         <div class="cfg-summary-item cfg-summary-item--total">
                             <span class="cfg-summary-label">Subtotal</span>
                             <span class="cfg-summary-value" id="cfg-summary-subtotal">$0,00</span>
+                            <span class="money-bs-eq" id="cfg-summary-subtotal-bs"></span>
                         </div>
                     </div>
                     <div class="cfg-actions-buttons">

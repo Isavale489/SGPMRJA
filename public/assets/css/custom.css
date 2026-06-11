@@ -8480,3 +8480,31 @@ header#page-topbar,
     border-radius: 6px;
     transition: background .15s;
 }
+
+/* ════════════════════════════════════════════════════════════════════
+   Equivalente en Bs junto a montos en $ (tasa BCV del día)
+   Requisito: todo total en $ muestra su equivalente en Bs, y la tasa
+   BCV del día queda visible (píldoras [data-bcv-pill] en headers).
+   ════════════════════════════════════════════════════════════════════ */
+.money-bs-eq {
+    display: block;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: #64748b;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.2;
+    margin-top: 2px;
+}
+.money-bs-eq:empty { display: none; }
+/* Contextos sobre fondo navy/gradiente: texto claro */
+.cot-kpi--total .money-bs-eq,
+.vs-result-price .money-bs-eq { color: rgba(255, 255, 255, 0.75); }
+[data-bs-theme="dark"] .money-bs-eq { color: #94a3b8; }
+/* Fila secundaria "Equivalente Bs" bajo el Estimado del carrito */
+.cat-cart-total-row--bs { margin-top: -6px; }
+.cat-cart-total-row--bs .cat-cart-total-label {
+    font-size: 0.62rem;
+    text-transform: none;
+    letter-spacing: 0.04em;
+}
+.cat-cart-total-row--bs .cat-cart-total-value { font-size: 0.85rem; opacity: 0.85; }

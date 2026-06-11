@@ -158,6 +158,25 @@
             if (!rate) return null;
             return 'Bs ' + rate.toLocaleString('es-VE', { minimumFractionDigits: 4, maximumFractionDigits: 4 });
         };
+
+        // Rellena toda píldora BCV declarativa: cualquier elemento con [data-bcv-pill]
+        // que contenga spans [data-bcv-fecha] y [data-bcv-val]. Permite mostrar la tasa
+        // del día en headers de modales sin repetir el script por módulo.
+        document.addEventListener('DOMContentLoaded', function () {
+            var fecha = '', valor = null;
+            if (window.tasaBcv && window.tasaBcv.valor) {
+                valor = 'Bs. ' + Number(window.tasaBcv.valor)
+                    .toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                var p = String(window.tasaBcv.fecha || '').split('-');
+                fecha = (p.length === 3) ? (p[2] + '/' + p[1]) : '';
+            }
+            document.querySelectorAll('[data-bcv-pill]').forEach(function (pill) {
+                var f = pill.querySelector('[data-bcv-fecha]');
+                var v = pill.querySelector('[data-bcv-val]');
+                if (f) f.textContent = fecha;
+                if (v) v.textContent = valor || 'N/D';
+            });
+        });
     </script>
 
     <!-- JAVASCRIPT -->
