@@ -210,8 +210,24 @@
                                                 <div class="input-group">
                                                     <span class="input-group-text"><i class="ri-calendar-event-line"></i></span>
                                                     <input type="date" id="c-fecha" name="fecha_compra"
-                                                        class="form-control" required value="{{ date('Y-m-d') }}">
+                                                        class="form-control" required value="{{ date('Y-m-d') }}"
+                                                        max="{{ date('Y-m-d') }}">
                                                 </div>
+                                            </div>
+                                            <div class="col-12">
+                                                <label class="form-label small fw-semibold mb-1" for="c-tasa">
+                                                    Tasa de cambio (Bs por USD) <span class="text-danger">*</span>
+                                                </label>
+                                                <div class="input-group">
+                                                    <span class="input-group-text"><i class="ri-exchange-dollar-line"></i></span>
+                                                    <input type="number" id="c-tasa" name="tasa_cambio"
+                                                        class="form-control bg-light" min="0.0001" step="0.0001"
+                                                        placeholder="0.0000" readonly>
+                                                    <span class="input-group-text">Bs/USD</span>
+                                                </div>
+                                                <small class="text-muted d-block mt-1" id="c-tasa-hint">
+                                                    <i class="ri-information-line me-1"></i>Se autocompleta con la tasa BCV de la fecha de compra.
+                                                </small>
                                             </div>
                                         </div>
                                     </div>
@@ -256,9 +272,9 @@
                                                 <th class="cot-col-num text-center" style="width:36px;">#</th>
                                                 <th>Insumo</th>
                                                 <th class="text-center" style="width:140px;">Cantidad</th>
-                                                <th class="text-center" style="width:125px;">Costo Unit.</th>
+                                                <th class="text-center" style="width:130px;">Costo Unit. (Bs)</th>
                                                 <th class="text-center" style="width:64px;" title="Marcá si la línea es gravable con IVA">IVA</th>
-                                                <th class="text-end" style="width:110px;">Subtotal</th>
+                                                <th class="text-end" style="width:120px;">Subtotal (Bs)</th>
                                                 <th class="text-center" style="width:48px;"></th>
                                             </tr>
                                         </thead>
@@ -274,7 +290,8 @@
                                 </span>
                                 <span class="small">
                                     Subtotal sin IVA:
-                                    <strong class="text-atlantico-emerald ms-1" id="c-items-footer-subtotal">0.00</strong>
+                                    <strong class="text-atlantico-emerald ms-1">Bs <span id="c-items-footer-subtotal">0.00</span></strong>
+                                    <span class="text-muted ms-1">(≈ $<span id="c-items-footer-subtotal-usd">0.00</span>)</span>
                                 </span>
                             </div>
                         </div>
@@ -344,23 +361,31 @@
                                         <div class="c-ticket">
                                             <div class="d-flex justify-content-between mb-2">
                                                 <span class="text-muted">Subtotal</span>
-                                                <span class="fw-semibold" id="c-resumen-subtotal">0.00</span>
+                                                <span class="fw-semibold">Bs <span id="c-resumen-subtotal">0.00</span></span>
                                             </div>
                                             <div class="d-flex justify-content-between mb-2" id="c-resumen-exento-wrap" hidden>
                                                 <span class="text-muted">Base exenta</span>
-                                                <span class="fw-semibold text-muted" id="c-resumen-exento">0.00</span>
+                                                <span class="fw-semibold text-muted">Bs <span id="c-resumen-exento">0.00</span></span>
                                             </div>
                                             <div class="d-flex justify-content-between mb-2">
                                                 <span class="text-muted">IVA (<span id="c-resumen-iva-pct">16</span>%)</span>
-                                                <span class="fw-semibold" id="c-resumen-iva">0.00</span>
+                                                <span class="fw-semibold">Bs <span id="c-resumen-iva">0.00</span></span>
                                             </div>
                                             <hr class="my-2">
                                             <div class="d-flex justify-content-between align-items-center">
                                                 <span class="fw-bold fs-15">Total</span>
-                                                <span class="fw-bold fs-18 text-atlantico-emerald" id="c-resumen-total">0.00</span>
+                                                <span class="fw-bold fs-18 text-atlantico-emerald">Bs <span id="c-resumen-total">0.00</span></span>
+                                            </div>
+                                            <div class="d-flex justify-content-between align-items-center mt-2 pt-2 border-top">
+                                                <span class="text-muted small"><i class="ri-exchange-dollar-line me-1"></i>Tasa aplicada</span>
+                                                <span class="small">Bs <span id="c-resumen-tasa">0.0000</span> / USD</span>
+                                            </div>
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <span class="text-muted small">Equivalente USD</span>
+                                                <span class="fw-semibold small">$ <span id="c-resumen-total-usd">0.00</span></span>
                                             </div>
                                             <p class="text-muted small mb-0 mt-2">
-                                                <i class="ri-information-line me-1"></i>El IVA ({{ (float) config('impuestos.iva', 16) }}%) se aplica solo a las líneas gravables marcadas en el paso anterior.
+                                                <i class="ri-information-line me-1"></i>Los costos se cargan en bolívares; el equivalente en USD usa la tasa indicada en el paso 1. El IVA ({{ (float) config('impuestos.iva', 16) }}%) se aplica solo a las líneas gravables.
                                             </p>
                                         </div>
                                     </div>

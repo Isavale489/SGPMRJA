@@ -39,11 +39,12 @@ $(document).ready(function () {
         });
     }
 
+    // Los costos se cargan en bolívares; el equivalente en USD se deriva de la tasa.
     function recalcular() {
-        var subtotal = 0, baseGravada = 0;
+        var subtotal = 0, baseGravada = 0; // en Bs
         $('#c-items-tbody tr').each(function () {
             var cantidad = parseFloat($(this).find('.c-cantidad').val()) || 0;
-            var costo    = parseFloat($(this).find('.c-costo').val())    || 0;
+            var costo    = parseFloat($(this).find('.c-costo').val())    || 0; // Bs
             var sub      = cantidad * costo;
             $(this).find('.c-subtotal').text(fmt(sub));
             subtotal += sub;
@@ -51,10 +52,18 @@ $(document).ready(function () {
         });
         var iva    = baseGravada * IVA_TASA / 100;
         var exento = subtotal - baseGravada;
+        var total  = subtotal + iva;
+
+        var tasa        = parseFloat($('#c-tasa').val()) || 0;
+        var subtotalUsd = tasa > 0 ? subtotal / tasa : 0;
+        var totalUsd    = tasa > 0 ? total / tasa : 0;
+
         $('#c-resumen-subtotal').text(fmt(subtotal));
         $('#c-resumen-iva').text(fmt(iva));
-        $('#c-resumen-total').text(fmt(subtotal + iva));
+        $('#c-resumen-total').text(fmt(total));
         $('#c-resumen-iva-pct').text(IVA_TASA);
+        $('#c-resumen-tasa').text(tasa ? tasa.toFixed(4) : '0.0000');
+        $('#c-resumen-total-usd').text(fmt(totalUsd));
         // Base exenta: solo se muestra si hay líneas exentas
         if (exento > 0.0001) {
             $('#c-resumen-exento').text(fmt(exento));
@@ -62,8 +71,9 @@ $(document).ready(function () {
         } else {
             $('#c-resumen-exento-wrap').attr('hidden', true);
         }
-        // Pie en vivo del paso 2
+        // Pie en vivo del paso 2 (Bs + equivalente USD)
         $('#c-items-footer-subtotal').text(fmt(subtotal));
+        $('#c-items-footer-subtotal-usd').text(fmt(subtotalUsd));
     }
 
     function renumber() {
@@ -132,10 +142,15 @@ $(document).ready(function () {
 
         $('#c-ins-' + idx).on('change', function () {
             var opt   = $(this).find('option:selected');
-            var costo = opt.data('costo');
+            var costo = opt.data('costo'); // costo de referencia del insumo, en USD
             var unid  = opt.data('unidad');
             var $tr   = $(this).closest('tr');
-            if (costo) { $tr.find('.c-costo').val(fmt(costo)); }
+            // El maestro guarda el costo en USD; lo precargamos convertido a Bs
+            // con la tasa de la compra (editable por el usuario).
+            if (costo) {
+                var tasa = parseFloat($('#c-tasa').val()) || 0;
+                $tr.find('.c-costo').val(tasa > 0 ? (parseFloat(costo) * tasa).toFixed(2) : fmt(costo));
+            }
             $tr.find('.c-unit-addon').text(unid ? String(unid).substring(0, 4) : '—');
             // Heredar gravable/exento del insumo elegido (data-iva = 1/0)
             if (opt.val()) {
@@ -158,6 +173,39 @@ $(document).ready(function () {
     // ── Recalcular al editar ────────────────────────────────────────────────
     $(document).on('input', '.c-cantidad, .c-costo', recalcular);
     $(document).on('change', '.c-iva-check', recalcular);
+
+    // ── Tasa de cambio: autocompletar según la fecha de compra ───────────────
+    // Busca la tasa BCV del día (o la vigente anterior) en la DB. Es editable:
+    // si la factura del proveedor usó otra tasa, el usuario la corrige.
+    function aplicarTasaPorFecha(fecha, opts) {
+        opts = opts || {};
+        if (!fecha) return;
+        $.get('/compras/tasa', { fecha: fecha }, function (r) {
+            // En modo edición ya se cargó la tasa guardada (snapshot): si la
+            // petición "solo nuevo" llega tarde, no pisar ese valor.
+            if (opts.soloNuevo && $('#c-edit-id').val()) return;
+
+            var $hint = $('#c-tasa-hint');
+            var $tasa = $('#c-tasa');
+            if (r.encontrada) {
+                // Tasa traída por el sistema: campo de solo lectura.
+                $tasa.val(parseFloat(r.valor).toFixed(4)).prop('readonly', true).addClass('bg-light');
+                if (r.exacta) {
+                    $hint.html('<i class="ri-checkbox-circle-line text-success me-1"></i>Tasa BCV oficial del ' + r.fecha_bcv_fmt + '.');
+                } else {
+                    $hint.html('<i class="ri-information-line text-warning me-1"></i>Sin tasa de ese día; se aplicó la tasa BCV vigente del ' + r.fecha_bcv_fmt + '.');
+                }
+            } else {
+                // El sistema no tiene tasa para esa fecha: se habilita la carga manual.
+                $tasa.val('').prop('readonly', false).removeClass('bg-light');
+                $hint.html('<i class="ri-error-warning-line text-danger me-1"></i>' + (r.message || 'Sin tasa BCV para esa fecha. Ingresala manualmente.'));
+            }
+            recalcular();
+        });
+    }
+
+    $('#c-fecha').on('change', function () { aplicarTasaPorFecha($(this).val()); });
+    $('#c-tasa').on('input', recalcular);
 
     // ══════════════════════════════════════════════════════════════════════
     //  WIZARD — navegación 3 pasos (scaffold .wiz-*)
@@ -327,6 +375,16 @@ $(document).ready(function () {
                     Swal.fire({ title: 'Campo requerido', text: 'Ingrese la fecha de compra.', icon: 'warning', confirmButtonText: 'Entendido' });
                     return false;
                 }
+                // La fecha no puede ser futura (max = hoy según el servidor).
+                var maxFecha = $('#c-fecha').attr('max');
+                if (maxFecha && $('#c-fecha').val() > maxFecha) {
+                    Swal.fire({ title: 'Fecha inválida', text: 'La fecha de compra no puede ser futura.', icon: 'warning', confirmButtonText: 'Entendido' });
+                    return false;
+                }
+                if (!(parseFloat($('#c-tasa').val()) > 0)) {
+                    Swal.fire({ title: 'Campo requerido', text: 'Ingrese la tasa de cambio (Bs por USD) de la compra.', icon: 'warning', confirmButtonText: 'Entendido' });
+                    return false;
+                }
                 return true;
             }
             if (n === 2) {
@@ -356,7 +414,8 @@ $(document).ready(function () {
                     return false;
                 }
                 insumoIds.push(insumoId);
-                items.push({ insumo_id: insumoId, cantidad: cantidad, costo_unitario: costo, aplica_iva: aplicaIva });
+                // El costo se ingresa en bolívares; el USD lo deriva el backend.
+                items.push({ insumo_id: insumoId, cantidad: cantidad, costo_unitario_bs: costo, aplica_iva: aplicaIva });
             });
 
             if (items.length === 0) {
@@ -535,6 +594,8 @@ $(document).ready(function () {
             $('#c-prov-doc-prefix').val('J-');
             $('#c-prov-autocomplete').empty().hide();
             $('#c-fecha').val('{{ date("Y-m-d") }}');
+            $('#c-tasa').val('').prop('readonly', true).addClass('bg-light');
+            $('#c-tasa-hint').html('<i class="ri-information-line me-1"></i>Se autocompleta con la tasa BCV de la fecha de compra.');
             $('#c-items-tbody').empty();
             updateEmpty();
             recalcular();
@@ -555,6 +616,15 @@ $(document).ready(function () {
 
             $('#c-factura').val(data.numero_factura || '');
             $('#c-fecha').val(data.fecha_compra || '');
+            // Tasa guardada en la compra (snapshot), no la del día actual. Solo
+            // lectura si quedó registrada; editable si la compra no tenía tasa.
+            if (data.tasa_cambio) {
+                $('#c-tasa').val(parseFloat(data.tasa_cambio).toFixed(4)).prop('readonly', true).addClass('bg-light');
+                $('#c-tasa-hint').html('<i class="ri-history-line me-1"></i>Tasa con la que se registró esta compra.');
+            } else {
+                $('#c-tasa').val('').prop('readonly', false).removeClass('bg-light');
+                $('#c-tasa-hint').html('<i class="ri-error-warning-line text-danger me-1"></i>Esta compra no tiene tasa registrada. Ingresala.');
+            }
             $('#c-observaciones').val(data.observaciones || '');
 
             $('#c-items-tbody').empty();
@@ -568,7 +638,8 @@ $(document).ready(function () {
                     var unid = $sel.find('option:selected').data('unidad') || '';
                     $row.find('.c-unit-addon').text(unid ? String(unid).substring(0, 4) : '—');
                     $row.find('.c-cantidad').val(parseFloat(item.cantidad));
-                    $row.find('.c-costo').val(parseFloat(item.costo_unitario).toFixed(2));
+                    // Mostrar el costo en Bs tal como se tecleó al crear la compra.
+                    $row.find('.c-costo').val(parseFloat(item.costo_unitario_bs).toFixed(2));
                     // Restaurar el flag IVA guardado en la línea (no el del insumo)
                     $row.find('.c-iva-check').prop('checked', item.aplica_iva !== false);
                 });
@@ -582,7 +653,12 @@ $(document).ready(function () {
 
         // ── Lifecycle del modal ──────────────────────────────────────────────
         $('#createCompraModal')
-            .on('show.bs.modal', function () { showStep(1); })
+            .on('show.bs.modal', function () {
+                showStep(1);
+                // Compra nueva: precargar la tasa BCV de hoy. En edición, populate()
+                // (shown.bs.modal) fija la tasa guardada y el guard soloNuevo la respeta.
+                aplicarTasaPorFecha($('#c-fecha').val(), { soloNuevo: true });
+            })
             .on('hidden.bs.modal', function () { resetModal(); currentStep = 1; });
 
         // ── Envío (solo en el último paso) ───────────────────────────────────
@@ -601,6 +677,7 @@ $(document).ready(function () {
                 proveedor_id:      $('#c-proveedor').val(),
                 numero_factura:    $('#c-factura').val() || null,
                 fecha_compra:      $('#c-fecha').val(),
+                tasa_cambio:       $('#c-tasa').val(),
                 observaciones:     $('#c-observaciones').val() || null,
                 items:             items
             };

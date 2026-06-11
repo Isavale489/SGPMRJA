@@ -138,6 +138,7 @@ $(document).ready(function () {
                 // Comprobante
                 $('#cv-factura').text(d.numero_factura);
                 $('#cv-fecha').text(d.fecha_compra);
+                $('#cv-tasa').text(d.tasa_cambio ? 'Bs ' + d.tasa_cambio + ' / USD' : '—');
 
                 if (d.observaciones) {
                     $('#cv-observaciones').text(d.observaciones);
@@ -158,9 +159,9 @@ $(document).ready(function () {
                         + '<td class="text-center"><span class="cot-tipo-pill">' + item.tipo + '</span></td>'
                         + '<td class="text-center text-muted">' + item.unidad + '</td>'
                         + '<td class="text-end">' + item.cantidad + '</td>'
-                        + '<td class="text-end">' + item.costo_unitario + '</td>'
+                        + '<td class="text-end">' + item.costo_unitario_bs + '</td>'
                         + '<td class="text-center">' + ivaBadge + '</td>'
-                        + '<td class="text-end fw-semibold">' + item.subtotal + '</td>'
+                        + '<td class="text-end fw-semibold">' + item.subtotal_bs + '</td>'
                         + '</tr>';
                 });
                 $('#cv-items-tbody').html(itemsHtml);
@@ -171,14 +172,16 @@ $(document).ready(function () {
                 $('#cv-reg-nombre').text(d.registrado_por.name);
                 $('#cv-reg-fecha').text(d.created_at);
 
-                // Totales
-                $('#cv-subtotal').text(d.subtotal);
-                $('#cv-iva').text(d.iva);
+                // Totales en bolívares (lo pagado) + equivalente USD y tasa
+                $('#cv-subtotal').text(d.subtotal_bs);
+                $('#cv-iva').text(d.iva_bs);
                 $('#cv-iva-pct').text(d.iva_porcentaje);
-                $('#cv-total-ticket').text(d.total);
-                // Base exenta = suma de subtotales de líneas no gravadas
+                $('#cv-total-ticket').text(d.total_bs);
+                $('#cv-tasa-ticket').text(d.tasa_cambio || '0.0000');
+                $('#cv-total-usd').text(d.total);
+                // Base exenta = suma de subtotales en Bs de líneas no gravadas
                 var exento = (d.items || []).reduce(function (acc, it) {
-                    return acc + (it.aplica_iva ? 0 : parseFloat(String(it.subtotal).replace(/,/g, '')) || 0);
+                    return acc + (it.aplica_iva ? 0 : parseFloat(String(it.subtotal_bs).replace(/,/g, '')) || 0);
                 }, 0);
                 if (exento > 0.0001) {
                     $('#cv-exento').text(exento.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
