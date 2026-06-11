@@ -5218,11 +5218,6 @@ header#page-topbar,
 [data-bs-theme="dark"] #viewModal .card-header    { background: rgba(78, 122, 199, 0.10) !important; }
 [data-bs-theme="dark"] #viewModal .card-header h6 { color: #93c5fd !important; }
 
-/* Botones sub-maestros (header de Empleados) */
-.btn-link-depto { background-color: #155e75; border-color: #155e75; color: #fff; }
-.btn-link-depto:hover, .btn-link-depto:focus { background-color: #0e4a5d; border-color: #0e4a5d; color: #fff; }
-.btn-link-cargo { background-color: #92400e; border-color: #92400e; color: #fff; }
-.btn-link-cargo:hover, .btn-link-cargo:focus { background-color: #78350f; border-color: #78350f; color: #fff; }
 
 /* Iconos circulares en viewModal de Empleados */
 .emp-icon-box { width: 32px; height: 32px; }
