@@ -289,6 +289,7 @@ Route::middleware(['auth', 'throttle:60,1', 'active.user', 'recovery.questions.r
         Route::get('movimiento-insumo/alertas', [MovimientoInsumoController::class, 'alertasStock'])->name('movimiento-insumo.alertas');
         Route::get('movimiento-insumo/historial/{id}', [MovimientoInsumoController::class, 'historialInsumo'])->name('movimiento-insumo.historial');
         Route::post('movimiento-insumo', [MovimientoInsumoController::class, 'store'])->name('movimiento-insumo.store');
+        Route::post('movimiento-insumo/masivo', [MovimientoInsumoController::class, 'storeMasivo'])->name('movimiento-insumo.masivo');
         Route::get('movimiento-insumo/{id}', [MovimientoInsumoController::class, 'show'])->name('movimiento-insumo.show');
 
         // Notificaciones (campanita del header)

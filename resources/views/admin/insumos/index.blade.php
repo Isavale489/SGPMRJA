@@ -44,17 +44,32 @@
                                 <button type="button" class="btn-historial btn-historial-ver" id="ins-toggle-historial">
                                     <i class="ri-archive-line"></i> <span>Inhabilitados</span>
                                 </button>
-                                <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal"
-                                    data-bs-target="#tiposInsumoModal">
-                                    <i class="ri-settings-3-line align-bottom me-1"></i> Gestionar Tipos
-                                </button>
                                 <button type="button" class="btn btn-success add-btn" data-bs-toggle="modal" id="create-btn"
                                     data-bs-target="#showModal">
                                     <i class="ri-add-line align-bottom me-1"></i> Agregar Insumo
                                 </button>
-                                <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#pdfExportModal">
-                                    <i class="ri-file-pdf-fill align-bottom me-1"></i> Exportar PDF
-                                </button>
+                                {{-- Acciones secundarias agrupadas — estándar .actions-menu --}}
+                                <div class="dropdown">
+                                    <button type="button" class="btn btn-soft-secondary dropdown-toggle"
+                                        data-bs-toggle="dropdown" aria-expanded="false">
+                                        <i class="ri-menu-2-line align-bottom me-1"></i> Más acciones
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end actions-menu">
+                                        <li>
+                                            <button type="button" class="dropdown-item act-item act-primary"
+                                                data-bs-toggle="modal" data-bs-target="#tiposInsumoModal">
+                                                <span class="act-ic"><i class="ri-settings-3-line"></i></span>Gestionar Tipos
+                                            </button>
+                                        </li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li>
+                                            <button type="button" class="dropdown-item act-item act-pdf"
+                                                data-bs-toggle="modal" data-bs-target="#pdfExportModal">
+                                                <span class="act-ic"><i class="ri-file-pdf-fill"></i></span>Exportar PDF
+                                            </button>
+                                        </li>
+                                    </ul>
+                                </div>
                             </div>
                         </div>
                     </div>
