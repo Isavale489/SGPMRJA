@@ -30,7 +30,14 @@ class StoreCompraRequest extends FormRequest
             'fecha_compra'                => ['required', 'date', 'before_or_equal:today'],
             'observaciones'               => ['nullable', 'string', 'max:500'],
             'items'                       => ['required', 'array', 'min:1'],
-            'items.*.insumo_id'           => ['required', 'integer', 'exists:insumo,id'],
+            'items.*.insumo_id'           => [
+                'required', 'integer',
+                // El insumo debe existir, estar habilitado (estado=1) y ser
+                // inventariable: solo esos pueden recibir movimientos de stock.
+                Rule::exists('insumo', 'id')
+                    ->where('estado', 1)
+                    ->where('is_inventoriable', 1),
+            ],
             'items.*.cantidad'            => ['required', 'numeric', 'min:0.01'],
             'items.*.costo_unitario'      => ['required', 'numeric', 'min:0.01'],
             'items.*.aplica_iva'          => ['sometimes', 'boolean'],
@@ -59,7 +66,7 @@ class StoreCompraRequest extends FormRequest
             'items.required'                   => 'Debe agregar al menos un insumo.',
             'items.min'                        => 'Debe agregar al menos un insumo.',
             'items.*.insumo_id.required'       => 'Seleccione el insumo en cada fila.',
-            'items.*.insumo_id.exists'         => 'Uno de los insumos seleccionados no existe.',
+            'items.*.insumo_id.exists'         => 'Uno de los insumos seleccionados no existe, está inhabilitado o no es inventariable.',
             'items.*.cantidad.required'        => 'Ingrese la cantidad para cada ítem.',
             'items.*.cantidad.min'             => 'La cantidad debe ser mayor a cero.',
             'items.*.costo_unitario.required'  => 'Ingrese el costo unitario para cada ítem.',

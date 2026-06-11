@@ -79,7 +79,9 @@ class CompraService
         }
 
         DB::transaction(function () use ($compra, $userId) {
-            $compra->load('detalles');
+            // Orden de lock estable (por insumo_id) para evitar deadlocks entre
+            // compras que comparten insumos y los recorren en distinto orden.
+            $compra->load(['detalles' => fn($q) => $q->orderBy('insumo_id')]);
 
             foreach ($compra->detalles as $detalle) {
                 $insumo        = $this->insumoBloqueado($detalle->insumo_id);
@@ -116,7 +118,12 @@ class CompraService
         }
 
         DB::transaction(function () use ($compra, $userId) {
-            $compra->load('detalles.insumo');
+            // Mismo orden de lock estable (por insumo_id) que procesar(), para
+            // evitar deadlocks entre operaciones concurrentes sobre el inventario.
+            $compra->load([
+                'detalles' => fn($q) => $q->orderBy('insumo_id'),
+                'detalles.insumo',
+            ]);
 
             foreach ($compra->detalles as $detalle) {
                 $insumo        = $this->insumoBloqueado($detalle->insumo_id);
