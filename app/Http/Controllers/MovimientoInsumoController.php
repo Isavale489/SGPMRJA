@@ -81,22 +81,32 @@ class MovimientoInsumoController extends Controller
         }
 
         return DataTables::of($movimientos)
-            // Búsqueda estricta: por el insumo (nombre o código) y el motivo del
-            // movimiento. Sobrescribe el buscador global para no romper sobre la
-            // columna derivada del insumo.
+            // Búsqueda "contiene" (LIKE %texto%) sobre TODAS las columnas visibles
+            // del listado: insumo (nombre/código), tipo, cantidad, stock nuevo,
+            // fecha (formato d/m/Y como se muestra) y el motivo. Sobrescribe POR
+            // COMPLETO el buscador global de Yajra (sin pasar el 2º arg / false):
+            // si se pasara `true`, Yajra correría además su búsqueda automática
+            // sobre las columnas `searchable`, incluidas las derivadas
+            // `insumo_nombre`/`fecha` —que no existen en `movimiento_insumo`— y
+            // generaría un SQL inválido (`WHERE movimiento_insumo.insumo_nombre
+            // LIKE ?`) que rompe el listado.
             ->filter(function ($query) use ($request) {
                 $keyword = trim((string) $request->input('search.value'));
                 if ($keyword === '') {
                     return;
                 }
                 $query->where(function ($q) use ($keyword) {
-                    $q->where('movimiento_insumo.motivo', 'like', "{$keyword}%")
+                    $q->where('movimiento_insumo.tipo_movimiento', 'like', "%{$keyword}%")
+                      ->orWhere('movimiento_insumo.cantidad', 'like', "%{$keyword}%")
+                      ->orWhere('movimiento_insumo.stock_nuevo', 'like', "%{$keyword}%")
+                      ->orWhere('movimiento_insumo.motivo', 'like', "%{$keyword}%")
+                      ->orWhereRaw("DATE_FORMAT(movimiento_insumo.created_at, '%d/%m/%Y') like ?", ["%{$keyword}%"])
                       ->orWhereHas('insumo', function ($i) use ($keyword) {
-                          $i->where('nombre', 'like', "{$keyword}%")
-                            ->orWhere('codigo', 'like', "{$keyword}%");
+                          $i->where('nombre', 'like', "%{$keyword}%")
+                            ->orWhere('codigo', 'like', "%{$keyword}%");
                       });
                 });
-            }, true)
+            })
             ->addColumn('insumo_nombre', function ($movimiento) {
                 return $movimiento->insumo ? $movimiento->insumo->nombre : 'N/A';
             })
