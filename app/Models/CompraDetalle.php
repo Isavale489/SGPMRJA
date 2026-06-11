@@ -16,12 +16,16 @@ class CompraDetalle extends Model
         'insumo_id',
         'cantidad',
         'costo_unitario',
+        'costo_unitario_bs',
+        'aplica_iva',
         'subtotal',
     ];
 
     protected $casts = [
-        'cantidad'       => 'decimal:2',
-        'costo_unitario' => 'decimal:2',
+        'cantidad'          => 'decimal:2',
+        'costo_unitario'    => 'decimal:2',
+        'costo_unitario_bs' => 'decimal:2',
+        'aplica_iva'        => 'boolean',
         'subtotal'       => 'decimal:2',
     ];
 

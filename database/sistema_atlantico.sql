@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1:3308
--- Tiempo de generación: 09-06-2026 a las 06:34:48
+-- Tiempo de generación: 11-06-2026 a las 08:04:45
 -- Versión del servidor: 10.4.32-MariaDB
 -- Versión de PHP: 8.2.12
 
@@ -330,6 +330,8 @@ CREATE TABLE `compra` (
   `fecha_compra` date NOT NULL,
   `subtotal` decimal(10,2) NOT NULL DEFAULT 0.00,
   `iva` decimal(10,2) NOT NULL DEFAULT 0.00,
+  `iva_porcentaje` decimal(5,2) NOT NULL DEFAULT 0.00,
+  `tasa_cambio` decimal(12,4) DEFAULT NULL,
   `total` decimal(10,2) NOT NULL DEFAULT 0.00,
   `observaciones` text DEFAULT NULL,
   `estado` enum('borrador','recibida','anulada') NOT NULL DEFAULT 'recibida',
@@ -345,8 +347,9 @@ CREATE TABLE `compra` (
 -- Volcado de datos para la tabla `compra`
 --
 
-INSERT INTO `compra` (`id`, `proveedor_id`, `user_id`, `numero_factura`, `fecha_compra`, `subtotal`, `iva`, `total`, `observaciones`, `estado`, `clonada`, `anulado_por_id`, `fecha_anulacion`, `created_at`, `updated_at`, `deleted_at`) VALUES
-(1, 5, 1, '54175', '2026-06-08', 420.00, 67.20, 487.20, NULL, 'recibida', 0, NULL, NULL, '2026-06-09 03:21:46', '2026-06-09 03:22:02', NULL);
+INSERT INTO `compra` (`id`, `proveedor_id`, `user_id`, `numero_factura`, `fecha_compra`, `subtotal`, `iva`, `iva_porcentaje`, `tasa_cambio`, `total`, `observaciones`, `estado`, `clonada`, `anulado_por_id`, `fecha_anulacion`, `created_at`, `updated_at`, `deleted_at`) VALUES
+(1, 5, 1, '54175', '2026-06-08', 420.00, 67.20, 16.00, 563.2892, 487.20, NULL, 'recibida', 0, NULL, NULL, '2026-06-09 03:21:46', '2026-06-09 03:22:02', NULL),
+(3, 8, 1, '111', '2026-06-11', 210.00, 33.60, 16.00, 577.5461, 243.60, NULL, 'recibida', 0, NULL, NULL, '2026-06-11 06:00:52', '2026-06-11 06:01:12', NULL);
 
 -- --------------------------------------------------------
 
@@ -360,6 +363,8 @@ CREATE TABLE `compra_detalle` (
   `insumo_id` bigint(20) UNSIGNED NOT NULL,
   `cantidad` decimal(10,2) NOT NULL,
   `costo_unitario` decimal(10,2) NOT NULL,
+  `costo_unitario_bs` decimal(14,2) DEFAULT NULL,
+  `aplica_iva` tinyint(1) NOT NULL DEFAULT 1,
   `subtotal` decimal(10,2) NOT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL
@@ -369,8 +374,10 @@ CREATE TABLE `compra_detalle` (
 -- Volcado de datos para la tabla `compra_detalle`
 --
 
-INSERT INTO `compra_detalle` (`id`, `compra_id`, `insumo_id`, `cantidad`, `costo_unitario`, `subtotal`, `created_at`, `updated_at`) VALUES
-(1, 1, 9, 30.00, 14.00, 420.00, '2026-06-09 03:21:46', '2026-06-09 03:21:46');
+INSERT INTO `compra_detalle` (`id`, `compra_id`, `insumo_id`, `cantidad`, `costo_unitario`, `costo_unitario_bs`, `aplica_iva`, `subtotal`, `created_at`, `updated_at`) VALUES
+(1, 1, 9, 30.00, 14.00, 7886.05, 1, 420.00, '2026-06-09 03:21:46', '2026-06-09 03:21:46'),
+(3, 3, 8, 10.00, 18.00, 10395.83, 1, 180.00, '2026-06-11 06:00:52', '2026-06-11 06:00:52'),
+(4, 3, 5, 10.00, 3.00, 1732.64, 1, 30.00, '2026-06-11 06:00:52', '2026-06-11 06:00:52');
 
 -- --------------------------------------------------------
 
@@ -758,6 +765,7 @@ CREATE TABLE `insumo` (
   `unidad_medida` varchar(20) NOT NULL,
   `is_inventoriable` tinyint(1) NOT NULL DEFAULT 1,
   `costo_unitario` decimal(10,2) NOT NULL,
+  `aplica_iva` tinyint(1) NOT NULL DEFAULT 1,
   `stock_actual` decimal(10,2) NOT NULL,
   `stock_minimo` decimal(10,2) NOT NULL,
   `stock_maximo` decimal(10,2) NOT NULL DEFAULT 0.00,
@@ -771,17 +779,17 @@ CREATE TABLE `insumo` (
 -- Volcado de datos para la tabla `insumo`
 --
 
-INSERT INTO `insumo` (`id`, `nombre`, `codigo`, `tipo`, `unidad_medida`, `is_inventoriable`, `costo_unitario`, `stock_actual`, `stock_minimo`, `stock_maximo`, `estado`, `created_at`, `updated_at`, `deleted_at`) VALUES
-(2, 'Botón Nacar 18mm', NULL, 'Boton', 'Unidad', 1, 1.00, 0.00, 1000.00, 0.00, 1, '2025-12-04 18:58:28', '2026-06-06 19:05:03', NULL),
-(3, 'Pique', 'PIQ', 'Tela', 'Kg', 1, 50.00, 0.00, 5.00, 0.00, 1, '2025-12-11 00:39:02', '2026-05-07 17:15:29', NULL),
-(5, 'Jersey', 'AJR', 'Tela', 'Kg', 1, 3.00, 0.00, 10.00, 0.00, 1, '2026-01-20 20:36:23', '2026-06-04 00:49:45', NULL),
-(7, 'Dacron', 'DAC', 'Tela', 'Metro', 1, 12.00, 0.00, 0.00, 0.00, 1, '2026-05-07 17:15:29', '2026-05-07 17:15:29', NULL),
-(8, 'Oxford', 'OXF', 'Tela', 'Metro', 1, 18.00, 0.00, 0.00, 0.00, 1, '2026-05-07 17:15:29', '2026-06-04 00:49:25', NULL),
-(9, 'Microfibra', 'MFB', 'Tela', 'Metro', 1, 14.00, 30.00, 0.00, 0.00, 1, '2026-05-07 17:15:29', '2026-06-09 03:22:02', NULL),
-(10, 'Gabardina / Dril', 'GBD', 'Tela', 'Metro', 1, 22.00, 0.00, 0.00, 0.00, 1, '2026-05-07 17:15:29', '2026-05-07 17:15:29', NULL),
-(14, 'Etiqueta Atlantico', 'EATL', 'Etiqueta', 'Unidad', 1, 1.00, 500.00, 100.00, 5000.00, 1, '2026-06-07 01:07:14', '2026-06-07 01:07:14', NULL),
-(16, 'Cinta para delantal', 'CTDLN', 'Cinta', 'Unidad', 1, 1.00, 100.00, 10.00, 500.00, 1, '2026-06-07 01:55:10', '2026-06-07 01:55:10', NULL),
-(17, 'Hilo poliéster', 'HL', 'Hilo', 'Metro', 1, 3.00, 50.00, 10.00, 100.00, 1, '2026-06-07 02:01:57', '2026-06-07 02:04:43', NULL);
+INSERT INTO `insumo` (`id`, `nombre`, `codigo`, `tipo`, `unidad_medida`, `is_inventoriable`, `costo_unitario`, `aplica_iva`, `stock_actual`, `stock_minimo`, `stock_maximo`, `estado`, `created_at`, `updated_at`, `deleted_at`) VALUES
+(2, 'Botón Nacar 18mm', NULL, 'Boton', 'Unidad', 1, 1.00, 1, 0.00, 1000.00, 0.00, 1, '2025-12-04 18:58:28', '2026-06-06 19:05:03', NULL),
+(3, 'Pique', 'PIQ', 'Tela', 'Kg', 1, 50.00, 1, 0.00, 5.00, 0.00, 1, '2025-12-11 00:39:02', '2026-05-07 17:15:29', NULL),
+(5, 'Jersey', 'AJR', 'Tela', 'Kg', 1, 3.00, 1, 10.00, 10.00, 0.00, 1, '2026-01-20 20:36:23', '2026-06-11 06:01:12', NULL),
+(7, 'Dacron', 'DAC', 'Tela', 'Metro', 1, 12.00, 1, 0.00, 0.00, 0.00, 1, '2026-05-07 17:15:29', '2026-05-07 17:15:29', NULL),
+(8, 'Oxford', 'OXF', 'Tela', 'Metro', 1, 18.00, 1, 10.00, 0.00, 0.00, 1, '2026-05-07 17:15:29', '2026-06-11 06:01:12', NULL),
+(9, 'Microfibra', 'MFB', 'Tela', 'Metro', 1, 14.00, 1, 30.00, 0.00, 0.00, 1, '2026-05-07 17:15:29', '2026-06-09 03:22:02', NULL),
+(10, 'Gabardina / Dril', 'GBD', 'Tela', 'Metro', 1, 22.00, 1, 0.00, 0.00, 0.00, 1, '2026-05-07 17:15:29', '2026-05-07 17:15:29', NULL),
+(14, 'Etiqueta Atlantico', 'EATL', 'Etiqueta', 'Unidad', 1, 1.00, 1, 500.00, 100.00, 5000.00, 1, '2026-06-07 01:07:14', '2026-06-07 01:07:14', NULL),
+(16, 'Cinta para delantal', 'CTDLN', 'Cinta', 'Unidad', 1, 1.00, 1, 100.00, 10.00, 500.00, 1, '2026-06-07 01:55:10', '2026-06-07 01:55:10', NULL),
+(17, 'Hilo poliéster', 'HL', 'Hilo', 'Metro', 1, 3.00, 1, 50.00, 10.00, 100.00, 1, '2026-06-07 02:01:57', '2026-06-07 02:04:43', NULL);
 
 -- --------------------------------------------------------
 
@@ -972,7 +980,11 @@ INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES
 (131, '2026_06_07_000002_create_sub_orden_produccion_tables', 74),
 (132, '2026_06_08_000001_add_motivo_cancelacion_to_orden_produccion_table', 75),
 (133, '2026_06_08_000002_add_fecha_formalizacion_to_pedido_table', 76),
-(134, '2026_06_09_000001_create_orden_produccion_empleado_table', 77);
+(134, '2026_06_09_000001_create_orden_produccion_empleado_table', 77),
+(135, '2026_06_10_000001_add_aplica_iva_to_insumo_table', 77),
+(136, '2026_06_10_000002_add_aplica_iva_to_compra_detalle_table', 77),
+(137, '2026_06_10_000003_add_iva_porcentaje_to_compra_table', 77),
+(139, '2026_06_10_000004_add_moneda_bs_to_compra_tables', 78);
 
 -- --------------------------------------------------------
 
@@ -998,7 +1010,9 @@ CREATE TABLE `movimiento_insumo` (
 --
 
 INSERT INTO `movimiento_insumo` (`id`, `insumo_id`, `tipo_movimiento`, `cantidad`, `stock_anterior`, `stock_nuevo`, `motivo`, `created_by`, `created_at`, `updated_at`) VALUES
-(1, 9, 'Entrada', 30.00, 0.00, 30.00, 'Compra #1 — Fact: 54175', 1, '2026-06-09 03:22:02', '2026-06-09 03:22:02');
+(1, 9, 'Entrada', 30.00, 0.00, 30.00, 'Compra #1 — Fact: 54175', 1, '2026-06-09 03:22:02', '2026-06-09 03:22:02'),
+(2, 5, 'Entrada', 10.00, 0.00, 10.00, 'Compra #3 — Fact: 111', 1, '2026-06-11 06:01:12', '2026-06-11 06:01:12'),
+(3, 8, 'Entrada', 10.00, 0.00, 10.00, 'Compra #3 — Fact: 111', 1, '2026-06-11 06:01:12', '2026-06-11 06:01:12');
 
 -- --------------------------------------------------------
 
@@ -1036,6 +1050,20 @@ INSERT INTO `orden_produccion` (`id`, `pedido_id`, `detalle_pedido_id`, `product
 (2, 2, 2, NULL, 12, 2, 0, 0, '2026-06-07', '2026-06-20', NULL, 'Pendiente', NULL, NULL, 7, '2026-06-07 17:55:58', '2026-06-07 17:55:58', NULL),
 (3, 2, 3, NULL, 11, 2, 0, 0, '2026-06-07', '2026-06-20', NULL, 'Pendiente', NULL, NULL, 7, '2026-06-07 17:55:58', '2026-06-07 17:55:58', NULL),
 (4, 3, 5, NULL, 3, 1, 0, 0, '2026-06-07', '2026-06-21', NULL, 'Pendiente', 'notas', NULL, 7, '2026-06-07 17:57:45', '2026-06-07 18:02:53', NULL);
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `orden_produccion_empleado`
+--
+
+CREATE TABLE `orden_produccion_empleado` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `orden_produccion_id` bigint(20) UNSIGNED NOT NULL,
+  `empleado_id` bigint(20) UNSIGNED NOT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -1355,30 +1383,6 @@ INSERT INTO `recovery_attempt` (`id`, `user_id`, `email`, `ip`, `user_agent`, `t
 -- --------------------------------------------------------
 
 --
--- Estructura de tabla para la tabla `orden_produccion_empleado`
---
-
-CREATE TABLE `orden_produccion_empleado` (
-  `id` bigint UNSIGNED NOT NULL,
-  `orden_produccion_id` bigint UNSIGNED NOT NULL,
-  `empleado_id` bigint UNSIGNED NOT NULL,
-  `created_at` timestamp NULL DEFAULT NULL,
-  `updated_at` timestamp NULL DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
---
--- Índices para tablas volcadas
---
-
-ALTER TABLE `orden_produccion_empleado`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `op_emp_unique` (`orden_produccion_id`,`empleado_id`),
-  ADD KEY `orden_produccion_empleado_id_foreign` (`empleado_id`);
-
-ALTER TABLE `orden_produccion_empleado`
-  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
-
---
 -- Estructura de tabla para la tabla `sub_orden_empleado`
 --
 
@@ -1525,7 +1529,9 @@ INSERT INTO `tasa_cambio` (`id`, `moneda`, `valor`, `fecha_bcv`, `fuente`, `crea
 (54, 'USD', 557.9741, '2026-06-02', 'BCV (DolarAPI)', '2026-06-02 15:13:27', '2026-06-02 15:13:27'),
 (55, 'USD', 558.6436, '2026-06-03', 'BCV (DolarAPI)', '2026-06-03 05:20:10', '2026-06-03 05:20:10'),
 (56, 'USD', 560.3753, '2026-06-04', 'BCV (DolarAPI)', '2026-06-04 04:09:40', '2026-06-04 04:09:40'),
-(57, 'USD', 563.2892, '2026-06-05', 'BCV (DolarAPI)', '2026-06-05 17:50:40', '2026-06-05 17:50:40');
+(57, 'USD', 563.2892, '2026-06-05', 'BCV (DolarAPI)', '2026-06-05 17:50:40', '2026-06-05 17:50:40'),
+(58, 'USD', 572.6784, '2026-06-10', 'BCV (DolarAPI)', '2026-06-10 21:50:49', '2026-06-10 21:50:49'),
+(59, 'USD', 577.5461, '2026-06-11', 'BCV (DolarAPI)', '2026-06-11 04:19:18', '2026-06-11 04:19:18');
 
 -- --------------------------------------------------------
 
@@ -2051,6 +2057,14 @@ ALTER TABLE `orden_produccion`
   ADD KEY `orden_produccion_empleado_id_foreign` (`empleado_id`);
 
 --
+-- Indices de la tabla `orden_produccion_empleado`
+--
+ALTER TABLE `orden_produccion_empleado`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `op_emp_unique` (`orden_produccion_id`,`empleado_id`),
+  ADD KEY `orden_produccion_empleado_empleado_id_foreign` (`empleado_id`);
+
+--
 -- Indices de la tabla `pago_pedido`
 --
 ALTER TABLE `pago_pedido`
@@ -2276,13 +2290,13 @@ ALTER TABLE `color`
 -- AUTO_INCREMENT de la tabla `compra`
 --
 ALTER TABLE `compra`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT de la tabla `compra_detalle`
 --
 ALTER TABLE `compra_detalle`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT de la tabla `cotizacion`
@@ -2366,19 +2380,25 @@ ALTER TABLE `logo`
 -- AUTO_INCREMENT de la tabla `migrations`
 --
 ALTER TABLE `migrations`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=134;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=140;
 
 --
 -- AUTO_INCREMENT de la tabla `movimiento_insumo`
 --
 ALTER TABLE `movimiento_insumo`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT de la tabla `orden_produccion`
 --
 ALTER TABLE `orden_produccion`
   MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+
+--
+-- AUTO_INCREMENT de la tabla `orden_produccion_empleado`
+--
+ALTER TABLE `orden_produccion_empleado`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT de la tabla `pago_pedido`
@@ -2456,7 +2476,7 @@ ALTER TABLE `talla`
 -- AUTO_INCREMENT de la tabla `tasa_cambio`
 --
 ALTER TABLE `tasa_cambio`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=58;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=60;
 
 --
 -- AUTO_INCREMENT de la tabla `telefono`
@@ -2632,6 +2652,13 @@ ALTER TABLE `orden_produccion`
   ADD CONSTRAINT `ordenes_produccion_producto_id_foreign` FOREIGN KEY (`producto_id`) REFERENCES `producto` (`id`) ON DELETE CASCADE;
 
 --
+-- Filtros para la tabla `orden_produccion_empleado`
+--
+ALTER TABLE `orden_produccion_empleado`
+  ADD CONSTRAINT `orden_produccion_empleado_empleado_id_foreign` FOREIGN KEY (`empleado_id`) REFERENCES `empleado` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `orden_produccion_empleado_orden_produccion_id_foreign` FOREIGN KEY (`orden_produccion_id`) REFERENCES `orden_produccion` (`id`) ON DELETE CASCADE;
+
+--
 -- Filtros para la tabla `pago_pedido`
 --
 ALTER TABLE `pago_pedido`
@@ -2678,13 +2705,6 @@ ALTER TABLE `proveedor`
 --
 ALTER TABLE `recovery_attempt`
   ADD CONSTRAINT `recovery_attempt_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `user` (`id`) ON DELETE SET NULL;
-
---
--- Filtros para la tabla `orden_produccion_empleado`
---
-ALTER TABLE `orden_produccion_empleado`
-  ADD CONSTRAINT `op_emp_orden_foreign` FOREIGN KEY (`orden_produccion_id`) REFERENCES `orden_produccion` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `orden_produccion_empleado_id_foreign` FOREIGN KEY (`empleado_id`) REFERENCES `empleado` (`id`) ON DELETE CASCADE;
 
 --
 -- Filtros para la tabla `sub_orden_empleado`

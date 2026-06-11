@@ -112,6 +112,10 @@
                                     <small class="text-muted d-block mb-1"><i class="ri-calendar-event-line me-1"></i>Fecha de Compra</small>
                                     <span id="cv-fecha">—</span>
                                 </div>
+                                <div class="col-md-4">
+                                    <small class="text-muted d-block mb-1"><i class="ri-exchange-dollar-line me-1"></i>Tasa de cambio</small>
+                                    <span id="cv-tasa">—</span>
+                                </div>
                                 <div class="col-12 d-none" id="cv-obs-wrap">
                                     <small class="text-muted d-block mb-1"><i class="ri-sticky-note-line me-1"></i>Observaciones</small>
                                     <span class="fst-italic" id="cv-observaciones">—</span>
@@ -167,9 +171,10 @@
                                             <th>Insumo</th>
                                             <th class="text-center" style="width:110px;">Tipo</th>
                                             <th class="text-center" style="width:90px;">Unidad</th>
-                                            <th class="text-end" style="width:100px;">Cantidad</th>
-                                            <th class="text-end" style="width:110px;">Costo Unit.</th>
-                                            <th class="text-end" style="width:110px;">Subtotal</th>
+                                            <th class="text-end" style="width:95px;">Cantidad</th>
+                                            <th class="text-end" style="width:115px;">Costo Unit. (Bs)</th>
+                                            <th class="text-center" style="width:70px;">IVA</th>
+                                            <th class="text-end" style="width:120px;">Subtotal (Bs)</th>
                                         </tr>
                                     </thead>
                                     <tbody id="cv-items-tbody"></tbody>
@@ -191,18 +196,33 @@
                                 </div>
                                 <div class="card-body">
                                     <div class="c-ticket">
-                                        <div class="d-flex justify-content-between mb-2">
-                                            <span class="text-muted">Subtotal</span>
-                                            <span class="fw-semibold" id="cv-subtotal">0.00</span>
+                                        <div class="c-ticket-row">
+                                            <span class="c-ticket-label">Subtotal</span>
+                                            <span class="c-ticket-val">Bs <span id="cv-subtotal">0,00</span></span>
                                         </div>
-                                        <div class="d-flex justify-content-between mb-2">
-                                            <span class="text-muted">IVA</span>
-                                            <span class="fw-semibold" id="cv-iva">0.00</span>
+                                        <div class="c-ticket-row d-none" id="cv-exento-wrap">
+                                            <span class="c-ticket-label">Base exenta</span>
+                                            <span class="c-ticket-val text-muted">Bs <span id="cv-exento">0,00</span></span>
                                         </div>
-                                        <hr class="my-2">
-                                        <div class="d-flex justify-content-between align-items-center">
-                                            <span class="fw-bold fs-15">Total</span>
-                                            <span class="fw-bold fs-18 text-atlantico-emerald" id="cv-total-ticket">0.00</span>
+                                        <div class="c-ticket-row">
+                                            <span class="c-ticket-label">IVA (<span id="cv-iva-pct">—</span>%)</span>
+                                            <span class="c-ticket-val">Bs <span id="cv-iva">0,00</span></span>
+                                        </div>
+
+                                        <div class="c-ticket-total">
+                                            <span class="c-ticket-total-label">Total a pagar</span>
+                                            <span class="c-ticket-total-val">Bs <span id="cv-total-ticket">0,00</span></span>
+                                        </div>
+
+                                        <div class="c-ticket-conv">
+                                            <div class="c-ticket-conv-row">
+                                                <span><i class="ri-exchange-dollar-line me-1"></i>Tasa aplicada</span>
+                                                <span>Bs <span id="cv-tasa-ticket">0,0000</span> / USD</span>
+                                            </div>
+                                            <div class="c-ticket-conv-row">
+                                                <span>Equivalente en USD</span>
+                                                <span class="c-conv-usd">$ <span id="cv-total-usd">0,00</span></span>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>

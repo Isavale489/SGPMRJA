@@ -44,17 +44,32 @@
                                 <button type="button" class="btn-historial btn-historial-ver" id="ins-toggle-historial">
                                     <i class="ri-archive-line"></i> <span>Inhabilitados</span>
                                 </button>
-                                <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal"
-                                    data-bs-target="#tiposInsumoModal">
-                                    <i class="ri-settings-3-line align-bottom me-1"></i> Gestionar Tipos
-                                </button>
                                 <button type="button" class="btn btn-success add-btn" data-bs-toggle="modal" id="create-btn"
                                     data-bs-target="#showModal">
                                     <i class="ri-add-line align-bottom me-1"></i> Agregar Insumo
                                 </button>
-                                <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#pdfExportModal">
-                                    <i class="ri-file-pdf-fill align-bottom me-1"></i> Exportar PDF
-                                </button>
+                                {{-- Acciones secundarias agrupadas — estándar .actions-menu --}}
+                                <div class="dropdown">
+                                    <button type="button" class="btn btn-soft-secondary dropdown-toggle"
+                                        data-bs-toggle="dropdown" aria-expanded="false">
+                                        <i class="ri-menu-2-line align-bottom me-1"></i> Más acciones
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end actions-menu">
+                                        <li>
+                                            <button type="button" class="dropdown-item act-item act-primary"
+                                                data-bs-toggle="modal" data-bs-target="#tiposInsumoModal">
+                                                <span class="act-ic"><i class="ri-settings-3-line"></i></span>Gestionar Tipos
+                                            </button>
+                                        </li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li>
+                                            <button type="button" class="dropdown-item act-item act-pdf"
+                                                data-bs-toggle="modal" data-bs-target="#pdfExportModal">
+                                                <span class="act-ic"><i class="ri-file-pdf-fill"></i></span>Exportar PDF
+                                            </button>
+                                        </li>
+                                    </ul>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -400,10 +415,22 @@
                                 </div>
                             </div>
 
-                            <div class="row mb-0">
+                            <div class="row mb-0 align-items-center">
                                 <div class="col-md-6">
                                     <x-forms.input name="costo_unitario" label="Costo Unitario" type="number" step="0.01" min="0"
                                         required />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label d-block mb-1">Impuesto</label>
+                                    <div class="form-check form-switch">
+                                        {{-- Hidden previo: garantiza que FormData envíe 0 cuando el switch va destildado --}}
+                                        <input type="hidden" name="aplica_iva" value="0">
+                                        <input class="form-check-input" type="checkbox" id="aplica-iva-switch"
+                                            name="aplica_iva" value="1" checked>
+                                        <label class="form-check-label" for="aplica-iva-switch">
+                                            Gravable con IVA <small class="text-muted">(desmarca si es exento)</small>
+                                        </label>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -826,6 +853,8 @@
                     var inventoriable = data.is_inventoriable !== false && data.is_inventoriable !== 0;
                     $("#is-inventoriable-switch").prop('checked', inventoriable);
                     $("#stock-fields-wrapper").toggle(inventoriable);
+                    var gravable = data.aplica_iva !== false && data.aplica_iva !== 0;
+                    $("#aplica-iva-switch").prop('checked', gravable);
                     $("#field-stock_actual").val(data.stock_actual);
                     $("#field-stock_minimo").val(data.stock_minimo);
                     $("#field-stock_maximo").val(data.stock_maximo);
@@ -1025,6 +1054,7 @@
                 $("#id-field").val("");
                 $("#codigo-field").prop('readonly', false);
                 $("#is-inventoriable-switch").prop('checked', true);
+                $("#aplica-iva-switch").prop('checked', true);
                 $("#stock-fields-wrapper").show();
                 $("#add-btn").show();
                 $("#edit-btn").hide();

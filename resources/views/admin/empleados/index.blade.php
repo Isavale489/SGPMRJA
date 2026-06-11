@@ -54,21 +54,38 @@
                                 </a>
                             @endif
                             <div class="d-flex gap-2">
-                                <a href="{{ url('departamentos') }}" class="btn btn-link-depto" title="Ir al catálogo de departamentos">
-                                    <i class="ri-building-line align-bottom me-1"></i> Departamentos
-                                </a>
-                                <a href="{{ url('cargos') }}" class="btn btn-link-cargo" title="Ir al catálogo de cargos">
-                                    <i class="ri-briefcase-line align-bottom me-1"></i> Cargos
-                                </a>
                                 @if(!$historial)
                                     <button type="button" class="btn btn-success add-btn" data-bs-toggle="modal" id="create-btn"
                                         data-bs-target="#showModal">
                                         <i class="ri-add-line align-bottom me-1"></i> Agregar Empleado
                                     </button>
                                 @endif
-                                <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#pdfExportModal">
-                                    <i class="ri-file-pdf-fill align-bottom me-1"></i> Exportar PDF
-                                </button>
+                                {{-- Acciones secundarias agrupadas — estándar .actions-menu --}}
+                                <div class="dropdown">
+                                    <button type="button" class="btn btn-soft-secondary dropdown-toggle"
+                                        data-bs-toggle="dropdown" aria-expanded="false">
+                                        <i class="ri-menu-2-line align-bottom me-1"></i> Más acciones
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end actions-menu">
+                                        <li>
+                                            <a class="dropdown-item act-item act-restore" href="{{ url('departamentos') }}">
+                                                <span class="act-ic"><i class="ri-building-line"></i></span>Departamentos
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a class="dropdown-item act-item act-warn" href="{{ url('cargos') }}">
+                                                <span class="act-ic"><i class="ri-briefcase-line"></i></span>Cargos
+                                            </a>
+                                        </li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li>
+                                            <button type="button" class="dropdown-item act-item act-pdf"
+                                                data-bs-toggle="modal" data-bs-target="#pdfExportModal">
+                                                <span class="act-ic"><i class="ri-file-pdf-fill"></i></span>Exportar PDF
+                                            </button>
+                                        </li>
+                                    </ul>
+                                </div>
                             </div>
                         </div>
                     </div>

@@ -5218,11 +5218,6 @@ header#page-topbar,
 [data-bs-theme="dark"] #viewModal .card-header    { background: rgba(78, 122, 199, 0.10) !important; }
 [data-bs-theme="dark"] #viewModal .card-header h6 { color: #93c5fd !important; }
 
-/* Botones sub-maestros (header de Empleados) */
-.btn-link-depto { background-color: #155e75; border-color: #155e75; color: #fff; }
-.btn-link-depto:hover, .btn-link-depto:focus { background-color: #0e4a5d; border-color: #0e4a5d; color: #fff; }
-.btn-link-cargo { background-color: #92400e; border-color: #92400e; color: #fff; }
-.btn-link-cargo:hover, .btn-link-cargo:focus { background-color: #78350f; border-color: #78350f; color: #fff; }
 
 /* Iconos circulares en viewModal de Empleados */
 .emp-icon-box { width: 32px; height: 32px; }
@@ -8095,8 +8090,70 @@ header#page-topbar,
     background: linear-gradient(180deg, rgba(16, 185, 129, 0.06) 0%, rgba(16, 185, 129, 0.02) 100%);
     border: 1px solid rgba(16, 185, 129, 0.18);
     border-radius: 12px;
-    padding: 16px 18px;
+    padding: 18px 20px;
 }
+
+/* ── Filas del desglose (subtotal / exenta / IVA) ── */
+.c-ticket-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    font-size: 0.92rem;
+}
+.c-ticket-row + .c-ticket-row {
+    border-top: 1px dashed rgba(16, 185, 129, 0.14);
+}
+.c-ticket-label { color: #6b7280; }
+.c-ticket-val   { font-weight: 600; color: #374151; }
+
+/* ── Total a pagar (protagonista) ── */
+.c-ticket-total {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 10px;
+    margin-top: 12px;
+    padding-top: 14px;
+    border-top: 2px solid rgba(16, 185, 129, 0.28);
+}
+.c-ticket-total-label { font-weight: 700; font-size: 0.95rem; color: #1f2937; }
+.c-ticket-total-val {
+    font-weight: 800;
+    font-size: 1.6rem;
+    line-height: 1.1;
+    color: #059669;
+    white-space: nowrap;
+}
+
+/* ── Bloque de conversión (secundario, agrupado y atenuado) ── */
+.c-ticket-conv {
+    margin-top: 14px;
+    padding: 10px 14px;
+    background: rgba(15, 23, 42, 0.035);
+    border-radius: 8px;
+}
+.c-ticket-conv-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.8rem;
+    color: #6b7280;
+}
+.c-ticket-conv-row + .c-ticket-conv-row { margin-top: 5px; }
+.c-ticket-conv-row .c-conv-usd { font-weight: 700; color: #374151; }
+
+.c-ticket-note {
+    font-size: 0.72rem;
+    color: #9ca3af;
+    line-height: 1.55;
+    margin: 12px 0 0;
+}
+
+[data-bs-theme="dark"] .c-ticket-val,
+[data-bs-theme="dark"] .c-ticket-total-label { color: #e5e7eb; }
+[data-bs-theme="dark"] .c-ticket-conv { background: rgba(255, 255, 255, 0.05); }
+[data-bs-theme="dark"] .c-ticket-conv-row .c-conv-usd { color: #e5e7eb; }
 
 /* ── Encaje en viewport: header + stepper + footer fijos, body scrollable ──
    Sin esto, el paso 3 (el más alto) desbordaba la pantalla y dejaba el

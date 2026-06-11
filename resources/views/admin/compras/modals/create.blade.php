@@ -198,11 +198,12 @@
                                     <div class="card-body">
                                         <div class="row g-3">
                                             <div class="col-12">
-                                                <label class="form-label small fw-semibold mb-1" for="c-factura">N° de Factura</label>
+                                                <label class="form-label small fw-semibold mb-1" for="c-factura">N° de Factura <span class="text-danger">*</span></label>
                                                 <div class="input-group">
                                                     <span class="input-group-text"><i class="ri-receipt-line"></i></span>
                                                     <input type="text" id="c-factura" name="numero_factura"
-                                                        class="form-control" maxlength="30" placeholder="Ej: 0001-000456">
+                                                        class="form-control" maxlength="10" inputmode="numeric"
+                                                        placeholder="Ej: 0001-0456">
                                                 </div>
                                             </div>
                                             <div class="col-12">
@@ -210,8 +211,24 @@
                                                 <div class="input-group">
                                                     <span class="input-group-text"><i class="ri-calendar-event-line"></i></span>
                                                     <input type="date" id="c-fecha" name="fecha_compra"
-                                                        class="form-control" required value="{{ date('Y-m-d') }}">
+                                                        class="form-control" required value="{{ date('Y-m-d') }}"
+                                                        max="{{ date('Y-m-d') }}">
                                                 </div>
+                                            </div>
+                                            <div class="col-12">
+                                                <label class="form-label small fw-semibold mb-1" for="c-tasa">
+                                                    Tasa de cambio (Bs por USD) <span class="text-danger">*</span>
+                                                </label>
+                                                <div class="input-group">
+                                                    <span class="input-group-text"><i class="ri-exchange-dollar-line"></i></span>
+                                                    <input type="number" id="c-tasa" name="tasa_cambio"
+                                                        class="form-control bg-light" min="0.0001" step="0.0001"
+                                                        placeholder="0.0000" readonly>
+                                                    <span class="input-group-text">Bs/USD</span>
+                                                </div>
+                                                <small class="text-muted d-block mt-1" id="c-tasa-hint">
+                                                    <i class="ri-information-line me-1"></i>Se autocompleta con la tasa BCV de la fecha de compra.
+                                                </small>
                                             </div>
                                         </div>
                                     </div>
@@ -255,9 +272,10 @@
                                             <tr>
                                                 <th class="cot-col-num text-center" style="width:36px;">#</th>
                                                 <th>Insumo</th>
-                                                <th class="text-center" style="width:140px;">Cantidad</th>
-                                                <th class="text-center" style="width:125px;">Costo Unit.</th>
-                                                <th class="text-end" style="width:110px;">Subtotal</th>
+                                                <th class="text-center" style="width:130px;">Cantidad</th>
+                                                <th class="text-center" style="width:130px;">Costo Unit. (Bs)</th>
+                                                <th class="text-center" style="width:140px;">Total (Bs)</th>
+                                                <th class="text-center" style="width:60px;" title="Marcá si la línea es gravable con IVA">IVA</th>
                                                 <th class="text-center" style="width:48px;"></th>
                                             </tr>
                                         </thead>
@@ -266,14 +284,15 @@
                                 </div>
                             </div>
                             {{-- Pie: subtotal en vivo --}}
-                            <div class="card-footer border-0 bg-transparent d-flex align-items-center justify-content-between py-2 px-3"
-                                id="c-items-footer" hidden>
+                            <div class="card-footer border-0 bg-transparent align-items-center justify-content-between py-2 px-3 d-none"
+                                id="c-items-footer">
                                 <span class="text-muted small">
                                     <i class="ri-stack-line me-1"></i><span id="c-items-footer-count">0</span> ítem(s)
                                 </span>
                                 <span class="small">
                                     Subtotal sin IVA:
-                                    <strong class="text-atlantico-emerald ms-1" id="c-items-footer-subtotal">0.00</strong>
+                                    <strong class="text-atlantico-emerald ms-1">Bs <span id="c-items-footer-subtotal">0.00</span></strong>
+                                    <span class="text-muted ms-1">(≈ $<span id="c-items-footer-subtotal-usd">0.00</span>)</span>
                                 </span>
                             </div>
                         </div>
@@ -340,28 +359,39 @@
                                         </h6>
                                     </div>
                                     <div class="card-body">
-                                        <div class="mb-3">
-                                            <label class="form-label small fw-semibold mb-1" for="c-iva">% IVA</label>
-                                            <div class="input-group">
-                                                <input type="number" id="c-iva" name="iva_porcentaje"
-                                                    class="form-control" value="16" min="0" max="100" step="0.01">
-                                                <span class="input-group-text">%</span>
-                                            </div>
-                                        </div>
                                         <div class="c-ticket">
-                                            <div class="d-flex justify-content-between mb-2">
-                                                <span class="text-muted">Subtotal</span>
-                                                <span class="fw-semibold" id="c-resumen-subtotal">0.00</span>
+                                            <div class="c-ticket-row">
+                                                <span class="c-ticket-label">Subtotal</span>
+                                                <span class="c-ticket-val">Bs <span id="c-resumen-subtotal">0,00</span></span>
                                             </div>
-                                            <div class="d-flex justify-content-between mb-2">
-                                                <span class="text-muted">IVA (<span id="c-resumen-iva-pct">16</span>%)</span>
-                                                <span class="fw-semibold" id="c-resumen-iva">0.00</span>
+                                            <div class="c-ticket-row d-none" id="c-resumen-exento-wrap">
+                                                <span class="c-ticket-label">Base exenta</span>
+                                                <span class="c-ticket-val text-muted">Bs <span id="c-resumen-exento">0,00</span></span>
                                             </div>
-                                            <hr class="my-2">
-                                            <div class="d-flex justify-content-between align-items-center">
-                                                <span class="fw-bold fs-15">Total</span>
-                                                <span class="fw-bold fs-18 text-atlantico-emerald" id="c-resumen-total">0.00</span>
+                                            <div class="c-ticket-row">
+                                                <span class="c-ticket-label">IVA (<span id="c-resumen-iva-pct">16</span>%)</span>
+                                                <span class="c-ticket-val">Bs <span id="c-resumen-iva">0,00</span></span>
                                             </div>
+
+                                            <div class="c-ticket-total">
+                                                <span class="c-ticket-total-label">Total a pagar</span>
+                                                <span class="c-ticket-total-val">Bs <span id="c-resumen-total">0,00</span></span>
+                                            </div>
+
+                                            <div class="c-ticket-conv">
+                                                <div class="c-ticket-conv-row">
+                                                    <span><i class="ri-exchange-dollar-line me-1"></i>Tasa aplicada</span>
+                                                    <span>Bs <span id="c-resumen-tasa">0,0000</span> / USD</span>
+                                                </div>
+                                                <div class="c-ticket-conv-row">
+                                                    <span>Equivalente en USD</span>
+                                                    <span class="c-conv-usd">$ <span id="c-resumen-total-usd">0,00</span></span>
+                                                </div>
+                                            </div>
+
+                                            <p class="c-ticket-note">
+                                                <i class="ri-information-line me-1"></i>Los costos se cargan en bolívares; el equivalente en USD usa la tasa del paso 1. El IVA ({{ (float) config('impuestos.iva', 16) }}%) aplica solo a las líneas gravables.
+                                            </p>
                                         </div>
                                     </div>
                                 </div>
@@ -464,6 +494,15 @@
                                     <span class="input-group-text">$/</span>
                                     <input type="number" id="cir-costo-field" class="form-control"
                                         step="0.01" min="0.01" placeholder="0.00">
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-0 d-flex align-items-end">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="cir-aplica-iva-field" checked>
+                                    <label class="form-check-label" for="cir-aplica-iva-field">
+                                        Gravable con IVA
+                                        <i class="ri-information-line text-muted" title="Desmarca si el insumo es exento de IVA"></i>
+                                    </label>
                                 </div>
                             </div>
                         </div>

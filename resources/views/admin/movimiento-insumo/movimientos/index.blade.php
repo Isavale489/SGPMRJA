@@ -40,15 +40,38 @@
                                         data-bs-target="#createModal">
                                         <i class="ri-add-line align-bottom me-1"></i> Registrar Movimiento
                                     </button>
-                                    <a href="{{ route('movimiento-insumo.alertas') }}" class="btn btn-warning">
-                                        <i class="ri-alert-line align-bottom me-1"></i> Alertas de Stock
-                                    </a>
-                                    <a href="{{ route('movimiento-insumo.reporte') }}" class="btn btn-danger">
-                                        <i class="ri-file-list-3-line align-bottom me-1"></i> Reporte de Insumos
-                                    </a>
-                                    <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#pdfExportModal">
-                                        <i class="ri-file-pdf-fill align-bottom me-1"></i> Exportar Movimientos
-                                    </button>
+                                    {{-- Acciones secundarias agrupadas — estándar .actions-menu --}}
+                                    <div class="dropdown">
+                                        <button type="button" class="btn btn-soft-secondary dropdown-toggle"
+                                            data-bs-toggle="dropdown" aria-expanded="false">
+                                            <i class="ri-menu-2-line align-bottom me-1"></i> Más acciones
+                                        </button>
+                                        <ul class="dropdown-menu dropdown-menu-end actions-menu">
+                                            <li>
+                                                <button type="button" class="dropdown-item act-item act-primary"
+                                                    data-bs-toggle="modal" data-bs-target="#masivoModal">
+                                                    <span class="act-ic"><i class="ri-stack-line"></i></span>Movimiento masivo
+                                                </button>
+                                            </li>
+                                            <li>
+                                                <a class="dropdown-item act-item act-warn" href="{{ route('movimiento-insumo.alertas') }}">
+                                                    <span class="act-ic"><i class="ri-alarm-warning-line"></i></span>Alertas de Stock
+                                                </a>
+                                            </li>
+                                            <li>
+                                                <a class="dropdown-item act-item act-restore" href="{{ route('movimiento-insumo.reporte') }}">
+                                                    <span class="act-ic"><i class="ri-file-list-3-line"></i></span>Reporte de Insumos
+                                                </a>
+                                            </li>
+                                            <li><hr class="dropdown-divider"></li>
+                                            <li>
+                                                <button type="button" class="dropdown-item act-item act-pdf"
+                                                    data-bs-toggle="modal" data-bs-target="#pdfExportModal">
+                                                    <span class="act-ic"><i class="ri-file-pdf-fill"></i></span>Exportar Movimientos
+                                                </button>
+                                            </li>
+                                        </ul>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -222,6 +245,7 @@
     </div>
 
     @include('admin.movimiento-insumo.movimientos.modals.create')
+    @include('admin.movimiento-insumo.movimientos.modals.masivo')
     @include('admin.movimiento-insumo.movimientos.modals.view')
     @include('admin.movimiento-insumo.movimientos.modals.create_insumo')
 

@@ -46,7 +46,7 @@ $(document).ready(function () {
                     return '<span class="text-muted">#' + data + '</span>';
                 }
             },
-            { data: 'proveedor_nombre', name: 'proveedor_nombre' },
+            { data: 'proveedor_nombre', name: 'proveedor_nombre', width: '25%', orderable: false },
             {
                 data: 'numero_factura', name: 'numero_factura',
                 render: function (data) {
@@ -138,6 +138,7 @@ $(document).ready(function () {
                 // Comprobante
                 $('#cv-factura').text(d.numero_factura);
                 $('#cv-fecha').text(d.fecha_compra);
+                $('#cv-tasa').text(d.tasa_cambio ? 'Bs ' + d.tasa_cambio + ' / USD' : '—');
 
                 if (d.observaciones) {
                     $('#cv-observaciones').text(d.observaciones);
@@ -149,14 +150,18 @@ $(document).ready(function () {
                 // Items
                 var itemsHtml = '';
                 (d.items || []).forEach(function (item, i) {
+                    var ivaBadge = item.aplica_iva
+                        ? '<span class="badge bg-soft-success text-success">' + d.iva_porcentaje + '%</span>'
+                        : '<span class="badge bg-soft-secondary text-muted">Exento</span>';
                     itemsHtml += '<tr>'
                         + '<td class="text-center cot-col-num">' + (i + 1) + '</td>'
                         + '<td class="fw-semibold">' + item.nombre + '</td>'
                         + '<td class="text-center"><span class="cot-tipo-pill">' + item.tipo + '</span></td>'
                         + '<td class="text-center text-muted">' + item.unidad + '</td>'
                         + '<td class="text-end">' + item.cantidad + '</td>'
-                        + '<td class="text-end">' + item.costo_unitario + '</td>'
-                        + '<td class="text-end fw-semibold">' + item.subtotal + '</td>'
+                        + '<td class="text-end">' + item.costo_unitario_bs + '</td>'
+                        + '<td class="text-center">' + ivaBadge + '</td>'
+                        + '<td class="text-end fw-semibold">' + item.subtotal_bs + '</td>'
                         + '</tr>';
                 });
                 $('#cv-items-tbody').html(itemsHtml);
@@ -167,10 +172,25 @@ $(document).ready(function () {
                 $('#cv-reg-nombre').text(d.registrado_por.name);
                 $('#cv-reg-fecha').text(d.created_at);
 
-                // Totales
-                $('#cv-subtotal').text(d.subtotal);
-                $('#cv-iva').text(d.iva);
-                $('#cv-total-ticket').text(d.total);
+                // Totales en bolívares (lo pagado) + equivalente USD y tasa
+                $('#cv-subtotal').text(d.subtotal_bs);
+                $('#cv-iva').text(d.iva_bs);
+                $('#cv-iva-pct').text(d.iva_porcentaje);
+                $('#cv-total-ticket').text(d.total_bs);
+                $('#cv-tasa-ticket').text(d.tasa_cambio || '0.0000');
+                $('#cv-total-usd').text(d.total);
+                // Base exenta = suma de subtotales en Bs de líneas no gravadas.
+                // subtotal_bs viene en formato venezolano ("1.234,56").
+                var exento = (d.items || []).reduce(function (acc, it) {
+                    var n = parseFloat(String(it.subtotal_bs).replace(/\./g, '').replace(',', '.')) || 0;
+                    return acc + (it.aplica_iva ? 0 : n);
+                }, 0);
+                if (exento > 0.0001) {
+                    $('#cv-exento').text(exento.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+                    $('#cv-exento-wrap').removeClass('d-none');
+                } else {
+                    $('#cv-exento-wrap').addClass('d-none');
+                }
 
                 // PDF
                 $('#cv-pdf-btn').attr('href', '/compras/' + d.id + '/pdf');
