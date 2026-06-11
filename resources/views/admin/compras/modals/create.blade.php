@@ -198,7 +198,7 @@
                                     <div class="card-body">
                                         <div class="row g-3">
                                             <div class="col-12">
-                                                <label class="form-label small fw-semibold mb-1" for="c-factura">N° de Factura</label>
+                                                <label class="form-label small fw-semibold mb-1" for="c-factura">N° de Factura <span class="text-danger">*</span></label>
                                                 <div class="input-group">
                                                     <span class="input-group-text"><i class="ri-receipt-line"></i></span>
                                                     <input type="text" id="c-factura" name="numero_factura"

@@ -319,6 +319,10 @@ $(document).ready(function () {
                     Swal.fire({ title: 'Campo requerido', text: 'Seleccione un proveedor.', icon: 'warning', confirmButtonText: 'Entendido' });
                     return false;
                 }
+                if (!$('#c-factura').val().trim()) {
+                    Swal.fire({ title: 'Campo requerido', text: 'Ingrese el número de factura.', icon: 'warning', confirmButtonText: 'Entendido' });
+                    return false;
+                }
                 if (!$('#c-fecha').val()) {
                     Swal.fire({ title: 'Campo requerido', text: 'Ingrese la fecha de compra.', icon: 'warning', confirmButtonText: 'Entendido' });
                     return false;
