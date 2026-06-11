@@ -6,6 +6,7 @@ use App\Http\Requests\StoreCompraRequest;
 use App\Models\Compra;
 use App\Models\Insumo;
 use App\Models\Proveedor;
+use App\Models\TasaCambio;
 use App\Models\TipoInsumo;
 use App\Services\CompraService;
 use Illuminate\Http\Request;
@@ -38,6 +39,40 @@ class CompraController extends Controller
         $tiposInsumo = TipoInsumo::where('activo', true)->orderBy('nombre')->get(['id', 'nombre']);
 
         return view('admin.compras.index', compact('proveedores', 'insumos', 'tiposInsumo', 'verAnuladas'));
+    }
+
+    /**
+     * Devuelve la tasa BCV (USD/VES) vigente para una fecha, para que el wizard
+     * la precargue al elegir la fecha de compra. Si no hay tasa del día exacto,
+     * cae a la última publicada antes de esa fecha (que es la que rige).
+     */
+    public function getTasa(Request $request)
+    {
+        $fecha = $request->input('fecha', now()->toDateString());
+
+        // Validación liviana del formato de fecha; si no parsea, usamos hoy.
+        try {
+            $fecha = \Carbon\Carbon::parse($fecha)->toDateString();
+        } catch (\Exception $e) {
+            $fecha = now()->toDateString();
+        }
+
+        $tasa = TasaCambio::tasaVigente($fecha);
+
+        if (!$tasa) {
+            return response()->json([
+                'encontrada' => false,
+                'message'    => 'No hay tasa BCV registrada para esa fecha. Ingrésala manualmente.',
+            ]);
+        }
+
+        return response()->json([
+            'encontrada'    => true,
+            'exacta'        => $tasa->fecha_bcv->toDateString() === $fecha,
+            'valor'         => (float) $tasa->valor,
+            'fecha_bcv'     => $tasa->fecha_bcv->format('Y-m-d'),
+            'fecha_bcv_fmt' => $tasa->fecha_bcv->format('d/m/Y'),
+        ]);
     }
 
     public function store(StoreCompraRequest $request)
@@ -158,6 +193,7 @@ class CompraController extends Controller
             'proveedor_id'      => $compra->proveedor_id,
             'numero_factura'    => $compra->numero_factura,
             'fecha_compra'      => $compra->fecha_compra?->format('Y-m-d'),
+            'tasa_cambio'       => (float) $compra->tasa_cambio,
             'observaciones'     => $compra->observaciones,
             'proveedor_data'    => [
                 'id'     => $compra->proveedor_id,
@@ -170,12 +206,13 @@ class CompraController extends Controller
                 'ultima'  => $compra->proveedor?->compras_max_fecha_compra,
             ],
             'items'             => $compra->detalles->map(fn($d) => [
-                'insumo_id'      => $d->insumo_id,
-                'nombre'         => $d->insumo?->nombre,
-                'cantidad'       => $d->cantidad,
-                'costo_unitario' => $d->costo_unitario,
-                'aplica_iva'     => (bool) $d->aplica_iva,
-                'subtotal'       => $d->subtotal,
+                'insumo_id'         => $d->insumo_id,
+                'nombre'            => $d->insumo?->nombre,
+                'cantidad'          => $d->cantidad,
+                'costo_unitario'    => $d->costo_unitario,
+                'costo_unitario_bs' => (float) $d->costo_unitario_bs,
+                'aplica_iva'        => (bool) $d->aplica_iva,
+                'subtotal'          => $d->subtotal,
             ]),
         ]);
     }
@@ -190,6 +227,14 @@ class CompraController extends Controller
             ->map(fn($w) => mb_strtoupper(mb_substr($w, 0, 1)))
             ->implode('') ?: '—';
 
+        // Montos en bolívares (lo efectivamente pagado), derivados del costo en
+        // Bs tecleado por línea. El IVA en Bs se aplica solo a la base gravada.
+        $ivaPct      = (float) $compra->iva_porcentaje;
+        $subtotalBs  = $compra->detalles->sum(fn($d) => (float) $d->cantidad * (float) $d->costo_unitario_bs);
+        $baseGravBs  = $compra->detalles->where('aplica_iva', true)
+            ->sum(fn($d) => (float) $d->cantidad * (float) $d->costo_unitario_bs);
+        $ivaBs       = round($baseGravBs * $ivaPct / 100, 2);
+
         return response()->json([
             'id'               => $compra->id,
             'estado'           => $compra->estado,
@@ -200,6 +245,11 @@ class CompraController extends Controller
             'iva'              => number_format($compra->iva, 2),
             'iva_porcentaje'   => rtrim(rtrim(number_format($compra->iva_porcentaje, 2, '.', ''), '0'), '.'),
             'total'            => number_format($compra->total, 2),
+            // Bolívares
+            'tasa_cambio'      => $compra->tasa_cambio ? number_format($compra->tasa_cambio, 4) : null,
+            'subtotal_bs'      => number_format($subtotalBs, 2),
+            'iva_bs'           => number_format($ivaBs, 2),
+            'total_bs'         => number_format($subtotalBs + $ivaBs, 2),
             'created_at'       => $compra->created_at?->format('d/m/Y H:i') ?? '—',
             'proveedor'        => [
                 'nombre' => $provName,
@@ -218,13 +268,15 @@ class CompraController extends Controller
                 'avatar_url' => $compra->registradoPor?->avatar_url ?? '',
             ],
             'items' => $compra->detalles->map(fn($d) => [
-                'nombre'         => $d->insumo?->nombre ?? 'N/A',
-                'tipo'           => $d->insumo?->tipo ?? '—',
-                'unidad'         => $d->insumo?->unidad_medida ?? '—',
-                'cantidad'       => number_format($d->cantidad, 2),
-                'costo_unitario' => number_format($d->costo_unitario, 2),
-                'aplica_iva'     => (bool) $d->aplica_iva,
-                'subtotal'       => number_format($d->subtotal, 2),
+                'nombre'            => $d->insumo?->nombre ?? 'N/A',
+                'tipo'              => $d->insumo?->tipo ?? '—',
+                'unidad'            => $d->insumo?->unidad_medida ?? '—',
+                'cantidad'          => number_format($d->cantidad, 2),
+                'costo_unitario'    => number_format($d->costo_unitario, 2),
+                'costo_unitario_bs' => number_format($d->costo_unitario_bs, 2),
+                'subtotal_bs'       => number_format((float) $d->cantidad * (float) $d->costo_unitario_bs, 2),
+                'aplica_iva'        => (bool) $d->aplica_iva,
+                'subtotal'          => number_format($d->subtotal, 2),
             ]),
         ]);
     }

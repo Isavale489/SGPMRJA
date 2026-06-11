@@ -270,6 +270,7 @@ Route::middleware(['auth', 'throttle:60,1', 'active.user', 'recovery.questions.r
         Route::post('compras', [CompraController::class, 'store'])->name('compras.store');
         Route::put('compras/{compra}', [CompraController::class, 'update'])->name('compras.update');
         Route::get('compras/data', [CompraController::class, 'getCompras'])->name('compras.data');
+        Route::get('compras/tasa', [CompraController::class, 'getTasa'])->name('compras.tasa');
         Route::get('compras/reporte/pdf', [CompraController::class, 'reportePdf'])->name('compras.reporte.pdf');
         Route::get('compras/{compra}/editar-datos', [CompraController::class, 'getParaEditar'])->name('compras.editar-datos');
         Route::get('compras/{compra}/detalle', [CompraController::class, 'getDetalle'])->name('compras.detalle');

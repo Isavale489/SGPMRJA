@@ -17,8 +17,10 @@ class CompraService
     public function registrar(array $data, int $userId): Compra
     {
         return DB::transaction(function () use ($data, $userId) {
-            $tasa = $this->tasaIva();
-            [$subtotal, $iva, $total] = $this->calcularTotales($data['items'], $tasa);
+            $tasaIva     = $this->tasaIva();
+            $tasaCambio  = (float) $data['tasa_cambio'];
+            $items       = $this->normalizarItems($data['items'], $tasaCambio);
+            [$subtotal, $iva, $total] = $this->calcularTotales($items, $tasaIva);
 
             $compra = Compra::create([
                 'proveedor_id'      => $data['proveedor_id'],
@@ -27,13 +29,14 @@ class CompraService
                 'fecha_compra'      => $data['fecha_compra'],
                 'subtotal'          => $subtotal,
                 'iva'               => $iva,
-                'iva_porcentaje'    => $tasa,
+                'iva_porcentaje'    => $tasaIva,
+                'tasa_cambio'       => $tasaCambio,
                 'total'             => $total,
                 'observaciones'     => $data['observaciones'] ?? null,
                 'estado'            => 'borrador',
             ]);
 
-            $this->sincronizarDetalles($compra, $data['items']);
+            $this->sincronizarDetalles($compra, $items);
 
             return $compra;
         });
@@ -50,8 +53,10 @@ class CompraService
         }
 
         DB::transaction(function () use ($compra, $data) {
-            $tasa = $this->tasaIva();
-            [$subtotal, $iva, $total] = $this->calcularTotales($data['items'], $tasa);
+            $tasaIva    = $this->tasaIva();
+            $tasaCambio = (float) $data['tasa_cambio'];
+            $items      = $this->normalizarItems($data['items'], $tasaCambio);
+            [$subtotal, $iva, $total] = $this->calcularTotales($items, $tasaIva);
 
             $compra->update([
                 'proveedor_id'      => $data['proveedor_id'],
@@ -59,13 +64,14 @@ class CompraService
                 'fecha_compra'      => $data['fecha_compra'],
                 'subtotal'          => $subtotal,
                 'iva'               => $iva,
-                'iva_porcentaje'    => $tasa,
+                'iva_porcentaje'    => $tasaIva,
+                'tasa_cambio'       => $tasaCambio,
                 'total'             => $total,
                 'observaciones'     => $data['observaciones'] ?? null,
             ]);
 
             $compra->detalles()->delete();
-            $this->sincronizarDetalles($compra, $data['items']);
+            $this->sincronizarDetalles($compra, $items);
         });
     }
 
@@ -189,6 +195,7 @@ class CompraService
                 'subtotal'          => $compra->subtotal,
                 'iva'               => $compra->iva,
                 'iva_porcentaje'    => $compra->iva_porcentaje,
+                'tasa_cambio'       => $compra->tasa_cambio,
                 'total'             => $compra->total,
                 'observaciones'     => 'Clonada de Compra #' . $compra->id . ($compra->observaciones ? '. ' . $compra->observaciones : ''),
                 'estado'            => 'borrador',
@@ -196,12 +203,13 @@ class CompraService
 
             foreach ($compra->detalles as $detalle) {
                 CompraDetalle::create([
-                    'compra_id'      => $nueva->id,
-                    'insumo_id'      => $detalle->insumo_id,
-                    'cantidad'       => $detalle->cantidad,
-                    'costo_unitario' => $detalle->costo_unitario,
-                    'aplica_iva'     => $detalle->aplica_iva,
-                    'subtotal'       => $detalle->subtotal,
+                    'compra_id'         => $nueva->id,
+                    'insumo_id'         => $detalle->insumo_id,
+                    'cantidad'          => $detalle->cantidad,
+                    'costo_unitario'    => $detalle->costo_unitario,
+                    'costo_unitario_bs' => $detalle->costo_unitario_bs,
+                    'aplica_iva'        => $detalle->aplica_iva,
+                    'subtotal'          => $detalle->subtotal,
                 ]);
             }
 
@@ -278,16 +286,39 @@ class CompraService
         return [round($subtotal, 2), $iva, round($subtotal + $iva, 2)];
     }
 
+    /**
+     * Normaliza los ítems del request (que llegan con el costo en bolívares)
+     * convirtiendo cada costo a USD con la tasa de la compra. El costo en Bs se
+     * conserva tal cual se tecleó (fiel a la factura); el USD es el que usa el
+     * resto del sistema (valuación de inventario, cotizaciones).
+     */
+    private function normalizarItems(array $items, float $tasaCambio): array
+    {
+        return array_map(function ($item) use ($tasaCambio) {
+            $costoBs  = (float) $item['costo_unitario_bs'];
+            $costoUsd = $tasaCambio > 0 ? round($costoBs / $tasaCambio, 2) : 0.0;
+
+            return [
+                'insumo_id'         => $item['insumo_id'],
+                'cantidad'          => $item['cantidad'],
+                'costo_unitario_bs' => $costoBs,
+                'costo_unitario'    => $costoUsd,
+                'aplica_iva'        => $item['aplica_iva'] ?? true,
+            ];
+        }, $items);
+    }
+
     private function sincronizarDetalles(Compra $compra, array $items): void
     {
         foreach ($items as $item) {
             CompraDetalle::create([
-                'compra_id'      => $compra->id,
-                'insumo_id'      => $item['insumo_id'],
-                'cantidad'       => $item['cantidad'],
-                'costo_unitario' => $item['costo_unitario'],
-                'aplica_iva'     => $this->lineaGravada($item),
-                'subtotal'       => $item['cantidad'] * $item['costo_unitario'],
+                'compra_id'         => $compra->id,
+                'insumo_id'         => $item['insumo_id'],
+                'cantidad'          => $item['cantidad'],
+                'costo_unitario'    => $item['costo_unitario'],
+                'costo_unitario_bs' => $item['costo_unitario_bs'],
+                'aplica_iva'        => $this->lineaGravada($item),
+                'subtotal'          => $item['cantidad'] * $item['costo_unitario'],
             ]);
         }
     }

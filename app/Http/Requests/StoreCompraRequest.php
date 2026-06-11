@@ -28,6 +28,8 @@ class StoreCompraRequest extends FormRequest
                     ->ignore($this->route('compra')),
             ],
             'fecha_compra'                => ['required', 'date', 'before_or_equal:today'],
+            // Tasa BCV (USD/VES) con la que se convierte el costo en Bs a USD.
+            'tasa_cambio'                 => ['required', 'numeric', 'min:0.0001'],
             'observaciones'               => ['nullable', 'string', 'max:500'],
             'items'                       => ['required', 'array', 'min:1'],
             'items.*.insumo_id'           => [
@@ -39,7 +41,9 @@ class StoreCompraRequest extends FormRequest
                     ->where('is_inventoriable', 1),
             ],
             'items.*.cantidad'            => ['required', 'numeric', 'min:0.01'],
-            'items.*.costo_unitario'      => ['required', 'numeric', 'min:0.01'],
+            // El costo se ingresa en bolívares (lo que se paga al proveedor);
+            // el USD se deriva en el servicio dividiendo por la tasa.
+            'items.*.costo_unitario_bs'   => ['required', 'numeric', 'min:0.01'],
             'items.*.aplica_iva'          => ['sometimes', 'boolean'],
         ];
     }
@@ -63,14 +67,16 @@ class StoreCompraRequest extends FormRequest
             'numero_factura.unique'            => 'Ya existe una compra de este proveedor con ese número de factura.',
             'fecha_compra.required'            => 'La fecha de compra es obligatoria.',
             'fecha_compra.before_or_equal'     => 'La fecha de compra no puede ser futura.',
+            'tasa_cambio.required'             => 'Ingrese la tasa de cambio (Bs por USD) de la compra.',
+            'tasa_cambio.min'                  => 'La tasa de cambio debe ser mayor a cero.',
             'items.required'                   => 'Debe agregar al menos un insumo.',
             'items.min'                        => 'Debe agregar al menos un insumo.',
             'items.*.insumo_id.required'       => 'Seleccione el insumo en cada fila.',
             'items.*.insumo_id.exists'         => 'Uno de los insumos seleccionados no existe, está inhabilitado o no es inventariable.',
             'items.*.cantidad.required'        => 'Ingrese la cantidad para cada ítem.',
             'items.*.cantidad.min'             => 'La cantidad debe ser mayor a cero.',
-            'items.*.costo_unitario.required'  => 'Ingrese el costo unitario para cada ítem.',
-            'items.*.costo_unitario.min'       => 'El costo unitario debe ser mayor a cero.',
+            'items.*.costo_unitario_bs.required' => 'Ingrese el costo en Bs para cada ítem.',
+            'items.*.costo_unitario_bs.min'      => 'El costo en Bs debe ser mayor a cero.',
         ];
     }
 }
