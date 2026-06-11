@@ -40,6 +40,10 @@
                                         data-bs-target="#createModal">
                                         <i class="ri-add-line align-bottom me-1"></i> Registrar Movimiento
                                     </button>
+                                    <button type="button" class="btn btn-outline-success" data-bs-toggle="modal"
+                                        data-bs-target="#masivoModal" title="Movimiento masivo: aplicar a todos los insumos">
+                                        <i class="ri-stack-line align-bottom"></i>
+                                    </button>
                                     <a href="{{ route('movimiento-insumo.alertas') }}" class="btn btn-warning">
                                         <i class="ri-alert-line align-bottom me-1"></i> Alertas de Stock
                                     </a>
@@ -222,6 +226,7 @@
     </div>
 
     @include('admin.movimiento-insumo.movimientos.modals.create')
+    @include('admin.movimiento-insumo.movimientos.modals.masivo')
     @include('admin.movimiento-insumo.movimientos.modals.view')
     @include('admin.movimiento-insumo.movimientos.modals.create_insumo')
 

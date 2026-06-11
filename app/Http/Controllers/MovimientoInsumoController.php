@@ -217,6 +217,83 @@ class MovimientoInsumoController extends Controller
         }
     }
 
+    /**
+     * Movimiento masivo: aplica una misma Entrada/Salida a TODOS los insumos
+     * inventariables activos en una sola transacción. Atajo para hidratar
+     * inventario sin registrar insumo por insumo. En salidas, los insumos
+     * sin stock suficiente se omiten (y se informan), nunca quedan negativos.
+     */
+    public function storeMasivo(Request $request)
+    {
+        $request->validate([
+            'tipo_movimiento' => 'required|in:Entrada,Salida',
+            'cantidad' => 'required|numeric|min:0.01',
+            'motivo' => 'required|string|max:500',
+        ]);
+
+        $tipo     = $request->tipo_movimiento;
+        $cantidad = (float) $request->cantidad;
+
+        try {
+            $resultado = DB::transaction(function () use ($request, $tipo, $cantidad) {
+                // Orden de lock estable (por id) para no interbloquear con
+                // compras u otros movimientos concurrentes sobre el inventario.
+                $insumos = Insumo::where('estado', true)
+                    ->where('is_inventoriable', true)
+                    ->orderBy('id')
+                    ->lockForUpdate()
+                    ->get();
+
+                $aplicados = 0;
+                $omitidos  = [];
+
+                foreach ($insumos as $insumo) {
+                    $stockAnterior = (float) $insumo->stock_actual;
+
+                    if ($tipo === 'Salida' && $stockAnterior < $cantidad) {
+                        $omitidos[] = $insumo->nombre;
+                        continue;
+                    }
+
+                    $stockNuevo = $tipo === 'Entrada'
+                        ? $stockAnterior + $cantidad
+                        : $stockAnterior - $cantidad;
+
+                    MovimientoInsumo::create([
+                        'insumo_id'       => $insumo->id,
+                        'tipo_movimiento' => $tipo,
+                        'cantidad'        => $cantidad,
+                        'stock_anterior'  => $stockAnterior,
+                        'stock_nuevo'     => $stockNuevo,
+                        'motivo'          => $request->motivo,
+                        'created_by'      => Auth::id(),
+                    ]);
+
+                    $insumo->update(['stock_actual' => $stockNuevo]);
+                    $aplicados++;
+                }
+
+                return ['aplicados' => $aplicados, 'omitidos' => $omitidos];
+            });
+
+            if ($resultado['aplicados'] === 0) {
+                return response()->json([
+                    'error' => 'No se aplicó ningún movimiento: ningún insumo tiene stock suficiente para esa salida.'
+                ], 422);
+            }
+
+            return response()->json([
+                'success'   => "Movimiento de {$tipo} registrado en {$resultado['aplicados']} insumo(s).",
+                'aplicados' => $resultado['aplicados'],
+                'omitidos'  => $resultado['omitidos'],
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Error al registrar el movimiento masivo: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
     public function show($id)
     {
         $movimiento = MovimientoInsumo::with(['insumo', 'creadoPor'])->findOrFail($id);
