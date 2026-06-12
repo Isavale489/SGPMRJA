@@ -339,6 +339,10 @@
                                         <i class="mdi mdi-account-group-outline fs-16 align-middle me-2 text-primary"></i>
                                         <span class="align-middle">Configuración de usuarios</span>
                                     </a>
+                                    <a class="dropdown-item d-flex align-items-center" href="{{ route('configuracion.index') }}">
+                                        <i class="mdi mdi-cog-outline fs-16 align-middle me-2 text-primary"></i>
+                                        <span class="align-middle">Configuración del sistema</span>
+                                    </a>
                                 @endif
                             </div>
                             <div class="dropdown-divider my-0"></div>
