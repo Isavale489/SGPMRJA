@@ -2,7 +2,7 @@
 
 **Feature**: FEAT-004 — Panel de Configuración del Sistema (base)
 **Spec**: `sdd/specs/panel-configuracion.spec.md`
-**Status**: pending
+**Status**: done
 **Priority**: high
 **Esfuerzo estimado**: M (2-4h)
 **Depends-on**: none
@@ -133,11 +133,18 @@ use Illuminate\Database\Eloquent\Model;
 
 ## Nota de Completitud
 
-*(Llenar al terminar)*
+**Completado por**: emmanuel (+ Claude Code)
+**Fecha**: 2026-06-12
+**Commits**: `7a3ad01` (rama `feat/panel-configuracion`)
+**Notas**: Implementado completo según scope. QA en tinker: default 16.0 con tabla
+vacía, override 8 → 8.0, borrar override → 16.0, clave inexistente lanza
+InvalidArgumentException (decisión documentada en el PHPDoc: truena en vez de
+devolver null mudo), default vía config simulando .env OK. Dump actualizado por
+delta (bloque `configuracion` + fila de migración 138/batch 78) y validado
+importando en BD temporal (49 tablas, DDL correcto) con DROP al final.
+Checklist de criterios de aceptación: todos verificados.
 
-**Completado por**:
-**Fecha**:
-**Commits**:
-**Notas**:
-
-**Desviaciones del spec**:
+**Desviaciones del spec**: ninguna. Hallazgo lateral (NO tocado, fuera de scope):
+el dump del repo no incluye la migración `2026_06_10_000004_add_moneda_bs_to_compra_tables`
+ni sus columnas — consistente con CLAUDE.md que la lista como "pendiente de
+ejecutar en otros entornos", pero conviene confirmarlo con el equipo.
