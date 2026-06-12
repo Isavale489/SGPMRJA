@@ -2873,7 +2873,7 @@
             var id = $(this).data('id');
             Swal.fire({
                 title: '¿Reactivar cotización?',
-                text: 'La cotización volverá a estado Pendiente con 15 días de validez desde hoy.',
+                text: 'La cotización volverá a estado Pendiente con {{ \App\Models\Cotizacion::diasVigencia() }} días de validez desde hoy.',
                 icon: 'question',
                 showCancelButton: true,
                 confirmButtonText: 'Sí, reactivar',

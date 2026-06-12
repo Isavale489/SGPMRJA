@@ -94,7 +94,8 @@ class CotizacionService
     }
 
     /**
-     * Reactivar una cotización vencida, reseteando su validez a 15 días desde hoy.
+     * Reactivar una cotización vencida, reseteando su validez a diasVigencia()
+     * días desde hoy (la vigencia se recalcula desde la nueva fecha de emisión).
      */
     public function reactivar(Cotizacion $cotizacion): void
     {
@@ -132,12 +133,12 @@ class CotizacionService
                 throw new \InvalidArgumentException('Solo se pueden convertir cotizaciones con estado Aprobada.');
             }
 
-            // 2.b Vigencia de precios: bloquear si pasaron más de DIAS_VIGENCIA días
+            // 2.b Vigencia de precios: bloquear si pasaron más de diasVigencia() días
             //     desde la emisión. La marca como 'Vencida' para reflejarlo en el listado.
             if ($cotizacion->estaVencidaPorVigencia()) {
                 $cotizacion->update(['estado' => 'Vencida']);
                 throw new \InvalidArgumentException(
-                    'La cotización venció: pasaron más de ' . Cotizacion::DIAS_VIGENCIA .
+                    'La cotización venció: pasaron más de ' . Cotizacion::diasVigencia() .
                     ' días desde su emisión. Reactívala para actualizar los precios antes de convertirla a pedido.'
                 );
             }

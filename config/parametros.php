@@ -44,4 +44,32 @@ return [
         'mensaje_confirmacion' => 'Vas a cambiar la tasa de IVA del sistema. El cambio aplica solo a las compras nuevas: las ya registradas conservan su porcentaje original.',
     ],
 
+    'pedidos.abono_minimo' => [
+        'modulo'      => 'Pedidos',
+        'nombre'      => 'Abono mínimo (%)',
+        'descripcion' => 'Porcentaje mínimo del total que debe estar abonado (con pagos validados) para registrar un pedido y para formalizarlo (habilitar producción). Los textos de términos, facturas y FAQ lo reflejan automáticamente.',
+        'tipo'        => 'decimal',
+        'reglas'      => 'required|numeric|min:0|max:100',
+        'default'     => null,
+        'config_key'  => 'pedidos.abono_minimo_porcentaje',
+    ],
+
+    'pedidos.dias_entrega_habiles' => [
+        'modulo'      => 'Pedidos',
+        'nombre'      => 'Tiempo de ejecución (días hábiles)',
+        'descripcion' => 'Días hábiles (sin sábados ni domingos) entre la formalización del pedido y la fecha de entrega estimada que calcula el sistema. La fecha elegida manualmente en el wizard siempre manda.',
+        'tipo'        => 'entero',
+        'reglas'      => 'required|integer|min:1|max:180',
+        'default'     => 30,
+    ],
+
+    'cotizaciones.dias_vigencia' => [
+        'modulo'      => 'Cotizaciones',
+        'nombre'      => 'Vigencia de precios (días)',
+        'descripcion' => 'Días continuos desde la emisión durante los que los precios de una cotización son válidos para convertirla en pedido. Pasado el plazo, la cotización se marca Vencida. Aplica también a cotizaciones ya emitidas (es una política, no un snapshot).',
+        'tipo'        => 'entero',
+        'reglas'      => 'required|integer|min:1|max:365',
+        'default'     => 15,
+    ],
+
 ];
