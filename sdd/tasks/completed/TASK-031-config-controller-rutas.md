@@ -2,7 +2,7 @@
 
 **Feature**: FEAT-004 — Panel de Configuración del Sistema (base)
 **Spec**: `sdd/specs/panel-configuracion.spec.md`
-**Status**: pending
+**Status**: done
 **Priority**: high
 **Esfuerzo estimado**: M (2-4h)
 **Depends-on**: TASK-030
@@ -123,11 +123,21 @@ Route::middleware('role:Administrador')->group(function () { ... });
 
 ## Nota de Completitud
 
-*(Llenar al terminar)*
+**Completado por**: emmanuel (+ Claude Code)
+**Fecha**: 2026-06-12
+**Commits**: `b711ba1` (rama `feat/panel-configuracion`)
+**Notas**: QA por invocación directa del controller en tinker (la vista llega en
+TASK-032): update válido 200 + helper refleja al instante + `updated_by_id`
+correcto; `150`/`abc` → 422; clave ajena al módulo → 422; módulo inexistente →
+404; reset → 200 con default en el body y fila eliminada. Middleware verificado
+con `route:list --json` (CheckRole:Administrador en las 3 rutas). Detalles para
+TASK-032: payload `{"valores": {"impuestos.iva": "8"}}`; errores 422 keyed por
+clave SIN escapar; el módulo en la URL es el slug del nombre (`Impuestos` →
+`impuestos`); `index()` pasa `$modulos` (slug → {slug, nombre, parametros}),
+cada parámetro con `clave`, `valor`, `es_default` + su definición del registry.
+Gotcha resuelto: claves con punto escapadas (`impuestos\.iva`) en las REGLAS del
+validador, pero la etiqueta (customAttributes) va con la clave sin escapar.
+QA 403-Supervisor queda cubierto por el middleware (mismo CheckRole de todo el
+grupo) y se re-verifica en navegador en TASK-033.
 
-**Completado por**:
-**Fecha**:
-**Commits**:
-**Notas**:
-
-**Desviaciones del spec**:
+**Desviaciones del spec**: ninguna.
