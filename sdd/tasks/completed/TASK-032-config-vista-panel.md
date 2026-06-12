@@ -2,7 +2,7 @@
 
 **Feature**: FEAT-004 — Panel de Configuración del Sistema (base)
 **Spec**: `sdd/specs/panel-configuracion.spec.md`
-**Status**: pending
+**Status**: done
 **Priority**: high
 **Esfuerzo estimado**: L (4-8h)
 **Depends-on**: TASK-031
@@ -124,11 +124,20 @@ solo, sin tocar esta vista.
 
 ## Nota de Completitud
 
-*(Llenar al terminar)*
+**Completado por**: emmanuel (+ Claude Code)
+**Fecha**: 2026-06-12
+**Commits**: `1c988fe` (rama `feat/panel-configuracion`)
+**Notas**: Implementado completo. La confirmación del guardado quedó
+registry-driven (campos opcionales `confirmar_guardado` + `mensaje_confirmacion`
+en la entrada del registry → `data-confirmar` en el form), NO hardcodeada por
+módulo. QA server-side por render en tinker: página completa OK (pill, form,
+input con min/max derivados de reglas, badge default, reset oculto sin override,
+help-text, update-url). **Prueba del patrón VERIFICADA**: módulo dummy "Pruebas"
+con parámetro booleano inyectado al registry en runtime → pill + form + switch
+checked + badge "Por defecto: Sí" aparecieron sin tocar Blade/JS. Hardening
+encontrado en el QA: entrada del registry sin `config_key` rompía helper y
+partial (`config(null)` devuelve el Repository) — blindado en ambos.
+**PENDIENTE: QA en navegador por Emmanuel** (clicks, SweetAlerts, dark mode
+visual, hash de URL) — el flujo AJAX completo se prueba junto a TASK-033.
 
-**Completado por**:
-**Fecha**:
-**Commits**:
-**Notas**:
-
-**Desviaciones del spec**:
+**Desviaciones del spec**: ninguna.
