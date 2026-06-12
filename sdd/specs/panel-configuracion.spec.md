@@ -8,7 +8,7 @@ base_branch: enmanuel
 **Feature ID**: FEAT-004
 **Fecha**: 2026-06-12
 **Autor**: Emmanuel
-**Status**: approved
+**Status**: shipped
 **Versión objetivo**: Sprint Final
 
 ---
@@ -338,3 +338,4 @@ window.IVA_TASA = @json((float) config('impuestos.iva', 16));
 | 0.2 | 2026-06-12 | Emmanuel | Acceso movido del sidebar al dropdown "Configuración" del header (junto a Perfil y Usuarios) |
 | 1.0 | 2026-06-12 | Emmanuel | Preguntas abiertas resueltas (solo-admin, confirm IVA) — status `approved` |
 | 1.1 | 2026-06-12 | Emmanuel | El panel pasa a ser el hub: accesos a Usuarios y Perfil dentro de /configuracion; "Configuración de usuarios" sale del dropdown (Perfil se queda por el Supervisor) |
+| 1.2 | 2026-06-12 | Emmanuel | Implementación completa (TASK-030..034 + hub + menú a la derecha), QA OK — status `shipped` |
