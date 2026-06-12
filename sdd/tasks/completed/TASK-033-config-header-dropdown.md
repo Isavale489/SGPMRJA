@@ -2,7 +2,7 @@
 
 **Feature**: FEAT-004 — Panel de Configuración del Sistema (base)
 **Spec**: `sdd/specs/panel-configuracion.spec.md`
-**Status**: pending
+**Status**: done
 **Priority**: medium
 **Esfuerzo estimado**: S (< 2h)
 **Depends-on**: TASK-031, TASK-032
@@ -96,11 +96,13 @@ el dropdown "Configuración" del header — el sidebar NO se toca.
 
 ## Nota de Completitud
 
-*(Llenar al terminar)*
+**Completado por**: emmanuel (+ Claude Code)
+**Fecha**: 2026-06-12
+**Commits**: `3a672d1` (rama `feat/panel-configuracion`)
+**Notas**: dropdown-item agregado dentro del `@if isAdmin()` existente, debajo de
+"Configuración de usuarios", con el mismo markup e icono `mdi mdi-cog-outline`.
+QA por render del header en tinker: como Administrador el ítem aparece con el
+href correcto; como Supervisor no se renderiza (y conserva "Configuración de
+perfil"). QA visual en navegador (dark mode) pendiente junto al del panel.
 
-**Completado por**:
-**Fecha**:
-**Commits**:
-**Notas**:
-
-**Desviaciones del spec**:
+**Desviaciones del spec**: ninguna.
