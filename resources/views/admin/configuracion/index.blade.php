@@ -19,8 +19,10 @@
         </div>
 
         <div class="row">
-            {{-- Nav-pills vertical: un pill por módulo del registry --}}
-            <div class="col-lg-3 col-xxl-2">
+            {{-- Nav-pills vertical: un pill por módulo del registry.
+                 A la DERECHA (order-lg-2) para no chocar visualmente con el
+                 sidebar general del sistema; en móvil queda arriba del contenido. --}}
+            <div class="col-lg-3 col-xxl-2 order-lg-2">
                 <div class="card card-config">
                     <div class="card-body p-2">
                         <div class="nav nav-pills flex-column config-pills" id="config-pills" role="tablist"
@@ -52,7 +54,7 @@
             </div>
 
             {{-- Contenido: un form por módulo, dirigido por el registry --}}
-            <div class="col-lg-9 col-xxl-10">
+            <div class="col-lg-9 col-xxl-10 order-lg-1">
                 <div class="tab-content" id="config-content">
                     @foreach ($modulos as $modulo)
                         @php
