@@ -35,6 +35,7 @@
 | [`business-flows.md`](business-flows.md) | Antes de diseñar transacciones nuevas |
 | [`softdeletes-unique.md`](softdeletes-unique.md) | Generadores secuenciales en modelos con SoftDeletes |
 | [`column-naming.md`](column-naming.md) | Toda columna nueva |
+| [`system-config.md`](system-config.md) | Parámetro configurable nuevo o consumo del panel `/configuracion` |
 
 ### Productos y SKU
 

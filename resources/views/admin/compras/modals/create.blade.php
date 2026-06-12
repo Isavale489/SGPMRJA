@@ -390,7 +390,7 @@
                                             </div>
 
                                             <p class="c-ticket-note">
-                                                <i class="ri-information-line me-1"></i>Los costos se cargan en bolívares; el equivalente en USD usa la tasa del paso 1. El IVA ({{ (float) config('impuestos.iva', 16) }}%) aplica solo a las líneas gravables.
+                                                <i class="ri-information-line me-1"></i>Los costos se cargan en bolívares; el equivalente en USD usa la tasa del paso 1. El IVA ({{ (float) parametro('impuestos.iva') }}%) aplica solo a las líneas gravables.
                                             </p>
                                         </div>
                                     </div>

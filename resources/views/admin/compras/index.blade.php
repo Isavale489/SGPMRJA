@@ -196,7 +196,7 @@
     <script>
         window.INSUMOS_DATA = @json($insumos);
         window.VER_ANULADAS = @json($verAnuladas);
-        window.IVA_TASA     = @json((float) config('impuestos.iva', 16));
+        window.IVA_TASA     = @json((float) parametro('impuestos.iva'));
     </script>
 @endsection
 

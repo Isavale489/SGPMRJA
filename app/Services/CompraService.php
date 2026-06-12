@@ -257,11 +257,12 @@ class CompraService
     }
 
     /**
-     * Tasa de IVA general vigente (%). Centralizada en config/impuestos.php.
+     * Tasa de IVA general vigente (%). Configurable desde el panel
+     * /configuracion (registry impuestos.iva, default en config/impuestos.php).
      */
     private function tasaIva(): float
     {
-        return (float) config('impuestos.iva', 16);
+        return (float) parametro('impuestos.iva');
     }
 
     /**
