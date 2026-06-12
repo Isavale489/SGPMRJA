@@ -8,7 +8,7 @@ base_branch: enmanuel
 **Feature ID**: FEAT-005
 **Fecha**: 2026-06-12
 **Autor**: Emmanuel
-**Status**: draft
+**Status**: approved
 **Versión objetivo**: Sprint Final
 
 ---
@@ -384,10 +384,10 @@ se suma al `app/Support/helpers.php` que esa feature crea (y viceversa).
 > Resolver antes de mergear. Marcar con [x] al cerrar y dejar la respuesta.
 
 - [x] ¿Roles dinámicos o solo los 2 actuales? — **Resuelto 2026-06-12 (Emmanuel): roles dinámicos, el admin crea roles y los asigna.**
-- [ ] Granularidad inicial de acciones: ¿finas en transaccionales (procesar/anular/clonar...) y gruesas (ver/gestionar) en maestros, o gruesas en todo para empezar? — *Propuesta: finas en transaccionales, gruesas en maestros.* — *Owner: Emmanuel / equipo*
-- [ ] ¿Los reportes (sección Consultas y Reportes) son un "módulo" único con permiso `reportes.ver` o uno por reporte? — *Propuesta: módulo único en fase 1.* — *Owner: equipo*
-- [ ] ¿El Supervisor (rol sistema) es editable en la matriz, o también fijo? — *Propuesta: editable (solo Administrador es intocable).* — *Owner: Emmanuel*
-- [ ] ¿Confirmar con el profesor si espera algún rol específico (Vendedor, Almacenista) para sembrarlo de una vez? — *Owner: Emmanuel*
+- [x] Granularidad inicial de acciones — **Resuelto 2026-06-12 (Emmanuel): finas en transaccionales (procesar/anular/clonar/formalizar/PDF...), gruesas (ver/gestionar) en maestros.**
+- [x] ¿Reportes módulo único o uno por reporte? — **Resuelto 2026-06-12 (Emmanuel): módulo único con permiso `reportes.ver`; subdividir después si hace falta.**
+- [x] ¿El Supervisor es editable en la matriz? — **Resuelto 2026-06-12 (Emmanuel): editable — solo Administrador es intocable. `es_sistema` en Supervisor solo impide renombrar/eliminar, NO bloquea su fila en la matriz.**
+- [x] ¿Roles a sembrar? — **Resuelto 2026-06-12 (Emmanuel): solo Administrador y Supervisor. Los demás los crea el admin desde el panel cuando los necesite (no se siembran ejemplos).**
 
 ---
 
@@ -396,3 +396,4 @@ se suma al `app/Support/helpers.php` que esa feature crea (y viceversa).
 | Versión | Fecha | Autor | Cambio |
 |---|---|---|---|
 | 0.1 | 2026-06-12 | Emmanuel | Borrador inicial — roles dinámicos + matriz de permisos por módulo/acción |
+| 1.0 | 2026-06-12 | Emmanuel | Preguntas resueltas (granularidad mixta, reportes único, Supervisor editable, seed solo 2 roles) — status `approved` |

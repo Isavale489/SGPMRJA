@@ -8,7 +8,7 @@ base_branch: enmanuel
 **Feature ID**: FEAT-004
 **Fecha**: 2026-06-12
 **Autor**: Emmanuel
-**Status**: draft
+**Status**: approved
 **Versión objetivo**: Sprint Final
 
 ---
@@ -300,6 +300,7 @@ window.IVA_TASA = @json((float) config('impuestos.iva', 16));
 - Casteo según `tipo` del registry al leer (`decimal` → float, `entero` → int, `booleano` → bool, `texto` → string).
 - Validación del `update` construida dinámicamente desde las `reglas` del registry — NO duplicar reglas en el Form Request.
 - El panel muestra junto al campo IVA la advertencia de que las compras previas conservan su snapshot (texto ya redactado en la `descripcion` del registry).
+- Guardar el grupo Impuestos pasa por un **SweetAlert de confirmación** (decisión 2026-06-12) antes del `PUT`; "Cancelar" no envía nada.
 - `config/impuestos.php` y `config/pedidos.php` NO se eliminan: son la fuente de los defaults (`config_key` en el registry) y el fallback si la tabla está vacía.
 
 ### Riesgos conocidos
@@ -323,8 +324,8 @@ window.IVA_TASA = @json((float) config('impuestos.iva', 16));
 
 - [x] ¿Dónde vive el acceso al panel? — **Resuelto 2026-06-12 (Emmanuel): en el dropdown "Configuración" del header, junto a Perfil y Usuarios. El sidebar no se toca.**
 - [x] ¿Qué pasa con el ítem "Usuarios"? — **Resuelto: ya vive en el dropdown del header (`header.blade.php:337-342`); no se mueve nada.**
-- [ ] ¿El panel es solo-Administrador, o el Supervisor lo ve en solo lectura? — *Propuesta: solo Administrador en fase 1 (consistente con "Configuración de usuarios").* — *Owner: Emmanuel / equipo*
-- [ ] ¿El cambio de IVA requiere confirmación extra (SweetAlert "¿Seguro?") por su impacto en compras nuevas? — *Propuesta: sí, confirm simple.* — *Owner: equipo*
+- [x] ¿El panel es solo-Administrador, o el Supervisor lo ve en solo lectura? — **Resuelto 2026-06-12 (Emmanuel): solo Administrador en fase 1 (consistente con "Configuración de usuarios").**
+- [x] ¿El cambio de IVA requiere confirmación extra por su impacto en compras nuevas? — **Resuelto 2026-06-12 (Emmanuel): sí — al guardar el grupo Impuestos, SweetAlert de confirmación recordando que las compras previas conservan su snapshot.**
 
 ---
 
@@ -334,3 +335,4 @@ window.IVA_TASA = @json((float) config('impuestos.iva', 16));
 |---|---|---|---|
 | 0.1 | 2026-06-12 | Emmanuel | Borrador inicial — base del panel + grupo Impuestos |
 | 0.2 | 2026-06-12 | Emmanuel | Acceso movido del sidebar al dropdown "Configuración" del header (junto a Perfil y Usuarios) |
+| 1.0 | 2026-06-12 | Emmanuel | Preguntas abiertas resueltas (solo-admin, confirm IVA) — status `approved` |
