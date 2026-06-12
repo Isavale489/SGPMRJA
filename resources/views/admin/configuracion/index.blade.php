@@ -25,6 +25,7 @@
                     <div class="card-body p-2">
                         <div class="nav nav-pills flex-column config-pills" id="config-pills" role="tablist"
                             aria-orientation="vertical">
+                            <div class="config-pills-label">Parámetros</div>
                             @foreach ($modulos as $modulo)
                                 <button class="nav-link text-start {{ $loop->first ? 'active' : '' }}"
                                     id="pill-{{ $modulo['slug'] }}" data-bs-toggle="pill"
@@ -34,6 +35,17 @@
                                     <i class="ri-settings-4-line me-1 align-middle"></i> {{ $modulo['nombre'] }}
                                 </button>
                             @endforeach
+
+                            {{-- Accesos a las demás configuraciones del sistema --}}
+                            <div class="config-pills-label config-pills-label--separado">Otras configuraciones</div>
+                            <a href="{{ url('users') }}" class="nav-link text-start config-pill-link">
+                                <i class="ri-group-line me-1 align-middle"></i> Configuración de usuarios
+                                <i class="ri-arrow-right-up-line config-pill-link-arrow"></i>
+                            </a>
+                            <a href="{{ route('profile.edit') }}" class="nav-link text-start config-pill-link">
+                                <i class="ri-user-settings-line me-1 align-middle"></i> Configuración de perfil
+                                <i class="ri-arrow-right-up-line config-pill-link-arrow"></i>
+                            </a>
                         </div>
                     </div>
                 </div>

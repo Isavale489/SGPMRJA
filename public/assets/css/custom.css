@@ -8571,3 +8571,31 @@ header#page-topbar,
     background: rgba(78, 122, 199, 0.18);
     color: #a8b9d9;
 }
+
+/* ── Pills del panel: etiquetas de grupo y enlaces externos ── */
+.config-pills-label {
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #878a99;
+    padding: 0.35rem 0.9rem 0.25rem;
+}
+.config-pills-label--separado {
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px dashed var(--vz-border-color, #e9ebec);
+}
+.config-pill-link {
+    position: relative;
+    padding-right: 1.9rem !important;
+}
+.config-pill-link .config-pill-link-arrow {
+    position: absolute;
+    right: 0.7rem;
+    top: 50%;
+    transform: translateY(-50%);
+    opacity: 0.45;
+}
+.config-pill-link:hover .config-pill-link-arrow { opacity: 1; }
+[data-bs-theme="dark"] .config-pills-label { color: #7a8db0; }

@@ -146,6 +146,7 @@ Las tres dentro del grupo `Route::middleware('role:Administrador')` existente.
 - Botón **"Restablecer"** por parámetro → `DELETE` de la fila → vuelve al default.
 - Validación JS estándar (blur + submit) según `docs/conventions/js-validations.md`.
 - Acceso: ítem "Configuración del sistema" (icono `mdi mdi-cog-outline`, mismo estilo de los ítems existentes) en el dropdown del header, dentro del bloque `isAdmin()`. NO se toca el sidebar.
+- **El panel es el hub de configuración** (decisión 2026-06-12, rev 1.1): bajo los pills de parámetros va la sección "Otras configuraciones" con enlaces a **Configuración de usuarios** (`/users`) y **Configuración de perfil** (`/profile/edit`). En consecuencia, el ítem "Configuración de usuarios" SALE del dropdown del header (queda: Perfil — visible para todos porque el Supervisor no entra al panel — y Sistema, solo admin).
 
 ---
 
@@ -336,3 +337,4 @@ window.IVA_TASA = @json((float) config('impuestos.iva', 16));
 | 0.1 | 2026-06-12 | Emmanuel | Borrador inicial — base del panel + grupo Impuestos |
 | 0.2 | 2026-06-12 | Emmanuel | Acceso movido del sidebar al dropdown "Configuración" del header (junto a Perfil y Usuarios) |
 | 1.0 | 2026-06-12 | Emmanuel | Preguntas abiertas resueltas (solo-admin, confirm IVA) — status `approved` |
+| 1.1 | 2026-06-12 | Emmanuel | El panel pasa a ser el hub: accesos a Usuarios y Perfil dentro de /configuracion; "Configuración de usuarios" sale del dropdown (Perfil se queda por el Supervisor) |
