@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\CompraController;
+use App\Http\Controllers\ConfiguracionController;
 use App\Http\Controllers\DetalleOrdenInsumoController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\InsumoController;
@@ -60,6 +61,11 @@ Route::middleware(['auth', 'throttle:60,1', 'active.user', 'recovery.questions.r
     // SOLO ADMINISTRADOR (CRUD de escritura)
     // ============================================
     Route::middleware('role:Administrador')->group(function () {
+        // Configuración del sistema (FEAT-004)
+        Route::get('configuracion', [ConfiguracionController::class, 'index'])->name('configuracion.index');
+        Route::put('configuracion/{modulo}', [ConfiguracionController::class, 'update'])->name('configuracion.update');
+        Route::delete('configuracion/{modulo}/{clave}', [ConfiguracionController::class, 'reset'])->name('configuracion.reset');
+
         // Usuarios
         Route::resource('users', UserController::class);
         Route::post('users/{id}/restore', [UserController::class, 'restore'])->name('users.restore');
