@@ -9,6 +9,7 @@ base_branch: enmanuel
 **Fecha**: 2026-06-12
 **Autor**: Emmanuel
 **Status**: approved
+**Asignado a**: Santiago (1 spec = 1 persona = 1 PR; él genera sus tasks con `/sdd-task`)
 **Versión objetivo**: Sprint Final
 
 ---
