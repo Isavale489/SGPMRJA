@@ -258,7 +258,7 @@
     <div class="nota-especial">
         <b>Condiciones para Pedidos:</b><br>
         &bull; <b>Formalización:</b> abono del {{ $abonoPct }}% del costo total para iniciar la producción.<br>
-        &bull; <b>Tiempo de ejecución:</b> 30 días hábiles desde la confirmación del pago inicial.<br>
+        &bull; <b>Tiempo de ejecución:</b> {{ \App\Models\Pedido::diasHabilesEntrega() }} días hábiles desde la confirmación del pago inicial.<br>
         &bull; <b>Saldo restante:</b> el {{ 100 - $abonoPct }}% se cancela al momento de la entrega.<br>
         &bull; <b>Modificaciones:</b> una vez formalizado el pedido no se aceptan cambios en tallas, cantidades ni diseño.<br>
         &bull; <b>Entrega:</b> el plazo comienza a contarse desde el abono del {{ $abonoPct }}% inicial.<br>
