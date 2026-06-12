@@ -23,6 +23,10 @@
 | - default     Valor por defecto explícito; null ⇒ usar config(config_key).
 | - config_key  Puente al config file legacy que aporta el default (.env).
 |
+| Campos opcionales (UI del panel):
+| - confirmar_guardado    true ⇒ guardar el módulo pide confirmación previa.
+| - mensaje_confirmacion  Texto del SweetAlert de confirmación.
+|
 */
 
 return [
@@ -35,6 +39,9 @@ return [
         'reglas'      => 'required|numeric|min:0|max:100',
         'default'     => null,
         'config_key'  => 'impuestos.iva',
+
+        'confirmar_guardado'   => true,
+        'mensaje_confirmacion' => 'Vas a cambiar la tasa de IVA del sistema. El cambio aplica solo a las compras nuevas: las ya registradas conservan su porcentaje original.',
     ],
 
 ];

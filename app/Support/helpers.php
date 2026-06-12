@@ -45,7 +45,7 @@ if (!function_exists('parametro')) {
 
         $valor = $overrides[$clave]
             ?? $definicion['default']
-            ?? config($definicion['config_key']);
+            ?? (isset($definicion['config_key']) ? config($definicion['config_key']) : null);
 
         return match ($definicion['tipo']) {
             'decimal'  => (float) $valor,
