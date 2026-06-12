@@ -8508,3 +8508,94 @@ header#page-topbar,
     letter-spacing: 0.04em;
 }
 .cat-cart-total-row--bs .cat-cart-total-value { font-size: 0.85rem; opacity: 0.85; }
+
+/* ================================================================
+   PANEL DE CONFIGURACIÓN DEL SISTEMA (FEAT-004)
+   Página /configuracion — nav-pills por módulo + form por módulo.
+   Paleta: Navy Institucional (misma de maestros).
+   ================================================================ */
+
+/* ── Card accent — borde izquierdo navy ── */
+.card-config > .card-header {
+    border-left: 4px solid #1e3c72;
+    padding-left: 16px;
+}
+[data-bs-theme="dark"] .card-config > .card-header {
+    border-left-color: #4e7ac7;
+}
+
+/* ── Nav-pills vertical de módulos ── */
+.config-pills .nav-link {
+    color: #405189;
+    font-weight: 500;
+    border-radius: 6px;
+    padding: 0.55rem 0.9rem;
+}
+.config-pills .nav-link:hover {
+    background: rgba(30, 60, 114, 0.08);
+}
+.config-pills .nav-link.active {
+    background: #1e3c72;
+    color: #ffffff;
+}
+[data-bs-theme="dark"] .config-pills .nav-link {
+    color: #a8b9d9;
+}
+[data-bs-theme="dark"] .config-pills .nav-link:hover {
+    background: rgba(78, 122, 199, 0.15);
+}
+[data-bs-theme="dark"] .config-pills .nav-link.active {
+    background: #4e7ac7;
+    color: #ffffff;
+}
+
+/* ── Campo de parámetro ── */
+.config-campo + .config-campo {
+    margin-top: 1.25rem;
+    padding-top: 1.25rem;
+    border-top: 1px dashed var(--vz-border-color, #e9ebec);
+}
+.config-help {
+    font-size: 0.78rem;
+    line-height: 1.45;
+}
+
+/* ── Badge "Por defecto" ── */
+.config-badge-default {
+    background: rgba(30, 60, 114, 0.1);
+    color: #1e3c72;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+}
+[data-bs-theme="dark"] .config-badge-default {
+    background: rgba(78, 122, 199, 0.18);
+    color: #a8b9d9;
+}
+
+/* ── Pills del panel: etiquetas de grupo y enlaces externos ── */
+.config-pills-label {
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #878a99;
+    padding: 0.35rem 0.9rem 0.25rem;
+}
+.config-pills-label--separado {
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px dashed var(--vz-border-color, #e9ebec);
+}
+.config-pill-link {
+    position: relative;
+    padding-right: 1.9rem !important;
+}
+.config-pill-link .config-pill-link-arrow {
+    position: absolute;
+    right: 0.7rem;
+    top: 50%;
+    transform: translateY(-50%);
+    opacity: 0.45;
+}
+.config-pill-link:hover .config-pill-link-arrow { opacity: 1; }
+[data-bs-theme="dark"] .config-pills-label { color: #7a8db0; }
