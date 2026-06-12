@@ -47,15 +47,10 @@ class ClienteController extends Controller
             $query->where('tipo_cliente', $request->input('filter_tipo_cliente'));
         }
 
-        // Filtro: Estatus (1 = activo, 0 = inactivo/trashed)
-        if ($request->filled('filter_estatus')) {
-            $estatus = $request->input('filter_estatus');
-            if ($estatus === '0') {
-                // Inactivo: incluir registros en papelera (SoftDeletes)
-                $query->onlyTrashed();
-            }
-            // Si estatus es '1' (activo), no se necesita filtro adicional
-            // porque el query base ya excluye trashed por defecto.
+        // Activos vs Historial: lo define la página (no un filtro). La principal
+        // muestra solo activos; el historial (?historial=true) solo inhabilitados.
+        if ($request->boolean('historial')) {
+            $query->onlyTrashed();
         }
 
         // Filtro: Estado Territorial
@@ -102,6 +97,22 @@ class ClienteController extends Controller
         }
 
         return DataTables::of($query)
+            // Búsqueda estricta: solo por la identidad del cliente (nombre/apellido,
+            // documento y email de la persona). Sobrescribe el buscador global de
+            // DataTables para no romper sobre columnas derivadas de relaciones.
+            ->filter(function ($query) use ($request) {
+                $keyword = trim((string) $request->input('search.value'));
+                if ($keyword === '') {
+                    return;
+                }
+                $query->whereHas('persona', function ($p) use ($keyword) {
+                    $p->where('nombre', 'like', "{$keyword}%")
+                      ->orWhere('apellido', 'like', "{$keyword}%")
+                      ->orWhere('email', 'like', "{$keyword}%")
+                      ->orWhereRaw("CONCAT(nombre, ' ', apellido) like ?", ["{$keyword}%"])
+                      ->orWhereRaw("CONCAT(tipo_documento, documento_identidad) like ?", ["{$keyword}%"]);
+                });
+            }, true)
             ->addColumn('nombre', fn($c) => $c->nombre ?? 'N/A')
             ->addColumn('apellido', fn($c) => $c->apellido ?? '')
             ->addColumn('tipo_cliente', fn($c) => $c->tipo_cliente)
@@ -243,15 +254,20 @@ class ClienteController extends Controller
      */
     public function searchAjax(Request $request)
     {
-        $query = $request->input('q');
+        $query = trim((string) $request->input('q'));
         $escaped = str_replace(['%', '_'], ['\\%', '\\_'], $query);
+
         $clientes = Cliente::with(['persona.telefonos', 'persona.direcciones'])
-            ->whereHas('persona', function ($q) use ($escaped) {
-                // Buscar por documento_identidad (solo el número, sin prefijo)
-                $q->where('documento_identidad', 'LIKE', "%{$escaped}%");
+            ->when($query !== '', function ($q) use ($escaped) {
+                $q->whereHas('persona', function ($sub) use ($escaped) {
+                    $sub->where('documento_identidad', 'LIKE', "{$escaped}%")
+                        ->orWhere('nombre', 'LIKE', "{$escaped}%")
+                        ->orWhere('apellido', 'LIKE', "{$escaped}%");
+                });
             })
             ->where('estatus', 1)
-            ->limit(10)
+            ->orderByDesc('id')
+            ->limit(50)
             ->get();
 
         // Formatear respuesta usando accessors del modelo Cliente
@@ -318,6 +334,13 @@ class ClienteController extends Controller
         }
         if ($request->filled('tipo_cliente')) {
             $query->where('tipo_cliente', $request->tipo_cliente);
+        }
+        // Rango por fecha de registro (created_at)
+        if ($request->filled('fecha_desde')) {
+            $query->whereDate('created_at', '>=', $request->fecha_desde);
+        }
+        if ($request->filled('fecha_hasta')) {
+            $query->whereDate('created_at', '<=', $request->fecha_hasta);
         }
         $clientes = $query->get();
         $pdf = Pdf::loadView('admin.clientes.reporte_pdf', compact('clientes'))->setPaper('a4', 'landscape');

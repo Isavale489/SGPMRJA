@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Proveedor;
 use App\Models\Persona;
 use App\Services\ProveedorService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Yajra\DataTables\DataTables;
@@ -19,6 +20,37 @@ class ProveedorController extends Controller
     {
         $historial = $request->has('historial');
         return view('admin.proveedores.index', compact('historial'));
+    }
+
+    public function search(Request $request)
+    {
+        $q = trim($request->input('q', ''));
+
+        $query = Proveedor::with(['persona.telefonos'])
+            ->where('estado', 1)
+            ->withCount('compras')
+            ->withMax('compras', 'fecha_compra');
+
+        if ($q) {
+            $query->whereHas('persona', function ($sub) use ($q) {
+                $sub->where('nombre', 'like', "{$q}%")
+                    ->orWhere('apellido', 'like', "{$q}%")
+                    ->orWhere('documento_identidad', 'like', "{$q}%");
+            });
+        }
+
+        return response()->json(
+            $query->orderByDesc('id')->limit(50)->get()->map(fn($p) => [
+                'id'     => $p->id,
+                'nombre' => $p->nombre_completo ?? '—',
+                'doc'    => $p->documento ?? '',
+                'tel'    => $p->telefono_unificado ?? '',
+                'email'  => $p->email_unificado ?? '',
+                'tipo'   => $p->tipo_proveedor,
+                'compras' => $p->compras_count ?? 0,
+                'ultima'  => $p->compras_max_fecha_compra,
+            ])
+        );
     }
 
     public function getProveedores(Request $request)
@@ -36,12 +68,10 @@ class ProveedorController extends Controller
             $query->where('tipo_proveedor', $request->input('filter_tipo_proveedor'));
         }
 
-        // Filtro: Estatus (1 = activo, 0 = inactivo/trashed)
-        if ($request->filled('filter_estatus')) {
-            $estatus = $request->input('filter_estatus');
-            if ($estatus === '0') {
-                $query->onlyTrashed();
-            }
+        // Activos vs Historial: lo define la página (no un filtro). La principal
+        // muestra solo activos; el historial (?historial=true) solo inhabilitados.
+        if ($request->boolean('historial')) {
+            $query->onlyTrashed();
         }
 
         // Filtro: Estado Territorial
@@ -88,6 +118,22 @@ class ProveedorController extends Controller
         }
 
         return DataTables::of($query)
+            // Búsqueda estricta: identidad del proveedor (nombre/razón social,
+            // documento y email de la persona). Sobrescribe el buscador global
+            // para no romper sobre columnas derivadas de relaciones.
+            ->filter(function ($query) use ($request) {
+                $keyword = trim((string) $request->input('search.value'));
+                if ($keyword === '') {
+                    return;
+                }
+                $query->whereHas('persona', function ($p) use ($keyword) {
+                    $p->where('nombre', 'like', "{$keyword}%")
+                      ->orWhere('apellido', 'like', "{$keyword}%")
+                      ->orWhere('email', 'like', "{$keyword}%")
+                      ->orWhereRaw("CONCAT(nombre, ' ', apellido) like ?", ["{$keyword}%"])
+                      ->orWhereRaw("CONCAT(tipo_documento, documento_identidad) like ?", ["{$keyword}%"]);
+                });
+            }, true)
             ->addColumn('nombre_display', fn($p) => $p->nombre_completo ?? 'N/A')
             ->addColumn('documento_display', fn($p) => $p->documento ?? 'N/A')
             ->addColumn('tipo_proveedor', fn($p) => $p->tipo_proveedor ?? 'juridico')
@@ -117,8 +163,11 @@ class ProveedorController extends Controller
                 'estado_territorial' => 'nullable|string|max:50',
             ]);
 
-            $this->proveedorService->crearNatural($request->all());
-            return response()->json(['success' => 'Proveedor natural creado exitosamente.']);
+            $proveedor = $this->proveedorService->crearNatural($request->all());
+            return response()->json([
+                'success'   => 'Proveedor natural creado exitosamente.',
+                'proveedor' => $this->proveedorPayload($proveedor),
+            ]);
         } else {
             $request->validate([
                 'tipo_proveedor' => 'required|in:natural,juridico',
@@ -131,9 +180,101 @@ class ProveedorController extends Controller
                 'telefono_contacto' => 'nullable|string|max:20',
             ]);
 
-            $this->proveedorService->crearJuridico($request->all());
-            return response()->json(['success' => 'Proveedor jurídico creado exitosamente.']);
+            $proveedor = $this->proveedorService->crearJuridico($request->all());
+            return response()->json([
+                'success'   => 'Proveedor jurídico creado exitosamente.',
+                'proveedor' => $this->proveedorPayload($proveedor),
+            ]);
         }
+    }
+
+    /**
+     * Crea un proveedor reutilizando una persona ya existente en el sistema
+     * (cliente, empleado u otro rol). Idempotente: si la persona ya es
+     * proveedor activo lo devuelve; si está inhabilitado lo reactiva.
+     * Mismo patrón que ClienteController@createFromPersona.
+     */
+    public function createFromPersona(int $personaId): JsonResponse
+    {
+        $persona = Persona::find($personaId);
+
+        if (!$persona) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Persona no encontrada.',
+            ], 404);
+        }
+
+        // Ya es proveedor activo → devolverlo
+        $proveedorExistente = Proveedor::where('persona_id', $persona->id)
+            ->where('estado', 1)
+            ->first();
+
+        if ($proveedorExistente) {
+            return response()->json([
+                'success'   => true,
+                'message'   => 'La persona ya estaba registrada como proveedor activo.',
+                'reused'    => true,
+                'proveedor' => $this->proveedorPayload($proveedorExistente),
+            ]);
+        }
+
+        // Existe pero inhabilitado (estado 0 o trashed) → reactivar
+        $proveedorInactivo = Proveedor::withTrashed()
+            ->where('persona_id', $persona->id)
+            ->first();
+
+        if ($proveedorInactivo) {
+            if ($proveedorInactivo->trashed()) {
+                $proveedorInactivo->restore();
+            }
+            $proveedorInactivo->update(['estado' => 1]);
+
+            return response()->json([
+                'success'   => true,
+                'message'   => 'Proveedor reactivado correctamente.',
+                'reused'    => true,
+                'proveedor' => $this->proveedorPayload($proveedorInactivo),
+            ]);
+        }
+
+        // Crear nuevo proveedor sobre la persona existente.
+        // J-/G- → jurídico; V-/E-/sin prefijo → natural.
+        $tipoProveedor = in_array($persona->tipo_documento, ['J-', 'G-'], true)
+            ? 'juridico'
+            : 'natural';
+
+        $proveedor = Proveedor::create([
+            'persona_id'     => $persona->id,
+            'tipo_proveedor' => $tipoProveedor,
+            'estado'         => 1,
+        ]);
+
+        return response()->json([
+            'success'   => true,
+            'message'   => 'Proveedor creado a partir de la persona registrada.',
+            'reused'    => false,
+            'proveedor' => $this->proveedorPayload($proveedor),
+        ]);
+    }
+
+    /**
+     * Serializa un proveedor para el autocomplete/card del wizard de compras.
+     */
+    private function proveedorPayload(Proveedor $proveedor): array
+    {
+        $proveedor->loadMissing('persona');
+
+        return [
+            'id'      => $proveedor->id,
+            'nombre'  => $proveedor->nombre_completo,
+            'doc'     => $proveedor->documento ?? '',
+            'tel'     => $proveedor->telefono_unificado ?? '',
+            'email'   => $proveedor->email_unificado ?? '',
+            'tipo'    => $proveedor->tipo_proveedor ?? '',
+            'compras' => 0,
+            'ultima'  => null,
+        ];
     }
 
     public function show($id)
@@ -242,6 +383,13 @@ class ProveedorController extends Controller
         // Estatus: 1 = activos (default), 0 = inhabilitados (trashed) — estándar de inhabilitación
         if ($request->input('estatus') === '0') {
             $query->onlyTrashed();
+        }
+        // Rango por fecha de registro (created_at)
+        if ($request->filled('fecha_desde')) {
+            $query->whereDate('created_at', '>=', $request->fecha_desde);
+        }
+        if ($request->filled('fecha_hasta')) {
+            $query->whereDate('created_at', '<=', $request->fecha_hasta);
         }
         $proveedores = $query->get();
         $pdf = \PDF::loadView('admin.proveedores.reporte_pdf', compact('proveedores'))

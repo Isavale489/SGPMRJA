@@ -43,7 +43,7 @@
                             @else
                                 <a href="{{ route('users.index', ['historial' => true]) }}"
                                     class="btn-historial btn-historial-ver">
-                                    <i class="ri-time-line"></i> Ver Historial
+                                    <i class="ri-archive-line"></i> Inhabilitados
                                 </a>
                             @endif
                             <div class="d-flex gap-2">
@@ -53,6 +53,9 @@
                                         <i class="ri-add-line align-bottom me-1"></i> Agregar Usuario
                                     </button>
                                 @endif
+                                <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#pdfExportModal">
+                                    <i class="ri-file-pdf-fill align-bottom me-1"></i> Exportar PDF
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -78,7 +81,7 @@
                         <div class="collapse" id="filters-collapse-body">
                             <div class="navy-filter-body">
                                 <div class="row g-3">
-                                    <div class="col-12 col-md-6">
+                                    <div class="col-12">
                                         <label class="navy-filter-label" for="filter-role">
                                             <i class="ri-shield-user-line"></i> Rol
                                         </label>
@@ -87,16 +90,6 @@
                                             <option value="Administrador">Administrador</option>
                                             <option value="Supervisor">Supervisor</option>
                                             <option value="Usuario">Usuario</option>
-                                        </select>
-                                    </div>
-                                    <div class="col-12 col-md-6">
-                                        <label class="navy-filter-label" for="filter-estado">
-                                            <i class="ri-shield-check-line"></i> Estado
-                                        </label>
-                                        <select class="form-select navy-filter-select" id="filter-estado">
-                                            <option value="">Todos los estados</option>
-                                            <option value="1" selected>Activo</option>
-                                            <option value="0">Inactivo</option>
                                         </select>
                                     </div>
                                 </div>
@@ -112,7 +105,6 @@
                                 <th>Nombre</th>
                                 <th>Email</th>
                                 <th>Rol</th>
-                                <th>Estado</th>
                                 <th>Acciones</th>
                             </tr>
                         </thead>
@@ -200,6 +192,18 @@
                                         </div>
                                     </div>
                                 </div>
+                                <div class="col-12">
+                                    <div class="d-flex align-items-center">
+                                        <div class="rounded-circle me-2 d-flex align-items-center justify-content-center"
+                                            style="width: 32px; height: 32px; background: rgba(30, 60, 114, 0.1);">
+                                            <i class="ri-shield-check-line" style="color: #1e3c72;"></i>
+                                        </div>
+                                        <div>
+                                            <small class="text-muted d-block">Estado (acceso al sistema)</small>
+                                            <span class="badge rounded-pill" id="view-estado">-</span>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -255,16 +259,10 @@
                             <div class="modal-form-section-title"><i class="ri-user-settings-line"></i>Perfil de Usuario</div>
 
                             <div class="row mb-3">
-                                <div class="col-md-6">
+                                <div class="col-md-12">
                                     <x-forms.select name="role" label="Rol" required
                                         :options="['Administrador' => 'Administrador', 'Supervisor' => 'Supervisor']"
                                         placeholder="Seleccione un rol" />
-                                </div>
-                                <div class="col-md-6">
-                                    {{-- Estado: solo lectura. Lo gobierna Inhabilitar/Habilitar (controla el acceso al login). --}}
-                                    <label class="form-label">Estado</label>
-                                    <input type="text" class="form-control bg-light" id="estado-display"
-                                        value="Activo" readonly tabindex="-1">
                                 </div>
                             </div>
                             <div class="d-flex align-items-start gap-2 mb-3 p-2 rounded-3 bg-info-subtle border border-info-subtle">
@@ -371,6 +369,55 @@
             </div>
         </div>
     </div>
+    {{-- Modal: Exportar PDF --}}
+    <div class="modal fade atlantico-modal" id="pdfExportModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" style="max-width: 380px;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="ri-file-pdf-line me-2"></i>Exportar PDF</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <p class="text-muted small mb-3">Filtra qué usuarios incluir en el reporte.</p>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold" for="pdf-filter-role">Rol</label>
+                        <select class="form-select" id="pdf-filter-role">
+                            <option value="">Todos los roles</option>
+                            <option value="Administrador">Administrador</option>
+                            <option value="Supervisor">Supervisor</option>
+                            <option value="Usuario">Usuario</option>
+                        </select>
+                    </div>
+                    <div class="mb-0">
+                        <label class="form-label fw-semibold" for="pdf-filter-estatus">Estatus</label>
+                        <select class="form-select" id="pdf-filter-estatus">
+                            <option value="">Todos</option>
+                            <option value="1">Activo</option>
+                            <option value="0">Inactivo</option>
+                        </select>
+                    </div>
+                    <div class="row g-2 mt-3">
+                        <div class="col-6">
+                            <label class="form-label fw-semibold" for="pdf-fecha-desde">Registro desde</label>
+                            <input type="date" class="form-control" id="pdf-fecha-desde">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label fw-semibold" for="pdf-fecha-hasta">Registro hasta</label>
+                            <input type="date" class="form-control" id="pdf-fecha-hasta">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light border-0">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">
+                        <i class="ri-close-line me-1"></i>Cancelar
+                    </button>
+                    <button type="button" class="btn btn-danger" id="btn-generar-pdf">
+                        <i class="ri-file-pdf-fill me-1"></i>Generar PDF
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 @endsection
 
 @push('scripts')
@@ -399,13 +446,7 @@
             function updateFilterBadge() {
                 let count = 0;
                 $('.navy-filter-select').each(function () {
-                    var v = $(this).val();
-                    // filter-estado='1' (Activo) es el default → no cuenta como filtro activo
-                    if (this.id === 'filter-estado') {
-                        if (v && v !== '1') count++;
-                    } else if (v && v !== '') {
-                        count++;
-                    }
+                    if ($(this).val() && $(this).val() !== '') count++;
                 });
                 $('#active-filter-count').text(count).toggleClass('d-none', count === 0);
             }
@@ -471,7 +512,7 @@
                     url: "{{ route('users.data') }}",
                     data: function (d) {
                         d.filter_role = $('#filter-role').val();
-                        d.filter_estado = $('#filter-estado').val();
+                        d.historial = @json($historial);
                     }
                 },
                 columns: [
@@ -508,14 +549,6 @@
                         }
                     },
                     {
-                        data: 'estado',
-                        render: function (data, type, row) {
-                            return data == 1
-                                ? '<span class="badge-status badge-status-activo"><i class="ri-checkbox-circle-line"></i> Activo</span>'
-                                : '<span class="badge-status badge-status-inactivo"><i class="ri-close-circle-line"></i> Inactivo</span>';
-                        }
-                    },
-                    {
                         data: null,
                         orderable: false,
                         searchable: false,
@@ -544,7 +577,6 @@
 
             $('#btn-clear-filters').on('click', function () {
                 $('.navy-filter-select').val('');
-                $('#filter-estado').val('1'); // default: solo activos (los inhabilitados van al historial)
                 $('#custom-search-input').val('');
                 table.search('').draw();
                 table.ajax.reload(null, true);
@@ -554,12 +586,6 @@
             updateFilterBadge();
 
             // ── Si se llegó por toggle historial (?historial=true) → mostrar inhabilitados ──
-            @if($historial)
-                $('#filter-estado').val('0');
-                table.ajax.reload(null, true);
-                updateFilterBadge();
-            @endif
-
             function validarFormularioUsuario() {
                 let esValido = true;
                 let esCreacion = $('#id-field').val() === '';
@@ -633,7 +659,6 @@
                 $('#modalTitle').text('Agregar Usuario');
                 $('#userForm')[0].reset();
                 $('#userForm input[type="hidden"]').val('');
-                $('#estado-display').val('Activo');
                 $('#avatar-preview').hide().find('img').attr('src', '');
                 $('#add-btn').show();
                 $('#edit-btn').hide();
@@ -751,6 +776,11 @@
                     $("#view-email").text(data.email);
                     $("#view-role").text(data.role || 'Sin rol');
                     $("#view-created").text(data.created_at);
+                    var _activo = (data.estado == 1 || data.estado === true);
+                    $("#view-estado")
+                        .text(_activo ? 'Activo' : 'Inhabilitado')
+                        .removeClass('bg-success bg-danger')
+                        .addClass(_activo ? 'bg-success' : 'bg-danger');
 
                     // Mostrar avatar
                     if (data.avatar) {
@@ -772,7 +802,6 @@
                     $("#field-name").val(data.name);
                     $("#field-email").val(data.email);
                     $("#field-role").val(data.role);
-                    $("#estado-display").val(data.estado == 1 ? 'Activo' : 'Inhabilitado');
 
                     // Mostrar las imágenes existentes si las hay
                     if (data.avatar) {
@@ -1060,6 +1089,25 @@
                     }
                 });
             });
+        });
+
+        // Exportar PDF — Usuarios
+        $('#btn-generar-pdf').on('click', function () {
+            var baseUrl = '{{ route('users.reporte.pdf') }}';
+            var params = [];
+            var role    = $('#pdf-filter-role').val();
+            var estatus = $('#pdf-filter-estatus').val();
+            var fdesde  = $('#pdf-fecha-desde').val();
+            var fhasta  = $('#pdf-fecha-hasta').val();
+            if (role)            params.push('role=' + encodeURIComponent(role));
+            if (estatus !== '')  params.push('estatus=' + encodeURIComponent(estatus));
+            if (fdesde)          params.push('fecha_desde=' + encodeURIComponent(fdesde));
+            if (fhasta)          params.push('fecha_hasta=' + encodeURIComponent(fhasta));
+            window.open(baseUrl + (params.length ? '?' + params.join('&') : ''), '_blank');
+            bootstrap.Modal.getInstance(document.getElementById('pdfExportModal'))?.hide();
+        });
+        $('#pdfExportModal').on('show.bs.modal', function () {
+            $('#pdf-filter-role, #pdf-filter-estatus, #pdf-fecha-desde, #pdf-fecha-hasta').val('');
         });
     </script>
 @endpush

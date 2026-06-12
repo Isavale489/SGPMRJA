@@ -175,16 +175,48 @@
         </tbody>
     </table>
 
+    {{-- Costo total del servicio de bordado (recargo unitario × cantidad de prendas).
+         Ya está incluido en el precio unitario; se desglosa para reflejarlo en Bs. --}}
+    @php
+        $totalBordadoUsd = $cotizacion->productos->sum(function ($d) {
+            if (!$d->lleva_bordado) {
+                return 0;
+            }
+            $recargoUnit = $d->bordados->sum(function ($b) {
+                return (float) $b->precio_aplicado * (int) ($b->cantidad ?? 1);
+            });
+            return $recargoUnit * (int) $d->cantidad;
+        });
+    @endphp
+
     {{-- ═══════ Totales ═══════ --}}
     <table class="totals-block">
         <tr>
             <td>&nbsp;</td>
             <td style="width: 230px;">
                 <table class="totals-inner">
+                    @if($cotizacion->tasa_cambio_valor)
+                    <tr>
+                        <td class="t-label" style="font-size:8.5px; color:#555;">Tasa BCV (USD→Bs):</td>
+                        <td class="t-value" style="font-size:8.5px; color:#555;">Bs {{ number_format($cotizacion->tasa_cambio_valor, 4) }}</td>
+                    </tr>
+                    @endif
                     <tr>
                         <td class="t-label">Subtotal:</td>
                         <td class="t-value">{{ number_format($subtotal, 2) }}</td>
                     </tr>
+                    @if($totalBordadoUsd > 0)
+                    <tr>
+                        <td class="t-label" style="color:#1e3c72;">Servicio de bordado:</td>
+                        <td class="t-value" style="color:#1e3c72;">{{ number_format($totalBordadoUsd, 2) }}</td>
+                    </tr>
+                    @if($cotizacion->tasa_cambio_valor)
+                    <tr>
+                        <td class="t-label" style="font-size:8.5px; color:#555;">Servicio de bordado (Bs):</td>
+                        <td class="t-value" style="font-size:8.5px; color:#555;">Bs {{ number_format($totalBordadoUsd * $cotizacion->tasa_cambio_valor, 2) }}</td>
+                    </tr>
+                    @endif
+                    @endif
                     <tr>
                         <td class="t-label">Descuento:</td>
                         <td class="t-value">{{ number_format($descuento, 2) }}</td>
@@ -197,16 +229,40 @@
                         <td class="t-label t-grand">Total a Pagar:</td>
                         <td class="t-value t-grand">{{ number_format($totalPagar, 2) }}</td>
                     </tr>
+                    @if($cotizacion->tasa_cambio_valor)
+                    <tr>
+                        <td class="t-label" style="font-size:8.5px; color:#555;">Equivalente Bs:</td>
+                        <td class="t-value" style="font-size:8.5px; color:#555;">
+                            Bs {{ number_format($totalPagar * $cotizacion->tasa_cambio_valor, 2) }}
+                        </td>
+                    </tr>
+                    @endif
                 </table>
             </td>
         </tr>
     </table>
 
-    {{-- ═══════ Nota especial ═══════ --}}
-    <div class="nota-especial">
-        <b>Tiempo de Ejecución del Trabajo:</b> 30 días hábiles.<br>
-        70% del costo total para la formalización del pedido, 30% a la entrega.<br>
-        El plazo de entrega comienza a transcurrir una vez realizado el pago.<br>
-        <b>No se modifican pedidos ya formalizados (ni tallas ni cantidades).</b>
+    {{-- ═══════ Condiciones y Términos ═══════ --}}
+    @if($cotizacion->condiciones_terminos)
+    <div class="nota-especial" style="background:#f0f4ff; border-color:#3b5bdb; border-left-color:#1d3557; color:#1d3557;">
+        <b>Condiciones y Términos:</b><br>
+        {!! nl2br(e($cotizacion->condiciones_terminos)) !!}
     </div>
+    @else
+    {{-- Términos y condiciones estándar (alineados con el wizard de cotización) --}}
+    @php($abonoPct = \App\Models\Pedido::porcentajeAbonoMinimo())
+    <div class="nota-especial">
+        <b>Condiciones para Pedidos:</b><br>
+        &bull; <b>Formalización:</b> abono del {{ $abonoPct }}% del costo total para iniciar la producción.<br>
+        &bull; <b>Tiempo de ejecución:</b> 30 días hábiles desde la confirmación del pago inicial.<br>
+        &bull; <b>Saldo restante:</b> el {{ 100 - $abonoPct }}% se cancela al momento de la entrega.<br>
+        &bull; <b>Modificaciones:</b> una vez formalizado el pedido no se aceptan cambios en tallas, cantidades ni diseño.<br>
+        &bull; <b>Entrega:</b> el plazo comienza a contarse desde el abono del {{ $abonoPct }}% inicial.<br>
+        <br>
+        <b>Servicio de bordado:</b><br>
+        &bull; Prendas externas: deben estar limpias y en buen estado.<br>
+        &bull; El cliente aprueba diseño, ubicación y tamaño antes de iniciar; luego no hay cambios.<br>
+        &bull; Anticipo del 50% para programar y 50% a la entrega; tiempo estimado de 7 a 10 días hábiles.
+    </div>
+    @endif
 @endsection

@@ -83,9 +83,9 @@ class PedidoController extends Controller
             })
             ->filterColumn('cliente_nombre_display', function ($query, $keyword) {
                 $query->where(function ($q) use ($keyword) {
-                    $q->where('persona.nombre', 'like', "%{$keyword}%")
-                        ->orWhere('persona.apellido', 'like', "%{$keyword}%")
-                        ->orWhereRaw("CONCAT(persona.nombre, ' ', persona.apellido) like ?", ["%{$keyword}%"]);
+                    $q->where('persona.nombre', 'like', "{$keyword}%")
+                        ->orWhere('persona.apellido', 'like', "{$keyword}%")
+                        ->orWhereRaw("CONCAT(persona.nombre, ' ', persona.apellido) like ?", ["{$keyword}%"]);
                 });
             })
 
@@ -158,14 +158,40 @@ class PedidoController extends Controller
         $pedido = Pedido::with([
             'user:id,name,avatar',
             'productos.producto.tipoProducto',
+            'productos.tipoProducto.atributos.valores',
             'productos.bordados.logo:id,name',
             'pagos.banco:id,nombre',
             'cliente.persona.telefonos',
-            'cliente.persona.direcciones'
+            'cliente.persona.direcciones',
+            'cotizacion:id,tasa_cambio_valor'
         ])->findOrFail($id);
 
         // Agregar datos normalizados del cliente al response
         $data = $pedido->toArray();
+
+        // Enriquecer cada línea con la variante resuelta (para reconstruir líneas dinámicas
+        // al editar): tipo, tela, atributo_valor_ids (por nombre) y un nombre legible.
+        $data['productos'] = $pedido->productos->map(function ($detalle) {
+            $arr = $detalle->toArray();
+            $esDinamica = empty($detalle->producto_id) && !empty($detalle->tipo_producto_id);
+            $telaSnap = $detalle->tela_snapshot ?? null;
+            $arr['insumo_tela_id'] = is_array($telaSnap) ? ($telaSnap['id'] ?? null) : null;
+            $arr['atributo_valor_ids'] = $esDinamica && $detalle->tipoProducto
+                ? $detalle->tipoProducto->valorIdsDesdeSnapshot($detalle->atributos_snapshot)
+                : [];
+            $arr['sku'] = $detalle->producto ? $detalle->producto->codigo : $detalle->sku_snapshot;
+            $arr['producto_nombre'] = $detalle->producto
+                ? $detalle->producto->nombre_completo
+                : trim(($detalle->tipoProducto?->nombre ?? 'Variante')
+                    . (is_array($telaSnap) && !empty($telaSnap['nombre']) ? ' · ' . $telaSnap['nombre'] : ''));
+            // Miniatura: imagen del producto (legacy) o del tipo (catálogo = Tipo).
+            $arr['imagen_url'] = ($detalle->producto && $detalle->producto->imagen)
+                ? asset($detalle->producto->imagen)
+                : ($detalle->tipoProducto?->imagen_url);
+            return $arr;
+        })->all();
+        // Tasa BCV heredada de la cotización de origen (para reflejar el bordado en Bs)
+        $data['tasa_cambio_valor'] = optional($pedido->cotizacion)->tasa_cambio_valor;
         $data['cliente_nombre_completo'] = $pedido->cliente_nombre_completo;
         $data['cliente_email_normalizado'] = $pedido->cliente_email_normalizado;
         $data['cliente_telefono_normalizado'] = $pedido->cliente_telefono_normalizado;
@@ -176,6 +202,10 @@ class PedidoController extends Controller
             'avatar_url' => $pedido->user->avatar_url,
         ] : null;
 
+        // Formalización: el front congela las líneas y deja editar solo pagos.
+        $data['esta_formalizado']  = $pedido->estaFormalizado();
+        $data['lineas_bloqueadas'] = $pedido->lineasBloqueadas();
+
         return response()->json($data);
     }
 
@@ -183,20 +213,30 @@ class PedidoController extends Controller
     {
         $pedido = Pedido::findOrFail($id);
 
-        if (in_array($pedido->estado, ['Completado', 'Cancelado'])) {
-            return response()->json(['error' => 'No se puede editar un pedido completado o cancelado.'], 403);
-        }
-        if ($pedido->tieneProduccionActiva()) {
-            return response()->json(['error' => 'No se puede editar un pedido con producción iniciada. Cancela primero sus órdenes de producción.'], 403);
+        if ($pedido->estado === 'Cancelado') {
+            return response()->json(['error' => 'No se puede editar un pedido cancelado.'], 403);
         }
 
+        // Una vez formalizado (abono ≥ 50%), con producción iniciada o completado,
+        // las líneas quedan congeladas: solo se permiten cambios de pagos (p. ej.
+        // registrar el saldo restante a la entrega).
+        $soloPagos = $pedido->lineasBloqueadas();
+
         try {
-            $this->pedidoService->actualizar($pedido, $request->validated());
+            if ($soloPagos) {
+                $this->pedidoService->actualizarSoloPagos($pedido, $request->validated());
+            } else {
+                $this->pedidoService->actualizar($pedido, $request->validated());
+            }
         } catch (\InvalidArgumentException $e) {
             return response()->json(['error' => $e->getMessage()], 422);
         }
 
-        return response()->json(['success' => 'Pedido actualizado exitosamente.']);
+        return response()->json([
+            'success' => $soloPagos
+                ? 'Pagos del pedido actualizados.'
+                : 'Pedido actualizado exitosamente.',
+        ]);
     }
 
     public function destroy($id)
@@ -235,6 +275,14 @@ class PedidoController extends Controller
         }
         if ($pedido->estado === 'Cancelado') {
             return response()->json(['success' => 'El pedido ya estaba cancelado.']);
+        }
+        // Bloqueo: no se puede cancelar un pedido con producción en curso.
+        // Hay que cancelar primero sus órdenes activas o en proceso.
+        if ($pedido->tieneProduccionEnCurso()) {
+            return response()->json([
+                'error' => 'No se puede cancelar el pedido: tiene órdenes de producción activas o en proceso. '
+                    . 'Cancela primero esas órdenes desde el módulo de Producción.',
+            ], 422);
         }
 
         $pedido->update(['estado' => 'Cancelado']);
@@ -289,7 +337,7 @@ class PedidoController extends Controller
     public function pedidoPdf(Pedido $pedido)
     {
         // Cargar relaciones necesarias
-        $pedido->load(['user:id,name', 'productos.producto', 'productos.bordados.logo:id,name', 'cliente', 'cliente.persona']);
+        $pedido->load(['user:id,name', 'productos.producto', 'productos.bordados.logo:id,name', 'cliente', 'cliente.persona', 'cotizacion:id,tasa_cambio_valor']);
 
         // Cálculos financieros
         $ivaTasa = 0.16; // 16 %

@@ -29,7 +29,7 @@ class NotificacionController extends Controller
                                 . ' · ' . rtrim(rtrim(number_format((float) $insumo->stock_actual, 2, '.', ''), '0'), '.')
                                 . ' / mín ' . rtrim(rtrim(number_format((float) $insumo->stock_minimo, 2, '.', ''), '0'), '.')
                                 . ($insumo->unidad_medida ? ' ' . $insumo->unidad_medida : ''),
-                'url'       => route('inventario.alertas'),
+                'url'       => route('movimiento-insumo.alertas'),
             ];
         }
 

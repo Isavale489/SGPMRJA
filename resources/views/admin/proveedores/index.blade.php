@@ -11,7 +11,7 @@
     <style>
         @media (min-width: 768px) {
             .navy-filter-grid {
-                grid-template-columns: repeat(4, 1fr) !important;
+                grid-template-columns: repeat(3, 1fr) !important;
             }
         }
     </style>
@@ -50,7 +50,7 @@
                             @else
                                 <a href="{{ route('proveedores.index', ['historial' => true]) }}"
                                     class="btn-historial btn-historial-ver">
-                                    <i class="ri-time-line"></i> Ver Historial
+                                    <i class="ri-archive-line"></i> Inhabilitados
                                 </a>
                             @endif
                             <div class="d-flex gap-2">
@@ -113,17 +113,6 @@
                                             <option value="">Todos</option>
                                             <option value="natural">Natural</option>
                                             <option value="juridico">Jurídico</option>
-                                        </select>
-                                    </div>
-                                    {{-- Filtro 2: Estatus --}}
-                                    <div>
-                                        <label class="navy-filter-label" for="filter-estatus">
-                                            <i class="ri-shield-check-line"></i> Estatus
-                                        </label>
-                                        <select class="form-select navy-filter-select" id="filter-estatus">
-                                            <option value="">Todos</option>
-                                            <option value="1" selected>Activo</option>
-                                            <option value="0">Inactivo</option>
                                         </select>
                                     </div>
                                     {{-- Filtro 3: Estado Territorial (Venezuela) --}}
@@ -705,20 +694,6 @@
                             </div>
                         </div>
 
-                        <div class="modal-form-section mb-0">
-                            <div class="modal-form-section-title"><i class="ri-shield-check-line"></i>Estatus</div>
-                            {{-- Estatus: solo lectura. Lo gobierna Inhabilitar/Restaurar, no es editable aquí. --}}
-                            <input type="text" class="form-control bg-light" id="estado-display"
-                                value="Activo" readonly tabindex="-1">
-                            <div class="d-flex align-items-start gap-2 mt-2 p-2 rounded-3 bg-info-subtle border border-info-subtle">
-                                <i class="ri-information-line text-info fs-5 lh-1 mt-1"></i>
-                                <small class="text-info-emphasis mb-0 lh-sm">
-                                    Se asigna automáticamente: un proveedor nuevo o restaurado queda <strong>Activo</strong>.
-                                    Para darlo de baja usa <strong>Inhabilitar</strong> (pasa a Inactivo y al historial).
-                                </small>
-                            </div>
-                        </div>
-
                     </div>
                     <div class="modal-footer bg-light border-0">
                         <div class="hstack gap-2 justify-content-end">
@@ -760,6 +735,16 @@
                             <option value="1">Activo</option>
                             <option value="0">Inactivo</option>
                         </select>
+                    </div>
+                    <div class="row g-2 mt-3">
+                        <div class="col-6">
+                            <label class="form-label fw-semibold" for="pdf-fecha-desde">Registro desde</label>
+                            <input type="date" class="form-control" id="pdf-fecha-desde">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label fw-semibold" for="pdf-fecha-hasta">Registro hasta</label>
+                            <input type="date" class="form-control" id="pdf-fecha-hasta">
+                        </div>
                     </div>
                 </div>
                 <div class="modal-footer bg-light border-0">
@@ -893,7 +878,7 @@
                     data: function (d) {
                         // ── Filtros avanzados: enviar valores al server ──
                         d.filter_tipo_proveedor      = $('#filter-tipo-proveedor').val();
-                        d.filter_estatus             = $('#filter-estatus').val();
+                        d.historial                  = @json($historial);
                         d.filter_estado_territorial  = $('#filter-estado-territorial').val();
                         d.filter_orden               = $('#filter-orden').val();
                     }
@@ -944,7 +929,6 @@
             function updateFilterBadge() {
                 var count = 0;
                 if ($('#filter-tipo-proveedor').val() !== '')                        count++;
-                if ($('#filter-estatus').val() !== '1')                              count++;
                 if ($('#filter-estado-territorial').val() !== '')                    count++;
                 if ($('#filter-orden').val() !== 'recientes')                        count++;
                 var $badge = $('#active-filter-count');
@@ -981,17 +965,9 @@
                 updateFilterBadge();
             });
 
-            // ── Si se llegó por toggle historial (?historial=true) ──
-            @if($historial)
-                $('#filter-estatus').val('0');
-                table.ajax.reload();
-                updateFilterBadge();
-            @endif
-
             // ── Botón limpiar: resetea búsqueda + filtros + orden ──
             $('#btn-clear-filters').on('click', function () {
                 $('#filter-tipo-proveedor').val('');
-                $('#filter-estatus').val('1');
                 $('#filter-estado-territorial').val('');
                 $('#filter-orden').val('recientes');
                 $('#custom-search-input').val('');
@@ -1056,7 +1032,6 @@
                     $("#modalTitle").text("Editar Proveedor");
                     $("#id-field").val(data.id);
                     $("#tipo-proveedor-field").val(data.tipo_proveedor || 'juridico');
-                    $("#estado-display").val(data.trashed ? 'Inhabilitado' : 'Activo');
 
                     toggleCampos();
 
@@ -1363,7 +1338,6 @@
                 $("#proveedorForm")[0].reset();
                 $("#id-field").val("");
                 $("#tipo-proveedor-field").val("juridico");
-                $("#estado-display").val("Activo");
                 toggleCampos();
                 $("#add-btn").show().prop('disabled', false);
                 $("#edit-btn").hide();
@@ -1656,12 +1630,17 @@
             var estatus = $('#pdf-filter-estatus').val();
             if (tipo)    params.push('tipo_proveedor=' + encodeURIComponent(tipo));
             if (estatus !== '') params.push('estatus=' + encodeURIComponent(estatus));
+            var fdesde = $('#pdf-fecha-desde').val();
+            var fhasta = $('#pdf-fecha-hasta').val();
+            if (fdesde) params.push('fecha_desde=' + encodeURIComponent(fdesde));
+            if (fhasta) params.push('fecha_hasta=' + encodeURIComponent(fhasta));
             window.open(baseUrl + (params.length ? '?' + params.join('&') : ''), '_blank');
             bootstrap.Modal.getInstance(document.getElementById('pdfExportModal'))?.hide();
         });
         $('#pdfExportModal').on('show.bs.modal', function () {
             $('#pdf-filter-tipo').val('');
             $('#pdf-filter-estatus').val('');
+            $('#pdf-fecha-desde, #pdf-fecha-hasta').val('');
         });
     </script>
 @endpush

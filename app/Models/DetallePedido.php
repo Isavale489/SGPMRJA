@@ -16,8 +16,10 @@ class DetallePedido extends Model
     protected $fillable = [
         'pedido_id',
         'producto_id',
+        'tipo_producto_id',
         'tela_snapshot',
         'atributos_snapshot',
+        'sku_snapshot',
         'cantidad',
         'descripcion',
         'lleva_bordado',
@@ -57,6 +59,24 @@ class DetallePedido extends Model
     public function producto()
     {
         return $this->belongsTo(Producto::class);
+    }
+
+    public function tipoProducto()
+    {
+        return $this->belongsTo(TipoProducto::class);
+    }
+
+    /**
+     * ¿Esta línea entra al flujo de producción?
+     * Los productos de reventa (tipo->requiere_produccion = false) se venden
+     * pero no se fabrican, por lo que NO generan orden de producción.
+     * El tipo se resuelve desde el producto (legacy) o desde la relación
+     * directa (línea dinámica). Sin tipo conocido → se asume producible.
+     */
+    public function requiereProduccion(): bool
+    {
+        $tipo = $this->producto ? $this->producto->tipoProducto : $this->tipoProducto;
+        return $tipo ? (bool) $tipo->requiere_produccion : true;
     }
 
     public function insumos()

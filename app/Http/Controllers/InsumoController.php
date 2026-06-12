@@ -3,19 +3,34 @@
 namespace App\Http\Controllers;
 
 use App\Models\Insumo;
+use App\Models\TipoInsumo;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Yajra\DataTables\DataTables;
 
 class InsumoController extends Controller
 {
     public function index()
     {
-        return view('admin.insumos.index');
+        $tiposInsumo = TipoInsumo::where('activo', true)->orderBy('nombre')->get(['id', 'nombre']);
+        return view('admin.insumos.index', compact('tiposInsumo'));
+    }
+
+    /** Regla de validación del tipo: debe existir en el catálogo y estar activo. */
+    private function tipoRule(): array
+    {
+        return ['required', 'string', Rule::exists('tipo_insumo', 'nombre')
+            ->where('activo', true)->whereNull('deleted_at')];
     }
 
     public function getInsumos(Request $request)
     {
         $query = Insumo::query();
+
+        // Historial: mostrar solo los inhabilitados (soft-deleted).
+        if ($request->boolean('historial')) {
+            $query->onlyTrashed();
+        }
 
         // ══════════════════════════════════════════════════════════
         // FILTROS AVANZADOS — Server-Side (Patrón Maestro S-07)
@@ -55,6 +70,20 @@ class InsumoController extends Controller
         }
 
         return DataTables::of($query)
+            // Búsqueda estricta: solo por nombre, código y tipo del insumo. Sobrescribe
+            // el buscador global para no matchear contra las columnas numéricas (stock,
+            // costo) que también son "searchable" por defecto.
+            ->filter(function ($query) use ($request) {
+                $keyword = trim((string) $request->input('search.value'));
+                if ($keyword === '') {
+                    return;
+                }
+                $query->where(function ($q) use ($keyword) {
+                    $q->where('insumo.nombre', 'like', "{$keyword}%")
+                      ->orWhere('insumo.codigo', 'like', "{$keyword}%")
+                      ->orWhere('insumo.tipo', 'like', "{$keyword}%");
+                });
+            }, true)
             ->addColumn('stock_status', function ($insumo) {
                 if ($insumo->stock_actual <= $insumo->stock_minimo) {
                     return 'bajo';
@@ -64,21 +93,33 @@ class InsumoController extends Controller
                     return 'normal';
                 }
             })
+            ->addColumn('trashed', fn($insumo) => $insumo->trashed())
             ->make(true);
     }
 
     public function store(Request $request)
     {
+        // Normalizar el código a MAYÚSCULAS antes de validar: el input usa
+        // text-uppercase (solo visual), así que el valor real puede venir en minúsculas.
+        if ($request->filled('codigo')) {
+            $request->merge(['codigo' => strtoupper(trim($request->input('codigo')))]);
+        }
+
+        // El checkbox desmarcado no se envía: normalizamos el flag a 0/1 explícito ANTES
+        // de validar, para capturar el apagado (false) y excluir el stock de la validación.
+        $request->merge(['is_inventoriable' => $request->boolean('is_inventoriable') ? 1 : 0]);
+
         $request->validate([
             'nombre'          => 'required|string|max:100',
             'codigo'          => 'nullable|string|min:2|max:8|regex:/^[A-Z0-9]+$/|unique:insumo,codigo',
-            'tipo'            => 'required|in:Tela,Hilo,Boton,Cierre,Etiqueta',
+            'tipo'            => $this->tipoRule(),
             'unidad_medida'   => 'required|in:Metro,Kg,Gramo,Unidad,Rollo,Cono,Docena',
             'is_inventoriable'=> 'nullable|boolean',
+            'aplica_iva'      => 'nullable|boolean',
             'costo_unitario'  => 'required|numeric|min:0.01',
-            'stock_actual'    => 'nullable|numeric|min:0',
-            'stock_minimo'    => 'nullable|numeric|min:0',
-            'stock_maximo'    => 'nullable|numeric|min:0|gte:stock_minimo',
+            'stock_actual'    => 'exclude_if:is_inventoriable,0|nullable|numeric|min:0',
+            'stock_minimo'    => 'exclude_if:is_inventoriable,0|nullable|numeric|min:0',
+            'stock_maximo'    => 'exclude_if:is_inventoriable,0|nullable|numeric|min:0|gte:stock_minimo',
             'estado'          => 'nullable|boolean',
         ], [
             'codigo.regex'  => 'El código solo admite letras mayúsculas y números.',
@@ -86,10 +127,14 @@ class InsumoController extends Controller
             'stock_maximo.gte' => 'La existencia máxima no puede ser menor que la mínima.',
         ]);
 
-        $inventoriable = $request->boolean('is_inventoriable', true);
-        $data = $request->only(['nombre', 'tipo', 'unidad_medida', 'costo_unitario', 'estado']);
+        $inventoriable = $request->boolean('is_inventoriable');
+        $data = $request->only(['nombre', 'tipo', 'unidad_medida', 'costo_unitario']);
+        // Todo insumo nace habilitado; el estatus se gobierna con Inhabilitar/Habilitar.
+        $data['estado']           = true;
         $data['codigo']           = $request->filled('codigo') ? strtoupper(trim($request->codigo)) : null;
         $data['is_inventoriable'] = $inventoriable;
+        // Gravable con IVA por defecto; el form puede marcarlo exento.
+        $data['aplica_iva']       = $request->boolean('aplica_iva', true);
         $data['stock_actual']     = $inventoriable ? ($request->input('stock_actual', 0)) : 0;
         $data['stock_minimo']     = $inventoriable ? ($request->input('stock_minimo', 0)) : 0;
         $data['stock_maximo']     = $inventoriable ? ($request->input('stock_maximo', 0)) : 0;
@@ -101,24 +146,37 @@ class InsumoController extends Controller
 
     public function show($id)
     {
-        $insumo = Insumo::findOrFail($id);
-        return response()->json($insumo);
+        // withTrashed: permite ver el detalle de un insumo inhabilitado desde el historial.
+        $insumo = Insumo::withTrashed()->findOrFail($id);
+        $data = $insumo->toArray();
+        $data['trashed'] = $insumo->trashed();
+        return response()->json($data);
     }
 
     public function update(Request $request, $id)
     {
         $insumo = Insumo::findOrFail($id);
 
+        // Normalizar el código a MAYÚSCULAS antes de validar (input usa text-uppercase visual).
+        if ($request->filled('codigo')) {
+            $request->merge(['codigo' => strtoupper(trim($request->input('codigo')))]);
+        }
+
+        // El checkbox desmarcado no se envía: normalizamos el flag a 0/1 explícito ANTES
+        // de validar, para capturar el apagado (false) y excluir el stock de la validación.
+        $request->merge(['is_inventoriable' => $request->boolean('is_inventoriable') ? 1 : 0]);
+
         $request->validate([
             'nombre'          => 'required|string|max:100',
             'codigo'          => 'nullable|string|min:2|max:8|regex:/^[A-Z0-9]+$/|unique:insumo,codigo,' . $insumo->id,
-            'tipo'            => 'required|in:Tela,Hilo,Boton,Cierre,Etiqueta',
+            'tipo'            => $this->tipoRule(),
             'unidad_medida'   => 'required|in:Metro,Kg,Gramo,Unidad,Rollo,Cono,Docena',
             'is_inventoriable'=> 'nullable|boolean',
+            'aplica_iva'      => 'nullable|boolean',
             'costo_unitario'  => 'required|numeric|min:0.01',
-            'stock_actual'    => 'nullable|numeric|min:0',
-            'stock_minimo'    => 'nullable|numeric|min:0',
-            'stock_maximo'    => 'nullable|numeric|min:0|gte:stock_minimo',
+            'stock_actual'    => 'exclude_if:is_inventoriable,0|nullable|numeric|min:0',
+            'stock_minimo'    => 'exclude_if:is_inventoriable,0|nullable|numeric|min:0',
+            'stock_maximo'    => 'exclude_if:is_inventoriable,0|nullable|numeric|min:0|gte:stock_minimo',
             'estado'          => 'nullable|boolean',
         ], [
             'codigo.regex'  => 'El código solo admite letras mayúsculas y números.',
@@ -126,9 +184,11 @@ class InsumoController extends Controller
             'stock_maximo.gte' => 'La existencia máxima no puede ser menor que la mínima.',
         ]);
 
-        $inventoriable = $request->boolean('is_inventoriable', true);
-        $data = $request->only(['nombre', 'tipo', 'unidad_medida', 'costo_unitario', 'estado']);
+        $inventoriable = $request->boolean('is_inventoriable');
+        // 'estado' NO se edita aquí: lo gobiernan Inhabilitar/Habilitar.
+        $data = $request->only(['nombre', 'tipo', 'unidad_medida', 'costo_unitario']);
         $data['is_inventoriable'] = $inventoriable;
+        $data['aplica_iva']       = $request->boolean('aplica_iva', true);
         $data['stock_actual']     = $inventoriable ? ($request->input('stock_actual', 0)) : 0;
         $data['stock_minimo']     = $inventoriable ? ($request->input('stock_minimo', 0)) : 0;
         $data['stock_maximo']     = $inventoriable ? ($request->input('stock_maximo', 0)) : 0;
@@ -144,8 +204,22 @@ class InsumoController extends Controller
     public function destroy($id)
     {
         $insumo = Insumo::findOrFail($id);
+        // Inhabilitar = estado=false (lo respetan los selectores `where('estado',true)`)
+        // + soft delete (queda en el historial, reversible con Habilitar).
+        $insumo->update(['estado' => false]);
         $insumo->delete();
-        return response()->json(['success' => 'Insumo eliminado exitosamente.']);
+        return response()->json(['success' => 'Insumo inhabilitado exitosamente.']);
+    }
+
+    /**
+     * Habilitar un insumo inhabilitado (soft-deleted): lo restaura y reactiva su estado.
+     */
+    public function restore($id)
+    {
+        $insumo = Insumo::onlyTrashed()->findOrFail($id);
+        $insumo->restore();
+        $insumo->update(['estado' => true]);
+        return response()->json(['success' => 'Insumo habilitado exitosamente.']);
     }
 
     public function checkNombre(Request $request)
@@ -170,6 +244,13 @@ class InsumoController extends Controller
         if ($request->filled('stock')) {
             if ($request->stock === 'con_stock') $query->where('stock_actual', '>', 0);
             elseif ($request->stock === 'agotado') $query->where('stock_actual', '<=', 0);
+        }
+        // Rango por fecha de registro (created_at)
+        if ($request->filled('fecha_desde')) {
+            $query->whereDate('created_at', '>=', $request->fecha_desde);
+        }
+        if ($request->filled('fecha_hasta')) {
+            $query->whereDate('created_at', '<=', $request->fecha_hasta);
         }
         $insumos = $query->get();
         $pdf = \PDF::loadView('admin.insumos.reporte_pdf', compact('insumos'))

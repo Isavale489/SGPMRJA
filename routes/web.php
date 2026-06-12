@@ -1,8 +1,10 @@
 <?php
 
+use App\Http\Controllers\CompraController;
 use App\Http\Controllers\DetalleOrdenInsumoController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\InsumoController;
+use App\Http\Controllers\TipoInsumoController;
 use App\Http\Controllers\MovimientoInsumoController;
 use App\Http\Controllers\NotificacionController;
 use App\Http\Controllers\OrdenProduccionController;
@@ -62,6 +64,7 @@ Route::middleware(['auth', 'throttle:60,1', 'active.user', 'recovery.questions.r
         Route::resource('users', UserController::class);
         Route::post('users/{id}/restore', [UserController::class, 'restore'])->name('users.restore');
         Route::get('users-data', [UserController::class, 'getUsers'])->name('users.data');
+        Route::get('users/reporte/pdf', [UserController::class, 'reportePdf'])->name('users.reporte.pdf');
         Route::get('users-check-email', [UserController::class, 'checkEmail'])->name('users.check-email');
         Route::post('users/{id}/unlock-recovery', [UserController::class, 'unlockRecovery'])->name('users.unlock-recovery');
         Route::post('users/{id}/reset-password', [UserController::class, 'resetPassword'])->name('users.reset-password');
@@ -125,6 +128,7 @@ Route::middleware(['auth', 'throttle:60,1', 'active.user', 'recovery.questions.r
 
         // Proveedores (escritura)
         Route::post('proveedores', [ProveedorController::class, 'store'])->name('proveedores.store');
+        Route::post('proveedores/from-persona/{persona}', [ProveedorController::class, 'createFromPersona'])->name('proveedores.from-persona');
         Route::get('proveedores/create', [ProveedorController::class, 'create'])->name('proveedores.create');
         Route::put('proveedores/{proveedor}', [ProveedorController::class, 'update'])->name('proveedores.update');
         Route::delete('proveedores/{proveedor}', [ProveedorController::class, 'destroy'])->name('proveedores.destroy');
@@ -155,6 +159,7 @@ Route::middleware(['auth', 'throttle:60,1', 'active.user', 'recovery.questions.r
         Route::put('cotizaciones/{cotizacion}/estado', [CotizacionController::class, 'updateEstado'])->name('cotizaciones.updateEstado');
         Route::get('cotizaciones/{cotizacion}/datos-para-pedido', [CotizacionController::class, 'getDatosParaPedido'])->name('cotizaciones.datosParaPedido');
         Route::post('cotizaciones/{cotizacion}/convertir-a-pedido', [CotizacionController::class, 'convertirAPedido'])->name('cotizaciones.convertirAPedido');
+        Route::post('cotizaciones/{cotizacion}/reactivar', [CotizacionController::class, 'reactivar'])->name('cotizaciones.reactivar');
 
         // Proveedores (lectura)
         Route::get('proveedores', [ProveedorController::class, 'index'])->name('proveedores.index');
@@ -163,6 +168,7 @@ Route::middleware(['auth', 'throttle:60,1', 'active.user', 'recovery.questions.r
         Route::get('proveedores-check-documento', [ProveedorController::class, 'checkDocumento'])->name('proveedores.check-documento');
         Route::get('proveedores-check-email', [ProveedorController::class, 'checkEmail'])->name('proveedores.check-email');
         Route::get('proveedores/reporte/pdf', [ProveedorController::class, 'reportePdf'])->name('proveedores.reporte.pdf');
+        Route::get('proveedores/search', [ProveedorController::class, 'search'])->name('proveedores.search');
         Route::get('proveedores/{proveedor}', [ProveedorController::class, 'show'])->name('proveedores.show');
 
         // Logos
@@ -170,6 +176,13 @@ Route::middleware(['auth', 'throttle:60,1', 'active.user', 'recovery.questions.r
 
         // Colores
         Route::get('colores-data', [ColorController::class, 'getColores'])->name('colores.data');
+        Route::get('colores-check-nombre', [ColorController::class, 'checkNombre'])->name('colores.check-nombre');
+        Route::get('colores', [ColorController::class, 'index'])->name('colores.index');
+        Route::post('colores', [ColorController::class, 'store'])->name('colores.store');
+        Route::get('colores/{color}', [ColorController::class, 'show'])->name('colores.show');
+        Route::put('colores/{color}', [ColorController::class, 'update'])->name('colores.update');
+        Route::delete('colores/{color}', [ColorController::class, 'destroy'])->name('colores.destroy');
+        Route::patch('colores/{id}/restore', [ColorController::class, 'restore'])->name('colores.restore');
 
         // Tallas
         Route::get('tallas-data', [TallaController::class, 'getTallas'])->name('tallas.data');
@@ -189,7 +202,8 @@ Route::middleware(['auth', 'throttle:60,1', 'active.user', 'recovery.questions.r
         // Tipos de Producto
         Route::get('tipo-productos', [App\Http\Controllers\TipoProductoController::class, 'index'])->name('tipo-productos.index');
         Route::post('tipo-productos', [App\Http\Controllers\TipoProductoController::class, 'store'])->name('tipo-productos.store');
-        Route::get('tipo-productos/{tipoProducto}', [App\Http\Controllers\TipoProductoController::class, 'show'])->name('tipo-productos.show');
+        Route::post('tipo-productos/{tipoProducto}/telas', [App\Http\Controllers\TipoProductoController::class, 'storeTela'])->name('tipo-productos.telas.store');
+        Route::get('tipo-productos/{id}', [App\Http\Controllers\TipoProductoController::class, 'show'])->name('tipo-productos.show');
         Route::put('tipo-productos/{tipoProducto}', [App\Http\Controllers\TipoProductoController::class, 'update'])->name('tipo-productos.update');
         Route::delete('tipo-productos/{tipoProducto}', [App\Http\Controllers\TipoProductoController::class, 'destroy'])->name('tipo-productos.destroy');
         Route::patch('tipo-productos/{id}/restore', [App\Http\Controllers\TipoProductoController::class, 'restore'])->name('tipo-productos.restore');
@@ -213,10 +227,20 @@ Route::middleware(['auth', 'throttle:60,1', 'active.user', 'recovery.questions.r
         Route::put('atributos/{atributo}/valores-reorder', [App\Http\Controllers\AtributoValorController::class, 'reorder'])->name('atributos.valores.reorder');
 
         // Insumos
+        Route::post('insumos/{id}/restore', [InsumoController::class, 'restore'])->name('insumos.restore');
         Route::resource('insumos', InsumoController::class);
         Route::get('insumos-data', [InsumoController::class, 'getInsumos'])->name('insumos.data');
         Route::get('insumos/reporte/pdf', [InsumoController::class, 'reportePdf'])->name('insumos.reporte.pdf');
         Route::get('insumos/check-nombre', [InsumoController::class, 'checkNombre'])->name('insumos.check-nombre');
+
+        // Catálogo gestionable de tipos de insumo
+        Route::get('tipo-insumos', [TipoInsumoController::class, 'index'])->name('tipo-insumos.index');
+        Route::post('tipo-insumos', [TipoInsumoController::class, 'store'])->name('tipo-insumos.store');
+        Route::get('tipo-insumos-check-nombre', [TipoInsumoController::class, 'checkNombre'])->name('tipo-insumos.check-nombre');
+        Route::get('tipo-insumos/{tipoInsumo}', [TipoInsumoController::class, 'show'])->name('tipo-insumos.show');
+        Route::put('tipo-insumos/{tipoInsumo}', [TipoInsumoController::class, 'update'])->name('tipo-insumos.update');
+        Route::delete('tipo-insumos/{tipoInsumo}', [TipoInsumoController::class, 'destroy'])->name('tipo-insumos.destroy');
+        Route::patch('tipo-insumos/{id}/restore', [TipoInsumoController::class, 'restore'])->name('tipo-insumos.restore');
 
         // Órdenes de Producción
         // (rutas específicas ANTES del resource para que no colisionen con ordenes/{orden})
@@ -225,6 +249,13 @@ Route::middleware(['auth', 'throttle:60,1', 'active.user', 'recovery.questions.r
         Route::get('ordenes-data', [OrdenProduccionController::class, 'getOrdenes'])->name('ordenes.data');
         Route::post('ordenes/batch', [OrdenProduccionController::class, 'storeBatch'])->name('ordenes.batch');
         Route::post('ordenes/{orden}/avance', [OrdenProduccionController::class, 'registrarAvance'])->name('ordenes.avance');
+        Route::patch('ordenes/{orden}/cancelar', [OrdenProduccionController::class, 'cancelar'])->name('ordenes.cancelar');
+        // Sub-órdenes de producción (etapas con empleados asignados)
+        Route::get('ordenes/{orden}/subordenes', [OrdenProduccionController::class, 'subordenes'])->name('ordenes.subordenes');
+        Route::post('ordenes/{orden}/subordenes', [OrdenProduccionController::class, 'storeSubOrden'])->name('ordenes.subordenes.store');
+        Route::delete('ordenes/{orden}/subordenes/{subId}', [OrdenProduccionController::class, 'destroySubOrden'])->name('ordenes.subordenes.destroy');
+        Route::patch('ordenes/{orden}/subordenes/{subId}/estado', [OrdenProduccionController::class, 'updateSubOrdenEstado'])->name('ordenes.subordenes.estado');
+        Route::get('ordenes/reporte/pdf', [OrdenProduccionController::class, 'reportePdf'])->name('ordenes.reporte.pdf');
         Route::resource('ordenes', OrdenProduccionController::class);
 
         // Control de Insumos por Orden
@@ -234,15 +265,32 @@ Route::middleware(['auth', 'throttle:60,1', 'active.user', 'recovery.questions.r
         Route::put('ordenes/insumos/{id}', [DetalleOrdenInsumoController::class, 'update'])->name('ordenes.insumos.update');
         Route::delete('ordenes/insumos/{id}', [DetalleOrdenInsumoController::class, 'destroy'])->name('ordenes.insumos.destroy');
 
-        // Inventario
-        Route::get('inventario/movimientos', [MovimientoInsumoController::class, 'index'])->name('inventario.movimientos.index');
-        Route::get('inventario/movimientos/data', [MovimientoInsumoController::class, 'getMovimientos'])->name('inventario.movimientos.data');
-        Route::get('inventario/existencias-data', [MovimientoInsumoController::class, 'getExistencias'])->name('inventario.existencias.data');
-        Route::post('inventario/movimientos', [MovimientoInsumoController::class, 'store'])->name('inventario.movimientos.store');
-        Route::get('inventario/movimientos/{id}', [MovimientoInsumoController::class, 'show'])->name('inventario.movimientos.show');
-        Route::get('inventario/reporte', [MovimientoInsumoController::class, 'reporteExistencia'])->name('inventario.reporte');
-        Route::get('inventario/alertas', [MovimientoInsumoController::class, 'alertasStock'])->name('inventario.alertas');
-        Route::get('inventario/movimientos/historial/{id}', [MovimientoInsumoController::class, 'historialInsumo'])->name('inventario.movimientos.historial');
+        // Compras
+        Route::get('compras', [CompraController::class, 'index'])->name('compras.index');
+        Route::post('compras', [CompraController::class, 'store'])->name('compras.store');
+        Route::put('compras/{compra}', [CompraController::class, 'update'])->name('compras.update');
+        Route::get('compras/data', [CompraController::class, 'getCompras'])->name('compras.data');
+        Route::get('compras/tasa', [CompraController::class, 'getTasa'])->name('compras.tasa');
+        Route::get('compras/reporte/pdf', [CompraController::class, 'reportePdf'])->name('compras.reporte.pdf');
+        Route::get('compras/{compra}/editar-datos', [CompraController::class, 'getParaEditar'])->name('compras.editar-datos');
+        Route::get('compras/{compra}/detalle', [CompraController::class, 'getDetalle'])->name('compras.detalle');
+        Route::get('compras/{compra}/pdf', [CompraController::class, 'compraPdf'])->name('compras.pdf');
+        Route::patch('compras/{compra}/procesar', [CompraController::class, 'procesar'])->name('compras.procesar');
+        Route::patch('compras/{compra}/anular', [CompraController::class, 'anular'])->name('compras.anular');
+        Route::post('compras/{compra}/clonar', [CompraController::class, 'clonar'])->name('compras.clonar');
+        Route::delete('compras/{compra}', [CompraController::class, 'destroy'])->name('compras.destroy');
+
+        // Movimientos de Insumo (rutas literales antes del comodín {id})
+        Route::get('movimiento-insumo', [MovimientoInsumoController::class, 'index'])->name('movimiento-insumo.index');
+        Route::get('movimiento-insumo/data', [MovimientoInsumoController::class, 'getMovimientos'])->name('movimiento-insumo.data');
+        Route::get('movimiento-insumo/existencias-data', [MovimientoInsumoController::class, 'getExistencias'])->name('movimiento-insumo.existencias.data');
+        Route::get('movimiento-insumo/reporte', [MovimientoInsumoController::class, 'reporteExistencia'])->name('movimiento-insumo.reporte');
+        Route::get('movimiento-insumo/reporte/pdf', [MovimientoInsumoController::class, 'reportePdf'])->name('movimiento-insumo.reporte.pdf');
+        Route::get('movimiento-insumo/alertas', [MovimientoInsumoController::class, 'alertasStock'])->name('movimiento-insumo.alertas');
+        Route::get('movimiento-insumo/historial/{id}', [MovimientoInsumoController::class, 'historialInsumo'])->name('movimiento-insumo.historial');
+        Route::post('movimiento-insumo', [MovimientoInsumoController::class, 'store'])->name('movimiento-insumo.store');
+        Route::post('movimiento-insumo/masivo', [MovimientoInsumoController::class, 'storeMasivo'])->name('movimiento-insumo.masivo');
+        Route::get('movimiento-insumo/{id}', [MovimientoInsumoController::class, 'show'])->name('movimiento-insumo.show');
 
         // Notificaciones (campanita del header)
         Route::get('notificaciones/sistema', [NotificacionController::class, 'sistema'])->name('notificaciones.sistema');

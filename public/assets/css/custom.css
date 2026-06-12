@@ -780,9 +780,13 @@ header#page-topbar,
 
 /* Focus en inputs */
 .form-control:focus,
+/* Focus navy unificado con AtlanticoSelect (.afs-toggle). Cubre los <select>
+   que NO se realzan (prefijos V-/J- en input-group, departamento/cargo con
+   botón "+", filtros de PDF, etc.) para que el control cerrado luzca igual
+   en todo el sistema. Los selects realzados ya pintan navy vía .afs-toggle. */
 .form-select:focus {
-  border-color: #00d9a5;
-  box-shadow: 0 0 0 0.2rem rgba(0, 217, 165, 0.25);
+  border-color: #1e3c72;
+  box-shadow: 0 0 0 0.2rem rgba(30, 60, 114, 0.15);
 }
 
 /* ============================================
@@ -1423,6 +1427,141 @@ header#page-topbar,
    tabla resumen, footer del wizard. Light + dark mode.
    ════════════════════════════════════════════════════════════════════ */
 
+/* ── Píldora de fecha + hora — moderna, con badges emerald y punto en vivo.
+      Reutilizable; se ubica en el footer junto al contador de pasos.
+      Variante --sm para footers compactos. Compartida por cotizaciones,
+      pedidos y órdenes de producción. */
+.wiz-body-datetime {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 5px 7px;
+    background: linear-gradient(135deg, #ffffff 0%, #f6f9fd 100%);
+    border: 1px solid rgba(30, 60, 114, 0.12);
+    border-radius: 12px;
+    box-shadow: 0 6px 16px -9px rgba(15, 35, 70, 0.30);
+    white-space: nowrap;
+}
+.wiz-body-dt-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 3px 9px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #1e3c72;
+    letter-spacing: 0.01em;
+}
+.wiz-body-dt-item i {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 7px;
+    font-size: 0.95rem;
+    background: rgba(16, 185, 129, 0.13);
+    color: #059669;
+    flex-shrink: 0;
+}
+.wiz-body-dt-divider {
+    width: 1px;
+    height: 22px;
+    background: rgba(30, 60, 114, 0.12);
+}
+.wiz-body-dt-live {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #10b981;
+    flex-shrink: 0;
+    margin-left: 1px;
+    animation: wizLivePulse 1.8s ease-out infinite;
+}
+@keyframes wizLivePulse {
+    0%   { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.55); }
+    70%  { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+    .wiz-body-dt-live { animation: none; }
+}
+
+[data-bs-theme="dark"] .wiz-body-datetime {
+    background: linear-gradient(135deg, #1a2233 0%, #141b29 100%);
+    border-color: #2a3447;
+    box-shadow: 0 6px 16px -9px rgba(0, 0, 0, 0.55);
+}
+[data-bs-theme="dark"] .wiz-body-dt-item { color: #e2e8f0; }
+[data-bs-theme="dark"] .wiz-body-dt-item i {
+    background: rgba(16, 185, 129, 0.18);
+    color: #34d399;
+}
+[data-bs-theme="dark"] .wiz-body-dt-divider { background: #2a3447; }
+
+/* Variante compacta para el footer (junto al contador de pasos) */
+.wiz-body-datetime--sm { padding: 3px 5px; border-radius: 10px; }
+.wiz-body-datetime--sm .wiz-body-dt-item { padding: 2px 7px; font-size: 0.74rem; gap: 6px; }
+.wiz-body-datetime--sm .wiz-body-dt-item i { width: 20px; height: 20px; font-size: 0.85rem; border-radius: 6px; }
+.wiz-body-datetime--sm .wiz-body-dt-divider { height: 18px; }
+
+/* La píldora de fecha/hora vive en el header del modal, pegada a la X.
+   El .btn-close de Bootstrap trae margin-left:auto; con el ms-auto de la
+   píldora habría dos auto-márgenes (la centra). El slot empuja a la derecha
+   y anula el auto del botón cerrar para que la píldora quede junto a la X. */
+.modal-header .wiz-dt-slot { margin-left: auto; }
+.modal-header .wiz-dt-slot ~ .btn-close { margin-left: 0 !important; }
+
+.modal-header .wiz-body-datetime {
+    background: rgba(255, 255, 255, 0.16);
+    border-color: rgba(255, 255, 255, 0.28);
+    box-shadow: none;
+    backdrop-filter: blur(2px);
+}
+.modal-header .wiz-body-dt-item { color: #ffffff; }
+.modal-header .wiz-body-dt-item i {
+    background: rgba(255, 255, 255, 0.22);
+    color: #ffffff;
+}
+.modal-header .wiz-body-dt-divider { background: rgba(255, 255, 255, 0.28); }
+.modal-header .wiz-body-dt-live {
+    background: #6ee7b7;
+    box-shadow: 0 0 0 0 rgba(110, 231, 183, 0.7);
+}
+
+@media (max-width: 575.98px) {
+    .wiz-body-datetime { display: none; }
+}
+
+/* ── Píldora de tasa BCV en el header del wizard ────────────────────
+   Gemela de la de fecha/hora; refleja la tasa oficial del día como el
+   header global ("BCV dd/mm" pequeño + "Bs. valor" en negrita).
+   Visible en todos los pasos porque vive en el modal-header. */
+.wiz-hdr-pills {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+.wiz-body-bcv-text {
+    display: inline-flex;
+    flex-direction: column;
+    line-height: 1.05;
+    text-align: left;
+}
+.wiz-body-bcv-label {
+    font-size: 0.6rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    opacity: 0.85;
+}
+.wiz-body-bcv-val {
+    font-size: 0.82rem;
+    font-weight: 800;
+}
+@media (max-width: 575.98px) {
+    .wiz-body-bcv { display: none; }
+}
+
 /* ── Stepper visual ─────────────────────────────────────────────── */
 .wiz-stepper-wrapper {
     background: linear-gradient(180deg, #f6f9fd 0%, #ffffff 100%);
@@ -1648,6 +1787,37 @@ header#page-topbar,
     padding: 24px 28px !important;
     min-height: 460px;
     background: #fafbfd;
+    position: relative;
+}
+
+/* Alto fijo dentro del viewport + body scrollable: header, stepper y footer
+   quedan fijos y solo el contenido del paso hace scroll cuando hay muchos
+   elementos. Generaliza a todos los .wiz-modal el patrón que ya usaba compras. */
+.wiz-modal .modal-content {
+    max-height: calc(100vh - 3.5rem);
+    min-height: min(560px, calc(100vh - 3.5rem));
+    display: flex;
+    flex-direction: column;
+}
+.wiz-modal .modal-content > form {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+}
+.wiz-modal .wiz-wizard-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+}
+.wiz-modal .modal-header,
+.wiz-modal .wiz-stepper-wrapper,
+.wiz-modal .wiz-wizard-footer {
+    flex: 0 0 auto;
+}
+@media (max-width: 575.98px) {
+    .wiz-modal .modal-content { max-height: 100vh; min-height: auto; }
 }
 
 .wiz-step-content { display: none; }
@@ -1662,15 +1832,6 @@ header#page-topbar,
 }
 
 .wiz-step-header { margin-bottom: 22px; }
-.wiz-step-tag {
-    display: inline-block;
-    font-size: 0.66rem;
-    letter-spacing: 0.18em;
-    text-transform: uppercase;
-    color: #00b88c;
-    font-weight: 700;
-    margin-bottom: 6px;
-}
 .wiz-step-title {
     font-size: 1.25rem;
     font-weight: 600;
@@ -1770,6 +1931,45 @@ header#page-topbar,
     box-shadow: 0 16px 32px -16px rgba(30, 60, 114, 0.55);
     overflow: hidden;
 }
+
+/* ── Acordeón informativo de Términos y Condiciones (paso 3 cotización) ── */
+.cot-terminos-accordion { --bs-accordion-border-color: rgba(30, 60, 114, 0.10); }
+.cot-terminos-accordion .accordion-item {
+    border-color: rgba(30, 60, 114, 0.10);
+    background: transparent;
+}
+.cot-terminos-accordion .accordion-button {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: #1e3c72;
+    padding: 10px 12px;
+}
+.cot-terminos-accordion .accordion-button:not(.collapsed) {
+    background: rgba(16, 185, 129, 0.08);
+    color: #064e3b;
+    box-shadow: none;
+}
+.cot-terminos-accordion .accordion-button:focus { box-shadow: none; }
+.cot-terminos-accordion .accordion-button::after { width: 1rem; height: 1rem; background-size: 1rem; }
+.cot-terminos-accordion .accordion-body {
+    font-size: 0.8rem;
+    line-height: 1.5;
+    padding: 10px 14px;
+    color: #475569;
+}
+.cot-terminos-accordion .accordion-body ul { margin: 0; padding-left: 18px; }
+.cot-terminos-accordion .accordion-body li { margin-bottom: 7px; }
+.cot-terminos-accordion .accordion-body li:last-child { margin-bottom: 0; }
+.cot-terminos-accordion .accordion-body strong { color: #1e3c72; }
+
+[data-bs-theme="dark"] .cot-terminos-accordion .accordion-item { background: transparent; border-color: #2a3447; }
+[data-bs-theme="dark"] .cot-terminos-accordion .accordion-button { color: #e2e8f0; background: transparent; }
+[data-bs-theme="dark"] .cot-terminos-accordion .accordion-button:not(.collapsed) {
+    background: rgba(16, 185, 129, 0.14);
+    color: #6ee7b7;
+}
+[data-bs-theme="dark"] .cot-terminos-accordion .accordion-body { color: #94a3b8; }
+[data-bs-theme="dark"] .cot-terminos-accordion .accordion-body strong { color: #cbd5e1; }
 .cot-resumen-card-header {
     padding: 14px 20px;
     background: rgba(0, 0, 0, 0.18);
@@ -1814,6 +2014,13 @@ header#page-topbar,
     font-weight: 800;
     color: #ffffff;
 }
+
+/* Variante compacta del resumen final — cede alto al acordeón de T&C */
+.cot-resumen-card--compact .cot-resumen-card-header { padding: 9px 16px; }
+.cot-resumen-card--compact .cot-resumen-card-body { padding: 12px 16px 14px; }
+.cot-resumen-card--compact .cot-resumen-row { padding: 4px 0; font-size: 0.85rem; }
+.cot-resumen-card--compact .cot-resumen-divider { margin: 4px 0; }
+.cot-resumen-card--compact .cot-resumen-row--total .cot-resumen-row-value { font-size: 1.4rem; }
 
 .cot-resumen-tabla-wrap { max-height: 220px; overflow-y: auto; }
 .cot-resumen-tabla thead th {
@@ -1874,6 +2081,139 @@ header#page-topbar,
     font-weight: 400;
     margin-top: 2px;
 }
+
+/* ── Líneas incluidas (resumen paso 3) — tarjetas por línea ── */
+.cot-lineas-list { display: flex; flex-direction: column; gap: 8px; max-height: 280px; overflow-y: auto; }
+.cot-linea-card {
+    display: flex; align-items: stretch; justify-content: space-between; gap: 12px;
+    border: 1px solid #e7ecf3; border-left: 3px solid var(--atlantico-cyan, #10b981);
+    border-radius: 10px; padding: 10px 12px; background: #fff;
+}
+.cot-linea-thumb {
+    width: 56px; height: 56px; border-radius: 10px; flex-shrink: 0; overflow: hidden;
+    background: #f1f5f9; display: flex; align-items: center; justify-content: center; align-self: center;
+}
+.cot-linea-thumb-img { width: 100%; height: 100%; object-fit: contain; padding: 4px; }
+.cot-linea-thumb-ph { color: #cbd5e1; font-size: 1.6rem; display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; }
+[data-bs-theme="dark"] .cot-linea-thumb { background: #0f172a; }
+.cot-linea-info { min-width: 0; flex: 1; }
+.cot-linea-top { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
+.cot-linea-codigo {
+    font-family: monospace; font-size: .72rem; font-weight: 700; color: #1e3c72;
+    background: rgba(30, 60, 114, .08); border-radius: 5px; padding: 1px 6px;
+}
+.cot-linea-nombre { font-weight: 700; color: #1e293b; font-size: .9rem; }
+.cot-linea-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.cot-linea-chip {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: .72rem; color: #475569; background: #f1f5f9;
+    border-radius: 999px; padding: 2px 9px;
+}
+.cot-linea-chip i { font-size: .8rem; }
+.cot-linea-swatch { width: 12px; height: 12px; border-radius: 50%; border: 1px solid rgba(0, 0, 0, .15); display: inline-block; flex-shrink: 0; }
+.cot-linea-tallas { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 7px; }
+.cot-linea-talla {
+    font-size: .7rem; color: #334155; background: #fff; border: 1px solid #e2e8f0;
+    border-radius: 6px; padding: 1px 7px;
+}
+.cot-linea-talla b { color: #1e3c72; margin-left: 2px; }
+.cot-linea-precio { display: flex; flex-direction: column; align-items: flex-end; justify-content: center; text-align: right; flex-shrink: 0; }
+.cot-linea-qxu { font-size: .72rem; color: #64748b; font-family: monospace; }
+.cot-linea-unitnote { font-size: .64rem; color: #94a3b8; }
+.cot-linea-sub { font-size: 1rem; font-weight: 800; color: #0f172a; font-family: monospace; margin-top: 2px; }
+
+[data-bs-theme="dark"] .cot-linea-card { background: #1e293b; border-color: #334155; }
+[data-bs-theme="dark"] .cot-linea-nombre { color: #f1f5f9; }
+[data-bs-theme="dark"] .cot-linea-codigo { background: rgba(96, 165, 250, .15); color: #93c5fd; }
+[data-bs-theme="dark"] .cot-linea-chip { background: #334155; color: #cbd5e1; }
+[data-bs-theme="dark"] .cot-linea-talla { background: #0f172a; border-color: #334155; color: #cbd5e1; }
+[data-bs-theme="dark"] .cot-linea-talla b { color: #93c5fd; }
+[data-bs-theme="dark"] .cot-linea-sub { color: #f8fafc; }
+[data-bs-theme="dark"] .cot-linea-qxu { color: #94a3b8; }
+
+/* ── Ficha de resumen (Cliente / Datos del pedido) — avatar + divisor ── */
+.res-ficha { width: 100%; }
+.res-ficha-head { display: flex; align-items: center; gap: 12px; }
+.res-ficha-avatar {
+    width: 46px; height: 46px; border-radius: 50%; flex-shrink: 0;
+    background: linear-gradient(135deg, #1e3c72, #2a5298);
+    color: #fff; font-weight: 700; font-size: 1rem; letter-spacing: .5px;
+    display: flex; align-items: center; justify-content: center;
+}
+.res-ficha-avatar--icon { font-size: 1.35rem; background: linear-gradient(135deg, #0891b2, #10b981); }
+.res-ficha-headtext { min-width: 0; }
+.res-ficha-title { font-weight: 700; font-size: 1.02rem; color: #1e293b; line-height: 1.2; word-break: break-word; }
+.res-ficha-sub { font-size: .68rem; color: #94a3b8; text-transform: uppercase; letter-spacing: .06em; font-weight: 600; }
+.res-ficha-divider { height: 1px; background: repeating-linear-gradient(90deg, #e2e8f0 0 6px, transparent 6px 12px); margin: 12px 0; }
+.res-ficha-rows { display: flex; flex-direction: column; gap: 8px; }
+.res-ficha-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.res-ficha-row-label { display: inline-flex; align-items: center; gap: 7px; font-size: .8rem; color: #64748b; white-space: nowrap; }
+.res-ficha-row-label i { font-size: .98rem; opacity: .75; }
+.res-ficha-row-value { font-size: .86rem; font-weight: 600; color: #1e293b; text-align: right; word-break: break-word; }
+
+[data-bs-theme="dark"] .res-ficha-title { color: #f1f5f9; }
+[data-bs-theme="dark"] .res-ficha-row-value { color: #e2e8f0; }
+[data-bs-theme="dark"] .res-ficha-row-label { color: #94a3b8; }
+[data-bs-theme="dark"] .res-ficha-divider { background: repeating-linear-gradient(90deg, #334155 0 6px, transparent 6px 12px); }
+
+/* ── Card de Pago (resumen): progreso + métodos ── */
+.ped-pago-progress { margin-bottom: 16px; }
+.ped-pago-progress-label { font-size: .82rem; color: #475569; }
+.ped-pago-progress-label strong { color: #16a34a; }
+.ped-pago-bar { height: 8px; border-radius: 6px; background: #e9eef5; overflow: hidden; }
+.ped-pago-bar-fill { height: 100%; border-radius: 6px; transition: width .4s ease; }
+.ped-pago-metodos-title { font-size: .68rem; text-transform: uppercase; letter-spacing: .06em; color: #94a3b8; font-weight: 600; margin-bottom: 8px; }
+.ped-pago-metodos { display: flex; flex-direction: column; gap: 8px; }
+.ped-metodo-row {
+    display: flex; align-items: center; gap: 12px;
+    border: 1px solid #e7ecf3; border-radius: 10px; padding: 9px 12px; background: #fff;
+}
+.ped-metodo-ico {
+    width: 38px; height: 38px; border-radius: 10px; flex-shrink: 0;
+    background: rgba(30, 60, 114, .08); color: #1e3c72;
+    display: flex; align-items: center; justify-content: center; font-size: 1.15rem;
+}
+.ped-metodo-info { flex: 1; min-width: 0; }
+.ped-metodo-label { font-weight: 600; font-size: .88rem; color: #1e293b; }
+.ped-metodo-extra { display: block; font-size: .72rem; color: #94a3b8; }
+.ped-metodo-monto { font-weight: 700; font-family: monospace; color: #0f172a; font-size: .95rem; white-space: nowrap; }
+
+[data-bs-theme="dark"] .ped-pago-progress-label { color: #cbd5e1; }
+[data-bs-theme="dark"] .ped-pago-bar { background: #334155; }
+[data-bs-theme="dark"] .ped-metodo-row { background: #1e293b; border-color: #334155; }
+[data-bs-theme="dark"] .ped-metodo-ico { background: rgba(96, 165, 250, .15); color: #93c5fd; }
+[data-bs-theme="dark"] .ped-metodo-label { color: #f1f5f9; }
+[data-bs-theme="dark"] .ped-metodo-monto { color: #f8fafc; }
+
+/* ── Línea de producto (resumen) — estilo factura con miniatura ── */
+.ped-prod-line {
+    display: flex; align-items: center; gap: 14px;
+    border: 1px solid #e7ecf3; border-radius: 12px; padding: 12px 14px; background: #fff;
+}
+.ped-prod-thumb {
+    width: 56px; height: 56px; border-radius: 10px; flex-shrink: 0; overflow: hidden;
+    background: #f1f5f9; display: flex; align-items: center; justify-content: center;
+}
+.ped-prod-thumb-img { width: 100%; height: 100%; object-fit: contain; padding: 4px; }
+.ped-prod-thumb-ph { color: #cbd5e1; font-size: 1.6rem; display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; }
+.ped-prod-body { flex: 1; min-width: 0; }
+.ped-prod-top { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin-bottom: 3px; }
+.ped-prod-code {
+    font-family: monospace; font-size: .72rem; font-weight: 700; color: #1e3c72;
+    background: rgba(30, 60, 114, .08); border-radius: 5px; padding: 1px 7px; letter-spacing: .3px;
+}
+.ped-prod-name { font-weight: 700; font-size: .92rem; color: #1e293b; line-height: 1.25; }
+.ped-prod-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 6px; }
+.ped-prod-price { text-align: right; flex-shrink: 0; display: flex; flex-direction: column; align-items: flex-end; justify-content: center; }
+.ped-prod-qxu { font-size: .74rem; color: #64748b; font-family: monospace; }
+.ped-prod-sub { font-size: 1.05rem; font-weight: 800; color: #0f172a; font-family: monospace; margin-top: 2px; }
+
+[data-bs-theme="dark"] .ped-prod-line { background: #1e293b; border-color: #334155; }
+[data-bs-theme="dark"] .ped-prod-thumb { background: #0f172a; }
+[data-bs-theme="dark"] .ped-prod-code { background: rgba(96, 165, 250, .15); color: #93c5fd; }
+[data-bs-theme="dark"] .ped-prod-name { color: #f1f5f9; }
+[data-bs-theme="dark"] .ped-prod-qxu { color: #94a3b8; }
+[data-bs-theme="dark"] .ped-prod-sub { color: #f8fafc; }
 
 [data-bs-theme="dark"] .cot-resumen-row-prod { color: #e2e8f0; }
 [data-bs-theme="dark"] .cot-resumen-row-meta { color: #94a3b8; }
@@ -1950,7 +2290,6 @@ header#page-topbar,
 [data-bs-theme="dark"] .wiz-wizard-body { background: #0f1521; }
 [data-bs-theme="dark"] .wiz-step-title { color: #e2e8f0; }
 [data-bs-theme="dark"] .wiz-step-desc { color: #94a3b8; }
-[data-bs-theme="dark"] .wiz-step-tag { color: #34d399; }
 
 [data-bs-theme="dark"] .cot-kpi {
     background: #1f2937;
@@ -2001,7 +2340,20 @@ header#page-topbar,
 .cot-search-doc-group {
     box-shadow: 0 1px 3px rgba(30, 60, 114, 0.06);
     border-radius: 10px;
-    overflow: hidden;
+    /* Sin overflow:hidden: recortaba el dropdown realzado (.afs-menu) del
+       prefijo V-/J- (el <select> nativo dibujaba su lista fuera del flujo, los
+       realzados no). El look de píldora se conserva redondeando los extremos. */
+}
+/* Redondea el extremo izquierdo (lupa) y el campo de texto visible. El último
+   hijo del DOM es un <input type="hidden"> (no se ve), por eso no se usa
+   :last-child sino el .form-control directamente. */
+.cot-search-doc-group > .input-group-text:first-child {
+    border-top-left-radius: 10px !important;
+    border-bottom-left-radius: 10px !important;
+}
+.cot-search-doc-group > .form-control {
+    border-top-right-radius: 10px !important;
+    border-bottom-right-radius: 10px !important;
 }
 .cot-search-doc-icon {
     background: #f3f6fc;
@@ -2664,7 +3016,9 @@ header#page-topbar,
 .cat-card-img-placeholder {
     width: 100%;
     height: 100%;
-    object-fit: cover;
+    /* contain: muestra el producto completo sin recortar (imágenes de tamaños variados) */
+    object-fit: contain;
+    padding: 6px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -2842,8 +3196,8 @@ header#page-topbar,
 }
 .cat-cart-item-info { min-width: 0; }
 .cat-cart-item-name {
-    font-size: 0.82rem;
-    font-weight: 600;
+    font-size: 1rem;
+    font-weight: 700;
     color: #1e3c72;
     margin: 0;
     overflow: hidden;
@@ -2851,9 +3205,10 @@ header#page-topbar,
     white-space: nowrap;
 }
 .cat-cart-item-meta {
-    font-size: 0.7rem;
-    color: #64748b;
-    margin: 0;
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: #475569;
+    margin: 2px 0 0;
 }
 .cat-cart-item-actions {
     display: flex;
@@ -2863,7 +3218,7 @@ header#page-topbar,
     border-top: 1px dashed rgba(30, 60, 114, 0.1);
 }
 .cat-cart-item-price {
-    font-size: 0.85rem;
+    font-size: 0.95rem;
     font-weight: 700;
     color: #1e3c72;
     font-variant-numeric: tabular-nums;
@@ -3115,17 +3470,33 @@ header#page-topbar,
     margin-bottom: 4px;
 }
 .cot-prod-modelo {
-    font-weight: 600;
+    font-weight: 700;
+    font-size: 0.95rem;
     color: #1e3c72;
     line-height: 1.25;
 }
 .cot-prod-codigo {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
     font-family: monospace;
-    font-size: 0.7rem;
+    font-size: 0.72rem;
     color: #94a3b8;
     font-weight: 600;
-    margin-top: 1px;
+    margin-top: 2px;
 }
+.cot-prod-codigo i { font-size: 0.85rem; }
+.cot-prod-variant {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.76rem;
+    color: #475569;
+    margin-top: 4px;
+}
+.cot-prod-variant i { color: #94a3b8; font-size: 0.9rem; flex-shrink: 0; }
+[data-bs-theme="dark"] .cot-prod-variant { color: #94a3b8; }
+[data-bs-theme="dark"] .cot-prod-variant i { color: #64748b; }
 
 .cot-grouped-table .cot-col-color { width: 130px; }
 .cot-color-cell {
@@ -3172,16 +3543,21 @@ header#page-topbar,
 
 .cot-grouped-bordado-line {
     margin-top: 5px;
-    font-size: 0.7rem;
-    color: #006b52;
+    font-size: 0.72rem;
     display: inline-flex;
     align-items: center;
-    gap: 3px;
-    background: rgba(0, 217, 165, 0.1);
-    padding: 2px 8px;
-    border-radius: 4px;
+    gap: 4px;
+    padding: 3px 9px;
+    border-radius: 999px;
     font-weight: 600;
 }
+.cot-grouped-bordado-line i { font-size: 0.9rem; }
+.cot-grouped-bordado-line--ok      { background: rgba(0, 217, 165, 0.12); color: #006b52; }
+.cot-grouped-bordado-line--pending { background: rgba(245, 158, 11, 0.15); color: #92400e; }
+.cot-grouped-bordado-line--none    { background: rgba(100, 116, 139, 0.10); color: #64748b; }
+[data-bs-theme="dark"] .cot-grouped-bordado-line--ok      { background: rgba(16, 185, 129, 0.18); color: #6ee7b7; }
+[data-bs-theme="dark"] .cot-grouped-bordado-line--pending { background: rgba(245, 158, 11, 0.20); color: #fcd34d; }
+[data-bs-theme="dark"] .cot-grouped-bordado-line--none    { background: rgba(148, 163, 184, 0.15); color: #94a3b8; }
 
 .cot-cell-num {
     text-align: right;
@@ -3275,10 +3651,6 @@ header#page-topbar,
     color: #cbd5e1;
 }
 [data-bs-theme="dark"] .cot-chip-x { color: #64748b; }
-[data-bs-theme="dark"] .cot-grouped-bordado-line {
-    background: rgba(0, 217, 165, 0.15);
-    color: #34d399;
-}
 [data-bs-theme="dark"] .cot-grouped-table tbody td.cot-cell-num,
 [data-bs-theme="dark"] .cot-grouped-table tbody td.cot-col-num { color: #e2e8f0; }
 [data-bs-theme="dark"] .cot-cell-subtotal { color: #34d399 !important; }
@@ -3382,7 +3754,9 @@ header#page-topbar,
 .cfg-media-img {
     width: 100%;
     height: 100%;
-    object-fit: cover;
+    /* contain: imagen completa del producto, sin recorte; centrada con respiro */
+    object-fit: contain;
+    padding: 10px;
 }
 
 .cfg-info-body { padding: 18px 22px 22px; }
@@ -3498,6 +3872,35 @@ header#page-topbar,
     font-weight: 600;
 }
 .cfg-distribute-btn:hover { color: #008f6c; }
+
+/* Botón "Nuevo color" — pill resaltado en el header de la sección Color */
+.cfg-newcolor-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+    font-size: 0.78rem;
+    font-weight: 600;
+    line-height: 1;
+    padding: 7px 14px;
+    border-radius: 999px;
+    color: #ffffff;
+    background: linear-gradient(135deg, #10b981 0%, #0891b2 100%);
+    border: none;
+    box-shadow: 0 2px 8px rgba(8, 145, 178, 0.30);
+    cursor: pointer;
+    transition: transform 0.12s ease, box-shadow 0.12s ease, filter 0.12s ease;
+}
+.cfg-newcolor-btn i { font-size: 0.95rem; }
+.cfg-newcolor-btn:hover {
+    filter: brightness(1.05);
+    box-shadow: 0 4px 12px rgba(8, 145, 178, 0.42);
+    transform: translateY(-1px);
+}
+.cfg-newcolor-btn:active { transform: translateY(0); box-shadow: 0 2px 6px rgba(8, 145, 178, 0.30); }
+[data-bs-theme="dark"] .cfg-newcolor-btn {
+    box-shadow: 0 2px 10px rgba(16, 185, 129, 0.35);
+}
 
 /* ── Selector de colores (chips) ─────────────────────────────── */
 .cfg-color-grid { padding: 0; }
@@ -4361,6 +4764,206 @@ header#page-topbar,
     background: linear-gradient(135deg, #10b981 0%, #0891b2 50%, #0d6efd 100%) !important;
 }
 
+/* Header del modal "Ver orden": el gradiente --op es claro, así que los
+   textos navy/muted del título y subtítulo se pierden → siempre blancos.
+   Scoped a #viewModal para no tocar los chips del wizard de creación. */
+#viewModal .modal-header .text-atlantico-dark { color: #ffffff !important; }
+#viewModal .modal-header .text-muted { color: rgba(255, 255, 255, 0.88) !important; }
+#viewModal .modal-header .opacity-50 { opacity: 0.8 !important; }
+/* El badge de estado (soft) gana fondo blanco sólido para leerse sobre el gradiente */
+#viewModal .modal-header .badge-status { background: rgba(255, 255, 255, 0.95) !important; }
+
+/* ── Selector de Variante (cotizaciones) ─────────────────────────
+   Secciones con indicador de completitud + chips seleccionables con
+   gradiente navy y check animado + panel de resultado tipo hero.   */
+/* Área scrolleable: el modal no crece infinito con muchos atributos; las
+   secciones scrollean y el resultado/progreso quedan siempre visibles. */
+.vs-scroll {
+    max-height: min(46vh, 30rem);
+    overflow-y: auto;
+    margin-right: -0.5rem;       /* compensa el carril del scrollbar */
+    padding-right: 0.5rem;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(30, 60, 114, 0.35) transparent;
+}
+.vs-scroll::-webkit-scrollbar { width: 6px; }
+.vs-scroll::-webkit-scrollbar-thumb { background: rgba(30, 60, 114, 0.3); border-radius: 999px; }
+.vs-scroll::-webkit-scrollbar-track { background: transparent; }
+
+.vs-section {
+    border: 1px solid rgba(30, 60, 114, 0.12);
+    border-radius: 0.7rem;
+    padding: 0.55rem 0.75rem;
+    background: rgba(30, 60, 114, 0.02);
+    margin-bottom: 0.5rem;
+    transition: border-color 0.25s ease, background-color 0.25s ease;
+}
+.vs-section:last-child, #vs-atributos-section > .vs-section:last-child { margin-bottom: 0; }
+.vs-section.is-done {
+    border-color: rgba(16, 185, 129, 0.45);
+    background: rgba(16, 185, 129, 0.04);
+}
+.vs-section-head {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.4rem;
+}
+.vs-section-title {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: #1e3c72;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+.vs-section-status {
+    width: 1.05rem; height: 1.05rem;
+    flex: 0 0 auto;
+    border-radius: 50%;
+    border: 1.5px solid rgba(30, 60, 114, 0.3);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    color: transparent;
+    background: transparent;
+    transition: all 0.25s ease;
+}
+.vs-section.is-done .vs-section-status {
+    border-color: #10b981;
+    background: #10b981;
+    color: #fff;
+}
+.vs-section-pick {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #059669;
+}
+.vs-section-pick:empty { display: none; }
+.vs-chip-group { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.vs-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    border: 1.5px solid rgba(30, 60, 114, 0.22);
+    border-radius: 999px;
+    padding: 0.28rem 0.75rem;
+    background: #ffffff;
+    color: #2c3e50;
+    font-size: 0.82rem;
+    font-weight: 500;
+    cursor: pointer;
+    user-select: none;
+    transition: border-color 0.18s ease, background 0.18s ease, color 0.18s ease,
+                box-shadow 0.18s ease, transform 0.18s ease;
+}
+.vs-chip:hover {
+    border-color: rgba(30, 60, 114, 0.55);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 10px -4px rgba(30, 60, 114, 0.35);
+}
+.vs-chip-check {
+    font-size: 0.95rem;
+    width: 0;
+    overflow: hidden;
+    opacity: 0;
+    transition: width 0.18s ease, opacity 0.18s ease;
+}
+.vs-chip-code {
+    font-family: 'JetBrains Mono', 'Consolas', monospace;
+    font-size: 0.68rem;
+    opacity: 0.55;
+    letter-spacing: 0.03em;
+}
+.btn-check:checked + .vs-chip {
+    background: linear-gradient(135deg, #1e3c72, #2a5298);
+    border-color: #1e3c72;
+    color: #ffffff;
+    box-shadow: 0 6px 16px -6px rgba(30, 60, 114, 0.55);
+}
+.btn-check:checked + .vs-chip .vs-chip-check { width: 1rem; opacity: 1; }
+.btn-check:checked + .vs-chip .vs-chip-code { opacity: 0.8; }
+.btn-check:focus-visible + .vs-chip { box-shadow: 0 0 0 0.2rem rgba(30, 60, 114, 0.2); }
+
+.vs-progress {
+    flex: 0 0 auto;
+    font-size: 0.74rem;
+    font-weight: 700;
+    border-radius: 999px;
+    padding: 0.25rem 0.7rem;
+    white-space: nowrap;
+    color: #1e3c72;
+    background: rgba(30, 60, 114, 0.08);
+    transition: background-color 0.25s ease, color 0.25s ease;
+}
+.vs-progress.is-complete { color: #067647; background: #dcfce7; }
+
+@keyframes vsSlideUp {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+.vs-result-card {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    background: linear-gradient(135deg, #1e3c72 0%, #2a5298 75%);
+    color: #ffffff;
+    border-radius: 0.75rem;
+    padding: 0.6rem 0.95rem;
+    box-shadow: 0 12px 24px -12px rgba(30, 60, 114, 0.55);
+    animation: vsSlideUp 0.3s ease;
+}
+.vs-result-icon { font-size: 1.4rem; color: #34d399; line-height: 1; }
+.vs-result-main { flex: 1 1 auto; min-width: 0; }
+.vs-result-label {
+    display: block;
+    font-size: 0.66rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    opacity: 0.7;
+}
+.vs-result-sku {
+    font-family: 'JetBrains Mono', 'Consolas', monospace;
+    font-size: 0.95rem;
+    letter-spacing: 0.04em;
+    word-break: break-all;
+}
+.vs-result-price { text-align: right; flex: 0 0 auto; }
+.vs-result-amount { font-size: 1.15rem; font-weight: 700; line-height: 1.1; }
+.vs-result-warn {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.6rem;
+    border: 1px solid rgba(180, 83, 9, 0.35);
+    background: #fef9ec;
+    color: #92400e;
+    border-radius: 0.75rem;
+    padding: 0.6rem 0.85rem;
+    font-size: 0.8rem;
+    animation: vsSlideUp 0.3s ease;
+}
+.vs-result-warn i { font-size: 1.15rem; line-height: 1.2; }
+.vs-result-warn a { color: #92400e; font-weight: 700; }
+
+[data-bs-theme="dark"] .vs-scroll { scrollbar-color: rgba(78, 122, 199, 0.45) transparent; }
+[data-bs-theme="dark"] .vs-scroll::-webkit-scrollbar-thumb { background: rgba(78, 122, 199, 0.4); }
+[data-bs-theme="dark"] .vs-section { background: rgba(78, 122, 199, 0.05); border-color: rgba(78, 122, 199, 0.2); }
+[data-bs-theme="dark"] .vs-section.is-done { background: rgba(16, 185, 129, 0.08); border-color: rgba(16, 185, 129, 0.4); }
+[data-bs-theme="dark"] .vs-section-title { color: #c8d4ea; }
+[data-bs-theme="dark"] .vs-section-status { border-color: rgba(78, 122, 199, 0.45); }
+[data-bs-theme="dark"] .vs-section-pick { color: #6ee7b7; }
+[data-bs-theme="dark"] .vs-chip { background: #1f2229; border-color: rgba(78, 122, 199, 0.35); color: #c8cbd0; }
+[data-bs-theme="dark"] .vs-chip:hover { border-color: rgba(126, 165, 232, 0.7); }
+[data-bs-theme="dark"] .btn-check:checked + .vs-chip {
+    background: linear-gradient(135deg, #2a5298, #4e7ac7);
+    border-color: #4e7ac7;
+}
+[data-bs-theme="dark"] .vs-progress { color: #aecbfa; background: rgba(78, 122, 199, 0.18); }
+[data-bs-theme="dark"] .vs-progress.is-complete { color: #6ee7b7; background: rgba(16, 185, 129, 0.18); }
+[data-bs-theme="dark"] .vs-result-warn { background: rgba(180, 83, 9, 0.12); color: #fcd34d; border-color: rgba(180, 83, 9, 0.4); }
+[data-bs-theme="dark"] .vs-result-warn a { color: #fcd34d; }
+
 /* ── .modal-form-section ─────────────────────────────────────────
    Sección agrupada dentro de un modal CRUD con borde navy sutil.  */
 .modal-form-section {
@@ -4391,6 +4994,64 @@ header#page-topbar,
 
 [data-bs-theme="dark"] .modal-form-section-title {
     color: #93c5fd;   /* blue-300 */
+}
+
+/* ── Estatus switch (solo lectura) ───────────────────────────────
+   Switch informativo: activado = Activo. Lo gobierna Inhabilitar /
+   Restaurar — no es editable. El candado + cursor bloqueado + fondo
+   tenue dejan claro que es informativo, no interactivo.
+   Compartido por Clientes, Proveedores y Empleados. */
+.estatus-switch {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0;
+    padding: 0.25rem 0.65rem;
+    min-height: auto;
+    border: 1px dashed var(--bs-border-color, #cbd5e1);
+    border-radius: 999px;
+    background: rgba(148, 163, 184, 0.10);   /* slate tenue: "no tocar" */
+    cursor: not-allowed;
+}
+/* Anula el layout flotado de .form-switch para alinear en flex */
+.estatus-switch .form-check-input {
+    float: none;
+    margin: 0;
+    cursor: not-allowed;
+    opacity: 1;            /* no se ve "apagado": es solo lectura, no deshabilitado */
+}
+.estatus-switch .form-check-label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: not-allowed;
+}
+.estatus-lock {
+    font-size: 0.9rem;
+    color: #94a3b8;        /* slate-400 */
+    line-height: 1;
+}
+/* Activo → verde esmeralda */
+.estatus-switch .form-check-input:checked {
+    background-color: #10b981;
+    border-color: #10b981;
+}
+.estatus-switch .form-check-input:checked ~ .form-check-label {
+    color: #047857;
+}
+/* Inactivo → rojo */
+.estatus-switch .form-check-input:not(:checked) ~ .form-check-label {
+    color: #b91c1c;
+}
+
+[data-bs-theme="dark"] .estatus-switch {
+    border-color: rgba(148, 163, 184, 0.40);
+    background: rgba(148, 163, 184, 0.12);
+}
+[data-bs-theme="dark"] .estatus-switch .form-check-input:checked ~ .form-check-label {
+    color: #6ee7b7;
+}
+[data-bs-theme="dark"] .estatus-switch .form-check-input:not(:checked) ~ .form-check-label {
+    color: #fca5a5;
 }
 
 /* ── .badge-tipo / .badge-status ─────────────────────────────────
@@ -4557,11 +5218,6 @@ header#page-topbar,
 [data-bs-theme="dark"] #viewModal .card-header    { background: rgba(78, 122, 199, 0.10) !important; }
 [data-bs-theme="dark"] #viewModal .card-header h6 { color: #93c5fd !important; }
 
-/* Botones sub-maestros (header de Empleados) */
-.btn-link-depto { background-color: #155e75; border-color: #155e75; color: #fff; }
-.btn-link-depto:hover, .btn-link-depto:focus { background-color: #0e4a5d; border-color: #0e4a5d; color: #fff; }
-.btn-link-cargo { background-color: #92400e; border-color: #92400e; color: #fff; }
-.btn-link-cargo:hover, .btn-link-cargo:focus { background-color: #78350f; border-color: #78350f; color: #fff; }
 
 /* Iconos circulares en viewModal de Empleados */
 .emp-icon-box { width: 32px; height: 32px; }
@@ -4597,19 +5253,38 @@ header#page-topbar,
 #insumos-table td:nth-child(5) { max-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* ============================================
-   MÓDULO PRODUCTOS — Anchos de columna
+   MÓDULO PRODUCTOS — Anchos de columna (catálogo = Tipos, 8 columnas)
+   Imagen · Tipo · Prefijo · Precio Confección · Telas · Atributos · Estado · Acciones
    ============================================ */
-#productos-table th:nth-child(1) { width: 10%; }
-#productos-table th:nth-child(2) { width: 12%; }
-#productos-table th:nth-child(3) { width: 16%; }
-#productos-table th:nth-child(4) { width: 24%; }
-#productos-table th:nth-child(5) { width: 12%; }
-#productos-table th:nth-child(6) { width: 12%; }
-#productos-table th:nth-child(7) { width: 14%; text-align: center; }
+#productos-table th:nth-child(1) { width: 9%; }                       /* Imagen */
+#productos-table th:nth-child(2) { width: 18%; }                      /* Tipo */
+#productos-table th:nth-child(3) { width: 11%; }                      /* Prefijo */
+#productos-table th:nth-child(4) { width: 16%; }                      /* Precio Confección */
+#productos-table th:nth-child(5) { width: 13%; }                      /* Telas */
+#productos-table th:nth-child(6) { width: 10%; text-align: center; }  /* Atributos */
+#productos-table th:nth-child(7) { width: 13%; text-align: center; }  /* Estado */
+#productos-table th:nth-child(8) { width: 10%; text-align: center; }  /* Acciones */
 
 #productos-table td:last-child    { text-align: center; overflow: visible; }
-#productos-table td:nth-child(2)  { overflow: visible; }
-#productos-table td:nth-child(4)  { max-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#productos-table td:nth-child(1)  { overflow: visible; }              /* Imagen */
+#productos-table td:nth-child(6),
+#productos-table td:nth-child(7)  { text-align: center; }
+
+/* ============================================
+   MODAL TIPO — listas de selección con scroll (Telas / Atributos)
+   Evita que el modal crezca vertical sin límite con muchos registros.
+   ============================================ */
+.tipo-check-scroll {
+    max-height: 220px;
+    overflow-y: auto;
+    border: 1px solid var(--bs-border-color, #dee2e6);
+    border-radius: .375rem;
+    padding: .5rem .75rem;
+}
+.tipo-check-scroll::-webkit-scrollbar { width: 8px; }
+.tipo-check-scroll::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, .15); border-radius: 4px; }
+[data-bs-theme="dark"] .tipo-check-scroll { border-color: rgba(255, 255, 255, .15); }
+[data-bs-theme="dark"] .tipo-check-scroll::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, .2); }
 
 /* ============================================
    MÓDULO PROVEEDORES — Anchos de columna
@@ -4801,6 +5476,274 @@ header#page-topbar,
 #ordenes-table td:last-child { overflow: visible; text-overflow: clip; text-align: center; }
 
 /* ============================================================
+   MÓDULO ÓRDENES — WIZARD: PASO ASIGNACIÓN (#showModal)
+   ============================================================ */
+
+/* Barra "Aplicar a todas" */
+.ord-apply-card {
+    background: linear-gradient(135deg, #eef2ff, #f8fafc);
+    border: 1px solid #dbe3f4;
+    border-radius: 14px;
+    padding: 14px 16px;
+}
+.ord-apply-head { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.ord-apply-icon {
+    width: 38px; height: 38px; flex: 0 0 38px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(135deg, #1e3c72, #2a5298);
+    color: #fff; font-size: 18px;
+    box-shadow: 0 4px 10px rgba(30, 60, 114, .25);
+}
+.ord-apply-title { font-weight: 700; color: #1e3c72; font-size: 14px; line-height: 1.15; }
+.ord-apply-sub   { font-size: 12px; color: #64748b; }
+
+/* Variante colapsable: cerrada por defecto queda como una fila mínima
+   (icono + título + chevron); el subtítulo y los campos solo al expandir. */
+.ord-apply-card--collapsible { padding: 8px 14px; }
+.ord-apply-card--collapsible .ord-apply-head { margin-bottom: 0; cursor: pointer; user-select: none; }
+.ord-apply-card--collapsible .ord-apply-icon {
+    width: 30px; height: 30px; flex: 0 0 30px; font-size: 15px; border-radius: 8px;
+}
+.ord-apply-card--collapsible .ord-apply-head[aria-expanded="false"] .ord-apply-sub { display: none; }
+.ord-apply-chevron { font-size: 18px; color: #1e3c72; transition: transform .2s ease; }
+.ord-apply-head[aria-expanded="true"] .ord-apply-chevron { transform: rotate(180deg); }
+[data-bs-theme="dark"] .ord-apply-chevron { color: #cbd5e1; }
+
+/* Separador entre "Aplicar a todas" y la asignación individual por línea */
+.ord-section-divider { display: flex; align-items: center; gap: 12px; margin: 4px 0 14px; }
+.ord-section-divider-line {
+    flex: 1 1 auto; height: 1px;
+    background: linear-gradient(90deg, transparent, #cbd5e1, transparent);
+}
+.ord-section-divider-label {
+    font-size: 11.5px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase;
+    color: #64748b; white-space: nowrap; display: inline-flex; align-items: center;
+}
+.ord-section-divider-count {
+    margin-left: 6px; min-width: 20px; height: 20px; padding: 0 6px; border-radius: 999px;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: #1e3c72; color: #fff; font-size: 11px; font-weight: 700; letter-spacing: 0;
+}
+
+/* Card de asignación por línea */
+.ord-asig-card {
+    background: #fff;
+    border: 1px solid #e6eaf2;
+    border-left: 4px solid #2a5298;
+    border-radius: 12px;
+    margin-bottom: 12px;
+    overflow: hidden;
+    box-shadow: 0 1px 2px rgba(16, 24, 40, .04);
+    transition: box-shadow .15s ease, transform .15s ease;
+}
+.ord-asig-card:hover { box-shadow: 0 6px 18px rgba(30, 60, 114, .10); }
+.ord-asig-card-head {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 14px; background: #f8fafc; border-bottom: 1px solid #eef1f6;
+}
+.ord-asig-num {
+    width: 26px; height: 26px; flex: 0 0 26px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    background: #1e3c72; color: #fff; font-weight: 700; font-size: 12px;
+}
+.ord-asig-prod { flex: 1 1 auto; min-width: 0; }
+.ord-asig-prod-name { font-weight: 600; color: #0f172a; font-size: 14px; }
+.ord-asig-qty { color: #64748b; font-weight: 500; font-size: 12px; }
+.ord-asig-chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 3px; }
+.ord-asig-dur {
+    flex: 0 0 auto; font-size: 12px; font-weight: 600; color: #0369a1;
+    background: #e0f2fe; border-radius: 999px; padding: 3px 10px; white-space: nowrap;
+}
+.ord-asig-dur.is-bad { color: #b42318; background: #fee4e2; }
+.ord-asig-dur:empty { display: none; }
+/* Reparto de una línea entre varias órdenes: chip de cobertura + botones Dividir/Quitar */
+.ord-asig-resto {
+    flex: 0 0 auto; font-size: 12px; font-weight: 600; border-radius: 999px;
+    padding: 3px 10px; white-space: nowrap;
+}
+.ord-asig-resto.is-ok   { color: #067647; background: #dcfce7; }
+.ord-asig-resto.is-warn { color: #b54708; background: #fef0c7; }
+.ord-asig-resto:empty { display: none; }
+.ord-asig-split-btns { flex: 0 0 auto; display: flex; gap: 4px; }
+.ord-asig-split-btns .btn { padding: 2px 8px; font-size: 12px; }
+.ord-asig-card-body { padding: 14px; }
+.ord-asig-card .input-group-text { background: #f1f5f9; border-color: #e2e8f0; color: #1e3c72; }
+
+/* Paso Insumos: tabla liviana dentro de la card por línea */
+.ord-ins-card-body { padding: 0; }
+.ord-ins-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.ord-ins-table thead th {
+    background: #f1f5f9; color: #1e3c72; font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .03em; padding: 8px 14px;
+    border-bottom: 1px solid #e2e8f0; text-align: left;
+}
+.ord-ins-table tbody td { padding: 10px 14px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
+.ord-ins-table tbody tr:last-child td { border-bottom: 0; }
+.ord-ins-c-num { width: 44px; text-align: center; color: #94a3b8; }
+.ord-ins-empty { text-align: center; padding: 18px 14px; color: #94a3b8; }
+.ord-ins-empty i { display: block; font-size: 1.6rem; opacity: .5; margin-bottom: 4px; }
+.ord-ins-empty span { font-size: 12px; }
+[data-bs-theme="dark"] .ord-ins-table thead th { background: #172033; color: #93c5fd; border-bottom-color: #334155; }
+[data-bs-theme="dark"] .ord-ins-table tbody td { border-bottom-color: #1f2a3d; color: #e2e8f0; }
+[data-bs-theme="dark"] .ord-ins-empty { color: #64748b; }
+
+/* ============================================================
+   INSUMOS — MODAL "Tipos de Insumo" (#tiposInsumoModal)
+   ============================================================ */
+.ti-hint {
+    display: flex; align-items: flex-start; gap: 8px;
+    background: #eff6ff; border: 1px solid #dbe7fb; border-radius: 10px;
+    padding: 10px 12px; font-size: 12.5px; color: #475569;
+}
+.ti-hint i { color: #2a5298; font-size: 16px; flex: 0 0 auto; margin-top: 1px; }
+
+/* Toggle segmentado Activos / Inhabilitados */
+.ti-segment { display: inline-flex; background: #eef2f7; border-radius: 10px; padding: 3px; gap: 3px; }
+.ti-seg-btn {
+    border: 0; background: transparent; color: #64748b; font-weight: 600; font-size: 13px;
+    padding: 6px 16px; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 5px;
+    transition: background .15s ease, color .15s ease, box-shadow .15s ease;
+}
+.ti-seg-btn:hover { color: #1e3c72; }
+.ti-seg-btn.active { background: #fff; color: #1e3c72; box-shadow: 0 1px 3px rgba(16,24,40,.12); }
+
+/* Zona de tabla: ALTURA FIJA → el modal no cambia de tamaño entre tabs/registros */
+.ti-table-wrap {
+    height: 340px; overflow-y: auto;
+    border: 1px solid #e3e8f0; border-radius: 12px;
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.4);
+}
+.ti-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 13px; }
+.ti-table thead th {
+    background: linear-gradient(180deg, #eef2f9, #e7edf6); color: #1e3c72;
+    font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em;
+    padding: 11px 16px; text-align: left;
+    border-bottom: 2px solid #d7e0ee; position: sticky; top: 0; z-index: 1;
+}
+.ti-table tbody td { padding: 11px 16px; border-bottom: 1px solid #eef1f6; vertical-align: middle; }
+.ti-table tbody tr:nth-child(even) td { background: #f9fbfe; }
+.ti-table tbody tr:hover td { background: #eef4ff; }
+.ti-table tbody tr:last-child td { border-bottom: 0; }
+.ti-name { display: inline-flex; align-items: center; gap: 9px; font-weight: 600; color: #0f172a; font-size: 13.5px; }
+.ti-name i {
+    color: #2a5298; font-size: 15px; width: 28px; height: 28px; flex: 0 0 28px;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: rgba(42,82,152,.10); border-radius: 8px;
+}
+.ti-empty { text-align: center; padding: 40px 14px; color: #94a3b8; }
+.ti-empty i { display: block; font-size: 2rem; opacity: .5; margin-bottom: 6px; }
+.ti-empty span { font-size: 12.5px; }
+
+/* Dark mode */
+[data-bs-theme="dark"] .ti-hint { background: #172033; border-color: #334155; color: #cbd5e1; }
+[data-bs-theme="dark"] .ti-hint i { color: #93c5fd; }
+[data-bs-theme="dark"] .ti-segment { background: #0f172a; }
+[data-bs-theme="dark"] .ti-seg-btn { color: #94a3b8; }
+[data-bs-theme="dark"] .ti-seg-btn.active { background: #1e293b; color: #cbd5e1; }
+[data-bs-theme="dark"] .ti-table-wrap { border-color: #334155; box-shadow: none; }
+[data-bs-theme="dark"] .ti-table thead th { background: linear-gradient(180deg, #1c2840, #172033); color: #93c5fd; border-bottom-color: #334155; }
+[data-bs-theme="dark"] .ti-table tbody td { border-bottom-color: #1f2a3d; color: #e2e8f0; }
+[data-bs-theme="dark"] .ti-table tbody tr:nth-child(even) td { background: #1b2435; }
+[data-bs-theme="dark"] .ti-table tbody tr:hover td { background: #1e293b; }
+[data-bs-theme="dark"] .ti-name { color: #e2e8f0; }
+[data-bs-theme="dark"] .ti-name i { color: #93c5fd; background: rgba(147,197,253,.14); }
+
+/* ============================================================
+   PRODUCTOS — MODAL VER (Detalle del Tipo) #viewTipoModal
+   ============================================================ */
+.vt-hero { display: flex; gap: 18px; align-items: flex-start; flex-wrap: wrap; }
+.vt-hero-media { flex: 0 0 180px; width: 180px; }
+.vt-img {
+    width: 180px; height: 180px; object-fit: cover; border-radius: 14px;
+    border: 1px solid #e6eaf2; box-shadow: 0 6px 18px rgba(30,60,114,.10); background: #fff;
+}
+.vt-img-empty {
+    width: 180px; height: 180px; border-radius: 14px; border: 1px dashed #cbd5e1;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    color: #94a3b8; gap: 4px; background: #f8fafc;
+}
+.vt-img-empty i { font-size: 2rem; opacity: .5; }
+.vt-img-empty span { font-size: 12px; }
+.vt-hero-info { flex: 1 1 320px; min-width: 0; }
+.vt-title-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 4px; }
+.vt-name { margin: 0; font-weight: 700; color: #1e3c72; font-size: 1.5rem; line-height: 1.1; }
+.vt-prefijo {
+    font-family: monospace; font-weight: 700; font-size: .8rem; letter-spacing: .03em;
+    background: rgba(30,60,114,.10); color: #1e3c72; padding: .15rem .5rem; border-radius: 6px;
+}
+.vt-desc { color: #64748b; font-size: 13px; margin-bottom: 14px; }
+.vt-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.vt-stat {
+    display: flex; align-items: center; gap: 10px;
+    background: #f8fafc; border: 1px solid #eef1f6; border-radius: 10px; padding: 10px 12px;
+}
+.vt-stat-ic {
+    width: 34px; height: 34px; flex: 0 0 34px; border-radius: 9px;
+    display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(135deg, #1e3c72, #2a5298); color: #fff; font-size: 16px;
+}
+.vt-stat-label { display: block; font-size: 11px; color: #64748b; line-height: 1.1; }
+.vt-stat-val { display: block; font-weight: 700; color: #0f172a; font-size: 14px; }
+.vt-section { background: #fff; border: 1px solid #eef1f6; border-radius: 12px; padding: 12px 14px; }
+.vt-section-head {
+    display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700;
+    color: #1e3c72; margin-bottom: 10px;
+}
+.vt-section-count { color: #94a3b8; font-weight: 600; }
+.vt-ins-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.vt-ins-table thead th {
+    background: #f1f5f9; color: #1e3c72; font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .03em; padding: 7px 12px; text-align: left;
+    border-bottom: 1px solid #e2e8f0;
+}
+.vt-ins-table tbody td { padding: 9px 12px; border-bottom: 1px solid #f1f5f9; }
+.vt-ins-table tbody tr:last-child td { border-bottom: 0; }
+/* Chips de telas / atributos — contraste legible (no se pierden) */
+.vt-chip {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 12px; font-weight: 600; line-height: 1;
+    padding: .38rem .6rem; border-radius: 999px; border: 1px solid transparent;
+}
+.vt-chip i { font-size: 13px; opacity: .85; }
+.vt-chip--tela { background: #eef2ff; color: #3730a3; border-color: #c7d2fe; }
+.vt-chip--attr { background: #f0fdfa; color: #0f766e; border-color: #5eead4; }
+[data-bs-theme="dark"] .vt-img { background: #0f172a; border-color: #334155; }
+[data-bs-theme="dark"] .vt-img-empty { background: #0f172a; border-color: #334155; color: #64748b; }
+[data-bs-theme="dark"] .vt-name { color: #cbd5e1; }
+[data-bs-theme="dark"] .vt-prefijo { background: rgba(147,197,253,.12); color: #93c5fd; }
+[data-bs-theme="dark"] .vt-desc { color: #94a3b8; }
+[data-bs-theme="dark"] .vt-stat { background: #1e293b; border-color: #334155; }
+[data-bs-theme="dark"] .vt-stat-val { color: #e2e8f0; }
+[data-bs-theme="dark"] .vt-section { background: #1e293b; border-color: #334155; }
+[data-bs-theme="dark"] .vt-section-head { color: #93c5fd; }
+[data-bs-theme="dark"] .vt-ins-table thead th { background: #172033; color: #93c5fd; border-bottom-color: #334155; }
+[data-bs-theme="dark"] .vt-ins-table tbody td { border-bottom-color: #1f2a3d; color: #e2e8f0; }
+[data-bs-theme="dark"] .vt-chip--tela { background: rgba(99,102,241,.16); color: #c7d2fe; border-color: rgba(99,102,241,.4); }
+[data-bs-theme="dark"] .vt-chip--attr { background: rgba(20,184,166,.16); color: #99f6e4; border-color: rgba(45,212,191,.4); }
+@media (max-width: 575.98px) {
+    .vt-hero-media, .vt-img, .vt-img-empty { width: 100%; flex-basis: auto; }
+    .vt-img, .vt-img-empty { height: 200px; }
+    .vt-stats { grid-template-columns: 1fr; }
+}
+
+/* Dark mode */
+[data-bs-theme="dark"] .ord-apply-card { background: linear-gradient(135deg, #1e293b, #0f172a); border-color: #334155; }
+[data-bs-theme="dark"] .ord-apply-title { color: #cbd5e1; }
+[data-bs-theme="dark"] .ord-apply-sub { color: #94a3b8; }
+[data-bs-theme="dark"] .ord-section-divider-line { background: linear-gradient(90deg, transparent, #334155, transparent); }
+[data-bs-theme="dark"] .ord-section-divider-label { color: #94a3b8; }
+[data-bs-theme="dark"] .ord-section-divider-count { background: #3b82f6; }
+[data-bs-theme="dark"] .ord-asig-card { background: #1e293b; border-color: #334155; border-left-color: #3b82f6; }
+[data-bs-theme="dark"] .ord-asig-card-head { background: #172033; border-bottom-color: #334155; }
+[data-bs-theme="dark"] .ord-asig-prod-name { color: #e2e8f0; }
+[data-bs-theme="dark"] .ord-asig-qty { color: #94a3b8; }
+[data-bs-theme="dark"] .ord-asig-card .input-group-text { background: #0f172a; border-color: #334155; color: #93c5fd; }
+[data-bs-theme="dark"] .ord-asig-dur { background: #0c3a52; color: #7dd3fc; }
+[data-bs-theme="dark"] .ord-asig-dur.is-bad { background: #4c1d1a; color: #fca5a5; }
+[data-bs-theme="dark"] .ord-asig-resto.is-ok   { background: #103e2b; color: #6ee7b7; }
+[data-bs-theme="dark"] .ord-asig-resto.is-warn { background: #4a3413; color: #fcd34d; }
+
+/* ============================================================
    MÓDULO ÓRDENES DE PRODUCCIÓN — MODAL DETALLES (#viewModal)
    ============================================================ */
 
@@ -4808,6 +5751,8 @@ header#page-topbar,
 #viewModal .modal-dialog  { max-width: 900px; }
 #viewModal .modal-content,
 #viewModal .modal-body    { background: #f6f7f9; }
+/* Wizard: el wiz-wizard-body base usa 460px (cotizaciones), reducir para ordenes */
+#viewModal .wiz-wizard-body { min-height: 340px; }
 
 /* Placa blanca: header, KPI zone y footer */
 .view-plate { background: #fff; border-bottom: 1px solid #e9ecef; }
@@ -5348,7 +6293,7 @@ header#page-topbar,
 [data-bs-theme="dark"] .form-control:focus,
 [data-bs-theme="dark"] .form-select:focus {
     background-color: #242832 !important;
-    border-color: #60a5fa !important;
+    border-color: #4e7ac7 !important;   /* navy de AtlanticoSelect (.afs-toggle dark) */
     color: #ffffff !important;
 }
 
@@ -5535,6 +6480,286 @@ header#page-topbar,
 
 .navy-filter-select:hover {
     border-color: rgba(30, 60, 114, 0.4) !important;
+}
+
+/* ── Filtro select realzado: dropdown con máx ~4 ítems + scroll ───────
+   El <select.navy-filter-select> nativo no permite limitar la altura de su
+   lista, así que se oculta (.afs-native) y se reemplaza por un dropdown
+   Bootstrap cuyo menú (.afs-menu) limita la altura a ~4 opciones con scroll.
+   El componente lo construye el IIFE global en admin/layouts/app.blade.php;
+   el select sigue en el DOM como fuente de verdad para el JS de filtros. */
+.afs-wrap { position: relative; width: 100%; }
+/* Oculto pero presente (sr-only): el <select> nativo sigue siendo la fuente de
+   verdad y conserva validación nativa (required) y envío de formularios. */
+.afs-native {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    padding: 0 !important;
+    margin: -1px !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+    white-space: nowrap !important;
+    border: 0 !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+}
+.afs-toggle {
+    width: 100% !important;
+    text-align: left !important;
+    font-size: 0.82rem !important;
+    padding: 0.35rem 2rem 0.35rem 0.6rem !important;
+    height: auto !important;
+    border-color: rgba(30, 60, 114, 0.25) !important;
+    color: #2c3e50 !important;
+    background-color: #ffffff !important;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease !important;
+}
+.afs-toggle:hover { border-color: rgba(30, 60, 114, 0.4) !important; }
+.afs-toggle:focus {
+    border-color: #1e3c72 !important;
+    box-shadow: 0 0 0 0.2rem rgba(30, 60, 114, 0.15) !important;
+}
+.afs-toggle .afs-label {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.afs-menu {
+    max-height: 8.75rem;          /* ≈ 4 ítems visibles; el resto con scroll */
+    overflow-y: auto;
+    min-width: 100%;
+    padding: 0.25rem;
+    font-size: 0.82rem;
+}
+.afs-menu .dropdown-item {
+    font-size: 0.82rem;
+    padding: 0.4rem 0.6rem;
+    border-radius: 0.35rem;
+    white-space: normal;
+    cursor: pointer;
+}
+.afs-menu .dropdown-item.active,
+.afs-menu .dropdown-item:active {
+    background-color: #1e3c72;
+    color: #ffffff;
+}
+
+[data-bs-theme="dark"] .afs-toggle {
+    background-color: #1f2229 !important;
+    border-color: rgba(78, 122, 199, 0.3) !important;
+    color: #c8cbd0 !important;
+}
+[data-bs-theme="dark"] .afs-toggle:focus {
+    border-color: #4e7ac7 !important;
+    box-shadow: 0 0 0 0.2rem rgba(78, 122, 199, 0.2) !important;
+}
+
+/* ── AtlanticoSelect dentro de input-group ───────────────────────────
+   Antes los <select> en .input-group se excluían del realce; ahora SÍ se
+   realzan (prefijos de documento/teléfono, departamento/cargo con botón "+").
+   El .afs-wrap debe portarse como flex item de Bootstrap y rematar la
+   continuidad de bordes con sus vecinos (input, botón, lupa). El ancho fijo
+   de los prefijos lo hereda el wrap vía JS (max-width/min-width del nativo). */
+.input-group > .afs-wrap--ig {
+    flex: 1 1 auto;
+    width: 1%;
+    min-width: 0;
+    display: flex;            /* el toggle (único hijo en flujo) estira a la altura de la celda */
+    flex-direction: column;
+}
+/* En input-group el toggle se pega a un .form-control de tamaño normal (1rem);
+   iguala su altura/tipografía para que los bordes alineen (los filtros sueltos
+   conservan su 0.82rem compacto). */
+.input-group > .afs-wrap--ig .afs-toggle {
+    font-size: 1rem !important;
+    padding: 0.375rem 1.75rem 0.375rem 0.75rem !important;
+    height: 100% !important;   /* estira a la altura de la celda del input-group (lupa/input vecinos) */
+}
+.input-group > .afs-wrap--ig:not(:first-child) .afs-toggle {
+    border-top-left-radius: 0 !important;
+    border-bottom-left-radius: 0 !important;
+}
+.input-group > .afs-wrap--ig:not(:last-child) .afs-toggle {
+    border-top-right-radius: 0 !important;
+    border-bottom-right-radius: 0 !important;
+}
+/* Solapa el borde con el vecino izquierdo, como hacen .form-control/.form-select
+   nativos en un input-group (evita el doble borde de 2px). */
+.input-group > .afs-wrap--ig:not(:first-child) { margin-left: -1px; }
+
+/* ── AtlanticoMultiSelect: multi-selección compacta (chips + checkboxes) ──
+   Reemplaza a Select2 multiple dentro de modales (atributos → tipos de
+   producto). In-house: sin CDN ni bugs de posicionamiento/altura en
+   .atlantico-modal. El <select multiple> nativo queda oculto (.afs-native)
+   como fuente de verdad; este control refleja y edita su selección. */
+.ams-wrap { position: relative; width: 100%; }
+/* .ams-control reutiliza .form-select (borde, radio, caret) pero crece en alto
+   para acomodar los chips en varias líneas en vez de una caja rígida. */
+.ams-control {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.3rem;
+    height: auto !important;
+    min-height: calc(1.5em + 0.75rem + 2px);
+    padding: 0.3rem 2.25rem 0.3rem 0.6rem !important;
+    border-color: rgba(30, 60, 114, 0.25) !important;
+    color: #2c3e50 !important;
+    background-color: #ffffff !important;
+    cursor: pointer;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease !important;
+}
+.ams-control:hover { border-color: rgba(30, 60, 114, 0.4) !important; }
+.ams-control:focus,
+.ams-control.show {
+    border-color: #1e3c72 !important;
+    box-shadow: 0 0 0 0.2rem rgba(30, 60, 114, 0.15) !important;
+}
+.ams-placeholder { color: #98a2b3; font-size: 0.9rem; }
+.ams-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    max-width: 100%;
+    background-color: rgba(30, 60, 114, 0.08);
+    color: #1e3c72;
+    border: 1px solid rgba(30, 60, 114, 0.18);
+    border-radius: 1rem;
+    padding: 0.08rem 0.25rem 0.08rem 0.6rem;
+    font-size: 0.78rem;
+    line-height: 1.5;
+}
+.ams-chip-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ams-chip-remove {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.05rem;
+    height: 1.05rem;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: #1e3c72;
+    font-size: 0.95rem;
+    line-height: 1;
+    padding: 0;
+    cursor: pointer;
+    opacity: 0.65;
+    transition: opacity 0.15s ease, background-color 0.15s ease;
+}
+.ams-chip-remove:hover { opacity: 1; background-color: rgba(30, 60, 114, 0.15); }
+.ams-menu {
+    max-height: 12rem;
+    overflow-y: auto;
+    min-width: 100%;
+    padding: 0.25rem;
+    font-size: 0.85rem;
+}
+.ams-option {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    margin: 0;
+    padding: 0.4rem 0.55rem;
+    border-radius: 0.35rem;
+    white-space: normal;
+    cursor: pointer;
+}
+.ams-option:hover { background-color: rgba(30, 60, 114, 0.07); }
+.ams-option input { pointer-events: none; flex: 0 0 auto; }
+.ams-empty { padding: 0.5rem 0.6rem; color: #98a2b3; font-size: 0.82rem; list-style: none; }
+
+[data-bs-theme="dark"] .ams-control {
+    background-color: #1f2229 !important;
+    border-color: rgba(78, 122, 199, 0.3) !important;
+    color: #c8cbd0 !important;
+}
+[data-bs-theme="dark"] .ams-control:focus,
+[data-bs-theme="dark"] .ams-control.show {
+    border-color: #4e7ac7 !important;
+    box-shadow: 0 0 0 0.2rem rgba(78, 122, 199, 0.2) !important;
+}
+[data-bs-theme="dark"] .ams-placeholder { color: #7a828e; }
+[data-bs-theme="dark"] .ams-chip {
+    background-color: rgba(78, 122, 199, 0.18);
+    color: #c8d4ea;
+    border-color: rgba(78, 122, 199, 0.35);
+}
+[data-bs-theme="dark"] .ams-chip-remove { color: #c8d4ea; }
+[data-bs-theme="dark"] .ams-chip-remove:hover { background-color: rgba(78, 122, 199, 0.3); }
+[data-bs-theme="dark"] .ams-option:hover { background-color: rgba(78, 122, 199, 0.15); }
+
+/* ── Select2 alineado a AtlanticoSelect ──────────────────────────────
+   Los selects buscables/múltiples (producto, insumo, tipos) usan Select2
+   y NO los toca el realce .afs-*. Para que el sistema luzca consistente,
+   el tema bootstrap-5 de Select2 se reviste con el mismo borde navy, foco,
+   altura, tipografía y opción activa navy que .afs-toggle / .afs-menu.
+   No se altera su funcionalidad (búsqueda y multiple siguen igual). */
+.select2-container--bootstrap-5 .select2-selection {
+    border-color: rgba(30, 60, 114, 0.25) !important;
+    color: #2c3e50 !important;
+    background-color: #ffffff !important;
+    font-size: 0.82rem !important;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease !important;
+}
+.select2-container--bootstrap-5 .select2-selection:hover {
+    border-color: rgba(30, 60, 114, 0.4) !important;
+}
+.select2-container--bootstrap-5.select2-container--focus .select2-selection,
+.select2-container--bootstrap-5.select2-container--open .select2-selection {
+    border-color: #1e3c72 !important;
+    box-shadow: 0 0 0 0.2rem rgba(30, 60, 114, 0.15) !important;
+}
+/* Dropdown + opciones: igual borde/tipografía y opción activa/hover navy */
+.select2-container--bootstrap-5 .select2-dropdown {
+    border-color: #1e3c72 !important;
+}
+.select2-container--bootstrap-5 .select2-results__option {
+    font-size: 0.82rem !important;
+    border-radius: 0.35rem !important;
+    padding: 0.4rem 0.6rem !important;
+}
+.select2-container--bootstrap-5 .select2-results__option--highlighted[aria-selected],
+.select2-container--bootstrap-5 .select2-results__option--selected,
+.select2-container--bootstrap-5 .select2-results__option[aria-selected="true"] {
+    background-color: #1e3c72 !important;
+    color: #ffffff !important;
+}
+/* Chips de selección múltiple (p.ej. tipos de producto en atributos) */
+.select2-container--bootstrap-5 .select2-selection--multiple .select2-selection__choice {
+    background-color: rgba(30, 60, 114, 0.1) !important;
+    border-color: rgba(30, 60, 114, 0.25) !important;
+    color: #1e3c72 !important;
+}
+.select2-container--bootstrap-5 .select2-search--inline .select2-search__field {
+    font-size: 0.82rem !important;
+}
+
+/* Dark mode: mismo tratamiento que .afs-toggle en oscuro */
+[data-bs-theme="dark"] .select2-container--bootstrap-5 .select2-selection {
+    background-color: #1f2229 !important;
+    border-color: rgba(78, 122, 199, 0.3) !important;
+    color: #c8cbd0 !important;
+}
+[data-bs-theme="dark"] .select2-container--bootstrap-5.select2-container--focus .select2-selection,
+[data-bs-theme="dark"] .select2-container--bootstrap-5.select2-container--open .select2-selection {
+    border-color: #4e7ac7 !important;
+    box-shadow: 0 0 0 0.2rem rgba(78, 122, 199, 0.2) !important;
+}
+[data-bs-theme="dark"] .select2-container--bootstrap-5 .select2-dropdown {
+    background-color: #1f2229 !important;
+    border-color: #4e7ac7 !important;
+}
+[data-bs-theme="dark"] .select2-container--bootstrap-5 .select2-results__option {
+    color: #c8cbd0 !important;
+}
+[data-bs-theme="dark"] .select2-container--bootstrap-5 .select2-results__option--highlighted[aria-selected],
+[data-bs-theme="dark"] .select2-container--bootstrap-5 .select2-results__option--selected,
+[data-bs-theme="dark"] .select2-container--bootstrap-5 .select2-results__option[aria-selected="true"] {
+    background-color: #4e7ac7 !important;
+    color: #ffffff !important;
 }
 
 /* ── Input de filtro (texto) ─────────────────────────────────── */
@@ -6777,20 +8002,34 @@ header#page-topbar,
 /* ════════════════════════════════════════════════════════════════════
    PEDIDO WIZARD — Banner "Datos heredados de cotización" (amber)
    ════════════════════════════════════════════════════════════════════ */
+/* Chip compacto "heredado de cotización" — vive en el gutter derecho
+   del encabezado del paso, no roba alto vertical. */
 .ped-banner-heredado {
-    display: flex;
+    display: inline-flex;
     align-items: center;
-    gap: 10px;
-    padding: 10px 16px;
+    gap: 6px;
+    padding: 5px 12px;
     background: rgba(245,158,11,0.10);
     border: 1px solid rgba(245,158,11,0.35);
-    border-radius: 8px;
+    border-radius: 999px;
     color: #92400e;
-    font-size: 0.8rem;
+    font-size: 0.74rem;
     font-weight: 600;
-    margin-bottom: 14px;
+    line-height: 1.2;
+    white-space: nowrap;
 }
-.ped-banner-heredado i { font-size: 1rem; color: #f59e0b; flex-shrink: 0; }
+.ped-banner-heredado i { font-size: 0.95rem; color: #f59e0b; flex-shrink: 0; }
+
+/* Encabezado de paso con chip lateral a la derecha */
+.wiz-step-header--with-aside {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+.wiz-step-header--with-aside .wiz-step-header-main { flex: 1 1 auto; min-width: 0; }
+.wiz-step-header--with-aside .ped-banner-heredado { flex: 0 0 auto; margin-top: 2px; }
 
 [data-bs-theme="dark"] .ped-banner-heredado {
     background: rgba(245,158,11,0.12);
@@ -6828,4 +8067,444 @@ header#page-topbar,
     color: #1e3c72 !important;
 }
 
+/* ════════════════════════════════════════════════════════════════════
+   COMPRAS — Wizard "Nueva Compra" (paso 3: ticket de totales)
+   Reutiliza el shell .wiz-* y la tabla .cot-grouped-table.
+   Solo añade el ticket de resumen y el acento emerald del total.
+   ════════════════════════════════════════════════════════════════════ */
+.c-ticket {
+    background: linear-gradient(180deg, rgba(16, 185, 129, 0.06) 0%, rgba(16, 185, 129, 0.02) 100%);
+    border: 1px solid rgba(16, 185, 129, 0.18);
+    border-radius: 12px;
+    padding: 18px 20px;
+}
+
+/* ── Filas del desglose (subtotal / exenta / IVA) ── */
+.c-ticket-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    font-size: 0.92rem;
+}
+.c-ticket-row + .c-ticket-row {
+    border-top: 1px dashed rgba(16, 185, 129, 0.14);
+}
+.c-ticket-label { color: #6b7280; }
+.c-ticket-val   { font-weight: 600; color: #374151; }
+
+/* ── Total a pagar (protagonista) ── */
+.c-ticket-total {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 10px;
+    margin-top: 12px;
+    padding-top: 14px;
+    border-top: 2px solid rgba(16, 185, 129, 0.28);
+}
+.c-ticket-total-label { font-weight: 700; font-size: 0.95rem; color: #1f2937; }
+.c-ticket-total-val {
+    font-weight: 800;
+    font-size: 1.6rem;
+    line-height: 1.1;
+    color: #059669;
+    white-space: nowrap;
+}
+
+/* ── Bloque de conversión (secundario, agrupado y atenuado) ── */
+.c-ticket-conv {
+    margin-top: 14px;
+    padding: 10px 14px;
+    background: rgba(15, 23, 42, 0.035);
+    border-radius: 8px;
+}
+.c-ticket-conv-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.8rem;
+    color: #6b7280;
+}
+.c-ticket-conv-row + .c-ticket-conv-row { margin-top: 5px; }
+.c-ticket-conv-row .c-conv-usd { font-weight: 700; color: #374151; }
+
+.c-ticket-note {
+    font-size: 0.72rem;
+    color: #9ca3af;
+    line-height: 1.55;
+    margin: 12px 0 0;
+}
+
+[data-bs-theme="dark"] .c-ticket-val,
+[data-bs-theme="dark"] .c-ticket-total-label { color: #e5e7eb; }
+[data-bs-theme="dark"] .c-ticket-conv { background: rgba(255, 255, 255, 0.05); }
+[data-bs-theme="dark"] .c-ticket-conv-row .c-conv-usd { color: #e5e7eb; }
+
+/* ── Encaje en viewport: header + stepper + footer fijos, body scrollable ──
+   Sin esto, el paso 3 (el más alto) desbordaba la pantalla y dejaba el
+   botón "Registrar Compra" fuera de vista. Scoped al modal de compras
+   para no alterar el scroll de los wizards de cotizaciones/pedidos. */
+#createCompraModal .modal-content {
+    max-height: calc(100vh - 3.5rem);
+    display: flex;
+    flex-direction: column;
+}
+#createCompraModal #compraForm {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+}
+#createCompraModal .wiz-wizard-body {
+    flex: 1 1 auto;
+    min-height: 0;          /* permite que el body encoja y haga scroll */
+    overflow-y: auto;
+}
+#createCompraModal .wiz-stepper-wrapper,
+#createCompraModal .modal-header,
+#createCompraModal .wiz-wizard-footer {
+    flex: 0 0 auto;         /* header, stepper y footer no se encogen */
+}
+.text-atlantico-emerald { color: #059669 !important; }
+
+[data-bs-theme="dark"] .c-ticket {
+    background: linear-gradient(180deg, rgba(16, 185, 129, 0.12) 0%, rgba(16, 185, 129, 0.04) 100%);
+    border-color: rgba(16, 185, 129, 0.28);
+}
+[data-bs-theme="dark"] .text-atlantico-emerald { color: #34d399 !important; }
+
+/* ── Control segmentado (toggle de pocas opciones) — agnóstico de dominio ──
+   Alternativa moderna a un <select> de 2-3 opciones (p. ej. Tipo de Pago).
+   El <select> real queda oculto (.d-none) como fuente de verdad del form. */
+.seg-control {
+    display: inline-flex;
+    gap: 4px;
+    width: 100%;
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 4px;
+}
+.seg-option {
+    flex: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 7px 12px;
+    border: 0;
+    background: transparent;
+    border-radius: 7px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #64748b;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s, box-shadow 0.15s;
+}
+.seg-option i { font-size: 1.05rem; }
+.seg-option:hover { color: #0f766e; }
+.seg-option.is-active {
+    background: #ffffff;
+    color: #047857;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.12);
+}
+
+[data-bs-theme="dark"] .seg-control {
+    background: #1a2233;
+    border-color: #2a3447;
+}
+[data-bs-theme="dark"] .seg-option { color: #94a3b8; }
+[data-bs-theme="dark"] .seg-option:hover { color: #34d399; }
+[data-bs-theme="dark"] .seg-option.is-active {
+    background: #0f1521;
+    color: #34d399;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+/* Hint contextual bajo un campo (icono info + texto) */
+.c-field-hint {
+    display: block;
+    margin-top: 5px;
+    font-size: 0.72rem;
+    color: #94a3b8;
+}
+[data-bs-theme="dark"] .c-field-hint { color: #64748b; }
+
+/* Hero de la página de detalle de compra (show) */
+.c-show-hero-icon {
+    width: 54px;
+    height: 54px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #10b981 0%, #0891b2 100%);
+    color: #fff;
+    font-size: 1.6rem;
+    flex-shrink: 0;
+    box-shadow: 0 6px 16px -6px rgba(8, 145, 178, 0.5);
+}
+.c-show-hero-total {
+    font-size: 1.7rem;
+    font-weight: 800;
+    line-height: 1;
+}
+
+/* Unidad de medida embebida en el input de cantidad (input-group append) */
+.c-unit-addon {
+    min-width: 38px;
+    justify-content: center;
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #64748b;
+}
+[data-bs-theme="dark"] .c-unit-addon { color: #94a3b8; }
+
 /* .btn-tbl-action eliminado: Órdenes migró al patrón estándar btn-soft (2026-05-31). */
+
+/* Utilidad de ancho mínimo 0 — evita desbordamiento de texto en flex items */
+.min-w-0 { min-width: 0; }
+
+/* ═══════════════════════════════════════════════════════════════
+   MÓDULO ÓRDENES — Checkboxes de empleados (paso 2 wizard)
+   ═══════════════════════════════════════════════════════════════ */
+
+.ord-asig-emp-checks {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 6px 0 2px;
+}
+
+.ord-emp-check-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px 4px 8px;
+    border: 1.5px solid #dee2e6;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 500;
+    color: #495057;
+    background: #fff;
+    transition: border-color .15s, background .15s, color .15s;
+    user-select: none;
+    line-height: 1.3;
+}
+.ord-emp-check-item:hover {
+    border-color: #0d6efd;
+    background: #f0f5ff;
+    color: #0d6efd;
+}
+.ord-emp-check-item input[type="checkbox"] {
+    width: 13px;
+    height: 13px;
+    margin: 0;
+    accent-color: #0d6efd;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+.ord-emp-check-item:has(input:checked) {
+    border-color: #0d6efd;
+    background: #e7f0ff;
+    color: #0d6efd;
+    font-weight: 600;
+}
+[data-bs-theme="dark"] .ord-emp-check-item {
+    border-color: #3d4a5c;
+    background: #1e2837;
+    color: #cbd5e1;
+}
+[data-bs-theme="dark"] .ord-emp-check-item:hover {
+    border-color: #74a8fc;
+    background: #1e3058;
+    color: #74a8fc;
+}
+[data-bs-theme="dark"] .ord-emp-check-item:has(input:checked) {
+    border-color: #74a8fc;
+    background: #1e3058;
+    color: #74a8fc;
+}
+
+/* Mensaje de error cuando no se selecciona ningún empleado */
+.ord-asig-emp-checks.is-invalid-group {
+    padding: 5px 8px;
+    border: 1.5px solid #dc3545;
+    border-radius: 8px;
+}
+.ord-asig-emp-checks.is-invalid-group + .ord-emp-feedback {
+    display: block;
+}
+.ord-emp-feedback {
+    display: none;
+    font-size: 0.75rem;
+    color: #dc3545;
+    margin-top: 3px;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   MÓDULO ÓRDENES — Tablero Kanban (viewModal paso 4)
+   ═══════════════════════════════════════════════════════════════ */
+
+.kanban-board {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    padding-bottom: 6px;
+    align-items: flex-start;
+}
+
+.kanban-col {
+    flex: 1 1 0;
+    min-width: 148px;
+    background: #f0f4f8;
+    border-radius: 10px;
+    padding: 10px 8px 6px;
+    display: flex;
+    flex-direction: column;
+}
+[data-bs-theme="dark"] .kanban-col { background: #1e2837; }
+
+.kanban-col-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    padding: 0 2px;
+}
+
+.kanban-col-title {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+}
+
+.kanban-col-count {
+    font-size: 11px;
+    font-weight: 700;
+    min-width: 20px;
+    text-align: center;
+    border-radius: 20px;
+    padding: 1px 7px;
+}
+
+.kanban-col-body {
+    flex: 1;
+    min-height: 72px;
+}
+
+/* colores de encabezado por estado */
+.kanban-col--pendiente  .kanban-col-title  { color: #9a6700; }
+.kanban-col--pendiente  .kanban-col-count  { background: #fff4e0; color: #9a6700; }
+.kanban-col--en-proceso .kanban-col-title  { color: #0d6efd; }
+.kanban-col--en-proceso .kanban-col-count  { background: #e7f0ff; color: #0d6efd; }
+.kanban-col--finalizado .kanban-col-title  { color: #1a7f5a; }
+.kanban-col--finalizado .kanban-col-count  { background: #e7f7ef; color: #1a7f5a; }
+.kanban-col--cancelado  .kanban-col-title  { color: #b42318; }
+.kanban-col--cancelado  .kanban-col-count  { background: #fdecea; color: #b42318; }
+
+/* Tickets */
+.kanban-ticket {
+    background: #fff;
+    border-radius: 8px;
+    padding: 9px 10px;
+    margin-bottom: 7px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.07);
+    cursor: grab;
+    border-left: 3px solid transparent;
+    user-select: none;
+}
+[data-bs-theme="dark"] .kanban-ticket { background: #243043; }
+.kanban-ticket:active { cursor: grabbing; }
+
+.kanban-ticket--pendiente  { border-left-color: #9a6700; }
+.kanban-ticket--en-proceso { border-left-color: #0d6efd; }
+.kanban-ticket--finalizado { border-left-color: #1a7f5a; }
+.kanban-ticket--cancelado  { border-left-color: #b42318; }
+
+.kanban-ticket-nombre {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--vz-heading-color, #1c2430);
+    margin-bottom: 5px;
+    line-height: 1.3;
+}
+[data-bs-theme="dark"] .kanban-ticket-nombre { color: #e2e8f0; }
+
+.kanban-ticket-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    align-items: center;
+}
+
+.kanban-ticket-cant {
+    font-size: 11px;
+    color: #6c757d;
+    background: #f0f4f8;
+    border-radius: 4px;
+    padding: 1px 6px;
+}
+[data-bs-theme="dark"] .kanban-ticket-cant { background: #1e2837; }
+
+.kanban-ticket-emp {
+    font-size: 10px;
+    background: #e7f0ff;
+    color: #0d6efd;
+    border-radius: 20px;
+    padding: 1px 7px;
+    font-weight: 600;
+}
+[data-bs-theme="dark"] .kanban-ticket-emp { background: #1e3058; color: #74a8fc; }
+
+/* Estados de arrastre */
+.kanban-ghost {
+    opacity: .35 !important;
+    background: #dde3ed !important;
+    border-radius: 8px;
+}
+.kanban-drag {
+    box-shadow: 0 6px 18px rgba(0,0,0,.18) !important;
+    transform: rotate(1.5deg);
+}
+
+/* Zona de soltar vacía — resalta al arrastrar sobre una columna */
+.kanban-col-body.sortable-over {
+    background: rgba(13,110,253,.07);
+    border-radius: 6px;
+    transition: background .15s;
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   Equivalente en Bs junto a montos en $ (tasa BCV del día)
+   Requisito: todo total en $ muestra su equivalente en Bs, y la tasa
+   BCV del día queda visible (píldoras [data-bcv-pill] en headers).
+   ════════════════════════════════════════════════════════════════════ */
+.money-bs-eq {
+    display: block;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: #64748b;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.2;
+    margin-top: 2px;
+}
+.money-bs-eq:empty { display: none; }
+/* Contextos sobre fondo navy/gradiente: texto claro */
+.cot-kpi--total .money-bs-eq,
+.vs-result-price .money-bs-eq { color: rgba(255, 255, 255, 0.75); }
+[data-bs-theme="dark"] .money-bs-eq { color: #94a3b8; }
+/* Fila secundaria "Equivalente Bs" bajo el Estimado del carrito */
+.cat-cart-total-row--bs { margin-top: -6px; }
+.cat-cart-total-row--bs .cat-cart-total-label {
+    font-size: 0.62rem;
+    text-transform: none;
+    letter-spacing: 0.04em;
+}
+.cat-cart-total-row--bs .cat-cart-total-value { font-size: 0.85rem; opacity: 0.85; }

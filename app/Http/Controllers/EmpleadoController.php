@@ -53,8 +53,9 @@ class EmpleadoController extends Controller
             $query->where('cargo_id', $request->input('filter_cargo'));
         }
 
-        // Filtro: Estatus (1 = activo/default, 0 = inhabilitado/trashed) — estándar Clientes/Proveedores
-        if ($request->filled('filter_estatus') && $request->input('filter_estatus') === '0') {
+        // Activos vs Historial: lo define la página (no un filtro). La principal
+        // muestra solo activos; el historial (?historial=true) solo inhabilitados.
+        if ($request->boolean('historial')) {
             $query->onlyTrashed();
         }
 
@@ -82,6 +83,26 @@ class EmpleadoController extends Controller
         }
 
         return DataTables::of($query)
+            // Búsqueda estricta: identidad del empleado (nombre/apellido, documento
+            // y email de la persona) más su cargo y departamento. Sobrescribe el
+            // buscador global para filtrar exactamente por esas columnas.
+            ->filter(function ($query) use ($request) {
+                $keyword = trim((string) $request->input('search.value'));
+                if ($keyword === '') {
+                    return;
+                }
+                $query->where(function ($q) use ($keyword) {
+                    $q->whereHas('persona', function ($p) use ($keyword) {
+                        $p->where('nombre', 'like', "{$keyword}%")
+                          ->orWhere('apellido', 'like', "{$keyword}%")
+                          ->orWhere('email', 'like', "{$keyword}%")
+                          ->orWhereRaw("CONCAT(nombre, ' ', apellido) like ?", ["{$keyword}%"])
+                          ->orWhereRaw("CONCAT(tipo_documento, documento_identidad) like ?", ["{$keyword}%"]);
+                    })
+                    ->orWhereHas('cargo', fn($c) => $c->where('nombre', 'like', "{$keyword}%"))
+                    ->orWhereHas('departamento', fn($d) => $d->where('nombre', 'like', "{$keyword}%"));
+                });
+            }, true)
             ->addColumn('nombre_completo', function ($emp) {
                 return $emp->persona ? $emp->persona->nombre_completo : 'N/A';
             })
@@ -323,6 +344,13 @@ class EmpleadoController extends Controller
         // Estatus: 1 = activos (default), 0 = inhabilitados (trashed) — estándar Clientes/Proveedores
         if ($request->input('estatus') === '0') {
             $query->onlyTrashed();
+        }
+        // Rango por fecha de ingreso
+        if ($request->filled('fecha_desde')) {
+            $query->whereDate('fecha_ingreso', '>=', $request->fecha_desde);
+        }
+        if ($request->filled('fecha_hasta')) {
+            $query->whereDate('fecha_ingreso', '<=', $request->fecha_hasta);
         }
         $empleados = $query->get();
         $pdf = \PDF::loadView('admin.empleados.reporte_pdf', compact('empleados'))

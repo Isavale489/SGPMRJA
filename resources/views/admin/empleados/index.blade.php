@@ -11,7 +11,7 @@
     <style>
         @media (min-width: 768px) {
             .navy-filter-grid {
-                grid-template-columns: repeat(4, 1fr) !important;
+                grid-template-columns: repeat(3, 1fr) !important;
             }
         }
     </style>
@@ -50,25 +50,42 @@
                             @else
                                 <a href="{{ route('empleados.index', ['historial' => true]) }}"
                                     class="btn-historial btn-historial-ver">
-                                    <i class="ri-time-line"></i> Ver Historial
+                                    <i class="ri-archive-line"></i> Inhabilitados
                                 </a>
                             @endif
                             <div class="d-flex gap-2">
-                                <a href="{{ url('departamentos') }}" class="btn btn-link-depto" title="Ir al catálogo de departamentos">
-                                    <i class="ri-building-line align-bottom me-1"></i> Departamentos
-                                </a>
-                                <a href="{{ url('cargos') }}" class="btn btn-link-cargo" title="Ir al catálogo de cargos">
-                                    <i class="ri-briefcase-line align-bottom me-1"></i> Cargos
-                                </a>
                                 @if(!$historial)
                                     <button type="button" class="btn btn-success add-btn" data-bs-toggle="modal" id="create-btn"
                                         data-bs-target="#showModal">
                                         <i class="ri-add-line align-bottom me-1"></i> Agregar Empleado
                                     </button>
                                 @endif
-                                <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#pdfExportModal">
-                                    <i class="ri-file-pdf-fill align-bottom me-1"></i> Exportar PDF
-                                </button>
+                                {{-- Acciones secundarias agrupadas — estándar .actions-menu --}}
+                                <div class="dropdown">
+                                    <button type="button" class="btn btn-soft-secondary dropdown-toggle"
+                                        data-bs-toggle="dropdown" aria-expanded="false">
+                                        <i class="ri-menu-2-line align-bottom me-1"></i> Más acciones
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end actions-menu">
+                                        <li>
+                                            <a class="dropdown-item act-item act-restore" href="{{ url('departamentos') }}">
+                                                <span class="act-ic"><i class="ri-building-line"></i></span>Departamentos
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a class="dropdown-item act-item act-warn" href="{{ url('cargos') }}">
+                                                <span class="act-ic"><i class="ri-briefcase-line"></i></span>Cargos
+                                            </a>
+                                        </li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li>
+                                            <button type="button" class="dropdown-item act-item act-pdf"
+                                                data-bs-toggle="modal" data-bs-target="#pdfExportModal">
+                                                <span class="act-ic"><i class="ri-file-pdf-fill"></i></span>Exportar PDF
+                                            </button>
+                                        </li>
+                                    </ul>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -133,17 +150,6 @@
                                             @endforeach
                                         </select>
                                     </div>
-                                    {{-- Filtro 3: Estatus --}}
-                                    <div>
-                                        <label class="navy-filter-label" for="filter-estatus">
-                                            <i class="ri-shield-check-line"></i> Estatus
-                                        </label>
-                                        <select class="form-select navy-filter-select" id="filter-estatus">
-                                            <option value="">Todos</option>
-                                            <option value="1" selected>Activo</option>
-                                            <option value="0">Inactivo</option>
-                                        </select>
-                                    </div>
                                     {{-- Filtro 4: Ordenar por --}}
                                     <div>
                                         <label class="navy-filter-label" for="filter-orden">
@@ -178,7 +184,6 @@
                                 <th>Teléfono</th>
                                 <th>Cargo</th>
                                 <th>Departamento</th>
-                                <th>Estado</th>
                                 <th>Acciones</th>
                             </tr>
                         </thead>
@@ -596,21 +601,6 @@
 
                             <input type="hidden" id="field-codigo_empleado" name="codigo_empleado" />
 
-                            {{-- Estado Laboral: solo lectura. Lo gobierna Inhabilitar/Restaurar, no es editable aquí. --}}
-                            <div class="row mb-0">
-                                <div class="col-md-6">
-                                    <label class="form-label">Estado Laboral</label>
-                                    <input type="text" class="form-control bg-light" id="field-estado-display"
-                                        value="Activo" readonly tabindex="-1">
-                                    <div class="d-flex align-items-start gap-2 mt-2 p-2 rounded-3 bg-info-subtle border border-info-subtle">
-                                        <i class="ri-information-line text-info fs-5 lh-1 mt-1"></i>
-                                        <small class="text-info-emphasis mb-0 lh-sm">
-                                            Se asigna automáticamente: un empleado nuevo o restaurado queda <strong>Activo</strong>.
-                                            Para darlo de baja usa <strong>Inhabilitar</strong> (pasa a Inactivo y al historial).
-                                        </small>
-                                    </div>
-                                </div>
-                            </div>
                         </div>
 
                     </div>
@@ -719,6 +709,16 @@
                             <option value="1">Activo</option>
                             <option value="0">Inactivo</option>
                         </select>
+                    </div>
+                    <div class="row g-2 mt-3">
+                        <div class="col-6">
+                            <label class="form-label fw-semibold" for="pdf-fecha-desde">Ingreso desde</label>
+                            <input type="date" class="form-control" id="pdf-fecha-desde">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label fw-semibold" for="pdf-fecha-hasta">Ingreso hasta</label>
+                            <input type="date" class="form-control" id="pdf-fecha-hasta">
+                        </div>
                     </div>
                 </div>
                 <div class="modal-footer bg-light border-0">
@@ -968,7 +968,7 @@
                         // ── Filtros avanzados: enviar valores al server ──
                         d.filter_departamento   = $('#filter-departamento').val();
                         d.filter_cargo          = $('#filter-cargo').val();
-                        d.filter_estatus        = $('#filter-estatus').val();
+                        d.historial             = @json($historial);
                         d.filter_orden          = $('#filter-orden').val();
                     }
                 },
@@ -1005,13 +1005,6 @@
                         }
                     },
                     {
-                        data: 'trashed', render: function (data) {
-                            return data
-                                ? '<span class="badge-status badge-status-inactivo"><i class="ri-close-circle-line"></i> Inhabilitado</span>'
-                                : '<span class="badge-status badge-status-activo"><i class="ri-checkbox-circle-line"></i> Activo</span>';
-                        }
-                    },
-                    {
                         data: null,
                         orderable: false,
                         searchable: false,
@@ -1035,7 +1028,6 @@
                 var count = 0;
                 if ($('#filter-departamento').val() !== '')                          count++;
                 if ($('#filter-cargo').val() !== '')                                 count++;
-                if ($('#filter-estatus').val() !== '1')                              count++;
                 if ($('#filter-orden').val() !== 'recientes')                        count++;
                 var $badge = $('#active-filter-count');
                 var $dot   = $('#filter-dot-indicator');
@@ -1071,18 +1063,10 @@
                 updateFilterBadge();
             });
 
-            // ── Si se llegó por toggle historial (?historial=true) → mostrar inhabilitados ──
-            @if($historial)
-                $('#filter-estatus').val('0');
-                table.ajax.reload();
-                updateFilterBadge();
-            @endif
-
             // ── Botón limpiar: resetea búsqueda + filtros + orden ──
             $('#btn-clear-filters').on('click', function () {
                 $('#filter-departamento').val('');
                 $('#filter-cargo').val('');
-                $('#filter-estatus').val('1');
                 $('#filter-orden').val('recientes');
                 $('#custom-search-input').val('');
                 updateFilterBadge();
@@ -1101,7 +1085,6 @@
                 $("#field-codigo_empleado").val("");
                 $("#tipo-documento-field").val("V-").prop('disabled', false).removeClass('campo-protegido');
                 $("#field-documento_identidad").prop('disabled', false).removeClass('campo-protegido');
-                $("#field-estado-display").val("Activo");
                 // Resetear teléfono
                 $("#telefono-prefix-field").val("0424");
                 $("#telefono-number-field").val("");
@@ -1320,7 +1303,6 @@
                     $("#field-genero").val(data.persona.genero);
                     $("#field-codigo_empleado").val(data.codigo_empleado);
                     $("#field-fecha_ingreso").val(data.fecha_ingreso);
-                    $("#field-estado-display").val(data.trashed ? 'Inhabilitado' : 'Activo');
 
                     // Departamento → cargo en cascada
                     var $deptoSel = $('#field-departamento_id');
@@ -1601,6 +1583,10 @@
             if (dep)            params.push('departamento_id=' + encodeURIComponent(dep));
             if (cargo)          params.push('cargo_id='        + encodeURIComponent(cargo));
             if (estatus !== '') params.push('estatus='         + encodeURIComponent(estatus));
+            var fdesde = $('#pdf-fecha-desde').val();
+            var fhasta = $('#pdf-fecha-hasta').val();
+            if (fdesde) params.push('fecha_desde=' + encodeURIComponent(fdesde));
+            if (fhasta) params.push('fecha_hasta=' + encodeURIComponent(fhasta));
             window.open(baseUrl + (params.length ? '?' + params.join('&') : ''), '_blank');
             bootstrap.Modal.getInstance(document.getElementById('pdfExportModal'))?.hide();
         });
@@ -1608,6 +1594,7 @@
             $('#pdf-filter-departamento').val('');
             $('#pdf-filter-cargo').val('');
             $('#pdf-filter-estatus').val('');
+            $('#pdf-fecha-desde, #pdf-fecha-hasta').val('');
         });
     </script>
 @endpush

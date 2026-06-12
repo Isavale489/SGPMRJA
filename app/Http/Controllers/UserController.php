@@ -24,11 +24,28 @@ class UserController extends Controller
             $users->where('role', $request->input('filter_role'));
         }
 
-        if ($request->filled('filter_estado')) {
-            $users->where('estado', $request->input('filter_estado'));
-        }
+        // Activos vs Historial: lo define la página (no un filtro). La principal
+        // muestra solo usuarios activos; el historial (?historial=true) solo los
+        // inhabilitados (estado=0, sin acceso al sistema).
+        $users->where('estado', $request->boolean('historial') ? 0 : 1);
+
+        $users->orderBy('created_at', 'desc'); // más reciente primero (estándar del sistema)
 
         return DataTables::of($users)
+            // Búsqueda estricta: solo por nombre, email y rol del usuario. Sobrescribe
+            // el buscador global para no romper sobre las columnas computadas (estado
+            // de recuperación) ni matchear datos no indicados en la barra.
+            ->filter(function ($query) use ($request) {
+                $keyword = trim((string) $request->input('search.value'));
+                if ($keyword === '') {
+                    return;
+                }
+                $query->where(function ($q) use ($keyword) {
+                    $q->where('name', 'like', "{$keyword}%")
+                      ->orWhere('email', 'like', "{$keyword}%")
+                      ->orWhere('role', 'like', "{$keyword}%");
+                });
+            }, true)
             ->editColumn('avatar', function ($user) {
                 return $user->avatar ? asset('storage/' . $user->avatar) : null;
             })
@@ -171,9 +188,26 @@ class UserController extends Controller
         ]);
     }
 
-    public function reportePdf()
+    public function reportePdf(Request $request)
     {
-        $users = User::all();
+        $query = User::query();
+        if ($request->filled('role')) {
+            $query->where('role', $request->role);
+        }
+        // Estatus: 1 = activos, 0 = inhabilitados; sin valor = todos.
+        if ($request->input('estatus') === '1') {
+            $query->where('estado', 1);
+        } elseif ($request->input('estatus') === '0') {
+            $query->where('estado', 0);
+        }
+        // Rango por fecha de registro (created_at)
+        if ($request->filled('fecha_desde')) {
+            $query->whereDate('created_at', '>=', $request->fecha_desde);
+        }
+        if ($request->filled('fecha_hasta')) {
+            $query->whereDate('created_at', '<=', $request->fecha_hasta);
+        }
+        $users = $query->orderBy('name')->get();
         $pdf = \PDF::loadView('admin.users.reporte_pdf', compact('users'))
             ->setPaper('a4', 'landscape');
         return $pdf->download('usuarios_' . now()->format('Y-m-d_H-i-s') . '.pdf');

@@ -11,7 +11,7 @@
     <style>
         @media (min-width: 768px) {
             .navy-filter-grid {
-                grid-template-columns: repeat(4, 1fr) !important;
+                grid-template-columns: repeat(3, 1fr) !important;
             }
         }
     </style>
@@ -49,7 +49,7 @@
                                 </a>
                             @else
                                 <a href="{{ route('clientes.index', ['historial' => true]) }}" class="btn-historial btn-historial-ver">
-                                    <i class="ri-time-line"></i> Ver Historial
+                                    <i class="ri-archive-line"></i> Inhabilitados
                                 </a>
                             @endif
                             @if(!$historial)
@@ -120,17 +120,6 @@
                                             <option value="natural">Natural</option>
                                             <option value="juridico">Jurídico</option>
                                             <option value="gubernamental">Gubernamental</option>
-                                        </select>
-                                    </div>
-                                    {{-- Filtro 2: Estatus --}}
-                                    <div>
-                                        <label class="navy-filter-label" for="filter-estatus">
-                                            <i class="ri-shield-check-line"></i> Estatus
-                                        </label>
-                                        <select class="form-select navy-filter-select" id="filter-estatus" data-col-index="7">
-                                            <option value="">Todos</option>
-                                            <option value="1" selected>Activo</option>
-                                            <option value="0">Inactivo</option>
                                         </select>
                                     </div>
                                     {{-- Filtro 3: Estado Territorial (Venezuela) --}}
@@ -602,20 +591,6 @@
                         </div>
                     </div>
 
-                    <div class="modal-form-section mb-0">
-                        <div class="modal-form-section-title"><i class="ri-shield-check-line"></i>Estatus</div>
-                        {{-- Estatus: solo lectura. Lo gobierna Inhabilitar/Restaurar, no es editable aquí. --}}
-                        <input type="text" class="form-control bg-light" id="estatus-display"
-                            value="Activo" readonly tabindex="-1">
-                        <div class="d-flex align-items-start gap-2 mt-2 p-2 rounded-3 bg-info-subtle border border-info-subtle">
-                            <i class="ri-information-line text-info fs-5 lh-1 mt-1"></i>
-                            <small class="text-info-emphasis mb-0 lh-sm">
-                                Se asigna automáticamente: un cliente nuevo o restaurado queda <strong>Activo</strong>.
-                                Para darlo de baja usa <strong>Inhabilitar</strong> (pasa a Inactivo y al historial).
-                            </small>
-                        </div>
-                    </div>
-
                 </div>
                 <div class="modal-footer bg-light border-0">
                     <div class="hstack gap-2 justify-content-end">
@@ -659,6 +634,16 @@
                             <option value="juridico">Jurídico</option>
                             <option value="gubernamental">Gubernamental</option>
                         </select>
+                    </div>
+                    <div class="row g-2 mt-3">
+                        <div class="col-6">
+                            <label class="form-label fw-semibold" for="pdf-fecha-desde">Registro desde</label>
+                            <input type="date" class="form-control" id="pdf-fecha-desde">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label fw-semibold" for="pdf-fecha-hasta">Registro hasta</label>
+                            <input type="date" class="form-control" id="pdf-fecha-hasta">
+                        </div>
                     </div>
                 </div>
                 <div class="modal-footer bg-light border-0">
@@ -1050,7 +1035,7 @@
                     data: function (d) {
                         // ── Filtros avanzados: enviar valores al server ──
                         d.filter_tipo_cliente        = $('#filter-tipo-cliente').val();
-                        d.filter_estatus             = $('#filter-estatus').val();
+                        d.historial                  = @json($historial);
                         d.filter_estado_territorial  = $('#filter-estado-territorial').val();
                         d.filter_orden               = $('#filter-orden').val();
                     }
@@ -1102,7 +1087,6 @@
             function updateFilterBadge() {
                 var count = 0;
                 if ($('#filter-tipo-cliente').val() !== '')                          count++;
-                if ($('#filter-estatus').val() !== '1')                              count++;
                 if ($('#filter-estado-territorial').val() !== '')                    count++;
                 if ($('#filter-orden').val() !== 'recientes')                        count++;
                 var $badge = $('#active-filter-count');
@@ -1139,17 +1123,9 @@
                 updateFilterBadge();
             });
 
-            // ── Si se llegó por toggle historial (?historial=true) ──
-            @if($historial)
-                $('#filter-estatus').val('0');
-                table.ajax.reload();
-                updateFilterBadge();
-            @endif
-
             // ── Botón limpiar: resetea búsqueda + filtros + orden ──
             $('#btn-clear-filters').on('click', function () {
                 $('#filter-tipo-cliente').val('');
-                $('#filter-estatus').val('1');
                 $('#filter-estado-territorial').val('');
                 $('#filter-orden').val('recientes');
                 $('#custom-search-input').val('');
@@ -1178,7 +1154,6 @@
                 $("#documento-prefix-field").prop('disabled', false).removeClass('campo-protegido');
                 $("#documento-number-field").val("");
                 $("#documento-number-field").prop('disabled', false).removeClass('campo-protegido');
-                $("#estatus-display").val("Activo");
                 // Reset teléfono
                 $("#telefono-prefix-field").val("0424");
                 $("#telefono-number-field").val("");
@@ -1433,8 +1408,6 @@
 
                     // Ahora seleccionar el municipio guardado
                     $("#ciudad-field").val(data.ciudad || '');
-                    // Estatus: display de solo lectura (siempre Activo al editar, los inhabilitados no se editan)
-                    $("#estatus-display").val(data.trashed ? 'Inhabilitado' : 'Activo');
                     $("#showModal").modal("show");
                 });
             });
@@ -1559,6 +1532,10 @@
             var tipo   = $('#pdf-filter-tipo').val();
             if (estado !== '') params.push('estado=' + encodeURIComponent(estado));
             if (tipo   !== '') params.push('tipo_cliente=' + encodeURIComponent(tipo));
+            var fdesde = $('#pdf-fecha-desde').val();
+            var fhasta = $('#pdf-fecha-hasta').val();
+            if (fdesde) params.push('fecha_desde=' + encodeURIComponent(fdesde));
+            if (fhasta) params.push('fecha_hasta=' + encodeURIComponent(fhasta));
             var url = baseUrl + (params.length ? '?' + params.join('&') : '');
             window.open(url, '_blank');
             bootstrap.Modal.getInstance(document.getElementById('pdfExportModal'))?.hide();
@@ -1566,6 +1543,7 @@
         $('#pdfExportModal').on('show.bs.modal', function () {
             $('#pdf-filter-estado').val('');
             $('#pdf-filter-tipo').val('');
+            $('#pdf-fecha-desde, #pdf-fecha-hasta').val('');
         });
     </script>
 @endpush

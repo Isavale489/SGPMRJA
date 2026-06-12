@@ -16,16 +16,55 @@ class TipoProducto extends Model
         'nombre',
         'prefijo',
         'descripcion',
+        'imagen',
         'precio_confeccion',
         'requiere_tela',
+        'requiere_produccion',
         'consumo_tela_por_unidad',
     ];
 
     protected $casts = [
         'precio_confeccion' => 'decimal:2',
         'requiere_tela' => 'boolean',
+        'requiere_produccion' => 'boolean',
         'consumo_tela_por_unidad' => 'decimal:2',
     ];
+
+    protected $appends = ['imagen_url'];
+
+    /**
+     * URL pública de la imagen del catálogo (null si no tiene).
+     */
+    public function getImagenUrlAttribute(): ?string
+    {
+        return $this->imagen ? asset($this->imagen) : null;
+    }
+
+    /**
+     * Resuelve los IDs de atributo_valor a partir de un snapshot de atributos
+     * ({nombreAtributo: nombreValor}), que es lo que guardan los detalles.
+     * Requiere que la relación atributos.valores esté cargada.
+     * @param  array|null  $snapshot
+     * @return array<int>
+     */
+    public function valorIdsDesdeSnapshot($snapshot): array
+    {
+        if (!is_array($snapshot) || empty($snapshot)) {
+            return [];
+        }
+        $ids = [];
+        foreach ($this->atributos as $atr) {
+            $valorNombre = $snapshot[$atr->nombre] ?? null;
+            if ($valorNombre === null) {
+                continue;
+            }
+            $val = $atr->valores->firstWhere('nombre', $valorNombre);
+            if ($val) {
+                $ids[] = $val->id;
+            }
+        }
+        return $ids;
+    }
 
     public function productos()
     {
@@ -53,6 +92,18 @@ class TipoProducto extends Model
     {
         return $this->belongsToMany(Insumo::class, 'tipo_producto_insumo')
             ->withPivot('cantidad_estimada')
+            ->withTimestamps();
+    }
+
+    /**
+     * Telas permitidas para este tipo de producto (FEAT-003).
+     * Pivot: tipo_producto_tela. Son insumos con tipo='Tela'.
+     * Alimenta el selector de variante de la cotización sin requerir
+     * una fila `producto` por combinación.
+     */
+    public function telas()
+    {
+        return $this->belongsToMany(Insumo::class, 'tipo_producto_tela')
             ->withTimestamps();
     }
 }

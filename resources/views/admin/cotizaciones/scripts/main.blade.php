@@ -385,6 +385,13 @@
             });
         }
 
+        // Equivalente en Bs a la tasa BCV del día, para acompañar montos en $.
+        // Devuelve '' si no hay tasa disponible — el span queda vacío y no estorba.
+        function bsApprox(usd) {
+            var txt = (typeof window.bsEquivalente === 'function') ? window.bsEquivalente(usd) : null;
+            return txt ? ('≈ ' + txt) : '';
+        }
+
         // Aplicar a campos de dirección al perder foco
         $(document).on('blur', '#direccion-field, #direccion-field-cliente, [name="direccion"]', function () {
             var val = $(this).val();
@@ -525,6 +532,12 @@
                             hadItems = true;
                         }
 
+                        // Reactivar (solo si está Vencida)
+                        if (isAdmin && row.estado === 'Vencida') {
+                            items += `<li><button type="button" class="dropdown-item act-item act-primary reactivar-btn" data-id="${data}"><span class="act-ic"><i class="ri-refresh-line"></i></span>Reactivar cotización</button></li>`;
+                            hadItems = true;
+                        }
+
                         // Editar y Eliminar (solo si NO está Convertida ni Cancelada ni Vencida)
                         if (isAdmin && row.estado !== 'Convertida' && row.estado !== 'Cancelada' && row.estado !== 'Vencida') {
                             items += `<li><button type="button" class="dropdown-item act-item act-edit edit-btn" data-id="${data}"><span class="act-ic"><i class="ri-pencil-fill"></i></span>Editar</button></li>`;
@@ -596,6 +609,9 @@
 
         // === Lógica de productos (Adaptada de Pedidos) ===
         var products = @json($productos);
+        // Catálogo = Tipo de Producto (FEAT-003). El grid del catálogo se arma desde los Tipos,
+        // no desde filas producto: el cliente elige tela + variaciones al cotizar.
+        var catalogoTipos = @json($tiposProducto ?? []);
         var productItemIndex = 0;
         var productosModalCotizacion = null;
         var currentProductIndex = null; // Para saber qué items editar si fuera el caso
@@ -664,7 +680,7 @@
                     var codigo = (p.codigo || '').toLowerCase();
                     var modelo = (p.modelo || '').toLowerCase();
                     var tipo = p.tipo_producto ? p.tipo_producto.nombre.toLowerCase() : '';
-                    matchFiltro = codigo.includes(busqueda) || modelo.includes(busqueda) || tipo.includes(busqueda);
+                    matchFiltro = codigo.startsWith(busqueda) || modelo.startsWith(busqueda) || tipo.startsWith(busqueda);
                 }
                 if (tipoId) {
                     matchTipo = p.tipo_producto && p.tipo_producto.id == tipoId;
@@ -1093,10 +1109,8 @@
                 var tipoNombre = producto.tipo_producto ? producto.tipo_producto.nombre : 'Sin tipo';
                 var displayName = (producto.codigo || '') + ' - ' + tipoNombre;
 
-                // Actualizar valores visuales y ocultos
-                card.find('.producto-text-display').val(displayName);
-                card.find('.producto-text-display').css('font-weight', '600').css('color', '#212529');
-
+                // Actualizar el dropdown con el producto seleccionado
+                card.find('.producto-dropdown').val(producto.id);
                 card.find('.producto-id-input').val(producto.id);
                 card.find('.precio-unitario-input').val(producto.precio_base);
 
@@ -1294,6 +1308,19 @@
         function getGroupBordados(key) {
             var st = window.cotGroupBordadosState || {};
             return (st[key] && Array.isArray(st[key].bordados)) ? st[key].bordados : [];
+        }
+
+        // Bordados efectivos de una card: prioriza cotGroupBordadosState (fuente de verdad,
+        // key prodId|colorId); si no hay, usa el data() de la card. Lo usan la grilla y el total.
+        function getEffectiveBordadosForCard($card) {
+            var prodId = $card.find('.producto-id-input').val();
+            var colorId = $card.find('.color-id-input').val() || '';
+            var stKey = (prodId || '') + '|' + (colorId || '');
+            var st = (window.cotGroupBordadosState && window.cotGroupBordadosState[stKey] &&
+                Array.isArray(window.cotGroupBordadosState[stKey].bordados))
+                ? window.cotGroupBordadosState[stKey].bordados : null;
+            if (st && st.length) return st;
+            return getCardBordados($card);
         }
 
         function setGroupBordados(key, bordados) {
@@ -1629,10 +1656,17 @@
 
             $('#resumenRecargoBordadoModal').text(formatMoney(recargo));
             $('#bordado-oc-active-count').text(activeCount);
+
+            // Equivalente en Bolívares (VES) del servicio de bordado — tasa BCV vigente
+            var bsBordado = (typeof window.bsEquivalente === 'function') ? window.bsEquivalente(recargo) : null;
+            $('#resumenRecargoBordadoModalBs').text(bsBordado || 'Sin tasa BCV');
+            var tasaFmt = (typeof window.bsTasaFmt === 'function') ? window.bsTasaFmt() : null;
+            $('#resumenRecargoBordadoTasa').text(tasaFmt ? '· Tasa ' + tasaFmt : '');
         }
 
         function aplicarBordadosDesdeModal() {
-            if (!currentBordadoCard) return;
+            // Permitir aplicar tanto desde una card concreta como desde un grupo de la grilla
+            if (!currentBordadoCard && !currentBordadoGroupKey) return;
 
             var bordados = [];
             var erroresLogo = [];
@@ -1710,7 +1744,8 @@
                 actualizarResumenBordadosEnCard(currentBordadoCard);
             }
             calculateCotizacionTotals();
-            if (typeof refreshGroupedList === 'function') refreshGroupedList();
+            // refreshGroupedList vive en otro IIFE; se accede vía window.cotRefreshGroupedList
+            if (typeof window.cotRefreshGroupedList === 'function') window.cotRefreshGroupedList();
 
             if (ubicacionModal) ubicacionModal.hide();
         }
@@ -1822,14 +1857,44 @@
             var tallaLabel = getTallaLabel(tallaId);
             var llevaBordadoActivo = (llevaBordado === true || llevaBordado === 1 || llevaBordado === '1');
 
+            var pDyn = null; // producto virtual (variante dinámica) si aplica
             if (productoId) {
                 var p = products.find(prod => prod.id == productoId);
                 if (p) {
                     var tipoNombre = p.tipo_producto ? p.tipo_producto.nombre : 'Sin tipo';
-                    productoDisplay = (p.codigo || '') + ' - ' + tipoNombre + ' ' + p.modelo;
+                    productoDisplay = (p.codigo || '') + ' - ' + tipoNombre + ' ' + (p.modelo || '');
                     precioUnitario = precioUnitario || p.precio_base;
                     textClass = 'text-dark fw-semibold';
+                    if (p._dynamic) pDyn = p;
                 }
+            }
+
+            // Campo de producto: select normal (legacy) o, para variante dinámica,
+            // display de solo lectura + hidden de tipo/tela/atributos para el submit.
+            var escAttr = function (s) {
+                return String(s == null ? '' : s)
+                    .replace(/&/g, '&amp;').replace(/"/g, '&quot;')
+                    .replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            };
+            var productoFieldHtml;
+            if (pDyn) {
+                var vd = pDyn._variante;
+                productoFieldHtml =
+                    `<input type="text" class="form-control form-control-sm" value="${escAttr((pDyn.codigo || '') + ' · ' + (pDyn.nombre_completo || ''))}" readonly title="Variante configurada">` +
+                    `<input type="hidden" class="producto-id-input" value="${escAttr(productoId)}">` +
+                    `<input type="hidden" name="productos[${productItemIndex}][tipo_producto_id]" value="${vd.tipo_producto_id}">` +
+                    (vd.insumo_tela_id ? `<input type="hidden" name="productos[${productItemIndex}][insumo_tela_id]" value="${vd.insumo_tela_id}">` : '') +
+                    (vd.atributo_valor_ids || []).map(function (vid) {
+                        return `<input type="hidden" name="productos[${productItemIndex}][atributo_valor_ids][]" value="${vid}">`;
+                    }).join('');
+            } else {
+                productoFieldHtml =
+                    `<select name="productos[${productItemIndex}][producto_id]"
+                            class="form-select form-select-sm producto-id-input producto-dropdown"
+                            required>
+                            <option value="">— Seleccionar producto —</option>
+                            ${products.filter(prod => !prod._dynamic).map(prod => `<option value="${prod.id}" data-precio="${prod.precio_base}" ${prod.id == productoId ? 'selected' : ''}>${prod.codigo ? prod.codigo + ' · ' : ''}${prod.nombre_completo || prod.nombre}</option>`).join('')}
+                        </select>`;
             }
 
             var itemHtml = `
@@ -1854,23 +1919,12 @@
                 <!-- Card Body -->
                 <div class="card-body p-3">
 
-                    <!-- Fila 1: Buscador de producto -->
-                    <div class="d-flex gap-2 align-items-center mb-2">
-                        <div class="input-group input-group-sm flex-grow-1">
-                            <input type="text"
-                                class="form-control form-control-sm producto-text-display"
-                                value="${productoId ? productoDisplay : ''}"
-                                placeholder="Clic para buscar producto..."
-                                readonly autocomplete="off"
-                                style="background-color: #fff;" />
-                            <button type="button"
-                                class="btn btn-sm btn-atlantico-brand producto-selector-trigger"
-                                data-bs-toggle="tooltip" data-bs-placement="top"
-                                title="Buscar">
-                                <i class="ri-search-line" style="color:#fff;"></i>
-                            </button>
-                        </div>
-                        <input type="hidden" name="productos[${productItemIndex}][producto_id]" class="producto-id-input" value="${productoId}" required />
+                    <!-- Fila 1: Selector de producto (dropdown) -->
+                    <div class="mb-2">
+                        <label class="form-label mb-1 small fw-medium" style="color:#495057;">
+                            <i class="ri-shopping-bag-line me-1"></i>Producto
+                        </label>
+                        ${productoFieldHtml}
                     </div>
 
                     <!-- Fila 2: Color + Talla + Cantidad + Precio Unitario -->
@@ -2103,6 +2157,28 @@
             calculateCotizacionTotals();
         });
 
+        // Al cerrar el panel de bordados: una línea que quedó marcada como
+        // "lleva bordado" pero SIN ubicaciones vuelve a "Sin bordado".
+        // (Abrir y cerrar el panel sin agregar nada NO debe comprometer bordado
+        // ni bloquear el guardado pidiendo una ubicación.)
+        $(document).on('hidden.bs.offcanvas', '#bordadoOffcanvas', function () {
+            $('#productos-container .product-item').each(function () {
+                var $card = $(this);
+                var marcado = parseInt($card.find('.lleva-bordado-value').val() || 0, 10) === 1;
+                var eff = getEffectiveBordadosForCard($card);
+                if (marcado && (!eff || eff.length === 0)) {
+                    $card.find('.lleva-bordado-checkbox').prop('checked', false);
+                    $card.find('.bordado-label').removeClass('active');
+                    $card.find('.lleva-bordado-value').val(0);
+                    $card.find('.nombre-logo-container').hide();
+                    setCardBordados($card, []);
+                    actualizarResumenBordadosEnCard($card);
+                }
+            });
+            if (typeof window.cotRefreshGroupedList === 'function') window.cotRefreshGroupedList();
+            calculateCotizacionTotals();
+        });
+
         // Calcular el total de la cotización y el restante
         function calculateCotizacionTotals() {
             let sum = 0;
@@ -2110,8 +2186,10 @@
                 var $card = $(this);
                 let quantity = parseFloat($card.find('.cantidad-input').val()) || 0;
                 let basePrice = parseFloat($card.find('.precio-unitario-input').val()) || 0;
-                let llevaBordado = parseInt($card.find('.lleva-bordado-value').val() || 0, 10) === 1;
-                let recargoBordado = llevaBordado ? calcularRecargoUnitarioBordadoDesdeLista(getCardBordados($card)) : 0;
+                let bordEff = getEffectiveBordadosForCard($card);
+                let llevaBordado = bordEff.length > 0 ||
+                    parseInt($card.find('.lleva-bordado-value').val() || 0, 10) === 1;
+                let recargoBordado = bordEff.length ? calcularRecargoUnitarioBordadoDesdeLista(bordEff) : 0;
                 let finalUnitPrice = basePrice + recargoBordado;
 
                 actualizarPanelResumenMonetario($card, recargoBordado, finalUnitPrice, llevaBordado);
@@ -2129,20 +2207,21 @@
         }
         // Recalcular total cuando cambia la cantidad o el precio negociado
         $('#productos-container').on('change keyup', '.cantidad-input, .precio-unitario-input', calculateCotizacionTotals);
-        $('#productos-container').on('change', '.product-select', function () {
+        $('#productos-container').on('change', '.product-select, .producto-dropdown', function () {
             var selectedOption = $(this).find('option:selected');
             var precio = selectedOption.data('precio');
-            var spanPrecio = $(this).closest('.product-item').find('.precio-producto-span');
-
-            $(this).closest('.card').find('.precio-unitario-input').val(precio);
+            var $item = $(this).closest('.product-item');
+            var spanPrecio = $item.find('.precio-producto-span');
 
             if (precio) {
+                $item.find('.precio-unitario-input').val(precio);
                 spanPrecio.text(formatMoney(parseFloat(precio)));
             } else {
                 spanPrecio.text('');
             }
 
             calculateCotizacionTotals();
+            refreshKPIs();
         });
         $('#abono-field').on('change keyup', updateCotizacionRemaining);
         // Reset al abrir el modal en modo creación (wizard 3 pasos)
@@ -2153,9 +2232,9 @@
             $('#cotizacionForm')[0].reset();
             $('#id-field').val('');
             $('#cliente-id-field').val('').prop('disabled', false).removeClass('campo-protegido');
-            $('#fecha-cotizacion-field').val('').prop('readonly', false).removeClass('campo-protegido');
+            $('#fecha-cotizacion-field').val(new Date().toISOString().slice(0, 10)).prop('readonly', false).removeClass('campo-protegido');
             $('#prioridad-field').val('Normal');
-            $('#estado-field-wrapper').hide();
+
             $('#productos-container').empty();
             window.cotCart = [];
             window.cotGroupBordadosState = {};
@@ -2344,7 +2423,7 @@
             $('#id-field').val(id);
             $('#add-btn').hide();
             $('#edit-btn').show();
-            $('#estado-field-wrapper').show();
+
             $('#productos-container').empty();
             window.cotCart = [];
             window.cotGroupBordadosState = {};
@@ -2393,6 +2472,8 @@
                     $('#estado-field').val(data.estado);
                     $('#prioridad-field').val(data.prioridad || 'Normal');
                     $('#notas-field').val(data.notas || '');
+                    // Actualizar banner de fecha (val() programático no dispara change)
+                    if (window.cotWizard && window.cotWizard.refreshBannerFecha) window.cotWizard.refreshBannerFecha();
                     // Creador real: mostrar quién creó la cotización (no el editor)
                     if (data.creador) {
                         $('#cot-creador-name').text(data.creador.name || '—');
@@ -2400,9 +2481,48 @@
                     }
                     // Cargar productos existentes
                     $('#productos-container').empty();
-                    if (data.productos && data.productos.length > 0) {
+                    var __detalles = (data.productos || []);
+
+                    // Precargar los tipos de las líneas DINÁMICAS (producto_id null + tipo_producto_id):
+                    // el snapshot guarda nombres atributo→valor, así que necesitamos los valores del tipo
+                    // para resolver los atributo_valor_ids al reconstruir el producto virtual.
+                    var __tipoCache = {};
+                    var __tipoFetches = [];
+                    var __tipoIds = {};
+                    __detalles.forEach(function (d) {
+                        if (!d.producto_id && d.tipo_producto_id) __tipoIds[d.tipo_producto_id] = true;
+                    });
+                    Object.keys(__tipoIds).forEach(function (tid) {
+                        __tipoFetches.push(
+                            $.getJSON("{{ url('tipo-productos') }}/" + tid).done(function (t) { __tipoCache[tid] = t; })
+                        );
+                    });
+
+                    function __finalizarCargaEdicion() {
+                        setTimeout(function () {
+                            calculateCotizacionTotals();
+                            if (typeof window.cotRefreshGroupedList === 'function') window.cotRefreshGroupedList();
+                            if (window.cotWizard) window.cotWizard.refreshKPIs();
+                            try {
+                                $('.product-select').each(function () {
+                                    if ($(this).hasClass("select2-hidden-accessible")) { $(this).select2('destroy'); }
+                                    $(this).select2({
+                                        theme: 'bootstrap-5', placeholder: '🔍 Buscar producto...',
+                                        allowClear: true, width: '100%', dropdownParent: $('#showModal'),
+                                        language: {
+                                            noResults: function () { return 'No se encontraron productos'; },
+                                            searching: function () { return 'Buscando...'; }
+                                        }
+                                    });
+                                });
+                            } catch (e) { console.error('Error inicializando Select2:', e); }
+                            $('#showModal').modal('show');
+                        }, 200);
+                    }
+
+                    $.when.apply($, __tipoFetches).always(function () {
                         productItemIndex = 0;
-                        data.productos.forEach(function (detalle) {
+                        __detalles.forEach(function (detalle) {
                             var recargoUnitario = (detalle.bordados || []).reduce(function (acc, bordado) {
                                 var precio = parseFloat(bordado.precio_aplicado || 0);
                                 var cantidad = Math.max(1, parseInt(bordado.cantidad || 1, 10));
@@ -2410,8 +2530,14 @@
                             }, 0);
                             var precioBase = Math.max(0, (parseFloat(detalle.precio_unitario || 0) - recargoUnitario));
 
+                            // Línea dinámica (sin producto_id): reconstruir el producto virtual desde el snapshot.
+                            var productoId = detalle.producto_id;
+                            if (!productoId && detalle.tipo_producto_id && typeof window.cotReconstruirVirtualDesdeDetalle === 'function') {
+                                productoId = window.cotReconstruirVirtualDesdeDetalle(detalle, __tipoCache[detalle.tipo_producto_id], precioBase);
+                            }
+
                             addProductItem(
-                                detalle.producto_id,
+                                productoId,
                                 detalle.cantidad,
                                 precioBase,
                                 detalle.descripcion,
@@ -2422,53 +2548,16 @@
                                 detalle.bordados || []
                             );
 
-                            // Poblar cotGroupBordadosState con bordados del server
+                            // Poblar cotGroupBordadosState con bordados del server (usar el id real de la línea)
                             if ((detalle.bordados || []).length > 0) {
-                                var gKey = String(detalle.producto_id) + '|' + String(detalle.color_id || '');
+                                var gKey = String(productoId) + '|' + String(detalle.color_id || '');
                                 if (!window.cotGroupBordadosState[gKey]) {
                                     window.cotGroupBordadosState[gKey] = { bordados: detalle.bordados };
                                 }
                             }
                         });
-                    }
-
-                    // Esperar un momento para que todos los elementos se rendericen
-                    setTimeout(function () {
-                        calculateCotizacionTotals();
-                        // Wizard: regenerar tabla agrupada y KPIs con los datos cargados
-                        if (typeof window.cotRefreshGroupedList === 'function') window.cotRefreshGroupedList();
-                        if (window.cotWizard) window.cotWizard.refreshKPIs();
-
-                        // Intentar inicializar Select2, pero no detener la ejecución si falla
-                        try {
-                            // Destruir y reinicializar Select2 en todos los selectores de productos
-                            $('.product-select').each(function () {
-                                if ($(this).hasClass("select2-hidden-accessible")) {
-                                    $(this).select2('destroy');
-                                }
-                                $(this).select2({
-                                    theme: 'bootstrap-5',
-                                    placeholder: '🔍 Buscar producto...',
-                                    allowClear: true,
-                                    width: '100%',
-                                    dropdownParent: $('#showModal'),
-                                    language: {
-                                        noResults: function () {
-                                            return 'No se encontraron productos';
-                                        },
-                                        searching: function () {
-                                            return 'Buscando...';
-                                        }
-                                    }
-                                });
-                            });
-                        } catch (e) {
-                            console.error('Error inicializando Select2:', e);
-                        }
-
-                        // Mostrar el modal siempre, independientemente de errores en Select2
-                        $('#showModal').modal('show');
-                    }, 200);
+                        __finalizarCargaEdicion();
+                    });
                 },
                 error: function (xhr) {
                     Swal.fire({
@@ -2487,216 +2576,234 @@
         });
 
         // Botón de ver detalles
+        // ── Wizard de solo lectura — navegación ──────────────────────────
+        (function () {
+            var VIEW_TOTAL_STEPS = 3;
+            var viewCurrentStep  = 1;
+
+            function viewShowStep(n) {
+                viewCurrentStep = n;
+                $('#viewModal .wiz-step-content').each(function () {
+                    var s = parseInt($(this).data('step'));
+                    $(this).toggleClass('is-active', s === n);
+                    s === n ? $(this).removeAttr('hidden') : $(this).attr('hidden', '');
+                });
+                $('#viewModal .wiz-step-marker').each(function () {
+                    var s = parseInt($(this).data('step'));
+                    $(this).toggleClass('is-active', s === n).toggleClass('is-done', s < n);
+                    $(this).attr('aria-selected', s === n ? 'true' : 'false');
+                });
+                $('#viewModal .wiz-step-line-fill').each(function () {
+                    $(this).toggleClass('is-filled', parseInt($(this).data('line')) < n);
+                });
+                $('#btn-view-prev').toggle(n > 1);
+                $('#btn-view-next').toggle(n < VIEW_TOTAL_STEPS);
+            }
+
+            window.viewCotShowStep = viewShowStep;
+
+            $('#viewModal').on('show.bs.modal', function () { viewShowStep(1); });
+            $(document).on('click', '#btn-view-next',  function () { if (viewCurrentStep < VIEW_TOTAL_STEPS) viewShowStep(viewCurrentStep + 1); });
+            $(document).on('click', '#btn-view-prev',  function () { if (viewCurrentStep > 1) viewShowStep(viewCurrentStep - 1); });
+            $(document).on('click', '#viewModal .wiz-step-marker', function () { viewShowStep(parseInt($(this).data('step'))); });
+        }());
+
+        // ── Render grilla de productos (solo lectura) ─────────────────
+        function viewRenderProductosGrilla(productos, tasaCotizacion) {
+            var $cont  = $('#view-productos-container');
+            var $empty = $('#view-productos-empty');
+            $cont.empty();
+
+            if (!productos || !productos.length) {
+                $empty.removeAttr('hidden');
+                $('#view-kpi-lineas').text('0');
+                $('#view-kpi-total').text('$0.00');
+                $('#view-kpi-total-bs').text('');
+                return;
+            }
+            $empty.attr('hidden', '');
+
+            // Agrupar por producto_id + color_id
+            var groups = {}, groupOrder = [];
+            productos.forEach(function (item) {
+                var key = (item.producto_id || 'x') + '_' + (item.color_id || 'x');
+                if (!groups[key]) {
+                    groups[key] = { key: key, items: [], producto: item.producto, color_id: item.color_id, precio_unitario: item.precio_unitario };
+                    groupOrder.push(key);
+                }
+                groups[key].items.push(item);
+            });
+
+            // KPIs
+            var grandTotal = productos.reduce(function (acc, it) {
+                return acc + parseFloat(it.precio_unitario) * parseInt(it.cantidad);
+            }, 0);
+            $('#view-kpi-lineas').text(groupOrder.length);
+            $('#view-kpi-total').text('$' + grandTotal.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ','));
+            // Respeta la tasa guardada en la cotización; si no tiene, usa la BCV del día
+            var viewKpiBs = (typeof window.bsEquivalente === 'function')
+                ? window.bsEquivalente(grandTotal, tasaCotizacion) : null;
+            $('#view-kpi-total-bs').text(viewKpiBs ? ('≈ ' + viewKpiBs) : '');
+
+            // Filas de la tabla
+            var rows = groupOrder.map(function (key, idx) {
+                var g       = groups[key];
+                var items   = g.items;
+                var prod    = g.producto || {};
+                var colorObj = getColorById(g.color_id) || {};
+                var colorNom = colorObj.nombre || '—';
+                var colorHex = colorObj.hex || colorObj.color_hex || '#94a3b8';
+
+                var tallasHtml = items.map(function (it) {
+                    var lbl = getTallaLabel(it.talla_id) || 'S/T';
+                    return '<span class="cot-chip cot-chip-talla">' + lbl + '<span class="cot-chip-x">×</span>' + it.cantidad + '</span>';
+                }).join('');
+
+                var totalQty = items.reduce(function (a, it) { return a + parseInt(it.cantidad); }, 0);
+                var subtotal = items.reduce(function (a, it) { return a + parseFloat(it.precio_unitario) * parseInt(it.cantidad); }, 0);
+                var llevaBordado = items.some(function (it) { return it.lleva_bordado; });
+
+                // Detalle de bordados para tooltip/línea extra
+                var bordadosDetalle = '';
+                if (llevaBordado) {
+                    var blines = [];
+                    items.forEach(function (it) {
+                        if (it.bordados && it.bordados.length) {
+                            it.bordados.forEach(function (b) {
+                                var bNom = (b.logo ? b.logo.name : null) || b.nombre_logo_aplicado || 'Logo';
+                                blines.push(bNom + ' → ' + (b.nombre_aplicado || '—') + ' ×' + (b.cantidad || 1));
+                            });
+                        }
+                    });
+                    if (blines.length) {
+                        bordadosDetalle = '<div class="cot-prod-variant text-truncate" title="' + blines.join(' | ') + '">' +
+                            '<i class="ri-scissors-cut-line me-1"></i>' + blines[0] + (blines.length > 1 ? ' +' + (blines.length - 1) : '') + '</div>';
+                    }
+                }
+
+                var bordadoLineClass = llevaBordado ? 'cot-grouped-bordado-line--ok' : 'cot-grouped-bordado-line--none';
+                var bordadoText      = llevaBordado ? 'Con bordado' : 'Sin bordado';
+                // Servicio de bordado: precio del recargo + equivalente en Bs (tasa guardada de la cotización)
+                var recargoBordadoGrupo = items.reduce(function (a, it) {
+                    if (!it.bordados || !it.bordados.length) return a;
+                    var recU = it.bordados.reduce(function (s, b) { return s + (parseFloat(b.precio_aplicado) || 0) * Math.max(1, parseInt(b.cantidad || 1, 10)); }, 0);
+                    return a + recU * parseInt(it.cantidad);
+                }, 0);
+                var bordadoBsExtra = '';
+                if (llevaBordado && recargoBordadoGrupo > 0) {
+                    var bsB = (typeof window.bsEquivalente === 'function') ? window.bsEquivalente(recargoBordadoGrupo, tasaCotizacion) : null;
+                    bordadoBsExtra = ' · $' + recargoBordadoGrupo.toFixed(2) + (bsB ? ' · ' + bsB : '');
+                }
+                var prodNombre = prod.nombre_completo || prod.nombre || prod.codigo || 'Producto';
+                var prodCodigo = prod.codigo || '';
+                var precioU    = parseFloat(g.precio_unitario);
+
+                return '<tr class="cot-grouped-row">' +
+                    '<td class="cot-col-num">' + (idx + 1) + '</td>' +
+                    '<td class="cot-col-prod">' +
+                        '<div class="cot-prod-modelo">' + prodNombre + '</div>' +
+                        (prodCodigo ? '<div class="cot-prod-codigo"><i class="ri-barcode-line me-1"></i>' + prodCodigo + '</div>' : '') +
+                        bordadosDetalle +
+                    '</td>' +
+                    '<td class="cot-col-color">' +
+                        '<span class="cot-color-cell">' +
+                            '<span class="cot-color-dot" style="background:' + colorHex + '"></span>' +
+                            colorNom +
+                        '</span>' +
+                    '</td>' +
+                    '<td class="cot-col-tallas">' +
+                        '<div class="cot-tallas-wrap">' + tallasHtml + '</div>' +
+                        '<div class="cot-grouped-bordado-line ' + bordadoLineClass + '">' +
+                            '<i class="ri-scissors-cut-line"></i>' + bordadoText + bordadoBsExtra +
+                        '</div>' +
+                    '</td>' +
+                    '<td class="cot-col-num cot-cell-num"><strong>' + totalQty + '</strong></td>' +
+                    '<td class="cot-cell-num">$' + precioU.toFixed(2) + '</td>' +
+                    '<td class="cot-cell-num cot-cell-subtotal">$' + subtotal.toFixed(2) + '</td>' +
+                    '</tr>';
+            }).join('');
+
+            $cont.html(
+                '<div class="cot-grouped-tablewrap">' +
+                '<table class="cot-grouped-table">' +
+                '<thead><tr>' +
+                    '<th class="cot-col-num">#</th>' +
+                    '<th class="cot-col-prod">Producto</th>' +
+                    '<th class="cot-col-color">Color</th>' +
+                    '<th class="cot-col-tallas">Tallas y cantidades</th>' +
+                    '<th class="cot-col-num">Unid.</th>' +
+                    '<th class="cot-cell-num">Precio U.</th>' +
+                    '<th class="cot-cell-num">Subtotal</th>' +
+                '</tr></thead>' +
+                '<tbody>' + rows + '</tbody>' +
+                '</table></div>'
+            );
+        }
+
+        // ── Click en botón "Ver" ──────────────────────────────────────
         $('#cotizaciones-table').on('click', '.view-btn', function () {
             var id = $(this).data('id');
             $.ajax({
                 url: '/cotizaciones/' + id,
                 method: 'GET',
                 success: function (data) {
-                    // Obtener datos del cliente desde la relación
+                    // Paso 1 — Cliente
                     if (data.cliente) {
-                        // Mostrar nombre con badge si cliente fue eliminado
                         var nombreHtml = data.cliente.nombre || 'N/A';
                         if (data.cliente.eliminado) {
                             nombreHtml += ' <span class="badge bg-danger ms-1" title="Este cliente fue eliminado">Eliminado</span>';
                         }
                         $('#view-cliente-nombre').html(nombreHtml);
-
-                        // Si cliente eliminado, mostrar datos con estilo atenuado
-                        var mutedClass = data.cliente.eliminado ? 'text-muted' : '';
-                        $('#view-cliente-apellido').html(data.cliente.eliminado
-                            ? '<span class="text-muted">' + (data.cliente.apellido || '') + '</span>'
-                            : (data.cliente.apellido || ''));
-                        $('#view-cliente-email').html(data.cliente.eliminado
-                            ? '<span class="text-muted">' + (data.cliente.email || 'N/A') + '</span>'
-                            : (data.cliente.email || 'N/A'));
-                        $('#view-cliente-telefono').html(data.cliente.eliminado
-                            ? '<span class="text-muted">' + (data.cliente.telefono || 'N/A') + '</span>'
-                            : (data.cliente.telefono || 'N/A'));
-                        $('#view-ci-rif').html(data.cliente.eliminado
-                            ? '<span class="text-muted">' + (data.cliente.documento || 'N/A') + '</span>'
-                            : (data.cliente.documento || 'N/A'));
+                        var muted = data.cliente.eliminado;
+                        function vm(v) { return muted ? '<span class="text-muted">' + (v || '') + '</span>' : (v || 'N/A'); }
+                        $('#view-cliente-apellido').html(vm(data.cliente.apellido));
+                        $('#view-cliente-email').html(vm(data.cliente.email));
+                        $('#view-cliente-telefono').html(vm(data.cliente.telefono));
+                        $('#view-ci-rif').html(vm(data.cliente.documento));
                     } else {
                         $('#view-cliente-nombre').html('<span class="text-danger">Cliente no encontrado</span>');
-                        $('#view-cliente-apellido').text('');
-                        $('#view-cliente-email').text('N/A');
-                        $('#view-cliente-telefono').text('N/A');
-                        $('#view-ci-rif').text('N/A');
+                        $('#view-cliente-apellido, #view-cliente-email, #view-cliente-telefono, #view-ci-rif').text('N/A');
                     }
-                    // Función para formatear fechas YYYY-MM-DD o ISO a dd/mm/yyyy
+
                     function formatDate(dateStr) {
                         if (!dateStr) return 'N/A';
-                        var date = new Date(dateStr);
-                        if (isNaN(date.getTime())) return dateStr;
-                        var day = String(date.getDate()).padStart(2, '0');
-                        var month = String(date.getMonth() + 1).padStart(2, '0');
-                        var year = date.getFullYear();
-                        return day + '/' + month + '/' + year;
+                        var d = new Date(dateStr);
+                        if (isNaN(d.getTime())) return dateStr;
+                        return String(d.getDate()).padStart(2,'0') + '/' +
+                               String(d.getMonth()+1).padStart(2,'0') + '/' + d.getFullYear();
                     }
                     $('#view-fecha-cotizacion').text(formatDate(data.fecha_cotizacion));
                     $('#view-fecha-validez').text(formatDate(data.fecha_validez));
-                    // Mostrar estado con diseño unificado (usando clases CSS globales)
-                    var estadoClasses = {
-                        'Pendiente': 'status-pendiente',
-                        'Aprobada': 'status-aprobada',
-                        'Convertida': 'badge-soft-info',
-                        'Cancelada': 'status-cancelado',
-                        'Vencida': 'status-cancelado'
-                    };
-                    var estadoIcons = {
-                        'Pendiente': 'ri-time-line',
-                        'Aprobada': 'ri-check-double-line',
-                        'Convertida': 'ri-exchange-line',
-                        'Cancelada': 'ri-close-circle-line',
-                        'Vencida': 'ri-alarm-warning-line'
-                    };
+
+                    var estadoClasses = { 'Pendiente':'status-pendiente','Aprobada':'status-aprobada','Convertida':'badge-soft-info','Cancelada':'status-cancelado','Vencida':'status-cancelado' };
+                    var estadoIcons   = { 'Pendiente':'ri-time-line','Aprobada':'ri-check-double-line','Convertida':'ri-exchange-line','Cancelada':'ri-close-circle-line','Vencida':'ri-alarm-warning-line' };
                     var badgeClass = estadoClasses[data.estado] || '';
-                    var icon = estadoIcons[data.estado] || 'ri-question-line';
+                    var icon       = estadoIcons[data.estado]   || 'ri-question-line';
                     $('#view-estado').html('<span class="badge badge-status ' + badgeClass + ' rounded-pill"><i class="' + icon + ' me-1"></i>' + data.estado + '</span>');
                     $('#view-usuario-creador').text(data.user ? data.user.name : '');
-                    // Mostrar productos de la cotización con el mismo diseño que pedidos
-                    var productosBody = $('#view-productos-container');
-                    productosBody.empty();
-                    if (data.productos && data.productos.length > 0) {
-                        data.productos.forEach(function (item, index) {
-                            var subtotal = item.cantidad * item.precio_unitario;
-                            productosBody.append(`
-                                <div class="card border-0 shadow-sm mb-3" style="border-left: 4px solid #00d9a5 !important;">
-                                    <div class="card-body p-3">
-                                        <!-- Header del Producto -->
-                                        <div class="d-flex align-items-center mb-3">
-                                            <div class="rounded-circle me-3 d-flex align-items-center justify-content-center"
-                                                style="width: 45px; height: 45px; background: #1e3c72;">
-                                                <i class="ri-t-shirt-2-line text-white fs-5"></i>
-                                            </div>
-                                            <div>
-                                                <h6 class="mb-0 fw-bold" style="color: #1e3c72;">${item.producto ? (item.producto.nombre_completo || item.producto.codigo || 'Producto') : 'Sin producto'}</h6>
-                                                <small class="text-muted">Producto #${index + 1}</small>
-                                            </div>
-                                            <div class="ms-auto">
-                                                <span class="badge" style="background: #00d9a5; font-size: 0.9rem;">
-                                                    $${subtotal.toFixed(2)}
-                                                </span>
-                                            </div>
-                                        </div>
-                                        
-                                        <!-- Detalles del Producto -->
-                                        <div class="row g-2 mb-3">
-                                            <div class="col-6 col-md-3">
-                                                <div class="d-flex align-items-center">
-                                                    <div class="rounded-circle me-2 d-flex align-items-center justify-content-center"
-                                                        style="width: 28px; height: 28px; background: rgba(30, 60, 114, 0.15);">
-                                                        <i class="ri-stack-line" style="color: #1e3c72; font-size: 0.85rem;"></i>
-                                                    </div>
-                                                    <div>
-                                                        <small class="text-muted d-block" style="font-size: 0.7rem;">Cantidad</small>
-                                                        <span class="fw-semibold" style="font-size: 0.85rem;">${item.cantidad}</span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div class="col-6 col-md-3">
-                                                <div class="d-flex align-items-center">
-                                                    <div class="rounded-circle me-2 d-flex align-items-center justify-content-center"
-                                                        style="width: 28px; height: 28px; background: rgba(30, 60, 114, 0.15);">
-                                                        <i class="ri-t-shirt-line" style="color: #1e3c72; font-size: 0.85rem;"></i>
-                                                    </div>
-                                                    <div>
-                                                        <small class="text-muted d-block" style="font-size: 0.7rem;">Talla</small>
-                                                        <span class="fw-semibold" style="font-size: 0.85rem;">${getTallaLabel(item.talla_id) || 'N/A'}</span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div class="col-6 col-md-3">
-                                                <div class="d-flex align-items-center">
-                                                    <div class="rounded-circle me-2 d-flex align-items-center justify-content-center"
-                                                        style="width: 28px; height: 28px; background: rgba(30, 60, 114, 0.15);">
-                                                        <i class="ri-palette-line" style="color: #1e3c72; font-size: 0.85rem;"></i>
-                                                    </div>
-                                                    <div>
-                                                        <small class="text-muted d-block" style="font-size: 0.7rem;">Color</small>
-                                                        <span class="fw-semibold" style="font-size: 0.85rem;">${(getColorById(item.color_id) || {}).nombre || 'N/A'}</span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div class="col-6 col-md-3">
-                                                <div class="d-flex align-items-center">
-                                                    <div class="rounded-circle me-2 d-flex align-items-center justify-content-center"
-                                                        style="width: 28px; height: 28px; background: rgba(30, 60, 114, 0.15);">
-                                                        <i class="ri-money-dollar-circle-line" style="color: #1e3c72; font-size: 0.85rem;"></i>
-                                                    </div>
-                                                    <div>
-                                                        <small class="text-muted d-block" style="font-size: 0.7rem;">P. Unitario</small>
-                                                        <span class="fw-semibold" style="font-size: 0.85rem;">$${parseFloat(item.precio_unitario).toFixed(2)}</span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div class="col-6 col-md-3">
-                                                <div class="d-flex align-items-center">
-                                                    <div class="rounded-circle me-2 d-flex align-items-center justify-content-center"
-                                                        style="width: 28px; height: 28px; background: rgba(30, 60, 114, 0.15);">
-                                                        <i class="ri-scissors-cut-line" style="color: #1e3c72; font-size: 0.85rem;"></i>
-                                                    </div>
-                                                    <div>
-                                                        <small class="text-muted d-block" style="font-size: 0.7rem;">Bordado</small>
-                                                        <span class="badge ${item.lleva_bordado ? 'bg-success' : 'bg-secondary'}" style="font-size: 0.75rem;">${item.lleva_bordado ? 'Sí' : 'No'}</span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        
-                                        <!-- Logos si aplica -->
-                                        ${item.lleva_bordado ? `
-                                        <div class="rounded p-2 mb-3" style="background: rgba(30, 60, 114, 0.08);">
-                                            <div class="d-flex align-items-center mb-2">
-                                                <i class="ri-scissors-cut-line me-2" style="color: #1e3c72;"></i>
-                                                <span class="fw-semibold" style="color: #1e3c72; font-size: 0.85rem;">Logos</span>
-                                            </div>
-                                            <div class="row g-2">
-                                                <div class="col-12">
-                                                    <small class="text-muted d-block" style="font-size: 0.72rem;">Aplicaciones</small>
-                                                    <div class="d-flex flex-column" style="font-size: 0.85rem;">${(item.bordados && item.bordados.length)
-                                                        ? item.bordados.map(function (b) {
-                                                            return '<div class="pb-1 mb-1" style="border-bottom:1px dashed rgba(30,60,114,0.2);">' +
-                                                                '<span class="fw-semibold">' +
-                                                                    ((b.logo ? b.logo.name : null) || b.nombre_logo_aplicado || 'Logo') +
-                                                                    ' → ' + (b.nombre_aplicado || 'Ubicación') +
-                                                                    ' x' + (b.cantidad || 1) +
-                                                                '</span>' +
-                                                                '</div>';
-                                                        }).join('')
-                                                        : '<span class="text-muted">Sin bordados configurados</span>'
-                                                    }</div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        ` : ''}
-                                        
-                                        <!-- Descripción -->
-                                        ${item.descripcion ? `
-                                        <div class="rounded p-2" style="background: rgba(30, 60, 114, 0.05);">
-                                            <div class="d-flex align-items-start">
-                                                <i class="ri-file-text-line me-2 mt-1" style="color: #1e3c72;"></i>
-                                                <div>
-                                                    <small class="text-muted d-block">Descripción</small>
-                                                    <span style="font-size: 0.85rem;">${item.descripcion}</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        ` : ''}
-                                    </div>
-                                </div>
-                            `);
-                        });
-                    } else {
-                        productosBody.append('<p class="text-muted text-center py-4"><i class="ri-file-list-3-line fs-1 d-block mb-2"></i>No hay productos en esta cotización.</p>');
-                    }
-                    // Formatear el total
-                    var totalUsd = parseFloat(data.total || 0);
+
+                    // Paso 2 — Productos (grilla)
+                    viewRenderProductosGrilla(data.productos, data.tasa_cambio_valor);
+
+                    // Paso 3 — Resumen
+                    var subtotalUsd = (data.productos || []).reduce(function (acc, it) {
+                        return acc + parseFloat(it.precio_unitario) * parseInt(it.cantidad);
+                    }, 0);
+                    var ivaUsd   = subtotalUsd * 0.16;
+                    var totalUsd = subtotalUsd + ivaUsd;
+                    $('#view-resumen-subtotal').text(formatMoney(subtotalUsd));
+                    $('#view-resumen-iva').text(formatMoney(ivaUsd));
                     $('#view-total').text(formatMoney(totalUsd));
                     var bsLbl = (typeof window.bsEquivalente === 'function') ? window.bsEquivalente(totalUsd) : null;
                     $('#view-total-bs').text(bsLbl || 'Sin tasa BCV');
-                    // Establecer enlace PDF
+                    if (window.tasaBcv && window.tasaBcv.valor) {
+                        $('#view-resumen-tasa').text('Bs ' + parseFloat(window.tasaBcv.valor)
+                            .toLocaleString('es-VE', { minimumFractionDigits: 4, maximumFractionDigits: 4 }));
+                    }
+
+                    // PDF
                     $('#view-pdf-btn').attr('href', '/cotizaciones/' + id + '/pdf');
+
                     $('#viewModal').modal('show');
                 }
             });
@@ -2755,6 +2862,41 @@
                                 buttonsStyling: false,
                                 showCloseButton: true
                             })
+                        }
+                    });
+                }
+            });
+        });
+
+        // === REACTIVAR COTIZACIÓN VENCIDA ===
+        $('#cotizaciones-table').on('click', '.reactivar-btn', function () {
+            var id = $(this).data('id');
+            Swal.fire({
+                title: '¿Reactivar cotización?',
+                text: 'La cotización volverá a estado Pendiente con 15 días de validez desde hoy.',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Sí, reactivar',
+                cancelButtonText: 'Cancelar',
+                customClass: {
+                    confirmButton: 'btn btn-primary w-xs me-2',
+                    cancelButton: 'btn btn-light w-xs'
+                },
+                buttonsStyling: false,
+                showCloseButton: true
+            }).then(function (result) {
+                if (result.isConfirmed) {
+                    $.ajax({
+                        url: '/cotizaciones/' + id + '/reactivar',
+                        method: 'POST',
+                        data: { _token: $('meta[name="csrf-token"]').attr('content') },
+                        success: function (response) {
+                            Swal.fire({ icon: 'success', title: '¡Reactivada!', text: response.success, showConfirmButton: false, timer: 1800 });
+                            table.ajax.reload();
+                        },
+                        error: function (xhr) {
+                            var msg = (xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'No se pudo reactivar.';
+                            Swal.fire({ icon: 'error', title: 'Error', text: msg, showCloseButton: true });
                         }
                     });
                 }
@@ -3013,6 +3155,93 @@
             }
         });
 
+        // ════════════════════════════════════════════════════════════════════
+        //  MODAL DE BÚSQUEDA DE CLIENTE (lupa del paso 1)
+        //  Abierto vía JS (no data-bs-toggle) para no cerrar el wizard padre.
+        // ════════════════════════════════════════════════════════════════════
+        (function () {
+            var bclTimeout = null;
+
+            function bclRender(clientes) {
+                var $tbody = $('#bcl-tbody');
+                var $empty = $('#bcl-empty');
+                $tbody.empty();
+
+                if (!clientes || clientes.length === 0) {
+                    $empty.removeClass('d-none');
+                    $('#bcl-count-label').text('');
+                    return;
+                }
+
+                $empty.addClass('d-none');
+                $('#bcl-count-label').text(clientes.length + ' cliente(s) encontrado(s)');
+
+                clientes.forEach(function (c) {
+                    var doc = c.documento || '';
+                    var esJuridico = /^[JG]-/.test(doc);
+                    var tipoBadge = esJuridico
+                        ? '<span class="badge bg-soft-primary text-primary">Jurídico</span>'
+                        : '<span class="badge bg-soft-success text-success">Natural</span>';
+                    var nombre = (c.apellido ? c.nombre + ' ' + c.apellido : c.nombre) || '—';
+
+                    $('<tr style="cursor:pointer;">')
+                        .html(
+                            '<td class="fw-semibold">' + nombre + '</td>'
+                            + '<td class="font-monospace small">' + (doc || '—') + '</td>'
+                            + '<td>' + tipoBadge + '</td>'
+                            + '<td class="text-muted small">' + (c.telefono || '—') + '</td>'
+                        )
+                        .on('click', function () {
+                            aplicarPersonaACotizacion(c, c.id);
+                            $('#buscarClienteModal').modal('hide');
+                            $('#bcl-input').val('');
+                        })
+                        .appendTo($tbody);
+                });
+            }
+
+            function bclSearch(q) {
+                $('#bcl-loading').removeClass('d-none');
+                $('#bcl-empty').addClass('d-none');
+                $.ajax({
+                    url: '{{ route("clientes.search") }}',
+                    data: { q: q },
+                    success: function (data) {
+                        $('#bcl-loading').addClass('d-none');
+                        bclRender(data);
+                    },
+                    error: function () {
+                        $('#bcl-loading').addClass('d-none');
+                    }
+                });
+            }
+
+            $('#cot-cliente-browse-btn').on('click', function () {
+                $('#buscarClienteModal').modal('show');
+            });
+
+            $('#buscarClienteModal').on('shown.bs.modal', function () {
+                $('#bcl-input').trigger('focus');
+                if ($('#bcl-tbody tr').length === 0) {
+                    bclSearch('');
+                }
+            }).on('hidden.bs.modal', function () {
+                clearTimeout(bclTimeout);
+            });
+
+            $('#bcl-input').on('input', function () {
+                clearTimeout(bclTimeout);
+                bclTimeout = setTimeout(function () {
+                    bclSearch($('#bcl-input').val().trim());
+                }, 300);
+            });
+
+            $('#bcl-clear-btn').on('click', function () {
+                $('#bcl-input').val('').trigger('focus');
+                bclSearch('');
+            });
+        })();
+
         // --- MODAL AGREGAR CLIENTE DESDE COTIZACIÓN ---
 
         // Validación en tiempo real para nombre (solo letras y espacios)
@@ -3113,15 +3342,6 @@
             }
         });
 
-        // Listener para actualizar label del checkbox de estatus
-        $(document).on('change', '#estatus-field-cliente', function () {
-            if ($(this).is(':checked')) {
-                $('#estatus-label-cliente').text('Activo');
-            } else {
-                $('#estatus-label-cliente').text('Inactivo');
-            }
-        });
-
         // Dropdown dependiente: Poblar municipios cuando cambia el estado
         $(document).on('change', '#estado_territorial-field-cliente', function () {
             const estado = $(this).val();
@@ -3205,8 +3425,6 @@
             // Reset valores por defecto
             $('#documento-prefix-field-cliente').val('V-');
             $('#telefono-prefix-field-cliente').val('0424');
-            $('#estatus-field-cliente').prop('checked', true);
-            $('#estatus-label-cliente').text('Activo');
             $('#ciudad-field-cliente').html('<option value="">Primero seleccione un estado</option>');
             $('#tipo_cliente-field-cliente').val('');
             toggleClienteFieldsCotizacion();
@@ -3525,20 +3743,7 @@
                 $('.cot-priority-chip[data-value="' + val + '"]').addClass('is-active').attr('aria-checked', 'true');
             });
 
-            // === Chips de estado =============================================
-            $(document).on('click', '.cot-estado-chip', function () {
-                var $b = $(this);
-                var val = $b.data('value');
-                $('.cot-estado-chip').removeClass('is-active').attr('aria-checked', 'false');
-                $b.addClass('is-active').attr('aria-checked', 'true');
-                $('#estado-field').val(val).trigger('change');
-            });
-            $(document).on('change', '#estado-field', function () {
-                var val = $(this).val();
-                if (!val) return;
-                $('.cot-estado-chip').removeClass('is-active').attr('aria-checked', 'false');
-                $('.cot-estado-chip[data-value="' + val + '"]').addClass('is-active').attr('aria-checked', 'true');
-            });
+
 
             // === Atajos de fecha (validez) ==================================
             $(document).on('click', '.cot-date-chip', function () {
@@ -3585,22 +3790,38 @@
                 return (typeof products !== 'undefined' && Array.isArray(products)) ? products : [];
             }
 
+            function getCatalogoTipos() {
+                return (typeof catalogoTipos !== 'undefined' && Array.isArray(catalogoTipos)) ? catalogoTipos : [];
+            }
+
             function getTipoCount(tipoId) {
-                return getProductsList().filter(function (p) {
-                    return p.tipo_producto && p.tipo_producto.id == tipoId;
-                }).length;
+                var t = getCatalogoTipos().find(function (x) { return x.id == tipoId; });
+                return t ? (t.telas_count || 0) : 0;
             }
 
             function uniqueTipos() {
-                var byId = {};
-                getProductsList().forEach(function (p) {
-                    if (p.tipo_producto && !byId[p.tipo_producto.id]) {
-                        byId[p.tipo_producto.id] = p.tipo_producto;
-                    }
-                });
-                return Object.values(byId).sort(function (a, b) {
+                return getCatalogoTipos().slice().sort(function (a, b) {
                     return String(a.nombre || '').localeCompare(String(b.nombre || ''));
                 });
+            }
+
+            // Filtra los TIPOS del catálogo por búsqueda, tipos seleccionados y orden.
+            function getFilteredTipos() {
+                var list = getCatalogoTipos().slice();
+                var q = (catState.search || '').toLowerCase().trim();
+                list = list.filter(function (t) {
+                    if (q) {
+                        var nombre = (t.nombre || '').toLowerCase();
+                        var prefijo = (t.prefijo || '').toLowerCase();
+                        if (!nombre.startsWith(q) && !prefijo.startsWith(q)) return false;
+                    }
+                    if (catState.tipos.size && !catState.tipos.has(t.id)) return false;
+                    return true;
+                });
+                if (catState.sort === 'price-asc') list.sort(function (a, b) { return (parseFloat(a.precio_confeccion) || 0) - (parseFloat(b.precio_confeccion) || 0); });
+                else if (catState.sort === 'price-desc') list.sort(function (a, b) { return (parseFloat(b.precio_confeccion) || 0) - (parseFloat(a.precio_confeccion) || 0); });
+                else list.sort(function (a, b) { return String(a.nombre || '').localeCompare(String(b.nombre || '')); });
+                return list;
             }
 
             function renderFilterTipos() {
@@ -3634,6 +3855,7 @@
                 var list = getProductsList().slice();
                 var q = (catState.search || '').toLowerCase().trim();
                 list = list.filter(function (p) {
+                    if (p._dynamic) return false; // los productos virtuales no van al catálogo
                     if (q) {
                         var hay = ((p.codigo || '') + ' ' + (p.modelo || '') + ' ' +
                                    (p.tipo_producto ? p.tipo_producto.nombre : '')).toLowerCase();
@@ -3686,38 +3908,42 @@
             function renderGrid() {
                 var $grid = $('#cat-grid');
                 var $empty = $('#cat-grid-empty');
-                var items = getFilteredProducts();
-                var grupos = groupByTipo(items);
+                var tipos = getFilteredTipos();
 
-                $('#cat-results-count').text(grupos.length + ' familia' + (grupos.length === 1 ? '' : 's'));
+                $('#cat-results-count').text(tipos.length + ' tipo' + (tipos.length === 1 ? '' : 's'));
 
-                if (!grupos.length) {
+                if (!tipos.length) {
                     $grid.html('');
                     $empty.removeClass('d-none');
                     return;
                 }
                 $empty.addClass('d-none');
 
-                $grid.html(grupos.map(function (g) {
-                    var hasImg = !!g.firstImg;
-                    var imgBlock = hasImg
-                        ? '<img src="' + escapeForHtml(g.firstImg) + '" alt="" class="cat-card-img">'
+                $grid.html(tipos.map(function (t) {
+                    var imgBlock = t.imagen_url
+                        ? '<img src="' + escapeForHtml(t.imagen_url) + '" alt="" class="cat-card-img">'
                         : '<div class="cat-card-img-placeholder"><i class="ri-t-shirt-2-line"></i></div>';
-                    var rangoPrecio = g.precioMin === g.precioMax
-                        ? formatMoney(g.precioMin)
-                        : formatMoney(g.precioMin) + ' – ' + formatMoney(g.precioMax);
-                    var nVariantes = g.productos.length;
-                    var tipoId = g.tipo ? g.tipo.id : '';
+                    var nTelas = t.telas_count || 0;
+                    var nAtrib = t.atributos_count || 0;
+                    var meta = t.requiere_tela
+                        ? (nTelas + ' tela' + (nTelas === 1 ? '' : 's') + ' · ' + nAtrib + ' atributo' + (nAtrib === 1 ? '' : 's'))
+                        : ('Sin tela · ' + nAtrib + ' atributo' + (nAtrib === 1 ? '' : 's'));
+                    var precio = parseFloat(t.precio_confeccion || 0);
+                    var precioTxt = precio > 0 ? ('desde ' + formatMoney(precio)) : 'Precio al configurar';
+                    var precioBs = precio > 0 ? bsApprox(precio) : '';
+                    if (precioBs) {
+                        precioTxt += '<span class="money-bs-eq">' + precioBs + '</span>';
+                    }
                     return (
-                        '<button type="button" class="cat-card cat-card-tipo" data-tipo-id="' + tipoId + '">' +
+                        '<button type="button" class="cat-card cat-card-tipo" data-tipo-id="' + t.id + '">' +
                             '<div class="cat-card-media">' + imgBlock +
-                                '<span class="cat-card-tipo-badge">' + escapeForHtml(g.tipoNombre) + '</span>' +
+                                '<span class="cat-card-tipo-badge">' + escapeForHtml(t.nombre) + '</span>' +
                             '</div>' +
                             '<div class="cat-card-body">' +
-                                '<p class="cat-card-codigo"><i class="ri-stack-line me-1"></i>' + nVariantes + ' variante' + (nVariantes === 1 ? '' : 's') + '</p>' +
-                                '<h6 class="cat-card-modelo">' + escapeForHtml(g.tipoNombre) + '</h6>' +
+                                '<p class="cat-card-codigo"><i class="ri-shirt-line me-1"></i>' + meta + '</p>' +
+                                '<h6 class="cat-card-modelo">' + escapeForHtml(t.nombre) + '</h6>' +
                                 '<div class="cat-card-foot">' +
-                                    '<span class="cat-card-price">' + rangoPrecio + '</span>' +
+                                    '<span class="cat-card-price">' + precioTxt + '</span>' +
                                     '<span class="cat-card-cta">Elegir variante <i class="ri-arrow-right-line"></i></span>' +
                                 '</div>' +
                             '</div>' +
@@ -3744,6 +3970,7 @@
                     $list.html('').hide();
                     $empty.show();
                     $('#cat-cart-total').text(formatMoney(0));
+                    $('#cat-cart-total-bs').text(bsApprox(0));
                     $btn.prop('disabled', true);
                     return;
                 }
@@ -3756,10 +3983,14 @@
                     if (!p) return '';
                     var sub = parseFloat(it.subtotal || 0);
                     total += sub;
+                    // El modelo suele venir vacío; mostrar la familia (tipo) como en las tarjetas, luego código
+                    var nombreProd = (p.modelo && String(p.modelo).trim())
+                        ? p.modelo
+                        : ((p.tipo_producto && p.tipo_producto.nombre) ? p.tipo_producto.nombre : (p.codigo || '—'));
                     return (
                         '<div class="cat-cart-item">' +
                             '<div class="cat-cart-item-info">' +
-                                '<p class="cat-cart-item-name">' + escapeForHtml(p.modelo || '—') + '</p>' +
+                                '<p class="cat-cart-item-name">' + escapeForHtml(nombreProd) + '</p>' +
                                 '<p class="cat-cart-item-meta">' + escapeForHtml(it.summary || '') + '</p>' +
                             '</div>' +
                             '<div class="cat-cart-item-actions">' +
@@ -3770,6 +4001,7 @@
                     );
                 }).join(''));
                 $('#cat-cart-total').text(formatMoney(total));
+                $('#cat-cart-total-bs').text(bsApprox(total));
                 $btn.prop('disabled', false);
             }
 
@@ -3793,7 +4025,7 @@
                     if (!el) return;
                     catModalInstance = bootstrap.Modal.getOrCreateInstance(el);
                 }
-                $('#cat-eyebrow').text('Catálogo · ' + getProductsList().length + ' productos disponibles');
+                $('#cat-eyebrow').text('Catálogo · ' + getCatalogoTipos().length + ' tipos disponibles');
                 renderFilterTipos();
                 renderGrid();
                 renderCart();
@@ -3848,19 +4080,30 @@
                 });
             }
 
-            // Telas únicas usadas por productos del tipo
-            function telasDelTipo(productos) {
-                var byId = {};
-                productos.forEach(function (p) {
-                    if (p.tela && !byId[p.tela.id]) byId[p.tela.id] = p.tela;
-                });
-                return Object.values(byId).sort(function (a, b) {
+            // Telas permitidas del tipo (FEAT-003): vienen de tipo_producto_tela,
+            // ya no se deducen de los productos existentes.
+            function telasDelTipo() {
+                var telas = (vsState.tipo && Array.isArray(vsState.tipo.telas)) ? vsState.tipo.telas.slice() : [];
+                return telas.sort(function (a, b) {
                     return String(a.nombre || '').localeCompare(String(b.nombre || ''));
                 });
             }
 
+            // Chip seleccionable (radio oculto + label estilizada con check animado)
+            function vsChipHtml(opts) {
+                return '' +
+                    '<input type="radio" class="btn-check ' + opts.radioClass + '" name="' + opts.name + '" ' +
+                        'id="' + opts.id + '" value="' + opts.value + '"' + (opts.data || '') +
+                        (opts.checked ? ' checked' : '') + '>' +
+                    '<label class="vs-chip" for="' + opts.id + '">' +
+                        '<i class="ri-check-line vs-chip-check"></i>' +
+                        '<span>' + escapeForHtml(opts.label) + '</span>' +
+                        (opts.code ? '<span class="vs-chip-code">' + escapeForHtml(opts.code) + '</span>' : '') +
+                    '</label>';
+            }
+
             function vsRenderTelas() {
-                var telas = telasDelTipo(vsState.productos);
+                var telas = telasDelTipo();
                 var $cont = $('#vs-tela-options');
                 if (!telas.length) {
                     $('#vs-tela-section').hide();
@@ -3868,14 +4111,12 @@
                 }
                 $('#vs-tela-section').show();
                 $cont.html(telas.map(function (t) {
-                    var checked = vsState.telaId == t.id;
-                    return '' +
-                        '<input type="radio" class="btn-check vs-tela-radio" name="vs-tela" ' +
-                            'id="vs-tela-' + t.id + '" value="' + t.id + '"' + (checked ? ' checked' : '') + '>' +
-                        '<label class="btn btn-outline-primary btn-sm" for="vs-tela-' + t.id + '">' +
-                            escapeForHtml(t.nombre) +
-                            (t.codigo ? ' <small class="text-muted">' + escapeForHtml(t.codigo) + '</small>' : '') +
-                        '</label>';
+                    return vsChipHtml({
+                        radioClass: 'vs-tela-radio', name: 'vs-tela',
+                        id: 'vs-tela-' + t.id, value: t.id,
+                        checked: vsState.telaId == t.id,
+                        label: t.nombre, code: t.codigo || ''
+                    });
                 }).join(''));
             }
 
@@ -3883,33 +4124,71 @@
                 var $cont = $('#vs-atributos-section');
                 if (!vsState.tipo || !vsState.tipo.atributos || !vsState.tipo.atributos.length) {
                     $cont.html('<p class="text-muted small mb-0">Este tipo no tiene atributos asociados.</p>');
+                    vsRefrescarUI();
                     return;
                 }
                 var html = vsState.tipo.atributos.map(function (atr) {
                     if (!atr.valores || !atr.valores.length) {
-                        return '<div class="mb-3"><label class="form-label small fw-semibold mb-2">' +
-                            escapeForHtml(atr.nombre) + '</label>' +
+                        return '<div class="vs-section"><div class="vs-section-head">' +
+                            '<span class="vs-section-title">' + escapeForHtml(atr.nombre) + '</span></div>' +
                             '<p class="text-muted small fst-italic mb-0">Sin valores definidos.</p></div>';
                     }
                     var seleccionado = vsState.valoresPorAtributo[atr.id];
                     var chips = atr.valores.map(function (v) {
-                        var checked = seleccionado == v.id;
-                        return '' +
-                            '<input type="radio" class="btn-check vs-atributo-radio" name="vs-atr-' + atr.id + '" ' +
-                                'id="vs-val-' + v.id + '" value="' + v.id + '" data-atr-id="' + atr.id + '"' +
-                                (checked ? ' checked' : '') + '>' +
-                            '<label class="btn btn-outline-primary btn-sm" for="vs-val-' + v.id + '">' +
-                                escapeForHtml(v.nombre) +
-                            '</label>';
+                        return vsChipHtml({
+                            radioClass: 'vs-atributo-radio', name: 'vs-atr-' + atr.id,
+                            id: 'vs-val-' + v.id, value: v.id,
+                            data: ' data-atr-id="' + atr.id + '"',
+                            checked: seleccionado == v.id,
+                            label: v.nombre, code: ''
+                        });
                     }).join('');
-                    return '<div class="mb-3">' +
-                        '<label class="form-label small fw-semibold mb-2">' +
-                            escapeForHtml(atr.nombre) +
-                        '</label>' +
-                        '<div class="d-flex flex-wrap gap-2">' + chips + '</div>' +
+                    return '<div class="vs-section" data-vs-atr="' + atr.id + '">' +
+                        '<div class="vs-section-head">' +
+                            '<span class="vs-section-status" id="vs-status-atr-' + atr.id + '"><i class="ri-check-line"></i></span>' +
+                            '<span class="vs-section-title">' + escapeForHtml(atr.nombre) + '</span>' +
+                            '<span class="vs-section-pick" id="vs-pick-atr-' + atr.id + '"></span>' +
+                        '</div>' +
+                        '<div class="vs-chip-group">' + chips + '</div>' +
                     '</div>';
                 }).join('');
                 $cont.html(html);
+                vsRefrescarUI();
+            }
+
+            // Estado vivo del selector: marca secciones completas (check verde +
+            // valor elegido en la cabecera) y actualiza el contador de progreso.
+            function vsRefrescarUI() {
+                var total = 0, hechos = 0;
+                var telas = telasDelTipo();
+
+                if (telas.length) {
+                    total++;
+                    var tela = telas.find(function (t) { return t.id == vsState.telaId; });
+                    var done = !!tela;
+                    if (done) hechos++;
+                    $('#vs-tela-section').toggleClass('is-done', done);
+                    $('#vs-pick-tela').text(done ? tela.nombre : '');
+                }
+
+                ((vsState.tipo && vsState.tipo.atributos) || []).forEach(function (atr) {
+                    if (!atr.valores || !atr.valores.length) return;
+                    total++;
+                    var vid = vsState.valoresPorAtributo[atr.id];
+                    var val = (atr.valores || []).find(function (v) { return v.id == vid; });
+                    var done = !!val;
+                    if (done) hechos++;
+                    $('[data-vs-atr="' + atr.id + '"]').toggleClass('is-done', done);
+                    $('#vs-pick-atr-' + atr.id).text(done ? val.nombre : '');
+                });
+
+                var $prog = $('#vs-progress');
+                if (!total) { $prog.attr('hidden', true); return; }
+                $prog.removeAttr('hidden')
+                    .toggleClass('is-complete', hechos >= total)
+                    .html(hechos >= total
+                        ? '<i class="ri-checkbox-circle-fill me-1"></i>Combinación completa'
+                        : '<i class="ri-focus-2-line me-1"></i>' + hechos + ' de ' + total + ' elegidos');
             }
 
             function vsResolverVariante() {
@@ -3923,7 +4202,7 @@
                 var faltanAtributos = valoresIds.length < nAtributos;
                 if (faltaTela || faltanAtributos) {
                     $('#vs-result-found, #vs-result-missing').hide();
-                    $('#vs-confirm').prop('disabled', true).removeData('producto-id');
+                    $('#vs-confirm').prop('disabled', true).removeData('producto-id').removeData('variante');
                     return;
                 }
 
@@ -3935,16 +4214,123 @@
                     if (resp.found) {
                         $('#vs-result-codigo').text(resp.producto.codigo);
                         $('#vs-result-precio').text(formatMoney(resp.producto.precio_base));
+                        $('#vs-result-precio-bs').text(bsApprox(resp.producto.precio_base));
                         $('#vs-result-found').show();
                         $('#vs-result-missing').hide();
-                        $('#vs-confirm').prop('disabled', false).data('producto-id', resp.producto.id);
+                        if (resp.dynamic) {
+                            // Variante calculada al vuelo (no existe como Producto):
+                            // se confirma registrando un producto virtual en memoria.
+                            $('#vs-confirm').prop('disabled', false)
+                                .removeData('producto-id').data('variante', resp);
+                        } else {
+                            $('#vs-confirm').prop('disabled', false)
+                                .removeData('variante').data('producto-id', resp.producto.id);
+                        }
                     } else {
                         $('#vs-result-found').hide();
                         $('#vs-result-missing').show();
-                        $('#vs-confirm').prop('disabled', true).removeData('producto-id');
+                        $('#vs-confirm').prop('disabled', true).removeData('producto-id').removeData('variante');
                     }
                 });
             }
+
+            // Registra un "producto virtual" en memoria a partir de la respuesta
+            // dinámica del resolver, para que el resto del pipeline (configurador,
+            // carrito, tabla agrupada) lo trate como un producto normal por id.
+            // En el submit, addProductItem emite tipo_producto_id/tela/atributos.
+            var cotVirtualSeq = 0;
+            function cotRegistrarProductoVirtual(resp) {
+                var v = resp.variante, pr = resp.producto, tipo = vsState.tipo || {};
+                var existente = getProductsList().find(function (p) {
+                    return p._dynamic && p.codigo === v.sku;
+                });
+                if (existente) return existente.id;
+
+                var atributoValores = [];
+                (tipo.atributos || []).forEach(function (atr) {
+                    var vid = vsState.valoresPorAtributo[atr.id];
+                    if (!vid) return;
+                    var val = (atr.valores || []).find(function (x) { return x.id == vid; });
+                    if (val) atributoValores.push({ id: val.id, atributo_id: atr.id, nombre: val.nombre, codigo: val.codigo });
+                });
+
+                var nombreCompleto = [pr.tipo_nombre, pr.tela_nombre]
+                    .concat(atributoValores.map(function (x) { return x.nombre; }))
+                    .filter(Boolean).join(' ');
+
+                // La variante no tiene imagen propia: hereda la del Tipo (catálogo = Tipo).
+                var imagenTipo = tipo.imagen_url
+                    || ((getCatalogoTipos().find(function (x) { return x.id == v.tipo_producto_id; }) || {}).imagen_url)
+                    || null;
+
+                var virtual = {
+                    id: 'v' + (++cotVirtualSeq),
+                    _dynamic: true,
+                    _variante: {
+                        tipo_producto_id: v.tipo_producto_id,
+                        insumo_tela_id: v.insumo_tela_id || null,
+                        atributo_valor_ids: v.atributo_valor_ids || []
+                    },
+                    codigo: v.sku,
+                    precio_base: pr.precio_base,
+                    nombre: pr.tipo_nombre || 'Variante',
+                    nombre_completo: nombreCompleto,
+                    modelo: '',
+                    imagen: imagenTipo,
+                    tipo_producto: { id: v.tipo_producto_id, nombre: pr.tipo_nombre },
+                    tela: v.tela_snapshot ? { id: v.tela_snapshot.id, nombre: v.tela_snapshot.nombre, codigo: v.tela_snapshot.codigo } : null,
+                    atributo_valores: atributoValores
+                };
+                products.push(virtual);
+                return virtual.id;
+            }
+
+            // Reconstruye un producto virtual a partir de un DETALLE guardado (edición de
+            // cotización con línea dinámica: producto_id null + snapshots). Resuelve los
+            // atributo_valor_ids por NOMBRE usando los atributos/valores del tipo (tipoData).
+            // Devuelve el id virtual ('v...') para usar en addProductItem.
+            window.cotReconstruirVirtualDesdeDetalle = function (detalle, tipoData, precioBase) {
+                var tela = detalle.tela_snapshot || null;
+                var snap = detalle.atributos_snapshot || {}; // { atributoNombre: valorNombre }
+                var atributoValores = [];
+                var atrIds = [];
+                (tipoData && tipoData.atributos ? tipoData.atributos : []).forEach(function (atr) {
+                    var valorNombre = snap[atr.nombre];
+                    if (valorNombre == null) return;
+                    var val = (atr.valores || []).find(function (v) { return String(v.nombre) === String(valorNombre); });
+                    if (val) {
+                        atrIds.push(val.id);
+                        atributoValores.push({ id: val.id, atributo_id: atr.id, nombre: val.nombre, codigo: val.codigo });
+                    }
+                });
+
+                var tipoNombre = tipoData ? tipoData.nombre : 'Variante';
+                var nombreCompleto = [tipoNombre, tela ? tela.nombre : null]
+                    .concat(atributoValores.map(function (x) { return x.nombre; }))
+                    .filter(Boolean).join(' ');
+                var imagenTipo = tipoData ? tipoData.imagen_url : null;
+
+                var virtual = {
+                    id: 'v' + (++cotVirtualSeq),
+                    _dynamic: true,
+                    _variante: {
+                        tipo_producto_id: detalle.tipo_producto_id,
+                        insumo_tela_id: tela ? tela.id : null,
+                        atributo_valor_ids: atrIds
+                    },
+                    codigo: detalle.sku_snapshot || '',
+                    precio_base: precioBase,
+                    nombre: tipoNombre,
+                    nombre_completo: nombreCompleto,
+                    modelo: '',
+                    imagen: imagenTipo,
+                    tipo_producto: { id: detalle.tipo_producto_id, nombre: tipoNombre },
+                    tela: tela ? { id: tela.id, nombre: tela.nombre, codigo: tela.codigo } : null,
+                    atributo_valores: atributoValores
+                };
+                products.push(virtual);
+                return virtual.id;
+            };
 
             function vsAbrir(tipoId, opts) {
                 opts = opts || {};
@@ -3957,11 +4343,13 @@
 
                 $('#vs-tipo-nombre').text(vsState.productos[0]?.tipo_producto?.nombre || 'Variante');
                 $('#vs-result-found, #vs-result-missing').hide();
+                $('#vs-progress').attr('hidden', true);
                 $('#vs-confirm').prop('disabled', true).removeData('producto-id');
 
                 // Cargar info del tipo (atributos con sus valores)
                 $.getJSON("{{ url('tipo-productos') }}/" + tipoId).done(function (tipo) {
                     vsState.tipo = tipo;
+                    if (tipo && tipo.nombre) $('#vs-tipo-nombre').text(tipo.nombre);
                     vsRenderTelas();
                     vsRenderAtributos();
                     // Si vino con preselección, intentar resolver de inmediato
@@ -3974,18 +4362,111 @@
             }
             window.cotVarianteSelectorAbrir = vsAbrir;
 
+            // ════════════════════════════════════════════════════════════════
+            //  CREAR TELA INLINE (Insumo tipo='Tela') desde el selector
+            //  Solo se monta si el botón existe (gated por rol en Blade).
+            // ════════════════════════════════════════════════════════════════
+            (function () {
+                if (!document.getElementById('vs-add-tela-btn')) return;
+                var ctModal = new bootstrap.Modal(document.getElementById('crearTelaRapidaModal'));
+                var CT_CSRF = $('meta[name="csrf-token"]').attr('content');
+
+                function ctReset() {
+                    $('#ctForm')[0].reset();
+                    $('#ct-inventariable').prop('checked', true);
+                    $('#ct-stock-wrapper').show();
+                    $('#ct-nombre, #ct-codigo, #ct-costo').removeClass('is-invalid');
+                    $('#ct-nombre-error, #ct-codigo-error, #ct-costo-error').hide();
+                }
+
+                $('#ct-inventariable').on('change', function () {
+                    $('#ct-stock-wrapper').toggle(this.checked);
+                });
+
+                $('#vs-add-tela-btn').on('click', function () {
+                    if (!vsState.tipoId) return;
+                    ctReset();
+                    ctModal.show();
+                });
+
+                $('#ctForm').on('submit', function (e) {
+                    e.preventDefault();
+                    var nombre = $('#ct-nombre').val().trim();
+                    var costo = $('#ct-costo').val();
+                    var ok = true;
+                    if (!nombre) { $('#ct-nombre').addClass('is-invalid'); $('#ct-nombre-error').text('El nombre es obligatorio.').show(); ok = false; }
+                    else { $('#ct-nombre').removeClass('is-invalid'); $('#ct-nombre-error').hide(); }
+                    if (!costo || parseFloat(costo) <= 0) { $('#ct-costo').addClass('is-invalid'); $('#ct-costo-error').text('El costo debe ser mayor a 0.').show(); ok = false; }
+                    else { $('#ct-costo').removeClass('is-invalid'); $('#ct-costo-error').hide(); }
+                    if (!ok) return;
+
+                    var inv = $('#ct-inventariable').is(':checked');
+                    var payload = {
+                        _token: CT_CSRF,
+                        nombre: nombre,
+                        codigo: $('#ct-codigo').val().trim().toUpperCase() || null,
+                        unidad_medida: $('#ct-unidad').val(),
+                        is_inventoriable: inv ? 1 : 0,
+                        costo_unitario: costo,
+                        estado: $('#ct-estado').val(),
+                    };
+                    if (inv) {
+                        payload.stock_minimo = $('#ct-stock-min').val() || 0;
+                        payload.stock_actual = $('#ct-stock-actual').val() || 0;
+                        payload.stock_maximo = $('#ct-stock-max').val() || 0;
+                    }
+
+                    var $btn = $('#ct-submit-btn'), original = $btn.html();
+                    $btn.prop('disabled', true).html('<i class="ri-loader-4-line ri-spin me-1"></i>Guardando...');
+
+                    $.ajax({
+                        url: "{{ url('tipo-productos') }}/" + vsState.tipoId + "/telas",
+                        method: 'POST',
+                        data: payload,
+                        success: function (resp) {
+                            ctModal.hide();
+                            if (resp.tela && vsState.tipo) {
+                                vsState.tipo.telas = vsState.tipo.telas || [];
+                                vsState.tipo.telas.push(resp.tela);
+                                vsState.telaId = resp.tela.id;      // auto-seleccionar la nueva tela
+                                vsRenderTelas();
+                                vsRefrescarUI();
+                                vsResolverVariante();
+                            }
+                            Swal.fire({ icon: 'success', title: 'Tela creada', text: resp.message, showConfirmButton: false, timer: 1600 });
+                        },
+                        error: function (xhr) {
+                            var errs = xhr.responseJSON && xhr.responseJSON.errors || {};
+                            if (errs.codigo) { $('#ct-codigo').addClass('is-invalid'); $('#ct-codigo-error').text(errs.codigo[0]).show(); }
+                            if (errs.nombre) { $('#ct-nombre').addClass('is-invalid'); $('#ct-nombre-error').text(errs.nombre[0]).show(); }
+                            if (errs.costo_unitario) { $('#ct-costo').addClass('is-invalid'); $('#ct-costo-error').text(errs.costo_unitario[0]).show(); }
+                            if (!errs.codigo && !errs.nombre && !errs.costo_unitario) {
+                                Swal.fire({ icon: 'error', title: 'Error', text: (xhr.responseJSON && xhr.responseJSON.message) || 'No se pudo crear la tela.' });
+                            }
+                        },
+                        complete: function () { $btn.prop('disabled', false).html(original); }
+                    });
+                });
+            })();
+
             // Listeners del selector
             $(document).on('change', '.vs-tela-radio', function () {
                 vsState.telaId = parseInt(this.value);
+                vsRefrescarUI();
                 vsResolverVariante();
             });
             $(document).on('change', '.vs-atributo-radio', function () {
                 var atrId = $(this).data('atr-id');
                 vsState.valoresPorAtributo[atrId] = parseInt(this.value);
+                vsRefrescarUI();
                 vsResolverVariante();
             });
             $(document).on('click', '#vs-confirm', function () {
                 var pid = $(this).data('producto-id');
+                var variante = $(this).data('variante');
+                if (!pid && variante) {
+                    pid = cotRegistrarProductoVirtual(variante);
+                }
                 if (!pid) return;
                 var ctx = vsState.editContexto;
                 bootstrap.Modal.getInstance(document.getElementById('varianteSelectorModal'))?.hide();
@@ -4019,8 +4500,9 @@
 
             // Quitar item del carrito (delegado)
             $(document).on('click', '.cat-cart-item-remove', function () {
-                var pid = parseInt(this.dataset.productoId, 10);
-                window.cotCart = (window.cotCart || []).filter(function (it) { return it.productoId !== pid; });
+                // El id puede ser virtual ('v1') o numérico → comparar como string.
+                var pid = String(this.dataset.productoId);
+                window.cotCart = (window.cotCart || []).filter(function (it) { return String(it.productoId) !== pid; });
                 renderCart();
                 renderGrid();
             });
@@ -4105,7 +4587,7 @@
                 cfgState.producto = p;
                 cfgState.cartItemId = opts.cartItemId || null;
                 // Si veníamos editando un bloque de un producto distinto (cambio de variante),
-                // recordá el id original para que el patcher de guardado pueda borrar las cards correctas.
+                // recuerda el id original para que el patcher de guardado pueda borrar las cards correctas.
                 cfgState.productoIdOriginal = (opts.productoIdOriginal != null)
                     ? opts.productoIdOriginal
                     : p.id;
@@ -4157,6 +4639,7 @@
                     ? window.cotBuildVariantLabel(p) : '';
                 $('#cfg-info-tipo').text(variantLabel || ('Tipo: ' + tipoNombre));
                 $('#cfg-info-precio').text(formatMoney(parseFloat(p.precio_base || 0)));
+                $('#cfg-info-precio-bs').text(bsApprox(parseFloat(p.precio_base || 0)));
 
                 // Mostrar botón "Cambiar variante" solo si el tipo tiene >1 producto activo
                 var tipoId = p.tipo_producto ? p.tipo_producto.id : null;
@@ -4260,7 +4743,9 @@
                 $('#cfg-tallas-total').text(qty);
                 $('#cfg-summary-qty').text(qty);
                 $('#cfg-summary-unit').text(formatMoney(unit));
+                $('#cfg-summary-unit-bs').text(bsApprox(unit));
                 $('#cfg-summary-subtotal').text(formatMoney(subtotal));
+                $('#cfg-summary-subtotal-bs').text(bsApprox(subtotal));
 
                 $('#cfg-save-btn').prop('disabled', !(cfgState.colorId && qty > 0 && unit > 0));
             }
@@ -4276,6 +4761,119 @@
                 $('#cfg-color-selected').text(cfgState.colorNombre || 'Sin seleccionar');
                 refreshSummary();
             });
+
+            // ════════════════════════════════════════════════════════════════
+            //  CREAR COLOR INLINE (extensión del maestro Colores)
+            //  Solo se monta si el botón existe (gated por rol en Blade).
+            // ════════════════════════════════════════════════════════════════
+            (function () {
+                if (!document.getElementById('cfg-add-color-btn')) return;
+                var CC_HEX_RE = /^#[0-9A-Fa-f]{6}$/;
+                var ccModal = new bootstrap.Modal(document.getElementById('crearColorRapidoModal'));
+
+                function ccSetHex(hex) {
+                    hex = (hex || '').toUpperCase();
+                    $('#cc-hex-text').val(hex);
+                    if (CC_HEX_RE.test(hex)) {
+                        $('#cc-hex').val(hex);
+                        $('#cc-preview-dot').css('background', hex);
+                    }
+                }
+                function ccGetGrupo() {
+                    var sel = $('#cc-grupo').val();
+                    if (sel === '__new__') return $('#cc-grupo-nuevo').val().trim();
+                    return sel || '';
+                }
+                function ccPoblarGrupos() {
+                    var grupos = [];
+                    (coloresArray || []).forEach(function (c) {
+                        if (c.grupo && grupos.indexOf(c.grupo) === -1) grupos.push(c.grupo);
+                    });
+                    grupos.sort(function (a, b) { return a.localeCompare(b, 'es'); });
+                    var opts = '<option value="">Sin grupo</option>';
+                    grupos.forEach(function (g) {
+                        opts += '<option value="' + escForHtml(g) + '">' + escForHtml(g) + '</option>';
+                    });
+                    opts += '<option value="__new__">➕ Nuevo grupo…</option>';
+                    $('#cc-grupo').html(opts);
+                }
+                function ccReset() {
+                    $('#ccForm')[0].reset();
+                    $('#cc-nombre, #cc-hex-text').removeClass('is-invalid is-valid');
+                    $('#cc-nombre-error, #cc-hex-error').hide();
+                    $('#cc-grupo-nuevo').addClass('d-none').val('');
+                    ccPoblarGrupos();
+                    ccSetHex('#1B3A5C');
+                    $('#cc-preview-name').text('Nombre del color');
+                }
+
+                $('#cc-hex').on('input', function () { ccSetHex(this.value); });
+                $('#cc-hex-text').on('input', function () { ccSetHex(this.value); });
+                $('#cc-nombre').on('input', function () {
+                    $('#cc-preview-name').text($(this).val().trim() || 'Nombre del color');
+                });
+                $('#cc-grupo').on('change', function () {
+                    var nuevo = this.value === '__new__';
+                    $('#cc-grupo-nuevo').toggleClass('d-none', !nuevo);
+                    if (nuevo) $('#cc-grupo-nuevo').val('').focus();
+                });
+
+                $('#cfg-add-color-btn').on('click', function () {
+                    ccReset();
+                    // Prefijar el grupo con el contexto actual si el color elegido tenía uno
+                    ccModal.show();
+                });
+
+                $('#ccForm').on('submit', function (e) {
+                    e.preventDefault();
+                    var nombre = $('#cc-nombre').val().trim();
+                    var hex = $('#cc-hex-text').val().trim().toUpperCase();
+                    var ok = true;
+                    if (nombre.length < 2) {
+                        $('#cc-nombre').removeClass('is-valid').addClass('is-invalid');
+                        $('#cc-nombre-error').text('El nombre debe tener al menos 2 caracteres.').show();
+                        ok = false;
+                    } else { $('#cc-nombre').removeClass('is-invalid'); $('#cc-nombre-error').hide(); }
+                    if (!CC_HEX_RE.test(hex)) {
+                        $('#cc-hex-text').removeClass('is-valid').addClass('is-invalid');
+                        $('#cc-hex-error').text('El HEX debe tener el formato #RRGGBB.').show();
+                        ok = false;
+                    } else { $('#cc-hex-text').removeClass('is-invalid'); $('#cc-hex-error').hide(); }
+                    if (!ok) return;
+
+                    var $btn = $('#cc-submit-btn'), original = $btn.html();
+                    $btn.prop('disabled', true).html('<i class="ri-loader-4-line ri-spin me-1"></i>Guardando...');
+
+                    $.ajax({
+                        url: "{{ route('colores.store') }}",
+                        method: 'POST',
+                        data: { nombre: nombre, grupo: ccGetGrupo(), hex_referencial: hex, _token: '{{ csrf_token() }}' },
+                        success: function (resp) {
+                            ccModal.hide();
+                            var nuevo = resp.color;
+                            if (nuevo) {
+                                coloresArray.push(nuevo);
+                                // Auto-seleccionar el color recién creado
+                                cfgState.colorId = nuevo.id;
+                                cfgState.colorNombre = nuevo.nombre;
+                                cfgState.colorHex = nuevo.hex_referencial;
+                                renderColorGrid();
+                                refreshSummary();
+                            }
+                            Swal.fire({ icon: 'success', title: 'Color creado', text: resp.message, showConfirmButton: false, timer: 1500 });
+                        },
+                        error: function (xhr) {
+                            var errs = xhr.responseJSON && xhr.responseJSON.errors || {};
+                            if (errs.nombre) { $('#cc-nombre').removeClass('is-valid').addClass('is-invalid'); $('#cc-nombre-error').text(errs.nombre[0]).show(); }
+                            if (errs.hex_referencial) { $('#cc-hex-text').removeClass('is-valid').addClass('is-invalid'); $('#cc-hex-error').text(errs.hex_referencial[0]).show(); }
+                            if (!errs.nombre && !errs.hex_referencial) {
+                                Swal.fire({ icon: 'error', title: 'Error', text: (xhr.responseJSON && xhr.responseJSON.message) || 'No se pudo crear el color.' });
+                            }
+                        },
+                        complete: function () { $btn.prop('disabled', false).html(original); }
+                    });
+                });
+            })();
 
             // Cambio en cantidad por talla
             $(document).on('input', '#cfg-tallas-grid .cfg-talla-cell-input', function () {
@@ -4573,8 +5171,10 @@
                     var $card = $(this);
                     var prodId = $card.find('.producto-id-input').val();
                     var colorId = $card.find('.color-id-input').val() || '';
-                    var bordados = (typeof getCardBordados === 'function') ? getCardBordados($card) : [];
-                    var llevaBordado = parseInt($card.find('.lleva-bordado-value').val() || 0, 10) === 1;
+                    // Fuente de verdad de bordados: cotGroupBordadosState; fallback al data() de la card.
+                    var bordados = getEffectiveBordadosForCard($card);
+                    var llevaBordado = (bordados.length > 0) ||
+                        (parseInt($card.find('.lleva-bordado-value').val() || 0, 10) === 1);
                     var bKey = llevaBordado ? bordadosKey(bordados) : 'sb';
                     var key = (prodId || 'x') + '|' + (colorId || 'x') + '|' + bKey;
 
@@ -4660,8 +5260,14 @@
 
                 var rowsHtml = groups.map(function (g, idx) {
                     var prodCodigo = g.producto && g.producto.codigo ? g.producto.codigo : '—';
-                    var prodModelo = g.producto && g.producto.modelo ? g.producto.modelo : '(producto sin definir)';
                     var tipoLabel = g.producto && g.producto.tipo_producto ? g.producto.tipo_producto.nombre : '';
+                    // Si hay modelo propio: pill de familia + modelo como título.
+                    // Si no: el título es la familia (sin pill redundante).
+                    var hasModelo = !!(g.producto && g.producto.modelo && String(g.producto.modelo).trim());
+                    var prodTitulo = hasModelo ? g.producto.modelo : (tipoLabel || '(producto sin definir)');
+                    var prodPill = (hasModelo && tipoLabel)
+                        ? '<span class="cot-tipo-pill">' + escForHtml(tipoLabel) + '</span>'
+                        : '';
                     var variantLabel = buildVariantLabel(g.producto);
                     var colorName = g.color ? g.color.nombre : (g.colorId ? '#' + g.colorId : 'Sin color');
                     var colorHex = g.color ? g.color.hex_referencial : '#cccccc';
@@ -4674,11 +5280,22 @@
                                '</span>';
                     }).join('');
 
-                    var bordadoLine = g.llevaBordado
-                        ? ('<div class="cot-grouped-bordado-line"><i class="ri-scissors-cut-line"></i> ' +
-                                g.bordados.length + ' bordado' + (g.bordados.length === 1 ? '' : 's') +
-                                ' · +' + formatMoney(g.unitWithBordado - g.unitBase) + '/u</div>')
-                        : '';
+                    var bordadoCount = g.bordados ? g.bordados.length : 0;
+                    var bordadoRecargo = (g.unitWithBordado || 0) - (g.unitBase || 0);
+                    var bordadoLine;
+                    if (bordadoCount > 0) {
+                        bordadoLine = '<div class="cot-grouped-bordado-line cot-grouped-bordado-line--ok">' +
+                            '<i class="ri-scissors-cut-line"></i>' +
+                            bordadoCount + ' bordado' + (bordadoCount === 1 ? '' : 's') +
+                            (bordadoRecargo > 0 ? ' · +' + formatMoney(bordadoRecargo) + '/u' : '') +
+                            '</div>';
+                    } else if (g.llevaBordado) {
+                        bordadoLine = '<div class="cot-grouped-bordado-line cot-grouped-bordado-line--pending">' +
+                            '<i class="ri-error-warning-line"></i>Bordado sin configurar</div>';
+                    } else {
+                        bordadoLine = '<div class="cot-grouped-bordado-line cot-grouped-bordado-line--none">' +
+                            '<i class="ri-subtract-line"></i>Sin bordado</div>';
+                    }
 
                     var indices = g.cards.map(function (c) { return c.productIndex; }).join(',');
                     var unitDisplay = formatMoney(g.unitWithBordado);
@@ -4690,11 +5307,11 @@
                         '<tr class="cot-grouped-row" data-group-key="' + escForHtml(g.key) + '" data-product-id="' + escForHtml(g.productoId) + '" data-color-id="' + escForHtml(g.colorId) + '" data-card-indices="' + escForHtml(indices) + '">' +
                             '<td class="cot-col-num">' + (idx + 1) + '</td>' +
                             '<td class="cot-col-prod">' +
-                                (tipoLabel ? '<span class="cot-tipo-pill">' + escForHtml(tipoLabel) + '</span>' : '') +
-                                '<div class="cot-prod-modelo">' + escForHtml(prodModelo) + '</div>' +
-                                '<div class="cot-prod-codigo">' + escForHtml(prodCodigo) + '</div>' +
+                                prodPill +
+                                '<div class="cot-prod-modelo">' + escForHtml(prodTitulo) + '</div>' +
+                                '<div class="cot-prod-codigo"><i class="ri-barcode-line"></i>' + escForHtml(prodCodigo) + '</div>' +
                                 (variantLabel
-                                    ? '<div class="cot-prod-variant" style="font-size:.72rem;color:#475569;margin-top:2px;"><i class="ri-shape-2-line me-1"></i>' + escForHtml(variantLabel) + '</div>'
+                                    ? '<div class="cot-prod-variant"><i class="ri-shape-2-line"></i>' + escForHtml(variantLabel) + '</div>'
                                     : '') +
                             '</td>' +
                             '<td class="cot-col-color">' +
@@ -4748,7 +5365,9 @@
             // Eliminar bloque entero
             $(document).on('click', '.cot-action-delete', function () {
                 var $blk = $(this).closest('.cot-grouped-row');
-                var indices = String($blk.data('card-indices') || '').split(',').filter(Boolean);
+                // .attr() (no .data()): jQuery coacciona data-card-indices="0" al numero 0,
+                // y `0 || ''` daria '' (0 es falsy) dejando sin indices al primer producto.
+                var indices = String($blk.attr('data-card-indices') || '').split(',').filter(Boolean);
                 Swal.fire({
                     icon: 'warning',
                     title: '¿Eliminar bloque?',
@@ -4772,7 +5391,7 @@
             // Editar bloque → reabre configurador con datos cargados
             $(document).on('click', '.cot-action-edit', function () {
                 var $blk = $(this).closest('.cot-grouped-row');
-                var prodId = parseInt($blk.data('product-id'), 10);
+                var prodId = $blk.data('product-id');          // puede ser virtual ('v1') o numérico
                 var colorId = parseInt($blk.data('color-id'), 10);
                 var groupKey = $blk.data('group-key');
 
@@ -4781,9 +5400,9 @@
                 var precioFromCards = null;
                 $('#productos-container .product-item').each(function () {
                     var $c = $(this);
-                    var pid = parseInt($c.find('.producto-id-input').val(), 10);
+                    var pid = String($c.find('.producto-id-input').val());
                     var cid = parseInt($c.find('.color-id-input').val(), 10);
-                    if (pid !== prodId || cid !== colorId) return;
+                    if (pid !== String(prodId) || cid !== colorId) return;
                     var tid = parseInt($c.find('.talla-input-value').val(), 10);
                     var qty = parseInt($c.find('.cantidad-input').val(), 10) || 0;
                     if (tid && qty > 0) tallasMap[tid] = qty;
@@ -4874,9 +5493,9 @@
                         var colorId = lastItem.colorId;
                         $('#productos-container .product-item').each(function () {
                             var $c = $(this);
-                            var pid = parseInt($c.find('.producto-id-input').val(), 10);
+                            var pid = String($c.find('.producto-id-input').val());
                             var cid = parseInt($c.find('.color-id-input').val(), 10);
-                            if (pid === prodIdParaBorrar && cid === colorId) $c.remove();
+                            if (pid === String(prodIdParaBorrar) && cid === colorId) $c.remove();
                         });
 
                         // 2) Insertar nuevas cards del item editado (una por talla)
@@ -5135,7 +5754,9 @@
                 });
                 $('#cot-kpi-items').text($items.length);
                 $('#cot-kpi-subtotal').text(formatMoney(subtotal));
+                $('#cot-kpi-subtotal-bs').text(bsApprox(subtotal));
                 $('#cot-kpi-total').text(formatMoney(subtotal));
+                $('#cot-kpi-total-bs').text(bsApprox(subtotal));
             }
 
             function refreshResumen() {
@@ -5159,24 +5780,41 @@
                             ? ' <span class="cot-resumen-bordado-pill"><i class="ri-scissors-cut-line"></i> bordado</span>'
                             : '';
                         var unitDisplay = formatMoney(g.unitWithBordado);
-                        var unitNote = (g.llevaBordado && g.unitWithBordado !== g.unitBase)
-                            ? '<small class="cot-resumen-unit-note">' + formatMoney(g.unitBase) + ' + ' + formatMoney(g.unitWithBordado - g.unitBase) + '</small>'
+                        var unitNoteTxt = (g.llevaBordado && g.unitWithBordado !== g.unitBase)
+                            ? (formatMoney(g.unitBase) + ' + ' + formatMoney(g.unitWithBordado - g.unitBase) + ' bordado')
                             : '';
+                        var codigo = (g.producto && g.producto.codigo) ? g.producto.codigo : '';
+                        var tipoNombre = (g.producto && g.producto.tipo_producto) ? g.producto.tipo_producto.nombre : '(sin tipo)';
+                        var colorHex = g.color ? g.color.hex_referencial : null;
+                        var tallasPills = g.cards.map(function (c) {
+                            return '<span class="cot-linea-talla">' + escHtmlW(c.tallaLabel) + '<b>×' + c.qty + '</b></span>';
+                        }).join('');
+                        var imgUrl = (g.producto && g.producto.imagen) ? g.producto.imagen : '';
+                        var thumb = imgUrl
+                            ? '<div class="cot-linea-thumb"><img src="' + escHtmlW(imgUrl) + '" alt="" class="cot-linea-thumb-img"></div>'
+                            : '<div class="cot-linea-thumb"><span class="cot-linea-thumb-ph"><i class="ri-t-shirt-2-line"></i></span></div>';
 
                         rows.push(
-                            '<tr>' +
-                                '<td>' +
-                                    '<div class="cot-resumen-row-prod">' + escHtmlW(prodLabel) + bordadoBadge + '</div>' +
-                                    (variantLabel ? '<div class="cot-resumen-row-variant" style="font-size:.72rem;color:#475569;margin:2px 0;"><i class="ri-shape-2-line me-1"></i>' + escHtmlW(variantLabel) + '</div>' : '') +
-                                    '<div class="cot-resumen-row-meta">' +
-                                        (colorName ? '<span>' + escHtmlW(colorName) + '</span>' : '') +
-                                        '<span class="cot-resumen-row-tallas">' + escHtmlW(tallasTxt) + '</span>' +
+                            '<div class="cot-linea-card">' +
+                                thumb +
+                                '<div class="cot-linea-info">' +
+                                    '<div class="cot-linea-top">' +
+                                        (codigo ? '<span class="cot-linea-codigo">' + escHtmlW(codigo) + '</span>' : '') +
+                                        '<span class="cot-linea-nombre">' + escHtmlW(tipoNombre) + '</span>' +
+                                        bordadoBadge +
                                     '</div>' +
-                                '</td>' +
-                                '<td class="text-center align-middle"><strong>' + g.totalQty + '</strong></td>' +
-                                '<td class="text-end font-monospace align-middle">' + unitDisplay + unitNote + '</td>' +
-                                '<td class="text-end font-monospace fw-semibold align-middle">' + formatMoney(g.totalSubtotal) + '</td>' +
-                            '</tr>'
+                                    '<div class="cot-linea-chips">' +
+                                        (variantLabel ? '<span class="cot-linea-chip"><i class="ri-shape-2-line"></i>' + escHtmlW(variantLabel) + '</span>' : '') +
+                                        (colorName ? '<span class="cot-linea-chip"><span class="cot-linea-swatch" style="background:' + (colorHex || '#cbd5e1') + '"></span>' + escHtmlW(colorName) + '</span>' : '') +
+                                    '</div>' +
+                                    (tallasPills ? '<div class="cot-linea-tallas">' + tallasPills + '</div>' : '') +
+                                '</div>' +
+                                '<div class="cot-linea-precio">' +
+                                    '<div class="cot-linea-qxu">' + g.totalQty + ' u × ' + unitDisplay + '</div>' +
+                                    (unitNoteTxt ? '<div class="cot-linea-unitnote">' + unitNoteTxt + '</div>' : '') +
+                                    '<div class="cot-linea-sub">' + formatMoney(g.totalSubtotal) + '</div>' +
+                                '</div>' +
+                            '</div>'
                         );
                     });
                 } else {
@@ -5187,24 +5825,33 @@
                         var s = readLineState($c);
                         var rowSubtotal = s.qty * s.unit;
                         subtotal += rowSubtotal;
-                        var prodName = $c.find('.producto-text-display').val() || 'Producto sin definir';
+                        var $prodSel = $c.find('.producto-dropdown');
+                        var prodName = $prodSel.length
+                            ? ($prodSel.find('option:selected').text() || 'Producto sin definir')
+                            : ($c.find('.producto-text-display').val() || 'Producto sin definir');
                         var colorName = $c.find('.color-display').val() || '';
                         var tallaName = $c.find('.talla-input-display').val() || '';
                         var bits = [colorName, tallaName].filter(Boolean).join(' · ');
-                        var label = prodName + (bits ? ' — ' + bits : '');
                         rows.push(
-                            '<tr>' +
-                                '<td class="text-truncate" style="max-width:0;" title="' + escHtmlW(label) + '">' + escHtmlW(label) + '</td>' +
-                                '<td class="text-center">' + s.qty + '</td>' +
-                                '<td class="text-end font-monospace">' + formatMoney(s.unit) + '</td>' +
-                                '<td class="text-end font-monospace fw-semibold">' + formatMoney(rowSubtotal) + '</td>' +
-                            '</tr>'
+                            '<div class="cot-linea-card">' +
+                                '<div class="cot-linea-thumb"><span class="cot-linea-thumb-ph"><i class="ri-t-shirt-2-line"></i></span></div>' +
+                                '<div class="cot-linea-info">' +
+                                    '<div class="cot-linea-top">' +
+                                        '<span class="cot-linea-nombre">' + escHtmlW(prodName) + '</span>' +
+                                    '</div>' +
+                                    (bits ? '<div class="cot-linea-chips"><span class="cot-linea-chip">' + escHtmlW(bits) + '</span></div>' : '') +
+                                '</div>' +
+                                '<div class="cot-linea-precio">' +
+                                    '<div class="cot-linea-qxu">' + s.qty + ' u × ' + formatMoney(s.unit) + '</div>' +
+                                    '<div class="cot-linea-sub">' + formatMoney(rowSubtotal) + '</div>' +
+                                '</div>' +
+                            '</div>'
                         );
                     });
                 }
 
                 if (!rows.length) {
-                    rows.push('<tr><td colspan="4" class="text-center text-muted py-3 small">Sin productos agregados</td></tr>');
+                    rows.push('<div class="cot-lineas-empty text-center text-muted py-3 small">Sin productos agregados</div>');
                 }
                 var iva = subtotal * IVA_RATE;
                 var total = subtotal + iva;
@@ -5212,7 +5859,12 @@
                 $('#cot-resumen-subtotal').text(formatMoney(subtotal));
                 $('#cot-resumen-iva').text(formatMoney(iva));
                 $('#cot-resumen-total').text(formatMoney(total));
-                // Equivalente en Bs (tasa BCV del día, expuesta por el layout)
+                // Tasa BCV del día y equivalente en Bs
+                if (window.tasaBcv && window.tasaBcv.valor) {
+                    $('#cot-resumen-tasa').text('Bs ' + parseFloat(window.tasaBcv.valor).toLocaleString('es-VE', { minimumFractionDigits: 4, maximumFractionDigits: 4 }));
+                } else {
+                    $('#cot-resumen-tasa').text('No disponible');
+                }
                 var bsLabel = (typeof window.bsEquivalente === 'function') ? window.bsEquivalente(total) : null;
                 $('#cot-resumen-total-bs').text(bsLabel || 'Sin tasa BCV');
             }
@@ -5247,15 +5899,74 @@
                 setTimeout(refreshKPIs, 600);
             });
 
+            // Actualiza la hora visible (formato 12h con am/pm)
+            function refreshBannerHora() {
+                var now = new Date();
+                var h = now.getHours();
+                var ampm = h >= 12 ? 'p.m.' : 'a.m.';
+                h = h % 12; if (h === 0) h = 12;
+                var mm = String(now.getMinutes()).padStart(2, '0');
+                $('#cot-banner-hora').text(h + ':' + mm + ' ' + ampm);
+            }
+
+            // Actualiza la fecha visible: usa la fecha de emisión si está, si no, hoy
+            function refreshBannerFecha() {
+                var raw = $('#fecha-cotizacion-field').val();
+                if (raw) {
+                    var parts = raw.split('-');
+                    $('#cot-banner-fecha-val').text(parts[2] + '/' + parts[1] + '/' + parts[0]);
+                } else {
+                    var now = new Date();
+                    var dd = String(now.getDate()).padStart(2, '0');
+                    var mo = String(now.getMonth() + 1).padStart(2, '0');
+                    $('#cot-banner-fecha-val').text(dd + '/' + mo + '/' + now.getFullYear());
+                }
+            }
+
+            // Refleja la tasa BCV del día en el header (formato del header global)
+            function refreshBannerBcv() {
+                if (window.tasaBcv && window.tasaBcv.valor) {
+                    var val = Number(window.tasaBcv.valor)
+                        .toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                    $('#cot-banner-bcv-val').text('Bs. ' + val);
+                    if (window.tasaBcv.fecha) {
+                        var p = String(window.tasaBcv.fecha).split('-');
+                        $('#cot-banner-bcv-fecha').text(p.length === 3 ? (p[2] + '/' + p[1]) : '');
+                    }
+                } else {
+                    $('#cot-banner-bcv-val').text('N/D');
+                    $('#cot-banner-bcv-fecha').text('');
+                }
+            }
+
+            // Sincronizar banner-fecha al cambiar el input de fecha
+            $(document).on('change', '#fecha-cotizacion-field', refreshBannerFecha);
+
+            // Reloj en vivo: actualiza la hora mientras el modal está abierto
+            var horaInterval = null;
+
             // Reset al abrir el modal
-            $('#showModal').on('show.bs.modal', function () { showStep(1); refreshKPIs(); });
+            $('#showModal').on('show.bs.modal', function () {
+                refreshBannerHora();
+                refreshBannerFecha();
+                refreshBannerBcv();
+                showStep(1);
+                refreshKPIs();
+                clearInterval(horaInterval);
+                horaInterval = setInterval(refreshBannerHora, 1000);
+            });
             $('#showModal').on('shown.bs.modal', function () { showStep(currentStep); });
-            $('#showModal').on('hidden.bs.modal', function () { currentStep = 1; });
+            $('#showModal').on('hidden.bs.modal', function () {
+                currentStep = 1;
+                clearInterval(horaInterval);
+                horaInterval = null;
+            });
 
             // API global por si otras funciones quieren usarlo
             window.cotWizard = {
                 show: showStep, next: nextStep, prev: prevStep,
-                refreshKPIs: refreshKPIs, refreshResumen: refreshResumen
+                refreshKPIs: refreshKPIs, refreshResumen: refreshResumen,
+                refreshBannerFecha: refreshBannerFecha
             };
         })();
     });

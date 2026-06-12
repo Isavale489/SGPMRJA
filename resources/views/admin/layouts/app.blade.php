@@ -138,12 +138,45 @@
         } @else null @endif;
 
         // Helper: convierte un monto en USD a string "Bs X.XXX,XX" (formato Venezuela).
+        // Acepta una tasa específica (rateOverride) para respetar la tasa guardada en el
+        // documento (cotización/pedido); si no se pasa, usa la tasa BCV vigente global.
         // Devuelve null si no hay tasa disponible — el caller decide qué mostrar.
-        window.bsEquivalente = function (usd) {
-            if (!window.tasaBcv || !window.tasaBcv.valor) return null;
-            var bs = Number(usd || 0) * Number(window.tasaBcv.valor);
+        window.bsEquivalente = function (usd, rateOverride) {
+            var rate = (rateOverride != null && Number(rateOverride) > 0)
+                ? Number(rateOverride)
+                : ((window.tasaBcv && window.tasaBcv.valor) ? Number(window.tasaBcv.valor) : null);
+            if (!rate) return null;
+            var bs = Number(usd || 0) * rate;
             return 'Bs ' + bs.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         };
+
+        // Helper: formatea una tasa de cambio como "Bs X.XXX,XXXX" (4 decimales).
+        window.bsTasaFmt = function (rateOverride) {
+            var rate = (rateOverride != null && Number(rateOverride) > 0)
+                ? Number(rateOverride)
+                : ((window.tasaBcv && window.tasaBcv.valor) ? Number(window.tasaBcv.valor) : null);
+            if (!rate) return null;
+            return 'Bs ' + rate.toLocaleString('es-VE', { minimumFractionDigits: 4, maximumFractionDigits: 4 });
+        };
+
+        // Rellena toda píldora BCV declarativa: cualquier elemento con [data-bcv-pill]
+        // que contenga spans [data-bcv-fecha] y [data-bcv-val]. Permite mostrar la tasa
+        // del día en headers de modales sin repetir el script por módulo.
+        document.addEventListener('DOMContentLoaded', function () {
+            var fecha = '', valor = null;
+            if (window.tasaBcv && window.tasaBcv.valor) {
+                valor = 'Bs. ' + Number(window.tasaBcv.valor)
+                    .toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                var p = String(window.tasaBcv.fecha || '').split('-');
+                fecha = (p.length === 3) ? (p[2] + '/' + p[1]) : '';
+            }
+            document.querySelectorAll('[data-bcv-pill]').forEach(function (pill) {
+                var f = pill.querySelector('[data-bcv-fecha]');
+                var v = pill.querySelector('[data-bcv-val]');
+                if (f) f.textContent = fecha;
+                if (v) v.textContent = valor || 'N/D';
+            });
+        });
     </script>
 
     <!-- JAVASCRIPT -->
@@ -186,6 +219,10 @@
 
     <!-- App js -->
     <script src="{{ asset('assets/js/app.js') }}"></script>
+
+    <!-- SweetAlert2 — global para todos los módulos y para AtlanticoGuard -->
+    <link href="{{ asset('assets/libs/sweetalert2/sweetalert2.min.css') }}" rel="stylesheet" type="text/css" />
+    <script src="{{ asset('assets/libs/sweetalert2/sweetalert2.min.js') }}"></script>
 
     <!-- Notificaciones del header (campanita) -->
     @auth
@@ -801,6 +838,228 @@
                 }
             });
         });
+    </script>
+    {{-- Guard de cambios sin guardar — auto-detecta todos los .atlantico-modal con <form> --}}
+    <script>
+        const AtlanticoGuard = (function () {
+            'use strict';
+
+            function init() {
+                $('.atlantico-modal').each(function () {
+                    var $modal     = $(this);
+                    var $form      = $modal.find('form').first();
+                    if (!$form.length) return;
+
+                    var isDirty    = false;
+                    var forceClose = false;
+
+                    // Resetear al abrir el modal
+                    $modal.on('shown.bs.modal', function () {
+                        isDirty = false;
+                    });
+
+                    // Cualquier interacción del usuario en un campo activa el flag
+                    $modal.on('input.guard change.guard',
+                        'input:not([type="hidden"]), select, textarea',
+                        function () { isDirty = true; }
+                    );
+
+                    // Al enviar el form (submit via jQuery o nativo) → limpiar flag
+                    // para que el cierre post-guardado no dispare el guard
+                    $form.on('submit.guard', function () {
+                        isDirty = false;
+                    });
+
+                    // Módulos que guardan via click (no form submit, ej. pedidos con e.preventDefault)
+                    // usan data-guard-save-btn="btn-id" para indicar su botón de guardado
+                    var saveBtnId = $modal.data('guardSaveBtn');
+                    if (saveBtnId) {
+                        $(document).on('click.guard-' + saveBtnId, '#' + saveBtnId, function () {
+                            isDirty = false;
+                        });
+                    }
+
+                    $modal.on('hide.bs.modal', function (e) {
+                        if (forceClose) {
+                            forceClose = false;
+                            return;
+                        }
+
+                        // Solo activar si: el usuario hizo cambios Y hay un registro existente
+                        // data-guard-id-field permite que cada modal declare su campo ID (default: id-field)
+                        var idField = $modal.data('guardIdField') || 'id-field';
+                        var editandoExistente = !!$form.find('#' + idField).val();
+                        if (!isDirty || !editandoExistente) return;
+
+                        e.preventDefault();
+
+                        Swal.fire({
+                            title: '¿Tienes cambios sin guardar?',
+                            text: 'Si cierras ahora, perderás los cambios realizados.',
+                            icon: 'warning',
+                            showCancelButton: true,
+                            showDenyButton:   true,
+                            confirmButtonColor: '#1e3c72',
+                            denyButtonColor:    '#e74c3c',
+                            cancelButtonColor:  '#6c757d',
+                            confirmButtonText:  'Guardar',
+                            denyButtonText:     'Descartar',
+                            cancelButtonText:   'Seguir editando',
+                            reverseButtons: true
+                        }).then(function (result) {
+                            if (result.isConfirmed) {
+                                // Si el módulo declara un botón de guardado custom (ej. pedidos),
+                                // lo clickeamos directamente en vez de hacer trigger('submit')
+                                var customSave = $modal.data('guardSaveBtn');
+                                if (customSave) {
+                                    $('#' + customSave).trigger('click');
+                                } else {
+                                    $form.trigger('submit');
+                                }
+                            } else if (result.isDenied) {
+                                forceClose = true;
+                                $modal.modal('hide');
+                            }
+                        });
+                    });
+                });
+            }
+
+            return { init: init };
+        })();
+
+        $(document).ready(function () {
+            AtlanticoGuard.init();
+        });
+
+        // ──────────────────────────────────────────────────────────────────
+        // AtlanticoSelect — realza los <select> a un dropdown Bootstrap cuyo menú
+        // muestra ~4 ítems con scroll (el <select> nativo no permite limitar la
+        // altura de su lista). Aplica a TODO el sistema con resguardos:
+        //   · omite Select2, multiple, size>1, sin opciones y [data-no-afs]
+        //   · el <select> nativo se conserva (oculto sr-only) como fuente de verdad
+        //     → required/validación nativa y envío de formularios siguen OK
+        //   · reconstruye el menú si las opciones cambian por JS (MutationObserver)
+        //   · re-sincroniza la etiqueta al abrir modales (tras poblarse los valores)
+        // El JS existente (lectura de .val() y evento change) sigue igual.
+        // ──────────────────────────────────────────────────────────────────
+        (function () {
+            'use strict';
+
+            function isEligible(sel) {
+                var $s = $(sel);
+                if ($s.data('afsEnhanced')) return false;
+                if (sel.multiple || sel.size > 1) return false;             // listbox/multiple
+                if ($s.is('[data-no-afs]')) return false;                   // opt-out explícito
+                if ($s.hasClass('select2-hidden-accessible')) return false; // gestionado por Select2
+                if ($s.closest('.afs-wrap').length) return false;           // ya realzado
+                if (!sel.options || sel.options.length === 0) return false; // aún sin opciones
+                return true;
+            }
+
+            function rebuildMenu(sel, $menu) {
+                $menu.empty();
+                $.each(sel.options, function (i, opt) {
+                    $('<li></li>').append(
+                        $('<button type="button" class="dropdown-item afs-option"></button>')
+                            .attr('data-value', opt.value)
+                            .text(opt.text)
+                    ).appendTo($menu);
+                });
+            }
+
+            function syncToggle(sel, $wrap) {
+                var opt = sel.options[sel.selectedIndex];
+                $wrap.children('.afs-toggle')
+                    .find('.afs-label').text(opt ? opt.text : '').end()
+                    .prop('disabled', !!sel.disabled);   // refleja disabled (p.ej. cargo en cascada)
+                $wrap.find('.afs-option').each(function () {
+                    $(this).toggleClass('active', this.getAttribute('data-value') === sel.value);
+                });
+            }
+
+            function enhance(sel) {
+                if (!isEligible(sel)) return;
+                var $select = $(sel);
+                $select.data('afsEnhanced', true);
+
+                var $wrap = $('<div class="dropdown afs-wrap"></div>');
+                $select.before($wrap);
+                $wrap.append($select);
+
+                // Dentro de input-group: el wrap actúa como flex item de Bootstrap y
+                // hereda las restricciones de ancho del <select> nativo (prefijos
+                // V-/J-, 0424… usan .tipo-doc-select/.phone-prefix-select con max-width;
+                // dept/cargo no las tienen y crecen para llenar). Así no se rompe el
+                // layout flex ni la continuidad de bordes (el CSS .afs-wrap--ig remata).
+                if ($select.closest('.input-group').length) {
+                    $wrap.addClass('afs-wrap--ig');
+                    var cs = window.getComputedStyle(sel);
+                    if (cs.maxWidth && cs.maxWidth !== 'none') $wrap.css('max-width', cs.maxWidth);
+                    if (cs.minWidth && cs.minWidth !== '0px') $wrap.css('min-width', cs.minWidth);
+                }
+
+                var $toggle = $('<button type="button" class="afs-toggle form-select" data-bs-toggle="dropdown" aria-expanded="false"><span class="afs-label"></span></button>');
+                var $menu = $('<ul class="dropdown-menu afs-menu w-100"></ul>');
+                rebuildMenu(sel, $menu);
+                $wrap.append($toggle).append($menu);
+                syncToggle(sel, $wrap);
+
+                // Elegir opción → refleja en el select + dispara change
+                $menu.on('click', '.afs-option', function () {
+                    var val = this.getAttribute('data-value');
+                    if (sel.value !== val) { $select.val(val).trigger('change'); }
+                    syncToggle(sel, $wrap);
+                });
+                // Cambios del select (incl. programáticos con change) → re-sincroniza
+                $select.on('change', function () { syncToggle(sel, $wrap); });
+                // Al abrir, re-sincroniza por si el valor cambió sin disparar change
+                $wrap.on('show.bs.dropdown', function () { syncToggle(sel, $wrap); });
+
+                // Si el JS cambia las opciones (childList) o habilita/deshabilita el
+                // select (attributes → disabled), reconstruye el menú y re-sincroniza.
+                if (window.MutationObserver) {
+                    new MutationObserver(function () {
+                        rebuildMenu(sel, $menu);
+                        syncToggle(sel, $wrap);
+                    }).observe(sel, { childList: true, attributes: true, attributeFilter: ['disabled'] });
+                }
+
+                // Recién aquí se oculta el nativo (degradación elegante si algo falló).
+                $select.addClass('afs-native');
+            }
+
+            function enhanceVisible(ctx) {
+                $(ctx || document).find('select').each(function () {
+                    // En el barrido general omite los no visibles (plantillas y
+                    // selects de modales cerrados): se realzan al mostrarse el modal.
+                    if (!$(this).is(':visible')) return;
+                    enhance(this);
+                });
+            }
+
+            // Filtros: al ready (sin parpadeo en barras visibles, aunque estén en
+            // un panel colapsado).
+            $(document).ready(function () {
+                $('select.navy-filter-select').each(function () { enhance(this); });
+            });
+
+            // Resto del sistema: tras load, cuando Select2 (init en ready) ya es
+            // detectable y se puede omitir.
+            $(window).on('load', function () { enhanceVisible(document); });
+
+            // Selects dentro de modales: realzar y re-sincronizar etiquetas DESPUÉS
+            // de que el modal inicialice Select2 y pueble sus valores (defer 0ms).
+            $(document).on('shown.bs.modal', function (e) {
+                var modal = e.target;
+                setTimeout(function () {
+                    enhanceVisible(modal);
+                    $(modal).find('select.afs-native').each(function () {
+                        syncToggle(this, $(this).closest('.afs-wrap'));
+                    });
+                }, 0);
+            });
+        })();
     </script>
     @stack('scripts')
 </body>

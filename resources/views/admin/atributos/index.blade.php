@@ -115,7 +115,7 @@
     </div>
 
     {{-- Modal: Crear / Editar Atributo --}}
-    <div class="modal fade atlantico-modal" id="atributoModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal fade atlantico-modal" id="atributoModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false" data-guard-id-field="atr-id">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
@@ -144,12 +144,12 @@
                         </div>
                         <div class="mb-0">
                             <label for="atr-tipos-producto" class="form-label">Tipos de Producto</label>
-                            <select id="atr-tipos-producto" class="form-select" multiple style="min-height: 90px;">
+                            <select id="atr-tipos-producto" class="form-select" multiple>
                                 @foreach($tiposProducto as $tp)
                                     <option value="{{ $tp->id }}">{{ $tp->nombre }}</option>
                                 @endforeach
                             </select>
-                            <small class="text-muted">Selecciona uno o varios. Mantén <kbd>Ctrl</kbd> para selección múltiple.</small>
+                            <small class="text-muted">Selecciona uno o varios desde el desplegable.</small>
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -166,7 +166,7 @@
     </div>
 
     {{-- Modal: Crear / Editar Valor --}}
-    <div class="modal fade atlantico-modal" id="valorModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal fade atlantico-modal" id="valorModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false" data-guard-id-field="val-id">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
@@ -228,6 +228,74 @@
 
         let atributosCache = [];
         let selectedAtributo = null;
+
+        // Tipos de Producto: multi-selección compacta in-house (AtlanticoMultiSelect).
+        // Reemplaza a Select2 para evitar bugs de posicionamiento/altura dentro del
+        // modal. El <select multiple> nativo queda oculto (.afs-native) como fuente de
+        // verdad: el resto del JS sigue leyendo/escribiendo con .val()/.trigger('change').
+        const $tiposNative = $('#atr-tipos-producto');
+        const $amsWrap     = $('<div class="ams-wrap dropdown"></div>');
+        const $amsControl  = $('<div class="ams-control form-select" data-bs-toggle="dropdown" tabindex="0" role="button" aria-expanded="false"></div>');
+        const $amsMenu     = $('<ul class="dropdown-menu ams-menu w-100"></ul>');
+
+        // Construye un ítem por cada <option> (checkbox + etiqueta, sin inyección de HTML).
+        $tiposNative.find('option').each(function () {
+            const $cb    = $('<input type="checkbox" class="form-check-input m-0">').val(this.value);
+            const $label = $('<label class="ams-option"></label>').append($cb).append($('<span></span>').text(this.text));
+            $amsMenu.append($('<li></li>').append($label));
+        });
+        if (!$amsMenu.children().length) {
+            $amsMenu.append('<li class="ams-empty">No hay tipos de producto registrados.</li>');
+        }
+
+        $tiposNative.addClass('afs-native').after($amsWrap);
+        $amsWrap.append($amsControl, $amsMenu);
+
+        function renderAmsControl() {
+            const $selected = $tiposNative.find('option:selected');
+            $amsControl.empty();
+            if (!$selected.length) {
+                $amsControl.append('<span class="ams-placeholder">Selecciona uno o varios tipos…</span>');
+                return;
+            }
+            $selected.each(function () {
+                $amsControl.append(
+                    $('<span class="ams-chip"></span>')
+                        .append($('<span class="ams-chip-label"></span>').text(this.text))
+                        .append($('<button type="button" class="ams-chip-remove" aria-label="Quitar">&times;</button>').attr('data-val', this.value))
+                );
+            });
+        }
+
+        function syncAmsCheckboxes() {
+            $amsMenu.find('input[type="checkbox"]').each(function () {
+                this.checked = $tiposNative.find('option[value="' + this.value + '"]').prop('selected');
+            });
+        }
+
+        // Toggle desde el menú (checkbox). El click en el <label> ya togglea el input.
+        $amsMenu.on('change', 'input[type="checkbox"]', function () {
+            $tiposNative.find('option[value="' + this.value + '"]').prop('selected', this.checked);
+            renderAmsControl();
+        });
+        // Mantener el dropdown abierto al elegir varios (closeOnSelect: false).
+        $amsMenu.on('click', '.ams-option', function (e) { e.stopPropagation(); });
+
+        // Quitar un chip sin abrir/cerrar el dropdown.
+        $amsControl.on('click', '.ams-chip-remove', function (e) {
+            e.stopPropagation();
+            $tiposNative.find('option[value="' + $(this).data('val') + '"]').prop('selected', false);
+            renderAmsControl();
+            syncAmsCheckboxes();
+        });
+
+        // Reflejar en la UI cuando el JS externo hace .val(ids).trigger('change').
+        $tiposNative.on('change', function () {
+            renderAmsControl();
+            syncAmsCheckboxes();
+        });
+
+        renderAmsControl();
 
         // ----------- ATRIBUTOS -----------
         function loadAtributos() {
@@ -311,11 +379,9 @@
             $('#atr-nombre').val(atr?.nombre || '').removeClass('is-invalid');
             $('#atr-codigo').val(atr?.codigo || '').removeClass('is-invalid').prop('readonly', isEdit);
             $('#atr-descripcion').val(atr?.descripcion || '');
-            // Pre-seleccionar tipos de producto asociados
+            // Pre-seleccionar tipos de producto asociados (Select2 refleja el valor al disparar change)
             const ids = (atr?.tipos_producto_ids || []).map(String);
-            $('#atr-tipos-producto option').each(function() {
-                $(this).prop('selected', ids.includes($(this).val()));
-            });
+            $('#atr-tipos-producto').val(ids).trigger('change');
             $('#btn-save-atributo .btn-label').text(isEdit ? 'Actualizar' : 'Crear');
             new bootstrap.Modal('#atributoModal').show();
         }

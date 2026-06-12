@@ -34,11 +34,13 @@ class PersonaController extends Controller
                     ->withCount('cotizaciones')
                     ->withMax('cotizaciones', 'fecha_cotizacion'),
                 'empleado',
-                'proveedor' => fn ($q) => $q->where('estado', 1),
+                'proveedor' => fn ($q) => $q->where('estado', 1)
+                    ->withCount('compras')
+                    ->withMax('compras', 'fecha_compra'),
                 'telefonos',
                 'direcciones',
             ])
-            ->where('documento_identidad', 'LIKE', "%{$escaped}%")
+            ->where('documento_identidad', 'LIKE', "{$escaped}%")
             ->limit(10)
             ->get();
 
@@ -63,6 +65,8 @@ class PersonaController extends Controller
                 'persona_id'      => $persona->id,
                 'cliente_id'      => $persona->cliente?->id,
                 'tipo_cliente'    => $persona->cliente?->tipo_cliente,
+                'proveedor_id'    => $persona->proveedor?->id,
+                'proveedor_tipo'  => $persona->proveedor?->tipo_proveedor,
                 'documento'       => $persona->documento_completo,
                 'tipo_documento'  => $persona->tipo_documento,
                 'documento_num'   => $persona->documento_identidad,
@@ -80,6 +84,9 @@ class PersonaController extends Controller
                 // Mini-stats del cliente (null si la persona aún no es cliente)
                 'cotizaciones_count'    => $persona->cliente?->cotizaciones_count ?? null,
                 'cotizaciones_last_date' => $persona->cliente?->cotizaciones_max_fecha_cotizacion ?? null,
+                // Mini-stats del proveedor (null si la persona aún no es proveedor)
+                'compras_count'    => $persona->proveedor?->compras_count ?? null,
+                'compras_last_date' => $persona->proveedor?->compras_max_fecha_compra ?? null,
             ];
         })->filter()->values();
 

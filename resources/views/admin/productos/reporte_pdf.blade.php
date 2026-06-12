@@ -1,62 +1,29 @@
 @extends('layouts.pdf')
 
-@section('page-title', 'Reporte de Productos')
-@section('report-title', 'Reporte General de Productos')
+@section('page-title', 'Catálogo de Tipos de Producto')
+@section('report-title', $historial ? 'Catálogo de Tipos (Historial / Inhabilitados)' : 'Catálogo de Tipos de Producto')
 
 @section('extra-styles')
-    .col-imagen {
-        width: 8%;
-        text-align: center;
-    }
-
-    .col-nombre {
-        width: 18%;
-        font-weight: 600;
-    }
-
-    .col-modelo {
-        width: 12%;
-    }
-
-    .col-descripcion {
-        width: 25%;
-    }
-
-    .col-precio {
-        width: 12%;
-        text-align: right;
-    }
-
-    .col-estatus {
-        width: 8%;
-        text-align: center;
-    }
-
-    .col-creado {
-        width: 10%;
-        text-align: center;
-    }
-
-    .product-image {
-        width: 50px;
-        height: auto;
-        display: block;
-        margin: 0 auto;
-    }
+    .col-nombre   { width: 26%; font-weight: 600; }
+    .col-prefijo  { width: 12%; text-align: center; }
+    .col-precio   { width: 18%; text-align: right; }
+    .col-telas    { width: 12%; text-align: center; }
+    .col-atrib    { width: 12%; text-align: center; }
+    .col-tela-req { width: 14%; text-align: center; }
 @endsection
 
 @section('summary-bar')
     <td>
-        <span class="label">Total Registros:</span>
-        <span class="value">{{ $productos->count() }}</span>
+        <span class="label">Total Tipos:</span>
+        <span class="value">{{ $tipos->count() }}</span>
     </td>
     <td>
-        <span class="label">Activos:</span>
-        <span class="value">{{ $productos->where('estado', 1)->count() }}</span>
+        <span class="label">Con tela:</span>
+        <span class="value">{{ $tipos->where('requiere_tela', true)->count() }}</span>
     </td>
     <td>
-        <span class="label">Inactivos:</span>
-        <span class="value">{{ $productos->where('estado', 0)->count() }}</span>
+        <span class="label">Sin tela:</span>
+        <span class="value">{{ $tipos->where('requiere_tela', false)->count() }}</span>
     </td>
 @endsection
 
@@ -65,34 +32,28 @@
         <thead>
             <tr>
                 <th class="col-num">#</th>
-                <th class="col-imagen">Imagen</th>
-                <th class="col-nombre">Nombre</th>
-                <th class="col-descripcion">Descripción</th>
-                <th class="col-precio">Precio Base ($)</th>
-                <th class="col-estatus">Estado</th>
-                <th class="col-creado">Fecha Creación</th>
+                <th class="col-nombre">Tipo</th>
+                <th class="col-prefijo">Prefijo</th>
+                <th class="col-precio">Precio Confección ($)</th>
+                <th class="col-telas">Telas</th>
+                <th class="col-atrib">Atributos</th>
+                <th class="col-tela-req">¿Requiere tela?</th>
             </tr>
         </thead>
         <tbody>
-            @foreach($productos as $index => $producto)
+            @foreach($tipos as $index => $tipo)
                 <tr class="{{ $index % 2 === 1 ? 'zebra' : '' }}">
                     <td class="col-num">{{ $index + 1 }}</td>
-                    <td class="col-imagen">
-                        @if($producto->imagen)
-                            <img src="{{ public_path($producto->imagen) }}" alt="Imagen Producto" class="product-image">
-                        @else
-                            Sin imagen
-                        @endif
-                    </td>
-                    <td class="col-nombre">{{ $producto->nombre }}</td>
-                    <td class="col-descripcion">{{ $producto->descripcion }}</td>
-                    <td class="col-precio">{{ number_format($producto->precio_base, 2) }}</td>
-                    <td class="col-estatus">
-                        <span class="{{ $producto->estado ? 'badge-activo' : 'badge-inactivo' }}">
-                            {{ $producto->estado ? 'Activo' : 'Inactivo' }}
+                    <td class="col-nombre">{{ $tipo->nombre }}</td>
+                    <td class="col-prefijo">{{ $tipo->prefijo }}</td>
+                    <td class="col-precio">{{ number_format($tipo->precio_confeccion, 2) }}</td>
+                    <td class="col-telas">{{ $tipo->requiere_tela ? $tipo->telas_count : '—' }}</td>
+                    <td class="col-atrib">{{ $tipo->atributos_count }}</td>
+                    <td class="col-tela-req">
+                        <span class="{{ $tipo->requiere_tela ? 'badge-activo' : 'badge-inactivo' }}">
+                            {{ $tipo->requiere_tela ? 'Sí' : 'No' }}
                         </span>
                     </td>
-                    <td class="col-creado">{{ \Carbon\Carbon::parse($producto->created_at)->format('d/m/Y') }}</td>
                 </tr>
             @endforeach
         </tbody>

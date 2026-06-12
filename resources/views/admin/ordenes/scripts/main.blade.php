@@ -1,30 +1,9 @@
+<!-- SortableJS — solo para el módulo Órdenes (Kanban de sub-órdenes) -->
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.3/Sortable.min.js"></script>
 <script>
-    // Validación onblur: fecha_fin_estimada debe ser posterior a fecha_inicio
-    $(document).on('blur', '#fecha-fin-estimada-field', function () {
-        let finVal = $(this).val();
-        let inicioVal = $('#fecha-inicio-field').val();
-        if (finVal && inicioVal) {
-            if (finVal <= inicioVal) {
-                marcarInvalido($(this), 'La fecha fin estimada debe ser posterior a la fecha de inicio.');
-            } else {
-                marcarValido($(this));
-            }
-        } else if (finVal) {
-            marcarValido($(this));
-        }
-    });
-
-    // Validación onblur: fecha_inicio — obligatoria
-    $(document).on('blur', '#fecha-inicio-field', function () {
-        if (!$(this).val()) {
-            marcarInvalido($(this), 'La fecha de inicio es obligatoria.');
-        } else {
-            marcarValido($(this));
-        }
-        let $fin = $('#fecha-fin-estimada-field');
-        if ($fin.val()) { $fin.trigger('blur'); }
-    });
-
+    // ─────────────────────────────────────────────────────────────
+    // Validaciones onblur de modales auxiliares (insumo nested + avance)
+    // ─────────────────────────────────────────────────────────────
     // Validación al cerrar Select2 — insumo obligatorio (modal nested)
     $(document).on('select2:close', '#insumo-add-select', function () {
         if (!$(this).val()) {
@@ -77,8 +56,10 @@
         // ══════════════════════════════════════════════════════
         // Helpers
         // ══════════════════════════════════════════════════════
-        function fmtMoneda(n) {
-            return Number(n || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        var viewKanbanOrdenId = null; // ID de la OP actualmente en viewModal
+
+        function escHtml(s) {
+            return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
         }
         const hoyISO = () => new Date().toISOString().split('T')[0];
         const formatDateForInput = (dateString) => {
@@ -103,13 +84,21 @@
             }
             return fin;
         }
+        function parseDMY(s) { // "dd/mm/yyyy" -> "yyyy-mm-dd" para comparar
+            if (!s) return '';
+            const m = String(s).split('/');
+            return m.length === 3 ? (m[2] + '-' + m[1] + '-' + m[0]) : '';
+        }
+        function debounce(func, wait) {
+            let timeout;
+            return function () {
+                const context = this, args = arguments;
+                clearTimeout(timeout);
+                timeout = setTimeout(() => func.apply(context, args), wait);
+            };
+        }
 
-        // ── Insumos: estado + grilla + nested modal ──────────────────
-        // Estado en memoria. Render → tabla visible + hidden inputs en #insumos-container
-        // (fuente de verdad para FormData).
-        let ordenInsumosState = []; // [{ id, nombre, unidad, cantidad }]
-
-        // Select2 dentro del nested modal de agregar
+        // Select2 dentro del nested modal de agregar insumo
         $('#insumo-add-select').select2({
             theme: 'bootstrap-5',
             placeholder: 'Seleccione insumo...',
@@ -117,81 +106,195 @@
             dropdownParent: $('#insumoAddModal')
         });
 
-        function renderInsumosGrid() {
-            const $tbody    = $('#orden-insumos-tbody');
-            const $empty    = $('#orden-insumos-empty');
-            const $wrap     = $('#orden-insumos-table-wrap');
-            const $hidden   = $('#insumos-container');
-            $('#orden-insumos-count').text('(' + ordenInsumosState.length + ')');
+        // ══════════════════════════════════════════════════════════════
+        // WIZARD ORDEN — estado unificado (escala de 1 a N líneas)
+        // ══════════════════════════════════════════════════════════════
+        const TOTAL_STEPS = 4;
+        let currentStep = 1;
 
-            if (!ordenInsumosState.length) {
-                $tbody.empty();
-                $hidden.empty();
-                $wrap.attr('hidden', true);
-                $empty.show();
-                return;
-            }
-            $empty.hide();
-            $wrap.removeAttr('hidden');
+        // Estado del wizard. Cada "línea" = una orden a crear/editar.
+        // línea: { detalle_id, producto_id, producto_nombre, cantidad, color, talla,
+        //          lleva_bordado, bordados_count, empleado_id, fecha_inicio,
+        //          fecha_fin_estimada, estado, insumos:[{id,nombre,unidad,cantidad}] }
+        let ordWiz = { mode: 'create', editId: null, pedido: null, lineas: [] };
+        function isEditMode() { return ordWiz.mode === 'edit'; }
 
-            $tbody.html(ordenInsumosState.map(function (it, idx) {
-                const cant = parseFloat(it.cantidad).toFixed(2);
-                return '<tr>' +
-                    '<td class="cot-col-num">' + (idx + 1) + '</td>' +
-                    '<td class="cot-col-prod">' +
-                        '<div class="fw-semibold">' + escHtml(it.nombre) + '</div>' +
-                        (it.unidad ? '<small class="text-muted">' + escHtml(it.unidad) + '</small>' : '') +
-                    '</td>' +
-                    '<td class="cot-col-num text-end fw-semibold">' + cant + '</td>' +
-                    '<td class="cot-col-acc text-center">' +
-                        '<button type="button" class="btn btn-sm btn-soft-primary edit-insumo-btn me-1" data-idx="' + idx + '" title="Editar"><i class="ri-pencil-line"></i></button>' +
-                        '<button type="button" class="btn btn-sm btn-soft-danger remove-insumo" data-idx="' + idx + '" title="Quitar"><i class="ri-delete-bin-line"></i></button>' +
-                    '</td>' +
-                '</tr>';
-            }).join(''));
-
-            // Sincronizar hidden inputs (fuente de verdad para FormData)
-            $hidden.html(ordenInsumosState.map(function (it, idx) {
-                return '<input type="hidden" name="insumos[' + idx + '][id]" value="' + it.id + '">' +
-                       '<input type="hidden" name="insumos[' + idx + '][cantidad_estimada]" value="' + it.cantidad + '">';
-            }).join(''));
-        }
-
-        function resetInsumos() {
-            ordenInsumosState = [];
-            renderInsumosGrid();
-        }
-
-        function abrirInsumoAddModal(idx) {
-            $('#insumoAddModal').find('.is-invalid, .is-valid').removeClass('is-invalid is-valid');
-            if (idx != null && ordenInsumosState[idx]) {
-                const it = ordenInsumosState[idx];
-                $('#insumo-add-edit-idx').val(idx);
-                $('#insumoAddModal-title').text('Editar insumo');
-                $('#insumo-add-confirm-label').text('Guardar');
-                $('#insumo-add-select').val(it.id).trigger('change');
-                $('#insumo-add-cantidad').val(it.cantidad);
-            } else {
-                $('#insumo-add-edit-idx').val('');
-                $('#insumoAddModal-title').text('Agregar insumo');
-                $('#insumo-add-confirm-label').text('Agregar');
-                $('#insumo-add-select').val('').trigger('change');
-                $('#insumo-add-cantidad').val('');
-            }
-            $('#insumoAddModal').modal('show');
-        }
-
-        // ══════════════════════════════════════════════════════
-        // SELECCIÓN DE PEDIDO / LÍNEA (modal de cards)
-        // ══════════════════════════════════════════════════════
+        // Pedidos disponibles (paso 1)
         let pedidosOrdenData = [];
 
-        $(document).on('shown.bs.modal', '#seleccionarPedidoModal', function () {
-            pedordResetFiltros();
-            cargarPedidosDisponibles();
-        });
+        // Insumo nested modal — línea destino + índice del insumo en edición
+        let ordInsLineIdx = null;
+        let ordInsEditIdx = null;
 
-        function cargarPedidosDisponibles() {
+        function empleadoOptionsHtml() { return $('#ord-empleados-tpl').html(); }
+
+        // Chips de cabecera (cliente + creador)
+        function ordSetCreador(name, avatar) {
+            $('#ord-creador-name').text(name || '—');
+            if (avatar) $('#ord-creador-avatar').attr('src', avatar);
+        }
+        function ordResetCreador() {
+            const $b = $('#ord-creador-banner');
+            ordSetCreador($b.data('default-name'), $b.data('default-avatar'));
+        }
+        function ordSetClienteBanner(name, doc) {
+            const n = (name || '').trim();
+            $('#ord-banner-name').text(n || '—');
+            $('#ord-banner-doc').text(doc || '');
+            $('#ord-banner-avatar').text(n ? n.charAt(0).toUpperCase() : '—');
+        }
+
+        // Chips de atributos de una línea (color / talla / bordado)
+        function lineaMetaChips(l) {
+            const cls = 'badge rounded-pill badge-soft-secondary fw-normal';
+            const chips = [];
+            chips.push('<span class="' + cls + '"><i class="ri-palette-line me-1"></i>' + escHtml(l.color || 'Sin color') + '</span>');
+            chips.push('<span class="' + cls + '"><i class="ri-ruler-line me-1"></i>' + escHtml(l.talla || 'Talla única') + '</span>');
+            if (l.lleva_bordado) {
+                chips.push('<span class="' + cls + '"><i class="ri-scissors-cut-line me-1"></i>' + (l.bordados_count || 0) + ' bordado(s)</span>');
+            }
+            return chips.join('');
+        }
+
+        // Insumos de una orden a partir del consumo POR UNIDAD × unidades asignadas.
+        // `por_unidad` se conserva para reescalar sin deriva de redondeo.
+        function insumosDesdeUnitarios(unitarios, unidades) {
+            return (unitarios || []).map(function (i) {
+                const pu = parseFloat(i.cantidad_unitaria) || 0;
+                return { id: i.id, nombre: i.nombre, unidad: i.unidad || '', por_unidad: pu, cantidad: +(pu * unidades).toFixed(2) };
+            });
+        }
+
+        // Cambia las unidades de una orden reescalando sus insumos en proporción
+        // (preserva agregados/ediciones manuales del paso 3 vía su por_unidad).
+        // En edición NO se tocan los insumos: ya comprometieron stock al crear.
+        function setCantidadOrden(l, nueva) {
+            nueva = Math.max(1, parseInt(nueva, 10) || 1);
+            const previa = parseInt(l.cantidad, 10) || 0;
+            if (nueva === previa) return;
+            if (!isEditMode()) {
+                (l.insumos || []).forEach(function (i) {
+                    if (!(i.por_unidad > 0) && previa > 0) i.por_unidad = i.cantidad / previa;
+                    i.cantidad = +((i.por_unidad || 0) * nueva).toFixed(2);
+                });
+            }
+            l.cantidad = nueva;
+        }
+
+        // Entradas del wizard que reparten la MISMA línea del pedido (cada entrada = una orden)
+        function grupoLinea(detalleId) {
+            return ordWiz.lineas.filter(function (x) { return x.detalle_id === detalleId; });
+        }
+        function unidadesUsadasGrupo(detalleId) {
+            return grupoLinea(detalleId).reduce(function (s, x) { return s + (parseInt(x.cantidad, 10) || 0); }, 0);
+        }
+
+        // Construye una "línea" del wizard (= una orden) desde una línea del pedido
+        // disponible. Arranca con todas las unidades aún sin asignar de la línea;
+        // "Dividir" la reparte en más órdenes.
+        function makeLineaDesde(pedido, l) {
+            const pendiente = (l.cantidad_pendiente != null) ? l.cantidad_pendiente : l.cantidad;
+            return {
+                detalle_id: l.detalle_id,
+                producto_id: l.producto_id,
+                producto_nombre: l.producto_nombre,
+                linea_cantidad: l.cantidad,
+                cantidad_pendiente: pendiente,
+                cantidad: pendiente,
+                color: l.color,
+                talla: l.talla,
+                lleva_bordado: l.lleva_bordado,
+                bordados_count: l.bordados_count,
+                empleado_ids: [],
+                fecha_inicio: hoyISO(),
+                fecha_fin_estimada: finEstimadoDefault(pedido.fecha_entrega, hoyISO()),
+                estado: 'Pendiente',
+                insumos_unitarios: Array.isArray(l.insumos_default) ? l.insumos_default : [],
+                insumos: insumosDesdeUnitarios(l.insumos_default, pendiente)
+            };
+        }
+
+        // Clona una entrada como nueva "parte" de la misma línea (otra orden)
+        function makeParteDesde(l, unidades) {
+            return {
+                detalle_id: l.detalle_id,
+                producto_id: l.producto_id,
+                producto_nombre: l.producto_nombre,
+                linea_cantidad: l.linea_cantidad,
+                cantidad_pendiente: l.cantidad_pendiente,
+                cantidad: unidades,
+                color: l.color,
+                talla: l.talla,
+                lleva_bordado: l.lleva_bordado,
+                bordados_count: l.bordados_count,
+                empleado_ids: [],
+                fecha_inicio: l.fecha_inicio,
+                fecha_fin_estimada: l.fecha_fin_estimada,
+                estado: 'Pendiente',
+                insumos_unitarios: l.insumos_unitarios,
+                insumos: insumosDesdeUnitarios(l.insumos_unitarios, unidades)
+            };
+        }
+
+        // ── Navegación del wizard ────────────────────────────────────
+        function ordShowStep(n) {
+            n = Math.max(1, Math.min(TOTAL_STEPS, n));
+            currentStep = n;
+
+            $('#showModal .wiz-step-content').removeClass('is-active').attr('hidden', true);
+            $('#showModal .wiz-step-content[data-step="' + n + '"]').addClass('is-active').removeAttr('hidden');
+
+            $('#showModal .wiz-step-marker').each(function () {
+                const s = parseInt($(this).data('step'), 10);
+                $(this).removeClass('is-active is-complete').attr('aria-selected', 'false');
+                if (s < n) $(this).addClass('is-complete');
+                else if (s === n) $(this).addClass('is-active').attr('aria-selected', 'true');
+            });
+
+            for (let i = 1; i < TOTAL_STEPS; i++) {
+                $('#showModal .wiz-step-line-fill[data-line="' + i + '"]').css('width', i < n ? '100%' : '0%');
+            }
+
+            $('#ord-step-current').text(n);
+            $('#btn-ord-prev').toggle(n > 1);
+            $('#btn-ord-next').toggle(n < TOTAL_STEPS);
+            $('#ord-wiz-submit-btn').toggle(n === TOTAL_STEPS);
+
+            actualizarBanners(n);
+
+            if (n === 2) renderAsignacion();
+            if (n === 3) renderInsumosAcc();
+            if (n === 4) renderResumen();
+        }
+
+        function actualizarBanners(n) {
+            const hayCliente = ordWiz.pedido && ordWiz.pedido.cliente_nombre;
+            if (hayCliente && n >= 2) {
+                ordSetClienteBanner(ordWiz.pedido.cliente_nombre, ordWiz.pedido.cliente_documento || '');
+                $('#ord-cliente-banner').removeAttr('hidden').attr('aria-hidden', 'false');
+            } else {
+                $('#ord-cliente-banner').attr('hidden', true).attr('aria-hidden', 'true');
+            }
+            if (!isEditMode()) ordResetCreador();
+            $('#ord-creador-banner').removeAttr('hidden').attr('aria-hidden', 'false');
+        }
+
+        function ordSyncStep(n) {
+            if (n === 2) syncAsignacion();
+            if (n === 4) { /* notas se leen al enviar */ }
+        }
+
+        function validateStep(n) {
+            if (n === 1) return validateStep1();
+            if (n === 2) return validateStep2();
+            if (n === 3) return validateStep3();
+            return true;
+        }
+
+        // ══════════════════════════════════════════════════════
+        // PASO 1 — Pedido y líneas
+        // ══════════════════════════════════════════════════════
+        function ordCargarPedidos() {
             const $cont = $('#pedidos-orden-container');
             const $empty = $('#pedidos-orden-empty');
             const $loading = $('#pedidos-orden-loading');
@@ -215,64 +318,73 @@
             });
         }
 
-        function escHtml(s) {
-            return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-        }
-
         function renderPedidosOrden(pedidos) {
             const $cont = $('#pedidos-orden-container');
             $cont.empty();
 
             pedidos.forEach(function (p) {
+                // Regla de negocio: sin abono mínimo no se pueden generar órdenes.
+                const abonoOk = p.cumple_abono !== false;
                 const lineasHtml = p.lineas.map(function (l) {
-                    const meta = [
-                        l.cantidad + ' u',
-                        l.color || 'Sin color',
-                        l.talla || 'Talla única'
-                    ].join(' · ');
+                    const meta = [l.cantidad + ' u', l.color || 'Sin color', l.talla || 'Talla única'].join(' · ');
                     const bordadoBadge = l.lleva_bordado
                         ? `<span class="badge bg-info-subtle text-info ms-1"><i class="ri-scissors-cut-line"></i> ${l.bordados_count} bordado(s)</span>`
                         : '';
-                    // Líneas con orden activa → solo badge informativo
-                    if (l.orden_id) {
+                    const pendiente = (l.cantidad_pendiente != null) ? l.cantidad_pendiente : l.cantidad;
+                    const asignada  = l.cantidad_asignada || 0;
+                    // Línea con TODAS sus unidades en órdenes activas → solo informativa
+                    if (!(pendiente > 0)) {
+                        const nOrd = l.ordenes_activas || 1;
                         return `
                             <div class="list-group-item d-flex justify-content-between align-items-center gap-2 flex-wrap">
                                 <div>
                                     <div class="fw-semibold text-muted">${escHtml(l.producto_nombre)}${bordadoBadge}</div>
                                     <small class="text-muted">${escHtml(meta)}</small>
                                 </div>
-                                <span class="badge bg-secondary"><i class="ri-check-line"></i> Orden #${l.orden_id}</span>
+                                <span class="badge bg-secondary"><i class="ri-check-line"></i> ${nOrd > 1 ? nOrd + ' órdenes activas' : 'Orden activa'}</span>
                             </div>`;
                     }
-                    // Líneas pendientes → checkbox seleccionable
+                    // Sin abono mínimo: línea visible pero no seleccionable (bloqueo de negocio).
+                    if (!abonoOk) {
+                        return `
+                            <div class="list-group-item d-flex align-items-center gap-2 flex-wrap opacity-75">
+                                <i class="ri-lock-2-line text-warning"></i>
+                                <div class="flex-grow-1">
+                                    <div class="fw-semibold">${escHtml(l.producto_nombre)}${bordadoBadge}</div>
+                                    <small class="text-muted">${escHtml(meta)}</small>
+                                </div>
+                            </div>`;
+                    }
+                    // Reparto previo parcial: se informa cuánto queda por asignar
+                    const parcialBadge = asignada > 0
+                        ? `<span class="badge bg-warning-subtle text-warning ms-1"><i class="ri-scales-3-line"></i> ${pendiente} de ${l.cantidad} u por asignar</span>`
+                        : '';
+                    // Líneas con unidades por asignar → checkbox seleccionable
                     return `
                         <label class="list-group-item d-flex align-items-center gap-2 flex-wrap" style="cursor: pointer;">
                             <input type="checkbox" class="form-check-input linea-check"
                                 data-pedido-id="${p.id}" data-detalle-id="${l.detalle_id}">
                             <div class="flex-grow-1">
-                                <div class="fw-semibold">${escHtml(l.producto_nombre)}${bordadoBadge}</div>
+                                <div class="fw-semibold">${escHtml(l.producto_nombre)}${bordadoBadge}${parcialBadge}</div>
                                 <small class="text-muted">${escHtml(meta)}</small>
                             </div>
                         </label>`;
                 }).join('');
 
-                const hayPendientes = p.lineas_pendientes > 0;
-                const footerHtml = hayPendientes
-                    ? `<div class="d-flex justify-content-end mt-2">
-                          <button type="button" class="btn btn-sm btn-success crear-batch-btn"
-                              data-pedido-id="${p.id}" disabled>
-                              <i class="ri-add-line me-1"></i><span class="batch-btn-label">Selecciona líneas</span>
-                          </button>
-                       </div>`
-                    : '';
+                const abonoBanner = abonoOk ? '' : `
+                        <div class="alert alert-warning d-flex align-items-center gap-2 py-1 px-2 small mb-2">
+                            <i class="ri-lock-2-line"></i>
+                            <span>Abono ${p.porcentaje_abonado}% — requiere ${p.abono_minimo_pct}% para iniciar producción.</span>
+                        </div>`;
 
+                const hayPendientes = p.lineas_pendientes > 0;
                 const inicialCliente = (p.cliente_nombre || '?').trim().charAt(0).toUpperCase() || '?';
                 const card = `
                     <div class="cotizacion-card" data-pedido-id="${p.id}">
                         <div class="cotizacion-header">
                             <span class="cotizacion-numero"><i class="ri-shopping-bag-line"></i> Pedido #${p.id}</span>
                             <span class="badge ${hayPendientes ? 'bg-success-subtle text-success' : 'bg-secondary'}">
-                                ${p.lineas_pendientes} de ${p.total_lineas} sin orden
+                                ${p.lineas_pendientes} de ${p.total_lineas} por asignar
                             </span>
                         </div>
                         <div class="d-flex align-items-center gap-2 flex-wrap mt-1 mb-2">
@@ -291,39 +403,83 @@
                             </div>
                             <small class="text-muted fw-semibold" style="white-space: nowrap;">Progreso ${p.progreso}%</small>
                         </div>
+                        ${abonoBanner}
                         <div class="list-group">${lineasHtml}</div>
-                        ${footerHtml}
                     </div>`;
                 $cont.append(card);
             });
+
+            // Restaurar marca visual de selección (si seguimos en el mismo pedido)
+            ordResaltarSeleccion();
         }
 
-        // Actualizar texto y estado disabled del botón "Crear N" por pedido
-        function actualizarBotonBatch(pedidoId) {
-            const $card = $('#pedidos-orden-container .cotizacion-card[data-pedido-id="' + pedidoId + '"]');
-            const seleccionadas = $card.find('.linea-check:checked').length;
-            const $btn = $card.find('.crear-batch-btn');
-            $btn.prop('disabled', seleccionadas === 0);
-            const $label = $btn.find('.batch-btn-label');
-            if (seleccionadas === 0)      $label.text('Selecciona líneas');
-            else if (seleccionadas === 1) $label.text('Crear 1 orden');
-            else                          $label.text('Crear ' + seleccionadas + ' órdenes');
-        }
-
-        // Tracking de checkboxes
+        // Selección limitada a UN pedido (un batch = un pedido)
         $(document).on('change', '.linea-check', function () {
-            actualizarBotonBatch($(this).data('pedido-id'));
+            if (this.checked) {
+                const pid = $(this).data('pedido-id');
+                let limpiado = false;
+                $('#pedidos-orden-container .linea-check:checked').each(function () {
+                    if ($(this).data('pedido-id') != pid) { $(this).prop('checked', false); limpiado = true; }
+                });
+                if (limpiado) {
+                    Swal.fire({ icon: 'info', title: 'Una orden cubre un solo pedido', text: 'Se limpió la selección del pedido anterior.', toast: true, position: 'top-end', showConfirmButton: false, timer: 1800 });
+                }
+            }
+            ordActualizarSeleccionChip();
+            ordResaltarSeleccion();
         });
 
-        // ══════════════════════════════════════════════════════
-        // BÚSQUEDA + FILTROS AVANZADOS (selección de pedidos a producir)
-        // ══════════════════════════════════════════════════════
-        function parseDMY(s) { // "dd/mm/yyyy" -> "yyyy-mm-dd" para comparar
-            if (!s) return '';
-            const m = String(s).split('/');
-            return m.length === 3 ? (m[2] + '-' + m[1] + '-' + m[0]) : '';
+        function ordActualizarSeleccionChip() {
+            const n = $('#pedidos-orden-container .linea-check:checked').length;
+            const $chip = $('#ord-lineas-chip');
+            if (n > 0) { $chip.removeClass('d-none').text(n === 1 ? '1 línea seleccionada' : n + ' líneas seleccionadas'); }
+            else { $chip.addClass('d-none'); }
         }
 
+        function ordResaltarSeleccion() {
+            $('#pedidos-orden-container .cotizacion-card').removeClass('border border-2 border-success');
+            const $checked = $('#pedidos-orden-container .linea-check:checked').first();
+            if ($checked.length) {
+                $checked.closest('.cotizacion-card').addClass('border border-2 border-success');
+            }
+        }
+
+        function validateStep1() {
+            if (isEditMode()) return true; // la línea queda fija al editar
+            const $checked = $('#pedidos-orden-container .linea-check:checked');
+            if (!$checked.length) {
+                Swal.fire({ icon: 'warning', title: 'Sin selección', text: 'Selecciona al menos una línea del pedido para producir.' });
+                return false;
+            }
+            const pid = $checked.first().data('pedido-id');
+            const pedido = pedidosOrdenData.find(p => p.id == pid);
+            if (!pedido) return false;
+            if (pedido.cumple_abono === false) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Abono insuficiente',
+                    html: `El Pedido #${pedido.id} tiene ${pedido.porcentaje_abonado}% abonado y requiere `
+                        + `${pedido.abono_minimo_pct}% para iniciar producción.<br>Registra el abono en el pedido antes de generar órdenes.`,
+                });
+                return false;
+            }
+            const detalleIds = $checked.map(function () { return parseInt($(this).data('detalle-id'), 10); }).get();
+
+            // Si la selección no cambió, conservar lo ya capturado (asignación/insumos/
+            // divisiones). Con líneas divididas hay detalle_id repetidos → comparar únicos.
+            const prev = Array.from(new Set(ordWiz.lineas.map(l => l.detalle_id))).sort().join(',');
+            const now = detalleIds.slice().sort().join(',');
+            if (ordWiz.pedido && ordWiz.pedido.id == pid && prev === now && ordWiz.lineas.length) return true;
+
+            ordWiz.pedido = pedido;
+            ordWiz.lineas = detalleIds.map(function (id) {
+                const l = pedido.lineas.find(x => x.detalle_id == id);
+                return l ? makeLineaDesde(pedido, l) : null;
+            }).filter(Boolean);
+            return ordWiz.lineas.length > 0;
+        }
+
+        // ── Filtros del paso 1 ───────────────────────────────────────
         function pedordUpdateBadge() {
             let count = 0;
             if ($('#pedord-filter-estado').val())    count++;
@@ -388,7 +544,6 @@
             pedordUpdateBadge();
         }
 
-        // Header colapsable de filtros (clase is-collapsed)
         $('#pedord-filters-collapse')
             .on('show.bs.collapse',   function () { $('#pedord-advanced-filters .navy-filter-header').removeClass('is-collapsed'); })
             .on('hidden.bs.collapse', function () { $('#pedord-advanced-filters .navy-filter-header').addClass('is-collapsed'); });
@@ -397,275 +552,691 @@
         $('#pedord-advanced-filters .navy-filter-select').on('change', aplicarFiltrosPedidos);
         $('#pedord-clear-filters').on('click', function () { pedordResetFiltros(); aplicarFiltrosPedidos(); });
 
-        // Click "Crear N órdenes" → 1 línea: modal single; 2+ líneas: modal batch
-        $(document).on('click', '.crear-batch-btn', function () {
-            const pedidoId = $(this).data('pedido-id');
-            const pedido = pedidosOrdenData.find(p => p.id == pedidoId);
-            if (!pedido) return;
-            const $card = $(this).closest('.cotizacion-card');
-            const detalleIds = $card.find('.linea-check:checked').map(function () {
-                return parseInt($(this).data('detalle-id'), 10);
-            }).get();
-            if (!detalleIds.length) return;
-
-            const lineas = detalleIds.map(id => pedido.lineas.find(l => l.detalle_id == id)).filter(Boolean);
-            $('#seleccionarPedidoModal').modal('hide');
-
-            // 1 línea → modal individual (UX completa, edita insumos)
-            if (lineas.length === 1) {
-                setTimeout(() => ordenAbrirDesdeLinea(pedido, lineas[0]), 300);
-                return;
-            }
-            // 2+ líneas → modal batch (defaults compartidos, insumos por template)
-            setTimeout(() => batchAbrir(pedido, lineas), 300);
-        });
-
         // ══════════════════════════════════════════════════════
-        // HIDRATAR FORM DESDE UNA LÍNEA (modo crear)
+        // PASO 2 — Asignación (empleado + cronograma) por línea
         // ══════════════════════════════════════════════════════
-        // Chip "Registrada por": creador real (editar) o usuario logueado (crear).
-        function ordSetCreador(name, avatar) {
-            $('#orden-creador-name').text(name || '—');
-            if (avatar) $('#orden-creador-avatar').attr('src', avatar);
-        }
-        function ordResetCreador() {
-            var $b = $('#orden-creador-banner');
-            ordSetCreador($b.data('default-name'), $b.data('default-avatar'));
-        }
-
-        // Chip "Cliente": nombre + avatar con inicial.
-        function ordSetCliente(name) {
-            var n = (name || '').trim();
-            $('#orden-cliente-name').text(n || '—');
-            $('#orden-cliente-avatar').text(n ? n.charAt(0).toUpperCase() : '—');
+        // Texto/clase de la píldora de duración (días entre inicio y fin)
+        function actualizarDur($el, ini, fin) {
+            if (!$el || !$el.length) return;
+            if (!ini || !fin) { $el.html('').removeClass('is-bad'); return; }
+            const dias = Math.round((new Date(fin) - new Date(ini)) / 86400000);
+            if (isNaN(dias)) { $el.html('').removeClass('is-bad'); return; }
+            if (dias < 0) { $el.html('<i class="ri-error-warning-line me-1"></i>Revisa fechas').addClass('is-bad'); return; }
+            $el.html('<i class="ri-time-line me-1"></i>' + dias + (dias === 1 ? ' día' : ' días')).removeClass('is-bad');
         }
 
-        function llenarPanelLinea(d) {
-            $('#orden-linea-pedido').text('Pedido #' + d.pedido_id);
-            ordSetCliente(d.cliente_nombre);
-            $('#orden-linea-producto').text(d.producto_nombre || '—');
-            $('#orden-linea-cantidad').text(d.cantidad != null ? d.cantidad : 0);
-
-            // Chips translúcidos sobre el gradiente del hero
-            const chipCls = 'badge rounded-pill bg-white bg-opacity-10 text-white fw-normal';
-            const chips = [];
-            chips.push('<span class="' + chipCls + '"><i class="ri-palette-line me-1"></i>' + escHtml(d.color || 'Sin color') + '</span>');
-            chips.push('<span class="' + chipCls + '"><i class="ri-ruler-line me-1"></i>' + escHtml(d.talla || 'Talla única') + '</span>');
-            if (d.lleva_bordado) {
-                chips.push('<span class="' + chipCls + '"><i class="ri-scissors-cut-line me-1"></i>' + (d.bordados_count || 0) + ' bordado(s)</span>');
-            }
-            $('#orden-linea-meta').html(chips.join(''));
-        }
-
-        function ordenAbrirDesdeLinea(pedido, linea) {
-            // Modo crear
-            $('#id-field').val('');
-            $('#modalTitle').text('Nueva Orden de Producción');
-            $('#estado-container').hide();
-            $('#add-btn').show();
-            $('#edit-btn').hide();
-
-            // Hidden
-            $('#detalle-pedido-id-field').val(linea.detalle_id);
-            $('#pedido-id-hidden-field').val(pedido.id);
-            $('#producto-id-field').val(linea.producto_id);
-
-            // Panel solo lectura
-            llenarPanelLinea({
-                pedido_id: pedido.id,
-                cliente_nombre: pedido.cliente_nombre,
-                producto_nombre: linea.producto_nombre,
-                cantidad: linea.cantidad,
-                color: linea.color,
-                talla: linea.talla,
-                lleva_bordado: linea.lleva_bordado,
-                bordados_count: linea.bordados_count
+        // Pills-checkbox de empleados: para una card (idx entero) o la barra global (idx null)
+        function empleadoCheckboxesHtml(idx, selectedIds) {
+            selectedIds = (selectedIds || []).map(String);
+            var nameAttr = idx !== null ? 'data-idx="' + idx + '"' : '';
+            var chkClass = idx !== null ? 'ord-asig-emp-chk' : 'ord-default-emp-chk';
+            var html = '';
+            $('#ord-empleados-tpl option').each(function () {
+                var val = $(this).val();
+                if (!val) return;
+                var checked = selectedIds.indexOf(val) !== -1 ? ' checked' : '';
+                html += '<label class="ord-emp-check-item">'
+                    + '<input type="checkbox" class="' + chkClass + '" value="' + val + '" ' + nameAttr + checked + '>'
+                    + '<span>' + escHtml($(this).text()) + '</span>'
+                    + '</label>';
             });
+            return html;
+        }
 
-            // Creador: la registra el usuario logueado
-            ordResetCreador();
+        function asignacionCardHtml(l, idx) {
+            const meta      = lineaMetaChips(l);
+            const edit      = isEditMode();
+            const fechaCol  = edit ? 'col-md-3' : 'col-md-5';
+            // 'Cancelado' no se ofrece aquí: la cancelación va por su propia acción
+            // (define reposición de stock condicional y exige motivo de merma).
+            const estadoBlock = edit
+                ? '<div class="col-md-4"><label class="form-label form-label-sm required mb-1" for="ord-asig-estado-' + idx + '"><i class="ri-flag-line me-1"></i>Estado</label>'
+                  + '<select class="form-select form-select-sm ord-asig-estado" id="ord-asig-estado-' + idx + '" data-idx="' + idx + '">'
+                  + '<option value="Pendiente">Pendiente</option><option value="En Proceso">En Proceso</option>'
+                  + '<option value="Finalizado">Finalizado</option></select></div>'
+                : '';
 
-            // Empleado
-            $('#empleado-id-field').val('');
+            // Reparto: una línea puede dividirse en varias órdenes (partes)
+            const grupo = grupoLinea(l.detalle_id);
+            const gn = grupo.length, gi = grupo.indexOf(l);
+            const parteChip = gn > 1
+                ? '<span class="badge badge-soft-info ord-asig-parte"><i class="ri-git-branch-line me-1"></i>Parte ' + (gi + 1) + ' de ' + gn + '</span>'
+                : '';
+            const splitBtns = !edit
+                ? '<div class="ord-asig-split-btns">'
+                  + '<button type="button" class="btn btn-sm btn-soft-primary ord-asig-split" data-idx="' + idx + '" title="Dividir estas unidades en otra orden (otro empleado)"><i class="ri-scissors-line"></i><span class="d-none d-lg-inline ms-1">Dividir</span></button>'
+                  + (gn > 1 ? '<button type="button" class="btn btn-sm btn-soft-danger ord-asig-unsplit" data-idx="' + idx + '" title="Quitar esta parte (devuelve sus unidades)"><i class="ri-close-line"></i></button>' : '')
+                  + '</div>'
+                : '';
 
-            // Fechas sugeridas (el fin nunca queda antes del inicio)
-            $('#fecha-inicio-field').val(hoyISO());
-            $('#fecha-fin-estimada-field').val(finEstimadoDefault(pedido.fecha_entrega, hoyISO()));
+            // Unidades de ESTA orden. En edición solo es editable con la orden Pendiente.
+            const cantMax = edit ? (l.cantidad_maxima || l.cantidad) : (l.cantidad_pendiente || l.cantidad);
+            const cantDisabled = (edit && l.estado !== 'Pendiente')
+                ? ' disabled title="Solo editable con la orden Pendiente"' : '';
+            const cantBlock = '<div class="col-6 col-md-2"><label class="form-label form-label-sm required mb-1" for="ord-asig-cant-' + idx + '"><i class="ri-stack-line me-1"></i>Unidades</label>'
+                + '<input type="number" inputmode="numeric" class="form-control form-control-sm ord-asig-cant" id="ord-asig-cant-' + idx + '" data-idx="' + idx + '" min="1" max="' + cantMax + '" value="' + l.cantidad + '"' + cantDisabled + '>'
+                + '</div>';
 
-            // Insumos: prefill desde el template del tipo_producto (si tiene)
-            resetInsumos();
-            if (Array.isArray(linea.insumos_default) && linea.insumos_default.length) {
-                ordenInsumosState = linea.insumos_default.map(function (i) {
-                    return {
-                        id: i.id,
-                        nombre: i.nombre,
-                        unidad: i.unidad || '',
-                        cantidad: parseFloat(i.cantidad) || 0
-                    };
-                });
-                renderInsumosGrid();
+            return '<div class="ord-asig-card" data-idx="' + idx + '">'
+                + '<div class="ord-asig-card-head">'
+                +   '<span class="ord-asig-num">' + (idx + 1) + '</span>'
+                +   '<div class="ord-asig-prod">'
+                +     '<div class="ord-asig-prod-name">' + escHtml(l.producto_nombre) + ' <span class="ord-asig-qty">· ' + l.cantidad + ' u</span></div>'
+                +     '<div class="ord-asig-chips">' + meta + parteChip + '</div>'
+                +   '</div>'
+                +   '<span class="ord-asig-resto" id="ord-asig-resto-' + idx + '"></span>'
+                +   '<span class="ord-asig-dur" id="ord-asig-dur-' + idx + '"></span>'
+                +   splitBtns
+                + '</div>'
+                + '<div class="ord-asig-card-body"><div class="row g-2">'
+                +   '<div class="col-12">'
+                +     '<label class="form-label form-label-sm required mb-1"><i class="ri-team-line me-1"></i>Empleados asignados</label>'
+                +     '<div class="ord-asig-emp-checks" id="ord-asig-emp-chks-' + idx + '">'
+                +       empleadoCheckboxesHtml(idx, l.empleado_ids || [])
+                +     '</div>'
+                +     '<div class="ord-emp-feedback">Selecciona al menos un empleado.</div>'
+                +   '</div>'
+                +   cantBlock
+                +   '<div class="' + fechaCol + '"><label class="form-label form-label-sm required mb-1" for="ord-asig-inicio-' + idx + '">Inicio</label>'
+                +     '<div class="input-group input-group-sm"><span class="input-group-text"><i class="ri-calendar-event-line"></i></span>'
+                +     '<input type="date" class="form-control ord-asig-inicio" id="ord-asig-inicio-' + idx + '" data-idx="' + idx + '" value="' + (l.fecha_inicio || '') + '"></div></div>'
+                +   '<div class="' + fechaCol + '"><label class="form-label form-label-sm required mb-1" for="ord-asig-fin-' + idx + '">Fin estimado</label>'
+                +     '<div class="input-group input-group-sm"><span class="input-group-text"><i class="ri-calendar-check-line"></i></span>'
+                +     '<input type="date" class="form-control ord-asig-fin" id="ord-asig-fin-' + idx + '" data-idx="' + idx + '" value="' + (l.fecha_fin_estimada || '') + '"></div></div>'
+                +   estadoBlock
+                + '</div></div>'
+                + '</div>';
+        }
+
+        function renderAsignacion() {
+            const multi = ordWiz.lineas.length > 1;
+            $('#ord-apply-bar').attr('hidden', !multi);
+            $('#ord-porlinea-sep').attr('hidden', !multi);
+            $('#ord-porlinea-count').text(multi ? ordWiz.lineas.length : '');
+            $('#ord-asignacion-desc').text(multi
+                ? 'Asigna empleados, unidades y fechas a cada orden. Usa "Aplicar a todas" para ir más rápido, o "Dividir" para repartir una línea entre varios empleados.'
+                : 'Define quién produce la orden, cuántas unidades y sus fechas. Con "Dividir" puedes repartir la línea entre varios empleados.');
+
+            if (multi) {
+                if (!$('#ord-default-empleado-wrap .ord-default-emp-chk').length) {
+                    $('#ord-default-empleado-wrap').html(empleadoCheckboxesHtml(null, []));
+                }
+                $('#ord-default-inicio').val(hoyISO());
+                $('#ord-default-fin').val(ordWiz.lineas[0].fecha_fin_estimada || '');
             }
-            $('#notas-field').val('');
 
-            // Limpiar validaciones
-            $('#ordenForm').find('.is-invalid, .is-valid').removeClass('is-invalid is-valid');
-
-            $('#showModal').modal('show');
-        }
-
-        // ══════════════════════════════════════════════════════
-        // BATCH: crear varias órdenes del mismo pedido en un solo flow
-        // ══════════════════════════════════════════════════════
-        // Estado en memoria. Cada fila = una orden a crear. Los insumos vienen
-        // del template del tipo (Feature D) y se envían sin edición en batch.
-        let batchState = { pedido: null, filas: [] };
-
-        function batchAbrir(pedido, lineas) {
-            batchState.pedido = pedido;
-            batchState.filas = lineas.map(function (l) {
-                return {
-                    detalle_id: l.detalle_id,
-                    producto_nombre: l.producto_nombre,
-                    color: l.color,
-                    talla: l.talla,
-                    lleva_bordado: l.lleva_bordado,
-                    bordados_count: l.bordados_count,
-                    cantidad: l.cantidad,
-                    insumos: Array.isArray(l.insumos_default) ? l.insumos_default.slice() : [],
-                    // editables
-                    empleado_id: '',
-                    fecha_inicio: hoyISO(),
-                    fecha_fin_estimada: finEstimadoDefault(pedido.fecha_entrega, hoyISO()),
-                };
-            });
-
-            // Header
-            $('#batch-pedido-label').text('Pedido #' + pedido.id + ' — ' + pedido.cliente_nombre);
-            $('#batch-submit-count').text(batchState.filas.length);
-
-            // Defaults arriba: vacíos
-            $('#batch-default-empleado').val('');
-            $('#batch-default-inicio').val(hoyISO());
-            $('#batch-default-fin').val(batchState.filas[0]?.fecha_fin_estimada || '');
-
-            batchRenderFilas();
-            $('#batchOrdenModal').modal('show');
-        }
-
-        function batchRenderFilas() {
-            const $tbody = $('#batch-ordenes-tbody');
-            // Cache de opciones de empleado (las mismas que en el select default)
-            const empleadosOpts = $('#batch-default-empleado').html();
-
-            $tbody.html(batchState.filas.map(function (f, idx) {
-                const meta = [
-                    f.color || 'Sin color',
-                    f.talla || 'Talla única',
-                    f.lleva_bordado ? (f.bordados_count + ' bord.') : ''
-                ].filter(Boolean).join(' · ');
-                return '<tr data-idx="' + idx + '">' +
-                    '<td class="cot-col-num">' + (idx + 1) + '</td>' +
-                    '<td class="cot-col-prod">' +
-                        '<div class="fw-semibold">' + escHtml(f.producto_nombre) + '</div>' +
-                        '<small class="text-muted">' + escHtml(meta) + '</small>' +
-                    '</td>' +
-                    '<td class="cot-col-num text-center fw-semibold">' + f.cantidad + '</td>' +
-                    '<td><select class="form-select form-select-sm batch-empleado">' + empleadosOpts + '</select></td>' +
-                    '<td><input type="date" class="form-control form-control-sm batch-inicio" value="' + (f.fecha_inicio || '') + '"></td>' +
-                    '<td><input type="date" class="form-control form-control-sm batch-fin" value="' + (f.fecha_fin_estimada || '') + '"></td>' +
-                    '<td class="text-center">' +
-                        '<button type="button" class="btn btn-sm btn-soft-info batch-ins-btn" data-idx="' + idx + '" title="Editar insumos de esta línea">' +
-                            '<i class="ri-tools-line me-1"></i>' + (f.insumos ? f.insumos.length : 0) +
-                        '</button>' +
-                    '</td>' +
-                '</tr>';
+            $('#ord-asignacion-cards').html(ordWiz.lineas.map(function (l, idx) {
+                return asignacionCardHtml(l, idx);
             }).join(''));
 
-            // Setear el valor de empleado seleccionado por fila
-            batchState.filas.forEach(function (f, idx) {
-                $('#batch-ordenes-tbody tr[data-idx="' + idx + '"] .batch-empleado').val(f.empleado_id || '');
+            ordWiz.lineas.forEach(function (l, idx) {
+                if (isEditMode()) $('#ord-asig-estado-' + idx).val(l.estado || 'Pendiente');
+                actualizarDur($('#ord-asig-dur-' + idx), l.fecha_inicio, l.fecha_fin_estimada);
+            });
+            actualizarChipsReparto();
+        }
+
+        // Chip de cobertura por card: ¿la línea quedará completa tras guardar o
+        // quedarán unidades sin asignar (asignación parcial diferida, permitida)?
+        function actualizarChipsReparto() {
+            if (isEditMode()) { $('.ord-asig-resto').empty(); return; }
+            ordWiz.lineas.forEach(function (l, idx) {
+                const $chip = $('#ord-asig-resto-' + idx);
+                if (!$chip.length) return;
+                const resto = (l.cantidad_pendiente || 0) - unidadesUsadasGrupo(l.detalle_id);
+                if (resto > 0) {
+                    $chip.html('<i class="ri-error-warning-line me-1"></i>' + resto + ' u sin asignar')
+                        .attr('title', 'Podrás asignarlas luego creando otra orden para esta línea')
+                        .addClass('is-warn').removeClass('is-ok');
+                } else {
+                    $chip.html('<i class="ri-checkbox-circle-line me-1"></i>Línea completa')
+                        .attr('title', 'Todas las unidades de la línea quedarán asignadas')
+                        .addClass('is-ok').removeClass('is-warn');
+                }
             });
         }
 
-        // Sincronizar inputs visibles → estado (antes de submit / aplicar defaults)
-        function batchSyncFilasDesdeDom() {
-            $('#batch-ordenes-tbody tr').each(function () {
+        // Unidades de una orden: tope vivo = pendiente de la línea menos lo que
+        // usan las otras partes (nunca se puede sobre-asignar desde la UI).
+        $(document).on('input', '.ord-asig-cant', function () {
+            const idx = parseInt($(this).data('idx'), 10);
+            const l = ordWiz.lineas[idx];
+            if (!l) return;
+            let v = parseInt(this.value, 10);
+            if (isNaN(v)) return; // permitir seguir escribiendo
+            if (v < 1) v = 1;
+            if (isEditMode()) {
+                const tope = l.cantidad_maxima || v;
+                if (v > tope) v = tope;
+            } else {
+                const otras = unidadesUsadasGrupo(l.detalle_id) - (parseInt(l.cantidad, 10) || 0);
+                const tope = Math.max(1, (l.cantidad_pendiente || 0) - otras);
+                if (v > tope) v = tope;
+            }
+            if (String(v) !== this.value) this.value = v;
+            setCantidadOrden(l, v);
+            $(this).closest('.ord-asig-card').find('.ord-asig-qty').first().text('· ' + v + ' u');
+            actualizarChipsReparto();
+        });
+
+        // Si el campo queda vacío al salir, restaurar las unidades del estado
+        $(document).on('blur', '.ord-asig-cant', function () {
+            const idx = parseInt($(this).data('idx'), 10);
+            const l = ordWiz.lineas[idx];
+            if (l && (!this.value || parseInt(this.value, 10) < 1)) this.value = l.cantidad;
+        });
+
+        // Dividir: crea otra orden (parte) para la misma línea. Si quedan unidades
+        // libres se las lleva; si no, parte las de esta orden a la mitad.
+        $(document).on('click', '.ord-asig-split', function () {
+            syncAsignacion();
+            const idx = parseInt($(this).data('idx'), 10);
+            const l = ordWiz.lineas[idx];
+            if (!l) return;
+            const libre = (l.cantidad_pendiente || 0) - unidadesUsadasGrupo(l.detalle_id);
+            let unidades;
+            if (libre >= 1) {
+                unidades = libre;
+            } else if ((parseInt(l.cantidad, 10) || 0) >= 2) {
+                unidades = Math.floor(l.cantidad / 2);
+                setCantidadOrden(l, l.cantidad - unidades);
+            } else {
+                Swal.fire({ icon: 'info', title: 'Nada que dividir', text: 'Esta parte tiene 1 unidad y la línea no tiene unidades libres.', toast: true, position: 'top-end', showConfirmButton: false, timer: 2200 });
+                return;
+            }
+            ordWiz.lineas.splice(idx + 1, 0, makeParteDesde(l, unidades));
+            renderAsignacion();
+        });
+
+        // Quitar una parte: sus unidades vuelven a quedar libres (chip ámbar)
+        $(document).on('click', '.ord-asig-unsplit', function () {
+            syncAsignacion();
+            const idx = parseInt($(this).data('idx'), 10);
+            const l = ordWiz.lineas[idx];
+            if (!l || grupoLinea(l.detalle_id).length < 2) return;
+            ordWiz.lineas.splice(idx, 1);
+            renderAsignacion();
+        });
+
+        // Duración en vivo al cambiar fechas de una línea
+        $(document).on('change', '.ord-asig-inicio, .ord-asig-fin', function () {
+            const idx = parseInt($(this).data('idx'), 10);
+            actualizarDur($('#ord-asig-dur-' + idx), $('#ord-asig-inicio-' + idx).val(), $('#ord-asig-fin-' + idx).val());
+        });
+
+        function syncAsignacion() {
+            $('#ord-asignacion-cards .ord-asig-card').each(function () {
                 const idx = parseInt($(this).data('idx'), 10);
-                batchState.filas[idx].empleado_id        = $(this).find('.batch-empleado').val() || '';
-                batchState.filas[idx].fecha_inicio       = $(this).find('.batch-inicio').val();
-                batchState.filas[idx].fecha_fin_estimada = $(this).find('.batch-fin').val();
+                const l = ordWiz.lineas[idx];
+                if (!l) return;
+                l.empleado_ids = [];
+                $(this).find('.ord-asig-emp-chk:checked').each(function () {
+                    l.empleado_ids.push($(this).val());
+                });
+                const v = parseInt($(this).find('.ord-asig-cant').val(), 10);
+                if (!isNaN(v) && v >= 1) setCantidadOrden(l, v);
+                l.fecha_inicio = $(this).find('.ord-asig-inicio').val() || '';
+                l.fecha_fin_estimada = $(this).find('.ord-asig-fin').val() || '';
+                const $est = $(this).find('.ord-asig-estado');
+                if ($est.length) l.estado = $est.val();
             });
         }
 
-        // "Aplicar a todas" → propaga defaults a cada fila
-        $(document).on('click', '#batch-apply-defaults', function () {
-            const emp = $('#batch-default-empleado').val();
-            const ini = $('#batch-default-inicio').val();
-            const fin = $('#batch-default-fin').val();
-            $('#batch-ordenes-tbody tr').each(function () {
-                if (emp) $(this).find('.batch-empleado').val(emp);
-                if (ini) $(this).find('.batch-inicio').val(ini);
-                if (fin) $(this).find('.batch-fin').val(fin);
+        $(document).on('click', '#ord-apply-defaults', function () {
+            const selEmpIds = [];
+            $('#ord-default-empleado-wrap .ord-default-emp-chk:checked').each(function () {
+                selEmpIds.push($(this).val());
             });
-            Swal.fire({
-                icon: 'success', title: 'Defaults aplicados', toast: true, position: 'top-end',
-                showConfirmButton: false, timer: 1500
+            const ini = $('#ord-default-inicio').val();
+            const fin = $('#ord-default-fin').val();
+            $('#ord-asignacion-cards .ord-asig-card').each(function () {
+                const idx = parseInt($(this).data('idx'), 10);
+                if (selEmpIds.length) {
+                    $(this).find('.ord-asig-emp-chk').each(function () {
+                        $(this).prop('checked', selEmpIds.indexOf($(this).val()) !== -1);
+                    });
+                }
+                if (ini) $(this).find('.ord-asig-inicio').val(ini);
+                if (fin) $(this).find('.ord-asig-fin').val(fin);
+                actualizarDur($('#ord-asig-dur-' + idx), $('#ord-asig-inicio-' + idx).val(), $('#ord-asig-fin-' + idx).val());
+            });
+            Swal.fire({ icon: 'success', title: 'Aplicado a todas', toast: true, position: 'top-end', showConfirmButton: false, timer: 1400 });
+        });
+
+        // Validación en vivo de fechas por línea
+        $(document).on('blur', '.ord-asig-fin', function () {
+            const $row = $(this).closest('.ord-asig-card');
+            const ini = $row.find('.ord-asig-inicio').val();
+            const fin = $(this).val();
+            if (fin && ini && fin <= ini) marcarInvalido($(this), 'El fin debe ser posterior al inicio.');
+            else if (fin) marcarValido($(this));
+        });
+
+        function validateStep2() {
+            syncAsignacion();
+            let ok = true, $first = null;
+            ordWiz.lineas.forEach(function (l, idx) {
+                const $chks = $('#ord-asig-emp-chks-' + idx);
+                const $ini  = $('#ord-asig-inicio-' + idx);
+                const $fin  = $('#ord-asig-fin-' + idx);
+                const $cant = $('#ord-asig-cant-' + idx);
+                if (!l.empleado_ids || !l.empleado_ids.length) {
+                    $chks.addClass('is-invalid-group');
+                    ok = false; $first = $first || $chks;
+                } else {
+                    $chks.removeClass('is-invalid-group');
+                }
+                if (!l.cantidad || l.cantidad < 1) { marcarInvalido($cant, 'Al menos 1 unidad.'); ok = false; $first = $first || $cant; } else marcarValido($cant);
+                if (!l.fecha_inicio) { marcarInvalido($ini, 'Fecha de inicio requerida.'); ok = false; $first = $first || $ini; } else marcarValido($ini);
+                if (!l.fecha_fin_estimada) { marcarInvalido($fin, 'Fecha fin requerida.'); ok = false; $first = $first || $fin; }
+                else if (l.fecha_inicio && l.fecha_fin_estimada <= l.fecha_inicio) { marcarInvalido($fin, 'El fin debe ser posterior al inicio.'); ok = false; $first = $first || $fin; }
+                else marcarValido($fin);
+            });
+
+            // Sobre-asignación por línea (los inputs se capan en vivo; red de seguridad)
+            if (ok && !isEditMode()) {
+                const vistos = {};
+                ordWiz.lineas.forEach(function (l) {
+                    if (vistos[l.detalle_id]) return;
+                    vistos[l.detalle_id] = true;
+                    if (unidadesUsadasGrupo(l.detalle_id) > (l.cantidad_pendiente || 0)) {
+                        ok = false;
+                        Swal.fire({ icon: 'warning', title: 'Reparto excedido', text: '"' + l.producto_nombre + '" tiene asignadas más unidades de las disponibles. Ajusta las partes.' });
+                    }
+                });
+            }
+
+            // Asignación parcial diferida: permitida, solo se informa una vez
+            if (ok && !isEditMode()) {
+                const restos = [], vistos2 = {};
+                ordWiz.lineas.forEach(function (l) {
+                    if (vistos2[l.detalle_id]) return;
+                    vistos2[l.detalle_id] = true;
+                    const resto = (l.cantidad_pendiente || 0) - unidadesUsadasGrupo(l.detalle_id);
+                    if (resto > 0) restos.push(l.producto_nombre + ': ' + resto + ' u');
+                });
+                if (restos.length) {
+                    Swal.fire({
+                        icon: 'info',
+                        title: 'Quedarán unidades sin asignar',
+                        text: restos.join(' · ') + ' — podrás asignarlas luego creando más órdenes.',
+                        toast: true, position: 'top-end', showConfirmButton: false, timer: 3200
+                    });
+                }
+            }
+
+            if (!ok && $first) $first[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+            return ok;
+        }
+
+        // ══════════════════════════════════════════════════════
+        // PASO 3 — Insumos por línea
+        // ══════════════════════════════════════════════════════
+        function insumosPanelHtml(l, idx) {
+            // Al EDITAR, los insumos quedan fijos: ya comprometieron stock al crear
+            // la orden. Solo lectura (corregirlos = cancelar la orden y recrearla).
+            const ro = isEditMode();
+            const nIns = l.insumos ? l.insumos.length : 0;
+            const rows = (l.insumos || []).map(function (it, j) {
+                const accionesTd = ro
+                    ? '<td class="text-center text-muted"><i class="ri-lock-line" title="Insumos fijos tras crear la orden"></i></td>'
+                    : '<td class="text-center text-nowrap">'
+                      + '<button type="button" class="btn btn-sm btn-soft-primary ord-ins-edit me-1" data-l="' + idx + '" data-i="' + j + '" title="Editar"><i class="ri-pencil-line"></i></button>'
+                      + '<button type="button" class="btn btn-sm btn-soft-danger ord-ins-del" data-l="' + idx + '" data-i="' + j + '" title="Quitar"><i class="ri-delete-bin-line"></i></button>'
+                      + '</td>';
+                return '<tr>'
+                    + '<td class="ord-ins-c-num">' + (j + 1) + '</td>'
+                    + '<td><div class="fw-semibold">' + escHtml(it.nombre) + '</div>'
+                        + (it.unidad ? '<small class="text-muted">' + escHtml(it.unidad) + '</small>' : '') + '</td>'
+                    + '<td class="text-end fw-semibold">' + parseFloat(it.cantidad).toFixed(2) + '</td>'
+                    + accionesTd + '</tr>';
+            }).join('');
+            const cuerpo = nIns
+                ? '<table class="ord-ins-table"><thead><tr>'
+                  + '<th class="ord-ins-c-num">#</th><th>Insumo</th>'
+                  + '<th class="text-end">Cantidad</th><th class="text-center">' + (ro ? '' : 'Acciones') + '</th>'
+                  + '</tr></thead><tbody>' + rows + '</tbody></table>'
+                : '<div class="ord-ins-empty"><i class="ri-tools-line"></i>'
+                  + '<span>Sin insumos registrados.</span></div>';
+            const addBtn = ro
+                ? '<span class="badge rounded-pill badge-soft-secondary flex-shrink-0"><i class="ri-lock-line me-1"></i>Insumos fijos</span>'
+                : '<button type="button" class="btn btn-sm btn-soft-primary ord-ins-add flex-shrink-0" data-l="' + idx + '"><i class="ri-add-line me-1"></i>Agregar insumo</button>';
+            const grupo = grupoLinea(l.detalle_id);
+            const parteChip = grupo.length > 1
+                ? '<span class="badge badge-soft-info ord-asig-parte"><i class="ri-git-branch-line me-1"></i>Parte ' + (grupo.indexOf(l) + 1) + ' de ' + grupo.length
+                  + ' · ' + escHtml(empNames(l.empleado_ids)) + '</span>'
+                : '';
+            return '<div class="ord-asig-card ord-ins-card" data-idx="' + idx + '">'
+                + '<div class="ord-asig-card-head">'
+                +   '<span class="ord-asig-num">' + (idx + 1) + '</span>'
+                +   '<div class="ord-asig-prod">'
+                +     '<div class="ord-asig-prod-name">' + escHtml(l.producto_nombre) + ' <span class="ord-asig-qty">· ' + l.cantidad + ' u a producir</span></div>'
+                +     '<div class="ord-asig-chips">' + lineaMetaChips(l) + parteChip
+                +       '<span class="badge rounded-pill badge-soft-info"><i class="ri-tools-line me-1"></i>' + nIns + ' insumo' + (nIns === 1 ? '' : 's') + '</span></div>'
+                +   '</div>'
+                +   addBtn
+                + '</div>'
+                + '<div class="ord-ins-card-body">' + cuerpo + '</div>'
+                + '</div>';
+        }
+
+        function renderInsumosAcc() {
+            $('#ord-insumos-acc').html(ordWiz.lineas.map(function (l, idx) {
+                return insumosPanelHtml(l, idx);
+            }).join(''));
+        }
+
+        function abrirInsumoModal(lineIdx, insIdx) {
+            ordInsLineIdx = lineIdx;
+            ordInsEditIdx = (insIdx == null ? null : insIdx);
+            $('#insumoAddModal').find('.is-invalid, .is-valid').removeClass('is-invalid is-valid');
+            const L = ordWiz.lineas[lineIdx];
+            if (insIdx != null && L && L.insumos[insIdx]) {
+                const it = L.insumos[insIdx];
+                $('#insumo-add-edit-idx').val(insIdx);
+                $('#insumoAddModal-title').text('Editar insumo');
+                $('#insumo-add-confirm-label').text('Guardar');
+                $('#insumo-add-select').val(it.id).trigger('change');
+                $('#insumo-add-cantidad').val(it.cantidad);
+            } else {
+                $('#insumo-add-edit-idx').val('');
+                $('#insumoAddModal-title').text('Agregar insumo');
+                $('#insumo-add-confirm-label').text('Agregar');
+                $('#insumo-add-select').val('').trigger('change');
+                $('#insumo-add-cantidad').val('');
+            }
+            $('#insumoAddModal').modal('show');
+        }
+
+        $(document).on('click', '.ord-ins-add', function () { abrirInsumoModal(parseInt($(this).data('l'), 10), null); });
+        $(document).on('click', '.ord-ins-edit', function () { abrirInsumoModal(parseInt($(this).data('l'), 10), parseInt($(this).data('i'), 10)); });
+        $(document).on('click', '.ord-ins-del', function () {
+            const li = parseInt($(this).data('l'), 10), ii = parseInt($(this).data('i'), 10);
+            if (ordWiz.lineas[li]) { ordWiz.lineas[li].insumos.splice(ii, 1); renderInsumosAcc(); }
+        });
+
+        $(document).on('click', '#insumo-add-confirm', function () {
+            const $sel = $('#insumo-add-select');
+            const id = $sel.val();
+            const cantidad = parseFloat($('#insumo-add-cantidad').val());
+            if (!id) { marcarInvalido($sel, 'Selecciona un insumo.'); return; }
+            if (isNaN(cantidad) || cantidad <= 0) { marcarInvalido($('#insumo-add-cantidad'), 'La cantidad debe ser mayor a cero.'); return; }
+
+            const $opt = $sel.find('option:selected');
+            const L = ordWiz.lineas[ordInsLineIdx];
+            if (!L) { $('#insumoAddModal').modal('hide'); return; }
+            const unidadesOrden = parseInt(L.cantidad, 10) || 1;
+            const item = {
+                id: parseInt(id, 10),
+                nombre: $opt.data('nombre') || $opt.text().replace(/\s*\(.*\)\s*$/, ''),
+                unidad: $opt.data('unidad') || '',
+                // por_unidad permite reescalar el insumo si luego cambian las
+                // unidades de la orden (división de la línea entre empleados)
+                por_unidad: cantidad / unidadesOrden,
+                cantidad: +cantidad.toFixed(2)
+            };
+            if (ordInsEditIdx != null) {
+                L.insumos[ordInsEditIdx] = item;
+            } else {
+                const existing = L.insumos.findIndex(x => x.id === item.id);
+                if (existing !== -1) {
+                    const tot = +(L.insumos[existing].cantidad + item.cantidad).toFixed(2);
+                    L.insumos[existing].cantidad = tot;
+                    L.insumos[existing].por_unidad = tot / unidadesOrden;
+                } else {
+                    L.insumos.push(item);
+                }
+            }
+            renderInsumosAcc();
+            $('#insumoAddModal').modal('hide');
+        });
+
+        $('#insumoAddModal').on('hidden.bs.modal', function () {
+            ordInsLineIdx = null; ordInsEditIdx = null;
+            $('#insumo-add-edit-idx').val('');
+            $('#insumo-add-select').val('').trigger('change');
+            $('#insumo-add-cantidad').val('');
+            $('#insumoAddModal').find('.is-invalid, .is-valid').removeClass('is-invalid is-valid');
+        });
+
+        function validateStep3() {
+            const bad = ordWiz.lineas.findIndex(l => !l.insumos || !l.insumos.length);
+            if (bad !== -1) {
+                Swal.fire({ icon: 'warning', title: 'Faltan insumos', text: 'La línea #' + (bad + 1) + ' no tiene insumos. Agrega al menos uno.' });
+                return false;
+            }
+            return true;
+        }
+
+        // ══════════════════════════════════════════════════════
+        // PASO 4 — Resumen
+        // ══════════════════════════════════════════════════════
+        function empName(id) {
+            const t = $('#ord-empleados-tpl option[value="' + id + '"]').text();
+            return t || '—';
+        }
+        function empNames(ids) {
+            if (!ids || !ids.length) return '—';
+            return ids.map(function (id) { return empName(id); }).join(', ');
+        }
+
+        function renderResumen() {
+            const multi = ordWiz.lineas.length > 1;
+            const pedidoId = ordWiz.pedido ? ordWiz.pedido.id : '—';
+            $('#ord-resumen-desc').text(isEditMode()
+                ? 'Revisa los cambios antes de guardar.'
+                : (multi ? ('Se crearán ' + ordWiz.lineas.length + ' órdenes para el Pedido #' + pedidoId + '.') : 'Revisa la orden antes de confirmar.'));
+            $('#ord-notas-scope').text(multi ? '(se aplican a todas las órdenes)' : '');
+
+            const estadoTh = isEditMode() ? '<th class="text-center">Estado</th>' : '';
+            const rows = ordWiz.lineas.map(function (l, idx) {
+                const estadoTd = isEditMode() ? '<td class="text-center"><span class="badge badge-soft-secondary">' + escHtml(l.estado || 'Pendiente') + '</span></td>' : '';
+                const grupo = grupoLinea(l.detalle_id);
+                const parteChip = grupo.length > 1
+                    ? '<span class="badge badge-soft-info"><i class="ri-git-branch-line me-1"></i>Parte ' + (grupo.indexOf(l) + 1) + ' de ' + grupo.length + '</span>'
+                    : '';
+                return '<tr>'
+                    + '<td class="cot-col-num">' + (idx + 1) + '</td>'
+                    + '<td><div class="fw-semibold">' + escHtml(l.producto_nombre) + '</div><div class="d-flex flex-wrap gap-1 mt-1">' + lineaMetaChips(l) + parteChip + '</div></td>'
+                    + '<td class="text-center fw-semibold">' + l.cantidad + '</td>'
+                    + '<td>' + escHtml(empNames(l.empleado_ids)) + '</td>'
+                    + '<td class="text-center fs-12">' + (l.fecha_inicio || '—') + '<br><span class="text-muted">→ ' + (l.fecha_fin_estimada || '—') + '</span></td>'
+                    + '<td class="text-center"><span class="badge badge-soft-info">' + ((l.insumos || []).length) + ' insumo(s)</span></td>'
+                    + estadoTd
+                    + '</tr>';
+            }).join('');
+
+            const html = '<div class="cot-grouped-tablewrap"><table class="cot-grouped-table"><thead><tr>'
+                + '<th class="cot-col-num">#</th><th>Producto</th><th class="text-center">Cant.</th>'
+                + '<th>Empleado</th><th class="text-center">Cronograma</th><th class="text-center">Insumos</th>' + estadoTh
+                + '</tr></thead><tbody>' + rows + '</tbody></table></div>';
+            $('#ord-resumen').html(html);
+        }
+
+        // ══════════════════════════════════════════════════════
+        // Navegación — botones y markers
+        // ══════════════════════════════════════════════════════
+        $('#btn-ord-next').on('click', function () {
+            ordSyncStep(currentStep);
+            if (validateStep(currentStep)) ordShowStep(currentStep + 1);
+        });
+        $('#btn-ord-prev').on('click', function () {
+            ordSyncStep(currentStep);
+            ordShowStep(currentStep - 1);
+        });
+        $('#showModal').on('click', '.wiz-step-marker', function () {
+            const target = parseInt($(this).data('step'), 10);
+            ordSyncStep(currentStep);
+            if (target <= currentStep) { ordShowStep(target); return; }
+            for (let s = currentStep; s < target; s++) {
+                if (!validateStep(s)) { ordShowStep(s); return; }
+                ordShowStep(s + 1);
+            }
+        });
+
+        // ══════════════════════════════════════════════════════
+        // Abrir wizard — modo CREAR
+        // ══════════════════════════════════════════════════════
+        $(document).on('click', '#create-btn', function () {
+            ordWiz = { mode: 'create', editId: null, pedido: null, lineas: [] };
+            $('#ord-wiz-id-field').val('');
+            $('#modalTitle').text('Nueva Orden de Producción');
+            $('#ord-edit-locked').attr('hidden', true);
+            $('#ord-select-wrap').removeAttr('hidden');
+            $('#ord-wiz-submit-label').text('Crear Orden');
+            $('#ord-notas-global').val('');
+            $('#ord-lineas-chip').addClass('d-none');
+            $('#ordenForm').find('.is-invalid, .is-valid').removeClass('is-invalid is-valid');
+            ordShowStep(1);
+            $('#showModal').modal('show');
+        });
+
+        $('#showModal').on('shown.bs.modal', function () {
+            if (ordWiz.mode === 'create') {
+                pedordResetFiltros();
+                ordCargarPedidos();
+            }
+        });
+
+        // ══════════════════════════════════════════════════════
+        // Abrir wizard — modo EDITAR
+        // ══════════════════════════════════════════════════════
+        function ordEditSummaryHtml(l, pedidoId) {
+            return '<div class="card border-0 shadow-sm">'
+                + '<div class="card-body p-3 d-flex align-items-center justify-content-between gap-3 flex-wrap">'
+                +   '<div><div class="text-muted fs-11 mb-1">Pedido #' + escHtml(pedidoId) + '</div>'
+                +     '<div class="fw-semibold">' + escHtml(l.producto_nombre) + '</div>'
+                +     '<div class="d-flex flex-wrap gap-1 mt-1">' + lineaMetaChips(l) + '</div></div>'
+                +   '<div class="text-end"><div class="fw-bold fs-4 lh-1">' + l.cantidad + '</div><small class="text-muted">unidades</small></div>'
+                + '</div></div>';
+        }
+
+        $(document).on('click', '.edit-btn', function () {
+            const id = $(this).data('id');
+            $.get("{{ route('ordenes.edit', ':id') }}".replace(':id', id), function (data) {
+                const det = data.detalle_pedido || {};
+                const linea = {
+                    detalle_id: data.detalle_pedido_id,
+                    producto_id: data.producto_id,
+                    producto_nombre: data.nombre_producto || (data.producto ? data.producto.nombre : (data.producto_id ? 'Producto #' + data.producto_id : 'Producto')),
+                    cantidad: data.cantidad_solicitada,
+                    linea_cantidad: data.linea_cantidad || data.cantidad_solicitada,
+                    // Tope al editar: sus unidades + las que la línea tiene sin asignar
+                    cantidad_maxima: data.cantidad_maxima || data.cantidad_solicitada,
+                    color: det.color ? det.color.nombre : null,
+                    talla: det.talla ? (det.talla.etiqueta || det.talla.nombre) : null,
+                    lleva_bordado: !!(det.bordados && det.bordados.length),
+                    bordados_count: det.bordados ? det.bordados.length : 0,
+                    empleado_ids: (data.empleados_asignados || []).map(function (e) { return String(e.id); }),
+                    fecha_inicio: formatDateForInput(data.fecha_inicio),
+                    fecha_fin_estimada: formatDateForInput(data.fecha_fin_estimada),
+                    estado: data.estado || 'Pendiente',
+                    insumos: (data.insumos || []).map(function (i) {
+                        return { id: i.id, nombre: i.nombre || ('Insumo #' + i.id), unidad: i.unidad_medida || '', cantidad: parseFloat(i.pivot && i.pivot.cantidad_estimada) || 0 };
+                    })
+                };
+                ordWiz = {
+                    mode: 'edit',
+                    editId: data.id,
+                    pedido: { id: data.pedido_id, cliente_nombre: data.cliente_nombre || '', cliente_documento: det.documento || '' },
+                    lineas: [linea]
+                };
+
+                $('#ord-wiz-id-field').val(data.id);
+                $('#modalTitle').text('Editar Orden de Producción');
+                $('#ord-select-wrap').attr('hidden', true);
+                $('#ord-edit-locked').removeAttr('hidden');
+                $('#ord-edit-line-summary').html(ordEditSummaryHtml(linea, data.pedido_id || '—'));
+                $('#ord-wiz-submit-label').text('Actualizar Orden');
+
+                if (data.creador) ordSetCreador(data.creador.name, data.creador.avatar_url);
+                else ordResetCreador();
+
+                $('#ord-notas-global').val(data.notas || '');
+                $('#ord-lineas-chip').addClass('d-none');
+                $('#ordenForm').find('.is-invalid, .is-valid').removeClass('is-invalid is-valid');
+
+                ordShowStep(1);
+                $('#showModal').modal('show');
             });
         });
 
-        // Submit del batch
-        $(document).on('click', '#batch-submit-btn', function () {
-            batchSyncFilasDesdeDom();
+        // ══════════════════════════════════════════════════════
+        // Enviar — crea 1 (store), N (batch) o actualiza (update)
+        // ══════════════════════════════════════════════════════
+        function ordFinalCheck() {
+            if (!ordWiz.lineas.length) {
+                Swal.fire({ icon: 'warning', title: 'Sin líneas', text: 'No hay líneas para producir.' });
+                ordShowStep(1);
+                return false;
+            }
+            for (let i = 0; i < ordWiz.lineas.length; i++) {
+                const l = ordWiz.lineas[i];
+                if (!l.empleado_ids || !l.empleado_ids.length || !l.cantidad || l.cantidad < 1
+                    || !l.fecha_inicio || !l.fecha_fin_estimada || l.fecha_fin_estimada <= l.fecha_inicio) {
+                    ordShowStep(2); validateStep2(); return false;
+                }
+                if (!l.insumos || !l.insumos.length) {
+                    ordShowStep(3);
+                    Swal.fire({ icon: 'warning', title: 'Faltan insumos', text: 'La línea #' + (i + 1) + ' no tiene insumos.' });
+                    return false;
+                }
+            }
+            return true;
+        }
 
-            // Validación cliente: empleado + fechas + costo + fin > inicio
-            const errores = [];
-            batchState.filas.forEach(function (f, idx) {
-                if (!f.empleado_id)                    errores.push('Fila ' + (idx + 1) + ': empleado requerido');
-                if (!f.fecha_inicio)                   errores.push('Fila ' + (idx + 1) + ': fecha inicio requerida');
-                if (!f.fecha_fin_estimada)             errores.push('Fila ' + (idx + 1) + ': fecha fin requerida');
-                if (f.fecha_inicio && f.fecha_fin_estimada && f.fecha_fin_estimada <= f.fecha_inicio)
-                    errores.push('Fila ' + (idx + 1) + ': la fecha fin debe ser posterior al inicio');
-                if (!f.insumos || !f.insumos.length)
-                    errores.push('Fila ' + (idx + 1) + ': sin insumos (agrégalos con el botón de la columna Ins.)');
-            });
-            if (errores.length) {
-                Swal.fire({ icon: 'warning', title: 'Revisa los datos', html: errores.join('<br>') });
-                return;
+        $('#ordenForm').on('submit', function (e) {
+            e.preventDefault();
+            if (currentStep !== TOTAL_STEPS) return;      // enviar solo desde el resumen
+            if (!ordFinalCheck()) return;
+
+            const notas = $('#ord-notas-global').val() || null;
+            const $btn = $('#ord-wiz-submit-btn').prop('disabled', true);
+            const mapInsumos = (arr) => arr.map(i => ({ id: i.id, cantidad_estimada: i.cantidad }));
+
+            let url, payload;
+            if (isEditMode()) {
+                const l = ordWiz.lineas[0];
+                url = "{{ route('ordenes.update', ':id') }}".replace(':id', ordWiz.editId);
+                payload = {
+                    _token: '{{ csrf_token() }}', _method: 'PUT',
+                    empleados: l.empleado_ids, cantidad: l.cantidad,
+                    fecha_inicio: l.fecha_inicio, fecha_fin_estimada: l.fecha_fin_estimada,
+                    estado: l.estado || 'Pendiente', notas: notas, insumos: mapInsumos(l.insumos)
+                };
+            } else if (ordWiz.lineas.length === 1) {
+                const l = ordWiz.lineas[0];
+                url = "{{ route('ordenes.store') }}";
+                payload = {
+                    _token: '{{ csrf_token() }}',
+                    detalle_pedido_id: l.detalle_id, empleados: l.empleado_ids, cantidad: l.cantidad,
+                    fecha_inicio: l.fecha_inicio, fecha_fin_estimada: l.fecha_fin_estimada,
+                    notas: notas, insumos: mapInsumos(l.insumos)
+                };
+            } else {
+                url = "{{ route('ordenes.batch') }}";
+                payload = {
+                    _token: '{{ csrf_token() }}',
+                    pedido_id: ordWiz.pedido.id,
+                    ordenes: ordWiz.lineas.map(l => ({
+                        detalle_pedido_id: l.detalle_id, empleados: l.empleado_ids, cantidad: l.cantidad,
+                        fecha_inicio: l.fecha_inicio, fecha_fin_estimada: l.fecha_fin_estimada,
+                        notas: notas, insumos: mapInsumos(l.insumos)
+                    }))
+                };
             }
 
-            const payload = {
-                _token: '{{ csrf_token() }}',
-                pedido_id: batchState.pedido.id,
-                ordenes: batchState.filas.map(function (f) {
-                    return {
-                        detalle_pedido_id: f.detalle_id,
-                        empleado_id: f.empleado_id,
-                        fecha_inicio: f.fecha_inicio,
-                        fecha_fin_estimada: f.fecha_fin_estimada,
-                        insumos: f.insumos.map(function (i) {
-                            return { id: i.id, cantidad_estimada: i.cantidad };
-                        })
-                    };
-                })
-            };
-
-            const $btn = $('#batch-submit-btn').prop('disabled', true);
             $.ajax({
-                url: "{{ route('ordenes.batch') }}",
-                method: 'POST',
-                data: payload,
+                url: url, method: 'POST', data: payload,
                 success: function (resp) {
                     $btn.prop('disabled', false);
-                    $('#batchOrdenModal').modal('hide');
+                    $('#showModal').modal('hide');
                     table.ajax.reload(null, false);
-                    Swal.fire({
-                        icon: 'success', title: '¡Listo!', text: resp.message,
-                        timer: 2200, showConfirmButton: false
-                    });
+                    Swal.fire({ icon: 'success', title: '¡Listo!', text: resp.message, timer: 2200, showConfirmButton: false });
                 },
                 error: function (xhr) {
                     $btn.prop('disabled', false);
-                    let msg = 'Error al crear las órdenes.';
+                    let msg = 'Ocurrió un error al procesar la solicitud.';
                     if (xhr.responseJSON) {
                         if (xhr.responseJSON.errors) {
                             msg = Object.values(xhr.responseJSON.errors).map(v => Array.isArray(v) ? v[0] : v).join('\n');
@@ -676,81 +1247,30 @@
             });
         });
 
-        // ── Editor de insumos por línea (batch) ─────────────────────
-        let batchInsTemp = [];        // insumos en edición (copia temporal)
-        let batchInsRowIdx = null;    // fila del batch que se está editando
-
-        function batchRenderInsTemp() {
-            const $tbody = $('#batch-ins-tbody');
-            const $empty = $('#batch-ins-empty');
-            const $wrap  = $('#batch-ins-tablewrap');
-            if (!batchInsTemp.length) {
-                $tbody.empty(); $wrap.attr('hidden', true); $empty.show(); return;
-            }
-            $empty.hide(); $wrap.removeAttr('hidden');
-            $tbody.html(batchInsTemp.map(function (it, i) {
-                return '<tr>' +
-                    '<td class="cot-col-prod"><div class="fw-semibold">' + escHtml(it.nombre) + '</div>' +
-                        (it.unidad ? '<small class="text-muted">' + escHtml(it.unidad) + '</small>' : '') + '</td>' +
-                    '<td class="cot-col-num text-end fw-semibold">' + parseFloat(it.cantidad).toFixed(2) + '</td>' +
-                    '<td class="cot-col-acc text-center"><button type="button" class="btn btn-sm btn-soft-danger batch-ins-del" data-i="' + i + '" title="Quitar"><i class="ri-delete-bin-line"></i></button></td>' +
-                '</tr>';
-            }).join(''));
-        }
-
-        // Abrir el editor de insumos para una línea
-        $(document).on('click', '.batch-ins-btn', function () {
-            const idx = parseInt($(this).data('idx'), 10);
-            if (!batchState.filas[idx]) return;
-            // No perder lo editado (empleado/fechas) al re-renderear luego
-            batchSyncFilasDesdeDom();
-            batchInsRowIdx = idx;
-            batchInsTemp = (batchState.filas[idx].insumos || []).map(function (i) {
-                return { id: i.id, nombre: i.nombre, unidad: i.unidad || '', cantidad: i.cantidad };
-            });
-            $('#batch-ins-prod').text(batchState.filas[idx].producto_nombre || ('Línea ' + (idx + 1)));
-            $('#batch-ins-select').val('');
-            $('#batch-ins-cant').val('');
-            batchRenderInsTemp();
-            $('#batchInsumosModal').modal('show');
-        });
-
-        // Agregar (o actualizar cantidad si ya existe) un insumo a la lista temporal
-        $(document).on('click', '#batch-ins-add', function () {
-            const $opt = $('#batch-ins-select option:selected');
-            const id   = $('#batch-ins-select').val();
-            const cant = parseFloat($('#batch-ins-cant').val());
-            if (!id) { Swal.fire({ icon: 'warning', title: 'Selecciona un insumo', toast: true, position: 'top-end', showConfirmButton: false, timer: 1400 }); return; }
-            if (isNaN(cant) || cant <= 0) { Swal.fire({ icon: 'warning', title: 'Cantidad inválida', toast: true, position: 'top-end', showConfirmButton: false, timer: 1400 }); return; }
-            const ex = batchInsTemp.find(function (i) { return String(i.id) === String(id); });
-            if (ex) {
-                ex.cantidad = cant;
-            } else {
-                batchInsTemp.push({ id: parseInt(id, 10), nombre: $opt.data('nombre'), unidad: $opt.data('unidad') || '', cantidad: cant });
-            }
-            $('#batch-ins-select').val('');
-            $('#batch-ins-cant').val('');
-            batchRenderInsTemp();
-        });
-
-        // Quitar un insumo de la lista temporal
-        $(document).on('click', '.batch-ins-del', function () {
-            batchInsTemp.splice(parseInt($(this).data('i'), 10), 1);
-            batchRenderInsTemp();
-        });
-
-        // Guardar → vuelca la lista a la fila del batch y refresca el contador
-        $(document).on('click', '#batch-ins-save', function () {
-            if (batchInsRowIdx == null) return;
-            batchState.filas[batchInsRowIdx].insumos = batchInsTemp.slice();
-            $('#batchInsumosModal').modal('hide');
-            batchRenderFilas();
-        });
-
-        // Reset al cerrar
-        $('#batchOrdenModal').on('hidden.bs.modal', function () {
-            batchState = { pedido: null, filas: [] };
-            $('#batch-ordenes-tbody').empty();
+        // ══════════════════════════════════════════════════════
+        // Reset al cerrar el wizard
+        // ══════════════════════════════════════════════════════
+        $('#showModal').on('hidden.bs.modal', function () {
+            ordWiz = { mode: 'create', editId: null, pedido: null, lineas: [] };
+            $('#ord-wiz-id-field').val('');
+            $('#ordenForm').find('.is-invalid, .is-valid').removeClass('is-invalid is-valid');
+            // "Aplicar a todas" siempre reabre colapsada (no estorba a la vista)
+            $('#ord-apply-collapse').removeClass('show');
+            $('#ord-apply-bar .ord-apply-head').attr('aria-expanded', 'false');
+            $('#ord-asignacion-cards').empty();
+            $('#ord-insumos-acc').empty();
+            $('#ord-resumen').empty();
+            $('#ord-edit-line-summary').empty();
+            $('#ord-notas-global').val('');
+            $('#pedidos-orden-container').empty();
+            $('#ord-lineas-chip').addClass('d-none');
+            $('#ord-cliente-banner').attr('hidden', true).attr('aria-hidden', 'true');
+            $('#ord-creador-banner').attr('hidden', true).attr('aria-hidden', 'true');
+            $('#ord-edit-locked').attr('hidden', true);
+            $('#ord-select-wrap').removeAttr('hidden');
+            $('#modalTitle').text('Nueva Orden de Producción');
+            ordResetCreador();
+            ordShowStep(1);
         });
 
         // ══════════════════════════════════════════════════════
@@ -872,15 +1392,6 @@
         // ══════════════════════════════════════════════════════
         // DataTable
         // ══════════════════════════════════════════════════════
-        function debounce(func, wait) {
-            let timeout;
-            return function () {
-                const context = this, args = arguments;
-                clearTimeout(timeout);
-                timeout = setTimeout(() => func.apply(context, args), wait);
-            };
-        }
-
         function updateFilterBadge() {
             let count = 0;
             const ordenValue = $('#filter-orden').val();
@@ -941,7 +1452,9 @@
                     className: 'align-middle text-center',
                     width: '16%',
                     render: function (data, type, row) {
-                        const estadoActivo = ['Pendiente', 'En Proceso'].includes(row.estado);
+                        const estado = row.estado;
+                        const estadoActivo = ['Pendiente', 'En Proceso'].includes(estado);
+                        const esCancelado = estado === 'Cancelado';
 
                         const sVer = `<button class="btn btn-sm btn-soft-info view-btn" data-id="${data}" title="Ver detalle"><i class="ri-eye-fill"></i></button>`;
 
@@ -949,8 +1462,17 @@
                         if (estadoActivo) {
                             items += `<li><button type="button" class="dropdown-item act-item act-primary avance-btn" data-id="${data}"><span class="act-ic"><i class="ri-add-circle-line"></i></span>Registrar avance</button></li>`;
                         }
-                        items += `<li><button type="button" class="dropdown-item act-item act-edit edit-btn" data-id="${data}"><span class="act-ic"><i class="ri-pencil-fill"></i></span>Editar</button></li>`;
-                        items += `<li><button type="button" class="dropdown-item act-item act-del remove-btn" data-id="${data}"><span class="act-ic"><i class="ri-delete-bin-fill"></i></span>Eliminar</button></li>`;
+                        if (!esCancelado) {
+                            items += `<li><button type="button" class="dropdown-item act-item act-edit edit-btn" data-id="${data}"><span class="act-ic"><i class="ri-pencil-fill"></i></span>Editar</button></li>`;
+                        }
+                        // Cancelar (Pendiente/En Proceso): reposición de stock condicional + merma.
+                        if (estadoActivo) {
+                            items += `<li><button type="button" class="dropdown-item act-item act-warning cancelar-btn" data-id="${data}" data-estado="${estado}"><span class="act-ic"><i class="ri-close-circle-line"></i></span>Cancelar orden</button></li>`;
+                        }
+                        // Eliminar (hard delete) solo aplica a órdenes Pendientes.
+                        if (estado === 'Pendiente') {
+                            items += `<li><button type="button" class="dropdown-item act-item act-del remove-btn" data-id="${data}"><span class="act-ic"><i class="ri-delete-bin-fill"></i></span>Eliminar</button></li>`;
+                        }
 
                         const menu = `
                             <div class="dropdown d-inline-block">
@@ -1003,204 +1525,11 @@
         updateFilterBadge();
 
         // ══════════════════════════════════════════════════════
-        // Insumos: abrir/editar/eliminar/confirmar (vía nested modal)
-        // ══════════════════════════════════════════════════════
-        $(document).on('click', '#add-insumo-btn', function () {
-            abrirInsumoAddModal(null);
-        });
-        $(document).on('click', '.edit-insumo-btn', function () {
-            abrirInsumoAddModal(parseInt($(this).data('idx'), 10));
-        });
-        $(document).on('click', '.remove-insumo', function () {
-            const idx = parseInt($(this).data('idx'), 10);
-            if (isNaN(idx)) return;
-            ordenInsumosState.splice(idx, 1);
-            renderInsumosGrid();
-        });
-        $(document).on('click', '#insumo-add-confirm', function () {
-            const $sel = $('#insumo-add-select');
-            const id = $sel.val();
-            const cantidad = parseFloat($('#insumo-add-cantidad').val());
-            if (!id) {
-                marcarInvalido($sel, 'Selecciona un insumo.');
-                return;
-            }
-            if (isNaN(cantidad) || cantidad <= 0) {
-                marcarInvalido($('#insumo-add-cantidad'), 'La cantidad debe ser mayor a cero.');
-                return;
-            }
-
-            const $opt = $sel.find('option:selected');
-            const item = {
-                id: parseInt(id, 10),
-                nombre: $opt.data('nombre') || $opt.text().replace(/\s*\(.*\)\s*$/, ''),
-                unidad: $opt.data('unidad') || '',
-                cantidad: +cantidad.toFixed(2)
-            };
-
-            const idxStr = $('#insumo-add-edit-idx').val();
-            if (idxStr !== '') {
-                ordenInsumosState[parseInt(idxStr, 10)] = item;
-            } else {
-                // Si el insumo ya estaba en la lista, sumamos las cantidades
-                const existing = ordenInsumosState.findIndex(x => x.id === item.id);
-                if (existing !== -1) {
-                    ordenInsumosState[existing].cantidad = +(ordenInsumosState[existing].cantidad + item.cantidad).toFixed(2);
-                } else {
-                    ordenInsumosState.push(item);
-                }
-            }
-
-            renderInsumosGrid();
-            $('#insumoAddModal').modal('hide');
-        });
-        $('#insumoAddModal').on('hidden.bs.modal', function () {
-            $('#insumo-add-edit-idx').val('');
-            $('#insumo-add-select').val('').trigger('change');
-            $('#insumo-add-cantidad').val('');
-            $('#insumoAddModal').find('.is-invalid, .is-valid').removeClass('is-invalid is-valid');
-        });
-
-        // ══════════════════════════════════════════════════════
-        // VALIDACIÓN AL SUBMIT
-        // ══════════════════════════════════════════════════════
-        function validarFormularioOrden() {
-            let esValido = true;
-
-            // Línea del pedido seleccionada (solo en creación)
-            let isEdit = $('#id-field').val() !== '';
-            if (!isEdit && !$('#detalle-pedido-id-field').val()) {
-                Swal.fire({ icon: 'warning', title: 'Sin pedido', text: 'Selecciona un pedido y producto antes de crear la orden.' });
-                return false;
-            }
-
-            // Empleado — obligatorio
-            let $emp = $('#empleado-id-field');
-            if (!$emp.val()) { marcarInvalido($emp, 'Selecciona el empleado asignado.'); esValido = false; }
-            else { marcarValido($emp); }
-
-            // Fecha Inicio
-            let $inicio = $('#fecha-inicio-field');
-            if (!$inicio.val()) { marcarInvalido($inicio, 'La fecha de inicio es obligatoria.'); esValido = false; }
-            else { marcarValido($inicio); }
-
-            // Fecha Fin Estimada
-            let $fin = $('#fecha-fin-estimada-field');
-            if (!$fin.val()) { marcarInvalido($fin, 'La fecha fin estimada es obligatoria.'); esValido = false; }
-            else if ($inicio.val() && $fin.val() <= $inicio.val()) { marcarInvalido($fin, 'La fecha fin estimada debe ser posterior a la fecha de inicio.'); esValido = false; }
-            else { marcarValido($fin); }
-
-            // Insumos: al menos 1 en el estado (cada uno se valida al agregarlo)
-            if (!ordenInsumosState.length) {
-                Swal.fire({ icon: 'warning', title: 'Sin insumos', text: 'Agrega al menos un insumo a la orden.', timer: 2200, showConfirmButton: false });
-                esValido = false;
-            }
-
-            return esValido;
-        }
-
-        // Crear / actualizar orden
-        $('#ordenForm').on('submit', function (e) {
-            e.preventDefault();
-            if (!validarFormularioOrden()) return;
-
-            let formData = new FormData(this);
-            let editId = $('#id-field').val();
-            let url = editId
-                ? "{{ route('ordenes.update', ':id') }}".replace(':id', editId)
-                : "{{ route('ordenes.store') }}";
-            if (editId) { formData.append('_method', 'PUT'); }
-
-            let $btn = $(editId ? '#edit-btn' : '#add-btn').prop('disabled', true);
-
-            $.ajax({
-                url: url,
-                method: 'POST',
-                data: formData,
-                processData: false,
-                contentType: false,
-                success: function (response) {
-                    $btn.prop('disabled', false);
-                    $('#showModal').modal('hide');
-                    table.ajax.reload(null, false);
-                    Swal.fire({ icon: 'success', title: 'Éxito', text: response.message, timer: 2000, showConfirmButton: false });
-                },
-                error: function (xhr) {
-                    $btn.prop('disabled', false);
-                    let msg = 'Ocurrió un error al procesar la solicitud.';
-                    if (xhr.responseJSON) {
-                        if (xhr.responseJSON.errors) {
-                            msg = Object.values(xhr.responseJSON.errors).map(v => Array.isArray(v) ? v[0] : v).join('\n');
-                        } else if (xhr.responseJSON.message) {
-                            msg = xhr.responseJSON.message;
-                        }
-                    }
-                    Swal.fire({ icon: 'error', title: 'Error', text: msg });
-                }
-            });
-        });
-
-        // ══════════════════════════════════════════════════════
-        // Editar orden
-        // ══════════════════════════════════════════════════════
-        $(document).on('click', '.edit-btn', function () {
-            let id = $(this).data('id');
-            $.get("{{ route('ordenes.edit', ':id') }}".replace(':id', id), function (data) {
-                $('#modalTitle').text('Editar Orden de Producción');
-                $('#id-field').val(data.id);
-                $('#detalle-pedido-id-field').val(data.detalle_pedido_id || '');
-                $('#pedido-id-hidden-field').val(data.pedido_id || '');
-                $('#producto-id-field').val(data.producto_id || '');
-
-                // Creador real de la orden (no quien edita)
-                if (data.creador) {
-                    ordSetCreador(data.creador.name, data.creador.avatar_url);
-                } else {
-                    ordResetCreador();
-                }
-
-                const det = data.detalle_pedido || {};
-                llenarPanelLinea({
-                    pedido_id: data.pedido_id || '—',
-                    cliente_nombre: data.cliente_nombre || '',
-                    producto_nombre: data.producto ? data.producto.nombre : ('Producto #' + data.producto_id),
-                    cantidad: data.cantidad_solicitada,
-                    color: det.color ? det.color.nombre : null,
-                    talla: det.talla ? (det.talla.etiqueta || det.talla.nombre) : null,
-                    lleva_bordado: !!(det.bordados && det.bordados.length),
-                    bordados_count: det.bordados ? det.bordados.length : 0
-                });
-
-                $('#empleado-id-field').val(data.empleado_id || '');
-                $('#fecha-inicio-field').val(formatDateForInput(data.fecha_inicio));
-                $('#fecha-fin-estimada-field').val(formatDateForInput(data.fecha_fin_estimada));
-                $('#estado-field').val(data.estado);
-                $('#notas-field').val(data.notas);
-
-                // Insumos: hidratar estado desde la orden y rerenderear la grilla
-                ordenInsumosState = (data.insumos || []).map(function (i) {
-                    return {
-                        id: i.id,
-                        nombre: i.nombre || ('Insumo #' + i.id),
-                        unidad: i.unidad_medida || '',
-                        cantidad: parseFloat(i.pivot && i.pivot.cantidad_estimada) || 0
-                    };
-                });
-                renderInsumosGrid();
-
-                $('#estado-container').show();
-                $('#add-btn').hide();
-                $('#edit-btn').show();
-                $('#ordenForm').find('.is-invalid, .is-valid').removeClass('is-invalid is-valid');
-                $('#showModal').modal('show');
-            });
-        });
-
-        // ══════════════════════════════════════════════════════
         // Ver orden
         // ══════════════════════════════════════════════════════
         $(document).on('click', '.view-btn', function () {
             let id = $(this).data('id');
+            viewKanbanOrdenId = id;
             $.get("{{ route('ordenes.show', ':id') }}".replace(':id', id), function (data) {
                 const estadoClases = {
                     'Pendiente':  'status-pendiente badge-soft-warning',
@@ -1209,7 +1538,8 @@
                     'Cancelado':  'status-cancelado badge-soft-danger'
                 };
 
-                $('#view-producto').text(data.producto ? data.producto.nombre : 'N/A');
+                // Nombre legible: cubre líneas dinámicas (producto_id null) vía accessor
+                $('#view-producto').text(data.nombre_producto || (data.producto ? data.producto.nombre : 'Producto'));
                 $('#view-cantidad-solicitada').text(data.cantidad_solicitada);
                 $('#view-cantidad-producida').text(data.cantidad_producida);
 
@@ -1226,12 +1556,28 @@
 
                 $('#view-fecha-inicio').text(formatDate(data.fecha_inicio));
                 $('#view-fecha-fin-estimada').text(formatDate(data.fecha_fin_estimada));
+                if (data.fecha_fin_real) {
+                    $('#view-fecha-fin-real').text(formatDate(data.fecha_fin_real)).removeClass('fst-italic text-muted');
+                } else {
+                    $('#view-fecha-fin-real').text('Aún en curso').addClass('fst-italic text-muted');
+                }
                 $('#view-estado').html(`<span class="badge badge-status ${estadoClases[data.estado] || 'badge-soft-secondary'} rounded-pill"><i class="${iconEstadoOrden(data.estado)} me-1"></i>${data.estado}</span>`);
                 $('#view-creado-por').text(data.creado_por ? data.creado_por.name : 'Sin especificar');
-                $('#view-empleado').text(
-                    data.empleado && data.empleado.persona ? data.empleado.persona.nombre_completo : 'Sin asignar'
-                );
-                $('#view-pedido-info').text(data.pedido_id ? 'Pedido #' + data.pedido_id : 'Orden Manual');
+
+                // Equipo completo (multi-empleado); fallback al responsable legacy
+                const empNoms = (data.empleados_asignados && data.empleados_asignados.length)
+                    ? data.empleados_asignados.map(e => (e.persona && e.persona.nombre_completo) || ('Empleado #' + e.id))
+                    : (data.empleado && data.empleado.persona ? [data.empleado.persona.nombre_completo] : []);
+                $('#view-empleado').text(empNoms.length ? empNoms.join(', ') : 'Sin asignar');
+                $('#view-empleado-label').text(empNoms.length > 1 ? 'Empleados (' + empNoms.length + ')' : 'Empleado');
+
+                // Subtítulo del header: pedido + unidades + variante (color/talla)
+                const detSub = data.detalle_pedido || {};
+                const subInfo = [data.pedido_id ? 'Pedido #' + data.pedido_id : 'Orden manual',
+                                 data.cantidad_solicitada + (data.cantidad_solicitada === 1 ? ' unidad' : ' unidades')];
+                if (detSub.color && detSub.color.nombre) subInfo.push(detSub.color.nombre);
+                if (detSub.talla) subInfo.push(detSub.talla.etiqueta || detSub.talla.nombre);
+                $('#view-pedido-info').text(subInfo.join(' · '));
 
                 // Diseño / Bordado — desde la línea del pedido (los bordados se definen por producto)
                 const bordados = (data.detalle_pedido && data.detalle_pedido.bordados) || [];
@@ -1251,25 +1597,36 @@
                 $('#view-logo').html(disenoHtml);
 
                 // Insumos
+                var insumos = data.insumos || [];
                 $('#view-insumos').empty();
-                (data.insumos || []).forEach(insumo => {
-                    let pct = (insumo.pivot.cantidad_utilizada / insumo.pivot.cantidad_estimada * 100).toFixed(2);
-                    $('#view-insumos').append(`
-                        <tr>
-                            <td><h6 class="fs-13 mb-0">${escHtml(insumo.nombre)}</h6></td>
-                            <td class="text-center">${insumo.pivot.cantidad_estimada} ${insumo.unidad_medida}</td>
-                            <td class="text-center">${insumo.pivot.cantidad_utilizada} ${insumo.unidad_medida}</td>
-                            <td>
-                                <div class="progress animated-progress custom-progress progress-sm">
-                                    <div class="progress-bar bg-success" role="progressbar" style="width: ${pct}%"
-                                        aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100"></div>
-                                </div>
-                                <div class="text-muted fs-11 mt-1 text-center">${pct}%</div>
-                            </td>
-                        </tr>`);
-                });
+                if (insumos.length === 0) {
+                    $('#view-insumos-tablewrap').hide();
+                    $('#view-insumos-empty').show();
+                } else {
+                    $('#view-insumos-tablewrap').show();
+                    $('#view-insumos-empty').hide();
+                    insumos.forEach(insumo => {
+                        let pct = (insumo.pivot.cantidad_utilizada / insumo.pivot.cantidad_estimada * 100).toFixed(2);
+                        $('#view-insumos').append(`
+                            <tr>
+                                <td><h6 class="fs-13 mb-0">${escHtml(insumo.nombre)}</h6></td>
+                                <td class="text-center">${insumo.pivot.cantidad_estimada} ${insumo.unidad_medida}</td>
+                                <td class="text-center">${insumo.pivot.cantidad_utilizada} ${insumo.unidad_medida}</td>
+                                <td>
+                                    <div class="progress animated-progress custom-progress progress-sm">
+                                        <div class="progress-bar bg-success" role="progressbar" style="width: ${pct}%"
+                                            aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100"></div>
+                                    </div>
+                                    <div class="text-muted fs-11 mt-1 text-center">${pct}%</div>
+                                </td>
+                            </tr>`);
+                    });
+                }
 
-                $('#view-notas').text(data.notas || 'Sin notas adicionales.');
+                const motivoCancel = (data.estado === 'Cancelado' && data.motivo_cancelacion)
+                    ? '<div class="alert alert-danger py-2 px-3 mt-2 mb-0 fs-12"><i class="ri-close-circle-line me-1"></i><b>Motivo de cancelación:</b> ' + escHtml(data.motivo_cancelacion) + '</div>'
+                    : '';
+                $('#view-notas').html(escHtml(data.notas || 'Sin notas adicionales.') + motivoCancel);
                 const formatDateTime = (dateString) => {
                     if (!dateString) return 'N/A';
                     const date = new Date(dateString);
@@ -1277,7 +1634,7 @@
                 };
                 $('#view-created').text(formatDateTime(data.created_at));
 
-                new bootstrap.Tab(document.getElementById('tab-detalles-btn')).show();
+                viewOrdShowStep(1);
                 $('#viewModal').modal('show');
             });
         });
@@ -1315,6 +1672,70 @@
                     });
                 }
             });
+        });
+
+        // ══════════════════════════════════════════════════════
+        // Cancelar orden (reposición de stock condicional / merma textil)
+        // ══════════════════════════════════════════════════════
+        $(document).on('click', '.cancelar-btn', function () {
+            const id = $(this).data('id');
+            const estado = String($(this).data('estado'));
+            const enProduccion = estado !== 'Pendiente';   // tela ya cortada = merma
+
+            const enviar = function (motivo) {
+                $.ajax({
+                    url: "{{ route('ordenes.cancelar', ':id') }}".replace(':id', id),
+                    method: 'POST',
+                    data: { _token: '{{ csrf_token() }}', _method: 'PATCH', motivo_cancelacion: motivo || null },
+                    success: function (resp) {
+                        table.ajax.reload(null, false);
+                        if (misOrdenesEmpleadoId) { cargarMisOrdenes(misOrdenesEmpleadoId); }
+                        Swal.fire({ icon: 'success', title: 'Orden cancelada', text: resp.message, timer: 2800, showConfirmButton: false });
+                    },
+                    error: function (xhr) {
+                        let msg = 'No se pudo cancelar la orden.';
+                        if (xhr.responseJSON) {
+                            if (xhr.responseJSON.errors) { msg = Object.values(xhr.responseJSON.errors).flat().join('\n'); }
+                            else if (xhr.responseJSON.message) { msg = xhr.responseJSON.message; }
+                        }
+                        Swal.fire({ icon: 'error', title: 'Error', text: msg });
+                    }
+                });
+            };
+
+            if (enProduccion) {
+                // Cancelación tardía: la tela ya se cortó → merma. Motivo obligatorio.
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Cancelar orden en producción',
+                    html: 'El material ya está en producción (cortado). Al cancelar <b>no se repone el stock</b> (se registra como merma).<br>Indica el motivo de la cancelación:',
+                    input: 'textarea',
+                    inputPlaceholder: 'Motivo / justificación de la pérdida del material...',
+                    inputAttributes: { maxlength: 500 },
+                    showCancelButton: true,
+                    confirmButtonText: 'Cancelar orden',
+                    cancelButtonText: 'Volver',
+                    confirmButtonColor: '#d33',
+                    inputValidator: function (value) {
+                        if (!value || !value.trim()) return 'El motivo es obligatorio para justificar la merma.';
+                    }
+                }).then(function (r) {
+                    if (r.isConfirmed) enviar(r.value.trim());
+                });
+            } else {
+                // Cancelación temprana (Pendiente): tela sin cortar → se repone el stock.
+                Swal.fire({
+                    icon: 'question',
+                    title: '¿Cancelar la orden?',
+                    text: 'La orden aún no inicia producción: se repondrá el stock de los insumos al inventario.',
+                    showCancelButton: true,
+                    confirmButtonText: 'Sí, cancelar',
+                    cancelButtonText: 'Volver',
+                    confirmButtonColor: '#d33'
+                }).then(function (r) {
+                    if (r.isConfirmed) enviar(null);
+                });
+            }
         });
 
         // ══════════════════════════════════════════════════════
@@ -1382,30 +1803,234 @@
         });
 
         $('#viewModal').on('hidden.bs.modal', function () {
-            new bootstrap.Tab(document.getElementById('tab-detalles-btn')).show();
+            viewOrdShowStep(1);
+            kanbanReset();
+            viewKanbanOrdenId = null;
         });
 
         // ══════════════════════════════════════════════════════
-        // Reset del form al cerrar
+        // Wizard navegación — viewModal (read-only, 4 pasos)
         // ══════════════════════════════════════════════════════
-        $('#showModal').on('hidden.bs.modal', function () {
-            $('#ordenForm')[0].reset();
-            $('#id-field').val('');
-            $('#detalle-pedido-id-field').val('');
-            $('#pedido-id-hidden-field').val('');
-            $('#producto-id-field').val('');
-            $('#orden-linea-pedido').text('Pedido #—');
-            ordSetCliente('');
-            ordResetCreador();
-            $('#orden-linea-producto').text('—');
-            $('#orden-linea-cantidad').text('0');
-            $('#orden-linea-meta').empty();
-            $('#modalTitle').text('Nueva Orden de Producción');
-            $('#estado-container').hide();
-            $('#add-btn').show();
-            $('#edit-btn').hide();
-            $('#ordenForm').find('.is-invalid, .is-valid').removeClass('is-invalid is-valid');
-            resetInsumos();
-        });
+        (function () {
+            var TOTAL = 4;
+            var currentStep = 1;
+
+            window.viewOrdShowStep = function (step) {
+                currentStep = step;
+                $('#viewModal .wiz-step-content').removeClass('is-active');
+                $('#viewModal .wiz-step-content[data-step="' + step + '"]').addClass('is-active');
+                $('#viewModal .wiz-step-marker').removeClass('is-active is-complete');
+                $('#viewModal .wiz-step-marker').each(function () {
+                    var s = parseInt($(this).data('step'));
+                    if (s < step) $(this).addClass('is-complete');
+                    else if (s === step) $(this).addClass('is-active');
+                });
+                for (var i = 1; i < TOTAL; i++) {
+                    $('#viewModal .wiz-step-line-fill[data-line="' + i + '"]')
+                        .css('width', i < step ? '100%' : '0%');
+                }
+                $('#btn-view-ord-prev').toggle(step > 1);
+                $('#btn-view-ord-next').toggle(step < TOTAL);
+                $('#btn-view-ord-close').toggle(step === TOTAL);
+
+                // Carga lazy del Kanban al llegar al paso 4
+                if (step === 4 && viewKanbanOrdenId) {
+                    kanbanLoad(viewKanbanOrdenId);
+                }
+            };
+
+            $(document).on('click', '#btn-view-ord-next', function () {
+                if (currentStep < TOTAL) viewOrdShowStep(currentStep + 1);
+            });
+            $(document).on('click', '#btn-view-ord-prev', function () {
+                if (currentStep > 1) viewOrdShowStep(currentStep - 1);
+            });
+            $('#viewModal').on('click', '.wiz-step-marker', function () {
+                viewOrdShowStep(parseInt($(this).data('step')));
+            });
+        }());
+
+        // ══════════════════════════════════════════════════════
+        // KANBAN — Tablero por sub-órdenes
+        // ══════════════════════════════════════════════════════
+        (function () {
+            var ESTADOS = ['Pendiente', 'En Proceso', 'Finalizado', 'Cancelado'];
+            var COL_CSS  = { 'Pendiente': 'pendiente', 'En Proceso': 'en-proceso', 'Finalizado': 'finalizado', 'Cancelado': 'cancelado' };
+            var sortables = [];
+            var kanbanLoaded = false; // evita recargas si ya está montado
+
+            // Convierte estado a slug CSS
+            function colSlug(estado) { return COL_CSS[estado] || 'pendiente'; }
+
+            // Crea el HTML de un ticket
+            function ticketHtml(sub) {
+                var empBadges = (sub.empleados || []).map(function (e) {
+                    var nombre = (e.persona && e.persona.nombre_completo)
+                        ? e.persona.nombre_completo.split(' ')[0]
+                        : ('Emp. ' + e.id);
+                    return '<span class="kanban-ticket-emp">' + escHtml(nombre) + '</span>';
+                }).join('');
+                var cantHtml = sub.cantidad_asignada
+                    ? '<span class="kanban-ticket-cant"><i class="ri-stack-line me-1"></i>' + sub.cantidad_asignada + ' uds.</span>'
+                    : '';
+                return '<div class="kanban-ticket kanban-ticket--' + colSlug(sub.estado) + '" data-suborden-id="' + sub.id + '">'
+                    + '<div class="kanban-ticket-nombre">' + escHtml(sub.nombre) + '</div>'
+                    + '<div class="kanban-ticket-meta">' + cantHtml + empBadges + '</div>'
+                    + '</div>';
+            }
+
+            // Renderiza todas las columnas con sus tickets
+            function renderBoard(subordenes) {
+                var $board = $('#kanban-board').empty();
+
+                ESTADOS.forEach(function (estado) {
+                    var slug = colSlug(estado);
+                    var tickets = subordenes.filter(function (s) { return s.estado === estado; });
+                    var countBadge = tickets.length > 0 ? tickets.length : '&mdash;';
+
+                    var $col = $('<div class="kanban-col kanban-col--' + slug + '" data-estado="' + escHtml(estado) + '">'
+                        + '<div class="kanban-col-header">'
+                        + '<span class="kanban-col-title">' + escHtml(estado) + '</span>'
+                        + '<span class="kanban-col-count" id="kanban-count-' + slug + '">' + countBadge + '</span>'
+                        + '</div>'
+                        + '<div class="kanban-col-body" id="kanban-col-' + slug + '" data-estado="' + escHtml(estado) + '"></div>'
+                        + '</div>');
+
+                    tickets.forEach(function (sub) {
+                        $col.find('.kanban-col-body').append(ticketHtml(sub));
+                    });
+
+                    $board.append($col);
+                });
+
+                // Inicializa SortableJS en cada columna
+                destroySortables();
+                ESTADOS.forEach(function (estado) {
+                    var el = document.getElementById('kanban-col-' + colSlug(estado));
+                    if (!el) return;
+                    sortables.push(Sortable.create(el, {
+                        group: 'kanban-op',
+                        animation: 150,
+                        ghostClass: 'kanban-ghost',
+                        dragClass: 'kanban-drag',
+                        onStart: function () {
+                            document.querySelectorAll('.kanban-col-body').forEach(function (c) {
+                                c.classList.add('sortable-over');
+                            });
+                        },
+                        onEnd: function (evt) {
+                            document.querySelectorAll('.kanban-col-body').forEach(function (c) {
+                                c.classList.remove('sortable-over');
+                            });
+                            var nuevoEstado = evt.to.dataset.estado;
+                            var viejoEstado = evt.from.dataset.estado;
+                            if (nuevoEstado === viejoEstado) return;
+
+                            var subId = evt.item.dataset.subordenId;
+                            var $ticket = $(evt.item);
+
+                            $.ajax({
+                                url: '{{ url("ordenes") }}/' + viewKanbanOrdenId + '/subordenes/' + subId + '/estado',
+                                method: 'PATCH',
+                                data: { estado: nuevoEstado, _token: '{{ csrf_token() }}' },
+                                success: function (res) {
+                                    // Actualiza clase del ticket
+                                    $ticket.removeClass(function (i, cls) {
+                                        return (cls.match(/kanban-ticket--\S+/g) || []).join(' ');
+                                    }).addClass('kanban-ticket--' + colSlug(nuevoEstado));
+
+                                    // Actualiza contadores de columnas
+                                    updateColCounts();
+
+                                    // Actualiza badge estado de la OP en el header del modal
+                                    if (res.op_estado) {
+                                        updateViewEstadoBadge(res.op_estado);
+                                        // Refresca la DataTable para reflejar el nuevo estado
+                                        if (table) table.ajax.reload(null, false);
+                                    }
+                                },
+                                error: function (xhr) {
+                                    // Revierte moviendo el ticket de vuelta a la columna original
+                                    var $fromCol = $('#kanban-col-' + colSlug(viejoEstado));
+                                    if (evt.oldIndex === 0) {
+                                        $fromCol.prepend($ticket);
+                                    } else {
+                                        $fromCol.append($ticket);
+                                    }
+                                    // 422 con motivo (p. ej. faltan avances por registrar) → mostrarlo
+                                    var msg = (xhr.responseJSON && xhr.responseJSON.message) || 'No se pudo actualizar el estado.';
+                                    var esBloqueo = xhr.status === 422 && xhr.responseJSON && xhr.responseJSON.message;
+                                    Swal.fire(esBloqueo
+                                        ? { icon: 'warning', title: 'Etapa bloqueada', text: msg }
+                                        : { icon: 'error', title: 'Error', text: msg, timer: 2500, showConfirmButton: false });
+                                }
+                            });
+                        }
+                    }));
+                });
+            }
+
+            // Actualiza los contadores de cada columna
+            function updateColCounts() {
+                ESTADOS.forEach(function (estado) {
+                    var slug = colSlug(estado);
+                    var count = $('#kanban-col-' + slug + ' .kanban-ticket').length;
+                    $('#kanban-count-' + slug).text(count > 0 ? count : '—');
+                });
+            }
+
+            // Destruye instancias previas de SortableJS
+            function destroySortables() {
+                sortables.forEach(function (s) { try { s.destroy(); } catch (e) {} });
+                sortables = [];
+            }
+
+            // Actualiza el badge de estado de la OP en el header del viewModal
+            function updateViewEstadoBadge(estado) {
+                var estadoClases = {
+                    'Pendiente':  'status-pendiente badge-soft-warning',
+                    'En Proceso': 'status-procesando badge-soft-info',
+                    'Finalizado': 'status-finalizado badge-soft-success',
+                    'Cancelado':  'status-cancelado badge-soft-danger'
+                };
+                $('#view-estado').html(
+                    '<span class="badge badge-status ' + (estadoClases[estado] || 'badge-soft-secondary') + ' rounded-pill">'
+                    + '<i class="' + iconEstadoOrden(estado) + ' me-1"></i>' + escHtml(estado) + '</span>'
+                );
+            }
+
+            // Carga el Kanban desde el backend (llamado al activar paso 4)
+            window.kanbanLoad = function (ordenId) {
+                if (kanbanLoaded) return; // ya montado para esta OP
+                $('#kanban-loading').show();
+                $('#kanban-empty').hide();
+                $('#kanban-board').hide();
+
+                $.get('{{ url("ordenes") }}/' + ordenId + '/subordenes', function (res) {
+                    var subs = res.subordenes || [];
+                    $('#kanban-loading').hide();
+                    if (!subs.length) {
+                        $('#kanban-empty').show();
+                    } else {
+                        renderBoard(subs);
+                        $('#kanban-board').show();
+                    }
+                    kanbanLoaded = true;
+                }).fail(function () {
+                    $('#kanban-loading').hide();
+                    $('#kanban-empty').show();
+                });
+            };
+
+            // Limpia el Kanban al cerrar el modal
+            window.kanbanReset = function () {
+                destroySortables();
+                $('#kanban-board').empty().hide();
+                $('#kanban-loading').hide();
+                $('#kanban-empty').hide();
+                kanbanLoaded = false;
+            };
+        }());
+
     });
 </script>

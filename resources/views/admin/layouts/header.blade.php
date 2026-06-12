@@ -277,7 +277,7 @@
                         </div>
 
                         <div class="notif-footer">
-                            <a href="{{ route('inventario.alertas') }}">
+                            <a href="{{ route('movimiento-insumo.alertas') }}">
                                 Ver todas las alertas de stock
                                 <i class="ri-arrow-right-line"></i>
                             </a>

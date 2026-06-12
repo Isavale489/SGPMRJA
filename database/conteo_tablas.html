@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Conteo de Tablas — Base de Datos sistema_atlantico</title>
+  <style>
+    :root {
+      --navy: #1e3c72;
+      --navy-2: #2a5298;
+      --emerald: #064e3b;
+      --emerald-light: #10b981;
+      --amber: #b45309;
+      --gray: #475569;
+      --border: #e2e8f0;
+      --bg-soft: #f8fafc;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      color: #1e293b;
+      margin: 0;
+      padding: 32px;
+      background: #ffffff;
+      line-height: 1.5;
+    }
+
+    .doc {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    header {
+      border-bottom: 4px solid var(--navy);
+      padding-bottom: 16px;
+      margin-bottom: 28px;
+    }
+
+    header h1 {
+      margin: 0 0 4px;
+      font-size: 24px;
+      color: var(--navy);
+    }
+
+    header .sub {
+      color: var(--gray);
+      font-size: 13px;
+    }
+
+    /* ===== Tarjetas de resumen ===== */
+    .cards {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 32px;
+      flex-wrap: wrap;
+    }
+
+    .card {
+      flex: 1 1 200px;
+      border-radius: 12px;
+      padding: 20px;
+      color: #fff;
+      box-shadow: 0 2px 6px rgba(0,0,0,.08);
+    }
+
+    .card .label {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: .5px;
+      opacity: .9;
+    }
+
+    .card .num {
+      font-size: 42px;
+      font-weight: 700;
+      line-height: 1;
+      margin: 8px 0 4px;
+    }
+
+    .card .hint { font-size: 12px; opacity: .85; }
+
+    .card.total   { background: linear-gradient(135deg, var(--navy), var(--navy-2)); }
+    .card.detalle { background: linear-gradient(135deg, var(--amber), #d97706); }
+    .card.sin     { background: linear-gradient(135deg, var(--emerald), var(--emerald-light)); }
+    .card.pivote  { background: linear-gradient(135deg, #6d28d9, #8b5cf6); }
+    .card.dominio { background: linear-gradient(135deg, #0c4a6e, #0ea5e9); }
+    .card.nucleo  { background: linear-gradient(135deg, #7f1d1d, #dc2626); }
+
+    h2.nucleo-title {
+      color: #b91c1c;
+      border-left-color: #dc2626;
+    }
+
+    .diagram-wrap {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      background: var(--bg-soft);
+      overflow-x: auto;
+    }
+    .diagram-wrap svg { width: 100%; height: auto; display: block; }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      font-size: 12px;
+      color: var(--gray);
+      margin-top: 10px;
+    }
+    .legend span { display: inline-flex; align-items: center; gap: 6px; }
+
+    /* ===== Secciones / tablas ===== */
+    section { margin-bottom: 32px; }
+
+    h2 {
+      font-size: 17px;
+      color: var(--navy);
+      border-left: 5px solid var(--navy);
+      padding-left: 10px;
+      margin: 0 0 14px;
+    }
+
+    h2.detalle-title {
+      color: var(--amber);
+      border-left-color: var(--amber);
+    }
+
+    h2.pivote-title {
+      color: #6d28d9;
+      border-left-color: #6d28d9;
+    }
+
+    h2.dominio-title {
+      color: #0c4a6e;
+      border-left-color: #0ea5e9;
+    }
+
+    tr.group-row td {
+      background: var(--navy);
+      color: #fff;
+      font-weight: 600;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: .5px;
+    }
+    tr.group-row.g-personas td   { background: #1e3c72; }
+    tr.group-row.g-catalogos td  { background: #064e3b; }
+    tr.group-row.g-transac td    { background: #0c4a6e; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    th, td {
+      text-align: left;
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    thead th {
+      background: var(--navy);
+      color: #fff;
+      font-weight: 600;
+    }
+
+    h2.detalle-title + table thead th { background: var(--amber); }
+
+    tbody tr:nth-child(even) { background: var(--bg-soft); }
+
+    td.idx {
+      width: 48px;
+      color: var(--gray);
+      font-variant-numeric: tabular-nums;
+    }
+
+    code {
+      font-family: "Consolas", "Courier New", monospace;
+      background: #eef2f7;
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-size: 12.5px;
+    }
+
+    .note {
+      font-size: 12px;
+      color: var(--gray);
+      background: var(--bg-soft);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin-top: 24px;
+    }
+
+    footer {
+      margin-top: 32px;
+      padding-top: 12px;
+      border-top: 1px solid var(--border);
+      font-size: 11px;
+      color: var(--gray);
+      text-align: center;
+    }
+
+    /* ===== Impresión / PDF ===== */
+    @media print {
+      body { padding: 0; }
+      .cards { gap: 10px; }
+      .card { box-shadow: none; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      thead th, .card { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      section, .cards { page-break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+  <div class="doc">
+
+    <header>
+      <h1>Conteo de Tablas — Base de Datos <code>sistema_atlantico</code></h1>
+      <div class="sub">Fuente: <code>database/sistema_atlantico.sql</code> · Generado el 05/06/2026</div>
+    </header>
+
+    <!-- Resumen -->
+    <div class="cards">
+      <div class="card total">
+        <div class="label">Total de tablas</div>
+        <div class="num">44</div>
+        <div class="hint">Todas las tablas del dump</div>
+      </div>
+      <div class="card detalle">
+        <div class="label">Tablas de detalle</div>
+        <div class="num">7</div>
+        <div class="hint">Líneas de transacción</div>
+      </div>
+      <div class="card sin">
+        <div class="label">Sin tablas de detalle</div>
+        <div class="num">37</div>
+        <div class="hint">44 − 7 = 37</div>
+      </div>
+      <div class="card pivote">
+        <div class="label">Sin detalle ni pivote</div>
+        <div class="num">33</div>
+        <div class="hint">37 − 4 = 33</div>
+      </div>
+      <div class="card dominio">
+        <div class="label">Entidades de dominio</div>
+        <div class="num">29</div>
+        <div class="hint">33 − 4 de sistema</div>
+      </div>
+      <div class="card nucleo">
+        <div class="label">Núcleo del negocio</div>
+        <div class="num">7</div>
+        <div class="hint">Clases centrales</div>
+      </div>
+    </div>
+
+    <!-- Tablas de detalle -->
+    <section>
+      <h2 class="detalle-title">Tablas de detalle (7) — excluidas</h2>
+      <table>
+        <thead>
+          <tr><th class="idx">#</th><th>Tabla</th><th>Pertenece a</th></tr>
+        </thead>
+        <tbody>
+          <tr><td class="idx">1</td><td><code>compra_detalle</code></td><td>Compras</td></tr>
+          <tr><td class="idx">2</td><td><code>detalle_cotizacion</code></td><td>Cotizaciones</td></tr>
+          <tr><td class="idx">3</td><td><code>detalle_cotizacion_bordado</code></td><td>Cotizaciones</td></tr>
+          <tr><td class="idx">4</td><td><code>detalle_orden_insumo</code></td><td>Órdenes de producción</td></tr>
+          <tr><td class="idx">5</td><td><code>detalle_pedido</code></td><td>Pedidos</td></tr>
+          <tr><td class="idx">6</td><td><code>detalle_pedido_bordado</code></td><td>Pedidos</td></tr>
+          <tr><td class="idx">7</td><td><code>detalle_pedido_insumo</code></td><td>Pedidos</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- Tablas sin detalle -->
+    <section>
+      <h2>Tablas sin las de detalle (37)</h2>
+      <table>
+        <thead>
+          <tr><th class="idx">#</th><th>Tabla</th></tr>
+        </thead>
+        <tbody>
+          <tr><td class="idx">1</td><td><code>atributo</code></td></tr>
+          <tr><td class="idx">2</td><td><code>atributo_valor</code></td></tr>
+          <tr><td class="idx">3</td><td><code>banco</code></td></tr>
+          <tr><td class="idx">4</td><td><code>bordado_ubicacion</code></td></tr>
+          <tr><td class="idx">5</td><td><code>cargo</code></td></tr>
+          <tr><td class="idx">6</td><td><code>cliente</code></td></tr>
+          <tr><td class="idx">7</td><td><code>color</code></td></tr>
+          <tr><td class="idx">8</td><td><code>compra</code></td></tr>
+          <tr><td class="idx">9</td><td><code>cotizacion</code></td></tr>
+          <tr><td class="idx">10</td><td><code>departamento</code></td></tr>
+          <tr><td class="idx">11</td><td><code>direccion</code></td></tr>
+          <tr><td class="idx">12</td><td><code>empleado</code></td></tr>
+          <tr><td class="idx">13</td><td><code>failed_jobs</code></td></tr>
+          <tr><td class="idx">14</td><td><code>insumo</code></td></tr>
+          <tr><td class="idx">15</td><td><code>logo</code></td></tr>
+          <tr><td class="idx">16</td><td><code>migrations</code></td></tr>
+          <tr><td class="idx">17</td><td><code>movimiento_insumo</code></td></tr>
+          <tr><td class="idx">18</td><td><code>orden_produccion</code></td></tr>
+          <tr><td class="idx">19</td><td><code>pago_pedido</code></td></tr>
+          <tr><td class="idx">20</td><td><code>password_resets</code></td></tr>
+          <tr><td class="idx">21</td><td><code>pedido</code></td></tr>
+          <tr><td class="idx">22</td><td><code>persona</code></td></tr>
+          <tr><td class="idx">23</td><td><code>personal_access_tokens</code></td></tr>
+          <tr><td class="idx">24</td><td><code>produccion_diaria</code></td></tr>
+          <tr><td class="idx">25</td><td><code>producto</code></td></tr>
+          <tr><td class="idx">26</td><td><code>producto_atributo_valor</code></td></tr>
+          <tr><td class="idx">27</td><td><code>proveedor</code></td></tr>
+          <tr><td class="idx">28</td><td><code>recovery_attempt</code></td></tr>
+          <tr><td class="idx">29</td><td><code>talla</code></td></tr>
+          <tr><td class="idx">30</td><td><code>tasa_cambio</code></td></tr>
+          <tr><td class="idx">31</td><td><code>telefono</code></td></tr>
+          <tr><td class="idx">32</td><td><code>tipo_producto</code></td></tr>
+          <tr><td class="idx">33</td><td><code>tipo_producto_atributo</code></td></tr>
+          <tr><td class="idx">34</td><td><code>tipo_producto_insumo</code></td></tr>
+          <tr><td class="idx">35</td><td><code>tipo_producto_tela</code></td></tr>
+          <tr><td class="idx">36</td><td><code>user</code></td></tr>
+          <tr><td class="idx">37</td><td><code>user_recovery_question</code></td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- Tablas pivote -->
+    <section>
+      <h2 class="pivote-title">Tablas pivote / de relación (4) — excluidas</h2>
+      <p style="font-size:13px;color:var(--gray);margin-top:-6px;">
+        Resuelven relaciones muchos-a-muchos. En un diagrama de clases <strong>no se modelan como clases</strong>,
+        sino como asociaciones (líneas) entre las entidades que conectan.
+      </p>
+      <table>
+        <thead>
+          <tr><th class="idx">#</th><th>Tabla pivote</th><th>Relaciona</th></tr>
+        </thead>
+        <tbody>
+          <tr><td class="idx">1</td><td><code>producto_atributo_valor</code></td><td><code>producto</code> ↔ <code>atributo_valor</code></td></tr>
+          <tr><td class="idx">2</td><td><code>tipo_producto_atributo</code></td><td><code>tipo_producto</code> ↔ <code>atributo</code></td></tr>
+          <tr><td class="idx">3</td><td><code>tipo_producto_insumo</code></td><td><code>tipo_producto</code> ↔ <code>insumo</code></td></tr>
+          <tr><td class="idx">4</td><td><code>tipo_producto_tela</code></td><td><code>tipo_producto</code> ↔ <code>insumo</code> (telas)</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- Entidades principales para el diagrama -->
+    <section>
+      <h2 class="dominio-title">Entidades principales para el diagrama de clases (29)</h2>
+      <p style="font-size:13px;color:var(--gray);margin-top:-6px;">
+        Resultado de excluir las <strong>7 de detalle</strong>, las <strong>4 pivote</strong> y las
+        <strong>4 de sistema</strong> (<code>migrations</code>, <code>failed_jobs</code>,
+        <code>password_resets</code>, <code>personal_access_tokens</code>). Estas son las clases candidatas,
+        agrupadas por dominio.
+      </p>
+      <table>
+        <thead>
+          <tr><th class="idx">#</th><th>Entidad</th><th>Rol</th></tr>
+        </thead>
+        <tbody>
+          <tr class="group-row g-personas"><td colspan="3">Personas y acceso (9)</td></tr>
+          <tr><td class="idx">1</td><td><code>persona</code></td><td>Entidad base de toda persona</td></tr>
+          <tr><td class="idx">2</td><td><code>cliente</code></td><td>Especialización de persona</td></tr>
+          <tr><td class="idx">3</td><td><code>empleado</code></td><td>Especialización de persona</td></tr>
+          <tr><td class="idx">4</td><td><code>proveedor</code></td><td>Especialización de persona</td></tr>
+          <tr><td class="idx">5</td><td><code>direccion</code></td><td>Dato de contacto</td></tr>
+          <tr><td class="idx">6</td><td><code>telefono</code></td><td>Dato de contacto</td></tr>
+          <tr><td class="idx">7</td><td><code>user</code></td><td>Usuario del sistema</td></tr>
+          <tr><td class="idx">8</td><td><code>user_recovery_question</code></td><td>Preguntas de recuperación</td></tr>
+          <tr><td class="idx">9</td><td><code>recovery_attempt</code></td><td>Intentos de recuperación</td></tr>
+
+          <tr class="group-row g-catalogos"><td colspan="3">Catálogos maestros (13)</td></tr>
+          <tr><td class="idx">10</td><td><code>producto</code></td><td>Producto terminado</td></tr>
+          <tr><td class="idx">11</td><td><code>tipo_producto</code></td><td>Categoría de producto</td></tr>
+          <tr><td class="idx">12</td><td><code>atributo</code></td><td>Atributo configurable</td></tr>
+          <tr><td class="idx">13</td><td><code>atributo_valor</code></td><td>Valor de un atributo</td></tr>
+          <tr><td class="idx">14</td><td><code>insumo</code></td><td>Material / insumo</td></tr>
+          <tr><td class="idx">15</td><td><code>color</code></td><td>Catálogo de colores</td></tr>
+          <tr><td class="idx">16</td><td><code>talla</code></td><td>Catálogo de tallas</td></tr>
+          <tr><td class="idx">17</td><td><code>bordado_ubicacion</code></td><td>Ubicaciones de bordado</td></tr>
+          <tr><td class="idx">18</td><td><code>logo</code></td><td>Logos / arte</td></tr>
+          <tr><td class="idx">19</td><td><code>banco</code></td><td>Catálogo de bancos</td></tr>
+          <tr><td class="idx">20</td><td><code>cargo</code></td><td>Cargo del empleado</td></tr>
+          <tr><td class="idx">21</td><td><code>departamento</code></td><td>Departamento del empleado</td></tr>
+          <tr><td class="idx">22</td><td><code>tasa_cambio</code></td><td>Tasa de cambio</td></tr>
+
+          <tr class="group-row g-transac"><td colspan="3">Transacciones (7)</td></tr>
+          <tr><td class="idx">23</td><td><code>cotizacion</code></td><td>Cotización</td></tr>
+          <tr><td class="idx">24</td><td><code>pedido</code></td><td>Pedido</td></tr>
+          <tr><td class="idx">25</td><td><code>compra</code></td><td>Compra a proveedor</td></tr>
+          <tr><td class="idx">26</td><td><code>orden_produccion</code></td><td>Orden de producción</td></tr>
+          <tr><td class="idx">27</td><td><code>produccion_diaria</code></td><td>Avance diario de producción</td></tr>
+          <tr><td class="idx">28</td><td><code>movimiento_insumo</code></td><td>Movimiento de inventario</td></tr>
+          <tr><td class="idx">29</td><td><code>pago_pedido</code></td><td>Pago de pedido</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- Núcleo del negocio -->
+    <section>
+      <h2 class="nucleo-title">Núcleo del negocio (7) — clases imprescindibles</h2>
+      <p style="font-size:13px;color:var(--gray);margin-top:-6px;">
+        El subconjunto mínimo que sostiene el flujo central del sistema:
+        <strong>Cotización → Pedido → Orden de Producción → Producción Diaria</strong>, alimentado por el
+        <code>cliente</code> y el <code>producto</code>, y cerrado con el <code>pago_pedido</code>.
+        Si el diagrama debe ser compacto, modela solo estas 7.
+      </p>
+      <table>
+        <thead>
+          <tr><th class="idx">#</th><th>Entidad</th><th>Por qué es núcleo</th></tr>
+        </thead>
+        <tbody>
+          <tr><td class="idx">1</td><td><code>cliente</code></td><td>Quien solicita; origen de toda venta</td></tr>
+          <tr><td class="idx">2</td><td><code>producto</code></td><td>Qué se vende y se fabrica</td></tr>
+          <tr><td class="idx">3</td><td><code>cotizacion</code></td><td>Propuesta comercial inicial</td></tr>
+          <tr><td class="idx">4</td><td><code>pedido</code></td><td>Venta confirmada; eje del proceso</td></tr>
+          <tr><td class="idx">5</td><td><code>orden_produccion</code></td><td>Manda a fabricar lo pedido</td></tr>
+          <tr><td class="idx">6</td><td><code>produccion_diaria</code></td><td>Avance real de fabricación</td></tr>
+          <tr><td class="idx">7</td><td><code>pago_pedido</code></td><td>Cobro asociado al pedido</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <div class="note">
+      <strong>Criterios de exclusión (de mayor a menor alcance):</strong>
+      <ul style="margin:8px 0 0;padding-left:20px;">
+        <li><strong>44 → 37:</strong> se quitan las <strong>7 tablas de detalle</strong> (<code>detalle_*</code> / <code>*_detalle</code>, líneas de transacción).</li>
+        <li><strong>37 → 33:</strong> se quitan las <strong>4 tablas pivote</strong> (relaciones N:M; en el diagrama son asociaciones, no clases).</li>
+        <li><strong>33 → 29:</strong> se quitan las <strong>4 tablas de sistema</strong> de Laravel (<code>migrations</code>, <code>failed_jobs</code>, <code>password_resets</code>, <code>personal_access_tokens</code>), que no son entidades de negocio.</li>
+      </ul>
+      <p style="margin:8px 0 0;">
+        Para el <strong>diagrama de clases</strong> usa las <strong>29 entidades de dominio</strong>. Para el
+        <strong>diagrama de objetos</strong>, instancia esas mismas clases con datos reales (p. ej. un
+        <code>cliente</code> concreto con su <code>pedido</code>, sus <code>detalle_pedido</code> y su
+        <code>pago_pedido</code>) — ahí sí conviene mostrar las de detalle como objetos enlazados.
+      </p>
+    </div>
+
+    <!-- ===================== DIAGRAMA DE CLASES ===================== -->
+    <section>
+      <h2 class="dominio-title">Diagrama de Clases — Núcleo del negocio</h2>
+      <p style="font-size:13px;color:var(--gray);margin-top:-6px;">
+        Vista UML de las clases centrales y sus relaciones. Se incluye <code>DetallePedido</code> para mostrar
+        la composición del pedido.
+      </p>
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 900 640" xmlns="http://www.w3.org/2000/svg">
+          <style>
+            .cls-name{fill:#fff;font-weight:700;font-size:13px;font-family:'Segoe UI',Arial,sans-serif;}
+            .cls-attr{fill:#1e293b;font-size:11px;font-family:'Consolas','Courier New',monospace;}
+            .rel{stroke:#475569;stroke-width:1.4;fill:none;}
+            .mult{fill:#475569;font-size:10px;font-family:'Segoe UI',Arial,sans-serif;}
+            .relname{fill:#0c4a6e;font-size:10px;font-style:italic;font-family:'Segoe UI',Arial,sans-serif;}
+          </style>
+
+          <!-- Relaciones (debajo de las cajas) -->
+          <path class="rel" d="M190,120 L250,120"/>
+          <text class="mult" x="194" y="116">1</text>
+          <text class="mult" x="236" y="116">*</text>
+          <text class="relname" x="200" y="110">solicita</text>
+
+          <path class="rel" d="M410,119 L480,119"/>
+          <text class="mult" x="414" y="115">1</text>
+          <text class="mult" x="456" y="115">0..1</text>
+          <text class="relname" x="416" y="109">deriva</text>
+
+          <path class="rel" d="M640,119 L700,121"/>
+          <text class="mult" x="644" y="116">1</text>
+          <text class="mult" x="688" y="116">*</text>
+          <text class="relname" x="646" y="110">genera</text>
+
+          <path class="rel" d="M790,172 L790,300"/>
+          <text class="mult" x="796" y="188">1</text>
+          <text class="mult" x="796" y="294">*</text>
+          <text class="relname" x="796" y="240">registra</text>
+
+          <!-- Composición Pedido <>-- DetallePedido -->
+          <path class="rel" d="M560,200 L560,300"/>
+          <polygon points="560,178 568,189 560,200 552,189" fill="#1e3c72" stroke="#1e3c72"/>
+          <text class="mult" x="566" y="218">1</text>
+          <text class="mult" x="566" y="294">*</text>
+          <text class="relname" x="566" y="255">compone</text>
+
+          <path class="rel" d="M560,402 L560,500"/>
+          <text class="mult" x="566" y="420">*</text>
+          <text class="mult" x="566" y="492">1</text>
+          <text class="relname" x="566" y="455">usa</text>
+
+          <path class="rel" d="M510,178 L350,310"/>
+          <text class="mult" x="498" y="196">1</text>
+          <text class="mult" x="356" y="302">*</text>
+          <text class="relname" x="415" y="250">abona</text>
+
+          <!-- ===== Cliente ===== -->
+          <g>
+            <rect x="30" y="70" width="160" height="102" fill="#fff" stroke="#1e3c72" stroke-width="1.5"/>
+            <rect x="30" y="70" width="160" height="26" fill="#1e3c72"/>
+            <text class="cls-name" x="110" y="87" text-anchor="middle">Cliente</text>
+            <text class="cls-attr" x="40" y="114">+ id</text>
+            <text class="cls-attr" x="40" y="130">+ nombre</text>
+            <text class="cls-attr" x="40" y="146">+ documento</text>
+            <text class="cls-attr" x="40" y="162">+ telefono</text>
+          </g>
+
+          <!-- ===== Cotizacion ===== -->
+          <g>
+            <rect x="250" y="60" width="160" height="118" fill="#fff" stroke="#1e3c72" stroke-width="1.5"/>
+            <rect x="250" y="60" width="160" height="26" fill="#1e3c72"/>
+            <text class="cls-name" x="330" y="77" text-anchor="middle">Cotizacion</text>
+            <text class="cls-attr" x="260" y="104">+ id</text>
+            <text class="cls-attr" x="260" y="120">+ numero</text>
+            <text class="cls-attr" x="260" y="136">+ fecha</text>
+            <text class="cls-attr" x="260" y="152">+ total</text>
+            <text class="cls-attr" x="260" y="168">+ estado</text>
+          </g>
+
+          <!-- ===== Pedido ===== -->
+          <g>
+            <rect x="480" y="60" width="160" height="118" fill="#fff" stroke="#1e3c72" stroke-width="1.5"/>
+            <rect x="480" y="60" width="160" height="26" fill="#1e3c72"/>
+            <text class="cls-name" x="560" y="77" text-anchor="middle">Pedido</text>
+            <text class="cls-attr" x="490" y="104">+ id</text>
+            <text class="cls-attr" x="490" y="120">+ numero</text>
+            <text class="cls-attr" x="490" y="136">+ fecha</text>
+            <text class="cls-attr" x="490" y="152">+ total</text>
+            <text class="cls-attr" x="490" y="168">+ estado</text>
+          </g>
+
+          <!-- ===== OrdenProduccion ===== -->
+          <g>
+            <rect x="700" y="70" width="180" height="102" fill="#fff" stroke="#1e3c72" stroke-width="1.5"/>
+            <rect x="700" y="70" width="180" height="26" fill="#1e3c72"/>
+            <text class="cls-name" x="790" y="87" text-anchor="middle">OrdenProduccion</text>
+            <text class="cls-attr" x="710" y="114">+ id</text>
+            <text class="cls-attr" x="710" y="130">+ numero</text>
+            <text class="cls-attr" x="710" y="146">+ fecha</text>
+            <text class="cls-attr" x="710" y="162">+ estado</text>
+          </g>
+
+          <!-- ===== DetallePedido ===== -->
+          <g>
+            <rect x="480" y="300" width="160" height="102" fill="#fff" stroke="#1e3c72" stroke-width="1.5"/>
+            <rect x="480" y="300" width="160" height="26" fill="#1e3c72"/>
+            <text class="cls-name" x="560" y="317" text-anchor="middle">DetallePedido</text>
+            <text class="cls-attr" x="490" y="344">+ id</text>
+            <text class="cls-attr" x="490" y="360">+ cantidad</text>
+            <text class="cls-attr" x="490" y="376">+ precio</text>
+            <text class="cls-attr" x="490" y="392">+ subtotal</text>
+          </g>
+
+          <!-- ===== ProduccionDiaria ===== -->
+          <g>
+            <rect x="700" y="300" width="180" height="102" fill="#fff" stroke="#1e3c72" stroke-width="1.5"/>
+            <rect x="700" y="300" width="180" height="26" fill="#1e3c72"/>
+            <text class="cls-name" x="790" y="317" text-anchor="middle">ProduccionDiaria</text>
+            <text class="cls-attr" x="710" y="344">+ id</text>
+            <text class="cls-attr" x="710" y="360">+ fecha</text>
+            <text class="cls-attr" x="710" y="376">+ cantidad</text>
+            <text class="cls-attr" x="710" y="392">+ estado</text>
+          </g>
+
+          <!-- ===== Producto ===== -->
+          <g>
+            <rect x="480" y="500" width="160" height="102" fill="#fff" stroke="#1e3c72" stroke-width="1.5"/>
+            <rect x="480" y="500" width="160" height="26" fill="#1e3c72"/>
+            <text class="cls-name" x="560" y="517" text-anchor="middle">Producto</text>
+            <text class="cls-attr" x="490" y="544">+ id</text>
+            <text class="cls-attr" x="490" y="560">+ nombre</text>
+            <text class="cls-attr" x="490" y="576">+ precio</text>
+            <text class="cls-attr" x="490" y="592">+ tipo</text>
+          </g>
+
+          <!-- ===== PagoPedido ===== -->
+          <g>
+            <rect x="250" y="310" width="160" height="102" fill="#fff" stroke="#1e3c72" stroke-width="1.5"/>
+            <rect x="250" y="310" width="160" height="26" fill="#1e3c72"/>
+            <text class="cls-name" x="330" y="327" text-anchor="middle">PagoPedido</text>
+            <text class="cls-attr" x="260" y="354">+ id</text>
+            <text class="cls-attr" x="260" y="370">+ monto</text>
+            <text class="cls-attr" x="260" y="386">+ fecha</text>
+            <text class="cls-attr" x="260" y="402">+ metodo</text>
+          </g>
+        </svg>
+      </div>
+      <div class="legend">
+        <span><strong>◆</strong> Composición (el todo contiene la parte)</span>
+        <span><strong>1 · * · 0..1</strong> Multiplicidad</span>
+        <span>Caja navy = Clase (nombre + atributos)</span>
+      </div>
+    </section>
+
+    <!-- ===================== DIAGRAMA DE OBJETOS ===================== -->
+    <section>
+      <h2 class="nucleo-title">Diagrama de Objetos — Un caso real</h2>
+      <p style="font-size:13px;color:var(--gray);margin-top:-6px;">
+        Instancias concretas de las clases del núcleo: el cliente <em>Confecciones López</em> cotiza, confirma
+        el pedido, manda a producción y abona el 50%.
+      </p>
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 900 580" xmlns="http://www.w3.org/2000/svg">
+          <style>
+            .obj-name{fill:#fff;font-weight:700;font-size:12px;font-family:'Segoe UI',Arial,sans-serif;}
+            .obj-slot{fill:#1e293b;font-size:10.5px;font-family:'Consolas','Courier New',monospace;}
+            .lnk{stroke:#475569;stroke-width:1.4;fill:none;}
+            .lnkname{fill:#0c4a6e;font-size:10px;font-style:italic;font-family:'Segoe UI',Arial,sans-serif;}
+          </style>
+
+          <!-- Enlaces -->
+          <path class="lnk" d="M205,115 L250,115"/>
+          <text class="lnkname" x="208" y="110">solicita</text>
+          <path class="lnk" d="M425,115 L470,115"/>
+          <text class="lnkname" x="428" y="110">deriva</text>
+          <path class="lnk" d="M645,115 L690,115"/>
+          <text class="lnkname" x="648" y="110">genera</text>
+          <path class="lnk" d="M557,150 L557,300"/>
+          <text class="lnkname" x="562" y="230">compone</text>
+          <path class="lnk" d="M557,370 L557,480"/>
+          <text class="lnkname" x="562" y="430">usa</text>
+          <path class="lnk" d="M490,150 L340,300"/>
+          <text class="lnkname" x="400" y="240">abona</text>
+
+          <!-- ===== c1 : Cliente ===== -->
+          <g>
+            <rect x="30" y="80" width="175" height="70" fill="#fff" stroke="#0c4a6e" stroke-width="1.5"/>
+            <rect x="30" y="80" width="175" height="26" fill="#0c4a6e"/>
+            <text class="obj-name" x="117" y="97" text-anchor="middle">c1 : Cliente</text>
+            <line x1="58" y1="100" x2="177" y2="100" stroke="#fff" stroke-width="1"/>
+            <text class="obj-slot" x="40" y="124">nombre = "Confecciones López"</text>
+            <text class="obj-slot" x="40" y="140">documento = "J-001"</text>
+          </g>
+
+          <!-- ===== cot1 : Cotizacion ===== -->
+          <g>
+            <rect x="250" y="80" width="175" height="70" fill="#fff" stroke="#0c4a6e" stroke-width="1.5"/>
+            <rect x="250" y="80" width="175" height="26" fill="#0c4a6e"/>
+            <text class="obj-name" x="337" y="97" text-anchor="middle">cot1 : Cotizacion</text>
+            <line x1="275" y1="100" x2="400" y2="100" stroke="#fff" stroke-width="1"/>
+            <text class="obj-slot" x="260" y="124">numero = "COT-001"</text>
+            <text class="obj-slot" x="260" y="140">total = 1500.00</text>
+          </g>
+
+          <!-- ===== ped1 : Pedido ===== -->
+          <g>
+            <rect x="470" y="80" width="175" height="70" fill="#fff" stroke="#0c4a6e" stroke-width="1.5"/>
+            <rect x="470" y="80" width="175" height="26" fill="#0c4a6e"/>
+            <text class="obj-name" x="557" y="97" text-anchor="middle">ped1 : Pedido</text>
+            <line x1="498" y1="100" x2="617" y2="100" stroke="#fff" stroke-width="1"/>
+            <text class="obj-slot" x="480" y="124">numero = "PED-001"</text>
+            <text class="obj-slot" x="480" y="140">estado = "en_produccion"</text>
+          </g>
+
+          <!-- ===== op1 : OrdenProduccion ===== -->
+          <g>
+            <rect x="690" y="80" width="185" height="70" fill="#fff" stroke="#0c4a6e" stroke-width="1.5"/>
+            <rect x="690" y="80" width="185" height="26" fill="#0c4a6e"/>
+            <text class="obj-name" x="782" y="97" text-anchor="middle">op1 : OrdenProduccion</text>
+            <line x1="715" y1="100" x2="850" y2="100" stroke="#fff" stroke-width="1"/>
+            <text class="obj-slot" x="700" y="124">numero = "OP-001"</text>
+            <text class="obj-slot" x="700" y="140">estado = "en_proceso"</text>
+          </g>
+
+          <!-- ===== pago1 : PagoPedido ===== -->
+          <g>
+            <rect x="250" y="300" width="175" height="70" fill="#fff" stroke="#0c4a6e" stroke-width="1.5"/>
+            <rect x="250" y="300" width="175" height="26" fill="#0c4a6e"/>
+            <text class="obj-name" x="337" y="317" text-anchor="middle">pago1 : PagoPedido</text>
+            <line x1="272" y1="320" x2="403" y2="320" stroke="#fff" stroke-width="1"/>
+            <text class="obj-slot" x="260" y="344">monto = 750.00</text>
+            <text class="obj-slot" x="260" y="360">metodo = "transferencia"</text>
+          </g>
+
+          <!-- ===== dp1 : DetallePedido ===== -->
+          <g>
+            <rect x="470" y="300" width="175" height="70" fill="#fff" stroke="#0c4a6e" stroke-width="1.5"/>
+            <rect x="470" y="300" width="175" height="26" fill="#0c4a6e"/>
+            <text class="obj-name" x="557" y="317" text-anchor="middle">dp1 : DetallePedido</text>
+            <line x1="490" y1="320" x2="625" y2="320" stroke="#fff" stroke-width="1"/>
+            <text class="obj-slot" x="480" y="344">cantidad = 100</text>
+            <text class="obj-slot" x="480" y="360">precio = 15.00</text>
+          </g>
+
+          <!-- ===== prod1 : Producto ===== -->
+          <g>
+            <rect x="470" y="480" width="175" height="70" fill="#fff" stroke="#0c4a6e" stroke-width="1.5"/>
+            <rect x="470" y="480" width="175" height="26" fill="#0c4a6e"/>
+            <text class="obj-name" x="557" y="497" text-anchor="middle">prod1 : Producto</text>
+            <line x1="492" y1="500" x2="623" y2="500" stroke="#fff" stroke-width="1"/>
+            <text class="obj-slot" x="480" y="524">nombre = "Camisa Polo"</text>
+            <text class="obj-slot" x="480" y="540">precio = 15.00</text>
+          </g>
+        </svg>
+      </div>
+      <div class="legend">
+        <span><strong>obj : Clase</strong> (subrayado) = instancia / objeto</span>
+        <span>slots = valores concretos de los atributos</span>
+        <span>líneas = enlaces entre objetos</span>
+      </div>
+    </section>
+
+    <footer>
+      Proyecto SGPMRJA — Sistema Atlántico · Documento generado automáticamente para impresión/PDF
+    </footer>
+
+  </div>
+</body>
+</html>

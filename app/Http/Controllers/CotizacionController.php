@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Cotizacion;
 use App\Models\Producto;
+use App\Models\TipoProducto;
 use App\Models\Logo;
 use App\Models\Pedido;
 use App\Models\Insumo;
@@ -35,10 +36,16 @@ class CotizacionController extends Controller
             'atributoValores.atributo:id,nombre,codigo',
         ])->where('estado', true)->get();
 
+        // Catálogo = Tipo de Producto. El grid de la cotización se arma desde los Tipos
+        // (no desde filas producto): el cliente elige tela + variaciones al cotizar.
+        $tiposProducto = TipoProducto::withCount(['telas', 'atributos'])
+            ->orderBy('nombre')
+            ->get(['id', 'nombre', 'prefijo', 'imagen', 'precio_confeccion', 'requiere_tela']);
+
         $logos = Logo::orderBy('name')->get(['id', 'name', 'original_filename']);
         $insumos = Insumo::all();
         $bancos = Banco::all();
-        return view('admin.cotizaciones.index', compact('productos', 'logos', 'insumos', 'bancos'));
+        return view('admin.cotizaciones.index', compact('productos', 'tiposProducto', 'logos', 'insumos', 'bancos'));
     }
 
     public function getCotizaciones(Request $request)
@@ -81,9 +88,9 @@ class CotizacionController extends Controller
             ->filterColumn('cliente_nombre', function ($query, $keyword) {
                 $query->whereHas('cliente', function ($clienteQuery) use ($keyword) {
                     $clienteQuery->withTrashed()->whereHas('persona', function ($personaQuery) use ($keyword) {
-                        $personaQuery->where('nombre', 'like', "%{$keyword}%")
-                            ->orWhere('apellido', 'like', "%{$keyword}%")
-                            ->orWhereRaw("CONCAT(nombre, ' ', apellido) like ?", ["%{$keyword}%"]);
+                        $personaQuery->where('nombre', 'like', "{$keyword}%")
+                            ->orWhere('apellido', 'like', "{$keyword}%")
+                            ->orWhereRaw("CONCAT(nombre, ' ', apellido) like ?", ["{$keyword}%"]);
                     });
                 });
             })
@@ -161,8 +168,13 @@ class CotizacionController extends Controller
             'fecha_cotizacion' => 'required|date',
             'fecha_validez' => 'nullable|date|after_or_equal:fecha_cotizacion',
             'notas' => 'nullable|string|max:2000',
+            'condiciones_terminos' => 'nullable|string',
             'productos' => 'required|array|min:1',
-            'productos.*.producto_id' => 'required|exists:producto,id',
+            'productos.*.producto_id' => 'nullable|required_without:productos.*.tipo_producto_id|integer|exists:producto,id',
+            'productos.*.tipo_producto_id' => 'nullable|required_without:productos.*.producto_id|integer|exists:tipo_producto,id',
+            'productos.*.insumo_tela_id' => 'nullable|integer|exists:insumo,id',
+            'productos.*.atributo_valor_ids' => 'nullable|array',
+            'productos.*.atributo_valor_ids.*' => 'integer|exists:atributo_valor,id',
             'productos.*.cantidad' => 'required|integer|min:1',
             'productos.*.descripcion' => 'nullable|string|max:500',
             'productos.*.lleva_bordado' => 'nullable|boolean',
@@ -188,8 +200,10 @@ class CotizacionController extends Controller
             'fecha_validez.after_or_equal' => 'La fecha de validez debe ser igual o posterior a la fecha de cotización.',
             'productos.required' => 'Debe agregar al menos un producto.',
             'productos.min' => 'Debe agregar al menos un producto.',
-            'productos.*.producto_id.required' => 'Debe seleccionar un producto.',
+            'productos.*.producto_id.required_without' => 'Debe seleccionar un producto o configurar una variante (tipo).',
             'productos.*.producto_id.exists' => 'El producto seleccionado no existe.',
+            'productos.*.tipo_producto_id.required_without' => 'Debe seleccionar un producto o configurar una variante (tipo).',
+            'productos.*.tipo_producto_id.exists' => 'El tipo de producto seleccionado no existe.',
             'productos.*.cantidad.required' => 'La cantidad es obligatoria.',
             'productos.*.cantidad.integer' => 'La cantidad debe ser un número entero.',
             'productos.*.cantidad.min' => 'La cantidad debe ser al menos 1.',
@@ -266,8 +280,13 @@ class CotizacionController extends Controller
             'fecha_validez' => 'nullable|date|after_or_equal:fecha_cotizacion',
             'estado' => 'required|in:Pendiente,Aprobada,Cancelada,Convertida,Vencida',
             'notas' => 'nullable|string|max:2000',
+            'condiciones_terminos' => 'nullable|string',
             'productos' => 'required|array|min:1',
-            'productos.*.producto_id' => 'required|exists:producto,id',
+            'productos.*.producto_id' => 'nullable|required_without:productos.*.tipo_producto_id|integer|exists:producto,id',
+            'productos.*.tipo_producto_id' => 'nullable|required_without:productos.*.producto_id|integer|exists:tipo_producto,id',
+            'productos.*.insumo_tela_id' => 'nullable|integer|exists:insumo,id',
+            'productos.*.atributo_valor_ids' => 'nullable|array',
+            'productos.*.atributo_valor_ids.*' => 'integer|exists:atributo_valor,id',
             'productos.*.cantidad' => 'required|integer|min:1',
             'productos.*.descripcion' => 'nullable|string|max:500',
             'productos.*.lleva_bordado' => 'nullable|boolean',
@@ -295,8 +314,10 @@ class CotizacionController extends Controller
             'estado.in' => 'El estado seleccionado no es válido.',
             'productos.required' => 'Debe agregar al menos un producto.',
             'productos.min' => 'Debe agregar al menos un producto.',
-            'productos.*.producto_id.required' => 'Debe seleccionar un producto.',
+            'productos.*.producto_id.required_without' => 'Debe seleccionar un producto o configurar una variante (tipo).',
             'productos.*.producto_id.exists' => 'El producto seleccionado no existe.',
+            'productos.*.tipo_producto_id.required_without' => 'Debe seleccionar un producto o configurar una variante (tipo).',
+            'productos.*.tipo_producto_id.exists' => 'El tipo de producto seleccionado no existe.',
             'productos.*.cantidad.required' => 'La cantidad es obligatoria.',
             'productos.*.cantidad.integer' => 'La cantidad debe ser un número entero.',
             'productos.*.cantidad.min' => 'La cantidad debe ser al menos 1.',
@@ -325,6 +346,13 @@ class CotizacionController extends Controller
         $this->cotizacionService->actualizar($cotizacion, $request->all());
 
         return response()->json(['success' => 'Cotización actualizada exitosamente.']);
+    }
+
+    public function reactivar($id)
+    {
+        $cotizacion = Cotizacion::findOrFail($id);
+        $this->cotizacionService->reactivar($cotizacion);
+        return response()->json(['success' => 'Cotización reactivada correctamente. Nueva validez: 15 días.']);
     }
 
     public function destroy($id)
@@ -430,8 +458,12 @@ class CotizacionController extends Controller
      */
     public function getDatosParaPedido($id)
     {
-        $cotizacion = Cotizacion::with(['cliente.persona', 'productos.producto.tipoProducto', 'productos.bordados.logo:id,name'])
-            ->findOrFail($id);
+        $cotizacion = Cotizacion::with([
+            'cliente.persona',
+            'productos.producto.tipoProducto',
+            'productos.tipoProducto.atributos.valores',
+            'productos.bordados.logo:id,name',
+        ])->findOrFail($id);
 
         // Verificar que esté aprobada
         if ($cotizacion->estado !== 'Aprobada') {
@@ -463,9 +495,27 @@ class CotizacionController extends Controller
                     return (int) ($bordado->cantidad ?: 1);
                 });
 
+                // Línea dinámica (sin producto_id): arrastrar la variante (tipo + tela + atributos)
+                // para que el pedido la persista, y construir un nombre legible desde el snapshot.
+                $esDinamica = empty($detalle->producto_id) && !empty($detalle->tipo_producto_id);
+                $telaSnap   = $detalle->tela_snapshot ?? null;
+                $nombreLinea = $detalle->producto
+                    ? $detalle->producto->nombre_completo
+                    : trim(($detalle->tipoProducto?->nombre ?? 'Variante')
+                        . (is_array($telaSnap) && !empty($telaSnap['nombre']) ? ' · ' . $telaSnap['nombre'] : ''));
+
                 return [
                     'producto_id' => $detalle->producto_id,
-                    'producto_nombre' => $detalle->producto ? $detalle->producto->nombre_completo : 'N/A',
+                    'tipo_producto_id' => $detalle->tipo_producto_id,
+                    'insumo_tela_id' => is_array($telaSnap) ? ($telaSnap['id'] ?? null) : null,
+                    'atributo_valor_ids' => $esDinamica && $detalle->tipoProducto
+                        ? $detalle->tipoProducto->valorIdsDesdeSnapshot($detalle->atributos_snapshot)
+                        : [],
+                    'sku' => $detalle->producto ? $detalle->producto->codigo : $detalle->sku_snapshot,
+                    'imagen_url' => ($detalle->producto && $detalle->producto->imagen)
+                        ? asset($detalle->producto->imagen)
+                        : ($detalle->tipoProducto?->imagen_url),
+                    'producto_nombre' => $nombreLinea ?: 'N/A',
                     'cantidad' => $detalle->cantidad,
                     'descripcion' => $detalle->descripcion,
                     'lleva_bordado' => $detalle->lleva_bordado,

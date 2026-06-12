@@ -38,16 +38,38 @@
             <div class="card card-maestros">
                 <div class="card-header">
                     <div class="d-flex align-items-center">
-                        <h5 class="card-title mb-0 flex-grow-1">Listado de Insumos</h5>
+                        <h5 class="card-title mb-0 flex-grow-1" id="insumos-card-title">Listado de Insumos</h5>
                         <div class="flex-shrink-0 d-flex align-items-center gap-3">
                             <div class="d-flex gap-2">
+                                <button type="button" class="btn-historial btn-historial-ver" id="ins-toggle-historial">
+                                    <i class="ri-archive-line"></i> <span>Inhabilitados</span>
+                                </button>
                                 <button type="button" class="btn btn-success add-btn" data-bs-toggle="modal" id="create-btn"
                                     data-bs-target="#showModal">
                                     <i class="ri-add-line align-bottom me-1"></i> Agregar Insumo
                                 </button>
-                                <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#pdfExportModal">
-                                    <i class="ri-file-pdf-fill align-bottom me-1"></i> Exportar PDF
-                                </button>
+                                {{-- Acciones secundarias agrupadas — estándar .actions-menu --}}
+                                <div class="dropdown">
+                                    <button type="button" class="btn btn-soft-secondary dropdown-toggle"
+                                        data-bs-toggle="dropdown" aria-expanded="false">
+                                        <i class="ri-menu-2-line align-bottom me-1"></i> Más acciones
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end actions-menu">
+                                        <li>
+                                            <button type="button" class="dropdown-item act-item act-primary"
+                                                data-bs-toggle="modal" data-bs-target="#tiposInsumoModal">
+                                                <span class="act-ic"><i class="ri-settings-3-line"></i></span>Gestionar Tipos
+                                            </button>
+                                        </li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li>
+                                            <button type="button" class="dropdown-item act-item act-pdf"
+                                                data-bs-toggle="modal" data-bs-target="#pdfExportModal">
+                                                <span class="act-ic"><i class="ri-file-pdf-fill"></i></span>Exportar PDF
+                                            </button>
+                                        </li>
+                                    </ul>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -95,11 +117,9 @@
                                         </label>
                                         <select class="form-select navy-filter-select" id="filter-tipo">
                                             <option value="">Todos</option>
-                                            <option value="Tela">Tela</option>
-                                            <option value="Hilo">Hilo</option>
-                                            <option value="Boton">Botón</option>
-                                            <option value="Cierre">Cierre</option>
-                                            <option value="Etiqueta">Etiqueta</option>
+                                            @foreach($tiposInsumo as $ti)
+                                                <option value="{{ $ti->nombre }}">{{ $ti->nombre }}</option>
+                                            @endforeach
                                         </select>
                                     </div>
                                     {{-- Filtro 2: Disponibilidad --}}
@@ -292,15 +312,18 @@
                             {{-- Tarjeta de Registro --}}
                             <div class="card border-0 shadow-sm">
                                 <div class="card-body py-2 px-3">
-                                    <div class="d-flex align-items-center">
-                                        <div class="rounded-circle me-2 d-flex align-items-center justify-content-center flex-shrink-0"
-                                            style="width:28px;height:28px;background:rgba(30,60,114,0.08);">
-                                            <i class="ri-calendar-line" style="color:#1e3c72;font-size:12px;"></i>
+                                    <div class="d-flex align-items-center justify-content-between gap-2">
+                                        <div class="d-flex align-items-center">
+                                            <div class="rounded-circle me-2 d-flex align-items-center justify-content-center flex-shrink-0"
+                                                style="width:28px;height:28px;background:rgba(30,60,114,0.08);">
+                                                <i class="ri-calendar-line" style="color:#1e3c72;font-size:12px;"></i>
+                                            </div>
+                                            <div>
+                                                <small class="text-muted d-block" style="font-size:11px;">Fecha de Registro</small>
+                                                <small class="fw-semibold" id="view-created">-</small>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <small class="text-muted d-block" style="font-size:11px;">Fecha de Registro</small>
-                                            <small class="fw-semibold" id="view-created">-</small>
-                                        </div>
+                                        <span class="badge rounded-pill" id="view-estatus">-</span>
                                     </div>
                                 </div>
                             </div>
@@ -353,7 +376,7 @@
                                 </div>
                                 <div class="col-md-4">
                                     <x-forms.select name="tipo" label="Tipo" required
-                                        :options="['Tela' => 'Tela', 'Hilo' => 'Hilo', 'Boton' => 'Botón', 'Cierre' => 'Cierre', 'Etiqueta' => 'Etiqueta']" />
+                                        :options="$tiposInsumo->pluck('nombre', 'nombre')->all()" />
                                 </div>
                             </div>
 
@@ -392,14 +415,22 @@
                                 </div>
                             </div>
 
-                            <div class="row mb-0">
+                            <div class="row mb-0 align-items-center">
                                 <div class="col-md-6">
                                     <x-forms.input name="costo_unitario" label="Costo Unitario" type="number" step="0.01" min="0"
                                         required />
                                 </div>
                                 <div class="col-md-6">
-                                    <x-forms.select name="estado" label="Estado" required
-                                        :options="['1' => 'Activo', '0' => 'Inactivo']" placeholder="" value="1" />
+                                    <label class="form-label d-block mb-1">Impuesto</label>
+                                    <div class="form-check form-switch">
+                                        {{-- Hidden previo: garantiza que FormData envíe 0 cuando el switch va destildado --}}
+                                        <input type="hidden" name="aplica_iva" value="0">
+                                        <input class="form-check-input" type="checkbox" id="aplica-iva-switch"
+                                            name="aplica_iva" value="1" checked>
+                                        <label class="form-check-label" for="aplica-iva-switch">
+                                            Gravable con IVA <small class="text-muted">(desmarca si es exento)</small>
+                                        </label>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -433,11 +464,9 @@
                         <label class="form-label fw-semibold" for="pdf-filter-tipo">Tipo de Insumo</label>
                         <select class="form-select" id="pdf-filter-tipo">
                             <option value="">Todos los tipos</option>
-                            <option value="Tela">Tela</option>
-                            <option value="Hilo">Hilo</option>
-                            <option value="Boton">Botón</option>
-                            <option value="Cierre">Cierre</option>
-                            <option value="Etiqueta">Etiqueta</option>
+                            @foreach($tiposInsumo as $ti)
+                                <option value="{{ $ti->nombre }}">{{ $ti->nombre }}</option>
+                            @endforeach
                         </select>
                     </div>
                     <div class="mb-0">
@@ -448,6 +477,16 @@
                             <option value="agotado">Agotados</option>
                         </select>
                     </div>
+                    <div class="row g-2 mt-3">
+                        <div class="col-6">
+                            <label class="form-label fw-semibold" for="pdf-fecha-desde">Registro desde</label>
+                            <input type="date" class="form-control" id="pdf-fecha-desde">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label fw-semibold" for="pdf-fecha-hasta">Registro hasta</label>
+                            <input type="date" class="form-control" id="pdf-fecha-hasta">
+                        </div>
+                    </div>
                 </div>
                 <div class="modal-footer bg-light border-0">
                     <button type="button" class="btn btn-light" data-bs-dismiss="modal">
@@ -455,6 +494,72 @@
                     </button>
                     <button type="button" class="btn btn-danger" id="btn-generar-pdf">
                         <i class="ri-file-pdf-fill me-1"></i>Generar PDF
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- Modal: Gestionar Tipos de Insumo (catálogo) --}}
+    <div class="modal fade atlantico-modal" id="tiposInsumoModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-light p-3">
+                    <h5 class="modal-title"><i class="ri-price-tag-3-line me-2"></i>Tipos de Insumo</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-3 p-md-4">
+                    <div class="ti-hint mb-3">
+                        <i class="ri-information-line"></i>
+                        <span>Categorías para clasificar los insumos (Tela, Hilo, Botón, Cinta…). Aparecen al crear/editar un insumo. No se puede inhabilitar un tipo si hay insumos usándolo.</span>
+                    </div>
+
+                    {{-- Alta rápida --}}
+                    <form id="tipoInsumoForm" novalidate>
+                        <input type="hidden" id="ti-id-field">
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="ri-price-tag-3-line"></i></span>
+                            <input type="text" id="ti-nombre-field" class="form-control" maxlength="100"
+                                placeholder="Nuevo tipo (ej: Cinta, Elástico, Broche)…" autocomplete="off">
+                            <button type="submit" class="btn btn-success" id="ti-save-btn">
+                                <i class="ri-add-line me-1"></i><span id="ti-save-label">Agregar</span>
+                            </button>
+                            <button type="button" class="btn btn-light d-none" id="ti-cancel-btn" title="Cancelar edición">
+                                <i class="ri-close-line"></i>
+                            </button>
+                        </div>
+                        <div class="invalid-feedback d-block" id="ti-nombre-error"></div>
+                    </form>
+
+                    {{-- Toggle activos / historial (segmentado) --}}
+                    <div class="ti-segment my-3" role="group">
+                        <button type="button" class="ti-seg-btn active" id="ti-btn-activos">
+                            <i class="ri-checkbox-circle-line"></i> Activos
+                        </button>
+                        <button type="button" class="ti-seg-btn" id="ti-btn-historial">
+                            <i class="ri-archive-line"></i> Inhabilitados
+                        </button>
+                    </div>
+
+                    <div class="ti-table-wrap">
+                        <table class="ti-table" id="tipos-insumo-table">
+                            <thead>
+                                <tr>
+                                    <th>Tipo</th>
+                                    <th class="text-center" style="width: 22%;">Insumos</th>
+                                    <th class="text-center" style="width: 26%;">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tipos-insumo-tbody"></tbody>
+                        </table>
+                        <div class="ti-empty d-none" id="tipos-insumo-empty">
+                            <i class="ri-inbox-line"></i><span>Sin tipos en esta vista.</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light border-0">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">
+                        <i class="ri-close-line me-1"></i>Cerrar
                     </button>
                 </div>
             </div>
@@ -480,11 +585,12 @@
 
     <script>
         $(document).ready(function () {
-            function generateButtons(insumoId) {
+            function generateButtons(insumoId, isTrashed) {
                 var sVer = `<button class="btn btn-sm btn-soft-info view-item-btn" data-id="${insumoId}" title="Ver"><i class="ri-eye-fill"></i></button>`;
-                var items =
-                    `<li><button type="button" class="dropdown-item act-item act-edit edit-item-btn" data-id="${insumoId}"><span class="act-ic"><i class="ri-pencil-fill"></i></span>Editar</button></li>` +
-                    `<li><button type="button" class="dropdown-item act-item act-del remove-item-btn" data-id="${insumoId}"><span class="act-ic"><i class="ri-delete-bin-fill"></i></span>Eliminar</button></li>`;
+                var items = isTrashed
+                    ? `<li><button type="button" class="dropdown-item act-item act-restore restore-item-btn" data-id="${insumoId}"><span class="act-ic"><i class="ri-arrow-go-back-line"></i></span>Habilitar</button></li>`
+                    : `<li><button type="button" class="dropdown-item act-item act-edit edit-item-btn" data-id="${insumoId}"><span class="act-ic"><i class="ri-pencil-fill"></i></span>Editar</button></li>` +
+                      `<li><button type="button" class="dropdown-item act-item act-warn remove-item-btn" data-id="${insumoId}"><span class="act-ic"><i class="ri-forbid-line"></i></span>Inhabilitar</button></li>`;
                 var menu =
                     `<div class="dropdown d-inline-block">` +
                         `<button class="btn btn-sm btn-soft-secondary" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Más acciones"><i class="ri-more-2-fill"></i></button>` +
@@ -498,6 +604,9 @@
                 return '<span title="' + value + '" style="cursor:default;">' + value + '</span>';
             }
 
+            // Toggle de historial (insumos inhabilitados). Lo lee ajax.data.
+            var insHistorial = false;
+
             var table = $('#insumos-table').DataTable({
                 processing: true,
                 serverSide: true,
@@ -509,6 +618,7 @@
                         d.filter_tipo   = $('#filter-tipo').val();
                         d.filter_stock  = $('#filter-stock').val();
                         d.filter_orden  = $('#filter-orden').val();
+                        d.historial     = insHistorial ? 1 : 0;
                     }
                 },
                 dom: 'rtip',
@@ -607,14 +717,26 @@
                         width: '19%',
                         orderable: false,
                         searchable: false,
-                        render: function (data) {
-                            return generateButtons(data);
+                        render: function (data, type, row) {
+                            return generateButtons(data, row.trashed);
                         }
                     }
                 ],
                 order: [],
                 ordering: false,
                 language: lenguajeData
+            });
+
+            // ── Toggle Activos / Historial (Inhabilitados) ──
+            $('#ins-toggle-historial').on('click', function () {
+                insHistorial = !insHistorial;
+                var $btn = $(this);
+                $btn.toggleClass('btn-historial-ver', !insHistorial)
+                    .toggleClass('btn-historial-volver', insHistorial);
+                $btn.find('i').attr('class', insHistorial ? 'ri-arrow-left-line' : 'ri-archive-line');
+                $btn.find('span').text(insHistorial ? 'Solo Activos' : 'Inhabilitados');
+                $('#insumos-card-title').text(insHistorial ? 'Insumos inhabilitados (historial)' : 'Listado de Insumos');
+                table.ajax.reload();
             });
 
             // ══════════════════════════════════════════════════
@@ -702,13 +824,17 @@
                 var id = $(this).data('id');
                 $.get("{{ route('insumos.show', ':id') }}".replace(':id', id), function (data) {
                     $("#view-nombre").text(data.nombre);
-                    $("#view-tipo").html(tipoBadges[data.tipo] || data.tipo);
+                    $("#view-tipo").html(tipoBadges[data.tipo] || '<span class="badge-tipo"><i class="ri-more-line"></i> ' + data.tipo + '</span>');
                     $("#view-unidad-medida").text(data.unidad_medida);
                     $("#view-stock-actual").text(parseFloat(data.stock_actual).toFixed(2));
                     $("#view-stock-minimo").text(parseFloat(data.stock_minimo).toFixed(2));
                     $("#view-stock-maximo").text(parseFloat(data.stock_maximo).toFixed(2));
                     $("#view-costo-unitario").text('$/ ' + parseFloat(data.costo_unitario).toFixed(2));
                     $("#view-created").text(formatDate(data.created_at));
+                    $("#view-estatus")
+                        .text(data.trashed ? 'Inhabilitado' : 'Activo')
+                        .removeClass('badge-soft-success badge-soft-danger')
+                        .addClass(data.trashed ? 'badge-soft-danger' : 'badge-soft-success');
                     $("#viewModal").modal('show');
                 });
             });
@@ -727,11 +853,12 @@
                     var inventoriable = data.is_inventoriable !== false && data.is_inventoriable !== 0;
                     $("#is-inventoriable-switch").prop('checked', inventoriable);
                     $("#stock-fields-wrapper").toggle(inventoriable);
+                    var gravable = data.aplica_iva !== false && data.aplica_iva !== 0;
+                    $("#aplica-iva-switch").prop('checked', gravable);
                     $("#field-stock_actual").val(data.stock_actual);
                     $("#field-stock_minimo").val(data.stock_minimo);
                     $("#field-stock_maximo").val(data.stock_maximo);
                     $("#field-costo_unitario").val(data.costo_unitario);
-                    $("#field-estado").val(data.estado ? '1' : '0');
 
                     $("#add-btn").hide();
                     $("#edit-btn").show();
@@ -782,14 +909,20 @@
                         });
                     },
                     error: function (xhr) {
-                        var errors = xhr.responseJSON.errors;
                         var errorMessage = '';
-                        $.each(errors, function (key, value) {
-                            errorMessage += value[0] + '<br>';
-                        });
+                        if (xhr.status === 422 && xhr.responseJSON && xhr.responseJSON.errors) {
+                            // 422: listar cada mensaje de validación con precisión
+                            $.each(xhr.responseJSON.errors, function (key, value) {
+                                errorMessage += value[0] + '<br>';
+                            });
+                        } else {
+                            errorMessage = (xhr.responseJSON && xhr.responseJSON.message)
+                                ? xhr.responseJSON.message
+                                : 'Ocurrió un error al guardar el insumo. Intenta nuevamente.';
+                        }
                         Swal.fire({
                             icon: 'error',
-                            title: 'Error',
+                            title: xhr.status === 422 ? 'Revisa los datos' : 'Error',
                             html: errorMessage,
                             customClass: {
                                 confirmButton: 'btn btn-primary w-xs me-2',
@@ -802,15 +935,15 @@
                 });
             });
 
-            // Eliminar
+            // Inhabilitar (soft delete → historial, reversible con Habilitar)
             $(document).on("click", ".remove-item-btn", function () {
                 var id = $(this).data("id");
                 Swal.fire({
-                    title: '¿Estás seguro?',
-                    text: "¡No podrás revertir esto!",
+                    title: '¿Inhabilitar este insumo?',
+                    text: "Se moverá al historial y dejará de estar disponible en compras y órdenes. Podrás habilitarlo de nuevo.",
                     icon: 'warning',
                     showCancelButton: true,
-                    confirmButtonText: 'Sí, eliminar',
+                    confirmButtonText: 'Sí, inhabilitar',
                     cancelButtonText: 'Cancelar',
                     customClass: {
                         confirmButton: 'btn btn-primary w-xs me-2',
@@ -830,7 +963,7 @@
                                 table.draw();
                                 Swal.fire({
                                     icon: 'success',
-                                    title: '¡Eliminado!',
+                                    title: '¡Inhabilitado!',
                                     text: response.success,
                                     showConfirmButton: false,
                                     customClass: {
@@ -846,7 +979,7 @@
                                 Swal.fire({
                                     icon: 'error',
                                     title: 'Error',
-                                    text: 'No se pudo eliminar el insumo',
+                                    text: 'No se pudo inhabilitar el insumo',
                                     customClass: {
                                         confirmButton: 'btn btn-primary w-xs me-2',
                                         cancelButton: 'btn btn-danger w-xs'
@@ -860,9 +993,58 @@
                 });
             });
 
+            // Habilitar (restaurar desde el historial)
+            $(document).on("click", ".restore-item-btn", function () {
+                var id = $(this).data("id");
+                Swal.fire({
+                    title: '¿Habilitar este insumo?',
+                    text: "Volverá a estar disponible en compras y órdenes.",
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonText: 'Sí, habilitar',
+                    cancelButtonText: 'Cancelar',
+                    customClass: {
+                        confirmButton: 'btn btn-success w-xs me-2',
+                        cancelButton: 'btn btn-light w-xs'
+                    },
+                    buttonsStyling: false,
+                    showCloseButton: true
+                }).then(function (result) {
+                    if (result.value) {
+                        $.ajax({
+                            url: "{{ url('insumos') }}/" + id + "/restore",
+                            method: "POST",
+                            headers: {
+                                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                            },
+                            success: function (response) {
+                                table.ajax.reload();
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: '¡Habilitado!',
+                                    text: response.success,
+                                    showConfirmButton: false,
+                                    timer: 1500
+                                });
+                            },
+                            error: function () {
+                                Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo habilitar el insumo.' });
+                            }
+                        });
+                    }
+                });
+            });
+
             // Toggle inventariable: muestra/oculta campos de stock
             $(document).on('change', '#is-inventoriable-switch', function () {
                 $('#stock-fields-wrapper').toggle($(this).is(':checked'));
+            });
+
+            // Código: forzar MAYÚSCULAS reales y solo letras/números (text-uppercase es solo visual).
+            $(document).on('input', '#codigo-field', function () {
+                var pos = this.selectionStart;
+                this.value = this.value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+                this.setSelectionRange(pos, pos);
             });
 
             // Limpiar modal al cerrar
@@ -872,6 +1054,7 @@
                 $("#id-field").val("");
                 $("#codigo-field").prop('readonly', false);
                 $("#is-inventoriable-switch").prop('checked', true);
+                $("#aplica-iva-switch").prop('checked', true);
                 $("#stock-fields-wrapper").show();
                 $("#add-btn").show();
                 $("#edit-btn").hide();
@@ -1070,12 +1253,183 @@
             var stock = $('#pdf-filter-stock').val();
             if (tipo)  params.push('tipo='  + encodeURIComponent(tipo));
             if (stock) params.push('stock=' + encodeURIComponent(stock));
+            var fdesde = $('#pdf-fecha-desde').val();
+            var fhasta = $('#pdf-fecha-hasta').val();
+            if (fdesde) params.push('fecha_desde=' + encodeURIComponent(fdesde));
+            if (fhasta) params.push('fecha_hasta=' + encodeURIComponent(fhasta));
             window.open(baseUrl + (params.length ? '?' + params.join('&') : ''), '_blank');
             bootstrap.Modal.getInstance(document.getElementById('pdfExportModal'))?.hide();
         });
         $('#pdfExportModal').on('show.bs.modal', function () {
             $('#pdf-filter-tipo').val('');
             $('#pdf-filter-stock').val('');
+            $('#pdf-fecha-desde, #pdf-fecha-hasta').val('');
         });
+
+        // ══════════════════════════════════════════════════════════
+        // CATÁLOGO GESTIONABLE — Tipos de Insumo
+        // ══════════════════════════════════════════════════════════
+        (function () {
+            'use strict';
+            var CSRF = $('meta[name="csrf-token"]').attr('content');
+            var tiHistorial = false;
+
+            function tiUrl() {
+                return "{{ route('tipo-insumos.index') }}" + (tiHistorial ? '?historial=true' : '');
+            }
+
+            function escHtml(s) {
+                return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+                    return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c];
+                });
+            }
+
+            function tiRender(rows) {
+                var $tb = $('#tipos-insumo-tbody').empty();
+                $('#tipos-insumo-empty').toggleClass('d-none', rows.length > 0);
+                rows.forEach(function (t) {
+                    var n = t.insumos_count || 0;
+                    var acciones = tiHistorial
+                        ? '<button class="btn btn-sm btn-soft-success ti-restore" data-id="' + t.id + '" title="Habilitar"><i class="ri-arrow-go-back-line"></i></button>'
+                        : '<button class="btn btn-sm btn-soft-primary ti-edit me-1" data-id="' + t.id + '" data-nombre="' + escHtml(t.nombre) + '" title="Renombrar"><i class="ri-pencil-line"></i></button>' +
+                          '<button class="btn btn-sm btn-soft-danger ti-delete" data-id="' + t.id + '" data-count="' + n + '" title="Inhabilitar"><i class="ri-forbid-line"></i></button>';
+                    var badge = n > 0
+                        ? '<span class="badge rounded-pill badge-soft-info">' + n + ' en uso</span>'
+                        : '<span class="badge rounded-pill badge-soft-secondary">0</span>';
+                    $tb.append(
+                        '<tr>' +
+                            '<td><span class="ti-name"><i class="ri-price-tag-3-line"></i>' + escHtml(t.nombre) + '</span></td>' +
+                            '<td class="text-center">' + badge + '</td>' +
+                            '<td class="text-center text-nowrap">' + acciones + '</td>' +
+                        '</tr>'
+                    );
+                });
+            }
+
+            function tiCargar() {
+                $.getJSON(tiUrl(), tiRender);
+            }
+
+            // Reconstruye un <select> conservando su primera opción SOLO si es un placeholder
+            // (value="", ej. "Todos"); preserva el valor seleccionado si sigue existiendo.
+            function tiRebuildSelect(sel, tipos) {
+                var $s = $(sel);
+                if (!$s.length) return;
+                var prev = $s.val();
+                var $first = $s.find('option').first();
+                var firstHtml = ($first.length && $first.attr('value') === '') ? $first.prop('outerHTML') : '';
+                $s.empty();
+                if (firstHtml) $s.append(firstHtml);
+                tipos.forEach(function (t) {
+                    $s.append('<option value="' + escHtml(t.nombre) + '">' + escHtml(t.nombre) + '</option>');
+                });
+                if (prev && $s.find('option[value="' + prev.replace(/"/g, '\\"') + '"]').length) $s.val(prev);
+            }
+
+            // Sincroniza los selects de la página y refresca la tabla de insumos.
+            function tiSyncPagina() {
+                $.getJSON("{{ route('tipo-insumos.index') }}", function (tipos) {
+                    tiRebuildSelect('#filter-tipo', tipos);
+                    tiRebuildSelect('#field-tipo', tipos);
+                    tiRebuildSelect('#pdf-filter-tipo', tipos);
+                });
+                try { $('#insumos-table').DataTable().ajax.reload(null, false); } catch (e) {}
+            }
+
+            function tiResetForm() {
+                $('#ti-id-field').val('');
+                $('#ti-nombre-field').val('').removeClass('is-invalid');
+                $('#ti-save-label').text('Agregar');
+                $('#ti-cancel-btn').addClass('d-none');
+            }
+
+            $('#tiposInsumoModal').on('show.bs.modal', function () {
+                tiHistorial = false;
+                $('#ti-btn-activos').addClass('active');
+                $('#ti-btn-historial').removeClass('active');
+                tiResetForm();
+                tiCargar();
+            });
+
+            $('#ti-btn-activos').on('click', function () {
+                tiHistorial = false; $(this).addClass('active'); $('#ti-btn-historial').removeClass('active'); tiResetForm(); tiCargar();
+            });
+            $('#ti-btn-historial').on('click', function () {
+                tiHistorial = true; $(this).addClass('active'); $('#ti-btn-activos').removeClass('active'); tiResetForm(); tiCargar();
+            });
+
+            // Alta / edición
+            $('#tipoInsumoForm').on('submit', function (e) {
+                e.preventDefault();
+                var id = $('#ti-id-field').val();
+                var nombre = $('#ti-nombre-field').val().trim();
+                if (nombre.length < 2) {
+                    $('#ti-nombre-field').addClass('is-invalid');
+                    $('#ti-nombre-error').text('Mínimo 2 caracteres.');
+                    return;
+                }
+                var url = id ? "{{ url('tipo-insumos') }}/" + id : "{{ route('tipo-insumos.store') }}";
+                var data = { nombre: nombre };
+                if (id) data._method = 'PUT';
+                $.ajax({
+                    url: url, method: 'POST', data: data,
+                    headers: { 'X-CSRF-TOKEN': CSRF },
+                    success: function (resp) {
+                        tiResetForm();
+                        tiCargar();
+                        tiSyncPagina();
+                        Swal.fire({ icon: 'success', title: resp.message, showConfirmButton: false, timer: 1300 });
+                    },
+                    error: function (xhr) {
+                        var msg = (xhr.responseJSON && (xhr.responseJSON.message ||
+                            (xhr.responseJSON.errors && xhr.responseJSON.errors.nombre && xhr.responseJSON.errors.nombre[0]))) || 'Error al guardar.';
+                        $('#ti-nombre-field').addClass('is-invalid');
+                        $('#ti-nombre-error').text(msg);
+                    }
+                });
+            });
+
+            $('#ti-cancel-btn').on('click', tiResetForm);
+
+            $('#tipos-insumo-tbody').on('click', '.ti-edit', function () {
+                $('#ti-id-field').val($(this).data('id'));
+                $('#ti-nombre-field').val($(this).data('nombre')).removeClass('is-invalid').focus();
+                $('#ti-save-label').text('Guardar');
+                $('#ti-cancel-btn').removeClass('d-none');
+            });
+
+            $('#tipos-insumo-tbody').on('click', '.ti-delete', function () {
+                var id = $(this).data('id');
+                var count = parseInt($(this).data('count'), 10) || 0;
+                if (count > 0) {
+                    Swal.fire({ icon: 'warning', title: 'No se puede inhabilitar', text: 'Hay ' + count + ' insumo(s) usando este tipo.' });
+                    return;
+                }
+                Swal.fire({
+                    title: '¿Inhabilitar este tipo?', icon: 'warning', showCancelButton: true,
+                    confirmButtonText: 'Sí, inhabilitar', cancelButtonText: 'Cancelar',
+                    customClass: { confirmButton: 'btn btn-primary w-xs me-2', cancelButton: 'btn btn-danger w-xs' },
+                    buttonsStyling: false
+                }).then(function (r) {
+                    if (!r.isConfirmed) return;
+                    $.ajax({
+                        url: "{{ url('tipo-insumos') }}/" + id, method: 'DELETE',
+                        headers: { 'X-CSRF-TOKEN': CSRF },
+                        success: function (resp) { tiCargar(); tiSyncPagina(); Swal.fire({ icon: 'success', title: resp.message, showConfirmButton: false, timer: 1300 }); },
+                        error: function (xhr) { Swal.fire({ icon: 'error', title: 'Error', text: (xhr.responseJSON && xhr.responseJSON.message) || 'No se pudo inhabilitar.' }); }
+                    });
+                });
+            });
+
+            $('#tipos-insumo-tbody').on('click', '.ti-restore', function () {
+                var id = $(this).data('id');
+                $.ajax({
+                    url: "{{ url('tipo-insumos') }}/" + id + "/restore", method: 'PATCH',
+                    headers: { 'X-CSRF-TOKEN': CSRF },
+                    success: function (resp) { tiCargar(); tiSyncPagina(); Swal.fire({ icon: 'success', title: resp.message, showConfirmButton: false, timer: 1300 }); },
+                    error: function (xhr) { Swal.fire({ icon: 'error', title: 'Error', text: (xhr.responseJSON && xhr.responseJSON.message) || 'No se pudo restaurar.' }); }
+                });
+            });
+        })();
     </script>
 @endpush

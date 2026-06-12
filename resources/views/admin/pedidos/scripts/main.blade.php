@@ -10,6 +10,8 @@ $(document).ready(function () {
 
         var TOTAL_STEPS = 4;
         var currentStep = 1;
+        // % mínimo del total que debe estar abonado para registrar el pedido
+        var ABONO_MIN_PCT = {{ (float) \App\Models\Pedido::porcentajeAbonoMinimo() }};
 
         function isEditMode() { return !!$('#ped-wiz-id-field').val(); }
 
@@ -111,7 +113,16 @@ $(document).ready(function () {
                     return false;
                 }
                 var entrega = $('#ped-fecha-entrega-field').val();
-                if (entrega && entrega < fecha) {
+                if (!entrega) {
+                    Swal.fire({
+                        icon: 'warning', title: 'Entrega estimada requerida',
+                        text: 'Elige la fecha de entrega estimada (puedes usar los accesos Hoy / +15 / +30 / +60 días).',
+                        timer: 2600, showConfirmButton: false
+                    });
+                    $('#ped-fecha-entrega-field').trigger('focus');
+                    return false;
+                }
+                if (entrega < fecha) {
                     Swal.fire({
                         icon: 'warning', title: 'Fechas inconsistentes',
                         text: 'La fecha de entrega no puede ser anterior a la del pedido.',
@@ -146,7 +157,11 @@ $(document).ready(function () {
             }
             if (n === 3) {
                 var PED_METODO_LABELS = { efectivo: 'Efectivo', transferencia: 'Transferencia', pago_movil: 'Pago Móvil' };
-                var total3 = parseFloat($('#ped-pago-total-display').val()) || 0;
+                // Total desde el estado de productos (fuente de verdad): el display
+                // solo se sincroniza al entrar al paso 3 y puede estar vacío si se
+                // salta de paso con los markers del stepper.
+                var total3 = (window.pedProdState && window.pedProdState.total)
+                    || parseFloat($('#ped-pago-total-display').val()) || 0;
                 var pagos3 = (window.pedPagoState && window.pedPagoState.pagos) || [];
                 var abono3 = pagos3.reduce(function (a, p) { return a + (p.monto || 0); }, 0);
 
@@ -156,7 +171,7 @@ $(document).ready(function () {
                     if (!(p3.monto > 0)) {
                         Swal.fire({
                             icon: 'warning', title: 'Monto requerido',
-                            text: 'Ingresá un monto mayor a 0 para ' + label3 + ', o quitá ese pago.',
+                            text: 'Ingresa un monto mayor a 0 para ' + label3 + ', o quita ese pago.',
                             timer: 2600, showConfirmButton: false
                         });
                         $('#ped-pay-list .ped-pay-monto').eq(i).trigger('focus');
@@ -166,7 +181,7 @@ $(document).ready(function () {
                         if (!p3.banco_id) {
                             Swal.fire({
                                 icon: 'warning', title: 'Banco requerido',
-                                text: 'Seleccioná el banco para ' + label3 + '.',
+                                text: 'Selecciona el banco para ' + label3 + '.',
                                 timer: 2400, showConfirmButton: false
                             });
                             return false;
@@ -174,7 +189,7 @@ $(document).ready(function () {
                         if (!p3.referencia) {
                             Swal.fire({
                                 icon: 'warning', title: 'Referencia requerida',
-                                text: 'Ingresá la referencia para ' + label3 + '.',
+                                text: 'Ingresa la referencia para ' + label3 + '.',
                                 timer: 2400, showConfirmButton: false
                             });
                             return false;
@@ -186,6 +201,21 @@ $(document).ready(function () {
                         icon: 'warning', title: 'Abono inválido',
                         text: 'La suma de los métodos ($' + abono3.toFixed(2) + ') no puede superar el total ($' + total3.toFixed(2) + ').',
                         timer: 2800, showConfirmButton: false
+                    });
+                    return false;
+                }
+                // Abono mínimo (% configurable del total). Al crear es estricto;
+                // al editar no se exige subir pedidos legacy al mínimo, pero el
+                // abono no puede quedar por debajo de lo que ya estaba registrado.
+                var minimo3 = total3 * ABONO_MIN_PCT / 100;
+                var piso3 = isEditMode() ? Math.min(minimo3, window.pedAbonoOriginal || 0) : minimo3;
+                if (total3 > 0 && abono3 + 0.001 < piso3) {
+                    Swal.fire({
+                        icon: 'warning', title: 'Abono insuficiente',
+                        text: isEditMode()
+                            ? 'El abono no puede quedar por debajo de $' + piso3.toFixed(2) + '. Ajusta los pagos antes de continuar.'
+                            : 'Para registrar el pedido debes abonar al menos el ' + ABONO_MIN_PCT + '% del total (mínimo $' + minimo3.toFixed(2) + ').',
+                        timer: 3200, showConfirmButton: false
                     });
                     return false;
                 }
@@ -233,7 +263,7 @@ $(document).ready(function () {
         $wizModal.on('hidden.bs.modal', function () { currentStep = 1; });
 
         // API global
-        window.pedWizard = { show: showStep, next: nextStep, prev: prevStep };
+        window.pedWizard = { show: showStep, next: nextStep, prev: prevStep, validate: validateStep };
 
         // Modo protegido: cliente + fecha del pedido de solo lectura, oculta acciones de
         // producto y "cambiar cliente" (vía clase .ped-wiz-locked en CSS). Lo usan tanto
@@ -818,7 +848,8 @@ $(document).ready(function () {
         }));
 
         function pedFmt(n) {
-            return '$' + parseFloat(n || 0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+            // Formato es-VE (estándar de la app): $1.234,56
+            return '$' + Number(n || 0).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         }
 
         function pedRecalcularSubtotal() {
@@ -830,6 +861,7 @@ $(document).ready(function () {
         function pedRecalcularTotal() {
             var total = pedProdItems.reduce(function (acc, it) { return acc + (it.subtotal || 0); }, 0);
             $('#ped-kpi-lineas').text(pedProdItems.length);
+            $('#ped-kpi-subtotal').text(pedFmt(total));
             $('#ped-kpi-total').text(pedFmt(total));
             window.pedProdState = { items: pedProdItems, total: total };
         }
@@ -866,7 +898,12 @@ $(document).ready(function () {
             var groups = [];
             var byKey  = {};
             pedProdItems.forEach(function (it) {
-                var key = (it.producto_id || '0') + '::' + (it.color_id || '0');
+                // Firma de variante: producto_id (legacy) o tipo+tela+atributos (dinámica),
+                // para no colapsar variantes distintas que comparten producto_id null.
+                var variantSig = it.producto_id || ('t' + (it.tipo_producto_id || '') + '|' +
+                    (it.insumo_tela_id || '') + '|' +
+                    ((it.atributo_valor_ids || []).slice().sort(function (a, b) { return a - b; }).join('-')));
+                var key = variantSig + '::' + (it.color_id || '0');
                 if (!byKey[key]) {
                     byKey[key] = {
                         producto_id: it.producto_id, nombre: it.nombre,
@@ -883,25 +920,39 @@ $(document).ready(function () {
                 g.tallas.push({ label: it.talla_label || 'Única', qty: it.cantidad || 0 });
                 if (it.bordados && it.bordados.length) {
                     g.llevaBordado = true;
-                    g.bordadosCount += it.bordados.length;
+                    // Bordados por unidad (las tallas del mismo producto+color comparten config)
+                    if (!g.bordadosUnit) {
+                        g.bordadosUnit = it.bordados;
+                        g.bordadosCount = it.bordados.length;
+                    }
                 }
             });
 
             var rows = groups.map(function (g, idx) {
                 var info = pedProdInfo(g.producto_id);
-                var tipoPill = info.tipo ? '<span class="cot-tipo-pill">' + pedEscHtml(info.tipo) + '</span>' : '';
-                var nombreLine = '<div class="cot-prod-modelo">' + pedEscHtml(info.nombre || g.nombre) + '</div>';
-                var codigoLine = info.codigo ? '<div class="cot-prod-codigo">' + pedEscHtml(info.codigo) + '</div>' : '';
+                // Si hay nombre propio: pill de familia + nombre como título. Si no: la familia es el título (sin pill redundante).
+                var hasNombre = !!(info.nombre && String(info.nombre).trim());
+                var titulo = hasNombre ? info.nombre : (info.tipo || g.nombre || '(producto sin definir)');
+                var tipoPill = (hasNombre && info.tipo) ? '<span class="cot-tipo-pill">' + pedEscHtml(info.tipo) + '</span>' : '';
+                var nombreLine = '<div class="cot-prod-modelo">' + pedEscHtml(titulo) + '</div>';
+                var codigoLine = info.codigo ? '<div class="cot-prod-codigo"><i class="ri-barcode-line"></i>' + pedEscHtml(info.codigo) + '</div>' : '';
                 var hex = g.color_id ? (pedColoresHex[g.color_id] || '') : '';
                 var colorDot = '<span class="cot-color-dot" style="background:' + (hex || '#e2e8f0') + ';border-color:#cbd5e1;"></span>';
                 var tallasChips = g.tallas.map(function (t) {
                     return '<span class="cot-chip cot-chip-talla">' + pedEscHtml(t.label) +
                            '<span class="cot-chip-x">×</span><strong>' + t.qty + '</strong></span>';
                 }).join('');
-                var bordadoLine = g.llevaBordado
-                    ? '<div class="cot-grouped-bordado-line"><i class="ri-scissors-cut-line"></i> ' +
-                      g.bordadosCount + ' bordado' + (g.bordadosCount === 1 ? '' : 's') + '</div>'
-                    : '';
+                var bordadoLine;
+                if (g.bordadosCount > 0) {
+                    var recargoUnit = (typeof pedRecargoBordado === 'function') ? pedRecargoBordado(g.bordadosUnit || []) : 0;
+                    bordadoLine = '<div class="cot-grouped-bordado-line cot-grouped-bordado-line--ok">' +
+                        '<i class="ri-scissors-cut-line"></i>' +
+                        g.bordadosCount + ' bordado' + (g.bordadosCount === 1 ? '' : 's') +
+                        (recargoUnit > 0 ? ' · +' + pedFmt(recargoUnit) + '/u' : '') + '</div>';
+                } else {
+                    bordadoLine = '<div class="cot-grouped-bordado-line cot-grouped-bordado-line--none">' +
+                        '<i class="ri-subtract-line"></i>Sin bordado</div>';
+                }
                 return '<tr class="cot-grouped-row">' +
                     '<td class="cot-col-num">' + (idx + 1) + '</td>' +
                     '<td class="cot-col-prod">' + tipoPill + nombreLine + codigoLine + '</td>' +
@@ -927,8 +978,7 @@ $(document).ready(function () {
                             '<th class="cot-cell-num">Subtotal</th>' +
                         '</tr></thead>' +
                         '<tbody>' + rows + '</tbody>' +
-                        '<tfoot><tr><td colspan="6" class="text-end fw-bold">Total</td>' +
-                            '<td class="cot-cell-num cot-cell-subtotal fw-bold">' + pedFmt(total) + '</td></tr></tfoot>' +
+                        // El total ya se muestra en el KPI "TOTAL DEL PEDIDO" arriba; no repetirlo aquí.
                     '</table>' +
                 '</div>'
             );
@@ -1114,12 +1164,18 @@ $(document).ready(function () {
                         var precio  = parseFloat(p.precio_unitario);
                         pedProdItems.push({
                             producto_id:  p.producto_id,
+                            tipo_producto_id:   p.tipo_producto_id || null,
+                            insumo_tela_id:     p.insumo_tela_id || null,
+                            atributo_valor_ids: Array.isArray(p.atributo_valor_ids) ? p.atributo_valor_ids : [],
                             nombre:       p.producto_nombre,
                             cantidad:     cant,
                             talla_id:     p.talla_id || null,
                             talla_label:  p.talla_id ? (pedTallasCatalogo[p.talla_id] || '') : '',
                             color_id:     p.color_id || null,
                             color_label:  p.color_id ? (pedColoresCatalogo[p.color_id] || '') : '',
+                    color_hex:    p.color_id ? (pedColoresHex[p.color_id] || '') : '',
+                    sku:          p.sku || '',
+                    imagen_url:   p.imagen_url || '',
                             precio_unitario: precio,
                             subtotal:     cant * precio,
                             heredado_cotizacion_id: cotizacionId
@@ -1151,12 +1207,19 @@ $(document).ready(function () {
                 var recargo = pedRecargoBordado(bordados);                   // recargo bordado por unidad
                 pedProdItems.push({
                     producto_id:  p.producto_id,
+                    // Variante dinámica (FEAT-003): se arrastra para persistir y agrupar
+                    tipo_producto_id:   p.tipo_producto_id || null,
+                    insumo_tela_id:     p.insumo_tela_id || null,
+                    atributo_valor_ids: Array.isArray(p.atributo_valor_ids) ? p.atributo_valor_ids : [],
                     nombre:       p.producto_nombre,
                     cantidad:     cant,
                     talla_id:     p.talla_id || null,
                     talla_label:  p.talla_id ? (pedTallasCatalogo[p.talla_id] || '') : '',
                     color_id:     p.color_id || null,
                     color_label:  p.color_id ? (pedColoresCatalogo[p.color_id] || '') : '',
+                    color_hex:    p.color_id ? (pedColoresHex[p.color_id] || '') : '',
+                    sku:          p.sku || '',
+                    imagen_url:   p.imagen_url || '',
                     precio_unitario: precio,                                 // final → display/subtotal
                     precio_base:  +(precio - recargo).toFixed(2),            // base → payload (el backend re-suma el bordado)
                     lleva_bordado: bordados.length > 0,
@@ -1298,6 +1361,7 @@ $(document).ready(function () {
 
         function pedResetPaso3() {
             $('#ped-pay-list').empty();
+            window.pedAbonoOriginal = 0;
             pedRecalcularPago();
         }
 
@@ -1337,6 +1401,9 @@ $(document).ready(function () {
                 if (!PED_METODOS[p.metodo]) return;
                 pedAgregarFila(p.metodo, { monto: p.monto, banco_id: p.banco_id, referencia: p.referencia });
             });
+            // Piso para validateStep(3): al editar, el abono no puede quedar
+            // por debajo de lo que el pedido ya tenía registrado.
+            window.pedAbonoOriginal = pedAbonoTotal();
             pedRecalcularPago();
         };
 
@@ -1362,97 +1429,196 @@ $(document).ready(function () {
         };
 
         function pedFmtRes(n) {
-            return '$' + parseFloat(n || 0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+            // Formato es-VE (estándar de la app): $1.234,56
+            return '$' + Number(n || 0).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         }
 
-        // Renderizar bloque cliente
+        // Escape local (este scope no comparte el pedEscHtml de la IIFE de productos)
+        function pedEscRes(s) {
+            return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+                return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c];
+            });
+        }
+
+        function pedFichaRow(ico, label, val) {
+            return '<div class="res-ficha-row">' +
+                '<span class="res-ficha-row-label"><i class="' + ico + '"></i>' + label + '</span>' +
+                '<span class="res-ficha-row-value">' + val + '</span></div>';
+        }
+
+        // Renderizar bloque cliente (ficha: avatar + divisor)
         function pedRenderResCliente() {
             var nombre = $('#ped-cliente-name-display').text().trim() || '—';
             var doc    = $('#ped-cliente-doc-display').text().trim() || '—';
             var tel    = $('#ped-cliente-tel-wrap').is(':visible') ? $('#ped-cliente-tel-display').text().trim() : '';
             var email  = $('#ped-cliente-email-wrap').is(':visible') ? $('#ped-cliente-email-display').text().trim() : '';
-            var html   = '<dl class="row g-0 mb-0 small">' +
-                '<dt class="col-5 text-muted">Nombre</dt><dd class="col-7 fw-semibold mb-1">' + nombre + '</dd>' +
-                '<dt class="col-5 text-muted">Documento</dt><dd class="col-7 mb-1">' + doc + '</dd>' +
-                (tel   ? '<dt class="col-5 text-muted">Teléfono</dt><dd class="col-7 mb-1">' + tel + '</dd>' : '') +
-                (email ? '<dt class="col-5 text-muted">Email</dt><dd class="col-7 mb-0">' + email + '</dd>' : '') +
-                '</dl>';
-            $('#ped-res-cliente-bloque').html(html);
+
+            var iniciales = nombre.split(/\s+/).filter(Boolean).slice(0, 2)
+                .map(function (w) { return w.charAt(0); }).join('').toUpperCase() || '–';
+
+            var rows = pedFichaRow('ri-bank-card-line', 'Documento', pedEscRes(doc));
+            if (tel)   rows += pedFichaRow('ri-phone-line', 'Teléfono', pedEscRes(tel));
+            if (email) rows += pedFichaRow('ri-mail-line',  'Email',    pedEscRes(email));
+
+            $('#ped-res-cliente-bloque').html(
+                '<div class="res-ficha">' +
+                    '<div class="res-ficha-head">' +
+                        '<div class="res-ficha-avatar">' + pedEscRes(iniciales) + '</div>' +
+                        '<div class="res-ficha-headtext">' +
+                            '<div class="res-ficha-title">' + pedEscRes(nombre) + '</div>' +
+                            '<div class="res-ficha-sub">Cliente</div>' +
+                        '</div>' +
+                    '</div>' +
+                    '<div class="res-ficha-divider"></div>' +
+                    '<div class="res-ficha-rows">' + rows + '</div>' +
+                '</div>'
+            );
         }
 
-        // Renderizar bloque datos del pedido
+        // Renderizar bloque datos del pedido (ficha: dato principal = entrega estimada)
         function pedRenderResDatos() {
-            var fecha    = $('#ped-fecha-pedido-field').val() || '—';
-            var entrega  = $('#ped-fecha-entrega-field').val() || 'No especificada';
+            var fecha     = $('#ped-fecha-pedido-field').val() || '—';
+            var entrega   = $('#ped-fecha-entrega-field').val() || 'No especificada';
             var prioridad = $('#ped-prioridad-field').val() || 'Normal';
-            var html = '<dl class="row g-0 mb-0 small">' +
-                '<dt class="col-6 text-muted">Fecha pedido</dt><dd class="col-6 fw-semibold mb-1">' + fecha + '</dd>' +
-                '<dt class="col-6 text-muted">Entrega estimada</dt><dd class="col-6 mb-1">' + entrega + '</dd>' +
-                '<dt class="col-6 text-muted">Prioridad</dt><dd class="col-6 mb-0">' + prioridad + '</dd>' +
-                '</dl>';
-            $('#ped-res-datos-bloque').html(html);
+            var prioBg    = { Normal: 'bg-success', Alta: 'bg-warning', Urgente: 'bg-danger' };
+            var prioBadge = '<span class="badge ' + (prioBg[prioridad] || 'bg-secondary') + '">' + pedEscRes(prioridad) + '</span>';
+
+            $('#ped-res-datos-bloque').html(
+                '<div class="res-ficha">' +
+                    '<div class="res-ficha-head">' +
+                        '<div class="res-ficha-avatar res-ficha-avatar--icon"><i class="ri-calendar-check-line"></i></div>' +
+                        '<div class="res-ficha-headtext">' +
+                            '<div class="res-ficha-title">' + pedEscRes(entrega) + '</div>' +
+                            '<div class="res-ficha-sub">Entrega estimada</div>' +
+                        '</div>' +
+                    '</div>' +
+                    '<div class="res-ficha-divider"></div>' +
+                    '<div class="res-ficha-rows">' +
+                        pedFichaRow('ri-calendar-line', 'Fecha pedido', pedEscRes(fecha)) +
+                        '<div class="res-ficha-row">' +
+                            '<span class="res-ficha-row-label"><i class="ri-flag-line"></i>Prioridad</span>' +
+                            '<span class="res-ficha-row-value">' + prioBadge + '</span></div>' +
+                    '</div>' +
+                '</div>'
+            );
         }
 
         // Renderizar tabla de productos
         function pedRenderResProductos() {
             var items = (window.pedProdState && window.pedProdState.items) || [];
-            var total = (window.pedProdState && window.pedProdState.total) || 0;
             $('#ped-res-lineas').text(items.length);
-            $('#ped-res-total').text(pedFmtRes(total));
             if (!items.length) {
-                $('#ped-res-productos-tbody').html(
-                    '<tr><td colspan="6" class="text-center text-muted py-3 small">Sin productos</td></tr>'
+                $('#ped-res-productos-list').html(
+                    '<div class="cot-lineas-empty text-center text-muted py-3 small">Sin productos</div>'
                 );
                 return;
             }
+            // Escape local (este scope no comparte pedEscHtml de la IIFE de productos).
+            var esc = function (s) {
+                return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+                    return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c];
+                });
+            };
             var rows = items.map(function (it) {
                 var badge = it.heredado_cotizacion_id
-                    ? ' <span class="ped-inherited-badge">Heredado #' + it.heredado_cotizacion_id + '</span>'
+                    ? '<span class="ped-inherited-badge">Heredado #' + it.heredado_cotizacion_id + '</span>'
                     : '';
-                return '<tr>' +
-                    '<td class="small">' + it.nombre + badge + '</td>' +
-                    '<td class="text-center small">' + it.cantidad + '</td>' +
-                    '<td class="small">' + (it.talla_label || '—') + '</td>' +
-                    '<td class="small">' + (it.color_label || '—') + '</td>' +
-                    '<td class="text-end small">' + pedFmtRes(it.precio_unitario) + '</td>' +
-                    '<td class="text-end small fw-semibold">' + pedFmtRes(it.subtotal) + '</td>' +
-                    '</tr>';
+                var hex = it.color_hex || '#cbd5e1';
+                var colorChip = it.color_label
+                    ? '<span class="cot-linea-chip"><span class="cot-linea-swatch" style="background:' + hex + '"></span>' + esc(it.color_label) + '</span>'
+                    : '';
+                var bordadoChip = it.lleva_bordado
+                    ? '<span class="cot-resumen-bordado-pill"><i class="ri-scissors-cut-line"></i> bordado</span>'
+                    : '';
+                var tallaPill = '<span class="cot-linea-talla">' + esc(it.talla_label || 'Única') + '<b>×' + it.cantidad + '</b></span>';
+                var thumb = it.imagen_url
+                    ? '<img src="' + esc(it.imagen_url) + '" alt="" class="ped-prod-thumb-img">'
+                    : '<div class="ped-prod-thumb-ph"><i class="ri-t-shirt-2-line"></i></div>';
+                var codeChip = it.sku ? '<span class="ped-prod-code">' + esc(it.sku) + '</span>' : '';
+                return '<div class="ped-prod-line">' +
+                        '<div class="ped-prod-thumb">' + thumb + '</div>' +
+                        '<div class="ped-prod-body">' +
+                            ((codeChip || badge) ? '<div class="ped-prod-top">' + codeChip + badge + '</div>' : '') +
+                            '<div class="ped-prod-name">' + esc(it.nombre) + '</div>' +
+                            '<div class="ped-prod-meta">' + colorChip + tallaPill + bordadoChip + '</div>' +
+                        '</div>' +
+                        '<div class="ped-prod-price">' +
+                            '<div class="ped-prod-qxu">' + it.cantidad + ' × ' + pedFmtRes(it.precio_unitario) + '</div>' +
+                            '<div class="ped-prod-sub">' + pedFmtRes(it.subtotal) + '</div>' +
+                        '</div>' +
+                    '</div>';
             }).join('');
-            $('#ped-res-productos-tbody').html(rows);
+            $('#ped-res-productos-list').html(rows);
         }
 
         // Renderizar bloque pago (multi-método)
         function pedRenderResPago() {
+            var METODO_ICONS = {
+                efectivo:      'ri-money-dollar-circle-line',
+                transferencia: 'ri-bank-card-2-line',
+                pago_movil:    'ri-smartphone-line'
+            };
             var pagos    = ((window.pedPagoState && window.pedPagoState.pagos) || [])
                 .filter(function (p) { return p.monto > 0; });
             var abono    = pagos.reduce(function (a, p) { return a + p.monto; }, 0);
             var total    = (window.pedProdState && window.pedProdState.total) || 0;
             var restante = total - abono;
+            var pct      = total > 0 ? Math.min(100, (abono / total) * 100) : 0;
+            var pctInt   = Math.round(pct);
 
-            var resumen = '<dl class="row g-0 mb-2 small">' +
-                '<dt class="col-6 text-muted">Total</dt><dd class="col-6 text-end mb-1">' + pedFmtRes(total) + '</dd>' +
-                '<dt class="col-6 text-muted">Abono</dt><dd class="col-6 text-end fw-semibold mb-1">' + pedFmtRes(abono) + '</dd>' +
-                '<dt class="col-6 text-muted">Restante</dt><dd class="col-6 text-end fw-semibold text-atlantico-dark mb-0">' + pedFmtRes(restante) + '</dd>' +
-                '</dl>';
+            // Actualiza hero card
+            $('#ped-res-total-hero').text(pedFmtRes(total));
+            $('#ped-res-abono-hero').text(pedFmtRes(abono));
+            $('#ped-res-restante-hero').text(pedFmtRes(restante));
 
+            // Tasa BCV y equivalente en Bs
+            if (window.tasaBcv && window.tasaBcv.valor) {
+                $('#ped-res-tasa-hero').text('Bs ' + parseFloat(window.tasaBcv.valor)
+                    .toLocaleString('es-VE', { minimumFractionDigits: 4, maximumFractionDigits: 4 }));
+            }
+            var bsLbl = (typeof window.bsEquivalente === 'function') ? window.bsEquivalente(total) : null;
+            $('#ped-res-total-bs-hero').text(bsLbl || 'Sin tasa BCV');
+
+            // Estado de pago (pill) según el progreso
+            var estadoTxt, estadoCls;
+            if (pct >= 100)     { estadoTxt = 'Pagado';    estadoCls = 'bg-success'; }
+            else if (abono > 0) { estadoTxt = 'Parcial';   estadoCls = 'bg-warning'; }
+            else                { estadoTxt = 'Pendiente'; estadoCls = 'bg-secondary'; }
+
+            // Progreso: abonado de total + estado + barra (los KPIs viven en la card hero)
+            var barColor = pct >= 100 ? '#16a34a' : pct > 0 ? '#1e3c72' : '#cbd5e1';
+            var progress = '<div class="ped-pago-progress">' +
+                '<div class="d-flex align-items-center justify-content-between mb-2">' +
+                    '<span class="ped-pago-progress-label"><strong>' + pedFmtRes(abono) + '</strong> de ' + pedFmtRes(total) + '</span>' +
+                    '<span class="badge ' + estadoCls + '">' + estadoTxt + ' · ' + pctInt + '%</span>' +
+                '</div>' +
+                '<div class="ped-pago-bar"><div class="ped-pago-bar-fill" style="width:' + pctInt + '%;background:' + barColor + ';"></div></div>' +
+            '</div>';
+
+            // Métodos de pago en tarjetas
             var metodosHtml;
             if (!pagos.length) {
-                metodosHtml = '<p class="text-muted small mb-0"><i class="ri-information-line me-1"></i>Sin pagos registrados (se paga después).</p>';
+                metodosHtml = '<div class="ped-pago-empty text-center text-muted py-3">' +
+                    '<i class="ri-wallet-3-line d-block mb-1" style="font-size:1.4rem;opacity:.5"></i>' +
+                    '<span class="small">Sin pagos registrados.</span></div>';
             } else {
-                metodosHtml = pagos.map(function (p) {
-                    var label = METODO_LABELS[p.metodo] || p.metodo;
-                    var extra = '';
-                    if (p.metodo === 'transferencia' || p.metodo === 'pago_movil') {
-                        var bancoNombre = p.banco_nombre || '—';
-                        extra = '<small class="text-muted d-block">' + bancoNombre + ' · Ref: ' + (p.referencia || '—') + '</small>';
-                    }
-                    return '<div class="d-flex justify-content-between align-items-start py-1 border-top">' +
-                        '<div><span class="fw-semibold">' + label + '</span>' + extra + '</div>' +
-                        '<span class="fw-semibold ms-2">' + pedFmtRes(p.monto) + '</span>' +
+                metodosHtml = '<div class="ped-pago-metodos-title">Métodos de pago</div>' +
+                    '<div class="ped-pago-metodos">' +
+                    pagos.map(function (p) {
+                        var label = METODO_LABELS[p.metodo] || p.metodo;
+                        var icon  = METODO_ICONS[p.metodo] || 'ri-money-dollar-circle-line';
+                        var extra = '';
+                        if ((p.metodo === 'transferencia' || p.metodo === 'pago_movil') && (p.banco_nombre || p.referencia)) {
+                            extra = '<small class="ped-metodo-extra">' + pedEscRes(p.banco_nombre || '—') + ' · Ref: ' + pedEscRes(p.referencia || '—') + '</small>';
+                        }
+                        return '<div class="ped-metodo-row">' +
+                            '<div class="ped-metodo-ico"><i class="' + icon + '"></i></div>' +
+                            '<div class="ped-metodo-info"><span class="ped-metodo-label">' + pedEscRes(label) + '</span>' + extra + '</div>' +
+                            '<span class="ped-metodo-monto">' + pedFmtRes(p.monto) + '</span>' +
                         '</div>';
-                }).join('');
+                    }).join('') + '</div>';
             }
-            $('#ped-res-pago-bloque').html(resumen + metodosHtml);
+            $('#ped-res-pago-bloque').html(progress + metodosHtml);
         }
 
         // Render completo del resumen
@@ -1492,6 +1658,13 @@ $(document).ready(function () {
                         // que la regla `boolean` de Laravel rechaza (solo acepta 1/0/"1"/"0").
                         lleva_bordado:   bordados.length > 0 ? 1 : 0
                     };
+                    // Línea dinámica (sin producto_id): enviar la variante (tipo + tela + atributos)
+                    // para que PedidoService la persista con sus snapshots.
+                    if (!it.producto_id && it.tipo_producto_id) {
+                        prod.tipo_producto_id   = it.tipo_producto_id;
+                        if (it.insumo_tela_id) prod.insumo_tela_id = it.insumo_tela_id;
+                        prod.atributo_valor_ids = Array.isArray(it.atributo_valor_ids) ? it.atributo_valor_ids : [];
+                    }
                     if (bordados.length) {
                         prod.bordados = bordados.map(function (b) {
                             return {
@@ -1523,6 +1696,19 @@ $(document).ready(function () {
         $(document).on('click', '#ped-wiz-add-btn, #ped-wiz-edit-btn', function (e) {
             e.preventDefault(); // los botones son type=submit dentro del form → evitar submit nativo
             var $btn = $(this).prop('disabled', true);
+
+            // Red de seguridad: re-validar los pasos 1-3 antes de enviar
+            // (la navegación ya valida, pero el usuario pudo volver atrás y editar)
+            if (window.pedWizard && window.pedWizard.validate) {
+                for (var s = 1; s <= 3; s++) {
+                    if (!window.pedWizard.validate(s)) {
+                        window.pedWizard.show(s);
+                        $btn.prop('disabled', false);
+                        return;
+                    }
+                }
+            }
+
             var payload = pedConstruirPayload();
 
             // Modo edición: id presente → PUT a pedidos.update con estado
@@ -1778,8 +1964,14 @@ $(document).ready(function () {
             if (data.productos && data.productos.length && typeof window.pedHidratarProductosDesde === 'function') {
                 var prods = data.productos.map(function (d) {
                     return {
-                        producto_id:     d.producto_id,
-                        producto_nombre: (d.producto && d.producto.nombre) ? d.producto.nombre : ('Producto #' + d.producto_id),
+                        producto_id:        d.producto_id,
+                        // Variante dinámica: el backend (show) ya enriquece estos campos.
+                        tipo_producto_id:   d.tipo_producto_id || null,
+                        insumo_tela_id:     d.insumo_tela_id || null,
+                        atributo_valor_ids: Array.isArray(d.atributo_valor_ids) ? d.atributo_valor_ids : [],
+                        producto_nombre:    d.producto_nombre || ((d.producto && d.producto.nombre) ? d.producto.nombre : 'Variante'),
+                        sku:                d.sku || '',
+                        imagen_url:         d.imagen_url || '',
                         cantidad:        d.cantidad,
                         talla_id:        d.talla_id || null,
                         color_id:        d.color_id || null,
@@ -1803,6 +1995,23 @@ $(document).ready(function () {
                 window.pedAplicarModoProtegido();
             }
 
+            // ── Banner de formalización: informa que las líneas están congeladas
+            //    y muestra la fecha de entrega estimada del pedido.
+            (function () {
+                var $banner = $('#ped-formalizado-banner');
+                if (!data.esta_formalizado) { $banner.addClass('d-none'); return; }
+                var fmt = function (iso) {
+                    if (!iso) return '—';
+                    var p = String(iso).substring(0, 10).split('-');
+                    return p.length === 3 ? (p[2] + '/' + p[1] + '/' + p[0]) : iso;
+                };
+                $('#ped-formalizado-fechas').text(
+                    'Formalizado el ' + fmt(data.fecha_formalizacion) +
+                    ' · Entrega estimada: ' + fmt(data.fecha_entrega_estimada) + '.'
+                );
+                $banner.removeClass('d-none');
+            })();
+
             // Título según estado
             var titulo = (data.estado === 'Pendiente')
                 ? ('Completar Pedido #' + data.id)
@@ -1822,6 +2031,7 @@ $(document).ready(function () {
         $('#showModal').on('hidden.bs.modal', function () {
             $('#ped-wiz-id-field').val('');
             $('#ped-estado-field-wrapper').hide();
+            $('#ped-formalizado-banner').addClass('d-none');
             if (typeof window.pedQuitarModoProtegido === 'function') {
                 window.pedQuitarModoProtegido();
             }

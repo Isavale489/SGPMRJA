@@ -86,6 +86,22 @@ class ProductoController extends Controller
         }
 
         return DataTables::of($query)
+            // Búsqueda estricta: por las columnas que componen el producto (código,
+            // descripción, atributos) y por su tipo y tela. Sobrescribe el buscador
+            // global porque "nombre_completo" es un accessor, no una columna real.
+            ->filter(function ($query) use ($request) {
+                $keyword = trim((string) $request->input('search.value'));
+                if ($keyword === '') {
+                    return;
+                }
+                $query->where(function ($q) use ($keyword) {
+                    $q->where('producto.codigo', 'like', "{$keyword}%")
+                      ->orWhere('producto.descripcion', 'like', "{$keyword}%")
+                      ->orWhere('producto.atributos_snapshot', 'like', "{$keyword}%")
+                      ->orWhereHas('tipoProducto', fn($t) => $t->where('nombre', 'like', "{$keyword}%"))
+                      ->orWhereHas('tela', fn($t) => $t->where('nombre', 'like', "{$keyword}%"));
+                });
+            }, true)
             ->addColumn('tipo_nombre', function ($p) {
                 return $p->tipoProducto ? $p->tipoProducto->nombre : 'Sin tipo';
             })
@@ -220,21 +236,23 @@ class ProductoController extends Controller
 
     public function reportePdf(Request $request)
     {
-        $query = Producto::with(['tipoProducto', 'tela']);
-        if ($request->filled('tipo_producto')) {
-            $query->where('tipo_producto_id', $request->tipo_producto);
+        // Catálogo = Tipo de Producto. El reporte lista los Tipos (activos o historial).
+        $historial = $request->boolean('historial');
+
+        $query = TipoProducto::withCount(['atributos', 'telas'])->orderBy('nombre');
+        if ($historial) {
+            $query->onlyTrashed();
         }
-        if ($request->filled('estatus')) {
-            $query->where('estado', (int) $request->estatus);
-        }
-        $productos = $query->get();
+        $tipos = $query->get();
+
         $data = [
-            'title'     => 'Reporte de Productos',
+            'title'     => 'Catálogo de Tipos de Producto',
             'date'      => date('m/d/Y'),
-            'productos' => $productos,
+            'tipos'     => $tipos,
+            'historial' => $historial,
         ];
         $pdf = PDF::loadView('admin.productos.reporte_pdf', $data);
-        return $pdf->download('productos-reporte-' . time() . '.pdf');
+        return $pdf->download('catalogo-tipos-' . time() . '.pdf');
     }
 
     /**
@@ -288,22 +306,63 @@ class ProductoController extends Controller
             return $idsActuales == $valoresIds;
         });
 
-        if (!$match) {
+        // Caso compat: la combinación ya existe como Producto concreto (legacy).
+        if ($match) {
             return response()->json([
-                'found' => false,
-                'message' => 'No existe una variante con esa combinación. Crea primero el producto en /productos.',
+                'found'   => true,
+                'dynamic' => false,
+                'producto' => [
+                    'id'           => $match->id,
+                    'codigo'       => $match->codigo,
+                    'precio_base'  => (float) $match->precio_base,
+                    'imagen'       => $match->imagen ? asset($match->imagen) : null,
+                    'tipo_nombre'  => $match->tipoProducto?->nombre,
+                    'tela_nombre'  => $match->tela?->nombre,
+                ],
             ]);
         }
 
+        // Caso dinámico (FEAT-003): no existe Producto → se calcula la variante
+        // al vuelo (SKU + precio + snapshots) sin persistir nada.
+        $tipo = TipoProducto::find($tipoId);
+        $tela = $telaId ? Insumo::find($telaId) : null;
+
+        if ($tipo->requiere_tela && !$tela) {
+            return response()->json([
+                'found'   => false,
+                'message' => 'Este tipo de producto requiere una tela.',
+            ]);
+        }
+
+        // La tela elegida debe estar permitida para el tipo (tipo_producto_tela).
+        if ($tela && !$tipo->telas()->wherePivot('insumo_id', $tela->id)->exists()) {
+            return response()->json([
+                'found'   => false,
+                'message' => 'La tela seleccionada no está habilitada para este tipo de producto.',
+            ]);
+        }
+
+        $snap = $this->productoService->buildSnapshotsDesdeTipo($tipo, $tela, $valoresIds);
+
         return response()->json([
-            'found' => true,
+            'found'    => true,
+            'dynamic'  => true,
             'producto' => [
-                'id'           => $match->id,
-                'codigo'       => $match->codigo,
-                'precio_base'  => (float) $match->precio_base,
-                'imagen'       => $match->imagen ? asset($match->imagen) : null,
-                'tipo_nombre'  => $match->tipoProducto?->nombre,
-                'tela_nombre'  => $match->tela?->nombre,
+                'id'           => null,
+                'codigo'       => $snap['sku'],
+                'precio_base'  => $snap['precio_sugerido'],
+                'imagen'       => null,
+                'tipo_nombre'  => $tipo->nombre,
+                'tela_nombre'  => $tela?->nombre,
+            ],
+            'variante' => [
+                'tipo_producto_id'   => $tipo->id,
+                'insumo_tela_id'     => $tela?->id,
+                'atributo_valor_ids' => $valoresIds,
+                'tela_snapshot'      => $snap['tela_snapshot'],
+                'atributos_snapshot' => $snap['atributos_snapshot'],
+                'sku'                => $snap['sku'],
+                'precio_sugerido'    => $snap['precio_sugerido'],
             ],
         ]);
     }
@@ -337,12 +396,15 @@ class ProductoController extends Controller
         return $request->validate([
             'tipo_producto_id' => 'required|exists:tipo_producto,id',
             'precio_base'      => 'required|numeric|min:0.01',
-            'imagen'           => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'imagen'           => 'nullable|image|mimes:jpeg,png,jpg,gif,webp,bmp,avif|max:10240',
         ], [
             'tipo_producto_id.required' => 'Debe seleccionar un tipo de producto.',
             'tipo_producto_id.exists'   => 'El tipo de producto no existe.',
             'precio_base.required'      => 'El precio base es obligatorio.',
             'precio_base.min'           => 'El precio base debe ser mayor a cero.',
+            'imagen.image'              => 'El archivo debe ser una imagen válida.',
+            'imagen.mimes'              => 'Formato no permitido. Use JPG, PNG, GIF, WEBP, BMP o AVIF.',
+            'imagen.max'                => 'La imagen no puede superar 10MB.',
         ]);
     }
 
@@ -360,6 +422,14 @@ class ProductoController extends Controller
             ], 422));
         }
 
+        // Un tipo que no requiere tela no debe recibir una (espejo de resolverVariante).
+        if (!$tipo->requiere_tela && $request->filled('insumo_tela_id')) {
+            abort(response()->json([
+                'message' => 'Validación falló.',
+                'errors'  => ['insumo_tela_id' => ['Este tipo de producto no usa tela.']],
+            ], 422));
+        }
+
         if ($request->filled('insumo_tela_id')) {
             $tela = Insumo::find($request->insumo_tela_id);
             if (!$tela || $tela->tipo !== 'Tela') {
@@ -370,17 +440,12 @@ class ProductoController extends Controller
             }
         }
 
-        // Atributos: deben pertenecer a atributos asociados al tipo
+        // Atributos: el catálogo guarda el producto BASE (tipo + tela). Las variaciones
+        // (manga, cuello, corte...) se configuran al cotizar (FEAT-003), por lo que aquí
+        // NO se exigen — aunque el tipo las tenga marcadas como obligatorias.
+        // Si por compatibilidad llegan valores, se validan que pertenezcan al tipo.
         $valoresIds = array_map('intval', $request->input('atributo_valor_ids', []));
         if (empty($valoresIds)) {
-            // Si el tipo tiene atributos obligatorios, exigir al menos uno
-            $obligatorios = $tipo->atributos()->wherePivot('es_obligatorio', true)->count();
-            if ($obligatorios > 0) {
-                abort(response()->json([
-                    'message' => 'Validación falló.',
-                    'errors'  => ['atributo_valor_ids' => ['Debes seleccionar los valores de los atributos del tipo.']],
-                ], 422));
-            }
             return;
         }
 

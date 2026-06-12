@@ -202,7 +202,7 @@ class ProductoService
      * en cada renglón de cotización/pedido para preservar el estado del
      * catálogo en el momento exacto del registro.
      *
-     * @return array{tela_snapshot: ?array, atributos_snapshot: ?array}
+     * @return array{tela_snapshot: ?array, atributos_snapshot: ?array, sku: ?string}
      */
     public function buildSnapshotsParaDetalle(Producto $producto): array
     {
@@ -225,6 +225,44 @@ class ProductoService
         return [
             'tela_snapshot'      => $telaSnapshot,
             'atributos_snapshot' => $producto->atributos_snapshot ?: null,
+            'sku'                => $producto->codigo,
+        ];
+    }
+
+    /**
+     * Construye snapshots + SKU + precio sugerido para una variante DINÁMICA
+     * (tipo + tela + atributos) SIN persistir un `Producto`. Núcleo del refactor
+     * FEAT-003: permite cotizar combinaciones que no existen como fila `producto`.
+     *
+     * La forma de `tela_snapshot`/`atributos_snapshot` es idéntica a la de
+     * buildSnapshotsParaDetalle() para que las líneas sean intercambiables.
+     *
+     * @param  array<int> $valoresIds  IDs de atributo_valor seleccionados
+     * @return array{tela_snapshot: ?array, atributos_snapshot: ?array, sku: string, precio_sugerido: float}
+     */
+    public function buildSnapshotsDesdeTipo(TipoProducto $tipo, ?Insumo $tela, array $valoresIds): array
+    {
+        $valoresOrdenados = $this->ordenarValoresParaTipo($tipo, $valoresIds);
+
+        $telaSnapshot = null;
+        if ($tela) {
+            $telaSnapshot = [
+                'id'             => $tela->id,
+                'nombre'         => $tela->nombre,
+                'codigo'         => $tela->codigo,
+                'costo_unitario' => (float) $tela->costo_unitario,
+                'unidad_medida'  => $tela->unidad_medida,
+                'snapshot_at'    => now()->toDateString(),
+            ];
+        }
+
+        $atributosSnapshot = $this->buildAtributosSnapshot($valoresOrdenados);
+
+        return [
+            'tela_snapshot'      => $telaSnapshot,
+            'atributos_snapshot' => $atributosSnapshot ?: null,
+            'sku'                => $this->generarCodigo($tipo, $tela, $valoresOrdenados->all()),
+            'precio_sugerido'    => $this->sugerirPrecio($tipo, $tela),
         ];
     }
 }

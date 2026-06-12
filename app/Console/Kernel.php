@@ -12,8 +12,21 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule): void
     {
-        // Actualizar tasa BCV todos los días a las 8:00 AM (hora Venezuela)
-        $schedule->command('bcv:actualizar')->dailyAt('08:00')->timezone('America/Caracas');
+        // Actualizar tasa BCV: a partir de las 5:00 PM (hora Venezuela), cada hora
+        // hasta las 10:00 PM. El BCV publica en la tarde; reintentar asegura tomar
+        // la tasa del día aunque la API aún no la haya publicado a las 5:00 en punto.
+        // El comando es idempotente (updateOrCreate por fecha), repetir no causa daño.
+        $schedule->command('bcv:actualizar')
+            ->hourlyAt(0)
+            ->between('17:00', '22:00')
+            ->timezone('America/Caracas')
+            ->withoutOverlapping();
+
+        // Marcar cotizaciones vencidas diariamente a medianoche
+        $schedule->call(fn() => \App\Models\Cotizacion::actualizarCotizacionesVencidas())
+            ->dailyAt('00:05')
+            ->timezone('America/Caracas')
+            ->name('cotizaciones:marcar-vencidas');
     }
 
     /**

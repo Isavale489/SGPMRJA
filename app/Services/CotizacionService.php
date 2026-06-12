@@ -7,8 +7,11 @@ use App\Models\DetalleCotizacion;
 use App\Models\DetalleCotizacionBordado;
 use App\Models\DetallePedido;
 use App\Models\DetallePedidoBordado;
+use App\Models\Insumo;
 use App\Models\Pedido;
 use App\Models\Producto;
+use App\Models\TasaCambio;
+use App\Models\TipoProducto;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -30,13 +33,16 @@ class CotizacionService
             $total = $this->calcularTotal($data['productos']);
 
             $cotizacion = Cotizacion::create([
-                'cliente_id' => $data['cliente_id'],
-                'fecha_cotizacion' => $data['fecha_cotizacion'],
-                'fecha_validez' => $data['fecha_validez'] ?? null,
-                'estado' => 'Pendiente',
-                'total' => $total,
-                'notas' => $data['notas'] ?? null,
-                'user_id' => Auth::id(),
+                'cliente_id'          => $data['cliente_id'],
+                'fecha_cotizacion'    => $data['fecha_cotizacion'],
+                'fecha_validez'       => $data['fecha_validez']
+                    ?? \Carbon\Carbon::parse($data['fecha_cotizacion'])->addDays(15)->toDateString(),
+                'estado'              => 'Pendiente',
+                'total'               => $total,
+                'tasa_cambio_valor'   => TasaCambio::obtenerValorUsd(),
+                'notas'               => $data['notas'] ?? null,
+                'condiciones_terminos' => $data['condiciones_terminos'] ?? null,
+                'user_id'             => Auth::id(),
             ]);
 
             $this->crearDetalles($cotizacion, $data['productos']);
@@ -66,12 +72,14 @@ class CotizacionService
             $total = $this->calcularTotal($data['productos']);
 
             $cotizacion->update([
-                'cliente_id' => $data['cliente_id'],
-                'fecha_cotizacion' => $data['fecha_cotizacion'],
-                'fecha_validez' => $data['fecha_validez'] ?? null,
-                'estado' => $data['estado'],
-                'total' => $total,
-                'notas' => $data['notas'] ?? null,
+                'cliente_id'           => $data['cliente_id'],
+                'fecha_cotizacion'     => $data['fecha_cotizacion'],
+                'fecha_validez'        => $data['fecha_validez'] ?? null,
+                'estado'               => $data['estado'],
+                'total'                => $total,
+                'tasa_cambio_valor'    => TasaCambio::obtenerValorUsd(),
+                'notas'                => $data['notas'] ?? null,
+                'condiciones_terminos' => $data['condiciones_terminos'] ?? null,
                 // NO se sobrescribe user_id: queda fijo como el creador original.
             ]);
 
@@ -82,6 +90,28 @@ class CotizacionService
             'cotizacion_id' => $cotizacion->id,
             'total' => $cotizacion->total,
             'user_id' => Auth::id(),
+        ]);
+    }
+
+    /**
+     * Reactivar una cotización vencida, reseteando su validez a 15 días desde hoy.
+     */
+    public function reactivar(Cotizacion $cotizacion): void
+    {
+        if ($cotizacion->estado !== 'Vencida') {
+            throw new \InvalidArgumentException('Solo se pueden reactivar cotizaciones en estado Vencida.');
+        }
+
+        $cotizacion->update([
+            'estado'              => 'Pendiente',
+            'fecha_validez'       => now()->addDays(15)->toDateString(),
+            'tasa_cambio_valor'   => TasaCambio::obtenerValorUsd(),
+        ]);
+
+        Log::info('Cotización reactivada', [
+            'cotizacion_id'    => $cotizacion->id,
+            'nueva_fecha_validez' => $cotizacion->fecha_validez,
+            'user_id'          => Auth::id(),
         ]);
     }
 
@@ -100,6 +130,16 @@ class CotizacionService
             // 2. Validar estado DENTRO del bloqueo (previene race conditions)
             if ($cotizacion->estado !== 'Aprobada') {
                 throw new \InvalidArgumentException('Solo se pueden convertir cotizaciones con estado Aprobada.');
+            }
+
+            // 2.b Vigencia de precios: bloquear si pasaron más de DIAS_VIGENCIA días
+            //     desde la emisión. La marca como 'Vencida' para reflejarlo en el listado.
+            if ($cotizacion->estaVencidaPorVigencia()) {
+                $cotizacion->update(['estado' => 'Vencida']);
+                throw new \InvalidArgumentException(
+                    'La cotización venció: pasaron más de ' . Cotizacion::DIAS_VIGENCIA .
+                    ' días desde su emisión. Reactívala para actualizar los precios antes de convertirla a pedido.'
+                );
             }
 
             // 3. Verificar que no exista ya un pedido asociado (doble protección + índice único en BD)
@@ -130,8 +170,10 @@ class CotizacionService
                 $detallePedido = DetallePedido::create([
                     'pedido_id' => $pedido->id,
                     'producto_id' => $detalle->producto_id,
+                    'tipo_producto_id' => $detalle->tipo_producto_id,
                     'tela_snapshot' => $detalle->tela_snapshot,
                     'atributos_snapshot' => $detalle->atributos_snapshot,
+                    'sku_snapshot' => $detalle->sku_snapshot,
                     'cantidad' => $detalle->cantidad,
                     'precio_unitario' => $detalle->precio_unitario,
                     'descripcion' => $detalle->descripcion,
@@ -177,10 +219,10 @@ class CotizacionService
     {
         $total = 0;
         foreach ($productos as $item) {
-            $producto = Producto::find($item['producto_id']);
+            $base = $this->resolverVarianteLinea($item);
             $precioBase = isset($item['precio_unitario'])
                 ? (float) $item['precio_unitario']
-                : (float) ($producto->precio_base ?? 0);
+                : $base['precio_base'];
 
             $bordados = $this->bordadoPricingService->normalizeBordados($item);
             $precioUnitarioFinal = $this->bordadoPricingService->calcularPrecioUnitarioFinal($precioBase, $bordados);
@@ -191,24 +233,64 @@ class CotizacionService
     }
 
     /**
+     * Resuelve la base de una línea de producto, soportando dos casos (FEAT-003):
+     *   - Legacy: la línea trae `producto_id` → se usa el Producto y sus snapshots.
+     *   - Dinámico: la línea trae `tipo_producto_id` (+ tela + atributos) → se
+     *     calculan snapshots/precio al vuelo sin requerir una fila `producto`.
+     *
+     * @return array{producto_id: ?int, tipo_producto_id: ?int, precio_base: float,
+     *               tela_snapshot: ?array, atributos_snapshot: ?array, sku_snapshot: ?string}
+     */
+    private function resolverVarianteLinea(array $item): array
+    {
+        if (!empty($item['producto_id'])) {
+            $producto = Producto::with('tela')->find($item['producto_id']);
+            $snapshots = $this->productoService->buildSnapshotsParaDetalle($producto);
+
+            return [
+                'producto_id'        => (int) $item['producto_id'],
+                'tipo_producto_id'   => $producto?->tipo_producto_id,
+                'precio_base'        => (float) ($producto->precio_base ?? 0),
+                'tela_snapshot'      => $snapshots['tela_snapshot'],
+                'atributos_snapshot' => $snapshots['atributos_snapshot'],
+                'sku_snapshot'       => $snapshots['sku'],
+            ];
+        }
+
+        $tipo = TipoProducto::find($item['tipo_producto_id']);
+        $tela = !empty($item['insumo_tela_id']) ? Insumo::find($item['insumo_tela_id']) : null;
+        $snap = $this->productoService->buildSnapshotsDesdeTipo($tipo, $tela, $item['atributo_valor_ids'] ?? []);
+
+        return [
+            'producto_id'        => null,
+            'tipo_producto_id'   => $tipo->id,
+            'precio_base'        => (float) $snap['precio_sugerido'],
+            'tela_snapshot'      => $snap['tela_snapshot'],
+            'atributos_snapshot' => $snap['atributos_snapshot'],
+            'sku_snapshot'       => $snap['sku'],
+        ];
+    }
+
+    /**
      * Crear los detalles de cotización (líneas de producto).
      */
     private function crearDetalles(Cotizacion $cotizacion, array $productos): void
     {
         foreach ($productos as $item) {
-            $producto = Producto::with('tela')->find($item['producto_id']);
+            $base = $this->resolverVarianteLinea($item);
             $precioBase = isset($item['precio_unitario'])
                 ? (float) $item['precio_unitario']
-                : (float) ($producto->precio_base ?? 0);
+                : $base['precio_base'];
             $bordados = $this->bordadoPricingService->normalizeBordados($item);
             $precioUnitarioFinal = $this->bordadoPricingService->calcularPrecioUnitarioFinal($precioBase, $bordados);
-            $snapshots = $this->productoService->buildSnapshotsParaDetalle($producto);
 
             $detalle = DetalleCotizacion::create([
                 'cotizacion_id' => $cotizacion->id,
-                'producto_id' => $item['producto_id'],
-                'tela_snapshot' => $snapshots['tela_snapshot'],
-                'atributos_snapshot' => $snapshots['atributos_snapshot'],
+                'producto_id' => $base['producto_id'],
+                'tipo_producto_id' => $base['tipo_producto_id'],
+                'tela_snapshot' => $base['tela_snapshot'],
+                'atributos_snapshot' => $base['atributos_snapshot'],
+                'sku_snapshot' => $base['sku_snapshot'],
                 'cantidad' => $item['cantidad'],
                 'descripcion' => $item['descripcion'] ?? null,
                 'lleva_bordado' => $item['lleva_bordado'] ?? false,

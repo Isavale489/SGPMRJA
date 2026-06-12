@@ -21,7 +21,35 @@ class MovimientoInsumoController extends Controller
         $insumosInventariables = Insumo::where('estado', true)
             ->where('is_inventoriable', true)
             ->get();
-        return view('admin.inventario.movimientos.index', compact('insumos', 'insumosInventariables'));
+        return view('admin.movimiento-insumo.movimientos.index', compact('insumos', 'insumosInventariables'));
+    }
+
+    /**
+     * Exportar el historial de movimientos a PDF, con filtros por tipo, insumo
+     * y rango de fecha del movimiento (created_at).
+     */
+    public function reportePdf(Request $request)
+    {
+        $query = MovimientoInsumo::with(['insumo', 'creadoPor'])
+            ->orderBy('created_at', 'desc');
+
+        if ($request->filled('tipo_movimiento')) {
+            $query->where('tipo_movimiento', $request->tipo_movimiento);
+        }
+        if ($request->filled('insumo_id')) {
+            $query->where('insumo_id', $request->insumo_id);
+        }
+        if ($request->filled('fecha_desde')) {
+            $query->where('created_at', '>=', $request->fecha_desde . ' 00:00:00');
+        }
+        if ($request->filled('fecha_hasta')) {
+            $query->where('created_at', '<=', $request->fecha_hasta . ' 23:59:59');
+        }
+
+        $movimientos = $query->get();
+        $pdf = \PDF::loadView('admin.movimiento-insumo.movimientos.reporte_pdf', compact('movimientos'))
+            ->setPaper('a4', 'landscape');
+        return $pdf->download('movimientos_insumo_' . now()->format('Y-m-d_H-i-s') . '.pdf');
     }
 
     public function getMovimientos(Request $request)
@@ -53,6 +81,32 @@ class MovimientoInsumoController extends Controller
         }
 
         return DataTables::of($movimientos)
+            // Búsqueda "contiene" (LIKE %texto%) sobre TODAS las columnas visibles
+            // del listado: insumo (nombre/código), tipo, cantidad, stock nuevo,
+            // fecha (formato d/m/Y como se muestra) y el motivo. Sobrescribe POR
+            // COMPLETO el buscador global de Yajra (sin pasar el 2º arg / false):
+            // si se pasara `true`, Yajra correría además su búsqueda automática
+            // sobre las columnas `searchable`, incluidas las derivadas
+            // `insumo_nombre`/`fecha` —que no existen en `movimiento_insumo`— y
+            // generaría un SQL inválido (`WHERE movimiento_insumo.insumo_nombre
+            // LIKE ?`) que rompe el listado.
+            ->filter(function ($query) use ($request) {
+                $keyword = trim((string) $request->input('search.value'));
+                if ($keyword === '') {
+                    return;
+                }
+                $query->where(function ($q) use ($keyword) {
+                    $q->where('movimiento_insumo.tipo_movimiento', 'like', "%{$keyword}%")
+                      ->orWhere('movimiento_insumo.cantidad', 'like', "%{$keyword}%")
+                      ->orWhere('movimiento_insumo.stock_nuevo', 'like', "%{$keyword}%")
+                      ->orWhere('movimiento_insumo.motivo', 'like', "%{$keyword}%")
+                      ->orWhereRaw("DATE_FORMAT(movimiento_insumo.created_at, '%d/%m/%Y') like ?", ["%{$keyword}%"])
+                      ->orWhereHas('insumo', function ($i) use ($keyword) {
+                          $i->where('nombre', 'like', "%{$keyword}%")
+                            ->orWhere('codigo', 'like', "%{$keyword}%");
+                      });
+                });
+            })
             ->addColumn('insumo_nombre', function ($movimiento) {
                 return $movimiento->insumo ? $movimiento->insumo->nombre : 'N/A';
             })
@@ -77,7 +131,7 @@ class MovimientoInsumoController extends Controller
     }
 
     /**
-     * Panel de existencias dentro de /inventario/movimientos:
+     * Panel de existencias dentro de /movimiento-insumo:
      * stock mínimo, actual y máximo de cada insumo inventariable,
      * para consultarlo sin salir a /insumos.
      */
@@ -85,7 +139,8 @@ class MovimientoInsumoController extends Controller
     {
         $query = Insumo::where('estado', true)
             ->where('is_inventoriable', true)
-            ->select('id', 'nombre', 'codigo', 'tipo', 'unidad_medida', 'stock_minimo', 'stock_actual', 'stock_maximo');
+            ->select('id', 'nombre', 'codigo', 'tipo', 'unidad_medida', 'stock_minimo', 'stock_actual', 'stock_maximo')
+            ->orderBy('id', 'desc'); // más reciente primero (estándar del sistema)
 
         if ($request->filled('filter_tipo')) {
             $query->where('tipo', $request->input('filter_tipo'));
@@ -125,7 +180,7 @@ class MovimientoInsumoController extends Controller
             if (!$insumo->is_inventoriable) {
                 DB::rollBack();
                 return response()->json([
-                    'error' => 'Este insumo no es inventariable, por lo que no gestiona stock ni admite movimientos de inventario.'
+                    'error' => 'Este insumo no es inventariable, por lo que no gestiona stock ni admite movimientos de insumo.'
                 ], 422);
             }
 
@@ -162,12 +217,89 @@ class MovimientoInsumoController extends Controller
             DB::commit();
 
             return response()->json([
-                'success' => 'Movimiento de inventario registrado exitosamente'
+                'success' => 'Movimiento de insumo registrado exitosamente'
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([
-                'error' => 'Error al registrar el movimiento de inventario: ' . $e->getMessage()
+                'error' => 'Error al registrar el movimiento de insumo: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Movimiento masivo: aplica una misma Entrada/Salida a TODOS los insumos
+     * inventariables activos en una sola transacción. Atajo para hidratar
+     * inventario sin registrar insumo por insumo. En salidas, los insumos
+     * sin stock suficiente se omiten (y se informan), nunca quedan negativos.
+     */
+    public function storeMasivo(Request $request)
+    {
+        $request->validate([
+            'tipo_movimiento' => 'required|in:Entrada,Salida',
+            'cantidad' => 'required|numeric|min:0.01',
+            'motivo' => 'required|string|max:500',
+        ]);
+
+        $tipo     = $request->tipo_movimiento;
+        $cantidad = (float) $request->cantidad;
+
+        try {
+            $resultado = DB::transaction(function () use ($request, $tipo, $cantidad) {
+                // Orden de lock estable (por id) para no interbloquear con
+                // compras u otros movimientos concurrentes sobre el inventario.
+                $insumos = Insumo::where('estado', true)
+                    ->where('is_inventoriable', true)
+                    ->orderBy('id')
+                    ->lockForUpdate()
+                    ->get();
+
+                $aplicados = 0;
+                $omitidos  = [];
+
+                foreach ($insumos as $insumo) {
+                    $stockAnterior = (float) $insumo->stock_actual;
+
+                    if ($tipo === 'Salida' && $stockAnterior < $cantidad) {
+                        $omitidos[] = $insumo->nombre;
+                        continue;
+                    }
+
+                    $stockNuevo = $tipo === 'Entrada'
+                        ? $stockAnterior + $cantidad
+                        : $stockAnterior - $cantidad;
+
+                    MovimientoInsumo::create([
+                        'insumo_id'       => $insumo->id,
+                        'tipo_movimiento' => $tipo,
+                        'cantidad'        => $cantidad,
+                        'stock_anterior'  => $stockAnterior,
+                        'stock_nuevo'     => $stockNuevo,
+                        'motivo'          => $request->motivo,
+                        'created_by'      => Auth::id(),
+                    ]);
+
+                    $insumo->update(['stock_actual' => $stockNuevo]);
+                    $aplicados++;
+                }
+
+                return ['aplicados' => $aplicados, 'omitidos' => $omitidos];
+            });
+
+            if ($resultado['aplicados'] === 0) {
+                return response()->json([
+                    'error' => 'No se aplicó ningún movimiento: ningún insumo tiene stock suficiente para esa salida.'
+                ], 422);
+            }
+
+            return response()->json([
+                'success'   => "Movimiento de {$tipo} registrado en {$resultado['aplicados']} insumo(s).",
+                'aplicados' => $resultado['aplicados'],
+                'omitidos'  => $resultado['omitidos'],
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Error al registrar el movimiento masivo: ' . $e->getMessage()
             ], 500);
         }
     }
@@ -182,7 +314,7 @@ class MovimientoInsumoController extends Controller
     {
         // Insumos ya no tienen relación con proveedor (Santiago, e607f64).
         $insumos = Insumo::where('estado', true)->get();
-        return view('admin.inventario.reporte.index', compact('insumos'));
+        return view('admin.movimiento-insumo.reporte.index', compact('insumos'));
     }
 
     public function historialInsumo($id)
@@ -193,7 +325,7 @@ class MovimientoInsumoController extends Controller
             ->orderBy('created_at', 'desc')
             ->get();
 
-        return view('admin.inventario.movimientos.historial', compact('insumo', 'movimientos'));
+        return view('admin.movimiento-insumo.movimientos.historial', compact('insumo', 'movimientos'));
     }
 
     public function alertasStock()
@@ -205,6 +337,6 @@ class MovimientoInsumoController extends Controller
             ->whereRaw('stock_actual <= stock_minimo')
             ->get();
 
-        return view('admin.inventario.alertas.index', compact('insumosConBajoStock'));
+        return view('admin.movimiento-insumo.alertas.index', compact('insumosConBajoStock'));
     }
 }

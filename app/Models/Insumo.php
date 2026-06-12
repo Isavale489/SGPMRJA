@@ -19,6 +19,7 @@ class Insumo extends Model
         'unidad_medida',
         'is_inventoriable',
         'costo_unitario',
+        'aplica_iva',
         'stock_actual',
         'stock_minimo',
         'stock_maximo',
@@ -28,6 +29,7 @@ class Insumo extends Model
     protected $casts = [
         'estado' => 'boolean',
         'is_inventoriable' => 'boolean',
+        'aplica_iva' => 'boolean',
         'costo_unitario' => 'decimal:2',
         'stock_actual' => 'decimal:2',
         'stock_minimo' => 'decimal:2',
@@ -44,6 +46,11 @@ class Insumo extends Model
     public function movimientos()
     {
         return $this->hasMany(MovimientoInsumo::class);
+    }
+
+    public function compraDetalles()
+    {
+        return $this->hasMany(CompraDetalle::class);
     }
 
     /**

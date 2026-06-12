@@ -35,7 +35,7 @@
                                 </a>
                             @else
                                 <a href="{{ route('departamentos.index', ['historial' => true]) }}" class="btn-historial btn-historial-ver">
-                                    <i class="ri-time-line"></i> Ver Historial
+                                    <i class="ri-archive-line"></i> Inhabilitados
                                 </a>
                                 <button type="button" class="btn btn-success add-btn" id="create-btn">
                                     <i class="ri-add-line align-bottom me-1"></i> Agregar Departamento
@@ -74,7 +74,7 @@
     </div>
 
     {{-- Modal: Formulario Crear / Editar --}}
-    <div class="modal fade atlantico-modal" id="formModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal fade atlantico-modal" id="formModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false" data-guard-id-field="form-depto-id">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header bg-light p-3">
