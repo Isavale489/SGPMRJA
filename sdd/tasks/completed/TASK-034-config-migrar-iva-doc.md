@@ -2,7 +2,7 @@
 
 **Feature**: FEAT-004 — Panel de Configuración del Sistema (base)
 **Spec**: `sdd/specs/panel-configuracion.spec.md`
-**Status**: pending
+**Status**: done
 **Priority**: high
 **Esfuerzo estimado**: M (2-4h)
 **Depends-on**: TASK-030
@@ -126,11 +126,18 @@ window.IVA_TASA = @json((float) config('impuestos.iva', 16));
 
 ## Nota de Completitud
 
-*(Llenar al terminar)*
+**Completado por**: emmanuel (+ Claude Code)
+**Fecha**: 2026-06-12
+**Commits**: `00a5e6e` (rama `feat/panel-configuracion`)
+**Notas**: 3 consumidores migrados (re-verificados por grep antes y después:
+quedó cero `config('impuestos` fuera del propio config file). QA de la garantía
+central en tinker: con override IVA=8, `CompraService::tasaIva()` (vía
+reflection) devuelve 8.0 mientras los `iva_porcentaje` de las compras
+existentes quedan idénticos (16.00); comprobante y controller leen del snapshot
+(verificado por grep de `$compra->iva_porcentaje`). Override de prueba
+eliminado al final (tabla limpia). Doc `docs/conventions/system-config.md`
+creado (arquitectura, reglas de oro, receta de parámetro nuevo, gotchas) e
+indexado en README. QA de flujo compra completa en navegador queda dentro del
+QA general del feature (Emmanuel).
 
-**Completado por**:
-**Fecha**:
-**Commits**:
-**Notas**:
-
-**Desviaciones del spec**:
+**Desviaciones del spec**: ninguna.
