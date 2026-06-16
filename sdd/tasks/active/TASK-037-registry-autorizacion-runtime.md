@@ -2,11 +2,11 @@
 
 **Feature**: FEAT-005 — seguridad-roles-permisos
 **Spec**: `sdd/specs/seguridad-roles-permisos.spec.md`
-**Status**: pending
+**Status**: done
 **Priority**: high
 **Esfuerzo estimado**: L (4-8h)
 **Depends-on**: TASK-035
-**Assigned-to**: unassigned
+**Assigned-to**: claude
 
 ---
 
@@ -183,8 +183,30 @@ NO cachear por usuario (§7).
 
 ## Nota de Completitud
 
-**Completado por**:
-**Fecha**:
-**Commits**:
-**Notas**:
-**Desviaciones del spec**:
+**Completado por**: claude (Opus 4.8)
+**Fecha**: 2026-06-15
+
+**Commits**: ver rama `feat/TASK-037-registry-runtime` (1 commit).
+
+**Archivos**:
+- CREATE `config/modulos.php` — registry de 21 módulos + clave `comunes`. Cada módulo con `nombre`, `acciones` (clave→descripción) y `rutas` (patrón `a|b|c` → acción). Cubre los 230 nombres de ruta autenticados de `web.php` (0 sin mapear, excluyendo el flujo de auth.php que no pasa por el grupo `auth` de web.php:48).
+- MODIFY `app/Support/helpers.php` — añadidos `tienePermiso(string): bool` y el helper interno `esUsuarioAdministrador($user): bool`, sin tocar el `parametro()` de FEAT-004 (ambos guardados con `function_exists`). Caché por rol documentada en el docblock.
+- CREATE `app/Http/Middleware/CheckPermiso.php` — alias `permiso`. Resuelve el permiso por nombre de ruta contra el registry; `comunes` ⇒ pasa; sin mapeo ⇒ `abort(403)` + `Log::warning` (deny-by-default).
+- MODIFY `app/Http/Kernel.php` — alias `'permiso' => CheckPermiso::class` junto a `'role'`.
+- MODIFY `app/Providers/AuthServiceProvider.php` — `Gate::before` con bypass del admin (devuelve `true`/`null`, nunca `false`).
+- `composer.json` NO se tocó: el bloque `autoload.files` con `app/Support/helpers.php` ya existía (FEAT-004).
+
+**Verificaciones** (`php artisan tinker`):
+- Admin: `tienePermiso('compras.procesar')` ⇒ true y `tienePermiso('users.gestionar')` ⇒ true SIN fila en `permiso_rol` (bypass). `Gate::allows(<ability inexistente>)` ⇒ true.
+- Supervisor (rol id 2, 34 filas en `permiso_rol`): `compras.ver` ⇒ true, `cotizaciones.convertir` ⇒ true; solo-admin (`users.gestionar`, `pedidos.gestionar`) ⇒ false; `Gate::allows(<inexistente>)` ⇒ false.
+- Invitado ⇒ false.
+- Paridad: las 34 claves de `PERMISOS_SUPERVISOR` están definidas en el registry y cada una tiene ≥1 ruta mapeada (0 discrepancias).
+- Middleware: SUP `compras.index` PASA, `users.store` 403, `dashboard` PASA, ruta sin mapeo 403 + log; ADMIN ruta mapeada PASA, ruta sin mapeo 403 (deny-by-default aplica antes del bypass, a propósito — fuerza a cerrar huecos en QA).
+- Caché: key `permisos.rol_{id}` se crea al primer read, `Cache::forget` la borra, el siguiente read la re-cachea.
+- `php artisan route:list` corre limpio (255 rutas); alias `permiso` resuelto en el router.
+
+**Notas / Desviaciones del spec**:
+- **Helper extra `esUsuarioAdministrador($user)`**: el spec dice que `tienePermiso`/`Gate::before` se apoyan en `User::isAdmin()`. En la base actual la capa de compatibilidad de `User` (Módulo 2 / `rol()`+accessor `role`) NO está desplegada todavía, por lo que `User::isAdmin()` (que compara `$this->role`, columna ya dropeada) devuelve false para todos. Para que el bypass del Administrador funcione HOY y siga funcionando cuando Módulo 2 aterrice, el bypass se resuelve de forma robusta: primero intenta `User::isAdmin()` y, si no resuelve, cae a comparar el nombre del rol relacionado por `role_id` contra `'Administrador'` (cacheado en `rol_nombre_{id}`). Cuando Módulo 2 arregle `isAdmin()`, este helper lo respeta sin cambios.
+- **`*.check-*` (validadores AJAX de unicidad) NO van en `comunes`**: el task los listaba como candidatos pero dejaba el criterio abierto. Se gobiernan con el permiso `gestionar` de su propio módulo (revelarían existencia de email/documento/código a usuarios sin acceso al módulo). Documentado en `config/modulos.php`.
+- **Acciones solo-admin añadidas a módulos operativos**: `pedidos.gestionar`, `cotizaciones.gestionar`, `proveedores.gestionar` mapean la escritura que hoy vive en el grupo `role:Administrador`. No están en `PERMISOS_SUPERVISOR` (el Supervisor no las recibe), así que la paridad se mantiene; el admin entra por `Gate::before`.
+- **Nota de entorno (no afecta el entregable)**: el worktree se había creado desde una base (`b225dbf`) que NO contenía TASK-035 ni FEAT-004; se rebasó la rama a `3f98bfc` (TASK-035, que sí incluye FEAT-004 y los modelos `Rol`/`PermisoRol`) antes de implementar. `routes/web.php` NO se modificó (es alcance de TASK-038).
