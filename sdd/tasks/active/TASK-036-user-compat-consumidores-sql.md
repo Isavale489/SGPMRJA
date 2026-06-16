@@ -2,11 +2,11 @@
 
 **Feature**: FEAT-005 — seguridad-roles-permisos
 **Spec**: `sdd/specs/seguridad-roles-permisos.spec.md`
-**Status**: pending
+**Status**: done
 **Priority**: high
 **Esfuerzo estimado**: M (2-4h)
 **Depends-on**: TASK-035
-**Assigned-to**: unassigned
+**Assigned-to**: claude
 
 ---
 
@@ -166,8 +166,43 @@ No degradar esta salvaguarda.
 
 ## Nota de Completitud
 
-**Completado por**:
-**Fecha**:
-**Commits**:
+**Completado por**: claude (Opus 4.8)
+**Fecha**: 2026-06-15
+**Commits**: rama `feat/TASK-036-user-compat`
+
 **Notas**:
+
+Implementada la capa de compatibilidad de roles sobre `user.role_id` (FEAT-005, Módulo 2).
+
+`app/Models/User.php`:
+- `$fillable`: `'role'` → `'role_id'`.
+- Nueva relación `rol()` → `belongsTo(Rol::class, 'role_id')`.
+- Nuevo accessor `getRoleAttribute()` → `$this->rol?->nombre` (null-safe: rol soft-deleted devuelve null, no 500).
+- `isAdmin()`, `isSupervisor()`, `hasRole($roles)` reimplementados sobre el accessor `role` con la **misma firma exacta** (no se cambió nombre ni parámetros). Como leen `$this->role`, ahora resuelven vía relación.
+
+`app/Http/Controllers/UserController.php`:
+- `index()`: pasa `$roles` (todos los roles de la tabla `rol`, ordenados por nombre) a la vista.
+- `getUsers()`: query con `->with('rol')` (evita N+1); filtro `where('role', filter_role)` → `where('role_id', filter_role)`; búsqueda `orWhere('role','like',...)` → `orWhereHas('rol', nombre like ...)`. Añadido `addColumn('role', fn => $user->role)` porque `role` ya no es columna real (accessor no auto-serializado por Yajra).
+- `store()`/`update()`: `$user->role = $request->role` → `$user->role_id = $request->role_id`.
+- `destroy()` (protección último admin): conteo migrado a `whereHas('rol', nombre='Administrador')->where('estado',1)`; salvaguarda intacta.
+- `reportePdf()`: `->with('rol')`; filtro `where('role', role)` → `where('role_id', role_id)`.
+
+`app/Http/Requests/StoreUserRequest.php` y `UpdateUserRequest.php`:
+- Regla `'role' => 'required|in:Administrador,Supervisor'` → `'role_id' => 'required|exists:rol,id'`; mensajes `role.*` → `role_id.*`. Se añadió `messages()` a UpdateUserRequest (antes no tenía).
+
+`resources/views/admin/users/index.blade.php`:
+- Select del modal: `<x-forms.select name="role">` con opciones quemadas → `name="role_id"` con `:options="$roles->pluck('nombre','id')"` (el id del campo pasa a `field-role_id`).
+- Filtro de tabla `#filter-role` y filtro de PDF `#pdf-filter-role`: opciones quemadas (Administrador/Supervisor/Usuario) → `@foreach($roles)` con `value="{{ $rol->id }}"` (todos los roles, no solo 2).
+- JS: `#field-role` → `#field-role_id` (validación y edit handler); `data.role` → `data.role_id` al precargar edición; param de PDF `role=` → `role_id=`. La columna DataTable sigue siendo `data: 'role'` (la sirve el `addColumn`), y el render de badges mantiene el fallback para roles no Administrador/Supervisor.
+
+**Verificación**:
+- `grep "where('role'" app/`: solo quedan `Jobs/EnviarNotificacionSolicitud.php` y `Traits/NotificaSecretarias.php` (roles fantasma — TASK-040, fuera de alcance). Las 4 queries de UserController limpias.
+- `php -l` OK en los 4 archivos PHP.
+- tinker: `User::first()->role` = 'Administrador' (accessor), `role_id`=1, `isAdmin()`=true, `isSupervisor()`=false, `hasRole(['Administrador'])`=true; `exists:rol,id` rechaza 999999 y acepta 1; conteo último admin = 4 (whereHas).
+- `view('admin.users.index')` compila correctamente (única excepción al render fuera de HTTP: dependencia de `$errors`, propia del entorno, no del cambio).
+
 **Desviaciones del spec**:
+- Añadido `->with('rol')` en `getUsers()` y `reportePdf()` para evitar N+1 al resolver el accessor `role`; no estaba explícito en el scope pero es consistente con la intención.
+- Añadido `addColumn('role', ...)` en `getUsers()`: necesario porque `role` dejó de ser columna real y Yajra no serializa accessors no declarados en `$appends`. Mantiene `data: 'role'` en el front sin tocar la definición de columnas.
+- Añadido `messages()` a `UpdateUserRequest` (antes carecía de él) para que el mensaje de `role_id` sea coherente con StoreUserRequest.
+- Nota operativa: el worktree fue creado sobre una base que NO incluía TASK-035 (sin `Rol.php` ni `role_id`). Se reseteó la rama de trabajo sobre `feat/seguridad-roles-permisos` (que sí tiene TASK-035 mergeada) antes de re-aplicar los cambios.
