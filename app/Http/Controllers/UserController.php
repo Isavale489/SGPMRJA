@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Models\Rol;
 use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
 use Illuminate\Http\Request;
@@ -13,15 +14,18 @@ class UserController extends Controller
     public function index(Request $request)
     {
         $historial = $request->has('historial');
-        return view('admin.users.index', compact('historial'));
+        // Roles disponibles para los selects (filtro de tabla y de PDF).
+        $roles = Rol::orderBy('nombre')->get(['id', 'nombre']);
+        return view('admin.users.index', compact('historial', 'roles'));
     }
 
     public function getUsers(Request $request)
     {
-        $users = User::query();
+        // Eager-load del rol: el accessor $user->role lo resuelve sin N+1.
+        $users = User::query()->with('rol');
 
         if ($request->filled('filter_role')) {
-            $users->where('role', $request->input('filter_role'));
+            $users->where('role_id', $request->input('filter_role'));
         }
 
         // Activos vs Historial: lo define la página (no un filtro). La principal
@@ -43,11 +47,17 @@ class UserController extends Controller
                 $query->where(function ($q) use ($keyword) {
                     $q->where('name', 'like', "{$keyword}%")
                       ->orWhere('email', 'like', "{$keyword}%")
-                      ->orWhere('role', 'like', "{$keyword}%");
+                      ->orWhereHas('rol', function ($r) use ($keyword) {
+                          $r->where('nombre', 'like', "{$keyword}%");
+                      });
                 });
             }, true)
             ->editColumn('avatar', function ($user) {
                 return $user->avatar ? asset('storage/' . $user->avatar) : null;
+            })
+            // 'role' es accessor (no columna): se expone explícitamente para la tabla.
+            ->addColumn('role', function ($user) {
+                return $user->role;
             })
             ->addColumn('recovery_locked', function ($user) {
                 return $user->isRecoveryLocked() || $user->isRecoveryHardLocked();
@@ -77,7 +87,7 @@ class UserController extends Controller
         $user->name = $request->name;
         $user->email = $request->email;
         $user->password = Hash::make($request->password);
-        $user->role = $request->role;
+        $user->role_id = $request->role_id;
         // estado=1 (activo) por defecto; la baja se hace con Inhabilitar/Habilitar, no en el form
         $user->estado = 1;
 
@@ -110,7 +120,7 @@ class UserController extends Controller
         $user = User::findOrFail($id);
         $user->name = $request->name;
         $user->email = $request->email;
-        $user->role = $request->role;
+        $user->role_id = $request->role_id;
         // 'estado' no se edita aquí; se gobierna con Inhabilitar/Habilitar
 
         // Manejar la subida del avatar
@@ -143,7 +153,9 @@ class UserController extends Controller
         }
 
         if ($user->isAdmin() && $user->estado) {
-            $adminsActivos = User::where('role', 'Administrador')->where('estado', 1)->count();
+            $adminsActivos = User::whereHas('rol', function ($q) {
+                $q->where('nombre', 'Administrador');
+            })->where('estado', 1)->count();
             if ($adminsActivos <= 1) {
                 return response()->json(['message' => 'No puedes inhabilitar al último administrador activo.'], 422);
             }
@@ -190,9 +202,10 @@ class UserController extends Controller
 
     public function reportePdf(Request $request)
     {
-        $query = User::query();
-        if ($request->filled('role')) {
-            $query->where('role', $request->role);
+        // Eager-load del rol para que el accessor $user->role no genere N+1 en la vista.
+        $query = User::query()->with('rol');
+        if ($request->filled('role_id')) {
+            $query->where('role_id', $request->role_id);
         }
         // Estatus: 1 = activos, 0 = inhabilitados; sin valor = todos.
         if ($request->input('estatus') === '1') {

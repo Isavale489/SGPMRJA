@@ -87,9 +87,9 @@
                                         </label>
                                         <select class="form-select navy-filter-select" id="filter-role">
                                             <option value="">Todos los roles</option>
-                                            <option value="Administrador">Administrador</option>
-                                            <option value="Supervisor">Supervisor</option>
-                                            <option value="Usuario">Usuario</option>
+                                            @foreach($roles as $rol)
+                                                <option value="{{ $rol->id }}">{{ $rol->nombre }}</option>
+                                            @endforeach
                                         </select>
                                     </div>
                                 </div>
@@ -260,8 +260,8 @@
 
                             <div class="row mb-3">
                                 <div class="col-md-12">
-                                    <x-forms.select name="role" label="Rol" required
-                                        :options="['Administrador' => 'Administrador', 'Supervisor' => 'Supervisor']"
+                                    <x-forms.select name="role_id" label="Rol" required
+                                        :options="$roles->pluck('nombre', 'id')"
                                         placeholder="Seleccione un rol" />
                                 </div>
                             </div>
@@ -383,9 +383,9 @@
                         <label class="form-label fw-semibold" for="pdf-filter-role">Rol</label>
                         <select class="form-select" id="pdf-filter-role">
                             <option value="">Todos los roles</option>
-                            <option value="Administrador">Administrador</option>
-                            <option value="Supervisor">Supervisor</option>
-                            <option value="Usuario">Usuario</option>
+                            @foreach($roles as $rol)
+                                <option value="{{ $rol->id }}">{{ $rol->nombre }}</option>
+                            @endforeach
                         </select>
                     </div>
                     <div class="mb-0">
@@ -615,7 +615,7 @@
                     marcarValido($email);
                 }
 
-                let $role = $('#field-role');
+                let $role = $('#field-role_id');
                 if (!$role.val()) {
                     marcarInvalido($role, 'El rol es obligatorio.');
                     esValido = false;
@@ -801,7 +801,7 @@
                     $("#id-field").val(data.id);
                     $("#field-name").val(data.name);
                     $("#field-email").val(data.email);
-                    $("#field-role").val(data.role);
+                    $("#field-role_id").val(data.role_id);
 
                     // Mostrar las imágenes existentes si las hay
                     if (data.avatar) {
@@ -1099,7 +1099,7 @@
             var estatus = $('#pdf-filter-estatus').val();
             var fdesde  = $('#pdf-fecha-desde').val();
             var fhasta  = $('#pdf-fecha-hasta').val();
-            if (role)            params.push('role=' + encodeURIComponent(role));
+            if (role)            params.push('role_id=' + encodeURIComponent(role));
             if (estatus !== '')  params.push('estatus=' + encodeURIComponent(estatus));
             if (fdesde)          params.push('fecha_desde=' + encodeURIComponent(fdesde));
             if (fhasta)          params.push('fecha_hasta=' + encodeURIComponent(fhasta));
