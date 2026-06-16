@@ -34,8 +34,12 @@ class Pedido extends Model
 
     /**
      * Días hábiles (lun-vie) de plazo de entrega contados desde la formalización.
+     * Configurable desde el panel /configuracion (default 30).
      */
-    public const DIAS_HABILES_ENTREGA = 30;
+    public static function diasHabilesEntrega(): int
+    {
+        return (int) parametro('pedidos.dias_entrega_habiles');
+    }
 
     /**
      * Relación con el usuario que creó el pedido
@@ -63,11 +67,12 @@ class Pedido extends Model
 
     /**
      * Porcentaje mínimo de abono (sobre el total) requerido para que el pedido
-     * pueda avanzar a producción / generar órdenes. Configurable (default 50%).
+     * pueda avanzar a producción / generar órdenes. Configurable desde el
+     * panel /configuracion (default 50%, puente al .env vía config/pedidos.php).
      */
     public static function porcentajeAbonoMinimo(): float
     {
-        return (float) config('pedidos.abono_minimo_porcentaje', 50);
+        return (float) parametro('pedidos.abono_minimo');
     }
 
     /**
@@ -114,7 +119,7 @@ class Pedido extends Model
      * Marca la formalización si el pedido acaba de alcanzar el abono mínimo y aún
      * no estaba formalizado. Fija la fecha de formalización (hoy). La fecha de
      * entrega elegida en el wizard MANDA: solo se autocalcula (formalización +
-     * DIAS_HABILES_ENTREGA días hábiles, lun-vie) si el pedido no la tiene
+     * diasHabilesEntrega() días hábiles, lun-vie) si el pedido no la tiene
      * (pedidos legacy). Idempotente: una vez formalizado no recalcula.
      *
      * Lo invoca PedidoService::syncPagos() tras recalcular el abono.
@@ -130,7 +135,7 @@ class Pedido extends Model
 
         if (empty($this->fecha_entrega_estimada)) {
             // addWeekdays() avanza solo días hábiles (salta sábado y domingo).
-            $datos['fecha_entrega_estimada'] = $hoy->copy()->addWeekdays(self::DIAS_HABILES_ENTREGA)->toDateString();
+            $datos['fecha_entrega_estimada'] = $hoy->copy()->addWeekdays(self::diasHabilesEntrega())->toDateString();
         }
 
         $this->update($datos);

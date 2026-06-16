@@ -298,11 +298,11 @@ class PedidoService
         }
 
         // Vigencia de precios: no permitir crear pedido desde una cotización vencida
-        // (más de DIAS_VIGENCIA días desde la emisión). Se marca como 'Vencida'.
+        // (más de diasVigencia() días desde la emisión). Se marca como 'Vencida'.
         if ($cotizacion->estaVencidaPorVigencia()) {
             $cotizacion->update(['estado' => 'Vencida']);
             throw new \InvalidArgumentException(
-                'La cotización venció: pasaron más de ' . Cotizacion::DIAS_VIGENCIA .
+                'La cotización venció: pasaron más de ' . Cotizacion::diasVigencia() .
                 ' días desde su emisión. Reactívala para actualizar los precios antes de convertirla a pedido.'
             );
         }

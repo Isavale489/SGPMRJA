@@ -132,6 +132,8 @@ Migraciones relevantes recientes:
 - `2026_06_02_000002_create_compra_detalle_table` — tabla `compra_detalle`
 - `2026_06_03_000001_add_auditoria_anulacion_to_compra_table` — columnas `anulado_por_id` (FK a `user`) y `fecha_anulacion` en `compra`
 - `2026_06_03_000002_add_clonada_to_compra_table` — columna `clonada` (tinyint) en `compra`
+- `2025_12_15_164400_create_tasa_cambio_table` — tabla `tasa_cambio` (tasa BCV USD→VES por fecha; `UNIQUE(moneda, fecha_bcv)`)
+- `2026_06_10_000004_add_moneda_bs_to_compra_tables` — **compras en bolívares**: columna `tasa_cambio` (`decimal(12,4)`) en `compra` + `costo_unitario_bs` (`decimal(14,2)`) en `compra_detalle`; incluye backfill de filas previas con la tasa BCV vigente a la fecha de cada compra
 
 ---
 

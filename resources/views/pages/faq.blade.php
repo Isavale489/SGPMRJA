@@ -27,7 +27,7 @@
                                 <ul>
                                     <li><strong>Formalización del Pedido:</strong> Para iniciar la producción, el cliente debe abonar el {{ $abonoPct }}% del costo total del pedido. Este pago representa la formalización del mismo.</li><br>
 
-                                    <li><strong>Tiempo de Ejecución:</strong> El tiempo estimado para la ejecución del trabajo es de <strong>30 días hábiles</strong>, contados a partir de la confirmación del pago inicial.</li><br>
+                                    <li><strong>Tiempo de Ejecución:</strong> El tiempo estimado para la ejecución del trabajo es de <strong>{{ \App\Models\Pedido::diasHabilesEntrega() }} días hábiles</strong>, contados a partir de la confirmación del pago inicial.</li><br>
 
                                     <li><strong>Saldo Restante:</strong> El {{ 100 - $abonoPct }}% restante deberá ser cancelado al momento de la <strong>entrega del pedido</strong>.</li><br>
 

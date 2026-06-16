@@ -309,9 +309,14 @@ class CompraController extends Controller
         // El orden lo gobierna DataTables (encabezados clicables). El default
         // "más reciente primero" se declara en el front (order: [[0,'desc']]).
         return DataTables::of($query)
-            // Búsqueda estricta: solo por proveedor (nombre/razón social y documento)
-            // y número de factura, tal como indica la barra. Sobrescribe el buscador
-            // global para no romper sobre la columna derivada del proveedor.
+            // Búsqueda "contiene" (LIKE %texto%) sobre TODAS las columnas visibles
+            // del listado: N° de factura, proveedor (nombre/razón social y
+            // documento), fecha (formato d/m/Y como se muestra), total, estado
+            // (texto del badge: recibida/borrador/anulada) e id. Sobrescribe POR
+            // COMPLETO el buscador global de Yajra (sin pasar el 2º arg / false):
+            // si se pasara `true`, Yajra correría además su búsqueda automática
+            // sobre la columna derivada `proveedor_nombre` —que no existe en la
+            // tabla `compra`— y generaría un SQL inválido que rompe el listado.
             ->filter(function ($query) use ($request) {
                 $keyword = trim((string) $request->input('search.value'));
                 if ($keyword === '') {
@@ -319,6 +324,10 @@ class CompraController extends Controller
                 }
                 $query->where(function ($q) use ($keyword) {
                     $q->where('compra.numero_factura', 'like', "%{$keyword}%")
+                      ->orWhere('compra.id', 'like', "%{$keyword}%")
+                      ->orWhere('compra.total', 'like', "%{$keyword}%")
+                      ->orWhere('compra.estado', 'like', "%{$keyword}%")
+                      ->orWhereRaw("DATE_FORMAT(compra.fecha_compra, '%d/%m/%Y') like ?", ["%{$keyword}%"])
                       ->orWhereHas('proveedor.persona', function ($p) use ($keyword) {
                           $p->where('nombre', 'like', "%{$keyword}%")
                             ->orWhere('apellido', 'like', "%{$keyword}%")
@@ -326,7 +335,7 @@ class CompraController extends Controller
                             ->orWhereRaw("CONCAT(tipo_documento, documento_identidad) like ?", ["%{$keyword}%"]);
                       });
                 });
-            }, true)
+            })
             ->addColumn('proveedor_nombre', fn($c) => $c->proveedor?->nombre_completo ?? 'N/A')
             ->addColumn('registrado_por', fn($c) => $c->registradoPor?->name ?? 'Sistema')
             ->addColumn('fecha_formateada', fn($c) => $c->fecha_compra?->format('d/m/Y') ?? '')

@@ -385,6 +385,13 @@
             });
         }
 
+        // Equivalente en Bs a la tasa BCV del día, para acompañar montos en $.
+        // Devuelve '' si no hay tasa disponible — el span queda vacío y no estorba.
+        function bsApprox(usd) {
+            var txt = (typeof window.bsEquivalente === 'function') ? window.bsEquivalente(usd) : null;
+            return txt ? ('≈ ' + txt) : '';
+        }
+
         // Aplicar a campos de dirección al perder foco
         $(document).on('blur', '#direccion-field, #direccion-field-cliente, [name="direccion"]', function () {
             var val = $(this).val();
@@ -2611,6 +2618,7 @@
                 $empty.removeAttr('hidden');
                 $('#view-kpi-lineas').text('0');
                 $('#view-kpi-total').text('$0.00');
+                $('#view-kpi-total-bs').text('');
                 return;
             }
             $empty.attr('hidden', '');
@@ -2632,6 +2640,10 @@
             }, 0);
             $('#view-kpi-lineas').text(groupOrder.length);
             $('#view-kpi-total').text('$' + grandTotal.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ','));
+            // Respeta la tasa guardada en la cotización; si no tiene, usa la BCV del día
+            var viewKpiBs = (typeof window.bsEquivalente === 'function')
+                ? window.bsEquivalente(grandTotal, tasaCotizacion) : null;
+            $('#view-kpi-total-bs').text(viewKpiBs ? ('≈ ' + viewKpiBs) : '');
 
             // Filas de la tabla
             var rows = groupOrder.map(function (key, idx) {
@@ -2861,7 +2873,7 @@
             var id = $(this).data('id');
             Swal.fire({
                 title: '¿Reactivar cotización?',
-                text: 'La cotización volverá a estado Pendiente con 15 días de validez desde hoy.',
+                text: 'La cotización volverá a estado Pendiente con {{ \App\Models\Cotizacion::diasVigencia() }} días de validez desde hoy.',
                 icon: 'question',
                 showCancelButton: true,
                 confirmButtonText: 'Sí, reactivar',
@@ -3918,6 +3930,10 @@
                         : ('Sin tela · ' + nAtrib + ' atributo' + (nAtrib === 1 ? '' : 's'));
                     var precio = parseFloat(t.precio_confeccion || 0);
                     var precioTxt = precio > 0 ? ('desde ' + formatMoney(precio)) : 'Precio al configurar';
+                    var precioBs = precio > 0 ? bsApprox(precio) : '';
+                    if (precioBs) {
+                        precioTxt += '<span class="money-bs-eq">' + precioBs + '</span>';
+                    }
                     return (
                         '<button type="button" class="cat-card cat-card-tipo" data-tipo-id="' + t.id + '">' +
                             '<div class="cat-card-media">' + imgBlock +
@@ -3954,6 +3970,7 @@
                     $list.html('').hide();
                     $empty.show();
                     $('#cat-cart-total').text(formatMoney(0));
+                    $('#cat-cart-total-bs').text(bsApprox(0));
                     $btn.prop('disabled', true);
                     return;
                 }
@@ -3984,6 +4001,7 @@
                     );
                 }).join(''));
                 $('#cat-cart-total').text(formatMoney(total));
+                $('#cat-cart-total-bs').text(bsApprox(total));
                 $btn.prop('disabled', false);
             }
 
@@ -4196,6 +4214,7 @@
                     if (resp.found) {
                         $('#vs-result-codigo').text(resp.producto.codigo);
                         $('#vs-result-precio').text(formatMoney(resp.producto.precio_base));
+                        $('#vs-result-precio-bs').text(bsApprox(resp.producto.precio_base));
                         $('#vs-result-found').show();
                         $('#vs-result-missing').hide();
                         if (resp.dynamic) {
@@ -4620,6 +4639,7 @@
                     ? window.cotBuildVariantLabel(p) : '';
                 $('#cfg-info-tipo').text(variantLabel || ('Tipo: ' + tipoNombre));
                 $('#cfg-info-precio').text(formatMoney(parseFloat(p.precio_base || 0)));
+                $('#cfg-info-precio-bs').text(bsApprox(parseFloat(p.precio_base || 0)));
 
                 // Mostrar botón "Cambiar variante" solo si el tipo tiene >1 producto activo
                 var tipoId = p.tipo_producto ? p.tipo_producto.id : null;
@@ -4723,7 +4743,9 @@
                 $('#cfg-tallas-total').text(qty);
                 $('#cfg-summary-qty').text(qty);
                 $('#cfg-summary-unit').text(formatMoney(unit));
+                $('#cfg-summary-unit-bs').text(bsApprox(unit));
                 $('#cfg-summary-subtotal').text(formatMoney(subtotal));
+                $('#cfg-summary-subtotal-bs').text(bsApprox(subtotal));
 
                 $('#cfg-save-btn').prop('disabled', !(cfgState.colorId && qty > 0 && unit > 0));
             }
@@ -5732,7 +5754,9 @@
                 });
                 $('#cot-kpi-items').text($items.length);
                 $('#cot-kpi-subtotal').text(formatMoney(subtotal));
+                $('#cot-kpi-subtotal-bs').text(bsApprox(subtotal));
                 $('#cot-kpi-total').text(formatMoney(subtotal));
+                $('#cot-kpi-total-bs').text(bsApprox(subtotal));
             }
 
             function refreshResumen() {

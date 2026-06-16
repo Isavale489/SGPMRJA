@@ -25,7 +25,7 @@ class User extends Authenticatable
         'name',
         'persona_id',
         'avatar',
-        'role',
+        'role_id',
         'email',
         'password',
         'estado',
@@ -95,6 +95,25 @@ class User extends Authenticatable
     public function pedidosCreados()
     {
         return $this->hasMany(Pedido::class, 'user_id');
+    }
+
+    /**
+     * Rol administrable asignado al usuario (FEAT-005).
+     */
+    public function rol()
+    {
+        return $this->belongsTo(Rol::class, 'role_id');
+    }
+
+    /**
+     * Accessor de compatibilidad: expone el nombre del rol como `$user->role`,
+     * tal como lo esperaban las vistas/controllers previos al modelo de roles
+     * administrables. Null-safe: si el rol fue soft-deleted o no existe, devuelve
+     * null en vez de romper las vistas (§7 del spec FEAT-005).
+     */
+    public function getRoleAttribute()
+    {
+        return $this->rol?->nombre;
     }
 
     // Métodos para verificar roles

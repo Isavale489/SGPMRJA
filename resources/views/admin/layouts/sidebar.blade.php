@@ -464,7 +464,7 @@
                                                 <li class="nav-item">
                                                     <a href="{{ route('movimiento-insumo.index') }}"
                                                         class="nav-link {{ request()->is('movimiento-insumo*') ? 'active' : '' }}">
-                                                        <i class="ri-archive-2-line me-1"></i> Insumos
+                                                        <i class="ri-archive-2-line me-1"></i> Movimientos de Insumos
                                                     </a>
                                                 </li>
                                                 <li class="nav-item">
