@@ -2,11 +2,11 @@
 
 **Feature**: FEAT-005 — seguridad-roles-permisos
 **Spec**: `sdd/specs/seguridad-roles-permisos.spec.md`
-**Status**: pending
+**Status**: done
 **Priority**: medium
 **Esfuerzo estimado**: S (< 2h)
 **Depends-on**: TASK-036
-**Assigned-to**: unassigned
+**Assigned-to**: claude
 
 ---
 
@@ -126,8 +126,17 @@ grep -rn "SolicitudCredito" app/                 # ¿existe el flujo de solicitu
 
 ## Nota de Completitud
 
-**Completado por**:
-**Fecha**:
-**Commits**:
+**Completado por**: Claude (sesión Santiago)
+**Fecha**: 2026-06-15
+
 **Notas**:
+- Verificación previa (grep): el alias `admin` NO se usa en ninguna ruta; `CheckAdminRole` solo se referenciaba en Kernel; el trait `NotificaSecretarias` no lo usa ningún controller; el job `EnviarNotificacionSolicitud` nunca se despacha; **no existe** modelo/tabla/ruta `SolicitudCredito`. Subsistema "solicitud de crédito" = código muerto total (plantilla heredada, ajena al sistema textil).
+- **Borrados** (criterio "borrar > neutralizar", confirmado código muerto):
+  - `app/Http/Middleware/CheckAdminRole.php` (rol `Administrativa` inexistente)
+  - `app/Traits/NotificaSecretarias.php` (rol `Secretaria` inexistente)
+  - `app/Jobs/EnviarNotificacionSolicitud.php` (rol `Secretaria` inexistente)
+- **Kernel**: quitado el alias `'admin'` (ya sin clase ni uso).
+- Verificado: `grep "where('role'" app/` LIMPIO; `grep 'Administrativa'|'Secretaria'` LIMPIO; `composer dump-autoload` OK (6843 clases); `php artisan route:list` sin errores.
+
 **Desviaciones del spec**:
+- **Hallazgo para limpieza futura (NO tocado, como indica el §scope del task)**: quedan huérfanos `app/Mail/NuevaSolicitudCredito.php` y `app/Notifications/NuevaSolicitudCredito.php`, ambos `use App\Models\SolicitudCredito` (modelo inexistente). Tras borrar el trait/job ya nadie los referencia; son inofensivos (nunca se autoloadean/instancian) pero deberían eliminarse en una task dedicada. No contienen `where('role')` ni roles fantasma → fuera del criterio de aceptación de FEAT-005.
