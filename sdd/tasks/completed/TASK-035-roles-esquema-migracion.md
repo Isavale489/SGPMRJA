@@ -2,11 +2,11 @@
 
 **Feature**: FEAT-005 — seguridad-roles-permisos
 **Spec**: `sdd/specs/seguridad-roles-permisos.spec.md`
-**Status**: pending
+**Status**: done
 **Priority**: high
 **Esfuerzo estimado**: L (4-8h)
 **Depends-on**: none
-**Assigned-to**: unassigned
+**Assigned-to**: claude (Santiago)
 
 ---
 
@@ -150,10 +150,18 @@ hardcodear la lista en la migración (es un snapshot histórico, está bien que 
 
 ## Nota de Completitud
 
-*(Llenar al terminar)*
+**Completado por**: Claude (sesión Santiago)
+**Fecha**: 2026-06-15
+**Commits**: *(en rama `feat/TASK-035-roles-esquema`)*
 
-**Completado por**:
-**Fecha**:
-**Commits**:
 **Notas**:
+- 3 migraciones (`2026_06_15_000001/2/3`) + modelos `App\Models\Rol` y `App\Models\PermisoRol`.
+- `rol` (nombre UNIQUE, descripcion, es_sistema, softDeletes) y `permiso_rol` (rol_id FK, permiso, unique[rol_id,permiso]).
+- Migración 3: siembra Administrador/Supervisor (`es_sistema=1`, idempotente vía `updateOrInsert`), añade `role_id` FK nullable, backfill por nombre, **salvaguarda que aborta si quedan huérfanos** antes de dropear, `role_id` NOT NULL, drop del ENUM `role`, y seed de paridad del Supervisor.
+- **Seed de paridad: 34 permisos** derivados del grupo `role:Administrador,Supervisor` de `web.php`. Definidos como constante `PERMISOS_SUPERVISOR` y documentados como **CONTRATO DE VOCABULARIO** que `config/modulos.php` (TASK-037) debe reflejar. Administrador con 0 filas (bypass por Gate::before).
+- QA verificado: migrate sobre BD existente (5 usuarios backfilleados: 4 Admin + 1 Supervisor), rollback completo (ENUM restaurado como tipo `enum` real + tablas dropeadas), re-migrate, y modelo `Rol` instanciable con `usuarios()`/`permisos()`/`permisosArray()`.
+
 **Desviaciones del spec**:
+- El spec citaba la migración `2025_12_04_134221_update_user_role_enum` como origen del ENUM; **no existe ese archivo** (el ENUM ya venía en el dump/esquema base). No afecta el resultado: la migración detecta y migra el ENUM real (`enum('Administrador','Supervisor') NOT NULL`).
+- `down()` recrea el ENUM con SQL crudo (`ALTER TABLE ... MODIFY ... ENUM(...)`) porque el schema builder de Laravel degrada `enum→varchar` en MariaDB al usar `change()`. Resultado idéntico en MySQL 8 y MariaDB.
+- Se añadió un modelo `PermisoRol` (no exigido explícitamente) para soportar la relación `Rol::permisos()`; el spec dejaba abierta la forma ("hasMany o método que devuelva el array").
