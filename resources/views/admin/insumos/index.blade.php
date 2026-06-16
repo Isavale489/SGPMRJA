@@ -193,146 +193,108 @@
                     <h5 class="modal-title"><i class="ri-archive-line me-2"></i>Detalles del Insumo</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <div class="modal-body p-4">
-                    <div class="row g-4">
+                <div class="modal-body p-0">
 
-                        {{-- Columna izquierda: Información General --}}
-                        <div class="col-lg-6">
-                            <div class="card border-0 shadow-sm h-100">
-                                <div class="card-header border-0" style="background: rgba(30, 60, 114, 0.1);">
-                                    <h6 class="mb-0" style="color: #1e3c72;">
-                                        <i class="ri-information-line me-2"></i>Información General
-                                    </h6>
-                                </div>
-                                <div class="card-body">
-                                    <div class="row g-3">
-                                        <div class="col-12">
-                                            <div class="d-flex align-items-center">
-                                                <div class="rounded-circle me-2 d-flex align-items-center justify-content-center flex-shrink-0"
-                                                    style="width:32px;height:32px;background:rgba(30,60,114,0.1);">
-                                                    <i class="ri-box-3-line" style="color:#1e3c72;"></i>
-                                                </div>
-                                                <div>
-                                                    <small class="text-muted d-block">Nombre</small>
-                                                    <span class="fw-semibold" id="view-nombre">-</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="col-6">
-                                            <div class="d-flex align-items-center">
-                                                <div class="rounded-circle me-2 d-flex align-items-center justify-content-center flex-shrink-0"
-                                                    style="width:32px;height:32px;background:rgba(30,60,114,0.1);">
-                                                    <i class="ri-price-tag-3-line" style="color:#1e3c72;"></i>
-                                                </div>
-                                                <div>
-                                                    <small class="text-muted d-block">Tipo</small>
-                                                    <span id="view-tipo">-</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="col-6">
-                                            <div class="d-flex align-items-center">
-                                                <div class="rounded-circle me-2 d-flex align-items-center justify-content-center flex-shrink-0"
-                                                    style="width:32px;height:32px;background:rgba(30,60,114,0.1);">
-                                                    <i class="ri-scales-line" style="color:#1e3c72;"></i>
-                                                </div>
-                                                <div>
-                                                    <small class="text-muted d-block">Unidad de Medida</small>
-                                                    <span class="fw-semibold" id="view-unidad-medida">-</span>
-                                                </div>
-                                            </div>
-                                        </div>
+                    {{-- Hero strip --}}
+                    <div class="cli-view-hero">
+                        <div class="cli-view-hero-avatar"><i class="ri-archive-2-line"></i></div>
+                        <div class="cli-view-hero-info">
+                            <div class="cli-view-hero-name" id="view-hero-name">—</div>
+                            <div class="cli-view-hero-doc" id="view-hero-doc">—</div>
+                        </div>
+                        <div class="cli-view-hero-badge text-end">
+                            <div><span class="badge rounded-pill" id="view-estatus">—</span></div>
+                            <div class="cli-view-hero-date mt-1"><i class="ri-calendar-line me-1"></i><span id="view-hero-date">—</span></div>
+                        </div>
+                    </div>
+
+                    {{-- Secciones --}}
+                    <div class="px-4 py-3" style="background:#fbfcfe;">
+
+                        {{-- Información General --}}
+                        <div class="cli-view-card">
+                        <div class="cli-view-card-header"><i class="ri-information-line"></i>Información General</div>
+                        <div class="cli-view-card-body">
+                        <div class="row g-3">
+                            {{-- Código SIEMPRE primero --}}
+                            <div class="col-sm-4 col-6">
+                                <div class="d-flex align-items-start">
+                                    <div class="emp-icon-box emp-icon-box--navy rounded-circle me-2 flex-shrink-0 d-flex align-items-center justify-content-center">
+                                        <i class="ri-barcode-line emp-icon--navy"></i>
                                     </div>
+                                    <div><small class="text-muted d-block fs-12">Código</small>
+                                    <span class="fw-semibold fs-13" id="view-codigo">-</span></div>
+                                </div>
+                            </div>
+                            <div class="col-sm-4 col-6">
+                                <div class="d-flex align-items-start">
+                                    <div class="emp-icon-box emp-icon-box--navy rounded-circle me-2 flex-shrink-0 d-flex align-items-center justify-content-center">
+                                        <i class="ri-price-tag-3-line emp-icon--navy"></i>
+                                    </div>
+                                    <div><small class="text-muted d-block fs-12">Tipo</small>
+                                    <span class="fs-13" id="view-tipo">-</span></div>
+                                </div>
+                            </div>
+                            <div class="col-sm-4 col-6">
+                                <div class="d-flex align-items-start">
+                                    <div class="emp-icon-box emp-icon-box--navy rounded-circle me-2 flex-shrink-0 d-flex align-items-center justify-content-center">
+                                        <i class="ri-scales-line emp-icon--navy"></i>
+                                    </div>
+                                    <div><small class="text-muted d-block fs-12">Unidad de Medida</small>
+                                    <span class="fw-semibold fs-13" id="view-unidad-medida">-</span></div>
                                 </div>
                             </div>
                         </div>
+                        </div></div>
 
-                        {{-- Columna derecha: Inventario y Costo --}}
-                        <div class="col-lg-6">
-                            <div class="card border-0 shadow-sm mb-3">
-                                <div class="card-header border-0" style="background: rgba(30, 60, 114, 0.1);">
-                                    <h6 class="mb-0" style="color: #1e3c72;">
-                                        <i class="ri-bar-chart-grouped-line me-2"></i>Inventario y Costo
-                                    </h6>
-                                </div>
-                                <div class="card-body">
-                                    <div class="row g-3">
-                                        <div class="col-4">
-                                            <div class="d-flex align-items-center">
-                                                <div class="rounded-circle me-2 d-flex align-items-center justify-content-center flex-shrink-0"
-                                                    style="width:32px;height:32px;background:rgba(30,60,114,0.1);">
-                                                    <i class="ri-arrow-down-line" style="color:#1e3c72;"></i>
-                                                </div>
-                                                <div>
-                                                    <small class="text-muted d-block">Existencia Mínima</small>
-                                                    <span class="fw-semibold" id="view-stock-minimo">-</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="col-4">
-                                            <div class="d-flex align-items-center">
-                                                <div class="rounded-circle me-2 d-flex align-items-center justify-content-center flex-shrink-0"
-                                                    style="width:32px;height:32px;background:rgba(30,60,114,0.1);">
-                                                    <i class="ri-store-3-line" style="color:#1e3c72;"></i>
-                                                </div>
-                                                <div>
-                                                    <small class="text-muted d-block">Existencia Actual</small>
-                                                    <span class="fw-semibold" id="view-stock-actual">-</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="col-4">
-                                            <div class="d-flex align-items-center">
-                                                <div class="rounded-circle me-2 d-flex align-items-center justify-content-center flex-shrink-0"
-                                                    style="width:32px;height:32px;background:rgba(30,60,114,0.1);">
-                                                    <i class="ri-arrow-up-line" style="color:#1e3c72;"></i>
-                                                </div>
-                                                <div>
-                                                    <small class="text-muted d-block">Existencia Máxima</small>
-                                                    <span class="fw-semibold" id="view-stock-maximo">-</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="col-12">
-                                            <div class="d-flex align-items-center">
-                                                <div class="rounded-circle me-2 d-flex align-items-center justify-content-center flex-shrink-0"
-                                                    style="width:32px;height:32px;background:rgba(30,60,114,0.1);">
-                                                    <i class="ri-money-dollar-circle-line" style="color:#1e3c72;"></i>
-                                                </div>
-                                                <div>
-                                                    <small class="text-muted d-block">Costo Unitario</small>
-                                                    <span class="fw-semibold" id="view-costo-unitario">-</span>
-                                                </div>
-                                            </div>
-                                        </div>
+                        {{-- Inventario y Costo --}}
+                        <div class="cli-view-card">
+                        <div class="cli-view-card-header"><i class="ri-bar-chart-grouped-line"></i>Inventario y Costo</div>
+                        <div class="cli-view-card-body">
+                        <div class="row g-3">
+                            <div class="col-sm-3 col-6">
+                                <div class="d-flex align-items-start">
+                                    <div class="emp-icon-box emp-icon-box--navy rounded-circle me-2 flex-shrink-0 d-flex align-items-center justify-content-center">
+                                        <i class="ri-arrow-down-line emp-icon--navy"></i>
                                     </div>
+                                    <div><small class="text-muted d-block fs-12">Existencia Mínima</small>
+                                    <span class="fw-semibold fs-13" id="view-stock-minimo">-</span></div>
                                 </div>
                             </div>
-
-                            {{-- Tarjeta de Registro --}}
-                            <div class="card border-0 shadow-sm">
-                                <div class="card-body py-2 px-3">
-                                    <div class="d-flex align-items-center justify-content-between gap-2">
-                                        <div class="d-flex align-items-center">
-                                            <div class="rounded-circle me-2 d-flex align-items-center justify-content-center flex-shrink-0"
-                                                style="width:28px;height:28px;background:rgba(30,60,114,0.08);">
-                                                <i class="ri-calendar-line" style="color:#1e3c72;font-size:12px;"></i>
-                                            </div>
-                                            <div>
-                                                <small class="text-muted d-block" style="font-size:11px;">Fecha de Registro</small>
-                                                <small class="fw-semibold" id="view-created">-</small>
-                                            </div>
-                                        </div>
-                                        <span class="badge rounded-pill" id="view-estatus">-</span>
+                            <div class="col-sm-3 col-6">
+                                <div class="d-flex align-items-start">
+                                    <div class="emp-icon-box emp-icon-box--navy rounded-circle me-2 flex-shrink-0 d-flex align-items-center justify-content-center">
+                                        <i class="ri-store-3-line emp-icon--navy"></i>
                                     </div>
+                                    <div><small class="text-muted d-block fs-12">Existencia Actual</small>
+                                    <span class="fw-semibold fs-13" id="view-stock-actual">-</span></div>
+                                </div>
+                            </div>
+                            <div class="col-sm-3 col-6">
+                                <div class="d-flex align-items-start">
+                                    <div class="emp-icon-box emp-icon-box--navy rounded-circle me-2 flex-shrink-0 d-flex align-items-center justify-content-center">
+                                        <i class="ri-arrow-up-line emp-icon--navy"></i>
+                                    </div>
+                                    <div><small class="text-muted d-block fs-12">Existencia Máxima</small>
+                                    <span class="fw-semibold fs-13" id="view-stock-maximo">-</span></div>
+                                </div>
+                            </div>
+                            <div class="col-sm-3 col-6">
+                                <div class="d-flex align-items-start">
+                                    <div class="emp-icon-box emp-icon-box--navy rounded-circle me-2 flex-shrink-0 d-flex align-items-center justify-content-center">
+                                        <i class="ri-money-dollar-circle-line emp-icon--navy"></i>
+                                    </div>
+                                    <div><small class="text-muted d-block fs-12">Costo Unitario</small>
+                                    <span class="fw-semibold fs-13" id="view-costo-unitario">-</span></div>
                                 </div>
                             </div>
                         </div>
+                        </div></div>
 
                     </div>
                 </div>
                 <div class="modal-footer bg-light border-0">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">
                         <i class="ri-close-line me-1"></i>Cerrar
                     </button>
                 </div>
@@ -823,18 +785,20 @@
             $(document).on('click', '.view-item-btn', function () {
                 var id = $(this).data('id');
                 $.get("{{ route('insumos.show', ':id') }}".replace(':id', id), function (data) {
-                    $("#view-nombre").text(data.nombre);
+                    $("#view-hero-name").text(data.nombre || 'N/A');
+                    $("#view-hero-doc").text(data.codigo ? 'Código: ' + data.codigo : (data.tipo || '—'));
+                    $("#view-hero-date").text(formatDate(data.created_at));
+                    $("#view-codigo").text(data.codigo || 'N/A');
                     $("#view-tipo").html(tipoBadges[data.tipo] || '<span class="badge-tipo"><i class="ri-more-line"></i> ' + data.tipo + '</span>');
                     $("#view-unidad-medida").text(data.unidad_medida);
                     $("#view-stock-actual").text(parseFloat(data.stock_actual).toFixed(2));
                     $("#view-stock-minimo").text(parseFloat(data.stock_minimo).toFixed(2));
                     $("#view-stock-maximo").text(parseFloat(data.stock_maximo).toFixed(2));
                     $("#view-costo-unitario").text('$/ ' + parseFloat(data.costo_unitario).toFixed(2));
-                    $("#view-created").text(formatDate(data.created_at));
                     $("#view-estatus")
                         .text(data.trashed ? 'Inhabilitado' : 'Activo')
-                        .removeClass('badge-soft-success badge-soft-danger')
-                        .addClass(data.trashed ? 'badge-soft-danger' : 'badge-soft-success');
+                        .removeClass('bg-success bg-danger')
+                        .addClass(data.trashed ? 'bg-danger' : 'bg-success');
                     $("#viewModal").modal('show');
                 });
             });

@@ -204,212 +204,152 @@
                     <h5 class="modal-title">Detalles del Empleado</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <div class="modal-body p-4">
-                    <div class="row g-4">
-                        <!-- Columna Izquierda: Datos Personales -->
-                        <div class="col-lg-6">
-                            <!-- Card Datos Personales -->
-                            <div class="card border-0 shadow-sm mb-4">
-                                <div class="card-header border-0">
-                                    <h6 class="mb-0">
-                                        <i class="ri-user-line me-2"></i>Datos Personales
-                                    </h6>
-                                </div>
-                                <div class="card-body">
-                                    <div class="row g-3">
-                                        <div class="col-12">
-                                            <div class="d-flex align-items-center">
-                                                <div class="rounded-circle me-2 d-flex align-items-center justify-content-center emp-icon-box emp-icon-box--navy">
-                                                    <i class="ri-user-line emp-icon--navy"></i>
-                                                </div>
-                                                <div>
-                                                    <small class="text-muted d-block">Nombre Completo</small>
-                                                    <span class="fw-semibold" id="view-nombre-completo">-</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="col-6">
-                                            <div class="d-flex align-items-center">
-                                                <div class="rounded-circle me-2 d-flex align-items-center justify-content-center emp-icon-box emp-icon-box--green">
-                                                    <i class="ri-bank-card-line emp-icon--green"></i>
-                                                </div>
-                                                <div>
-                                                    <small class="text-muted d-block">Documento</small>
-                                                    <span class="fw-semibold" id="view-documento">-</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="col-6">
-                                            <div class="d-flex align-items-center">
-                                                <div class="rounded-circle me-2 d-flex align-items-center justify-content-center emp-icon-box emp-icon-box--teal">
-                                                    <i class="ri-user-heart-line emp-icon--teal"></i>
-                                                </div>
-                                                <div>
-                                                    <small class="text-muted d-block">Género</small>
-                                                    <span class="fw-semibold" id="view-genero">-</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="col-6">
-                                            <div class="d-flex align-items-center">
-                                                <div class="rounded-circle me-2 d-flex align-items-center justify-content-center emp-icon-box emp-icon-box--navy">
-                                                    <i class="ri-cake-2-line emp-icon--navy"></i>
-                                                </div>
-                                                <div>
-                                                    <small class="text-muted d-block">Fecha Nacimiento</small>
-                                                    <span class="fw-semibold" id="view-fecha-nacimiento">-</span>
-                                                </div>
-                                            </div>
-                                        </div>
+                <div class="modal-body p-0">
+
+                    {{-- Hero strip --}}
+                    <div class="cli-view-hero">
+                        <div class="cli-view-hero-avatar" id="view-hero-avatar">—</div>
+                        <div class="cli-view-hero-info">
+                            <div class="cli-view-hero-name" id="view-hero-name">—</div>
+                            <div class="cli-view-hero-doc" id="view-hero-doc">—</div>
+                        </div>
+                        <div class="cli-view-hero-badge text-end">
+                            <div><span id="view-estado">—</span></div>
+                            <div class="cli-view-hero-date mt-1"><i class="ri-calendar-line me-1"></i><span id="view-hero-date">—</span></div>
+                        </div>
+                    </div>
+
+                    {{-- Secciones --}}
+                    <div class="px-4 py-3" style="background:#fbfcfe;">
+
+                        {{-- Datos Personales --}}
+                        <div class="cli-view-card">
+                        <div class="cli-view-card-header"><i class="ri-user-line"></i>Datos Personales</div>
+                        <div class="cli-view-card-body">
+                        <div class="row g-3">
+                            {{-- Documento SIEMPRE primero --}}
+                            <div class="col-sm-6">
+                                <div class="d-flex align-items-start">
+                                    <div class="emp-icon-box emp-icon-box--navy rounded-circle me-2 flex-shrink-0 d-flex align-items-center justify-content-center">
+                                        <i class="ri-bank-card-line emp-icon--navy"></i>
                                     </div>
+                                    <div><small class="text-muted d-block fs-12">Documento</small>
+                                    <span class="fw-semibold fs-13" id="view-documento">-</span></div>
                                 </div>
                             </div>
-
-                            <!-- Card Contacto -->
-                            <div class="card border-0 shadow-sm">
-                                <div class="card-header border-0">
-                                    <h6 class="mb-0">
-                                        <i class="ri-contacts-line me-2"></i>Contacto y Ubicación
-                                    </h6>
-                                </div>
-                                <div class="card-body">
-                                    <div class="row g-3">
-                                        <div class="col-6">
-                                            <div class="d-flex align-items-center">
-                                                <div class="rounded-circle me-2 d-flex align-items-center justify-content-center emp-icon-box emp-icon-box--navy">
-                                                    <i class="ri-mail-line emp-icon--navy"></i>
-                                                </div>
-                                                <div>
-                                                    <small class="text-muted d-block">Email</small>
-                                                    <span class="fw-semibold" id="view-email">-</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="col-6">
-                                            <div class="d-flex align-items-center">
-                                                <div class="rounded-circle me-2 d-flex align-items-center justify-content-center emp-icon-box emp-icon-box--teal">
-                                                    <i class="ri-phone-line emp-icon--teal"></i>
-                                                </div>
-                                                <div>
-                                                    <small class="text-muted d-block">Teléfono</small>
-                                                    <span class="fw-semibold" id="view-telefono">-</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="col-12">
-                                            <div class="d-flex align-items-center">
-                                                <div class="rounded-circle me-2 d-flex align-items-center justify-content-center emp-icon-box emp-icon-box--green">
-                                                    <i class="ri-home-4-line emp-icon--green"></i>
-                                                </div>
-                                                <div>
-                                                    <small class="text-muted d-block">Dirección</small>
-                                                    <span class="fw-semibold" id="view-direccion">-</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="col-12">
-                                            <div class="d-flex align-items-center">
-                                                <div class="rounded-circle me-2 d-flex align-items-center justify-content-center emp-icon-box emp-icon-box--navy">
-                                                    <i class="ri-building-line emp-icon--navy"></i>
-                                                </div>
-                                                <div>
-                                                    <small class="text-muted d-block">Municipio</small>
-                                                    <span class="fw-semibold" id="view-ciudad">-</span>
-                                                </div>
-                                            </div>
-                                        </div>
+                            <div class="col-sm-6">
+                                <div class="d-flex align-items-start">
+                                    <div class="emp-icon-box emp-icon-box--navy rounded-circle me-2 flex-shrink-0 d-flex align-items-center justify-content-center">
+                                        <i class="ri-user-line emp-icon--navy"></i>
                                     </div>
+                                    <div><small class="text-muted d-block fs-12">Nombre Completo</small>
+                                    <span class="fw-semibold fs-13" id="view-nombre-completo">-</span></div>
+                                </div>
+                            </div>
+                            <div class="col-sm-6">
+                                <div class="d-flex align-items-start">
+                                    <div class="emp-icon-box emp-icon-box--navy rounded-circle me-2 flex-shrink-0 d-flex align-items-center justify-content-center">
+                                        <i class="ri-user-heart-line emp-icon--navy"></i>
+                                    </div>
+                                    <div><small class="text-muted d-block fs-12">Género</small>
+                                    <span class="fw-semibold fs-13" id="view-genero">-</span></div>
+                                </div>
+                            </div>
+                            <div class="col-sm-6">
+                                <div class="d-flex align-items-start">
+                                    <div class="emp-icon-box emp-icon-box--navy rounded-circle me-2 flex-shrink-0 d-flex align-items-center justify-content-center">
+                                        <i class="ri-cake-2-line emp-icon--navy"></i>
+                                    </div>
+                                    <div><small class="text-muted d-block fs-12">Fecha de Nacimiento</small>
+                                    <span class="fw-semibold fs-13" id="view-fecha-nacimiento">-</span></div>
                                 </div>
                             </div>
                         </div>
+                        </div></div>
 
-                        <!-- Columna Derecha: Datos Laborales -->
-                        <div class="col-lg-6">
-                            <!-- Card Datos Laborales -->
-                            <div class="card border-0 shadow-sm mb-4">
-                                <div class="card-header border-0">
-                                    <h6 class="mb-0">
-                                        <i class="ri-briefcase-line me-2"></i>Datos Laborales
-                                    </h6>
-                                </div>
-                                <div class="card-body">
-                                    <div class="row g-3">
-                                        <div class="col-6">
-                                            <div class="d-flex align-items-center">
-                                                <div class="rounded-circle me-2 d-flex align-items-center justify-content-center emp-icon-box emp-icon-box--green">
-                                                    <i class="ri-hashtag emp-icon--green"></i>
-                                                </div>
-                                                <div>
-                                                    <small class="text-muted d-block">Código</small>
-                                                    <span class="fw-semibold" id="view-codigo">-</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="col-6">
-                                            <div class="d-flex align-items-center">
-                                                <div class="rounded-circle me-2 d-flex align-items-center justify-content-center emp-icon-box emp-icon-box--teal">
-                                                    <i class="ri-user-star-line emp-icon--teal"></i>
-                                                </div>
-                                                <div>
-                                                    <small class="text-muted d-block">Cargo</small>
-                                                    <span class="fw-semibold" id="view-cargo">-</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="col-12">
-                                            <div class="d-flex align-items-center">
-                                                <div class="rounded-circle me-2 d-flex align-items-center justify-content-center emp-icon-box emp-icon-box--navy">
-                                                    <i class="ri-building-2-line emp-icon--navy"></i>
-                                                </div>
-                                                <div>
-                                                    <small class="text-muted d-block">Departamento</small>
-                                                    <span class="fw-semibold" id="view-departamento">-</span>
-                                                </div>
-                                            </div>
-                                        </div>
+                        {{-- Datos Laborales --}}
+                        <div class="cli-view-card">
+                        <div class="cli-view-card-header"><i class="ri-briefcase-line"></i>Datos Laborales</div>
+                        <div class="cli-view-card-body">
+                        <div class="row g-3">
+                            <div class="col-sm-4 col-6">
+                                <div class="d-flex align-items-start">
+                                    <div class="emp-icon-box emp-icon-box--navy rounded-circle me-2 flex-shrink-0 d-flex align-items-center justify-content-center">
+                                        <i class="ri-hashtag emp-icon--navy"></i>
                                     </div>
+                                    <div><small class="text-muted d-block fs-12">Código</small>
+                                    <span class="fw-semibold fs-13" id="view-codigo">-</span></div>
                                 </div>
                             </div>
-
-                            <!-- Card Estado -->
-                            <div class="card border-0 shadow-sm">
-                                <div class="card-header border-0">
-                                    <h6 class="mb-0">
-                                        <i class="ri-information-line me-2"></i>Estado del Empleado
-                                    </h6>
-                                </div>
-                                <div class="card-body">
-                                    <div class="row g-3">
-                                        <div class="col-6">
-                                            <div class="d-flex align-items-center">
-                                                <div class="rounded-circle me-2 d-flex align-items-center justify-content-center emp-icon-box emp-icon-box--green">
-                                                    <i class="ri-calendar-check-line emp-icon--green"></i>
-                                                </div>
-                                                <div>
-                                                    <small class="text-muted d-block">Fecha Ingreso</small>
-                                                    <span class="fw-semibold" id="view-fecha-ingreso">-</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="col-6">
-                                            <div class="d-flex align-items-center">
-                                                <div class="rounded-circle me-2 d-flex align-items-center justify-content-center emp-icon-box emp-icon-box--navy">
-                                                    <i class="ri-checkbox-circle-line emp-icon--navy"></i>
-                                                </div>
-                                                <div>
-                                                    <small class="text-muted d-block">Estado</small>
-                                                    <span class="fw-semibold" id="view-estado">-</span>
-                                                </div>
-                                            </div>
-                                        </div>
+                            <div class="col-sm-4 col-6">
+                                <div class="d-flex align-items-start">
+                                    <div class="emp-icon-box emp-icon-box--navy rounded-circle me-2 flex-shrink-0 d-flex align-items-center justify-content-center">
+                                        <i class="ri-user-star-line emp-icon--navy"></i>
                                     </div>
+                                    <div><small class="text-muted d-block fs-12">Cargo</small>
+                                    <span class="fw-semibold fs-13" id="view-cargo">-</span></div>
+                                </div>
+                            </div>
+                            <div class="col-sm-4 col-6">
+                                <div class="d-flex align-items-start">
+                                    <div class="emp-icon-box emp-icon-box--navy rounded-circle me-2 flex-shrink-0 d-flex align-items-center justify-content-center">
+                                        <i class="ri-building-2-line emp-icon--navy"></i>
+                                    </div>
+                                    <div><small class="text-muted d-block fs-12">Departamento</small>
+                                    <span class="fw-semibold fs-13" id="view-departamento">-</span></div>
                                 </div>
                             </div>
                         </div>
+                        </div></div>
+
+                        {{-- Contacto y Ubicación --}}
+                        <div class="cli-view-card">
+                        <div class="cli-view-card-header"><i class="ri-contacts-line"></i>Contacto y Ubicación</div>
+                        <div class="cli-view-card-body">
+                        <div class="row g-3">
+                            <div class="col-sm-6">
+                                <div class="d-flex align-items-start">
+                                    <div class="emp-icon-box emp-icon-box--navy rounded-circle me-2 flex-shrink-0 d-flex align-items-center justify-content-center">
+                                        <i class="ri-mail-line emp-icon--navy"></i>
+                                    </div>
+                                    <div><small class="text-muted d-block fs-12">Correo electrónico</small>
+                                    <span class="fw-semibold fs-13" id="view-email">-</span></div>
+                                </div>
+                            </div>
+                            <div class="col-sm-6">
+                                <div class="d-flex align-items-start">
+                                    <div class="emp-icon-box emp-icon-box--navy rounded-circle me-2 flex-shrink-0 d-flex align-items-center justify-content-center">
+                                        <i class="ri-phone-line emp-icon--navy"></i>
+                                    </div>
+                                    <div><small class="text-muted d-block fs-12">Teléfono</small>
+                                    <span class="fw-semibold fs-13" id="view-telefono">-</span></div>
+                                </div>
+                            </div>
+                            <div class="col-sm-6">
+                                <div class="d-flex align-items-start">
+                                    <div class="emp-icon-box emp-icon-box--navy rounded-circle me-2 flex-shrink-0 d-flex align-items-center justify-content-center">
+                                        <i class="ri-home-4-line emp-icon--navy"></i>
+                                    </div>
+                                    <div><small class="text-muted d-block fs-12">Dirección</small>
+                                    <span class="fw-semibold fs-13" id="view-direccion">-</span></div>
+                                </div>
+                            </div>
+                            <div class="col-sm-6">
+                                <div class="d-flex align-items-start">
+                                    <div class="emp-icon-box emp-icon-box--navy rounded-circle me-2 flex-shrink-0 d-flex align-items-center justify-content-center">
+                                        <i class="ri-building-line emp-icon--navy"></i>
+                                    </div>
+                                    <div><small class="text-muted d-block fs-12">Municipio</small>
+                                    <span class="fw-semibold fs-13" id="view-ciudad">-</span></div>
+                                </div>
+                            </div>
+                        </div>
+                        </div></div>
+
                     </div>
                 </div>
                 <div class="modal-footer bg-light border-0">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">
                         <i class="ri-close-line me-1"></i>Cerrar
                     </button>
                 </div>
@@ -1241,8 +1181,15 @@
                 var id = $(this).data("id");
                 $.get("{{ route('empleados.show', '') }}/" + id, function (data) {
                     $("#viewModal").modal("show");
-                    $("#view-nombre-completo").text(data.persona.nombre + ' ' + data.persona.apellido);
-                    $("#view-documento").text(data.persona.tipo_documento + data.persona.documento_identidad);
+                    var nombreCompleto = (data.persona.nombre || '') + ' ' + (data.persona.apellido || '');
+                    var documento = data.persona.tipo_documento + data.persona.documento_identidad;
+                    var initials = (data.persona.nombre ? data.persona.nombre.charAt(0) : '') + (data.persona.apellido ? data.persona.apellido.charAt(0) : '');
+                    $("#view-hero-avatar").text(initials.toUpperCase() || '?');
+                    $("#view-hero-name").text(nombreCompleto.trim() || 'N/A');
+                    $("#view-hero-doc").text(documento);
+                    $("#view-hero-date").text(formatDate(data.fecha_ingreso));
+                    $("#view-nombre-completo").text(nombreCompleto.trim());
+                    $("#view-documento").text(documento);
                     $("#view-email").text(data.persona.email || 'N/A');
                     $("#view-telefono").text(data.telefono || 'N/A');
                     $("#view-direccion").text(data.direccion || 'N/A');
@@ -1252,8 +1199,7 @@
                     $("#view-codigo").text(data.codigo_empleado);
                     $("#view-cargo").text(data.cargo);
                     $("#view-departamento").text(data.departamento);
-                    $("#view-fecha-ingreso").text(formatDate(data.fecha_ingreso));
-                    $("#view-estado").html(data.trashed ? '<span class="badge bg-danger">Inhabilitado</span>' : '<span class="badge bg-success">Activo</span>');
+                    $("#view-estado").html(data.trashed ? '<span class="badge rounded-pill bg-danger">Inhabilitado</span>' : '<span class="badge rounded-pill bg-success">Activo</span>');
                 });
             });
 

@@ -119,97 +119,63 @@
     <!-- Modal para ver detalles del Usuario -->
     <div class="modal fade atlantico-modal" id="viewModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static"
         data-bs-keyboard="false">
-        <div class="modal-dialog modal-dialog-centered modal-md">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content">
                 <div class="modal-header bg-light p-3">
                     <h5 class="modal-title">Detalles del Usuario</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <div class="modal-body p-4">
-                    <!-- Avatar centrado -->
-                    <div class="text-center mb-4" id="user-avatar-container">
-                        <div class="rounded-circle mx-auto d-flex align-items-center justify-content-center"
-                            style="width: 100px; height: 100px; background: linear-gradient(135deg, #1e3c72 0%, #00d9a5 100%); padding: 3px;">
-                            <img id="user-avatar" src="/assets/images/users/user-dummy-img.jpg" alt="Avatar del usuario"
-                                class="rounded-circle bg-white" style="width: 94px; height: 94px; object-fit: cover;">
+                <div class="modal-body p-0">
+
+                    {{-- Hero strip --}}
+                    <div class="cli-view-hero">
+                        <div class="cli-view-hero-avatar">
+                            <img id="user-avatar" src="/assets/images/users/user-dummy-img.jpg" alt="Avatar"
+                                style="width:100%;height:100%;object-fit:cover;">
+                        </div>
+                        <div class="cli-view-hero-info">
+                            <div class="cli-view-hero-name" id="view-name">—</div>
+                            <div class="cli-view-hero-doc" id="view-email">—</div>
+                        </div>
+                        <div class="cli-view-hero-badge text-end">
+                            <div><span class="badge rounded-pill" id="view-estado">—</span></div>
+                            <div class="cli-view-hero-date mt-1"><i class="ri-calendar-line me-1"></i><span id="view-created">—</span></div>
                         </div>
                     </div>
 
-                    <!-- Card Información del Usuario -->
-                    <div class="card border-0 shadow-sm">
-                        <div class="card-header border-0" style="background: rgba(30, 60, 114, 0.1);">
-                            <h6 class="mb-0" style="color: #1e3c72;">
-                                <i class="ri-information-line me-2"></i>Información del Usuario
-                            </h6>
-                        </div>
-                        <div class="card-body">
-                            <div class="row g-3">
-                                <div class="col-12">
-                                    <div class="d-flex align-items-center">
-                                        <div class="rounded-circle me-2 d-flex align-items-center justify-content-center"
-                                            style="width: 32px; height: 32px; background: rgba(30, 60, 114, 0.1);">
-                                            <i class="ri-user-line" style="color: #1e3c72;"></i>
-                                        </div>
-                                        <div>
-                                            <small class="text-muted d-block">Nombre</small>
-                                            <span class="fw-semibold" id="view-name">-</span>
-                                        </div>
+                    {{-- Secciones --}}
+                    <div class="px-4 py-3" style="background:#fbfcfe;">
+
+                        {{-- Acceso al Sistema --}}
+                        <div class="cli-view-card">
+                        <div class="cli-view-card-header"><i class="ri-shield-user-line"></i>Acceso al Sistema</div>
+                        <div class="cli-view-card-body">
+                        <div class="row g-3">
+                            <div class="col-sm-6">
+                                <div class="d-flex align-items-start">
+                                    <div class="emp-icon-box emp-icon-box--navy rounded-circle me-2 flex-shrink-0 d-flex align-items-center justify-content-center">
+                                        <i class="ri-shield-user-line emp-icon--navy"></i>
                                     </div>
+                                    <div><small class="text-muted d-block fs-12">Rol</small>
+                                    <span class="fw-semibold fs-13" id="view-role">-</span></div>
                                 </div>
-                                <div class="col-12">
-                                    <div class="d-flex align-items-center">
-                                        <div class="rounded-circle me-2 d-flex align-items-center justify-content-center"
-                                            style="width: 32px; height: 32px; background: rgba(30, 60, 114, 0.1);">
-                                            <i class="ri-mail-line" style="color: #1e3c72;"></i>
-                                        </div>
-                                        <div>
-                                            <small class="text-muted d-block">Email</small>
-                                            <span class="fw-semibold" id="view-email">-</span>
-                                        </div>
+                            </div>
+                            <div class="col-sm-6">
+                                <div class="d-flex align-items-start">
+                                    <div class="emp-icon-box emp-icon-box--navy rounded-circle me-2 flex-shrink-0 d-flex align-items-center justify-content-center">
+                                        <i class="ri-mail-line emp-icon--navy"></i>
                                     </div>
-                                </div>
-                                <div class="col-6">
-                                    <div class="d-flex align-items-center">
-                                        <div class="rounded-circle me-2 d-flex align-items-center justify-content-center"
-                                            style="width: 32px; height: 32px; background: rgba(30, 60, 114, 0.1);">
-                                            <i class="ri-shield-user-line" style="color: #1e3c72;"></i>
-                                        </div>
-                                        <div>
-                                            <small class="text-muted d-block">Rol</small>
-                                            <span class="fw-semibold" id="view-role">-</span>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-6">
-                                    <div class="d-flex align-items-center">
-                                        <div class="rounded-circle me-2 d-flex align-items-center justify-content-center"
-                                            style="width: 32px; height: 32px; background: rgba(30, 60, 114, 0.1);">
-                                            <i class="ri-calendar-line" style="color: #1e3c72;"></i>
-                                        </div>
-                                        <div>
-                                            <small class="text-muted d-block">Fecha Registro</small>
-                                            <span class="fw-semibold" id="view-created">-</span>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-12">
-                                    <div class="d-flex align-items-center">
-                                        <div class="rounded-circle me-2 d-flex align-items-center justify-content-center"
-                                            style="width: 32px; height: 32px; background: rgba(30, 60, 114, 0.1);">
-                                            <i class="ri-shield-check-line" style="color: #1e3c72;"></i>
-                                        </div>
-                                        <div>
-                                            <small class="text-muted d-block">Estado (acceso al sistema)</small>
-                                            <span class="badge rounded-pill" id="view-estado">-</span>
-                                        </div>
-                                    </div>
+                                    <div><small class="text-muted d-block fs-12">Correo electrónico</small>
+                                    <span class="fw-semibold fs-13" id="view-email-card">-</span></div>
                                 </div>
                             </div>
                         </div>
+                        </div></div>
+
                     </div>
                 </div>
                 <div class="modal-footer bg-light border-0">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">
                         <i class="ri-close-line me-1"></i>Cerrar
                     </button>
                 </div>
@@ -774,6 +740,7 @@
                     $("#viewModal").modal("show");
                     $("#view-name").text(data.name);
                     $("#view-email").text(data.email);
+                    $("#view-email-card").text(data.email);
                     $("#view-role").text(data.role || 'Sin rol');
                     $("#view-created").text(data.created_at);
                     var _activo = (data.estado == 1 || data.estado === true);
