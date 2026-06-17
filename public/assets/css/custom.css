@@ -16,12 +16,19 @@ html > body > .swal2-container,
   align-items: center !important;
   justify-content: center !important;
   pointer-events: all !important;
-  background-color: rgba(0, 0, 0, 0.4) !important;
-  /* Backdrop semi-transparente */
+  /* El fondo oscuro NO va aquí: pintaría todo contenedor (incl. toast) a
+     pantalla completa y causa un flash negro de 1 frame antes de que se
+     aplique .swal2-toast-shown. El backdrop real se define abajo, atado a
+     .swal2-backdrop-show (solo modales). */
 }
 
-/* Backdrop del modal de SweetAlert */
-.swal2-backdrop-show {
+/* Backdrop del modal de SweetAlert.
+   IMPORTANTE: se excluye cualquier contenedor que tenga un popup .swal2-toast
+   adentro. .swal2-backdrop-show es una clase de ANIMACIÓN de entrada que el
+   contenedor recibe en un 2º frame (vía rAF), también en los toasts → sin esta
+   exclusión, el toast parpadea en negro a pantalla completa. El popup .swal2-toast
+   existe desde el 1er frame del render, así que :has() lo detecta sin huecos. */
+.swal2-backdrop-show:not(:has(.swal2-toast)) {
   background-color: rgba(0, 0, 0, 0.4) !important;
 }
 
@@ -69,8 +76,11 @@ body {
   z-index: auto !important;
 }
 
-html.swal2-shown,
-body.swal2-shown {
+/* Bloquear scroll SOLO para modales. Los toasts también reciben
+   .swal2-shown, y ocultar el overflow les quita la barra de scroll →
+   la página se corre ~15px (el "salto de la vista"). */
+html.swal2-shown:not(.swal2-toast-shown),
+body.swal2-shown:not(.swal2-toast-shown) {
   overflow: hidden !important;
   position: static !important;
   z-index: auto !important;
@@ -82,11 +92,18 @@ body.swal2-shown {
   user-select: none !important;
 }
 
-/* Forzar backdrop semi-transparente con blur — solo modales, nunca toasts */
-body:not(.swal2-toast-shown) > div.swal2-container,
-body:not(.swal2-toast-shown) div.swal2-container.swal2-backdrop-show {
+/* Backdrop con blur — SOLO modales (contenedor sin .swal2-toast adentro) */
+div.swal2-container.swal2-backdrop-show:not(:has(.swal2-toast)) {
   background: rgba(0, 0, 0, 0.5) !important;
   backdrop-filter: blur(2px) !important;
+}
+
+/* Toast: contenedor SIEMPRE transparente y sin blur, desde el 1er frame,
+   sin depender de clases del <body> (que llegan con desfase). */
+div.swal2-container:has(.swal2-toast) {
+  background: transparent !important;
+  background-color: transparent !important;
+  backdrop-filter: none !important;
 }
 
 /* Asegurar que el popup tenga fondo blanco */
@@ -5224,9 +5241,13 @@ header#page-topbar,
 .emp-icon-box--teal  { background: rgba(0, 217, 165, 0.1); }
 .emp-icon-box--green { background: rgba(46, 204, 113, 0.1); }
 .emp-icon-box--navy  { background: rgba(30, 60, 114, 0.1); }
+.emp-icon-box--blue  { background: rgba(42, 82, 152, 0.12); }
+.emp-icon-box--slate { background: rgba(100, 116, 139, 0.14); }
 .emp-icon--teal  { color: #00d9a5; }
 .emp-icon--green { color: #2ecc71; }
 .emp-icon--navy  { color: #1e3c72; }
+.emp-icon--blue  { color: #2a5298; }
+.emp-icon--slate { color: #64748b; }
 
 /* Persona lookup card en showModal de Empleados */
 .emp-persona-card { border: 1px solid rgba(8, 145, 178, 0.35); background: rgba(8, 145, 178, 0.06); padding: 10px 12px; }
@@ -6072,7 +6093,9 @@ header#page-topbar,
 [data-bs-theme="dark"] .swal2-footer             { border-top-color: #2d3139 !important; color: #8b92a7 !important; }
 [data-bs-theme="dark"] .swal2-validation-message { background-color: #1f2229 !important; color: #e74c3c !important; }
 [data-bs-theme="dark"] .swal2-timer-progress-bar { background: rgba(96, 165, 250, 0.5) !important; }
-[data-bs-theme="dark"] .swal2-container          { background: rgba(0, 0, 0, 0.6) !important; }
+/* Backdrop oscuro en dark mode SOLO para modales, nunca toasts (ver nota en línea ~31) */
+[data-bs-theme="dark"] .swal2-container:not(:has(.swal2-toast)) { background: rgba(0, 0, 0, 0.6) !important; }
+[data-bs-theme="dark"] .swal2-container:has(.swal2-toast)       { background: transparent !important; }
 
 /* ── Dark mode — botones secundarios ── */
 [data-bs-theme="dark"] .swal2-actions .btn-secondary,
@@ -8616,21 +8639,34 @@ header#page-topbar,
 
 /* ── GESTIÓN GENERAL — View modal: Hero strip + Icon grid ─────────────── */
 .cli-view-hero {
+    position: relative;
     display: flex;
     align-items: center;
     gap: 1.1rem;
-    padding: 1.1rem 1.5rem;
-    background: #fff;
-    border-top: 3px solid #1e3c72;
-    border-bottom: 1px solid #eef1f6;
+    padding: 1.25rem 1.5rem;
+    background:
+        radial-gradient(120% 140% at 0% 0%, rgba(42, 82, 152, 0.10) 0%, rgba(42, 82, 152, 0) 55%),
+        linear-gradient(135deg, #1c365f 0%, #244a82 100%);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    overflow: hidden;
 }
+/* Trama geométrica muy tenue ligada a la marca */
+.cli-view-hero::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1px);
+    background-size: 16px 16px;
+    pointer-events: none;
+}
+.cli-view-hero > * { position: relative; z-index: 1; }
 .cli-view-hero-avatar {
-    width: 52px;
-    height: 52px;
-    border-radius: 10px;
-    background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+    width: 56px;
+    height: 56px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #2a5298 0%, #3a6dbf 100%);
     color: #fff;
-    font-size: 1rem;
+    font-size: 1.05rem;
     font-weight: 700;
     letter-spacing: 1px;
     display: flex;
@@ -8638,43 +8674,87 @@ header#page-topbar,
     justify-content: center;
     flex-shrink: 0;
     overflow: hidden;
-    box-shadow: 0 3px 8px rgba(30, 60, 114, 0.22);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.28), 0 0 0 4px rgba(255, 255, 255, 0.10);
 }
 .cli-view-hero-avatar i { font-size: 1.4rem; line-height: 1; }
 .cli-view-hero-info { flex: 1; min-width: 0; }
 .cli-view-hero-name {
-    font-size: 0.97rem;
+    font-size: 1.02rem;
     font-weight: 700;
-    color: #1a2c50;
+    color: #fff;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     line-height: 1.3;
 }
 .cli-view-hero-doc {
-    font-size: 0.75rem;
-    color: #8898aa;
+    font-size: 0.76rem;
+    color: rgba(255, 255, 255, 0.62);
     margin-top: 2px;
+    letter-spacing: 0.02em;
 }
-.cli-view-hero-badge { flex-shrink: 0; }
+.cli-view-hero-badge {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.4rem;
+}
+/* Estatus como chip glass con halo según estado */
+.cli-view-hero-badge .badge {
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    padding: 0.34em 0.85em;
+    border: 1px solid transparent;
+    backdrop-filter: blur(4px);
+}
+.cli-view-hero-badge .badge.bg-success {
+    background: rgba(34, 197, 94, 0.20) !important;
+    color: #b6f3cf !important;
+    border-color: rgba(134, 239, 172, 0.45);
+    box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.12);
+}
+.cli-view-hero-badge .badge.bg-danger {
+    background: rgba(239, 68, 68, 0.20) !important;
+    color: #fecaca !important;
+    border-color: rgba(252, 165, 165, 0.45);
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.12);
+}
+/* Fecha como chip translúcido legible */
 .cli-view-hero-date {
+    display: inline-flex;
+    align-items: center;
     font-size: 0.7rem;
-    color: #8898aa;
+    color: rgba(255, 255, 255, 0.85);
+    background: rgba(255, 255, 255, 0.10);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    padding: 0.22rem 0.6rem;
+    border-radius: 999px;
 }
-/* Card por sección */
+.cli-view-hero-date i { color: rgba(255, 255, 255, 0.6); }
+
+/* Card por sección — profundidad en capas + flotación al hover */
 .cli-view-card {
+    position: relative;
     border: 1px solid #e7ebf2;
+    border-left: 4px solid #1e3c72;          /* acento por defecto: navy */
     border-radius: 12px;
     background: #fff;
     overflow: hidden;
-    box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+    box-shadow: 0 1px 2px rgba(16, 24, 40, 0.05), 0 6px 18px -8px rgba(16, 24, 40, 0.10);
+    transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+.cli-view-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 2px 4px rgba(16, 24, 40, 0.06), 0 14px 32px -10px rgba(16, 24, 40, 0.20);
 }
 .cli-view-card + .cli-view-card { margin-top: 1rem; }
 .cli-view-card-header {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    padding: 0.6rem 1rem;
+    padding: 0.65rem 1rem;
     background: #f8fafc;
     border-bottom: 1px solid #eef1f6;
     font-size: 0.7rem;
@@ -8688,3 +8768,109 @@ header#page-topbar,
     color: #2a5298;
 }
 .cli-view-card-body { padding: 1rem; }
+
+/* Acentos por sección — paleta monocromática navy, POR POSICIÓN.
+   Global para los 5 módulos del estándar "Ver" (clientes, empleados, insumos,
+   proveedores, users): 1ª sección = navy (default), 2ª = azul medio, 3ª = slate.
+   Vía :nth-child para no requerir clases modificadoras en el HTML de cada módulo. */
+.cli-view-sections > .cli-view-card:nth-child(2) { border-left-color: #2a5298; }
+.cli-view-sections > .cli-view-card:nth-child(2) .cli-view-card-header { color: #2a5298; background: rgba(42, 82, 152, 0.06); }
+.cli-view-sections > .cli-view-card:nth-child(2) .cli-view-card-header i { color: #2a5298; }
+.cli-view-sections > .cli-view-card:nth-child(2) .emp-icon-box { background: rgba(42, 82, 152, 0.12) !important; }
+.cli-view-sections > .cli-view-card:nth-child(2) [class*="emp-icon--"] { color: #2a5298 !important; }
+.cli-view-sections > .cli-view-card:nth-child(3) { border-left-color: #64748b; }
+.cli-view-sections > .cli-view-card:nth-child(3) .cli-view-card-header { color: #475569; background: rgba(100, 116, 139, 0.07); }
+.cli-view-sections > .cli-view-card:nth-child(3) .cli-view-card-header i { color: #64748b; }
+.cli-view-sections > .cli-view-card:nth-child(3) .emp-icon-box { background: rgba(100, 116, 139, 0.14) !important; }
+.cli-view-sections > .cli-view-card:nth-child(3) [class*="emp-icon--"] { color: #64748b !important; }
+
+/* Dark mode: los acentos se aclaran para contraste sobre superficie oscura */
+[data-bs-theme="dark"] .cli-view-sections > .cli-view-card:nth-child(2) { border-left-color: #9db4e6; }
+[data-bs-theme="dark"] .cli-view-sections > .cli-view-card:nth-child(2) .cli-view-card-header,
+[data-bs-theme="dark"] .cli-view-sections > .cli-view-card:nth-child(2) .cli-view-card-header i,
+[data-bs-theme="dark"] .cli-view-sections > .cli-view-card:nth-child(2) [class*="emp-icon--"] { color: #9db4e6 !important; }
+[data-bs-theme="dark"] .cli-view-sections > .cli-view-card:nth-child(2) .emp-icon-box { background: rgba(157, 180, 230, 0.14) !important; }
+[data-bs-theme="dark"] .cli-view-sections > .cli-view-card:nth-child(3) { border-left-color: #b6c2d1; }
+[data-bs-theme="dark"] .cli-view-sections > .cli-view-card:nth-child(3) .cli-view-card-header,
+[data-bs-theme="dark"] .cli-view-sections > .cli-view-card:nth-child(3) .cli-view-card-header i,
+[data-bs-theme="dark"] .cli-view-sections > .cli-view-card:nth-child(3) [class*="emp-icon--"] { color: #b6c2d1 !important; }
+[data-bs-theme="dark"] .cli-view-sections > .cli-view-card:nth-child(3) .emp-icon-box { background: rgba(182, 194, 209, 0.14) !important; }
+
+/* Jerarquía tipográfica label → dato dentro de las cards */
+.cli-view-card .text-muted.fs-12 {
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-size: 0.66rem !important;
+    font-weight: 600;
+    color: #94a3b8 !important;
+}
+.cli-view-card .fs-13 {
+    font-size: 0.9rem !important;
+    color: #1a2c50;
+    line-height: 1.35;
+}
+
+/* ── Dark mode del modal Ver (Clientes) ──────────────────────────
+   El hero (gradiente navy) y header/footer ya funcionan en dark;
+   aquí se adaptan el wrapper de secciones, las cards y la tipografía
+   usando las variables de tema --vz-* (igual que .view-plate).      */
+.cli-view-sections { background: #fbfcfe; }
+[data-bs-theme="dark"] .cli-view-sections { background: var(--vz-body-bg); }
+
+[data-bs-theme="dark"] .cli-view-card {
+    background: var(--vz-card-bg);
+    border-color: var(--vz-border-color);
+}
+[data-bs-theme="dark"] .cli-view-card-header {
+    background: rgba(255, 255, 255, 0.03);
+    border-bottom-color: var(--vz-border-color);
+}
+[data-bs-theme="dark"] .cli-view-card .fs-13 { color: var(--vz-body-color); }
+[data-bs-theme="dark"] .cli-view-card .text-muted.fs-12 { color: #8a9ab0 !important; }
+
+/* Acentos: se aclaran para mantener contraste sobre superficie oscura */
+[data-bs-theme="dark"] .cli-view-card            { border-left-color: #6f8fd6; }
+[data-bs-theme="dark"] .cli-view-card-header,
+[data-bs-theme="dark"] .cli-view-card-header i   { color: #9db4e6; }
+[data-bs-theme="dark"] .cli-view-card--blue      { border-left-color: #6f8fd6; }
+[data-bs-theme="dark"] .cli-view-card--blue  .cli-view-card-header,
+[data-bs-theme="dark"] .cli-view-card--blue  .cli-view-card-header i { color: #9db4e6; }
+[data-bs-theme="dark"] .cli-view-card--slate     { border-left-color: #94a3b8; }
+[data-bs-theme="dark"] .cli-view-card--slate .cli-view-card-header,
+[data-bs-theme="dark"] .cli-view-card--slate .cli-view-card-header i { color: #b6c2d1; }
+
+/* Iconos: los tonos navy/blue/slate son muy oscuros sobre fondo dark */
+[data-bs-theme="dark"] .cli-view-card .emp-icon--navy,
+[data-bs-theme="dark"] .cli-view-card .emp-icon--blue  { color: #9db4e6; }
+[data-bs-theme="dark"] .cli-view-card .emp-icon--slate { color: #b6c2d1; }
+[data-bs-theme="dark"] .cli-view-card .emp-icon-box--navy,
+[data-bs-theme="dark"] .cli-view-card .emp-icon-box--blue  { background: rgba(157, 180, 230, 0.14); }
+[data-bs-theme="dark"] .cli-view-card .emp-icon-box--slate { background: rgba(182, 194, 209, 0.14); }
+
+/* ── Botón copiar dato (aparece al pasar el mouse por la fila) ──── */
+.cli-copy-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    margin-left: 6px;
+    padding: 0;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    color: #94a3b8;
+    cursor: pointer;
+    vertical-align: middle;
+    opacity: 0;                       /* oculto: ocupa espacio para no mover el layout */
+    transition: opacity 0.15s ease, background-color 0.15s ease, color 0.15s ease;
+}
+.cli-copy-btn i { font-size: 0.92rem; line-height: 1; }
+.cli-view-card-body .align-items-start:hover .cli-copy-btn,
+.cli-copy-btn:focus-visible { opacity: 1; }
+.cli-copy-btn:hover { background: rgba(42, 82, 152, 0.10); color: #2a5298; }
+.cli-copy-btn.is-copied { background: rgba(34, 197, 94, 0.14); color: #16a34a; opacity: 1; }
+
+[data-bs-theme="dark"] .cli-copy-btn { color: #8a9ab0; }
+[data-bs-theme="dark"] .cli-copy-btn:hover { background: rgba(157, 180, 230, 0.14); color: #9db4e6; }
+[data-bs-theme="dark"] .cli-copy-btn.is-copied { background: rgba(34, 197, 94, 0.18); color: #4ade80; }

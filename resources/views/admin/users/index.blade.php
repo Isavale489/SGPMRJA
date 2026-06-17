@@ -144,7 +144,7 @@
                     </div>
 
                     {{-- Secciones --}}
-                    <div class="px-4 py-3" style="background:#fbfcfe;">
+                    <div class="px-4 py-3 cli-view-sections">
 
                         {{-- Acceso al Sistema --}}
                         <div class="cli-view-card">
@@ -394,6 +394,20 @@
 
 
     <script>
+        // Formatea a dd/mm/aaaa (sin hora) — igual que en los demás módulos del estándar "Ver".
+        function formatDate(dateStr) {
+            if (!dateStr) return 'N/A';
+            if (typeof dateStr === 'string') {
+                var datePart = dateStr.trim().split(' ')[0] || '';
+                if (/^\d{2}\/\d{2}\/\d{4}$/.test(datePart)) return datePart;
+            }
+            var date = new Date(dateStr);
+            if (isNaN(date.getTime())) return dateStr;
+            var day = String(date.getDate()).padStart(2, '0');
+            var month = String(date.getMonth() + 1).padStart(2, '0');
+            return day + '/' + month + '/' + date.getFullYear();
+        }
+
         $(document).ready(function () {
             $.ajaxSetup({
                 headers: {
@@ -742,7 +756,7 @@
                     $("#view-email").text(data.email);
                     $("#view-email-card").text(data.email);
                     $("#view-role").text(data.role || 'Sin rol');
-                    $("#view-created").text(data.created_at);
+                    $("#view-created").text(formatDate(data.created_at));
                     var _activo = (data.estado == 1 || data.estado === true);
                     $("#view-estado")
                         .text(_activo ? 'Activo' : 'Inhabilitado')

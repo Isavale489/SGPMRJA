@@ -220,7 +220,7 @@
                     </div>
 
                     {{-- Secciones --}}
-                    <div class="px-4 py-3" style="background:#fbfcfe;">
+                    <div class="px-4 py-3 cli-view-sections">
 
                         {{-- Identificación --}}
                         <div class="cli-view-card">
@@ -696,6 +696,20 @@
     <script src="{{ asset('assets/js/municipios-venezuela.js') }}"></script>
 
     <script>
+        // Formatea a dd/mm/aaaa (sin hora) — igual que en los demás módulos del estándar "Ver".
+        function formatDate(dateStr) {
+            if (!dateStr) return 'N/A';
+            if (typeof dateStr === 'string') {
+                var datePart = dateStr.trim().split(' ')[0] || '';
+                if (/^\d{2}\/\d{2}\/\d{4}$/.test(datePart)) return datePart;
+            }
+            var date = new Date(dateStr);
+            if (isNaN(date.getTime())) return dateStr;
+            var day = String(date.getDate()).padStart(2, '0');
+            var month = String(date.getMonth() + 1).padStart(2, '0');
+            return day + '/' + month + '/' + date.getFullYear();
+        }
+
         $(document).ready(function () {
 
             function generateButtons(proveedorId, isTrashed) {
@@ -940,7 +954,7 @@
                     $("#view-hero-avatar").text((heroInitials || '?').toUpperCase());
                     $("#view-hero-name").text(heroName.trim() || 'N/A');
                     $("#view-hero-doc").text(heroDoc);
-                    $("#view-hero-date").text(data.created_at);
+                    $("#view-hero-date").text(formatDate(data.created_at));
 
                     $("#view-telefono").text(data.telefono || 'No especificado');
                     $("#view-email").text(data.email || 'No especificado');

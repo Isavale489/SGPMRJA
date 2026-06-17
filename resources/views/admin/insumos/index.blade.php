@@ -209,7 +209,7 @@
                     </div>
 
                     {{-- Secciones --}}
-                    <div class="px-4 py-3" style="background:#fbfcfe;">
+                    <div class="px-4 py-3 cli-view-sections">
 
                         {{-- Información General --}}
                         <div class="cli-view-card">

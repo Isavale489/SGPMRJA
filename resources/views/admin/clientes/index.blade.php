@@ -225,7 +225,7 @@
                     </div>
 
                     {{-- Secciones --}}
-                    <div class="px-4 py-3" style="background:#fbfcfe;">
+                    <div class="px-4 py-3 cli-view-sections">
 
                         {{-- Identificación --}}
                         <div class="cli-view-card">
@@ -284,14 +284,14 @@
                         </div></div>
 
                         {{-- Contacto --}}
-                        <div class="cli-view-card">
+                        <div class="cli-view-card cli-view-card--blue">
                         <div class="cli-view-card-header"><i class="ri-contacts-line"></i>Contacto</div>
                         <div class="cli-view-card-body">
                         <div class="row g-3">
                             <div class="col-sm-6">
                                 <div class="d-flex align-items-start">
-                                    <div class="emp-icon-box emp-icon-box--navy rounded-circle me-2 flex-shrink-0 d-flex align-items-center justify-content-center">
-                                        <i class="ri-mail-line emp-icon--navy"></i>
+                                    <div class="emp-icon-box emp-icon-box--blue rounded-circle me-2 flex-shrink-0 d-flex align-items-center justify-content-center">
+                                        <i class="ri-mail-line emp-icon--blue"></i>
                                     </div>
                                     <div><small class="text-muted d-block fs-12">Correo electrónico</small>
                                     <span class="fw-semibold fs-13" id="view-email">-</span></div>
@@ -299,8 +299,8 @@
                             </div>
                             <div class="col-sm-6">
                                 <div class="d-flex align-items-start">
-                                    <div class="emp-icon-box emp-icon-box--navy rounded-circle me-2 flex-shrink-0 d-flex align-items-center justify-content-center">
-                                        <i class="ri-phone-line emp-icon--navy"></i>
+                                    <div class="emp-icon-box emp-icon-box--blue rounded-circle me-2 flex-shrink-0 d-flex align-items-center justify-content-center">
+                                        <i class="ri-phone-line emp-icon--blue"></i>
                                     </div>
                                     <div><small class="text-muted d-block fs-12">Teléfono</small>
                                     <span class="fw-semibold fs-13" id="view-telefono">-</span></div>
@@ -310,14 +310,14 @@
                         </div></div>
 
                         {{-- Ubicación --}}
-                        <div class="cli-view-card">
+                        <div class="cli-view-card cli-view-card--slate">
                         <div class="cli-view-card-header"><i class="ri-map-pin-line"></i>Ubicación</div>
                         <div class="cli-view-card-body">
                         <div class="row g-3">
                             <div class="col-12">
                                 <div class="d-flex align-items-start">
-                                    <div class="emp-icon-box emp-icon-box--navy rounded-circle me-2 flex-shrink-0 d-flex align-items-center justify-content-center">
-                                        <i class="ri-home-4-line emp-icon--navy"></i>
+                                    <div class="emp-icon-box emp-icon-box--slate rounded-circle me-2 flex-shrink-0 d-flex align-items-center justify-content-center">
+                                        <i class="ri-home-4-line emp-icon--slate"></i>
                                     </div>
                                     <div><small class="text-muted d-block fs-12">Dirección</small>
                                     <span class="fw-semibold fs-13" id="view-direccion">-</span></div>
@@ -325,8 +325,8 @@
                             </div>
                             <div class="col-sm-6">
                                 <div class="d-flex align-items-start">
-                                    <div class="emp-icon-box emp-icon-box--navy rounded-circle me-2 flex-shrink-0 d-flex align-items-center justify-content-center">
-                                        <i class="ri-government-line emp-icon--navy"></i>
+                                    <div class="emp-icon-box emp-icon-box--slate rounded-circle me-2 flex-shrink-0 d-flex align-items-center justify-content-center">
+                                        <i class="ri-government-line emp-icon--slate"></i>
                                     </div>
                                     <div><small class="text-muted d-block fs-12">Estado</small>
                                     <span class="fw-semibold fs-13" id="view-estado-territorial">-</span></div>
@@ -334,8 +334,8 @@
                             </div>
                             <div class="col-sm-6">
                                 <div class="d-flex align-items-start">
-                                    <div class="emp-icon-box emp-icon-box--navy rounded-circle me-2 flex-shrink-0 d-flex align-items-center justify-content-center">
-                                        <i class="ri-building-line emp-icon--navy"></i>
+                                    <div class="emp-icon-box emp-icon-box--slate rounded-circle me-2 flex-shrink-0 d-flex align-items-center justify-content-center">
+                                        <i class="ri-building-line emp-icon--slate"></i>
                                     </div>
                                     <div><small class="text-muted d-block fs-12">Municipio</small>
                                     <span class="fw-semibold fs-13" id="view-ciudad">-</span></div>

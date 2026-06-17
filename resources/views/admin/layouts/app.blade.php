@@ -933,6 +933,67 @@
         });
 
         // ──────────────────────────────────────────────────────────────────
+        // AtlanticoCopy — copiar al portapapeles desde los modales "Ver" del
+        // estándar hero + cards (clientes, empleados, insumos, proveedores,
+        // users). Inyecta un botón de copiar junto a cada valor real y avisa
+        // con un toast. Global: cualquier #viewModal con .cli-view-card-body.
+        // ──────────────────────────────────────────────────────────────────
+        (function () {
+            function copyText(text) {
+                if (navigator.clipboard && window.isSecureContext) {
+                    return navigator.clipboard.writeText(text);
+                }
+                return new Promise(function (resolve, reject) {
+                    var ta = document.createElement('textarea');
+                    ta.value = text;
+                    ta.style.position = 'fixed';
+                    ta.style.opacity = '0';
+                    document.body.appendChild(ta);
+                    ta.select();
+                    try { document.execCommand('copy') ? resolve() : reject(); }
+                    catch (e) { reject(e); }
+                    finally { document.body.removeChild(ta); }
+                });
+            }
+
+            var copyToast = Swal.mixin({
+                toast: true, position: 'top-end', showConfirmButton: false,
+                timer: 1600, timerProgressBar: true,
+                backdrop: false, heightAuto: false, scrollbarPadding: false
+            });
+
+            // Inyecta los botones al abrir cualquier modal "Ver" del estándar.
+            $(document).on('shown.bs.modal', '#viewModal', function () {
+                var $modal = $(this);
+                $modal.find('.cli-copy-btn').remove();   // evita duplicados al reabrir
+                $modal.find('.cli-view-card-body span.fs-13').each(function () {
+                    var val = $.trim($(this).text());
+                    if (!val || val === '-') return;     // salta vacíos / placeholder
+                    $('<button type="button" class="cli-copy-btn" title="Copiar">' +
+                      '<i class="ri-file-copy-line"></i></button>').insertAfter(this);
+                });
+            });
+
+            // Click delegado: copia el valor hermano y avisa.
+            $(document).on('click', '#viewModal .cli-copy-btn', function () {
+                var $btn = $(this);
+                var text = $.trim($btn.prev('span.fs-13').text());
+                if (!text) return;
+                copyText(text).then(function () {
+                    $btn.addClass('is-copied').find('i')
+                        .removeClass('ri-file-copy-line').addClass('ri-check-line');
+                    setTimeout(function () {
+                        $btn.removeClass('is-copied').find('i')
+                            .removeClass('ri-check-line').addClass('ri-file-copy-line');
+                    }, 1200);
+                    copyToast.fire({ icon: 'success', title: 'Copiado al portapapeles' });
+                }).catch(function () {
+                    copyToast.fire({ icon: 'error', title: 'No se pudo copiar' });
+                });
+            });
+        })();
+
+        // ──────────────────────────────────────────────────────────────────
         // AtlanticoSelect — realza los <select> a un dropdown Bootstrap cuyo menú
         // muestra ~4 ítems con scroll (el <select> nativo no permite limitar la
         // altura de su lista). Aplica a TODO el sistema con resguardos:

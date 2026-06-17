@@ -220,7 +220,7 @@
                     </div>
 
                     {{-- Secciones --}}
-                    <div class="px-4 py-3" style="background:#fbfcfe;">
+                    <div class="px-4 py-3 cli-view-sections">
 
                         {{-- Datos Personales --}}
                         <div class="cli-view-card">
