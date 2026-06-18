@@ -192,9 +192,6 @@ $(document).ready(function () {
                     $('#cv-exento-wrap').addClass('d-none');
                 }
 
-                // PDF
-                $('#cv-pdf-btn').attr('href', '/compras/' + d.id + '/pdf');
-
                 $('#viewCompraModal').modal('show');
             },
             error: function () {

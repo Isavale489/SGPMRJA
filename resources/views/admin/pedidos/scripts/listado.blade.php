@@ -410,7 +410,6 @@
         // === Ver → viewModal (read-only) ====================================
         $('#pedidos-table').on('click', '.view-btn', function () {
             var id = $(this).data('id');
-            $('#view-ped-pdf-btn').attr('href', '/pedidos/' + id + '/pdf');
             $.ajax({
                 url: '/pedidos/' + id,
                 method: 'GET',

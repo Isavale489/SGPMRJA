@@ -235,9 +235,9 @@
 
             <div class="modal-footer wiz-wizard-footer py-2 px-3">
                 <div class="wiz-wizard-footer-info">
-                    <a id="cv-pdf-btn" href="#" target="_blank" class="btn btn-sm btn-outline-danger">
-                        <i class="ri-file-pdf-line me-1"></i>Descargar PDF
-                    </a>
+                    <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#pdfExportModal">
+                        <i class="ri-file-pdf-line align-bottom me-1"></i> Exportar PDF
+                    </button>
                 </div>
                 <div class="wiz-wizard-footer-actions">
                     <button type="button" class="btn btn-sm btn-light border" id="cv-prev" style="display:none;">

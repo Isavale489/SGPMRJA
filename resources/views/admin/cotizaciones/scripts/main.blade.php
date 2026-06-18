@@ -2810,9 +2810,6 @@
                             .toLocaleString('es-VE', { minimumFractionDigits: 4, maximumFractionDigits: 4 }));
                     }
 
-                    // PDF
-                    $('#view-pdf-btn').attr('href', '/cotizaciones/' + id + '/pdf');
-
                     $('#viewModal').modal('show');
                 }
             });
