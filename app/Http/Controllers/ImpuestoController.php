@@ -20,7 +20,18 @@ class ImpuestoController extends Controller
         $data = $this->validar($request);
         $data['codigo'] = strtoupper(trim($data['codigo']));
 
-        Impuesto::create($data);
+        // `codigo` es UNIQUE a nivel de BD e incluye los soft-deleted (la
+        // constraint no los excluye). La validación de unicidad solo mira los
+        // activos (whereNull), así que un código reutilizado tras borrar pasaría
+        // validación pero chocaría al INSERT (error 1062). Reusamos la fila
+        // soft-deleted: la restauramos y actualizamos. Ver docs/conventions/softdeletes-unique.md.
+        $previo = Impuesto::onlyTrashed()->where('codigo', $data['codigo'])->first();
+        if ($previo) {
+            $previo->restore();
+            $previo->update($data);
+        } else {
+            Impuesto::create($data);
+        }
 
         return response()->json(['success' => true, 'message' => 'Impuesto creado correctamente.']);
     }
