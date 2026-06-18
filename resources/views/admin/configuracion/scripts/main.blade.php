@@ -197,6 +197,133 @@
             });
         });
 
+        // ============================================================
+        // Impuestos (tabla `impuesto`) — crear / editar / eliminar
+        // ============================================================
+
+        const $impModal = $('#impuestoModal');
+        const impModal = $impModal.length
+            ? bootstrap.Modal.getOrCreateInstance($impModal[0])
+            : null;
+
+        function limpiarErroresImpuesto() {
+            $impModal.find('.form-control, .form-select').removeClass('is-invalid');
+            $impModal.find('.invalid-feedback').text('');
+        }
+
+        function abrirModalImpuesto() {
+            limpiarErroresImpuesto();
+            $('#form-impuesto')[0].reset();
+            $('#id-field').val('');
+            $('#impuestoModalTitle').text('Nuevo impuesto');
+            $('#form-impuesto').data('save-url', $('#imp-store-url').val()).data('method', 'POST');
+            $('#imp-codigo').prop('readonly', false);
+            $('#imp-estado').prop('disabled', false);
+            $('#imp-estado-wrapper').show();
+            $('#imp-codigo-help').text('Identificador corto en mayúsculas.');
+            impModal.show();
+        }
+
+        $(document).on('click', '#btn-nuevo-impuesto', abrirModalImpuesto);
+
+        $(document).on('click', '.btn-editar-impuesto', function () {
+            const d = $(this).data();
+            limpiarErroresImpuesto();
+            $('#id-field').val(d.id);
+            $('#imp-codigo').val(d.codigo);
+            $('#imp-nombre').val(d.nombre);
+            $('#imp-porcentaje').val(d.porcentaje);
+            $('#imp-descripcion').val(d.descripcion || '');
+            $('#imp-estado').val(d.estado);
+            $('#impuestoModalTitle').text('Editar impuesto');
+            $('#form-impuesto').data('save-url', d.updateUrl).data('method', 'PUT');
+
+            // El IVA es el impuesto base de compras: código inmutable y siempre activo.
+            const esIva = String(d.esIva) === '1';
+            $('#imp-codigo').prop('readonly', esIva);
+            $('#imp-estado').prop('disabled', esIva);
+            $('#imp-estado-wrapper').toggle(!esIva);
+            $('#imp-codigo-help').text(esIva
+                ? 'El código del IVA no se puede cambiar.'
+                : 'Identificador corto en mayúsculas.');
+
+            impModal.show();
+        });
+
+        $(document).on('submit', '#form-impuesto', function (e) {
+            e.preventDefault();
+            limpiarErroresImpuesto();
+
+            const $form = $(this);
+            const data = {
+                _token: CSRF,
+                _method: $form.data('method'),
+                codigo: $('#imp-codigo').val().trim().toUpperCase(),
+                nombre: $('#imp-nombre').val().trim(),
+                porcentaje: $('#imp-porcentaje').val(),
+                descripcion: $('#imp-descripcion').val().trim(),
+                estado: $('#imp-estado').val()
+            };
+
+            $('#btn-guardar-impuesto').prop('disabled', true);
+
+            $.ajax({
+                url: $form.data('save-url'),
+                type: 'POST',
+                data: data,
+                success: function (res) {
+                    impModal.hide();
+                    Swal.fire({
+                        icon: 'success', title: 'Listo', text: res.message,
+                        timer: 1600, showConfirmButton: false
+                    }).then(function () { window.location.reload(); });
+                },
+                error: function (xhr) {
+                    const res = xhr.responseJSON || {};
+                    if (xhr.status === 422 && res.errors) {
+                        Object.keys(res.errors).forEach(function (campo) {
+                            $('#imp-' + campo).addClass('is-invalid');
+                            $('#imp-' + campo + '-error').text(res.errors[campo][0]);
+                        });
+                        return;
+                    }
+                    Swal.fire('Error', res.message || 'No se pudo guardar el impuesto.', 'error');
+                },
+                complete: function () { $('#btn-guardar-impuesto').prop('disabled', false); }
+            });
+        });
+
+        $(document).on('click', '.btn-eliminar-impuesto', function () {
+            const $btn = $(this);
+            Swal.fire({
+                icon: 'warning',
+                title: '¿Eliminar impuesto?',
+                text: 'Se eliminará "' + $btn.data('nombre') + '".',
+                showCancelButton: true,
+                confirmButtonText: 'Sí, eliminar',
+                cancelButtonText: 'Cancelar',
+                confirmButtonColor: '#f06548',
+                cancelButtonColor: '#74788d'
+            }).then(function (result) {
+                if (!result.isConfirmed) return;
+                $.ajax({
+                    url: $btn.data('delete-url'),
+                    type: 'POST',
+                    data: { _token: CSRF, _method: 'DELETE' },
+                    success: function (res) {
+                        Swal.fire({
+                            icon: 'success', title: 'Eliminado', text: res.message,
+                            timer: 1500, showConfirmButton: false
+                        }).then(function () { window.location.reload(); });
+                    },
+                    error: function (xhr) {
+                        const res = xhr.responseJSON || {};
+                        Swal.fire('Error', res.message || 'No se pudo eliminar el impuesto.', 'error');
+                    }
+                });
+            });
+        });
+
         // ---------- Persistencia del módulo activo en el hash ----------
 
         $('#config-pills [data-bs-toggle="pill"]').on('shown.bs.tab', function () {

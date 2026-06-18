@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\CompraController;
 use App\Http\Controllers\ConfiguracionController;
+use App\Http\Controllers\ImpuestoController;
 use App\Http\Controllers\DetalleOrdenInsumoController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\InsumoController;
@@ -70,6 +71,11 @@ Route::middleware(['auth', 'throttle:60,1', 'active.user', 'recovery.questions.r
         Route::get('configuracion', [ConfiguracionController::class, 'index'])->name('configuracion.index');
         Route::put('configuracion/{modulo}', [ConfiguracionController::class, 'update'])->name('configuracion.update');
         Route::delete('configuracion/{modulo}/{clave}', [ConfiguracionController::class, 'reset'])->name('configuracion.reset');
+
+        // Impuestos (tabla `impuesto`) — gestionados desde el panel de configuración
+        Route::post('configuracion-impuestos', [ImpuestoController::class, 'store'])->name('impuestos.store');
+        Route::put('configuracion-impuestos/{impuesto}', [ImpuestoController::class, 'update'])->name('impuestos.update');
+        Route::delete('configuracion-impuestos/{impuesto}', [ImpuestoController::class, 'destroy'])->name('impuestos.destroy');
 
         // Usuarios
         Route::resource('users', UserController::class);

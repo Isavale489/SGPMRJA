@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Compra;
 use App\Models\CompraDetalle;
+use App\Models\Impuesto;
 use App\Models\Insumo;
 use App\Models\MovimientoInsumo;
 use Illuminate\Support\Facades\DB;
@@ -257,12 +258,12 @@ class CompraService
     }
 
     /**
-     * Tasa de IVA general vigente (%). Configurable desde el panel
-     * /configuracion (registry impuestos.iva, default en config/impuestos.php).
+     * Tasa de IVA general vigente (%). Fuente de verdad: tabla `impuesto`
+     * (fila con código IVA), gestionable desde el panel /configuracion.
      */
     private function tasaIva(): float
     {
-        return (float) parametro('impuestos.iva');
+        return Impuesto::tasaIva();
     }
 
     /**

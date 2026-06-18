@@ -46,6 +46,21 @@
                 @endif
             @endforeach
 
+            {{-- Impuestos: catálogo gestionable (tabla `impuesto`), no es un
+                 parámetro del registry. Mismo comportamiento tabs/links. --}}
+            @if ($modo === 'tabs')
+                <button class="nav-link text-start" id="pill-impuestos" data-bs-toggle="pill"
+                    data-bs-target="#mod-impuestos" data-config-slug="impuestos" type="button" role="tab"
+                    aria-controls="mod-impuestos" aria-selected="false">
+                    <i class="ri-percent-line me-1 align-middle"></i> Impuestos
+                </button>
+            @else
+                <a href="{{ route('configuracion.index') }}#impuestos" class="nav-link text-start config-pill-link">
+                    <i class="ri-percent-line me-1 align-middle"></i> Impuestos
+                    <i class="ri-arrow-right-up-line config-pill-link-arrow"></i>
+                </a>
+            @endif
+
             {{-- Accesos a las demás configuraciones del sistema --}}
             <div class="config-pills-label config-pills-label--separado">Otras configuraciones</div>
             <a href="{{ url('users') }}"

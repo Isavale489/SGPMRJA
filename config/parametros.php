@@ -31,18 +31,9 @@
 
 return [
 
-    'impuestos.iva' => [
-        'modulo'      => 'Impuestos',
-        'nombre'      => 'Tasa de IVA general (%)',
-        'descripcion' => 'Aplicada a las líneas gravables de compras. Las compras ya registradas conservan su snapshot (compra.iva_porcentaje), por lo que cambiar este valor no altera comprobantes previos.',
-        'tipo'        => 'decimal',
-        'reglas'      => 'required|numeric|min:0|max:100',
-        'default'     => null,
-        'config_key'  => 'impuestos.iva',
-
-        'confirmar_guardado'   => true,
-        'mensaje_confirmacion' => 'Vas a cambiar la tasa de IVA del sistema. El cambio aplica solo a las compras nuevas: las ya registradas conservan su porcentaje original.',
-    ],
+    // NOTA: el IVA ya NO es un parámetro de este registry. Se centralizó en la
+    // tabla `impuesto` (catálogo gestionable desde el panel de configuración),
+    // que es su única fuente de verdad. Ver App\Models\Impuesto::tasaIva().
 
     'pedidos.abono_minimo' => [
         'modulo'      => 'Pedidos',

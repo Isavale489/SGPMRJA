@@ -23,12 +23,18 @@ class ConfiguracionController extends Controller
     {
         $modulos = $this->registryPorModulo();
 
-        return view('admin.configuracion.index', compact('modulos'));
+        // Catálogo de impuestos (tabla `impuesto`): se gestiona en una pestaña
+        // propia del panel, fuera del registry. El IVA queda siempre primero.
+        $impuestos = \App\Models\Impuesto::orderByRaw("codigo = ? DESC", [\App\Models\Impuesto::CODIGO_IVA])
+            ->orderBy('nombre')
+            ->get();
+
+        return view('admin.configuracion.index', compact('modulos', 'impuestos'));
     }
 
     /**
      * Guarda los overrides de un módulo. Payload esperado:
-     * { "valores": { "impuestos.iva": "8", ... } }
+     * { "valores": { "pedidos.abono_minimo": "50", ... } }
      */
     public function update(Request $request, string $modulo)
     {
@@ -50,8 +56,8 @@ class ConfiguracionController extends Controller
         }
 
         // Reglas y etiquetas desde el registry. Las claves llevan punto
-        // (impuestos.iva), que para el validador significa anidamiento:
-        // se escapa con \. para validarlas como clave literal.
+        // (p.ej. pedidos.abono_minimo), que para el validador significa
+        // anidamiento: se escapa con \. para validarlas como clave literal.
         $reglas = [];
         $etiquetas = [];
         foreach ($valores as $clave => $valor) {

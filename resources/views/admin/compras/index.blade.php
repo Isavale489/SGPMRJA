@@ -196,7 +196,7 @@
     <script>
         window.INSUMOS_DATA = @json($insumos);
         window.VER_ANULADAS = @json($verAnuladas);
-        window.IVA_TASA     = @json((float) parametro('impuestos.iva'));
+        window.IVA_TASA     = @json(\App\Models\Impuesto::tasaIva());
     </script>
 @endsection
 

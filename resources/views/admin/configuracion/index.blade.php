@@ -65,10 +65,92 @@
                             </div>
                         </div>
                     @endforeach
+
+                    {{-- ── Impuestos: catálogo gestionable (tabla `impuesto`) ── --}}
+                    <div class="tab-pane fade" id="mod-impuestos" role="tabpanel" aria-labelledby="pill-impuestos">
+                        <div class="card card-config">
+                            <div class="card-header d-flex align-items-center justify-content-between">
+                                <h5 class="card-title mb-0">
+                                    <i class="ri-percent-line me-1 align-middle"></i> Impuestos
+                                </h5>
+                                <button type="button" class="btn btn-sm btn-success" id="btn-nuevo-impuesto">
+                                    <i class="ri-add-line align-bottom me-1"></i> Nuevo impuesto
+                                </button>
+                            </div>
+                            <div class="card-body">
+                                <p class="text-muted mb-3">
+                                    Catálogo central de impuestos. La tasa del IVA aquí definida es la que
+                                    aplica a las líneas gravables de las compras nuevas; las compras ya
+                                    registradas conservan su porcentaje original (snapshot).
+                                </p>
+                                <div class="table-responsive">
+                                    <table class="table table-nowrap align-middle mb-0" id="tabla-impuestos">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>Código</th>
+                                                <th>Nombre</th>
+                                                <th class="text-end">Porcentaje</th>
+                                                <th>Estado</th>
+                                                <th class="text-end">Acciones</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @forelse ($impuestos as $imp)
+                                                <tr>
+                                                    <td><span class="badge bg-light text-dark">{{ $imp->codigo }}</span></td>
+                                                    <td>{{ $imp->nombre }}</td>
+                                                    <td class="text-end">{{ rtrim(rtrim(number_format($imp->porcentaje, 2), '0'), '.') }}%</td>
+                                                    <td>
+                                                        @if ($imp->estado === 'activo')
+                                                            <span class="badge bg-success-subtle text-success">Activo</span>
+                                                        @else
+                                                            <span class="badge bg-secondary-subtle text-secondary">Inactivo</span>
+                                                        @endif
+                                                    </td>
+                                                    <td class="text-end">
+                                                        <button type="button"
+                                                            class="btn btn-sm btn-soft-primary btn-editar-impuesto"
+                                                            data-id="{{ $imp->id }}"
+                                                            data-codigo="{{ $imp->codigo }}"
+                                                            data-nombre="{{ $imp->nombre }}"
+                                                            data-porcentaje="{{ $imp->porcentaje }}"
+                                                            data-descripcion="{{ $imp->descripcion }}"
+                                                            data-estado="{{ $imp->estado }}"
+                                                            data-es-iva="{{ $imp->codigo === \App\Models\Impuesto::CODIGO_IVA ? '1' : '0' }}"
+                                                            data-update-url="{{ route('impuestos.update', $imp) }}"
+                                                            title="Editar">
+                                                            <i class="ri-pencil-line"></i>
+                                                        </button>
+                                                        @if ($imp->codigo !== \App\Models\Impuesto::CODIGO_IVA)
+                                                            <button type="button"
+                                                                class="btn btn-sm btn-soft-danger btn-eliminar-impuesto"
+                                                                data-nombre="{{ $imp->nombre }}"
+                                                                data-delete-url="{{ route('impuestos.destroy', $imp) }}"
+                                                                title="Eliminar">
+                                                                <i class="ri-delete-bin-line"></i>
+                                                            </button>
+                                                        @endif
+                                                    </td>
+                                                </tr>
+                                            @empty
+                                                <tr>
+                                                    <td colspan="5" class="text-center text-muted py-4">
+                                                        No hay impuestos registrados.
+                                                    </td>
+                                                </tr>
+                                            @endforelse
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
+
+    @include('admin.configuracion.partials.impuesto-modal')
 @endsection
 
 @push('scripts')
