@@ -2750,18 +2750,26 @@
                 success: function (data) {
                     // Paso 1 — Cliente
                     if (data.cliente) {
-                        var nombreHtml = data.cliente.nombre || 'N/A';
+                        // Jurídico (J-/G-): mostrar Razón Social como nombre y ocultar "Apellido".
+                        // Natural (V-/E-): Nombre + Apellido como siempre.
+                        var esJuridico = ['J-', 'G-'].includes(String(data.cliente.tipo_documento || '').toUpperCase());
+                        var nombreBase = esJuridico
+                            ? (data.cliente.razon_social || data.cliente.nombre || 'N/A')
+                            : (data.cliente.nombre || 'N/A');
+                        var nombreHtml = nombreBase;
                         if (data.cliente.eliminado) {
                             nombreHtml += ' <span class="badge bg-danger ms-1" title="Este cliente fue eliminado">Eliminado</span>';
                         }
                         $('#view-cliente-nombre').html(nombreHtml);
                         var muted = data.cliente.eliminado;
                         function vm(v) { return muted ? '<span class="text-muted">' + (v || '') + '</span>' : (v || 'N/A'); }
-                        $('#view-cliente-apellido').html(vm(data.cliente.apellido));
+                        $('#view-apellido-wrap').toggleClass('d-none', esJuridico);
+                        if (!esJuridico) { $('#view-cliente-apellido').html(vm(data.cliente.apellido)); }
                         $('#view-cliente-email').html(vm(data.cliente.email));
                         $('#view-cliente-telefono').html(vm(data.cliente.telefono));
                         $('#view-ci-rif').html(vm(data.cliente.documento));
                     } else {
+                        $('#view-apellido-wrap').removeClass('d-none');
                         $('#view-cliente-nombre').html('<span class="text-danger">Cliente no encontrado</span>');
                         $('#view-cliente-apellido, #view-cliente-email, #view-cliente-telefono, #view-ci-rif').text('N/A');
                     }

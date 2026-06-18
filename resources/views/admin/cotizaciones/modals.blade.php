@@ -63,7 +63,7 @@
                                             <div><small class="text-muted d-block fs-12">Nombre</small>
                                             <span class="fw-semibold fs-13" id="view-cliente-nombre">-</span></div>
                                         </div>
-                                        <div class="col-6 d-flex align-items-start">
+                                        <div class="col-6 d-flex align-items-start" id="view-apellido-wrap">
                                             <div class="emp-icon-box emp-icon-box--navy rounded-circle me-2 flex-shrink-0 d-flex align-items-center justify-content-center">
                                                 <i class="ri-user-follow-line emp-icon--navy"></i>
                                             </div>
