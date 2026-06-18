@@ -896,7 +896,7 @@
                             <span class="vs-section-status" id="vs-status-tela"><i class="ri-check-line"></i></span>
                             <span class="vs-section-title"><i class="ri-shirt-line"></i>Tela</span>
                             <span class="vs-section-pick" id="vs-pick-tela"></span>
-                            @if(Auth::user()->hasRole(['Administrador', 'Supervisor']))
+                            @if(tienePermiso('tipo-productos.gestionar'))
                                 <button type="button" class="cfg-newcolor-btn ms-auto" id="vs-add-tela-btn">
                                     <i class="ri-add-line"></i><span>Nueva tela</span>
                                 </button>
@@ -1021,7 +1021,7 @@
                                     <h6 class="cfg-section-title">Color</h6>
                                     <p class="cfg-section-desc">Selecciona el color para esta configuración.</p>
                                 </div>
-                                @if(Auth::user()->hasRole(['Administrador', 'Supervisor']))
+                                @if(tienePermiso('colores.gestionar'))
                                     <button type="button" class="cfg-newcolor-btn" id="cfg-add-color-btn">
                                         <i class="ri-palette-line"></i><span>Nuevo color</span>
                                     </button>
@@ -1463,7 +1463,7 @@
     </div>
 </div>
 
-@if(Auth::user()->hasRole(['Administrador', 'Supervisor']))
+@if(tienePermiso('colores.gestionar'))
 {{-- ═══════════════════════════════════════════════════════════════════════════
      MINI-MODAL: Crear color nuevo (inline, extensión del maestro Colores)
      Prefijo de IDs: cc-  ·  navy (atlantico-modal) porque pertenece al maestro.
@@ -1529,7 +1529,7 @@
 
 @include('admin.partials.catalog_modals')
 
-@if(Auth::user()->hasRole(['Administrador', 'Supervisor']))
+@if(tienePermiso('tipo-productos.gestionar'))
 {{-- ═══════════════════════════════════════════════════════════════════════════
      MINI-MODAL: Crear tela inline (Insumo tipo='Tela') desde el selector de variante.
      Réplica del form de Insumo del maestro (tipo fijo en Tela). Al guardar, la tela

@@ -38,7 +38,7 @@
                     <div class="d-flex align-items-center">
                         <h5 class="card-title mb-0 flex-grow-1">Listado de Cotizaciones</h5>
                         <div class="flex-shrink-0 d-flex align-items-center gap-3">
-                            @if(Auth::user()->isAdmin())
+                            @if(tienePermiso('cotizaciones.gestionar'))
                                 <button type="button" class="btn btn-success add-btn" data-bs-toggle="modal" id="create-btn"
                                     data-bs-target="#showModal">
                                     <i class="ri-add-line align-bottom me-1"></i> Agregar Cotización

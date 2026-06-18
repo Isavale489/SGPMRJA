@@ -476,10 +476,10 @@
 
                         var badge = '<span class="badge badge-status ' + badgeClass + ' rounded-pill"><i class="' + icon + ' me-1"></i>' + data + '</span>';
 
-                        var isAdmin = {{ Auth::user()->isAdmin() ? 'true' : 'false' }};
+                        var puedeConvertir = {{ tienePermiso('cotizaciones.convertir') ? 'true' : 'false' }};
 
-                        // Si no es admin o ya está convertida, solo mostrar badge
-                        if (!isAdmin || data === 'Convertida') {
+                        // Sin permiso de conversión/cambio de estado, o ya convertida: solo badge
+                        if (!puedeConvertir || data === 'Convertida') {
                             return badge;
                         }
 
@@ -517,7 +517,8 @@
                     searchable: false,
                     className: 'text-center',
                     render: function (data, type, row) {
-                        var isAdmin = {{ Auth::user()->isAdmin() ? 'true' : 'false' }};
+                        var puedeConvertir = {{ tienePermiso('cotizaciones.convertir') ? 'true' : 'false' }};
+                        var puedeGestionar = {{ tienePermiso('cotizaciones.gestionar') ? 'true' : 'false' }};
 
                         // Ver inline
                         var sVer = `<button class="btn btn-sm btn-soft-info view-btn" data-id="${data}" title="Ver"><i class="ri-eye-fill"></i></button>`;
@@ -527,19 +528,19 @@
                         var hadItems = false;
 
                         // Convertir a Pedido (solo si está Aprobada)
-                        if (row.estado === 'Aprobada' && isAdmin) {
+                        if (row.estado === 'Aprobada' && puedeConvertir) {
                             items += `<li><button type="button" class="dropdown-item act-item act-primary convert-to-pedido-btn" data-id="${data}"><span class="act-ic"><i class="ri-exchange-line"></i></span>Convertir a Pedido</button></li>`;
                             hadItems = true;
                         }
 
                         // Reactivar (solo si está Vencida)
-                        if (isAdmin && row.estado === 'Vencida') {
+                        if (puedeConvertir && row.estado === 'Vencida') {
                             items += `<li><button type="button" class="dropdown-item act-item act-primary reactivar-btn" data-id="${data}"><span class="act-ic"><i class="ri-refresh-line"></i></span>Reactivar cotización</button></li>`;
                             hadItems = true;
                         }
 
                         // Editar y Eliminar (solo si NO está Convertida ni Cancelada ni Vencida)
-                        if (isAdmin && row.estado !== 'Convertida' && row.estado !== 'Cancelada' && row.estado !== 'Vencida') {
+                        if (puedeGestionar && row.estado !== 'Convertida' && row.estado !== 'Cancelada' && row.estado !== 'Vencida') {
                             items += `<li><button type="button" class="dropdown-item act-item act-edit edit-btn" data-id="${data}"><span class="act-ic"><i class="ri-pencil-fill"></i></span>Editar</button></li>`;
                             items += `<li><button type="button" class="dropdown-item act-item act-del remove-btn" data-id="${data}"><span class="act-ic"><i class="ri-delete-bin-fill"></i></span>Eliminar</button></li>`;
                             hadItems = true;

@@ -178,13 +178,12 @@ return [
     'proveedores' => [
         'nombre'   => 'Proveedores',
         'acciones' => [
-            'ver'       => 'Ver listado y detalle de proveedores', // Supervisor
+            'ver'       => 'Ver listado, detalle y exportar PDF de proveedores', // Supervisor
             'gestionar' => 'Crear, editar y eliminar proveedores', // solo-admin
-            'pdf'       => 'Exportar PDF',
         ],
         'rutas' => [
-            'proveedores.index|proveedores.data|proveedores.show|proveedores.check-rif|proveedores.check-documento|proveedores.check-email' => 'ver',
-            'proveedores.reporte.pdf' => 'pdf',
+            // El PDF va bajo 'ver' (paridad Supervisor, TASK-038): quien puede ver el listado puede exportarlo.
+            'proveedores.index|proveedores.data|proveedores.show|proveedores.reporte.pdf|proveedores.check-rif|proveedores.check-documento|proveedores.check-email' => 'ver',
             // solo-admin (escritura): hoy en el grupo role:Administrador
             'proveedores.store|proveedores.from-persona|proveedores.create|proveedores.update|proveedores.destroy|proveedores.edit|proveedores.restore' => 'gestionar',
         ],
@@ -193,14 +192,13 @@ return [
     'productos' => [
         'nombre'   => 'Productos',
         'acciones' => [
-            'ver'       => 'Ver listado y detalle de productos',
+            'ver'       => 'Ver listado, detalle y exportar PDF de productos',
             'gestionar' => 'Crear, editar y eliminar productos',
-            'pdf'       => 'Exportar PDF',
         ],
         'rutas' => [
-            'productos.index|productos.show|productos.data|productos.sugerir-precio|productos.preview-codigo|productos.resolver-variante' => 'ver',
+            // El PDF va bajo 'ver' (paridad Supervisor, TASK-038).
+            'productos.index|productos.show|productos.data|productos.reporte.pdf|productos.sugerir-precio|productos.preview-codigo|productos.resolver-variante' => 'ver',
             'productos.create|productos.store|productos.edit|productos.update|productos.destroy|productos.restore' => 'gestionar',
-            'productos.reporte.pdf' => 'pdf',
         ],
     ],
 
@@ -263,14 +261,13 @@ return [
     'insumos' => [
         'nombre'   => 'Insumos',
         'acciones' => [
-            'ver'       => 'Ver listado y detalle de insumos',
+            'ver'       => 'Ver listado, detalle y exportar PDF de insumos',
             'gestionar' => 'Crear, editar y eliminar insumos',
-            'pdf'       => 'Exportar PDF',
         ],
         'rutas' => [
-            'insumos.index|insumos.show|insumos.data' => 'ver',
+            // El PDF va bajo 'ver' (paridad Supervisor, TASK-038).
+            'insumos.index|insumos.show|insumos.data|insumos.reporte.pdf' => 'ver',
             'insumos.create|insumos.store|insumos.edit|insumos.update|insumos.destroy|insumos.restore|insumos.check-nombre' => 'gestionar',
-            'insumos.reporte.pdf' => 'pdf',
         ],
     ],
 

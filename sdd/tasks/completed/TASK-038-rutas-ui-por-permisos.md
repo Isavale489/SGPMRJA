@@ -2,11 +2,11 @@
 
 **Feature**: FEAT-005 — seguridad-roles-permisos
 **Spec**: `sdd/specs/seguridad-roles-permisos.spec.md`
-**Status**: pending
+**Status**: in-progress
 **Priority**: high
 **Esfuerzo estimado**: L (4-8h)
 **Depends-on**: TASK-036, TASK-037
-**Assigned-to**: unassigned
+**Assigned-to**: Emmanuel
 
 ---
 
@@ -150,8 +150,15 @@ Ej. en cotizaciones, un botón "convertir a pedido" → `@if(tienePermiso('cotiz
 
 ## Nota de Completitud
 
-**Completado por**:
-**Fecha**:
-**Commits**:
+**Completado por**: Emmanuel
+**Fecha**: 2026-06-17
+**Commits**: (rama `feat/TASK-038-rutas-ui-permisos`)
 **Notas**:
+- `routes/web.php`: fundidos los dos grupos `role:` en el grupo `auth` con middleware `permiso` (retirados, NO en convivencia). Verificado con script ad-hoc sobre `Route::getRoutes()`: **0 huecos** (toda ruta autenticada resuelve a un permiso o está en `comunes`); 147 rutas permitidas al Supervisor, 75 denegadas — las 75 eran exactamente las del antiguo grupo solo-admin. **Paridad Supervisor confirmada a nivel de rutas** (y validada en navegador por Santi/Emmanuel).
+- Sidebar: gate global → visibilidad por módulo (`tienePermiso('<modulo>.ver')`), con secciones/sub-dropdowns ocultos si no tienen hijos visibles. Placeholders TODO (Calidad/Garantías/Reportes Generales) conservados.
+- Botones migrados a `tienePermiso`: pedidos (index + listado JS), cotizaciones (index + 4 gates de modals: telas→`tipo-productos.gestionar`, colores→`colores.gestionar`).
+
 **Desviaciones del spec**:
+1. **Brecha de paridad PDF (fix incluido)**: `productos/insumos/proveedores.reporte.pdf` exigían `*.pdf`, acción que el Supervisor NO tiene en sus 34 claves → habría perdido la exportación. Resuelto en `config/modulos.php` mapeando esos `reporte.pdf` a `*.ver` (decisión de Santi: sin tocar DB/dump, mantiene las 34 claves, consistente con `movimiento-insumo.reporte.pdf`). Se eliminó la acción `pdf` muerta en esos 3 módulos.
+2. **Archivos fuera del Contract migrados también** (por coherencia de UI para roles dinámicos, decisión de Santi): `proveedores/index.blade.php` (:57, :721 → `proveedores.gestionar`, neutro para roles actuales) y `cotizaciones/scripts/main.blade.php` (:479/:520 → separados en `cotizaciones.convertir` para cambio-de-estado/convertir/reactivar y `cotizaciones.gestionar` para editar/eliminar). **Cambio visible**: el Supervisor ahora ve en cotizaciones los botones de cambio de estado/convertir/reactivar (alineado con la ruta `updateEstado`=`convertir` que ya tenía). Si el negocio lo quiere solo-admin, mover `updateEstado` a `gestionar` en el registry.
+3. `header.blade.php:337` se mantiene `isAdmin()` (excluido por el spec; el panel de config es solo-admin).

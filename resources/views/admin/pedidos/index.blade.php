@@ -42,7 +42,7 @@
                         <h5 class="card-title mb-0 flex-grow-1">Listado de Pedidos</h5>
                         <div class="flex-shrink-0 d-flex align-items-center gap-3">
                             <div class="d-flex gap-2">
-                                @if(Auth::user()->isAdmin())
+                                @if(tienePermiso('pedidos.gestionar'))
                                     {{-- Un pedido solo nace de una cotización aprobada: abre el selector --}}
                                     <button type="button" class="btn btn-success add-btn" data-bs-toggle="modal" id="create-btn"
                                         data-bs-target="#seleccionarCotizacionModal">
