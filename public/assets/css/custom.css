@@ -2542,8 +2542,21 @@ header#page-topbar,
     display: inline-flex;
     align-items: center;
     gap: 5px;
+    /* FEAT-006 TASK-043: permitir que un email/dato largo encoja y quiebre
+       dentro del item en vez de desbordar la card */
+    min-width: 0;
+    max-width: 100%;
 }
 .cot-cliente-contact-item i { color: #94a3b8; font-size: 0.95rem; }
+/* FEAT-006 TASK-043: quiebre de email largo (overflow-wrap:anywhere reduce el
+   tamaño mínimo del flex item, así el texto rompe en vez de desbordar). Aplica
+   al detalle "Ver" (#view-cliente-email) y a la card del wizard de edición. */
+#view-cliente-email,
+#cot-cliente-email-display {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    min-width: 0;
+}
 .cot-cliente-stats {
     display: flex;
     flex-wrap: wrap;
