@@ -2810,6 +2810,9 @@
                             .toLocaleString('es-VE', { minimumFractionDigits: 4, maximumFractionDigits: 4 }));
                     }
 
+                    // PDF de ESTA cotización
+                    $('#view-pdf-btn').attr('href', '/cotizaciones/' + id + '/pdf');
+
                     $('#viewModal').modal('show');
                 }
             });

@@ -192,6 +192,9 @@ $(document).ready(function () {
                     $('#cv-exento-wrap').addClass('d-none');
                 }
 
+                // PDF de ESTA compra
+                $('#cv-pdf-btn').attr('href', '/compras/' + d.id + '/pdf');
+
                 $('#viewCompraModal').modal('show');
             },
             error: function () {

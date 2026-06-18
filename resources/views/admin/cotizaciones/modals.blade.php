@@ -209,9 +209,9 @@
 
             <div class="modal-footer wiz-wizard-footer">
                 <div class="wiz-wizard-footer-info">
-                    <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#pdfExportModal">
+                    <a href="#" id="view-pdf-btn" class="btn btn-danger" target="_blank">
                         <i class="ri-file-pdf-line align-bottom me-1"></i> Exportar PDF
-                    </button>
+                    </a>
                 </div>
                 <div class="wiz-wizard-footer-actions">
                     <button type="button" class="btn btn-light wiz-wizard-btn-prev" id="btn-view-prev" style="display:none;">

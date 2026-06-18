@@ -1,4 +1,4 @@
-# TASK-048: PDF del detalle se ve y comporta igual que "Exportar PDF" del índice
+# TASK-048: PDF del detalle se VE igual que "Exportar PDF" del índice (descarga ESE registro)
 
 **Feature**: FEAT-006 — correcciones-ux-detalles
 **Spec**: `sdd/specs/correcciones-ux-detalles.spec.md`
@@ -12,22 +12,25 @@
 
 ## Contexto
 
-Cambio de requerimiento del solicitante: el botón PDF de las ventanas detalle debe **verse y comportarse igual** que el botón "Exportar PDF" que está afuera, en la barra de la DataTable al lado de "Agregar". Esto **supersede la decisión visual de TASK-044** (que lo había unificado a `btn-sm btn-outline-danger` con descarga directa del registro).
+Cambio de requerimiento del solicitante: el botón PDF de las ventanas detalle debe **verse igual** que el botón "Exportar PDF" que está afuera, en la barra de la DataTable al lado de "Agregar". **Solo el look** — supersede la decisión visual de TASK-044 (`btn-sm btn-outline-danger`).
 
-Antes: el botón del footer del detalle descargaba el PDF de ESE registro (`/<modulo>/{id}/pdf`).
-Ahora: es idéntico al de afuera (`btn btn-danger`, ícono `ri-file-pdf-line align-bottom`, etiqueta "Exportar PDF") y abre el **mismo modal de exportación con filtros** (`#pdfExportModal`).
+> **Aclaración del solicitante (corrige una primera implementación):** el comportamiento NO debe ser igual. El de afuera es un reporte **general** (modal `#pdfExportModal` con filtros del listado); el del detalle es de **ese registro específico** (descarga `/<modulo>/{id}/pdf`). Solo se iguala la apariencia.
+
+Resultado final:
+- **Look**: `btn btn-danger` sólido, ícono `ri-file-pdf-line align-bottom`, etiqueta "Exportar PDF" — idéntico al de afuera.
+- **Comportamiento**: `<a target="_blank">` cuyo `href` se setea por JS a `/<modulo>/{id}/pdf` → descarga el PDF de ESE registro.
 
 ---
 
 ## Scope
 
-- En los 3 detalles (Cotizaciones, Pedidos, Compras), reemplazar el `<a>` de PDF del footer por un `<button>` idéntico al del índice: `btn btn-danger`, `data-bs-toggle="modal" data-bs-target="#pdfExportModal"`, ícono+etiqueta iguales.
-- Eliminar el JS que seteaba el `href` del botón (ya no aplica).
+- En los 3 detalles (Cotizaciones, Pedidos, Compras), darle al botón PDF del footer el **mismo look** que el del índice: `btn btn-danger` sólido, ícono `ri-file-pdf-line align-bottom`, etiqueta "Exportar PDF".
+- Mantener el comportamiento **por registro**: `<a target="_blank">` con `href` seteado por JS a `/<modulo>/{id}/pdf`.
 
 **NO está en alcance**:
 - El botón "Exportar PDF" del índice (es la referencia, no se toca).
-- El dropdown por fila "Ver / Descargar PDF" (sigue descargando el registro individual).
-- La generación del PDF ni el contenido del modal de exportación.
+- Que el detalle abra el modal de exportación general (descartado tras aclaración: el detalle es específico).
+- La generación del PDF.
 
 ---
 
@@ -35,12 +38,12 @@ Ahora: es idéntico al de afuera (`btn btn-danger`, ícono `ri-file-pdf-line ali
 
 | Archivo | Acción | Descripción |
 |---|---|---|
-| `resources/views/admin/cotizaciones/modals.blade.php` | MODIFY | Botón footer `#viewModal` → `btn-danger` que abre `#pdfExportModal` |
-| `resources/views/admin/cotizaciones/scripts/main.blade.php` | MODIFY | Eliminado `$('#view-pdf-btn').attr('href', …)` |
-| `resources/views/admin/pedidos/modals.blade.php` | MODIFY | Botón footer `#viewModal` → `btn-danger` que abre `#pdfExportModal` |
-| `resources/views/admin/pedidos/scripts/listado.blade.php` | MODIFY | Eliminado `$('#view-ped-pdf-btn').attr('href', …)` |
-| `resources/views/admin/compras/modals/view.blade.php` | MODIFY | Botón footer `#viewCompraModal` → `btn-danger` que abre `#pdfExportModal` |
-| `resources/views/admin/compras/scripts/main.blade.php` | MODIFY | Eliminado `$('#cv-pdf-btn').attr('href', …)` |
+| `resources/views/admin/cotizaciones/modals.blade.php` | MODIFY | `#view-pdf-btn`: `<a btn-danger target=_blank>` "Exportar PDF" (descarga el registro) |
+| `resources/views/admin/cotizaciones/scripts/main.blade.php` | MODIFY | `$('#view-pdf-btn').attr('href', '/cotizaciones/'+id+'/pdf')` |
+| `resources/views/admin/pedidos/modals.blade.php` | MODIFY | `#view-ped-pdf-btn`: `<a btn-danger target=_blank>` "Exportar PDF" |
+| `resources/views/admin/pedidos/scripts/listado.blade.php` | MODIFY | `$('#view-ped-pdf-btn').attr('href', '/pedidos/'+id+'/pdf')` |
+| `resources/views/admin/compras/modals/view.blade.php` | MODIFY | `#cv-pdf-btn`: `<a btn-danger target=_blank>` "Exportar PDF" |
+| `resources/views/admin/compras/scripts/main.blade.php` | MODIFY | `$('#cv-pdf-btn').attr('href', '/compras/'+d.id+'/pdf')` |
 
 ---
 
@@ -65,26 +68,25 @@ Ahora: es idéntico al de afuera (`btn btn-danger`, ícono `ri-file-pdf-line ali
 #   y revive al cerrar el export. NO reimplementar por módulo.
 ```
 
-### NO existe — no referenciar
-- ~~ids `#view-pdf-btn`, `#view-ped-pdf-btn`, `#cv-pdf-btn`~~ — eliminados; el botón ya no necesita id (abre el modal vía data-bs-target).
+### IDs (vigentes — los usa el JS para setear el href por registro)
+- `#view-pdf-btn` (cotizaciones), `#view-ped-pdf-btn` (pedidos), `#cv-pdf-btn` (compras).
 
 ---
 
 ## Criterios de aceptación
 
 - [x] Los 3 botones PDF del detalle se ven igual al "Exportar PDF" del índice (btn-danger sólido, mismo ícono y etiqueta).
-- [x] Al hacer clic abren `#pdfExportModal` (mismo comportamiento que el de afuera).
-- [x] El detalle se oculta y revive correctamente al cerrar el export (fix global de modales anidados).
-- [x] Sin referencias JS huérfanas a los ids viejos.
+- [x] Al hacer clic descargan/abren el PDF de ESE registro (`/<modulo>/{id}/pdf`), NO el modal de exportación general.
+- [x] El comportamiento del botón "Exportar PDF" del índice (reporte general con filtros) queda intacto.
 
 ---
 
 ## QA manual
 
-1. `/cotizaciones` → "Ver" → footer: botón "Exportar PDF" rojo idéntico al de afuera → clic abre el modal de exportación con filtros.
-2. Cerrar el modal de exportación → vuelve al detalle intacto.
-3. Repetir en `/pedidos` y `/compras`.
-4. Comparar visualmente el botón del detalle con el de la barra (al lado de Agregar) → iguales.
+1. `/cotizaciones` → "Ver" → footer: botón "Exportar PDF" rojo idéntico al de afuera → clic abre el PDF de ESA cotización.
+2. Repetir en `/pedidos` y `/compras` (PDF del pedido/compra específico).
+3. Comparar visualmente el botón del detalle con el de la barra (al lado de Agregar) → se ven iguales.
+4. El "Exportar PDF" de la barra sigue abriendo el modal de reporte general.
 
 ---
 
@@ -92,6 +94,6 @@ Ahora: es idéntico al de afuera (`btn btn-danger`, ícono `ri-file-pdf-line ali
 
 **Completado por**: vanessa (con Claude Code)
 **Fecha**: 2026-06-18
-**Commits**: *(este commit)*
-**Notas**: Supersede la decisión visual de TASK-044 (outline + descarga directa). Ahora los 3 botones del detalle replican exactamente el botón índice y abren el modal de exportación con filtros, apoyándose en el fix global de modales anidados. El dropdown por fila sigue descargando el registro individual.
+**Commits**: de0d618 (1ª versión: abría el modal general), <este commit> (corrección: descarga el registro)
+**Notas**: Primero se implementó abriendo `#pdfExportModal` (interpretando "comportarse igual"). El solicitante aclaró que el detalle debe ser específico: se corrigió a `<a>` con href por registro, conservando el look sólido rojo del botón de afuera. Supersede la decisión visual de TASK-044 (outline). El dropdown por fila sigue descargando el registro individual.
 **Desviaciones del spec**: Cambio de requerimiento posterior al shipped; documentado como task nueva.
