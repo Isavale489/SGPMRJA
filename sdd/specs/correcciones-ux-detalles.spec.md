@@ -8,7 +8,7 @@ base_branch: enmanuel
 **Feature ID**: FEAT-006
 **Fecha**: 2026-06-18
 **Autor**: Vane2105
-**Status**: approved
+**Status**: shipped
 **Versión objetivo**: Sprint actual
 
 ---
@@ -270,3 +270,4 @@ Ninguna. Se reutilizan las existentes (ver Codebase Contract).
 |---|---|---|---|
 | 0.1 | 2026-06-18 | Vane2105 | Borrador inicial (4 correcciones UI/UX de detalle en Cotizaciones) |
 | 0.2 | 2026-06-18 | Vane2105 | Resueltas preguntas abiertas (PDF detalle cotiz+compras; campos dinámicos solo cotizaciones; separación de secciones sin migrar hero). Status → approved |
+| 1.0 | 2026-06-18 | Vane2105 | Implementadas TASK-042..045 + TASK-046 (botón PDF en detalle de Pedidos, mejora de consistencia). Status → shipped |

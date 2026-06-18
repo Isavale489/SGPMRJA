@@ -2,7 +2,7 @@
 
 **Feature**: FEAT-006 — correcciones-ux-detalles
 **Spec**: `sdd/specs/correcciones-ux-detalles.spec.md`
-**Status**: in-progress
+**Status**: done
 **Priority**: high
 **Esfuerzo estimado**: S (< 2h)
 **Depends-on**: none
@@ -154,8 +154,8 @@ if (!esJuridico) { $('#view-cliente-apellido').html(vm(data.cliente.apellido)); 
 
 *(Llenar al terminar)*
 
-**Completado por**:
-**Fecha**:
-**Commits**:
-**Notas**:
+**Completado por**: vanessa (con Claude Code)
+**Fecha**: 2026-06-18
+**Commits**: d29a209
+**Notas**: Fix 100% front-end. Detección por `tipo_documento ∈ {J-,G-}` en el handler `.view-btn`; jurídico usa `razon_social || nombre` y oculta `#view-apellido-wrap` vía `d-none`. Verificado con datos reales: los 3 clientes jurídicos de la BD guardan el nombre de empresa en `persona.nombre` (razon_social vacía) → el fallback lo resuelve.
 **Desviaciones del spec**: ninguna

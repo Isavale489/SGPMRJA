@@ -2,7 +2,7 @@
 
 **Feature**: FEAT-006 — correcciones-ux-detalles
 **Spec**: `sdd/specs/correcciones-ux-detalles.spec.md`
-**Status**: in-progress
+**Status**: done
 **Priority**: medium
 **Esfuerzo estimado**: S (< 2h)
 **Depends-on**: none
@@ -120,8 +120,8 @@ El email del wizard de edición se renderiza en `#cot-cliente-email-display` den
 
 *(Llenar al terminar)*
 
-**Completado por**:
-**Fecha**:
-**Commits**:
-**Notas**:
+**Completado por**: vanessa (con Claude Code)
+**Fecha**: 2026-06-18
+**Commits**: a656f1b
+**Notas**: Solo CSS. `overflow-wrap:anywhere` + `word-break:break-word` + `min-width:0` en `#view-cliente-email` y `#cot-cliente-email-display`; `.cot-cliente-contact-item` con `min-width:0; max-width:100%`. Sin cambios de markup.
 **Desviaciones del spec**: ninguna

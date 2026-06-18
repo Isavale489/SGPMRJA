@@ -2,7 +2,7 @@
 
 **Feature**: FEAT-006 — correcciones-ux-detalles
 **Spec**: `sdd/specs/correcciones-ux-detalles.spec.md`
-**Status**: in-progress
+**Status**: done
 **Priority**: medium
 **Esfuerzo estimado**: S (< 2h)
 **Depends-on**: none
@@ -126,8 +126,8 @@ $('#cv-pdf-btn').attr('href', '/compras/' + d.id + '/pdf');
 
 *(Llenar al terminar)*
 
-**Completado por**:
-**Fecha**:
-**Commits**:
-**Notas**:
+**Completado por**: vanessa (con Claude Code)
+**Fecha**: 2026-06-18
+**Commits**: 834cfd0
+**Notas**: Ambos botones de detalle (cotizaciones `#view-pdf-btn`, compras `#cv-pdf-btn`) unificados a `btn-sm btn-outline-danger`, ícono `ri-file-pdf-line`, etiqueta "Descargar PDF". IDs/href/target intactos; el JS no cambió. El "Exportar PDF" del índice quedó intacto.
 **Desviaciones del spec**: ninguna

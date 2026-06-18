@@ -2,7 +2,7 @@
 
 **Feature**: FEAT-006 — correcciones-ux-detalles
 **Spec**: `sdd/specs/correcciones-ux-detalles.spec.md`
-**Status**: in-progress
+**Status**: done
 **Priority**: medium
 **Esfuerzo estimado**: M (2-4h)
 **Depends-on**: TASK-042
@@ -141,8 +141,8 @@ Implementa el **Módulo 4** del spec. El detalle "Ver" de Cotizaciones (`#viewMo
 
 *(Llenar al terminar)*
 
-**Completado por**:
-**Fecha**:
-**Commits**:
-**Notas**:
-**Desviaciones del spec**: ninguna
+**Completado por**: vanessa (con Claude Code)
+**Fecha**: 2026-06-18
+**Commits**: f51b793
+**Notas**: Las 2 cards del Paso 1 ("Información del Cliente" y "Datos de la Cotización") pasaron a las clases `cli-view-card`/`cli-view-card-header`/`cli-view-card-body` del estándar "Detalles del Insumo". Sin CSS nuevo (reuso del patrón existente, dark mode incluido). Pasos 2 y 3 ya tenían estilo propio adecuado → no se tocaron. Stepper/IDs intactos.
+**Desviaciones del spec**: Pasos 2/3 no modificados (ya cumplían la separación visual); el alcance efectivo fue el Paso 1.
