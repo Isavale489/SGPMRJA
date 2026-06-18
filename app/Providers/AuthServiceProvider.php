@@ -27,5 +27,11 @@ class AuthServiceProvider extends ServiceProvider
         Gate::before(function ($user) {
             return esUsuarioAdministrador($user) ? true : null;
         });
+
+        // Acceso al panel de seguridad (FEAT-005 / TASK-039): SOLO Administrador.
+        // Deliberadamente NO se gobierna por la matriz dinámica (config/modulos.php)
+        // para que nadie pueda otorgarse el panel a sí mismo (anti-escalada). El
+        // admin pasa por Gate::before; cualquier otro rol cae aquí y se deniega.
+        Gate::define('acceso-seguridad', fn ($user) => esUsuarioAdministrador($user));
     }
 }

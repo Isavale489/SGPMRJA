@@ -13,6 +13,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProductoController;
 use App\Http\Controllers\ProveedorController;
 use App\Http\Controllers\ReportesController;
+use App\Http\Controllers\SeguridadController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\PagesController;
 use App\Http\Controllers\PedidoController;
@@ -312,5 +313,23 @@ Route::middleware(['auth', 'throttle:60,1', 'active.user', 'recovery.questions.r
             Route::get('/empleados', [ReportesController::class, 'empleados'])->name('reportes.empleados');
         });
 });
+
+// ============================================
+// PANEL DE SEGURIDAD (FEAT-005 / TASK-039) — SOLO Administrador.
+// Deliberadamente FUERA del middleware 'permiso' y AUSENTE de config/modulos.php:
+// el acceso al panel no se gobierna por la matriz dinámica, para que nadie pueda
+// otorgárselo a sí mismo (anti-escalada). Gate 'acceso-seguridad' = admin por Gate::before.
+// ============================================
+Route::middleware(['auth', 'throttle:60,1', 'active.user', 'recovery.questions.required', 'can:acceso-seguridad'])
+    ->prefix('configuracion/seguridad')
+    ->name('seguridad.')
+    ->group(function () {
+        Route::get('/', [SeguridadController::class, 'index'])->name('index');
+        Route::post('roles', [SeguridadController::class, 'storeRol'])->name('roles.store');
+        Route::put('roles/{rol}', [SeguridadController::class, 'updateRol'])->name('roles.update');
+        Route::delete('roles/{rol}', [SeguridadController::class, 'destroyRol'])->name('roles.destroy');
+        Route::get('permisos/{rol}', [SeguridadController::class, 'getPermisos'])->name('permisos.get');
+        Route::put('permisos/{rol}', [SeguridadController::class, 'guardarMatriz'])->name('permisos.update');
+    });
 
 require __DIR__ . '/auth.php';

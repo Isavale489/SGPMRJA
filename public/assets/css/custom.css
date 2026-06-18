@@ -8874,3 +8874,82 @@ header#page-topbar,
 [data-bs-theme="dark"] .cli-copy-btn { color: #8a9ab0; }
 [data-bs-theme="dark"] .cli-copy-btn:hover { background: rgba(157, 180, 230, 0.14); color: #9db4e6; }
 [data-bs-theme="dark"] .cli-copy-btn.is-copied { background: rgba(34, 197, 94, 0.18); color: #4ade80; }
+
+/* ══════════════════════════════════════════════════════════
+   PANEL DE SEGURIDAD (FEAT-005 / TASK-039)
+   Roles + matriz de permisos. Reusa el shell de Configuración.
+══════════════════════════════════════════════════════════ */
+
+/* Tabs Roles / Permisos dentro de la card-config */
+.seg-tabs {
+    padding: 0 1rem;
+    border-bottom: 1px solid var(--vz-border-color);
+}
+.seg-tabs .nav-link {
+    font-weight: 500;
+    color: var(--vz-secondary-color);
+    border: none;
+    padding: 0.85rem 1rem;
+}
+.seg-tabs .nav-link.active {
+    color: #1e3c72;
+    background: transparent;
+    border-bottom: 2px solid #1e3c72;
+}
+[data-bs-theme="dark"] .seg-tabs .nav-link.active {
+    color: #9db4e6;
+    border-bottom-color: #9db4e6;
+}
+
+/* Chips de acción (checkbox + etiqueta) en la matriz */
+.seg-accion-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0;
+    padding: 4px 10px;
+    border: 1px solid var(--vz-border-color);
+    border-radius: 999px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    user-select: none;
+    transition: background .15s ease, border-color .15s ease, color .15s ease;
+}
+.seg-accion-chip:hover {
+    border-color: #1e3c72;
+}
+.seg-accion-chip input.form-check-input {
+    margin: 0;
+    cursor: pointer;
+    float: none;
+}
+/* Resaltar el chip cuando su checkbox está marcado */
+.seg-accion-chip:has(input:checked) {
+    background: rgba(30, 60, 114, 0.10);
+    border-color: #1e3c72;
+    color: #1e3c72;
+    font-weight: 500;
+}
+[data-bs-theme="dark"] .seg-accion-chip:has(input:checked) {
+    background: rgba(157, 180, 230, 0.16);
+    border-color: #9db4e6;
+    color: #cdd9f2;
+}
+
+/* Tabla de la matriz */
+.seg-matriz th {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+.seg-matriz td {
+    vertical-align: middle;
+}
+.seg-matriz .form-check-sm .form-check-input {
+    margin-top: 0.15rem;
+}
+
+/* Tabla de roles */
+.seg-roles-table td {
+    vertical-align: middle;
+}
