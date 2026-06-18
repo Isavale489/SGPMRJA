@@ -5110,6 +5110,55 @@ header#page-topbar,
     background-color: #2d3139 !important;
 }
 
+/* ── Select realzado (AtlanticoSelect) en SOLO LECTURA ───────────────
+   Para selects derivados de otro campo (p.ej. Tipo de Cliente/Proveedor,
+   que lo define el prefijo del documento). Mismo lenguaje que
+   .campo-protegido: fondo gris, sin caret y candado a la derecha. */
+.afs-wrap:has(> select.js-readonly) { position: relative; }
+
+.afs-wrap:has(> select.js-readonly) .afs-toggle {
+    background-color: #f0f0f0 !important;
+    color: #878a99 !important;
+    border-style: dashed !important;
+    cursor: not-allowed !important;
+    background-image: none !important;   /* no es desplegable: sin flecha */
+    opacity: 1;
+}
+
+/* El VALOR sí debe leerse con claridad (no apagado) */
+.afs-wrap:has(> select.js-readonly) .afs-toggle .afs-label {
+    color: #2c3e50 !important;
+    font-weight: 600;
+}
+
+.afs-wrap:has(> select.js-readonly)::after {
+    content: '\F1A4';                    /* candado (remixicon) */
+    font-family: 'remixicon';
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #878a99;
+    font-size: 14px;
+    pointer-events: none;
+}
+
+[data-bs-theme="dark"] .afs-wrap:has(> select.js-readonly) .afs-toggle {
+    background-color: #2d3139 !important;
+    color: #9aa4b2 !important;
+}
+[data-bs-theme="dark"] .afs-wrap:has(> select.js-readonly) .afs-toggle .afs-label {
+    color: #e9ecef !important;
+}
+
+/* Fallback: si el select NO está realzado (widget no aplicado), opacar el nativo */
+select.js-readonly.afs-native { display: none; }
+select.js-readonly:not(.afs-native) {
+    background-color: #f0f0f0 !important;
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
 /* ── .btn-purple ─────────────────────────────────────────────────
    Botón violeta para acciones secundarias (importar, etc.)        */
 .btn-purple            { background-color: #6f42c1; border-color: #6f42c1; color: #fff; }

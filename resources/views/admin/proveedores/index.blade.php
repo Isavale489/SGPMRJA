@@ -368,13 +368,17 @@
                             <div class="modal-form-section-title"><i class="ri-fingerprint-line"></i>Identificación</div>
 
                             <div class="row mb-0">
-                                {{-- Documento del proveedor: RIF si jurídico, Cédula si natural. Se togglea por JS según
-                                tipo. --}}
-                                <div class="col-md-6 js-tipo-juridico">
-                                    <x-forms.input name="rif_number" label="RIF" id="rif-number-field"
-                                        placeholder="Ej: 123456789" maxlength="9" required prependRaw="true">
+                                {{-- Documento unificado: el prefijo (V/E/J/G) determina el tipo de proveedor.
+                                     V/E → Natural (cédula), J/G → Jurídico (RIF). --}}
+                                <div class="col-md-6">
+                                    <x-forms.input name="documento_identidad_number" label="Documento (Cédula o RIF)"
+                                        id="documento-identidad-field" maxlength="9" placeholder="Nro. de documento"
+                                        required prependRaw="true">
                                         <x-slot:prepend>
-                                            <select class="form-select" id="rif-prefix-field" style="max-width: 80px;">
+                                            <select class="form-select" id="tipo-documento-field" name="tipo_documento"
+                                                style="max-width: 80px;">
+                                                <option value="V-">V-</option>
+                                                <option value="E-">E-</option>
                                                 <option value="J-">J-</option>
                                                 <option value="G-">G-</option>
                                             </select>
@@ -382,22 +386,11 @@
                                     </x-forms.input>
                                     <input type="hidden" id="rif-field" name="rif" />
                                 </div>
-                                <div class="col-md-6 js-tipo-natural" style="display: none;">
-                                    <x-forms.input name="documento_identidad_number" label="Documento de Identidad"
-                                        id="documento-identidad-field" maxlength="8" placeholder="Ej: 12345678" required
-                                        prependRaw="true">
-                                        <x-slot:prepend>
-                                            <select class="form-select" id="tipo-documento-field" name="tipo_documento"
-                                                style="max-width: 80px;">
-                                                <option value="V-">V-</option>
-                                                <option value="E-">E-</option>
-                                            </select>
-                                        </x-slot:prepend>
-                                    </x-forms.input>
-                                </div>
                                 <div class="col-md-6">
                                     <x-forms.select name="tipo_proveedor" label="Tipo de Proveedor" required
-                                        id="tipo-proveedor-field" :options="['juridico' => 'Jurídico (Empresa)', 'natural' => 'Natural (Persona)']" placeholder="" />
+                                        id="tipo-proveedor-field" :options="['juridico' => 'Jurídico (Empresa)', 'natural' => 'Natural (Persona)']" placeholder=""
+                                        class="js-readonly" disabled title="Se determina por el prefijo del documento"
+                                        hint="Se define por el prefijo del documento (V/E → Natural, J/G → Jurídico)." />
                                 </div>
                             </div>
                         </div>
@@ -734,47 +727,57 @@
                 return '<div class="d-flex gap-1 justify-content-center align-items-center">' + sVer + menu + '</div>';
             }
 
-            // Toggle campos según tipo de proveedor.
-            // Los selectores incluyen tanto los bloques grandes (#campos-juridico/#campos-natural)
-            // como los wrappers del RIF/Documento dentro de la sección Identificación
-            // (.js-tipo-juridico/.js-tipo-natural).
+            // Toggle de los bloques de datos (#campos-juridico/#campos-natural) según el tipo.
+            // El TIPO se DERIVA del prefijo del documento (select de tipo en solo lectura).
+            function tipoDesdePrefijo(prefix) {
+                return (prefix === 'J-' || prefix === 'G-') ? 'juridico' : 'natural';
+            }
+
             function toggleCampos() {
-                var tipo = $('#tipo-proveedor-field').val();
-                var $jur = $('#campos-juridico, .js-tipo-juridico');
-                var $nat = $('#campos-natural, .js-tipo-natural');
+                var prefix = $('#tipo-documento-field').val() || 'V-';
+                var tipo = tipoDesdePrefijo(prefix);
+                var $jur = $('#campos-juridico');
+                var $nat = $('#campos-natural');
+                var $doc = $('#documento-identidad-field');
+
+                // Reflejar el tipo en el select de solo lectura (trigger change para que
+                // AtlanticoSelect resincronice la etiqueta del widget realzado).
+                $('#tipo-proveedor-field').val(tipo).trigger('change');
+
+                // Maxlength dinámico: RIF (J/G) 9 dígitos, cédula (V/E) 8.
+                var maxLen = (tipo === 'juridico') ? 9 : 8;
+                $doc.attr('maxlength', String(maxLen));
+                if (($doc.val() || '').length > maxLen) $doc.val($doc.val().slice(0, maxLen));
 
                 if (tipo === 'natural') {
                     $jur.hide();
                     $nat.show();
-                    // Desactivar validaciones del bloque JURÍDICO oculto (incluye RIF en Identificación)
                     $jur.find('[required]').each(function () {
                         $(this).removeAttr('required').attr('data-required', 'true');
                     });
-                    // Restaurar validaciones del bloque NATURAL visible (incluye Documento en Identificación)
                     $nat.find('[data-required]').each(function () {
                         $(this).attr('required', 'required').removeAttr('data-required');
                     });
-                    // Limpiar campos jurídicos
-                    $('#rif-number-field, #razon-social-field, #direccion-jur-field, #telefono-jur-field, #email-jur-field, #contacto-field, #telefono-contacto-field, #estado-territorial-jur-field').val('');
+                    // Limpiar campos jurídicos (NO el documento, que es compartido)
+                    $('#razon-social-field, #direccion-jur-field, #telefono-jur-field, #email-jur-field, #contacto-field, #telefono-contacto-field, #estado-territorial-jur-field').val('');
                     $('#ciudad-jur-field').empty().append('<option value="">Primero seleccione un estado</option>');
                 } else {
                     $jur.show();
                     $nat.hide();
-                    // Desactivar validaciones del bloque NATURAL oculto (incluye Documento en Identificación)
                     $nat.find('[required]').each(function () {
                         $(this).removeAttr('required').attr('data-required', 'true');
                     });
-                    // Restaurar validaciones del bloque JURÍDICO visible (incluye RIF en Identificación)
                     $jur.find('[data-required]').each(function () {
                         $(this).attr('required', 'required').removeAttr('data-required');
                     });
-                    // Limpiar campos naturales
-                    $('#nombre-field, #apellido-field, #documento-identidad-field, #telefono-nat-field, #email-nat-field, #direccion-nat-field, #ciudad-field, #estado-territorial-field').val('');
+                    // Limpiar campos naturales (NO el documento, que es compartido)
+                    $('#nombre-field, #apellido-field, #telefono-nat-field, #email-nat-field, #direccion-nat-field, #ciudad-field, #estado-territorial-field').val('');
                 }
             }
 
-            $('#tipo-proveedor-field').on('change', toggleCampos);
-            toggleCampos(); // Inicializar: quitar required de los campos ocultos al cargar
+            // El tipo se deriva del prefijo del documento.
+            $('#tipo-documento-field').on('change', toggleCampos);
+            toggleCampos(); // Inicializar: tipo + visibilidad + required según el prefijo
 
             // Dropdown dependiente: Poblar municipios cuando cambia el estado (Natural)
             $("#estado-territorial-field").on('change', function () {
@@ -984,16 +987,28 @@
                 $.get("{{ route('proveedores.show', ':id') }}".replace(':id', id), function (data) {
                     $("#modalTitle").text("Editar Proveedor");
                     $("#id-field").val(data.id);
-                    $("#tipo-proveedor-field").val(data.tipo_proveedor || 'juridico');
 
+                    // Documento unificado: fijar prefijo+número primero; el tipo se deriva del prefijo.
+                    if (data.tipo_proveedor === 'natural') {
+                        $("#tipo-documento-field").val(data.tipo_documento || 'V-');
+                        $("#documento-identidad-field").val(data.documento_identidad || '');
+                    } else {
+                        var rifFull = data.rif || '';
+                        var rifM = rifFull.match(/^(V-|J-|E-|G-)(.+)$/);
+                        if (rifM) {
+                            $("#tipo-documento-field").val(rifM[1]);
+                            $("#documento-identidad-field").val(rifM[2]);
+                        } else {
+                            $("#tipo-documento-field").val('J-');
+                            $("#documento-identidad-field").val(rifFull);
+                        }
+                    }
                     toggleCampos();
 
                     if (data.tipo_proveedor === 'natural') {
                         // Cargar datos de persona natural
                         $("#nombre-field").val(data.nombre);
                         $("#apellido-field").val(data.apellido);
-                        $("#tipo-documento-field").val(data.tipo_documento || 'V-');
-                        $("#documento-identidad-field").val(data.documento_identidad);
 
                         // Separar teléfono en prefijo y número
                         var telefono = data.telefono || '';
@@ -1021,16 +1036,7 @@
                             select.val(data.ciudad);
                         }
                     } else {
-                        // Cargar datos de empresa jurídica
-                        var rif = data.rif || '';
-                        var rifMatch = rif.match(/^(V-|J-|E-|G-)(.+)$/);
-                        if (rifMatch) {
-                            $("#rif-prefix-field").val(rifMatch[1]);
-                            $("#rif-number-field").val(rifMatch[2]);
-                        } else {
-                            $("#rif-prefix-field").val('J-');
-                            $("#rif-number-field").val(rif);
-                        }
+                        // Cargar datos de empresa jurídica (el documento ya se fijó arriba)
                         $("#razon-social-field").val(data.razon_social);
                         $("#direccion-jur-field").val(data.direccion);
 
@@ -1075,15 +1081,9 @@
                     $("#add-btn").hide();
                     $("#edit-btn").show();
 
-                    // Bloquear edición de documento y tipo de proveedor
-                    $("#tipo-proveedor-field").prop('disabled', true).addClass('campo-protegido');
-                    if (data.tipo_proveedor === 'natural') {
-                        $("#tipo-documento-field").prop('disabled', true).addClass('campo-protegido');
-                        $("#documento-identidad-field").prop('disabled', true).addClass('campo-protegido');
-                    } else {
-                        $("#rif-prefix-field").prop('disabled', true).addClass('campo-protegido');
-                        $("#rif-number-field").prop('disabled', true).addClass('campo-protegido');
-                    }
+                    // Bloquear edición del documento (el tipo ya es de solo lectura)
+                    $("#tipo-documento-field").prop('disabled', true).addClass('campo-protegido');
+                    $("#documento-identidad-field").prop('disabled', true).addClass('campo-protegido');
 
                     $("#showModal").modal('show');
                 });
@@ -1098,15 +1098,15 @@
                 var id = $("#id-field").val();
                 var url = id ? "{{ route('proveedores.update', ':id') }}".replace(':id', id) : "{{ route('proveedores.store') }}";
                 var method = id ? "PUT" : "POST";
-                var tipo = $('#tipo-proveedor-field').val();
+                var tipo = tipoDesdePrefijo($('#tipo-documento-field').val());
 
                 var formData = new FormData(this);
                 formData.set('tipo_proveedor', tipo);
 
                 // Preparar datos según tipo y LIMPIAR campos del tipo opuesto
                 if (tipo === 'juridico') {
-                    var rifPrefix = $('#rif-prefix-field').val();
-                    var rifNumber = $('#rif-number-field').val();
+                    var rifPrefix = $('#tipo-documento-field').val();
+                    var rifNumber = $('#documento-identidad-field').val();
                     formData.set('rif', rifPrefix + rifNumber);
 
                     // Concatenar teléfono principal: prefijo-número
@@ -1290,14 +1290,11 @@
                 $("#modalTitle").text("Agregar Proveedor");
                 $("#proveedorForm")[0].reset();
                 $("#id-field").val("");
-                $("#tipo-proveedor-field").val("juridico");
+                $("#tipo-documento-field").val("V-");
                 toggleCampos();
                 $("#add-btn").show().prop('disabled', false);
                 $("#edit-btn").hide();
-                // Desbloquear campos de documento
-                $("#tipo-proveedor-field").prop('disabled', false).removeClass('campo-protegido');
-                $("#rif-prefix-field").prop('disabled', false).removeClass('campo-protegido');
-                $("#rif-number-field").prop('disabled', false).removeClass('campo-protegido');
+                // Desbloquear el documento unificado
                 $("#tipo-documento-field").prop('disabled', false).removeClass('campo-protegido');
                 $("#documento-identidad-field").prop('disabled', false).removeClass('campo-protegido');
                 $('.is-invalid').removeClass('is-invalid');
@@ -1321,36 +1318,8 @@
                 this.value = this.value.replace(/[^0-9]/g, '').slice(0, 7);
             });
             $(document).on('input', '#documento-identidad-field', function () {
-                this.value = this.value.replace(/[^0-9]/g, '').slice(0, 8);
-            });
-            $(document).on('input', '#rif-number-field', function () {
-                this.value = this.value.replace(/[^0-9]/g, '').slice(0, 9);
-            });
-
-            // 1. RIF (Jurídico) — longitud mínima + AJAX duplicado
-            $(document).on('blur', '#rif-number-field', function () {
-                var $input = $(this);
-                var val = $input.val().trim();
-                var isEdit = $('#id-field').val() !== '';
-                if (val.length === 0) {
-                    marcarInvalido($input, 'El RIF es obligatorio.');
-                    return;
-                }
-                if (val.length < 5) {
-                    marcarInvalido($input, 'El RIF debe tener al menos 5 dígitos.');
-                    return;
-                }
-                if (isEdit) { marcarValido($input); return; }
-                var fullRif = $('#rif-prefix-field').val() + val;
-                $.get("{{ route('proveedores.check-rif') }}", { rif: fullRif }, function (res) {
-                    if (res.exists) {
-                        marcarInvalido($input, 'Este RIF ya está registrado.');
-                        $('#add-btn').prop('disabled', true);
-                    } else {
-                        marcarValido($input);
-                        $('#add-btn').prop('disabled', false);
-                    }
-                });
+                var max = parseInt($(this).attr('maxlength'), 10) || 9;
+                this.value = this.value.replace(/[^0-9]/g, '').slice(0, max);
             });
 
             // 2. Razón Social (Jurídico)
@@ -1389,29 +1358,45 @@
                 }
             });
 
-            // 5. Documento de Identidad (Natural) — longitud + AJAX duplicado
+            // 5. Documento unificado — longitud + AJAX duplicado (según el prefijo)
             $(document).on('blur', '#documento-identidad-field', function () {
                 var $input = $(this);
                 var val = $input.val().trim();
                 var isEdit = $('#id-field').val() !== '';
+                var tipo = tipoDesdePrefijo($('#tipo-documento-field').val());
+                var minLen = (tipo === 'juridico') ? 5 : 6;
                 if (val.length === 0) {
                     marcarInvalido($input, 'El documento es obligatorio.');
                     return;
                 }
-                if (val.length < 6) {
-                    marcarInvalido($input, 'El documento debe tener al menos 6 dígitos.');
+                if (val.length < minLen) {
+                    marcarInvalido($input, 'El documento debe tener al menos ' + minLen + ' dígitos.');
                     return;
                 }
                 if (isEdit) { marcarValido($input); return; }
-                $.get("{{ route('proveedores.check-documento') }}", { numero: val }, function (res) {
-                    if (res.exists) {
-                        marcarInvalido($input, 'Este documento ya está registrado.');
-                        $('#add-btn').prop('disabled', true);
-                    } else {
-                        marcarValido($input);
-                        $('#add-btn').prop('disabled', false);
-                    }
-                });
+
+                if (tipo === 'juridico') {
+                    var fullRif = $('#tipo-documento-field').val() + val;
+                    $.get("{{ route('proveedores.check-rif') }}", { rif: fullRif }, function (res) {
+                        if (res.exists) {
+                            marcarInvalido($input, 'Este RIF ya está registrado.');
+                            $('#add-btn').prop('disabled', true);
+                        } else {
+                            marcarValido($input);
+                            $('#add-btn').prop('disabled', false);
+                        }
+                    });
+                } else {
+                    $.get("{{ route('proveedores.check-documento') }}", { numero: val }, function (res) {
+                        if (res.exists) {
+                            marcarInvalido($input, 'Este documento ya está registrado.');
+                            $('#add-btn').prop('disabled', true);
+                        } else {
+                            marcarValido($input);
+                            $('#add-btn').prop('disabled', false);
+                        }
+                    });
+                }
             });
 
             // 6. Teléfono principal — Jurídico
@@ -1513,7 +1498,7 @@
                 var tipo = $('#tipo-proveedor-field').val();
 
                 if (tipo === 'juridico') {
-                    var $rif = $('#rif-number-field');
+                    var $rif = $('#documento-identidad-field');
                     if ($rif.val().trim().length < 5) {
                         marcarInvalido($rif, 'El RIF debe tener al menos 5 dígitos.');
                         esValido = false;

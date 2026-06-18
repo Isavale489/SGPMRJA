@@ -415,7 +415,9 @@
                             </div>
                             <div class="col-md-6">
                                 <x-forms.select name="tipo_cliente" label="Tipo de Cliente" required id="tipo_cliente-field"
-                                    :options="['natural' => 'Natural', 'juridico' => 'Jurídico', 'gubernamental' => 'Gubernamental']" />
+                                    :options="['natural' => 'Natural', 'juridico' => 'Jurídico', 'gubernamental' => 'Gubernamental']"
+                                    class="js-readonly" disabled title="Se determina por el prefijo del documento"
+                                    hint="Se define solo por el prefijo del documento (V/E → Natural, J → Jurídico, G → Gubernamental)." />
                             </div>
                         </div>
                     </div>
@@ -638,7 +640,11 @@
             var p = $(this).data('persona');
             var role = $(this).data('role');
 
-            if (p.tipo_documento) $('#documento-prefix-field').val(p.tipo_documento);
+            if (p.tipo_documento) {
+                $('#documento-prefix-field').val(p.tipo_documento);
+                // Derivar el tipo (read-only) y la visibilidad según el prefijo.
+                toggleClienteFields();
+            }
 
             // Datos personales
             $('#nombre-field').val(p.nombre || '').prop('readonly', true).addClass('bg-light').css('cursor', 'not-allowed');
@@ -806,14 +812,24 @@
             $('.invalid-feedback').hide();
         });
 
-        // === Lógica dinámica: Natural vs Jurídico/Gubernamental ===
+        // === Lógica dinámica: el TIPO se DERIVA del PREFIJO del documento ===
+        // El prefijo es el control editable; el select de tipo es de solo lectura.
+        function tipoDesdePrefijo(prefix) {
+            if (prefix === 'J-') return 'juridico';
+            if (prefix === 'G-') return 'gubernamental';
+            return 'natural'; // V- y E-
+        }
+
         function toggleClienteFields() {
-            var tipo = $('#tipo_cliente-field').val();
-            var esNatural = (tipo === 'natural' || tipo === '');
-            var $prefixSelect = $('#documento-prefix-field');
+            var prefix = $('#documento-prefix-field').val() || 'V-';
+            var tipo = tipoDesdePrefijo(prefix);
             var $docInput = $('#documento-number-field');
 
-            if (esNatural) {
+            // Reflejar el tipo en el select de solo lectura (trigger change para que
+            // AtlanticoSelect resincronice la etiqueta del widget realzado).
+            $('#tipo_cliente-field').val(tipo).trigger('change');
+
+            if (tipo === 'natural') {
                 // Mostrar Nombre + Apellido, ocultar Razón Social
                 $('#campos-persona-natural').removeClass('d-none');
                 $('#nombre-field').prop('required', true).prop('disabled', false);
@@ -822,18 +838,13 @@
                 $('#campos-razon-social').addClass('d-none');
                 $('#razon-social-field').prop('required', false).prop('disabled', true).val('');
 
-                // Prefijos: V- y E- para Natural
-                $prefixSelect.html('<option value="V-">V-</option><option value="E-">E-</option>');
-                $prefixSelect.prop('disabled', false);
                 // Maxlength: 8 dígitos para cédula
                 $docInput.attr('maxlength', '8');
-                // Truncar si el valor actual excede el nuevo máximo
                 if ($docInput.val().length > 8) {
                     $docInput.val($docInput.val().slice(0, 8));
                 }
-
-            } else if (tipo === 'juridico') {
-                // Ocultar Nombre + Apellido, mostrar Razón Social
+            } else {
+                // Jurídico o Gubernamental → Razón Social
                 $('#campos-persona-natural').addClass('d-none');
                 $('#nombre-field').prop('required', false).prop('disabled', true).val('');
                 $('#apellido-field').prop('required', false).prop('disabled', true).val('');
@@ -841,28 +852,7 @@
                 $('#campos-razon-social').removeClass('d-none');
                 $('#razon-social-field').prop('required', true).prop('disabled', false);
 
-                // Prefijo: solo J- (bloqueado)
-                $prefixSelect.html('<option value="J-">J-</option>');
-                $prefixSelect.prop('disabled', true);
                 // Maxlength: 9 dígitos para RIF
-                $docInput.attr('maxlength', '9');
-                if ($docInput.val().length > 9) {
-                    $docInput.val($docInput.val().slice(0, 9));
-                }
-
-            } else if (tipo === 'gubernamental') {
-                // Ocultar Nombre + Apellido, mostrar Razón Social
-                $('#campos-persona-natural').addClass('d-none');
-                $('#nombre-field').prop('required', false).prop('disabled', true).val('');
-                $('#apellido-field').prop('required', false).prop('disabled', true).val('');
-
-                $('#campos-razon-social').removeClass('d-none');
-                $('#razon-social-field').prop('required', true).prop('disabled', false);
-
-                // Prefijo: solo G- (bloqueado)
-                $prefixSelect.html('<option value="G-">G-</option>');
-                $prefixSelect.prop('disabled', true);
-                // Maxlength: 9 dígitos para RIF gubernamental
                 $docInput.attr('maxlength', '9');
                 if ($docInput.val().length > 9) {
                     $docInput.val($docInput.val().slice(0, 9));
@@ -876,8 +866,8 @@
             return (prefix === 'J-' || prefix === 'G-') ? 9 : 8;
         }
 
-        // Disparar al cambiar el tipo de cliente
-        $(document).on('change', '#tipo_cliente-field', function () {
+        // Disparar al cambiar el prefijo del documento (el tipo se deriva)
+        $(document).on('change', '#documento-prefix-field', function () {
             toggleClienteFields();
         });
 
@@ -1239,6 +1229,8 @@
                 var telefonoCompleto = $("#telefono-prefix-field").val() + "-" + $("#telefono-number-field").val();
                 $("#telefono-field").val(telefonoCompleto);
                 var formData = $(this).serialize();
+                // El select de tipo es disabled (read-only) → serialize lo omite; lo añadimos.
+                formData += '&tipo_cliente=' + encodeURIComponent($('#tipo_cliente-field').val());
                 if (method === 'PUT') { formData += '&_method=PUT'; }
                 $.ajax({
                     url: url,
@@ -1305,8 +1297,12 @@
                     $("#id-field").val(data.id);
                     $("#nombre-field").val(data.nombre || '');
                     $("#apellido-field").val(data.apellido || '');
-                    $("#tipo_cliente-field").val(data.tipo_cliente);
-                    // Actualizar visibilidad de campos según tipo
+                    // El tipo se deriva del prefijo del documento: lo fijamos primero.
+                    if (data.documento) {
+                        $("#documento-prefix-field").val(data.documento.slice(0, 2));
+                        $("#documento-number-field").val(data.documento.slice(2));
+                    }
+                    // Actualizar tipo (read-only) y visibilidad de campos según el prefijo
                     toggleClienteFields();
                     // Si es Jurídico/Gubernamental, llenar Razón Social con nombre
                     if (data.tipo_cliente === 'juridico' || data.tipo_cliente === 'gubernamental') {
@@ -1322,10 +1318,6 @@
                         // Si no tiene guión, asumir formato 0424XXXXXXX
                         $("#telefono-prefix-field").val(data.telefono.slice(0, 4));
                         $("#telefono-number-field").val(data.telefono.slice(4));
-                    }
-                    if (data.documento) {
-                        $("#documento-prefix-field").val(data.documento.slice(0, 2));
-                        $("#documento-number-field").val(data.documento.slice(2));
                     }
                     $("#direccion-field").val(data.direccion || '');
 
@@ -1453,8 +1445,9 @@
                 });
             });
             $("#create-btn").click(function () {
-                $('#id-field').val('');
-                $('#clienteForm')[0].reset();
+                // NB: resetForm() (otro handler de #create-btn) ya restablece los campos
+                // y deriva el tipo desde el prefijo. Aquí solo limpiamos validación; NO
+                // re-resetear el form o se borraría el tipo recién derivado.
                 $('#modalTitle').text('Agregar Cliente');
                 $('#add-btn').show();
                 $('#edit-btn').hide();
