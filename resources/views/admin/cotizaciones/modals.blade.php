@@ -213,8 +213,8 @@
 
             <div class="modal-footer wiz-wizard-footer">
                 <div class="wiz-wizard-footer-info">
-                    <a href="#" id="view-pdf-btn" class="btn btn-sm btn-warning" target="_blank">
-                        <i class="ri-file-pdf-line me-1"></i>PDF
+                    <a href="#" id="view-pdf-btn" class="btn btn-sm btn-outline-danger" target="_blank">
+                        <i class="ri-file-pdf-line me-1"></i>Descargar PDF
                     </a>
                 </div>
                 <div class="wiz-wizard-footer-actions">
