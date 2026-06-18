@@ -33,12 +33,17 @@ class Pedido extends Model
     ];
 
     /**
-     * Días hábiles (lun-vie) de plazo de entrega contados desde la formalización.
-     * Configurable desde el panel /configuracion (default 30).
+     * Plazo de entrega estándar en días hábiles (lun-vie) desde la formalización.
+     * Valor fijo: la fecha de entrega real se define por pedido en el wizard
+     * (calendario) y siempre manda. Esto solo alimenta los textos informativos
+     * de "tiempo de ejecución" (FAQ, factura, términos) y el respaldo de
+     * formalización para pedidos legacy sin fecha.
      */
+    public const DIAS_HABILES_ENTREGA = 30;
+
     public static function diasHabilesEntrega(): int
     {
-        return (int) parametro('pedidos.dias_entrega_habiles');
+        return self::DIAS_HABILES_ENTREGA;
     }
 
     /**

@@ -45,15 +45,6 @@ return [
         'config_key'  => 'pedidos.abono_minimo_porcentaje',
     ],
 
-    'pedidos.dias_entrega_habiles' => [
-        'modulo'      => 'Pedidos',
-        'nombre'      => 'Tiempo de ejecución (días hábiles)',
-        'descripcion' => 'Días hábiles (sin sábados ni domingos) entre la formalización del pedido y la fecha de entrega estimada que calcula el sistema. La fecha elegida manualmente en el wizard siempre manda.',
-        'tipo'        => 'entero',
-        'reglas'      => 'required|integer|min:1|max:180',
-        'default'     => 30,
-    ],
-
     'cotizaciones.dias_vigencia' => [
         'modulo'      => 'Cotizaciones',
         'nombre'      => 'Vigencia de precios (días)',
