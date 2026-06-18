@@ -2,11 +2,11 @@
 
 **Feature**: FEAT-006 — correcciones-ux-detalles
 **Spec**: `sdd/specs/correcciones-ux-detalles.spec.md`
-**Status**: pending
+**Status**: in-progress
 **Priority**: medium
 **Esfuerzo estimado**: M (2-4h)
 **Depends-on**: TASK-042
-**Assigned-to**: unassigned
+**Assigned-to**: vanessa
 
 ---
 

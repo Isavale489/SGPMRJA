@@ -48,13 +48,11 @@
                     </div>
                     <div class="row g-3">
                         <div class="col-md-6">
-                            <div class="card border-0 shadow-sm h-100">
-                                <div class="card-header border-0 bg-soft-primary py-2 px-3">
-                                    <h6 class="mb-0 text-atlantico-dark fs-13">
-                                        <i class="ri-user-star-line me-1"></i>Información del Cliente
-                                    </h6>
+                            <div class="cli-view-card h-100">
+                                <div class="cli-view-card-header">
+                                    <i class="ri-user-star-line"></i>Información del Cliente
                                 </div>
-                                <div class="card-body p-3">
+                                <div class="cli-view-card-body">
                                     <div class="row g-2">
                                         <div class="col-6 d-flex align-items-start">
                                             <div class="emp-icon-box emp-icon-box--navy rounded-circle me-2 flex-shrink-0 d-flex align-items-center justify-content-center">
@@ -96,13 +94,11 @@
                             </div>
                         </div>
                         <div class="col-md-6">
-                            <div class="card border-0 shadow-sm h-100">
-                                <div class="card-header border-0 bg-soft-primary py-2 px-3">
-                                    <h6 class="mb-0 text-atlantico-dark fs-13">
-                                        <i class="ri-calendar-todo-line me-1"></i>Datos de la Cotización
-                                    </h6>
+                            <div class="cli-view-card h-100">
+                                <div class="cli-view-card-header">
+                                    <i class="ri-calendar-todo-line"></i>Datos de la Cotización
                                 </div>
-                                <div class="card-body p-3">
+                                <div class="cli-view-card-body">
                                     <div class="row g-2">
                                         <div class="col-6 d-flex align-items-start">
                                             <div class="emp-icon-box emp-icon-box--navy rounded-circle me-2 flex-shrink-0 d-flex align-items-center justify-content-center">
