@@ -54,7 +54,7 @@
                                 </a>
                             @endif
                             <div class="d-flex gap-2">
-                                @if(Auth::user()->isAdmin() && !$historial)
+                                @if(tienePermiso('proveedores.gestionar') && !$historial)
                                     <button type="button" class="btn btn-success add-btn" data-bs-toggle="modal" id="create-btn"
                                         data-bs-target="#showModal">
                                         <i class="ri-add-line align-bottom me-1"></i> Agregar Proveedor
@@ -718,8 +718,8 @@
                 if (isTrashed) {
                     items = '<li><button type="button" class="dropdown-item act-item act-restore restore-item-btn" data-id="' + proveedorId + '"><span class="act-ic"><i class="ri-arrow-go-back-line"></i></span>Restaurar</button></li>';
                 } else {
-                    var isAdmin = {{ Auth::user()->isAdmin() ? 'true' : 'false' }};
-                    if (isAdmin) {
+                    var puedeGestionar = {{ tienePermiso('proveedores.gestionar') ? 'true' : 'false' }};
+                    if (puedeGestionar) {
                         items =
                             '<li><button type="button" class="dropdown-item act-item act-edit edit-item-btn" data-id="' + proveedorId + '"><span class="act-ic"><i class="ri-pencil-fill"></i></span>Editar</button></li>' +
                             '<li><button type="button" class="dropdown-item act-item act-del remove-item-btn" data-id="' + proveedorId + '"><span class="act-ic"><i class="ri-forbid-line"></i></span>Inhabilitar</button></li>';

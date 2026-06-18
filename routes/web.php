@@ -13,6 +13,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProductoController;
 use App\Http\Controllers\ProveedorController;
 use App\Http\Controllers\ReportesController;
+use App\Http\Controllers\SeguridadController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\PagesController;
 use App\Http\Controllers\PedidoController;
@@ -45,7 +46,11 @@ Route::get('/portfolio', [PagesController::class, 'portfolio'])->name('portfolio
 // ============================================
 // RUTAS PROTEGIDAS (Requieren autenticación)
 // ============================================
-Route::middleware(['auth', 'throttle:60,1', 'active.user', 'recovery.questions.required'])->group(function () {
+// Autorización por permisos (FEAT-005 / TASK-038): el middleware 'permiso' resuelve
+// el permiso requerido desde el nombre de la ruta vía config/modulos.php (deny-by-default).
+// Sustituye a los antiguos grupos role:Administrador y role:Administrador,Supervisor:
+// el Administrador entra por Gate::before; el Supervisor y demás roles, por sus filas en permiso_rol.
+Route::middleware(['auth', 'throttle:60,1', 'active.user', 'recovery.questions.required', 'permiso'])->group(function () {
 
     // Dashboard - Acceso para todos los usuarios autenticados
     Route::get('/dashboard', [HomeController::class, 'index'])->name('dashboard');
@@ -58,9 +63,9 @@ Route::middleware(['auth', 'throttle:60,1', 'active.user', 'recovery.questions.r
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
     // ============================================
-    // SOLO ADMINISTRADOR (CRUD de escritura)
+    // CRUD DE ESCRITURA (antes role:Administrador) — ahora gateado por 'permiso'
+    // vía config/modulos.php (acciones 'gestionar' / módulos solo-admin).
     // ============================================
-    Route::middleware('role:Administrador')->group(function () {
         // Configuración del sistema (FEAT-004)
         Route::get('configuracion', [ConfiguracionController::class, 'index'])->name('configuracion.index');
         Route::put('configuracion/{modulo}', [ConfiguracionController::class, 'update'])->name('configuracion.update');
@@ -140,12 +145,11 @@ Route::middleware(['auth', 'throttle:60,1', 'active.user', 'recovery.questions.r
         Route::delete('proveedores/{proveedor}', [ProveedorController::class, 'destroy'])->name('proveedores.destroy');
         Route::get('proveedores/{proveedor}/edit', [ProveedorController::class, 'edit'])->name('proveedores.edit');
         Route::post('proveedores/{id}/restore', [ProveedorController::class, 'restore'])->name('proveedores.restore');
-    });
 
     // ============================================
-    // ADMIN Y SUPERVISOR (Lectura + CRUD compartido)
+    // LECTURA + CRUD COMPARTIDO (antes role:Administrador,Supervisor) — ahora
+    // gateado por 'permiso' vía config/modulos.php (acciones 'ver'/'gestionar'/etc.).
     // ============================================
-    Route::middleware('role:Administrador,Supervisor')->group(function () {
         // Pedidos (lectura)
         Route::get('pedidos', [PedidoController::class, 'index'])->name('pedidos.index');
         Route::get('pedidos-data', [PedidoController::class, 'getPedidos'])->name('pedidos.data');
@@ -308,7 +312,24 @@ Route::middleware(['auth', 'throttle:60,1', 'active.user', 'recovery.questions.r
             Route::get('/insumos', [ReportesController::class, 'insumos'])->name('reportes.insumos');
             Route::get('/empleados', [ReportesController::class, 'empleados'])->name('reportes.empleados');
         });
-    });
 });
+
+// ============================================
+// PANEL DE SEGURIDAD (FEAT-005 / TASK-039) — SOLO Administrador.
+// Deliberadamente FUERA del middleware 'permiso' y AUSENTE de config/modulos.php:
+// el acceso al panel no se gobierna por la matriz dinámica, para que nadie pueda
+// otorgárselo a sí mismo (anti-escalada). Gate 'acceso-seguridad' = admin por Gate::before.
+// ============================================
+Route::middleware(['auth', 'throttle:60,1', 'active.user', 'recovery.questions.required', 'can:acceso-seguridad'])
+    ->prefix('configuracion/seguridad')
+    ->name('seguridad.')
+    ->group(function () {
+        Route::get('/', [SeguridadController::class, 'index'])->name('index');
+        Route::post('roles', [SeguridadController::class, 'storeRol'])->name('roles.store');
+        Route::put('roles/{rol}', [SeguridadController::class, 'updateRol'])->name('roles.update');
+        Route::delete('roles/{rol}', [SeguridadController::class, 'destroyRol'])->name('roles.destroy');
+        Route::get('permisos/{rol}', [SeguridadController::class, 'getPermisos'])->name('permisos.get');
+        Route::put('permisos/{rol}', [SeguridadController::class, 'guardarMatriz'])->name('permisos.update');
+    });
 
 require __DIR__ . '/auth.php';

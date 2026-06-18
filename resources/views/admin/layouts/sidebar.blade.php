@@ -397,8 +397,20 @@
                 </li>
 
                 @auth
-                    @if (Auth::user()->hasRole(['Administrador', 'Supervisor']))
+                    @php
+                        // Visibilidad del sidebar por permisos (FEAT-005 / TASK-038).
+                        // Cada ítem se muestra si el rol tiene '<modulo>.ver'; el Administrador
+                        // ve todo porque tienePermiso() bypassa por Gate::before. Una sección o
+                        // sub-dropdown solo aparece si tiene al menos un hijo visible (sin headers vacíos).
+                        $verMaestros       = tienePermiso('clientes.ver') || tienePermiso('productos.ver') || tienePermiso('atributos.ver') || tienePermiso('colores.ver') || tienePermiso('proveedores.ver') || tienePermiso('insumos.ver') || tienePermiso('empleados.ver') || tienePermiso('departamentos.ver') || tienePermiso('cargos.ver');
+                        $verProductosGrp   = tienePermiso('productos.ver') || tienePermiso('atributos.ver') || tienePermiso('colores.ver');
+                        $verRRHHGrp        = tienePermiso('empleados.ver') || tienePermiso('departamentos.ver') || tienePermiso('cargos.ver');
+                        $verOperativa      = tienePermiso('cotizaciones.ver') || tienePermiso('pedidos.ver') || tienePermiso('ordenes.ver') || tienePermiso('movimiento-insumo.ver') || tienePermiso('compras.ver');
+                        $verMovimientosGrp = tienePermiso('movimiento-insumo.ver') || tienePermiso('compras.ver');
+                        $verReportes       = tienePermiso('reportes.ver');
+                    @endphp
 
+                    @if ($verMaestros)
                         {{-- ================================== --}}
                         {{-- 2. MAESTROS --}}
                         {{-- ================================== --}}
@@ -411,14 +423,17 @@
                             <div class="collapse menu-dropdown {{ request()->is('clientes*') || request()->is('productos*') || request()->is('atributos*') || request()->is('colores*') || request()->is('proveedores*') || request()->is('insumos*') || request()->is('empleados*') || request()->is('departamentos*') || request()->is('cargos*') ? 'show' : '' }}"
                                 id="sidebarMaestros">
                                 <ul class="nav nav-sm flex-column">
+                                    @if (tienePermiso('clientes.ver'))
                                     <li class="nav-item">
                                         <a href="{{ url('clientes') }}"
                                             class="nav-link {{ request()->is('clientes*') ? 'active' : '' }}">
                                             <i class="ri-user-star-line me-1"></i> Clientes
                                         </a>
                                     </li>
+                                    @endif
 
                                     {{-- Productos con sub-dropdown (Atributos) --}}
+                                    @if ($verProductosGrp)
                                     <li class="nav-item">
                                         <a href="#sidebarProductos" data-bs-toggle="collapse" role="button"
                                             class="nav-link {{ request()->is('productos*', 'atributos*', 'colores*') ? 'active' : 'collapsed' }}"
@@ -429,42 +444,54 @@
                                         <div class="collapse menu-dropdown {{ request()->is('productos*', 'atributos*', 'colores*') ? 'show' : '' }}"
                                             id="sidebarProductos">
                                             <ul class="nav nav-sm flex-column">
+                                                @if (tienePermiso('productos.ver'))
                                                 <li class="nav-item">
                                                     <a href="{{ url('productos') }}"
                                                         class="nav-link {{ request()->is('productos*') ? 'active' : '' }}">
                                                         <i class="ri-list-check-2 me-1"></i> Catálogo
                                                     </a>
                                                 </li>
+                                                @endif
+                                                @if (tienePermiso('atributos.ver'))
                                                 <li class="nav-item">
                                                     <a href="{{ url('atributos') }}"
                                                         class="nav-link {{ request()->is('atributos*') ? 'active' : '' }}">
                                                         <i class="ri-list-settings-line me-1"></i> Atributos
                                                     </a>
                                                 </li>
+                                                @endif
+                                                @if (tienePermiso('colores.ver'))
                                                 <li class="nav-item">
                                                     <a href="{{ url('colores') }}"
                                                         class="nav-link {{ request()->is('colores*') ? 'active' : '' }}">
                                                         <i class="ri-palette-line me-1"></i> Colores
                                                     </a>
                                                 </li>
+                                                @endif
                                             </ul>
                                         </div>
                                     </li>
+                                    @endif
 
+                                    @if (tienePermiso('proveedores.ver'))
                                     <li class="nav-item">
                                         <a href="{{ url('proveedores') }}"
                                             class="nav-link {{ request()->is('proveedores*') ? 'active' : '' }}">
                                             <i class="ri-truck-line me-1"></i> Proveedores
                                         </a>
                                     </li>
+                                    @endif
+                                    @if (tienePermiso('insumos.ver'))
                                     <li class="nav-item">
                                         <a href="{{ url('insumos') }}"
                                             class="nav-link {{ request()->is('insumos*') ? 'active' : '' }}">
                                             <i class="ri-archive-line me-1"></i> Insumos
                                         </a>
                                     </li>
+                                    @endif
 
                                     {{-- Empleados con sub-dropdown (Departamentos, Cargos) --}}
+                                    @if ($verRRHHGrp)
                                     <li class="nav-item">
                                         <a href="#sidebarEmpleados" data-bs-toggle="collapse" role="button"
                                             class="nav-link {{ request()->is('empleados*', 'departamentos*', 'cargos*') ? 'active' : 'collapsed' }}"
@@ -475,31 +502,40 @@
                                         <div class="collapse menu-dropdown {{ request()->is('empleados*', 'departamentos*', 'cargos*') ? 'show' : '' }}"
                                             id="sidebarEmpleados">
                                             <ul class="nav nav-sm flex-column">
+                                                @if (tienePermiso('empleados.ver'))
                                                 <li class="nav-item">
                                                     <a href="{{ url('empleados') }}"
                                                         class="nav-link {{ request()->is('empleados*') ? 'active' : '' }}">
                                                         <i class="ri-user-settings-line me-1"></i> Empleados
                                                     </a>
                                                 </li>
+                                                @endif
+                                                @if (tienePermiso('departamentos.ver'))
                                                 <li class="nav-item">
                                                     <a href="{{ url('departamentos') }}"
                                                         class="nav-link {{ request()->is('departamentos*') ? 'active' : '' }}">
                                                         <i class="ri-building-line me-1"></i> Departamentos
                                                     </a>
                                                 </li>
+                                                @endif
+                                                @if (tienePermiso('cargos.ver'))
                                                 <li class="nav-item">
                                                     <a href="{{ url('cargos') }}"
                                                         class="nav-link {{ request()->is('cargos*') ? 'active' : '' }}">
                                                         <i class="ri-briefcase-line me-1"></i> Cargos
                                                     </a>
                                                 </li>
+                                                @endif
                                             </ul>
                                         </div>
                                     </li>
+                                    @endif
                                 </ul>
                             </div>
                         </li>
+                    @endif
 
+                    @if ($verOperativa)
                         {{-- ================================== --}}
                         {{-- 3. TRANSACCIONES --}}
                         {{-- ================================== --}}
@@ -512,24 +548,30 @@
                             <div class="collapse menu-dropdown {{ request()->is('cotizaciones*') || request()->is('pedidos*') || request()->is('ordenes*') || request()->is('calidad*') || request()->is('movimiento-insumo*') || request()->is('compras*') || request()->is('garantias*') ? 'show' : '' }}"
                                 id="sidebarTransacciones">
                                 <ul class="nav nav-sm flex-column">
+                                    @if (tienePermiso('cotizaciones.ver'))
                                     <li class="nav-item">
                                         <a href="{{ url('cotizaciones') }}"
                                             class="nav-link {{ request()->is('cotizaciones*') ? 'active' : '' }}">
                                             <i class="ri-file-list-3-line me-1"></i> Cotizaciones
                                         </a>
                                     </li>
+                                    @endif
+                                    @if (tienePermiso('pedidos.ver'))
                                     <li class="nav-item">
                                         <a href="{{ url('pedidos') }}"
                                             class="nav-link {{ request()->is('pedidos*') ? 'active' : '' }}">
                                             <i class="ri-shopping-cart-line me-1"></i> Pedidos
                                         </a>
                                     </li>
+                                    @endif
+                                    @if (tienePermiso('ordenes.ver'))
                                     <li class="nav-item">
                                         <a href="{{ route('ordenes.index') }}"
                                             class="nav-link {{ request()->is('ordenes*') ? 'active' : '' }}">
                                             <i class="ri-calendar-check-line me-1"></i> Orden de Producción
                                         </a>
                                     </li>
+                                    @endif
                                     <li class="nav-item">
                                         {{-- TODO: Crear ruta y controlador para Control de Calidad --}}
                                         <a href="#"
@@ -538,6 +580,7 @@
                                         </a>
                                     </li>
                                     {{-- Movimientos con sub-dropdown (Insumos, Compras) --}}
+                                    @if ($verMovimientosGrp)
                                     <li class="nav-item">
                                         <a href="#sidebarMovimientos" data-bs-toggle="collapse" role="button"
                                             class="nav-link {{ request()->is('movimiento-insumo*', 'compras*') ? 'active' : 'collapsed' }}"
@@ -548,21 +591,26 @@
                                         <div class="collapse menu-dropdown {{ request()->is('movimiento-insumo*', 'compras*') ? 'show' : '' }}"
                                             id="sidebarMovimientos">
                                             <ul class="nav nav-sm flex-column">
+                                                @if (tienePermiso('movimiento-insumo.ver'))
                                                 <li class="nav-item">
                                                     <a href="{{ route('movimiento-insumo.index') }}"
                                                         class="nav-link {{ request()->is('movimiento-insumo*') ? 'active' : '' }}">
                                                         <i class="ri-archive-2-line me-1"></i> Movimientos de Insumos
                                                     </a>
                                                 </li>
+                                                @endif
+                                                @if (tienePermiso('compras.ver'))
                                                 <li class="nav-item">
                                                     <a href="{{ route('compras.index') }}"
                                                         class="nav-link {{ request()->is('compras*') ? 'active' : '' }}">
                                                         <i class="ri-shopping-bag-line me-1"></i> Compras
                                                     </a>
                                                 </li>
+                                                @endif
                                             </ul>
                                         </div>
                                     </li>
+                                    @endif
                                     <li class="nav-item">
                                         {{-- TODO: Crear ruta y controlador para Garantías --}}
                                         <a href="#"
@@ -573,7 +621,9 @@
                                 </ul>
                             </div>
                         </li>
+                    @endif
 
+                    @if ($verReportes)
                         {{-- ================================== --}}
                         {{-- 4. CONSULTAS Y REPORTES --}}
                         {{-- ================================== --}}
@@ -620,10 +670,7 @@
                                 </ul>
                             </div>
                         </li>
-
                     @endif
-
-
                 @endauth
             </ul>
         </div>

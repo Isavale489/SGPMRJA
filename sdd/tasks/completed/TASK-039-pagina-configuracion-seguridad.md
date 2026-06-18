@@ -2,11 +2,11 @@
 
 **Feature**: FEAT-005 — seguridad-roles-permisos
 **Spec**: `sdd/specs/seguridad-roles-permisos.spec.md`
-**Status**: pending
+**Status**: in-progress
 **Priority**: high
 **Esfuerzo estimado**: XL (> 8h)
 **Depends-on**: TASK-035, TASK-037
-**Assigned-to**: unassigned
+**Assigned-to**: Emmanuel
 
 ---
 
@@ -173,8 +173,13 @@ aplique sin re-login (QA paso 6 del spec). Administrador NO es editable en la ma
 
 ## Nota de Completitud
 
-**Completado por**:
-**Fecha**:
-**Commits**:
+**Completado por**: Emmanuel
+**Fecha**: 2026-06-17
+**Commits**: (rama `feat/TASK-039-pagina-seguridad`)
 **Notas**:
+- `SeguridadController`: index + CRUD roles (storeRol/updateRol/destroyRol) + matriz (getPermisos/guardarMatriz con `sync` reemplazante + `Cache::forget("permisos.rol_{id}")`). Reglas: es_sistema no editable/eliminable, rol con usuarios no eliminable, Administrador no editable en matriz, `ver` forzado como prerrequisito server-side, solo claves válidas del registry.
+- 6 rutas `seguridad.*` registradas. Vistas en `admin/seguridad/` (index + 3 partials + scripts IIFE). Ítem en dropdown del header + enlace en el nav de config. CSS en custom.css (dark mode incluido). Validado en navegador por Santi.
+
 **Desviaciones del spec**:
+1. **Layout integrado al shell de Configuración** (decisión de Santi): en vez de una página standalone, la página de seguridad reusa el shell de dos columnas de FEAT-004. Se extrajo el nav-pills a un partial compartido `configuracion/partials/nav.blade.php` (modo `tabs` en la página de config, modo `links` en seguridad/otras). La página de config se refactorizó para usarlo (sin cambio funcional).
+2. **Gate `acceso-seguridad` + grupo de rutas fuera de `permiso`** (no contemplado en el contract porque se escribió pre-TASK-038): como TASK-038 aplicó `permiso` a TODO el grupo `auth` y este hace deny-by-default (403) ANTES del bypass admin, las rutas de seguridad van en un grupo aparte SIN `permiso`, protegidas por `can:acceso-seguridad` (gate nuevo en AuthServiceProvider, solo-admin). Se mantiene FUERA de `config/modulos.php` a propósito: el acceso al panel NO es otorgable desde la matriz (anti-escalada). Cumple el requisito del spec "panel solo-admin, no por `permiso`".

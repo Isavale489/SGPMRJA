@@ -90,7 +90,7 @@
                     searchable: false,
                     width: '22%',
                     render: function (data, type, row) {
-                        var isAdmin = {{ Auth::user()->isAdmin() ? 'true' : 'false' }};
+                        var puedeGestionar = {{ tienePermiso('pedidos.gestionar') ? 'true' : 'false' }};
                         // Ver inline (acción rápida, en todas las filas) + menú "⋮ Más" con
                         // el resto de acciones, que son contextuales. Así cada fila es
                         // idéntica ([Ver][⋮]): columna alineada y sin huecos en blanco.
@@ -99,15 +99,15 @@
                         var items = '';
                         // Editar / Eliminar (bloqueado si hay producción activa o el pedido
                         // ya está completado/cancelado).
-                        var puedeEditar = isAdmin && row.estado !== 'Completado' && row.estado !== 'Cancelado' && !row.tiene_produccion;
+                        var puedeEditar = puedeGestionar && row.estado !== 'Completado' && row.estado !== 'Cancelado' && !row.tiene_produccion;
                         if (puedeEditar) {
                             items += `<li><button type="button" class="dropdown-item act-item act-edit edit-btn" data-id="${data}"><span class="act-ic"><i class="ri-pencil-fill"></i></span>Editar</button></li>`;
                             items += `<li><button type="button" class="dropdown-item act-item act-del remove-btn" data-id="${data}"><span class="act-ic"><i class="ri-delete-bin-fill"></i></span>Eliminar</button></li>`;
                         }
                         // Cancelar (Pendiente/Procesando) o Reactivar (Cancelado).
-                        if (isAdmin && (row.estado === 'Pendiente' || row.estado === 'Procesando')) {
+                        if (puedeGestionar && (row.estado === 'Pendiente' || row.estado === 'Procesando')) {
                             items += `<li><button type="button" class="dropdown-item act-item act-warn cancelar-btn" data-id="${data}"><span class="act-ic"><i class="ri-close-circle-line"></i></span>Cancelar pedido</button></li>`;
-                        } else if (isAdmin && row.estado === 'Cancelado') {
+                        } else if (puedeGestionar && row.estado === 'Cancelado') {
                             items += `<li><button type="button" class="dropdown-item act-item act-restore reactivar-btn" data-id="${data}"><span class="act-ic"><i class="ri-refresh-line"></i></span>Reactivar pedido</button></li>`;
                         }
                         // Separador antes del PDF si hubo acciones previas.
