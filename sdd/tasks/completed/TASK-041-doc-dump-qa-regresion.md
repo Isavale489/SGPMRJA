@@ -2,7 +2,7 @@
 
 **Feature**: FEAT-005 — seguridad-roles-permisos
 **Spec**: `sdd/specs/seguridad-roles-permisos.spec.md`
-**Status**: in-progress
+**Status**: completed
 **Priority**: medium
 **Esfuerzo estimado**: M (2-4h)
 **Depends-on**: TASK-035, TASK-036, TASK-037, TASK-038, TASK-039, TASK-040
@@ -133,8 +133,16 @@ dos sesiones, `migrate:fresh` vs dump). Documentar resultados.
 
 ## Nota de Completitud
 
-**Completado por**:
-**Fecha**:
-**Commits**:
+**Completado por**: Emmanuel
+**Fecha**: 2026-06-18
+**Commits**: doc `88be3e3`, dump `a949e2e`; mergeado a `enmanuel` vía PR #21 (merge `dd2a9f1`).
 **Notas**:
+- `docs/conventions/permissions.md` creado + enlazado en `docs/conventions/README.md`: patrón registry + matriz + autorización (helper `tienePermiso`, middleware `permiso` deny-by-default, `Gate::before`, caché por rol y flush, gate `acceso-seguridad` del panel, granularidad, cómo agregar módulo/acción).
+- Dump `database/sistema_atlantico.sql` actualizado por Santi: incluye `rol` (2 roles sistema), `permiso_rol` (34 filas de paridad Supervisor) y `user.role_id` (sin ENUM `role`).
+- **QA automático ✅**: `grep where('role'` limpio (0), grupos `role:` retirados de web.php (solo en comentarios), 0 huecos de rutas con `permiso`, 6 rutas `seguridad.*` con `can:acceso-seguridad`.
+- **QA manual de regresión ✅ PASÓ** (confirmado por Santi 2026-06-18): golden path §4 + edge cases. Runbook en `sdd/qa/FEAT-005-qa-regresion.md`.
+- Paridad Administrador/Supervisor confirmada (en navegador desde TASK-038/039 y en este QA).
+
 **Desviaciones del spec**:
+1. **Dump con sabor MariaDB** (no MySQL nativo): se exportó vía phpMyAdmin desde la MariaDB local de Santi (`bigint(20)`, header phpMyAdmin) en vez del MySQL 8 nativo que pide CLAUDE.md. Decisión pragmática de Santi; el contenido es correcto e importa en MySQL 8. Aclaración registrada en memoria [[feedback_dump_mysql]].
+2. **Runbook de QA como artefacto** (`sdd/qa/FEAT-005-qa-regresion.md`): no estaba en el scope original, pero formaliza el QA manual del §4 para que lo ejecute el encargado.
