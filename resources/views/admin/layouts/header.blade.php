@@ -335,14 +335,12 @@
                                         class="mdi mdi-lock text-muted fs-16 align-middle me-1"></i> <span
                                         class="align-middle">Lock screen</span></a>--}}
                                 @if (Auth::user()->isAdmin())
-                                    {{-- Usuarios y Perfil también son accesibles desde dentro del panel --}}
+                                    {{-- Punto de entrada único a las configuraciones. Seguridad, Usuarios
+                                         y Perfil se acceden DENTRO del panel /configuracion (evita
+                                         duplicar accesos en este dropdown). --}}
                                     <a class="dropdown-item d-flex align-items-center" href="{{ route('configuracion.index') }}">
                                         <i class="mdi mdi-cog-outline fs-16 align-middle me-2 text-primary"></i>
                                         <span class="align-middle">Configuración del sistema</span>
-                                    </a>
-                                    <a class="dropdown-item d-flex align-items-center" href="{{ route('seguridad.index') }}">
-                                        <i class="mdi mdi-shield-lock-outline fs-16 align-middle me-2 text-primary"></i>
-                                        <span class="align-middle">Configuración de seguridad</span>
                                     </a>
                                 @endif
                             </div>
