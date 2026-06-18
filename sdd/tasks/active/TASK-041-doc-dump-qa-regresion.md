@@ -2,11 +2,11 @@
 
 **Feature**: FEAT-005 — seguridad-roles-permisos
 **Spec**: `sdd/specs/seguridad-roles-permisos.spec.md`
-**Status**: pending
+**Status**: in-progress
 **Priority**: medium
 **Esfuerzo estimado**: M (2-4h)
 **Depends-on**: TASK-035, TASK-036, TASK-037, TASK-038, TASK-039, TASK-040
-**Assigned-to**: unassigned
+**Assigned-to**: Emmanuel
 
 ---
 

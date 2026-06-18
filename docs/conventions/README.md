@@ -57,6 +57,7 @@
 | Doc | Cuándo leerlo |
 |---|---|
 | [`password-recovery.md`](password-recovery.md) | Tocar el flujo de auth o recuperación de contraseña |
+| [`permissions.md`](permissions.md) | Tocar roles/permisos, agregar un módulo/acción al registry, o el panel de seguridad |
 
 ### Lecciones aprendidas
 
