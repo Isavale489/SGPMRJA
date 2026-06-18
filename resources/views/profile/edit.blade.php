@@ -761,23 +761,9 @@
             </div>
         </div>
 
-        {{-- Zona de peligro --}}
-        <div class="row g-3 mt-0">
-            <div class="col-12">
-                <div class="card profile-section-card section-danger">
-                    <div class="card-header">
-                        <span class="section-icon"><i class="ri-error-warning-line"></i></span>
-                        <div>
-                            <h5 class="card-title text-danger">Zona de peligro</h5>
-                            <p class="card-subtitle">Acciones irreversibles</p>
-                        </div>
-                    </div>
-                    <div class="card-body">
-                        @include('profile.partials.delete-user-form')
-                    </div>
-                </div>
-            </div>
-        </div>
+        {{-- Zona de peligro ELIMINADA: por política, una cuenta de usuario NO se
+             borra nunca (ni siquiera la propia). Solo un administrador puede
+             inhabilitarla (estado=0) desde el módulo de Usuarios. --}}
 @endsection
 
 @push('scripts')
