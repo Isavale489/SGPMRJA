@@ -276,10 +276,13 @@
         }
     }
 
-    /* Velzon fuerza min-height:1400px en detached+sm (app.css), lo que deja un
-       hueco enorme bajo el footer cuando el sidebar está colapsado. Lo anulamos:
-       el sidebar flota con top/bottom, así que no necesita esa altura mínima. */
+    /* Velzon fuerza min-height:1400px en modo sm: tanto en el <html> (app.css:870)
+       como en #layout-wrapper/.main-content (app.css:1101). Eso deja un hueco
+       enorme bajo el footer cuando el sidebar está colapsado. Lo anulamos: como
+       neutralizamos el flyout (que era lo que necesitaba esa altura) y el sidebar
+       flota con top/bottom, basta con 100vh. */
     @media (min-width: 768px) {
+        [data-layout="vertical"][data-layout-style="detached"][data-sidebar-size="sm"],
         [data-layout="vertical"][data-layout-style="detached"][data-sidebar-size="sm"] #layout-wrapper,
         [data-layout="vertical"][data-layout-style="detached"][data-sidebar-size="sm"] .main-content {
             min-height: 100vh !important;
