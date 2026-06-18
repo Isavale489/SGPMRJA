@@ -262,10 +262,84 @@
     [data-bs-theme="dark"] .menu-dropdown .nav-item.menu-subitem-child::after {
         background: rgba(147, 197, 253, 0.25);
     }
+
+    /* ════════════════════════════════════════════════════════════
+       SIDEBAR COLAPSABLE (layout detached)
+       El logo vive en el header (.horizontal-logo); el brand-box del
+       sidebar queda oculto por Velzon en detached. Para poder colapsar
+       el sidebar (lg ↔ sm) reactivamos la hamburguesa del topbar, que
+       en detached viene oculta por defecto.
+       ════════════════════════════════════════════════════════════ */
+    @media (min-width: 1024.1px) {
+        [data-layout="vertical"][data-layout-style="detached"] .topnav-hamburger {
+            visibility: visible !important;
+        }
+    }
+
+    /* ── Modo icono (sm): SIN flyout de submenú ──
+       En lugar del menú flotante de Velzon, al hacer hover sólo se muestra
+       un tooltip con el nombre (ver más abajo) y el click expande el sidebar. */
+    [data-sidebar-size="sm"] .navbar-menu .navbar-nav .nav-item:hover > a.menu-link {
+        width: auto !important;
+        background: transparent !important;
+    }
+    [data-sidebar-size="sm"] .navbar-menu .navbar-nav .nav-item:hover > a.menu-link span {
+        display: none !important;
+        padding-right: 0 !important;
+    }
+    [data-sidebar-size="sm"] .navbar-menu .navbar-nav .nav-item:hover > a.menu-link::after {
+        display: none !important;
+    }
+    [data-sidebar-size="sm"] .navbar-menu .navbar-nav .nav-item:hover > .menu-dropdown {
+        display: none !important;
+    }
+
+    /* ── Tooltip del item colapsado ──
+       Lo crea/posiciona el JS en app.blade.php y se anexa a <body> (position:fixed)
+       para escapar el overflow del sidebar y los pseudo-elementos de cada item. */
+    .sb-collapsed-tooltip {
+        position: fixed;
+        transform: translateY(-50%);
+        background: #1e3c72;
+        color: #fff;
+        padding: 5px 11px;
+        border-radius: 6px;
+        font-size: 0.78rem;
+        font-weight: 600;
+        letter-spacing: 0.01em;
+        line-height: 1.2;
+        white-space: nowrap;
+        z-index: 1080;
+        pointer-events: none;
+        opacity: 0;
+        visibility: hidden;
+        box-shadow: 0 4px 14px rgba(15, 34, 58, 0.28);
+        transition: opacity .12s ease;
+    }
+    .sb-collapsed-tooltip.show {
+        opacity: 1;
+        visibility: visible;
+    }
+    /* Flechita */
+    .sb-collapsed-tooltip::before {
+        content: "";
+        position: absolute;
+        right: 100%;
+        top: 50%;
+        transform: translateY(-50%);
+        border: 6px solid transparent;
+        border-right-color: #1e3c72;
+    }
+    [data-bs-theme="dark"] .sb-collapsed-tooltip {
+        background: #2a5298;
+    }
+    [data-bs-theme="dark"] .sb-collapsed-tooltip::before {
+        border-right-color: #2a5298;
+    }
 </style>
 <div class="app-menu navbar-menu">
     <div class="navbar-brand-box">
-        === App Menu Dark Logo-->
+        <!-- App Menu Dark Logo -->
         <a href="{{ route('dashboard') }}" class="logo logo-dark">
             <span class="logo-sm">
                 <img src="{{ asset('atlantico-logo-wide.png') }}" alt="" height="32">

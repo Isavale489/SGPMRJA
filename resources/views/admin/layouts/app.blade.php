@@ -38,6 +38,22 @@
                 }
                 sessionStorage.setItem('data-bs-theme', savedTheme);
             }
+
+            // Sidebar colapsado: hidratar la preferencia guardada (solo escritorio).
+            // En tablet/móvil la plantilla maneja el tamaño de forma responsiva.
+            var savedSidebar = localStorage.getItem('sgpmrja-sidebar-size');
+            if (savedSidebar && (savedSidebar === 'lg' || savedSidebar === 'sm') && window.innerWidth > 1025) {
+                document.documentElement.setAttribute('data-sidebar-size', savedSidebar);
+                var defaultsSb = sessionStorage.getItem('defaultAttribute');
+                if (defaultsSb) {
+                    try {
+                        var parsedSb = JSON.parse(defaultsSb);
+                        parsedSb['data-sidebar-size'] = savedSidebar;
+                        sessionStorage.setItem('defaultAttribute', JSON.stringify(parsedSb));
+                    } catch (e) { }
+                }
+                sessionStorage.setItem('data-sidebar-size', savedSidebar);
+            }
         })();
     </script>
     <!-- Layout config Js -->
@@ -931,6 +947,87 @@
         $(document).ready(function () {
             AtlanticoGuard.init();
         });
+
+        // ──────────────────────────────────────────────────────────────────
+        // Sidebar colapsable — persistir la preferencia del usuario.
+        // El botón hamburguesa alterna data-sidebar-size lg↔sm; guardamos el
+        // estado en localStorage para que sobreviva al cerrar el navegador.
+        // Solo persistimos en escritorio (>1025px); por debajo la plantilla
+        // gestiona el tamaño de forma responsiva (overlay off-canvas).
+        // ──────────────────────────────────────────────────────────────────
+        (function () {
+            var html = document.documentElement;
+            new MutationObserver(function () {
+                if (window.innerWidth <= 1025) return;
+                var size = html.getAttribute('data-sidebar-size');
+                if (size === 'lg' || size === 'sm') {
+                    localStorage.setItem('sgpmrja-sidebar-size', size);
+                }
+            }).observe(html, { attributes: true, attributeFilter: ['data-sidebar-size'] });
+        })();
+
+        // ──────────────────────────────────────────────────────────────────
+        // Sidebar colapsado (sm) — tooltip + click para expandir.
+        // En modo icono NO queremos el flyout de submenú de Velzon; en su lugar:
+        //   · hover  → tooltip flotante con el nombre de la opción
+        //   · click  → si el item tiene submenú, expande el sidebar a lg y abre el grupo
+        // El flyout en sí se neutraliza por CSS (ver sidebar.blade.php).
+        // El tooltip se anexa a <body> con position:fixed para que NO lo recorte
+        // el overflow del scroll del sidebar (simplebar) ni choque con los
+        // pseudo-elementos (chevron) de los items.
+        // ──────────────────────────────────────────────────────────────────
+        (function () {
+            var html = document.documentElement;
+            var nav = document.getElementById('navbar-nav');
+            if (!nav) return;
+
+            function isCollapsed() {
+                return html.getAttribute('data-sidebar-size') === 'sm';
+            }
+
+            var tip = document.createElement('div');
+            tip.className = 'sb-collapsed-tooltip';
+            document.body.appendChild(tip);
+
+            function showTip(link) {
+                if (!isCollapsed()) return;
+                var span = link.querySelector('span');
+                var text = span ? span.textContent.trim() : '';
+                if (!text) return;
+                var r = link.getBoundingClientRect();
+                tip.textContent = text;
+                tip.style.top = (r.top + r.height / 2) + 'px';
+                tip.style.left = (r.right + 12) + 'px';
+                tip.classList.add('show');
+            }
+            function hideTip() { tip.classList.remove('show'); }
+
+            // NB: usamos selector de descendiente (no hijo directo). SimpleBar
+            // reparenta los <li> dentro de .simplebar-content, así que
+            // "#navbar-nav > li > a" matchearía 0. La clase .menu-link solo
+            // existe en los items de primer nivel (los submenús usan .nav-link).
+            nav.querySelectorAll('a.menu-link').forEach(function (link) {
+                link.addEventListener('mouseenter', function () { showTip(link); });
+                link.addEventListener('mouseleave', hideTip);
+
+                // Click en un item con submenú estando colapsado → expandir a lg.
+                // Fase de captura: el sidebar ya está en lg cuando Bootstrap
+                // procesa el toggle del collapse, así que abre el grupo.
+                link.addEventListener('click', function () {
+                    if (isCollapsed() && link.getAttribute('data-bs-toggle') === 'collapse') {
+                        hideTip();
+                        html.setAttribute('data-sidebar-size', 'lg');
+                        if (window.innerWidth > 1025) localStorage.setItem('sgpmrja-sidebar-size', 'lg');
+                        var hb = document.querySelector('.hamburger-icon');
+                        if (hb) hb.classList.add('open');
+                    }
+                }, true);
+            });
+
+            // El tooltip flotante debe seguir/ocultarse ante scroll o resize.
+            window.addEventListener('scroll', hideTip, true);
+            window.addEventListener('resize', hideTip);
+        })();
 
         // ──────────────────────────────────────────────────────────────────
         // AtlanticoCopy — copiar al portapapeles desde los modales "Ver" del
