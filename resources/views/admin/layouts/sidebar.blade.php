@@ -276,6 +276,16 @@
         }
     }
 
+    /* Velzon fuerza min-height:1400px en detached+sm (app.css), lo que deja un
+       hueco enorme bajo el footer cuando el sidebar está colapsado. Lo anulamos:
+       el sidebar flota con top/bottom, así que no necesita esa altura mínima. */
+    @media (min-width: 768px) {
+        [data-layout="vertical"][data-layout-style="detached"][data-sidebar-size="sm"] #layout-wrapper,
+        [data-layout="vertical"][data-layout-style="detached"][data-sidebar-size="sm"] .main-content {
+            min-height: 100vh !important;
+        }
+    }
+
     /* ── Modo icono (sm): SIN flyout de submenú ──
        En lugar del menú flotante de Velzon, al hacer hover sólo se muestra
        un tooltip con el nombre (ver más abajo) y el click expande el sidebar. */
