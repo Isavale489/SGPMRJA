@@ -93,19 +93,24 @@ $(document).ready(function () {
 
     // Los costos se cargan en bolívares; el equivalente en USD se deriva de la tasa.
     function recalcular() {
+        var tasa = parseFloat($('#c-tasa').val()) || 0;
         var subtotal = 0, baseGravada = 0; // en Bs
         $('#c-items-tbody tr').each(function () {
-            var cantidad = parseFloat($(this).find('.c-cantidad').val()) || 0;
-            var costo    = parseBs($(this).find('.c-costo').val()); // Bs unitario
+            var $row     = $(this);
+            var cantidad = parseFloat($row.find('.c-cantidad').val()) || 0;
+            var costo    = parseBs($row.find('.c-costo').val()); // Bs unitario
             var sub      = cantidad * costo;
             subtotal += sub;
-            if ($(this).find('.c-iva-check').is(':checked')) baseGravada += sub;
+            if ($row.find('.c-iva-check').is(':checked')) baseGravada += sub;
+
+            // Equivalente USD en vivo bajo cada input en Bs (vacío si no hay tasa).
+            $row.find('.c-costo-usd').html(tasa > 0 && costo > 0 ? '≈ $' + formatBs(costo / tasa) : '&nbsp;');
+            $row.find('.c-total-usd').html(tasa > 0 && sub > 0 ? '≈ $' + formatBs(sub / tasa) : '&nbsp;');
         });
         var iva    = baseGravada * IVA_TASA / 100;
         var exento = subtotal - baseGravada;
         var total  = subtotal + iva;
 
-        var tasa        = parseFloat($('#c-tasa').val()) || 0;
         var subtotalUsd = tasa > 0 ? subtotal / tasa : 0;
         var totalUsd    = tasa > 0 ? total / tasa : 0;
 
@@ -176,12 +181,18 @@ $(document).ready(function () {
             +   '</div>'
             + '</td>'
             + '<td class="text-center">'
-            +   '<input type="text" inputmode="decimal" class="form-control form-control-sm c-costo text-end"'
-            +   ' placeholder="0,00" style="max-width:120px;margin:0 auto;">'
+            +   '<div style="max-width:120px;margin:0 auto;">'
+            +     '<input type="text" inputmode="decimal" class="form-control form-control-sm c-costo text-end"'
+            +     ' placeholder="0,00">'
+            +     '<small class="c-usd-hint c-costo-usd">&nbsp;</small>'
+            +   '</div>'
             + '</td>'
             + '<td class="text-center">'
-            +   '<input type="text" inputmode="decimal" class="form-control form-control-sm c-total text-end"'
-            +   ' placeholder="0,00" style="max-width:130px;margin:0 auto;">'
+            +   '<div style="max-width:130px;margin:0 auto;">'
+            +     '<input type="text" inputmode="decimal" class="form-control form-control-sm c-total text-end"'
+            +     ' placeholder="0,00">'
+            +     '<small class="c-usd-hint c-total-usd">&nbsp;</small>'
+            +   '</div>'
             + '</td>'
             + '<td class="text-center">'
             +   '<div class="form-check d-inline-block m-0">'
