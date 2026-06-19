@@ -29,8 +29,10 @@
                         </div>
                     </div>
 
+                    {{-- Solo Salida: las entradas de inventario se registran por el módulo de Compras
+                         (con proveedor, costo y factura). Aquí solo se documentan salidas/ajustes. --}}
                     <x-forms.select name="tipo_movimiento" label="Tipo de Movimiento" required
-                        :options="['Entrada' => 'Entrada', 'Salida' => 'Salida']"
+                        :options="['Salida' => 'Salida']"
                         placeholder="Seleccione el tipo" />
 
                     <div class="mb-3">
