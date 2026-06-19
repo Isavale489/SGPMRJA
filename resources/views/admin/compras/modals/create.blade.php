@@ -340,9 +340,9 @@
                                                             <tr>
                                                                 <th>Insumo</th>
                                                                 <th class="text-end" style="width:64px;">Cant.</th>
-                                                                <th class="text-end" style="width:108px;">Costo Unit. (Bs)</th>
+                                                                <th class="text-end" style="width:120px;">Costo Unit.</th>
                                                                 <th class="text-center" style="width:56px;">IVA</th>
-                                                                <th class="text-end" style="width:118px;">Subtotal (Bs)</th>
+                                                                <th class="text-end" style="width:128px;">Subtotal</th>
                                                             </tr>
                                                         </thead>
                                                         <tbody id="c-recap-items-tbody"></tbody>

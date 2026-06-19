@@ -464,12 +464,20 @@ $(document).ready(function () {
             $('#c-recap-items').text('(' + n + ' insumo' + (n === 1 ? '' : 's') + ')');
 
             // Detalle de ítems: espejo de la grilla del paso 2 (solo lectura).
+            // Bajo cada monto en Bs se muestra el equivalente en USD con la tasa.
+            var tasaRecap = parseFloat($('#c-tasa').val()) || 0;
+            var usdSub = function (bs) {
+                return tasaRecap > 0
+                    ? '<small class="text-muted d-block fw-normal">≈ $' + formatBs(bs / tasaRecap) + '</small>'
+                    : '';
+            };
             var html = '';
             $('#c-items-tbody tr').each(function () {
                 var $r       = $(this);
                 var nombre   = $r.find('.c-insumo-display').val() || '—';
                 var cantidad = parseFloat($r.find('.c-cantidad').val()) || 0;
                 var costo    = parseBs($r.find('.c-costo').val()); // Bs unitario
+                var subtotal = cantidad * costo;
                 var aplica   = $r.find('.c-iva-check').is(':checked');
                 var ivaBadge = aplica
                     ? '<span class="badge bg-soft-success text-success">' + IVA_TASA + '%</span>'
@@ -477,9 +485,9 @@ $(document).ready(function () {
                 html += '<tr>'
                     + '<td class="fw-semibold">' + nombre + '</td>'
                     + '<td class="text-end">' + formatBs(cantidad) + '</td>'
-                    + '<td class="text-end">' + formatBs(costo) + '</td>'
+                    + '<td class="text-end">Bs ' + formatBs(costo) + usdSub(costo) + '</td>'
                     + '<td class="text-center">' + ivaBadge + '</td>'
-                    + '<td class="text-end fw-semibold">' + formatBs(cantidad * costo) + '</td>'
+                    + '<td class="text-end fw-semibold">Bs ' + formatBs(subtotal) + usdSub(subtotal) + '</td>'
                     + '</tr>';
             });
             $('#c-recap-items-tbody').html(html);
