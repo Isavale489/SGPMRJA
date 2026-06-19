@@ -14,6 +14,28 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
 
+            {{-- Stepper visual — 3 pasos (jerárquicamente, los pasos van arriba de todo) --}}
+            <div class="wiz-stepper-wrapper">
+                <div class="wiz-stepper-side wiz-stepper-side--left"></div>
+                <div class="wiz-stepper" role="tablist">
+                    <button type="button" class="wiz-step-marker is-active" data-step="1" role="tab">
+                        <span class="wiz-step-dot">1</span>
+                        <span class="wiz-step-label">Proveedor</span>
+                    </button>
+                    <span class="wiz-step-line"><span class="wiz-step-line-fill" data-line="1"></span></span>
+                    <button type="button" class="wiz-step-marker" data-step="2" role="tab">
+                        <span class="wiz-step-dot">2</span>
+                        <span class="wiz-step-label">Ítems</span>
+                    </button>
+                    <span class="wiz-step-line"><span class="wiz-step-line-fill" data-line="2"></span></span>
+                    <button type="button" class="wiz-step-marker" data-step="3" role="tab">
+                        <span class="wiz-step-dot">3</span>
+                        <span class="wiz-step-label">Totales</span>
+                    </button>
+                </div>
+                <div class="wiz-stepper-side wiz-stepper-side--right"></div>
+            </div>
+
             {{-- Hero persistente: número + estado + total (visible en todos los pasos) --}}
             <div class="px-3 pt-3">
                 <div class="card border-0 shadow-sm mb-0">
@@ -38,28 +60,6 @@
                         </div>
                     </div>
                 </div>
-            </div>
-
-            {{-- Stepper visual — 3 pasos --}}
-            <div class="wiz-stepper-wrapper">
-                <div class="wiz-stepper-side wiz-stepper-side--left"></div>
-                <div class="wiz-stepper" role="tablist">
-                    <button type="button" class="wiz-step-marker is-active" data-step="1" role="tab">
-                        <span class="wiz-step-dot">1</span>
-                        <span class="wiz-step-label">Proveedor</span>
-                    </button>
-                    <span class="wiz-step-line"><span class="wiz-step-line-fill" data-line="1"></span></span>
-                    <button type="button" class="wiz-step-marker" data-step="2" role="tab">
-                        <span class="wiz-step-dot">2</span>
-                        <span class="wiz-step-label">Ítems</span>
-                    </button>
-                    <span class="wiz-step-line"><span class="wiz-step-line-fill" data-line="2"></span></span>
-                    <button type="button" class="wiz-step-marker" data-step="3" role="tab">
-                        <span class="wiz-step-dot">3</span>
-                        <span class="wiz-step-label">Totales</span>
-                    </button>
-                </div>
-                <div class="wiz-stepper-side wiz-stepper-side--right"></div>
             </div>
 
             <div class="modal-body wiz-wizard-body p-3">
