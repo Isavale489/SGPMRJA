@@ -49,31 +49,46 @@ $(document).ready(function () {
         recalcular();
     }
 
-    function buildInsumoOptions(selectedId) {
-        var html = '<option value="">Seleccione insumo...</option>';
-        INSUMOS.forEach(function (ins) {
-            var sel = (ins.id == selectedId) ? ' selected' : '';
-            // aplica_iva puede venir como 1/0/true/false desde el backend
-            var grav = (ins.aplica_iva === undefined || ins.aplica_iva === null)
-                ? 1 : (Number(ins.aplica_iva) ? 1 : 0);
-            html += '<option value="' + ins.id + '"'
-                + ' data-costo="' + ins.costo_unitario + '"'
-                + ' data-unidad="' + ins.unidad_medida + '"'
-                + ' data-iva="' + grav + '"'
-                + sel + '>'
-                + ins.nombre + ' (' + ins.tipo + ')'
-                + '</option>';
-        });
-        return html;
+    // aplica_iva puede venir como 1/0/true/false desde el backend → 1/0
+    function normIva(v) {
+        return (v === undefined || v === null) ? 1 : (Number(v) ? 1 : 0);
     }
 
-    // Reconstruye TODOS los <select> de insumo (tras un alta rápida), preservando
-    // la selección actual de cada fila para no perder ítems ya elegidos.
-    function rebuildAllInsumoSelects() {
-        $('#c-items-tbody tr').each(function () {
-            var $sel = $(this).find('.c-insumo');
-            $sel.html(buildInsumoOptions($sel.val()));
-        });
+    // Busca un insumo del catálogo local por id (sin Array.find, por consistencia ES5).
+    function findInsumo(id) {
+        for (var i = 0; i < INSUMOS.length; i++) {
+            if (String(INSUMOS[i].id) === String(id)) return INSUMOS[i];
+        }
+        return null;
+    }
+
+    // Fija el insumo elegido en la fila (id en el campo oculto + etiqueta visible +
+    // data-attrs). NO toca costo/cantidad/IVA → usado al repoblar en modo edición.
+    function setInsumoFila($tr, ins) {
+        $tr.find('.c-insumo')
+            .val(ins.id)
+            .attr('data-costo', ins.costo_unitario)
+            .attr('data-unidad', ins.unidad_medida)
+            .attr('data-iva', normIva(ins.aplica_iva));
+        $tr.find('.c-insumo-display').val(ins.nombre + ' (' + ins.tipo + ')');
+    }
+
+    // Selección interactiva (búsqueda o alta rápida): fija el insumo + precarga el
+    // costo (USD del maestro → Bs con la tasa de la compra), la unidad y el flag IVA.
+    function selectInsumoEnFila($tr, ins) {
+        setInsumoFila($tr, ins);
+        marcarValido($tr.find('.c-insumo-display'));
+
+        if (ins.costo_unitario) {
+            var tasa   = parseFloat($('#c-tasa').val()) || 0;
+            var unitBs = tasa > 0 ? parseFloat(ins.costo_unitario) * tasa : parseFloat(ins.costo_unitario);
+            $tr.find('.c-costo').val(formatBs(unitBs));
+        }
+        $tr.find('.c-unit-addon').text(ins.unidad_medida ? String(ins.unidad_medida).substring(0, 4) : '—');
+        $tr.find('.c-iva-check').prop('checked', normIva(ins.aplica_iva) !== 0);
+        // Recalcular el total de la línea y marcar el form como sucio (guard).
+        recomputeRow($tr, 'unit');
+        $tr.find('.c-insumo-display').trigger('change');
     }
 
     // Los costos se cargan en bolívares; el equivalente en USD se deriva de la tasa.
@@ -135,17 +150,20 @@ $(document).ready(function () {
     }
 
     // ── Agregar fila ────────────────────────────────────────────────────────
-    function addItemRow() {
+    // autoOpen: abre el buscador de insumo de inmediato (al pulsar "Agregar ítem").
+    function addItemRow(autoOpen) {
         var idx = rowCount++;
         var num = $('#c-items-tbody tr').length + 1;
 
         var row = '<tr id="c-row-' + idx + '">'
             + '<td class="c-row-num text-center text-muted cot-col-num">' + num + '</td>'
-            + '<td style="min-width:200px;">'
+            + '<td style="min-width:220px;">'
+            +   '<input type="hidden" class="c-insumo" id="c-ins-' + idx + '">'
             +   '<div class="input-group input-group-sm">'
-            +     '<select class="form-select form-select-sm c-insumo" id="c-ins-' + idx + '">'
-            +       buildInsumoOptions('')
-            +     '</select>'
+            +     '<button type="button" class="btn btn-outline-secondary c-insumo-browse-btn"'
+            +     ' data-row="' + idx + '" title="Buscar insumo"><i class="ri-search-2-line"></i></button>'
+            +     '<input type="text" class="form-control form-control-sm c-insumo-display"'
+            +     ' placeholder="Buscar insumo..." readonly style="cursor:pointer; background-color:#fff;">'
             +     '<button type="button" class="btn btn-soft-success c-add-insumo-btn"'
             +     ' data-row="' + idx + '" title="Crear insumo nuevo"><i class="ri-add-line"></i></button>'
             +   '</div>'
@@ -180,29 +198,19 @@ $(document).ready(function () {
         $('#c-items-tbody').append(row);
         updateEmpty();
 
-        $('#c-ins-' + idx).on('change', function () {
-            var opt   = $(this).find('option:selected');
-            var costo = opt.data('costo'); // costo de referencia del insumo, en USD
-            var unid  = opt.data('unidad');
-            var $tr   = $(this).closest('tr');
-            // El maestro guarda el costo en USD; lo precargamos convertido a Bs
-            // con la tasa de la compra (editable por el usuario).
-            if (costo) {
-                var tasa = parseFloat($('#c-tasa').val()) || 0;
-                var unitBs = tasa > 0 ? parseFloat(costo) * tasa : parseFloat(costo);
-                $tr.find('.c-costo').val(formatBs(unitBs));
-            }
-            $tr.find('.c-unit-addon').text(unid ? String(unid).substring(0, 4) : '—');
-            // Heredar gravable/exento del insumo elegido (data-iva = 1/0)
-            if (opt.val()) {
-                $tr.find('.c-iva-check').prop('checked', Number(opt.data('iva')) !== 0);
-            }
-            // Recalcular el total de la línea a partir del unitario precargado.
-            recomputeRow($tr, 'unit');
-        }).trigger('focus');
+        var $tr = $('#c-row-' + idx);
+        // Al agregar manualmente, abrir el buscador de insumo de una vez (el campo
+        // es de solo lectura: la acción natural es buscar).
+        if (autoOpen) abrirBuscarInsumo($tr);
+        return $tr;
     }
 
-    $('#c-add-item-btn, #c-add-item-empty-btn').on('click', addItemRow);
+    $('#c-add-item-btn, #c-add-item-empty-btn').on('click', function () { addItemRow(true); });
+
+    // El campo de insumo (display de solo lectura) y la lupa abren el buscador.
+    $(document).on('click', '.c-insumo-browse-btn, .c-insumo-display', function () {
+        abrirBuscarInsumo($(this).closest('tr'));
+    });
 
     // ── Eliminar fila ───────────────────────────────────────────────────────
     $(document).on('click', '.c-remove-btn', function () {
@@ -224,6 +232,80 @@ $(document).ready(function () {
     $(document).on('blur', '.c-costo, .c-total', function () {
         var v = parseBs($(this).val());
         $(this).val(v ? formatBs(v) : '');
+    });
+
+    // ── Buscador de insumo (mini-modal, filtrado en cliente) ─────────────────
+    // Reemplaza al <select> por fila: la lupa abre #buscarInsumoModal con una
+    // tabla buscable del catálogo INSUMOS; al elegir, se carga en la fila origen.
+    var bsiTargetRow = null;   // fila que disparó la búsqueda
+    var bsiBase      = [];      // catálogo disponible para esta apertura (sin duplicados)
+
+    // Insumos aún no usados en otras filas (la fila objetivo puede re-elegir el suyo).
+    function bsiDisponibles() {
+        var usados = [];
+        $('#c-items-tbody tr').each(function () {
+            var v = $(this).find('.c-insumo').val();
+            if (v && (!bsiTargetRow || this !== bsiTargetRow[0])) usados.push(String(v));
+        });
+        return INSUMOS.filter(function (ins) { return usados.indexOf(String(ins.id)) === -1; });
+    }
+
+    function bsiRender(items) {
+        var $tbody = $('#bsi-tbody'), $empty = $('#bsi-empty'), $label = $('#bsi-count-label');
+        $tbody.empty();
+        if (!items || items.length === 0) {
+            $empty.removeClass('d-none');
+            $label.text('');
+            return;
+        }
+        $empty.addClass('d-none');
+        $label.text(items.length + ' insumo(s)');
+        items.forEach(function (ins) {
+            var ivaBadge = normIva(ins.aplica_iva)
+                ? '<span class="badge bg-soft-primary text-primary">Sí</span>'
+                : '<span class="badge bg-light text-muted">Exento</span>';
+            var $tr = $('<tr style="cursor:pointer;">')
+                .html(
+                    '<td class="fw-semibold">' + ins.nombre + '</td>'
+                    + '<td class="text-muted small font-monospace">' + (ins.codigo || '—') + '</td>'
+                    + '<td>' + ins.tipo + '</td>'
+                    + '<td class="text-center">' + (ins.unidad_medida || '—') + '</td>'
+                    + '<td class="text-end font-monospace small">$ ' + fmt(ins.costo_unitario) + '</td>'
+                    + '<td class="text-center">' + ivaBadge + '</td>'
+                )
+                .on('click', function () {
+                    if (bsiTargetRow && bsiTargetRow.length) selectInsumoEnFila(bsiTargetRow, ins);
+                    $('#buscarInsumoModal').modal('hide');
+                });
+            $tbody.append($tr);
+        });
+    }
+
+    function bsiAplicarFiltro(q) {
+        q = (q || '').trim().toLowerCase();
+        if (!q) { bsiRender(bsiBase); return; }
+        bsiRender(bsiBase.filter(function (ins) {
+            return (ins.nombre && ins.nombre.toLowerCase().indexOf(q) !== -1)
+                || (ins.codigo && String(ins.codigo).toLowerCase().indexOf(q) !== -1)
+                || (ins.tipo && ins.tipo.toLowerCase().indexOf(q) !== -1);
+        }));
+    }
+
+    function abrirBuscarInsumo($tr) {
+        bsiTargetRow = $tr;
+        bsiBase = bsiDisponibles();
+        $('#bsi-input').val('');
+        $('#buscarInsumoModal').modal('show');
+    }
+
+    $('#buscarInsumoModal').on('shown.bs.modal', function () {
+        $('#bsi-input').trigger('focus');
+        bsiAplicarFiltro('');
+    });
+    $('#bsi-input').on('input', function () { bsiAplicarFiltro($(this).val()); });
+    $('#bsi-clear-btn').on('click', function () {
+        $('#bsi-input').val('').trigger('focus');
+        bsiAplicarFiltro('');
     });
 
     // ── Tasa de cambio: autocompletar según la fecha de compra ───────────────
@@ -478,14 +560,14 @@ $(document).ready(function () {
 
                 if (!insumoId || !cantidad || parseFloat(cantidad) <= 0 || !costo || costo <= 0) {
                     err = 'incompleto';
-                    if (!insumoId)                                      { $errField = $tr.find('.c-insumo');   errMsg = 'Seleccione un insumo para esta fila.'; }
-                    else if (!cantidad || parseFloat(cantidad) <= 0)    { $errField = $tr.find('.c-cantidad'); errMsg = 'Ingrese una cantidad válida (mayor a 0).'; }
-                    else                                                 { $errField = $tr.find('.c-costo');    errMsg = 'Ingrese un costo válido (mayor a 0).'; }
+                    if (!insumoId)                                      { $errField = $tr.find('.c-insumo-display'); errMsg = 'Seleccione un insumo para esta fila.'; }
+                    else if (!cantidad || parseFloat(cantidad) <= 0)    { $errField = $tr.find('.c-cantidad');       errMsg = 'Ingrese una cantidad válida (mayor a 0).'; }
+                    else                                                 { $errField = $tr.find('.c-costo');          errMsg = 'Ingrese un costo válido (mayor a 0).'; }
                     return false;
                 }
                 if (insumoIds.indexOf(insumoId) !== -1) {
                     err = 'dup';
-                    $errField = $tr.find('.c-insumo');
+                    $errField = $tr.find('.c-insumo-display');
                     errMsg = 'Este insumo ya está en la lista. Cada insumo puede aparecer una sola vez.';
                     return false;
                 }
@@ -717,9 +799,11 @@ $(document).ready(function () {
                 data.items.forEach(function (item) {
                     addItemRow();
                     var $row = $('#c-items-tbody tr:last');
-                    var $sel = $row.find('.c-insumo');
-                    $sel.val(item.insumo_id);
-                    var unid = $sel.find('option:selected').data('unidad') || '';
+                    // Fijar el insumo guardado SIN precargar costo/IVA (conservamos los
+                    // valores con que se registró la línea, no los del maestro).
+                    var ins = findInsumo(item.insumo_id);
+                    if (ins) setInsumoFila($row, ins);
+                    var unid = ins ? ins.unidad_medida : '';
                     $row.find('.c-unit-addon').text(unid ? String(unid).substring(0, 4) : '—');
                     $row.find('.c-cantidad').val(parseFloat(item.cantidad));
                     // Mostrar el costo en Bs (formato venezolano) tal como se tecleó.
@@ -1003,11 +1087,11 @@ $(document).ready(function () {
         // ════════════════════════════════════════════════════════════════════
         //  MINI-MODAL: crear insumo nuevo inline (alta rápida del maestro)
         // ════════════════════════════════════════════════════════════════════
-        var cirTargetSelect = null;
+        var cirTargetRow = null;
 
-        // Abrir desde el "+" de una fila — recuerda el <select> a auto-seleccionar
+        // Abrir desde el "+" de una fila — recuerda la fila a auto-seleccionar
         $(document).on('click', '.c-add-insumo-btn', function () {
-            cirTargetSelect = $('#c-ins-' + $(this).data('row'));
+            cirTargetRow = $(this).closest('tr');
             $('#cirForm')[0].reset();
             $('#cir-nombre-field, #cir-tipo-field, #cir-unidad-field, #cir-costo-field').each(function () {
                 limpiarValidacion($(this));
@@ -1099,7 +1183,7 @@ $(document).ready(function () {
                     $btn.removeAttr('disabled').html('<i class="ri-save-line me-1"></i>Guardar y seleccionar');
                     var ins = resp.insumo;
                     if (ins) {
-                        // Disponible para esta y futuras filas, sin recargar
+                        // Disponible para esta y futuras búsquedas, sin recargar
                         INSUMOS.push({
                             id:             ins.id,
                             nombre:         ins.nombre,
@@ -1109,9 +1193,9 @@ $(document).ready(function () {
                             costo_unitario: ins.costo_unitario,
                             aplica_iva:     ins.aplica_iva
                         });
-                        rebuildAllInsumoSelects();
-                        if (cirTargetSelect && cirTargetSelect.length) {
-                            cirTargetSelect.val(ins.id).trigger('change');
+                        // Auto-seleccionar el insumo recién creado en su fila origen.
+                        if (cirTargetRow && cirTargetRow.length) {
+                            selectInsumoEnFila(cirTargetRow, ins);
                         }
                     }
                     $('#crearInsumoRapidoModal').modal('hide');

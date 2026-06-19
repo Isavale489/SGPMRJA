@@ -432,6 +432,7 @@
 </div>
 
 @include('admin.compras.modals.buscar-proveedor')
+@include('admin.compras.modals.buscar-insumo')
 
 {{-- ═══════════════════════════════════════════════════════════════════════════
      MINI-MODAL: Crear insumo nuevo (inline, "extensión" del maestro Insumos)
