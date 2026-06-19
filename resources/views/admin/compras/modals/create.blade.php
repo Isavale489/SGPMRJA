@@ -329,8 +329,25 @@
                                                 <span id="c-recap-fecha">—</span>
                                             </div>
                                             <div class="col-12">
-                                                <small class="text-muted d-block mb-1"><i class="ri-archive-line me-1"></i>Ítems</small>
-                                                <span id="c-recap-items">0 insumo(s)</span>
+                                                <small class="text-muted d-block mb-2">
+                                                    <i class="ri-archive-line me-1"></i>Ítems
+                                                    <span class="ms-1" id="c-recap-items">0 insumo(s)</span>
+                                                </small>
+                                                {{-- Detalle de los insumos cargados (espejo de la grilla del paso 2) --}}
+                                                <div class="cot-grouped-tablewrap">
+                                                    <table class="cot-grouped-table">
+                                                        <thead>
+                                                            <tr>
+                                                                <th>Insumo</th>
+                                                                <th class="text-end" style="width:64px;">Cant.</th>
+                                                                <th class="text-end" style="width:108px;">Costo Unit. (Bs)</th>
+                                                                <th class="text-center" style="width:56px;">IVA</th>
+                                                                <th class="text-end" style="width:118px;">Subtotal (Bs)</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody id="c-recap-items-tbody"></tbody>
+                                                    </table>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>

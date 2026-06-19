@@ -461,7 +461,28 @@ $(document).ready(function () {
                 $('#c-recap-fecha').text('—');
             }
             var n = $('#c-items-tbody tr').length;
-            $('#c-recap-items').text(n + ' insumo' + (n === 1 ? '' : 's'));
+            $('#c-recap-items').text('(' + n + ' insumo' + (n === 1 ? '' : 's') + ')');
+
+            // Detalle de ítems: espejo de la grilla del paso 2 (solo lectura).
+            var html = '';
+            $('#c-items-tbody tr').each(function () {
+                var $r       = $(this);
+                var nombre   = $r.find('.c-insumo-display').val() || '—';
+                var cantidad = parseFloat($r.find('.c-cantidad').val()) || 0;
+                var costo    = parseBs($r.find('.c-costo').val()); // Bs unitario
+                var aplica   = $r.find('.c-iva-check').is(':checked');
+                var ivaBadge = aplica
+                    ? '<span class="badge bg-soft-success text-success">' + IVA_TASA + '%</span>'
+                    : '<span class="badge bg-soft-secondary text-muted">Exento</span>';
+                html += '<tr>'
+                    + '<td class="fw-semibold">' + nombre + '</td>'
+                    + '<td class="text-end">' + formatBs(cantidad) + '</td>'
+                    + '<td class="text-end">' + formatBs(costo) + '</td>'
+                    + '<td class="text-center">' + ivaBadge + '</td>'
+                    + '<td class="text-end fw-semibold">' + formatBs(cantidad * costo) + '</td>'
+                    + '</tr>';
+            });
+            $('#c-recap-items-tbody').html(html);
         }
 
         // ── Mostrar paso N ───────────────────────────────────────────────────

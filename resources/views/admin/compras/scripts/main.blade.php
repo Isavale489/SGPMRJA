@@ -153,19 +153,27 @@ $(document).ready(function () {
                     var ivaBadge = item.aplica_iva
                         ? '<span class="badge bg-soft-success text-success">' + d.iva_porcentaje + '%</span>'
                         : '<span class="badge bg-soft-secondary text-muted">Exento</span>';
+                    var codigo = item.codigo
+                        ? '<small class="text-muted d-block font-monospace">' + item.codigo + '</small>'
+                        : '';
                     itemsHtml += '<tr>'
                         + '<td class="text-center cot-col-num">' + (i + 1) + '</td>'
-                        + '<td class="fw-semibold">' + item.nombre + '</td>'
+                        + '<td class="fw-semibold">' + item.nombre + codigo + '</td>'
                         + '<td class="text-center"><span class="cot-tipo-pill">' + item.tipo + '</span></td>'
                         + '<td class="text-center text-muted">' + item.unidad + '</td>'
                         + '<td class="text-end">' + item.cantidad + '</td>'
                         + '<td class="text-end">' + item.costo_unitario_bs + '</td>'
+                        + '<td class="text-end text-muted">' + item.costo_unitario + '</td>'
                         + '<td class="text-center">' + ivaBadge + '</td>'
                         + '<td class="text-end fw-semibold">' + item.subtotal_bs + '</td>'
+                        + '<td class="text-end text-muted">' + item.subtotal + '</td>'
                         + '</tr>';
                 });
                 $('#cv-items-tbody').html(itemsHtml);
                 $('#cv-items-count').text('(' + (d.items || []).length + ')');
+                // Pie de la grilla: subtotal de las líneas (Bs + equivalente USD)
+                $('#cv-items-foot-bs').text(d.subtotal_bs);
+                $('#cv-items-foot-usd').text(d.subtotal);
 
                 // Registro
                 $('#cv-reg-avatar').attr('src', d.registrado_por.avatar_url);
