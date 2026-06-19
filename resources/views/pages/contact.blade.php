@@ -44,7 +44,7 @@
             <div class="text-center mb-5">
                 <h1 class="fw-bolder">Nuestra Ubicación:</h1>
             </div>
-            <img src="{{ asset('img/google-map-ubicacion.jpg') }}" class="img-fluid rounded d-block mx-auto" alt="Mapa de Ubicación">
+            <img src="{{ asset('img/google-map-ubicacion.png') }}" class="img-fluid rounded d-block mx-auto" alt="Mapa de Ubicación">
         </div>
     </div>
 </section>
