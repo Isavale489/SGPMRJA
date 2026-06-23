@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Guía de Defensa — Preguntas y Respuestas Modelo · SGPMRJA</title>
+<style>
+  :root{
+    --navy:#263238; --ink:#1f2d34; --muted:#5b6b73; --line:#dce4e7;
+    --bg:#eceff1; --card:#ffffff; --accent:#2E7D32;
+    --c-gen:#1e3c72; --c-tec:#7E57C2; --c-bd:#00897B; --c-fun:#10b981;
+    --c-eq:#EC407A; --c-esc:#FB8C00; --c-seg:#C62828; --c-tra:#455A64;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:'Segoe UI',Roboto,Arial,sans-serif;line-height:1.55}
+
+  .topbar{display:flex;align-items:center;justify-content:space-between;
+    padding:14px 26px;background:var(--navy);color:#fff;flex-wrap:wrap;gap:10px;
+    position:sticky;top:0;z-index:20}
+  .topbar h1{font-size:18px;margin:0;font-weight:600}
+  .topbar small{display:block;font-weight:400;opacity:.72;font-size:12px;margin-top:2px}
+  .topbar .actions{display:flex;gap:8px;flex-wrap:wrap}
+  .topbar button{border:0;border-radius:6px;padding:9px 15px;font-size:13px;font-weight:600;cursor:pointer;color:#fff}
+  .btn-toggle{background:#546E7A} .btn-toggle:hover{background:#455A64}
+  .btn-print{background:var(--accent)} .btn-print:hover{background:#43A047}
+
+  .wrap{max-width:1000px;margin:0 auto;padding:28px 22px 60px}
+
+  .hero{background:linear-gradient(135deg,var(--navy) 0%,#37474F 100%);
+    color:#fff;border-radius:14px;padding:30px 32px;box-shadow:0 10px 28px rgba(38,50,56,.22)}
+  .hero .eyebrow{font-size:12px;letter-spacing:.14em;text-transform:uppercase;opacity:.7;font-weight:600;margin:0 0 10px}
+  .hero h2{font-size:26px;line-height:1.2;margin:0 0 10px;font-weight:700}
+  .hero p{margin:0;max-width:760px;opacity:.92;font-size:14.5px}
+
+  .tips{background:#fff8ef;border:1px solid #ffd9a8;border-left:6px solid #FB8C00;
+    border-radius:12px;padding:18px 22px;margin-top:20px}
+  .tips h3{margin:0 0 8px;font-size:15px;color:#b25800}
+  .tips ol{margin:0;padding-left:20px} .tips li{font-size:13px;color:#5d4324;margin:5px 0}
+  .tips li b{color:#7a3e00}
+
+  .section-title{display:flex;align-items:center;gap:10px;font-size:13px;
+    letter-spacing:.1em;text-transform:uppercase;color:#fff;font-weight:700;
+    margin:30px 0 14px;padding:9px 16px;border-radius:8px}
+
+  details.qa{background:var(--card);border:1px solid var(--line);border-radius:11px;
+    margin-bottom:11px;box-shadow:0 2px 7px rgba(38,50,56,.05);overflow:hidden}
+  details.qa>summary{list-style:none;cursor:pointer;padding:15px 18px;
+    font-size:14.5px;font-weight:650;color:var(--navy);display:flex;gap:11px;align-items:flex-start}
+  details.qa>summary::-webkit-details-marker{display:none}
+  details.qa>summary::before{content:"Q";flex:none;width:24px;height:24px;border-radius:6px;
+    background:#eceff1;color:var(--navy);font-size:13px;font-weight:800;
+    display:inline-flex;align-items:center;justify-content:center;margin-top:-1px}
+  details.qa[open]>summary{border-bottom:1px solid var(--line)}
+  details.qa[open]>summary::before{content:"Q";background:var(--navy);color:#fff}
+  .ans{padding:14px 18px 17px 18px;font-size:13.5px;color:var(--ink);background:#fbfcfd}
+  .ans p{margin:0 0 9px} .ans p:last-child{margin-bottom:0}
+  .ans b{color:var(--navy)}
+  .ans .key{display:inline-block;background:#e8f5e9;color:#1b5e3a;border:1px solid #c8e6c9;
+    border-radius:6px;padding:1px 8px;font-size:11.5px;font-weight:700;margin-top:4px}
+  code{background:#eceff1;padding:1px 6px;border-radius:5px;font-size:12px}
+
+  .foot{margin-top:42px;padding-top:18px;border-top:1px solid var(--line);
+    font-size:12px;color:#90a4ae;text-align:center}
+
+  @media print{
+    .topbar .actions{display:none} body{background:#fff}
+    details.qa{break-inside:avoid;box-shadow:none}
+    details.qa:not([open]){display:block}
+    .hero{box-shadow:none}
+  }
+  @media (max-width:560px){.hero h2{font-size:21px}}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <h1>Guía de Defensa · Preguntas &amp; Respuestas Modelo
+    <small>SGPMRJA — Manufacturas R.J. Atlántico C.A. · Material de práctica del equipo</small>
+  </h1>
+  <div class="actions">
+    <button class="btn-toggle" onclick="toggleAll()" id="toggleBtn">🙈 Ocultar respuestas (modo práctica)</button>
+    <button class="btn-print" onclick="window.print()">🖨 Imprimir / PDF</button>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <section class="hero">
+    <p class="eyebrow">Defensa del proyecto · Ingeniería de Software</p>
+    <h2>Lo que el jurado podría preguntar — y cómo responderlo bien.</h2>
+    <p>Banco de preguntas probables organizado por tema, con una respuesta modelo para cada una basada en el
+      sistema real. Úsenlo para practicar: pulsen <b>"Ocultar respuestas"</b> e intenten responder en voz alta
+      antes de revelarlas. Repártanlo entre los 7 y túrnense haciéndose las preguntas.</p>
+  </section>
+
+  <div class="tips">
+    <h3>⭐ 3 reglas de oro al responder</h3>
+    <ol>
+      <li><b>No improvisen de más.</b> Si no saben algo, deriven: "esa parte la trabajó [compañero], él/ella la explica". Equipo bien repartido = puntos.</li>
+      <li><b>Apóyense en sus documentos</b> (escalabilidad, diagramas). Muchas respuestas ya están ahí; ténganlos abiertos.</li>
+      <li><b>Tengan una demo lista con datos cargados.</b> Ojo: denle stock a los insumos de prueba antes, o no podrán crear órdenes en vivo.</li>
+    </ol>
+  </div>
+
+  <!-- ============ 1. GENERALES ============ -->
+  <div class="section-title" style="background:var(--c-gen)">1 · Generales del proyecto</div>
+
+  <details class="qa" open><summary>¿Qué problema resuelve el sistema y para quién?</summary>
+    <div class="ans">
+      <p>Resuelve la <b>gestión integral de Manufacturas R.J. Atlántico C.A.</b>, una empresa de confección y bordado. Antes los procesos (cotizaciones, pedidos, producción, compras, personal) se llevaban de forma manual o dispersa; el sistema los <b>centraliza y conecta</b> en un solo flujo digital, con trazabilidad y control de existencias.</p>
+      <p class="key">Clave: un ERP a medida que digitaliza de la cotización a la entrega.</p>
+    </div>
+  </details>
+
+  <details class="qa" open><summary>¿Cuál fue el alcance propuesto y qué quedó dentro y fuera?</summary>
+    <div class="ans">
+      <p><b>Dentro:</b> maestros (clientes, proveedores, empleados, productos, insumos), el flujo operativo completo (cotización → pedido → producción → compras → existencias), reportes, configuración del sistema y seguridad por roles.</p>
+      <p><b>Fuera (planificado):</b> los módulos de <b>Control de Calidad</b> y <b>Garantías</b> quedaron previstos en la navegación pero no implementados — fueron priorizados para una siguiente etapa. Es honesto reconocerlo: muestra que sabemos diferenciar alcance entregado de pendiente.</p>
+    </div>
+  </details>
+
+  <details class="qa" open><summary>Resuman el sistema en una frase.</summary>
+    <div class="ans">
+      <p>"Una plataforma web que gestiona todo el proceso de Manufacturas R.J. Atlántico, desde que se cotiza un producto hasta que se produce, controlando insumos, personal y costos en dólares y bolívares."</p>
+    </div>
+  </details>
+
+  <details class="qa" open><summary>¿Qué ventaja tiene frente a hacerlo en Excel o a mano?</summary>
+    <div class="ans">
+      <p>Excel no valida reglas de negocio, no controla concurrencia, no deja historial ni permisos por usuario. Nuestro sistema <b>impide errores</b> (ej. un pedido sin abono mínimo), <b>conecta los módulos</b> (una cotización aprobada genera el pedido), <b>controla el stock en tiempo real</b> y deja <b>trazabilidad</b> de quién hizo qué.</p>
+    </div>
+  </details>
+
+  <!-- ============ 2. TÉCNICAS ============ -->
+  <div class="section-title" style="background:var(--c-tec)">2 · Técnicas y arquitectura</div>
+
+  <details class="qa" open><summary>¿Por qué eligieron Laravel y este stack?</summary>
+    <div class="ans">
+      <p><b>Laravel 10</b> (sobre PHP 8.1+) nos da estructura MVC, ORM (Eloquent), migraciones, validación y seguridad listas, lo que acelera el desarrollo y lo hace mantenible. Sumamos <b>Blade</b> para las vistas, <b>Bootstrap</b> + <b>jQuery</b> y la plantilla <b>Velzon</b> para la interfaz, y <b>MySQL</b> como base de datos. Es un stack maduro, documentado y con mucho soporte.</p>
+    </div>
+  </details>
+
+  <details class="qa" open><summary>¿Qué es la capa de servicios y por qué la usan?</summary>
+    <div class="ans">
+      <p>Es una capa donde vive la <b>lógica de negocio</b>, separada de los controladores (que solo reciben la petición y responden). Por ejemplo, <code>CompraService</code> contiene los métodos <code>procesar()</code>, <code>anular()</code> y <code>clonar()</code>. Así la lógica se <b>reutiliza, se prueba y se mantiene</b> sin ensuciar los controllers.</p>
+      <p class="key">Clave: controllers delgados, lógica centralizada en servicios.</p>
+    </div>
+  </details>
+
+  <details class="qa" open><summary>¿Qué pasa si dos usuarios procesan algo a la vez?</summary>
+    <div class="ans">
+      <p>Usamos <b>transacciones de base de datos</b> con bloqueo de filas (<code>lockForUpdate()</code>). Por ejemplo, al procesar una compra que actualiza el stock, la fila del insumo se bloquea dentro de la transacción: si dos procesos coinciden, uno espera al otro y <b>no se corrompe el stock</b>. Si algo falla a mitad, la transacción se revierte completa.</p>
+    </div>
+  </details>
+
+  <details class="qa" open><summary>¿Cómo evitan repetir código y mantener consistencia visual?</summary>
+    <div class="ans">
+      <p>Construimos un <b>design system propio ("Atlántico")</b>: todo el CSS vive en un solo archivo (<code>custom.css</code>), los modales, tablas y botones siguen clases estándar, y creamos componentes reutilizables (selectores realzados, guardia de cambios sin guardar). Una pantalla nueva <b>reutiliza patrones</b> en lugar de reinventarlos.</p>
+    </div>
+  </details>
+
+  <!-- ============ 3. BASE DE DATOS ============ -->
+  <div class="section-title" style="background:var(--c-bd)">3 · Base de datos</div>
+
+  <details class="qa" open><summary>¿Cómo normalizaron la base de datos? Den un ejemplo.</summary>
+    <div class="ans">
+      <p>Eliminamos redundancia separando datos en tablas relacionadas. Ejemplos reales: los <b>pagos</b> de un pedido se movieron a una tabla dedicada <code>pago_pedido</code> (un pedido puede tener varios pagos); una <b>Persona</b> se guarda una sola vez y se reutiliza como cliente, empleado o proveedor (en vez de repetir cédula/nombre en tres tablas); y los <b>proveedores jurídicos</b> también se modelan sobre Persona.</p>
+      <p class="key">Clave: cada dato en un solo lugar, conectado por llaves foráneas.</p>
+    </div>
+  </details>
+
+  <details class="qa" open><summary>¿Por qué usan soft-deletes en vez de borrar?</summary>
+    <div class="ans">
+      <p>Porque un registro suele estar referenciado por otros (un cliente con pedidos, un insumo con movimientos). Borrarlo rompería el historial. Con <b>soft-delete</b> el registro se marca como inhabilitado pero se conserva, manteniendo la <b>integridad referencial</b> y permitiendo <b>restaurarlo</b>. Por eso los usuarios tampoco se borran: solo se inhabilitan.</p>
+    </div>
+  </details>
+
+  <details class="qa" open><summary>¿Cómo modelaron los productos con variantes sin crear miles de filas?</summary>
+    <div class="ans">
+      <p>El catálogo guarda solo el <b>Tipo de Producto</b> (ej. "Gorra"). Las características —tela y atributos como talla o color, con sus valores posibles— se definen como catálogos, y la <b>combinación concreta se elige al cotizar</b>. El sistema genera un <b>SKU determinístico</b> (<code>PREFIJO-TELA-ATRIBUTOS-NNN</code>). Así no creamos una fila por cada combinación posible: las variantes son <b>dinámicas</b>.</p>
+      <p class="key">Clave: variantes calculadas, no almacenadas una por una.</p>
+    </div>
+  </details>
+
+  <details class="qa" open><summary>¿Qué son los snapshots inmutables y por qué los necesitan?</summary>
+    <div class="ans">
+      <p>Cuando se crea una cotización o pedido, los detalles guardan una <b>"foto" de los datos del momento</b> (precio, descripción, atributos). Si después cambia el precio de un producto, <b>los documentos viejos no se alteran</b>. Esto es esencial para que una cotización emitida siga siendo válida y auditable tal como se firmó.</p>
+    </div>
+  </details>
+
+  <!-- ============ 4. FUNCIONALES ============ -->
+  <div class="section-title" style="background:var(--c-fun)">4 · Funcionales / negocio</div>
+
+  <details class="qa" open><summary>Explíquenme el flujo completo del sistema.</summary>
+    <div class="ans">
+      <p>1) Se crea una <b>Cotización</b> para el cliente (con sus productos y bordados). 2) Si el cliente la aprueba, se convierte en <b>Pedido</b> (exige un abono mínimo). 3) El pedido formalizado genera <b>Órdenes de Producción</b> asignadas a empleados. 4) Si faltan insumos, se registra una <b>Compra</b> al proveedor, que da <b>entrada</b> al stock. 5) La producción <b>consume insumos</b> (salida de existencias). El sistema controla cada paso y deja reportes.</p>
+    </div>
+  </details>
+
+  <details class="qa" open><summary>¿Por qué un pedido solo nace de una cotización aprobada?</summary>
+    <div class="ans">
+      <p>Es una <b>regla de negocio</b>: garantiza que todo pedido tenga un origen documentado y precios acordados con el cliente. Evita pedidos "en blanco" sin respaldo. Por eso en el wizard de pedidos los primeros pasos son de <b>solo lectura</b>, heredados de la cotización.</p>
+    </div>
+  </details>
+
+  <details class="qa" open><summary>¿Cómo manejan los precios en dólares y bolívares?</summary>
+    <div class="ans">
+      <p>Los montos base están en <b>dólares</b>, y mostramos el <b>equivalente en bolívares</b> usando la <b>tasa BCV</b> guardada por fecha (tabla <code>tasa_cambio</code>). La tasa es visible en todo el flujo (cotización, pedido, compras). Así cumplimos el requisito local sin perder la referencia en divisa.</p>
+      <p class="key">Clave: precio en USD + equivalente en Bs por tasa BCV con fecha.</p>
+    </div>
+  </details>
+
+  <details class="qa" open><summary>¿Qué pasa con el stock cuando se compra o se produce?</summary>
+    <div class="ans">
+      <p>Manejamos <b>existencias de insumos</b> (no de producto terminado, porque lo confeccionado se entrega directo al cliente). Una <b>compra procesada</b> genera un movimiento de <b>Entrada</b> y sube el stock; la <b>producción</b> genera una <b>Salida</b> y lo baja. Todo queda registrado en <code>MovimientoInsumo</code>, así el stock siempre es trazable.</p>
+    </div>
+  </details>
+
+  <details class="qa" open><summary>¿Por qué el módulo de Compras tiene estados (borrador, recibida, anular, clonar)?</summary>
+    <div class="ans">
+      <p>Para reflejar el ciclo real: una compra empieza como <b>borrador</b> editable que <b>no toca el stock</b>; al <b>procesarla</b> pasa a <b>recibida</b> y recién ahí entra el inventario. Si fue un error, se <b>anula</b> (revierte el stock) y se puede <b>clonar</b> para rehacerla. Esto da control y evita movimientos accidentales de existencias.</p>
+    </div>
+  </details>
+
+  <!-- ============ 5. EQUIPO ============ -->
+  <div class="section-title" style="background:var(--c-eq)">5 · Trabajo en equipo y metodología</div>
+
+  <details class="qa" open><summary>¿Cómo se organizaron siendo 7 personas?</summary>
+    <div class="ans">
+      <p>Trabajamos sobre <b>GitHub</b> con <b>control de versiones</b>: cada quien en su rama, integrando cambios mediante <b>Pull Requests</b> revisados (más de 17 en el semestre, sobre 686 commits). El equipo combina <b>desarrolladores</b> (que programan) y <b>analistas</b> (requerimientos, documentación y pruebas), lo que nos permitió avanzar <b>en paralelo</b> sin pisarnos el trabajo y con historial de todo lo hecho.</p>
+    </div>
+  </details>
+
+  <details class="qa" open><summary>¿Qué es SDD (Spec-Driven Development) y cómo lo aplicaron?</summary>
+    <div class="ans">
+      <p>Es una metodología donde cada funcionalidad <b>nace de una especificación</b> escrita, que luego se descompone en <b>tareas rastreables</b> antes de programar. Lo adoptamos a mitad del semestre: las features grandes (panel de configuración, roles y permisos) se documentaron como specs y se dividieron en tasks. Da orden y claridad sobre qué se va a construir y por qué.</p>
+    </div>
+  </details>
+
+  <details class="qa" open><summary>¿Cómo evitaban pisarse el trabajo o resolver conflictos?</summary>
+    <div class="ans">
+      <p>Cada persona trabajaba en su <b>propia rama</b> y, al terminar, abría un <b>Pull Request</b> que se revisaba antes de integrar a la rama principal. Cuando dos cambios tocaban el mismo archivo, Git marca el <b>conflicto</b> y lo resolvíamos manualmente revisando ambas versiones. La comunicación constante evitó que dos personas hicieran lo mismo.</p>
+    </div>
+  </details>
+
+  <!-- ============ 6. ESCALABILIDAD ============ -->
+  <div class="section-title" style="background:var(--c-esc)">6 · Escalabilidad</div>
+
+  <details class="qa" open><summary>¿Qué entienden por escalabilidad y cómo la lograron?</summary>
+    <div class="ans">
+      <p>Para nosotros escalar fue crecer en <b>cuatro ejes</b>: <b>técnico</b> (arquitectura que admite cambios sin reescribir), <b>funcional</b> (de módulos sueltos a un flujo completo), <b>de equipo</b> (7 integrantes en paralelo con Git) y <b>de proceso</b> (adopción de SDD). Está documentado en nuestro informe de escalabilidad, derivado del historial real del repositorio.</p>
+    </div>
+  </details>
+
+  <details class="qa" open><summary>¿El sistema soporta crecer en cantidad de datos sin volverse lento?</summary>
+    <div class="ans">
+      <p>Sí. Las tablas usan <b>DataTables del lado del servidor</b> (server-side): no cargan todos los registros de golpe, sino solo la página que se ve, con búsqueda y orden hechos en la base de datos. Así una tabla con miles de filas <b>sigue siendo fluida</b>.</p>
+    </div>
+  </details>
+
+  <details class="qa" open><summary>Si la empresa cambia una regla de negocio mañana, ¿qué tan difícil es ajustarla?</summary>
+    <div class="ans">
+      <p>Muchas reglas son <b>configurables sin tocar código</b>, desde el <b>panel de configuración</b>: el porcentaje de abono mínimo, la vigencia de las cotizaciones, los días de entrega y el IVA (centralizado en la tabla de impuestos). El administrador lo cambia y el sistema entero lo refleja al instante.</p>
+      <p class="key">Clave: parámetros editables, no "quemados" en el código.</p>
+    </div>
+  </details>
+
+  <!-- ============ 7. SEGURIDAD ============ -->
+  <div class="section-title" style="background:var(--c-seg)">7 · Seguridad</div>
+
+  <details class="qa" open><summary>¿Cómo controlan quién puede ver o hacer qué?</summary>
+    <div class="ans">
+      <p>Con un sistema de <b>roles y permisos</b>. Cada rol tiene permisos asignados, y la autorización se valida <b>en tiempo de ejecución</b>: tanto las <b>rutas</b> como las <b>opciones de la interfaz</b> se muestran u ocultan según los permisos del usuario. Un usuario sin permiso ni siquiera ve la opción.</p>
+    </div>
+  </details>
+
+  <details class="qa" open><summary>¿Cómo recupera un usuario su contraseña si la olvida?</summary>
+    <div class="ans">
+      <p>Tenemos recuperación <b>multi-método</b>: por <b>correo electrónico</b>, por <b>preguntas de seguridad</b> personales, o mediante <b>reset hecho por un administrador</b>. Además hay un <b>bloqueo escalado</b>: tras varios intentos fallidos la cuenta se protege temporalmente, evitando ataques de fuerza bruta.</p>
+    </div>
+  </details>
+
+  <details class="qa" open><summary>¿Por qué nunca borran cuentas y solo las inhabilitan?</summary>
+    <div class="ans">
+      <p>Es una <b>política de auditoría</b>: una cuenta puede estar ligada a cotizaciones, pedidos u operaciones históricas. Borrarla perdería esa trazabilidad. Por eso una cuenta se <b>inhabilita</b> (no puede iniciar sesión) pero su historial se conserva intacto.</p>
+    </div>
+  </details>
+
+  <!-- ============ 8. DIFÍCILES ============ -->
+  <div class="section-title" style="background:var(--c-tra)">8 · Preguntas difíciles / trampa</div>
+
+  <details class="qa" open><summary>¿Qué NO alcanzaron a hacer y por qué?</summary>
+    <div class="ans">
+      <p>Los módulos de <b>Control de Calidad</b> y <b>Garantías</b> quedaron como <b>planificados</b>: están previstos en la navegación, pero priorizamos primero el núcleo operativo (cotización, pedido, producción, compras). Reconocerlo con claridad demuestra que gestionamos el alcance de forma realista.</p>
+    </div>
+  </details>
+
+  <details class="qa" open><summary>¿Cuál fue el mayor reto técnico y cómo lo resolvieron?</summary>
+    <div class="ans">
+      <p><i>(Elijan uno real y cuéntenlo como historia.)</i> Un buen ejemplo: el <b>catálogo con variantes dinámicas</b>. Modelar productos con muchas combinaciones de tela y atributos sin llenar la base de datos de filas fue complejo; lo resolvimos con un <b>SKU determinístico</b> y eligiendo la combinación al cotizar. Otro: garantizar que el <b>stock no se corrompa</b> con usuarios simultáneos, resuelto con transacciones y bloqueo de filas.</p>
+    </div>
+  </details>
+
+  <details class="qa" open><summary>¿Probaron el sistema? ¿Cómo?</summary>
+    <div class="ans">
+      <p>Sí, con <b>pruebas funcionales en el navegador</b> recorriendo el flujo completo (cotización → pedido → producción → compras) en modo claro y oscuro, y validando reglas de negocio (abono mínimo, vigencia, stock). Cada feature grande tuvo su <b>QA</b> antes de integrarse por Pull Request.</p>
+    </div>
+  </details>
+
+  <details class="qa" open><summary>¿Qué pasa si se cae la base de datos? ¿Tienen respaldos?</summary>
+    <div class="ans">
+      <p>Sí. Mantenemos <b>respaldos (dumps SQL) versionados en el repositorio</b>, lo que permite restaurar la base completa en cualquier equipo. Además, al usar control de versiones, todo el código está respaldado en GitHub.</p>
+    </div>
+  </details>
+
+  <details class="qa" open><summary>Si empezaran de cero, ¿qué harían diferente?</summary>
+    <div class="ans">
+      <p><i>(Respuesta madura, no defensiva.)</i> Adoptaríamos <b>SDD desde el día uno</b> (lo incorporamos a mitad de camino) y definiríamos el <b>design system y la normalización de la base</b> antes de programar funcionalidades, para no tener que refactorizar después. Son justo las decisiones que más nos costaron y las que más valor dieron.</p>
+    </div>
+  </details>
+
+  <div class="foot">
+    SGPMRJA · Manufacturas R.J. Atlántico C.A. — Guía de preguntas y respuestas para la defensa · Material interno de práctica del equipo.
+  </div>
+
+</div>
+
+<script>
+  function toggleAll(){
+    var items = document.querySelectorAll('details.qa');
+    var btn = document.getElementById('toggleBtn');
+    var anyOpen = Array.prototype.some.call(items, function(d){ return d.open; });
+    items.forEach(function(d){ d.open = !anyOpen; });
+    btn.textContent = anyOpen ? '👁 Mostrar respuestas' : '🙈 Ocultar respuestas (modo práctica)';
+  }
+</script>
+</body>
+</html>

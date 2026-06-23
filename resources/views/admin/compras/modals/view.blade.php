@@ -14,6 +14,28 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
 
+            {{-- Stepper visual — 3 pasos (jerárquicamente, los pasos van arriba de todo) --}}
+            <div class="wiz-stepper-wrapper">
+                <div class="wiz-stepper-side wiz-stepper-side--left"></div>
+                <div class="wiz-stepper" role="tablist">
+                    <button type="button" class="wiz-step-marker is-active" data-step="1" role="tab">
+                        <span class="wiz-step-dot">1</span>
+                        <span class="wiz-step-label">Proveedor</span>
+                    </button>
+                    <span class="wiz-step-line"><span class="wiz-step-line-fill" data-line="1"></span></span>
+                    <button type="button" class="wiz-step-marker" data-step="2" role="tab">
+                        <span class="wiz-step-dot">2</span>
+                        <span class="wiz-step-label">Ítems</span>
+                    </button>
+                    <span class="wiz-step-line"><span class="wiz-step-line-fill" data-line="2"></span></span>
+                    <button type="button" class="wiz-step-marker" data-step="3" role="tab">
+                        <span class="wiz-step-dot">3</span>
+                        <span class="wiz-step-label">Totales</span>
+                    </button>
+                </div>
+                <div class="wiz-stepper-side wiz-stepper-side--right"></div>
+            </div>
+
             {{-- Hero persistente: número + estado + total (visible en todos los pasos) --}}
             <div class="px-3 pt-3">
                 <div class="card border-0 shadow-sm mb-0">
@@ -38,28 +60,6 @@
                         </div>
                     </div>
                 </div>
-            </div>
-
-            {{-- Stepper visual — 3 pasos --}}
-            <div class="wiz-stepper-wrapper">
-                <div class="wiz-stepper-side wiz-stepper-side--left"></div>
-                <div class="wiz-stepper" role="tablist">
-                    <button type="button" class="wiz-step-marker is-active" data-step="1" role="tab">
-                        <span class="wiz-step-dot">1</span>
-                        <span class="wiz-step-label">Proveedor</span>
-                    </button>
-                    <span class="wiz-step-line"><span class="wiz-step-line-fill" data-line="1"></span></span>
-                    <button type="button" class="wiz-step-marker" data-step="2" role="tab">
-                        <span class="wiz-step-dot">2</span>
-                        <span class="wiz-step-label">Ítems</span>
-                    </button>
-                    <span class="wiz-step-line"><span class="wiz-step-line-fill" data-line="2"></span></span>
-                    <button type="button" class="wiz-step-marker" data-step="3" role="tab">
-                        <span class="wiz-step-dot">3</span>
-                        <span class="wiz-step-label">Totales</span>
-                    </button>
-                </div>
-                <div class="wiz-stepper-side wiz-stepper-side--right"></div>
             </div>
 
             <div class="modal-body wiz-wizard-body p-3">
@@ -167,17 +167,26 @@
                                 <table class="cot-grouped-table">
                                     <thead>
                                         <tr>
-                                            <th class="cot-col-num text-center" style="width:40px;">#</th>
-                                            <th>Insumo</th>
-                                            <th class="text-center" style="width:110px;">Tipo</th>
-                                            <th class="text-center" style="width:90px;">Unidad</th>
-                                            <th class="text-end" style="width:95px;">Cantidad</th>
-                                            <th class="text-end" style="width:115px;">Costo Unit. (Bs)</th>
-                                            <th class="text-center" style="width:70px;">IVA</th>
-                                            <th class="text-end" style="width:120px;">Subtotal (Bs)</th>
+                                            <th class="cot-col-num text-center" style="width:34px;">#</th>
+                                            <th style="min-width:160px;">Insumo</th>
+                                            <th class="text-center" style="width:85px;">Tipo</th>
+                                            <th class="text-center" style="width:70px;">Unidad</th>
+                                            <th class="text-end" style="width:70px;">Cant.</th>
+                                            <th class="text-end" style="width:100px;">Costo Unit.<br><small class="text-muted fw-normal">Bs</small></th>
+                                            <th class="text-end" style="width:95px;"><small class="text-muted fw-normal">≈ USD</small></th>
+                                            <th class="text-center" style="width:60px;">IVA</th>
+                                            <th class="text-end" style="width:110px;">Subtotal<br><small class="text-muted fw-normal">Bs</small></th>
+                                            <th class="text-end" style="width:95px;"><small class="text-muted fw-normal">≈ USD</small></th>
                                         </tr>
                                     </thead>
                                     <tbody id="cv-items-tbody"></tbody>
+                                    <tfoot>
+                                        <tr class="cot-grouped-foot">
+                                            <td colspan="8" class="text-end fw-semibold text-muted">Subtotal</td>
+                                            <td class="text-end fw-bold">Bs <span id="cv-items-foot-bs">0,00</span></td>
+                                            <td class="text-end text-muted">$ <span id="cv-items-foot-usd">0,00</span></td>
+                                        </tr>
+                                    </tfoot>
                                 </table>
                             </div>
                         </div>

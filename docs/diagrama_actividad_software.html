@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Diagrama de Actividad del Software — Manufacturas R.J. Atlántico C.A.</title>
+<style>
+  :root{
+    --c-cli:#2196F3; --c-cli-box:#BBDEFB; --c-cli-bd:#1565C0; --c-cli-dia:#4FC3F7;
+    --c-adm:#4CAF50; --c-adm-box:#C8E6C9; --c-adm-bd:#2E7D32;
+    --c-sup:#9E9E9E; --c-sup-box:#E0E0E0; --c-sup-bd:#616161; --c-sup-dia:#BDBDBD;
+    --c-sys:#FF9800; --c-sys-box:#FFE0B2; --c-sys-bd:#E65100; --c-sys-dia:#FFB74D;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:#eceff1;font-family:'Segoe UI',Roboto,Arial,sans-serif;color:#212121}
+  .topbar{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:14px 26px;background:#263238;color:#fff;flex-wrap:wrap;gap:10px
+  }
+  .topbar h1{font-size:18px;margin:0;font-weight:600}
+  .topbar small{display:block;font-weight:400;opacity:.75;font-size:12px;margin-top:2px}
+  .topbar button{
+    background:#4CAF50;color:#fff;border:0;border-radius:6px;
+    padding:9px 16px;font-size:13px;font-weight:600;cursor:pointer
+  }
+  .topbar button:hover{background:#43A047}
+  .wrap{padding:18px;overflow:auto}
+  .canvas{
+    background:#fff;border:1px solid #cfd8dc;border-radius:8px;
+    box-shadow:0 2px 10px rgba(0,0,0,.08);max-width:1280px;margin:0 auto
+  }
+  svg{display:block;width:100%;height:auto}
+  text{font-family:'Segoe UI',Roboto,Arial,sans-serif}
+  .note{font-size:11px;color:#455a64;text-align:center;padding:12px 18px 24px}
+  @media print{
+    .topbar button,.note{display:none}
+    body{background:#fff}
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <h1>Diagrama de Actividad del Software
+    <small>Sistema de Gestión — Manufacturas R.J. Atlántico C.A. · Maqueta de referencia para StarUML</small>
+  </h1>
+  <button onclick="window.print()">🖨 Imprimir / Guardar PDF</button>
+</div>
+
+<div class="wrap">
+<div class="canvas">
+<svg viewBox="0 0 1220 2440" xmlns="http://www.w3.org/2000/svg" role="img"
+     aria-label="Diagrama de actividad del software con carriles Cliente, Administrador, Supervisor y Sistema">
+
+  <defs>
+    <marker id="arrow" markerWidth="11" markerHeight="11" refX="8.5" refY="4"
+            orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M0,0 L9,4 L0,8 Z" fill="#37474f"/>
+    </marker>
+  </defs>
+
+  <!-- ====================== TÍTULO ====================== -->
+  <rect x="360" y="10" width="500" height="34" rx="6" fill="#1976D2"/>
+  <text x="610" y="33" text-anchor="middle" font-size="18" font-weight="700" fill="#fff">
+    Diagrama de Actividad del Software
+  </text>
+
+  <!-- ====================== CARRILES (fondos) ====================== -->
+  <rect x="20"  y="105" width="295" height="2305" fill="#F2F8FF"/>
+  <rect x="315" y="105" width="295" height="2305" fill="#F2FBF2"/>
+  <rect x="610" y="105" width="295" height="2305" fill="#F7F7F7"/>
+  <rect x="905" y="105" width="295" height="2305" fill="#FFF8EF"/>
+  <!-- divisores -->
+  <g stroke="#b0bec5" stroke-width="1.5">
+    <line x1="20"   y1="55" x2="20"   y2="2410"/>
+    <line x1="315"  y1="55" x2="315"  y2="2410"/>
+    <line x1="610"  y1="55" x2="610"  y2="2410"/>
+    <line x1="905"  y1="55" x2="905"  y2="2410"/>
+    <line x1="1200" y1="55" x2="1200" y2="2410"/>
+    <line x1="20"   y1="2410" x2="1200" y2="2410"/>
+  </g>
+
+  <!-- ====================== ENCABEZADOS DE CARRIL ====================== -->
+  <g font-size="16" font-weight="700" text-anchor="middle">
+    <rect x="35"  y="58" width="265" height="40" rx="5" fill="var(--c-cli)"/>
+    <text x="167" y="84" fill="#fff">CLIENTE</text>
+    <rect x="330" y="58" width="265" height="40" rx="5" fill="var(--c-adm)"/>
+    <text x="462" y="84" fill="#fff">ADMINISTRADOR</text>
+    <rect x="625" y="58" width="265" height="40" rx="5" fill="var(--c-sup)"/>
+    <text x="757" y="84" fill="#fff">SUPERVISOR</text>
+    <rect x="920" y="58" width="265" height="40" rx="5" fill="var(--c-sys)"/>
+    <text x="1052" y="84" fill="#fff">SISTEMA</text>
+  </g>
+
+  <!-- ====================== CAJA DE PRECONDICIONES ====================== -->
+  <g>
+    <rect x="35" y="145" width="265" height="155" rx="6" fill="#fff" stroke="#90a4ae" stroke-dasharray="5 4"/>
+    <text x="167" y="166" text-anchor="middle" font-size="12" font-weight="700" fill="#37474f">Configuración previa (datos maestros)</text>
+    <text x="48" y="190" font-size="10.5" fill="#455a64">• Registrar usuarios y roles</text>
+    <text x="48" y="208" font-size="10.5" fill="#455a64">• Registrar productos (atributos,</text>
+    <text x="58" y="222" font-size="10.5" fill="#455a64">catálogo, colores)</text>
+    <text x="48" y="240" font-size="10.5" fill="#455a64">• Registrar insumos y proveedores</text>
+    <text x="48" y="258" font-size="10.5" fill="#455a64">• Registrar RR.HH. (empleados,</text>
+    <text x="58" y="272" font-size="10.5" fill="#455a64">departamentos, cargos)</text>
+    <text x="167" y="292" text-anchor="middle" font-size="9.5" font-style="italic" fill="#78909c">Alimentan el flujo operativo principal</text>
+  </g>
+
+  <!-- ====================== SIMBOLOGÍA ====================== -->
+  <g>
+    <rect x="35" y="315" width="265" height="225" rx="6" fill="#fff" stroke="#90a4ae" stroke-dasharray="5 4"/>
+    <text x="167" y="336" text-anchor="middle" font-size="12" font-weight="700" fill="#37474f">Simbología</text>
+    <circle cx="60" cy="360" r="9" fill="#212121"/>
+    <text x="80" y="364" font-size="10.5" fill="#455a64">Nodo inicial</text>
+    <circle cx="60" cy="388" r="9" fill="none" stroke="#212121" stroke-width="2"/>
+    <circle cx="60" cy="388" r="4.5" fill="#212121"/>
+    <text x="80" y="392" font-size="10.5" fill="#455a64">Nodo final</text>
+    <rect x="48" y="408" width="26" height="16" rx="3" fill="var(--c-adm-box)" stroke="var(--c-adm-bd)"/>
+    <text x="80" y="420" font-size="10.5" fill="#455a64">Actividad / acción</text>
+    <polygon points="61,436 74,447 61,458 48,447" fill="var(--c-sup-dia)" stroke="var(--c-sup-bd)"/>
+    <text x="82" y="451" font-size="10.5" fill="#455a64">Decisión (SÍ / NO)</text>
+    <line x1="48" y1="476" x2="74" y2="476" stroke="#37474f" stroke-width="1.6" marker-end="url(#arrow)"/>
+    <text x="82" y="480" font-size="10.5" fill="#455a64">Flujo de control</text>
+    <text x="48" y="508" font-size="10.5" fill="#455a64">Cada carril = un actor</text>
+    <text x="48" y="524" font-size="10.5" fill="#455a64">o el sistema (software)</text>
+  </g>
+
+  <!-- =================================================================== -->
+  <!-- ========================== FLECHAS =============================== -->
+  <!-- =================================================================== -->
+  <g fill="none" stroke="#37474f" stroke-width="1.6" marker-end="url(#arrow)">
+    <path d="M463,170 V203"/>                               <!-- inicio->login -->
+    <path d="M548,230 H968"/>                               <!-- login->validar -->
+    <path d="M1053,257 V300"/>                              <!-- validar->Dcred -->
+    <path d="M1053,380 V423"/>                              <!-- SI -> panel -->
+    <path d="M968,340 H625 V233 H548"/>                     <!-- NO -> login -->
+    <path d="M1053,477 V510 H463 V528"/>                    <!-- panel->cliente -->
+    <path d="M548,555 H968"/>                               <!-- cliente->guardar -->
+    <path d="M1053,582 V615 H463 V638"/>                    <!-- guardar->cotizacion -->
+    <path d="M548,665 H968"/>                               <!-- cotizacion->calcular -->
+    <path d="M1053,692 V735 H168 V748"/>                    <!-- calcular->revisar -->
+    <path d="M168,802 V845"/>                               <!-- revisar->Daprueba -->
+    <path d="M253,885 H378"/>                               <!-- NO -> negociar -->
+    <path d="M548,885 H583 V665 H548"/>                     <!-- negociar->cotizacion -->
+    <path d="M168,925 V965 H463 V968"/>                     <!-- SI -> pedido -->
+    <path d="M548,995 H968"/>                               <!-- pedido->validar abono -->
+    <path d="M1053,1022 V1065"/>                            <!-- -> Dabono -->
+    <path d="M968,1105 H600 V995 H548"/>                    <!-- NO -> pedido -->
+    <path d="M1053,1145 V1185 H463 V1188"/>                 <!-- SI -> OP -->
+    <path d="M548,1215 H968"/>                              <!-- OP->verificar stock -->
+    <path d="M1053,1242 V1285"/>                            <!-- -> Dstock -->
+    <path d="M968,1325 H463 V1408"/>                        <!-- NO -> compra -->
+    <path d="M548,1435 H968"/>                              <!-- compra->entrada inv -->
+    <path d="M1053,1365 V1385 H758 V1473"/>                 <!-- Dstock SI -> produccion (rodea la caja de entrada inv) -->
+    <path d="M1053,1462 H770 V1473"/>                       <!-- entrada inv -> produccion (entra paralela, sin escalera) -->
+    <path d="M843,1500 H968"/>                              <!-- prod -> salida insumos -->
+    <path d="M1053,1527 V1583"/>                            <!-- salida insumos -> estado -->
+    <path d="M1053,1637 V1680 H758 V1693"/>                 <!-- estado -> control calidad -->
+    <path d="M758,1747 V1790"/>                             <!-- control -> Dconforme -->
+    <path d="M843,1830 H888 V1493 H843"/>                   <!-- NO -> reproceso (prod, lado der.) -->
+    <path d="M758,1870 V2010 H463 V2023"/>                  <!-- SI -> entrega (no hay inventario de producto terminado) -->
+    <path d="M378,2050 H168 V2120"/>                        <!-- entrega -> Dcliente conforme -->
+    <path d="M253,2160 H378"/>                              <!-- NO -> garantia -->
+    <path d="M548,2160 H625 V1507 H673"/>                   <!-- reparacion -> prod (lado izq.) -->
+    <path d="M168,2200 V2270 H378"/>                        <!-- SI -> reportes -->
+    <path d="M548,2270 H968"/>                              <!-- reportes -> generar reporte -->
+    <path d="M1053,2297 V2340 H463 V2357"/>                 <!-- -> FIN -->
+  </g>
+
+  <!-- ====================== ETIQUETAS SÍ / NO ====================== -->
+  <g font-size="12.5" font-weight="700" fill="#c62828">
+    <text x="1063" y="404">SÍ</text>
+    <text x="636" y="332">NO</text>
+    <text x="300" y="876">NO</text>
+    <text x="592" y="775" fill="#1565C0">re-editar</text>
+    <text x="183" y="950">SÍ</text>
+    <text x="610" y="1098">NO</text>
+    <text x="1063" y="1172">SÍ</text>
+    <text x="700" y="1318">NO</text>
+    <text x="1063" y="1455">SÍ</text>
+    <text x="895" y="1700">NO</text>
+    <text x="770" y="1900">SÍ</text>
+    <text x="300" y="2150">NO</text>
+    <text x="183" y="2235">SÍ</text>
+    <text x="632" y="1660" fill="#1565C0">reparación</text>
+  </g>
+
+  <!-- =================================================================== -->
+  <!-- ============================ NODOS =============================== -->
+  <!-- =================================================================== -->
+
+  <!-- INICIO -->
+  <circle cx="463" cy="150" r="13" fill="#212121"/>
+  <text x="485" y="154" font-size="11" font-weight="700" fill="#37474f">INICIO</text>
+
+  <!-- ===== ADMINISTRADOR (verde) ===== -->
+  <g font-size="11.5" text-anchor="middle">
+    <rect x="378" y="203" width="170" height="54" rx="6" fill="var(--c-adm-box)" stroke="var(--c-adm-bd)" stroke-width="1.5"/>
+    <text x="463" y="226"><tspan x="463">Iniciar sesión</tspan><tspan x="463" dy="16">(usuario y contraseña)</tspan></text>
+
+    <rect x="378" y="528" width="170" height="54" rx="6" fill="var(--c-adm-box)" stroke="var(--c-adm-bd)" stroke-width="1.5"/>
+    <text x="463" y="551"><tspan x="463">Registrar / seleccionar</tspan><tspan x="463" dy="16">cliente</tspan></text>
+
+    <rect x="378" y="638" width="170" height="54" rx="6" fill="var(--c-adm-box)" stroke="var(--c-adm-bd)" stroke-width="1.5"/>
+    <text x="463" y="661"><tspan x="463">Registrar cotización</tspan><tspan x="463" dy="16">(productos, tasa BCV)</tspan></text>
+
+    <rect x="378" y="858" width="170" height="54" rx="6" fill="var(--c-adm-box)" stroke="var(--c-adm-bd)" stroke-width="1.5"/>
+    <text x="463" y="881"><tspan x="463">Negociar o</tspan><tspan x="463" dy="16">anular cotización</tspan></text>
+
+    <rect x="378" y="968" width="170" height="54" rx="6" fill="var(--c-adm-box)" stroke="var(--c-adm-bd)" stroke-width="1.5"/>
+    <text x="463" y="991"><tspan x="463">Registrar pedido</tspan><tspan x="463" dy="16">(abono ≥ 50%, fecha)</tspan></text>
+
+    <rect x="378" y="1188" width="170" height="54" rx="6" fill="var(--c-adm-box)" stroke="var(--c-adm-bd)" stroke-width="1.5"/>
+    <text x="463" y="1211"><tspan x="463">Generar órdenes</tspan><tspan x="463" dy="16">de producción</tspan></text>
+
+    <rect x="378" y="1408" width="170" height="54" rx="6" fill="var(--c-adm-box)" stroke="var(--c-adm-bd)" stroke-width="1.5"/>
+    <text x="463" y="1431"><tspan x="463">Registrar compra</tspan><tspan x="463" dy="16">a proveedor</tspan></text>
+
+    <rect x="378" y="2023" width="170" height="54" rx="6" fill="var(--c-adm-box)" stroke="var(--c-adm-bd)" stroke-width="1.5"/>
+    <text x="463" y="2046"><tspan x="463">Registrar entrega</tspan><tspan x="463" dy="16">y cobro de saldo</tspan></text>
+
+    <rect x="378" y="2133" width="170" height="54" rx="6" fill="var(--c-adm-box)" stroke="var(--c-adm-bd)" stroke-width="1.5"/>
+    <text x="463" y="2156"><tspan x="463">Registrar garantía</tspan><tspan x="463" dy="16">o reclamo</tspan></text>
+
+    <rect x="378" y="2243" width="170" height="54" rx="6" fill="var(--c-adm-box)" stroke="var(--c-adm-bd)" stroke-width="1.5"/>
+    <text x="463" y="2274">Generar reportes</text>
+  </g>
+
+  <!-- ===== SISTEMA (naranja) ===== -->
+  <g font-size="11.5" text-anchor="middle">
+    <rect x="968" y="203" width="170" height="54" rx="6" fill="var(--c-sys-box)" stroke="var(--c-sys-bd)" stroke-width="1.5"/>
+    <text x="1053" y="226"><tspan x="1053">Validar credenciales</tspan><tspan x="1053" dy="16">y permisos</tspan></text>
+
+    <rect x="968" y="423" width="170" height="54" rx="6" fill="var(--c-sys-box)" stroke="var(--c-sys-bd)" stroke-width="1.5"/>
+    <text x="1053" y="446"><tspan x="1053">Cargar panel según</tspan><tspan x="1053" dy="16">rol del usuario</tspan></text>
+
+    <rect x="968" y="528" width="170" height="54" rx="6" fill="var(--c-sys-box)" stroke="var(--c-sys-bd)" stroke-width="1.5"/>
+    <text x="1053" y="551"><tspan x="1053">Guardar datos</tspan><tspan x="1053" dy="16">del cliente</tspan></text>
+
+    <rect x="968" y="638" width="170" height="54" rx="6" fill="var(--c-sys-box)" stroke="var(--c-sys-bd)" stroke-width="1.5"/>
+    <text x="1053" y="661"><tspan x="1053">Calcular totales y</tspan><tspan x="1053" dy="16">guardar cotización</tspan></text>
+
+    <rect x="968" y="968" width="170" height="54" rx="6" fill="var(--c-sys-box)" stroke="var(--c-sys-bd)" stroke-width="1.5"/>
+    <text x="1053" y="991"><tspan x="1053">Validar abono y</tspan><tspan x="1053" dy="16">datos del pedido</tspan></text>
+
+    <rect x="968" y="1188" width="170" height="54" rx="6" fill="var(--c-sys-box)" stroke="var(--c-sys-bd)" stroke-width="1.5"/>
+    <text x="1053" y="1211"><tspan x="1053">Verificar stock</tspan><tspan x="1053" dy="16">de insumos</tspan></text>
+
+    <rect x="968" y="1408" width="170" height="54" rx="6" fill="var(--c-sys-box)" stroke="var(--c-sys-bd)" stroke-width="1.5"/>
+    <text x="1053" y="1431"><tspan x="1053">Registrar entrada de</tspan><tspan x="1053" dy="16">insumos (compra)</tspan></text>
+
+    <!-- Salida de insumos: consumo durante la producción -->
+    <rect x="968" y="1473" width="170" height="54" rx="6" fill="var(--c-sys-box)" stroke="var(--c-sys-bd)" stroke-width="1.5"/>
+    <text x="1053" y="1496"><tspan x="1053">Registrar salida</tspan><tspan x="1053" dy="16">de insumos</tspan></text>
+
+    <rect x="968" y="1583" width="170" height="54" rx="6" fill="var(--c-sys-box)" stroke="var(--c-sys-bd)" stroke-width="1.5"/>
+    <text x="1053" y="1606"><tspan x="1053">Actualizar estado</tspan><tspan x="1053" dy="16">de la orden</tspan></text>
+
+    <rect x="968" y="2243" width="170" height="54" rx="6" fill="var(--c-sys-box)" stroke="var(--c-sys-bd)" stroke-width="1.5"/>
+    <text x="1053" y="2266"><tspan x="1053">Generar y</tspan><tspan x="1053" dy="16">exportar reporte</tspan></text>
+  </g>
+
+  <!-- ===== SUPERVISOR (gris) ===== -->
+  <g font-size="11.5" text-anchor="middle">
+    <rect x="673" y="1473" width="170" height="54" rx="6" fill="var(--c-sup-box)" stroke="var(--c-sup-bd)" stroke-width="1.5"/>
+    <text x="758" y="1490"><tspan x="758">Avanzar producción</tspan><tspan x="758" dy="14">(corte, confección,</tspan><tspan x="758" dy="14">bordado)</tspan></text>
+
+    <rect x="673" y="1693" width="170" height="54" rx="6" fill="var(--c-sup-box)" stroke="var(--c-sup-bd)" stroke-width="1.5"/>
+    <text x="758" y="1716"><tspan x="758">Registrar control</tspan><tspan x="758" dy="16">de calidad</tspan></text>
+  </g>
+
+  <!-- ===== CLIENTE (azul) ===== -->
+  <g font-size="11.5" text-anchor="middle">
+    <rect x="83" y="748" width="170" height="54" rx="6" fill="var(--c-cli-box)" stroke="var(--c-cli-bd)" stroke-width="1.5"/>
+    <text x="168" y="779">Revisar cotización</text>
+  </g>
+
+  <!-- ===== ROMBOS (decisiones) ===== -->
+  <g font-size="11" text-anchor="middle">
+    <polygon points="1053,300 1138,340 1053,380 968,340" fill="var(--c-sys-dia)" stroke="var(--c-sys-bd)" stroke-width="1.5"/>
+    <text x="1053" y="337"><tspan x="1053">¿Credenciales</tspan><tspan x="1053" dy="14">válidas?</tspan></text>
+
+    <polygon points="168,845 253,885 168,925 83,885" fill="var(--c-cli-dia)" stroke="var(--c-cli-bd)" stroke-width="1.5"/>
+    <text x="168" y="882"><tspan x="168">¿Aprueba</tspan><tspan x="168" dy="14">cotización?</tspan></text>
+
+    <polygon points="1053,1065 1138,1105 1053,1145 968,1105" fill="var(--c-sys-dia)" stroke="var(--c-sys-bd)" stroke-width="1.5"/>
+    <text x="1053" y="1102"><tspan x="1053">¿Datos del</tspan><tspan x="1053" dy="14">pedido válidos?</tspan></text>
+
+    <polygon points="1053,1285 1138,1325 1053,1365 968,1325" fill="var(--c-sys-dia)" stroke="var(--c-sys-bd)" stroke-width="1.5"/>
+    <text x="1053" y="1322"><tspan x="1053">¿Stock</tspan><tspan x="1053" dy="14">suficiente?</tspan></text>
+
+    <polygon points="758,1790 843,1830 758,1870 673,1830" fill="var(--c-sup-dia)" stroke="var(--c-sup-bd)" stroke-width="1.5"/>
+    <text x="758" y="1827"><tspan x="758">¿Producto</tspan><tspan x="758" dy="14">conforme?</tspan></text>
+
+    <polygon points="168,2120 253,2160 168,2200 83,2160" fill="var(--c-cli-dia)" stroke="var(--c-cli-bd)" stroke-width="1.5"/>
+    <text x="168" y="2157"><tspan x="168">¿Cliente</tspan><tspan x="168" dy="14">conforme?</tspan></text>
+  </g>
+
+  <!-- FIN -->
+  <circle cx="463" cy="2370" r="13" fill="none" stroke="#212121" stroke-width="2.5"/>
+  <circle cx="463" cy="2370" r="6" fill="#212121"/>
+  <text x="485" y="2374" font-size="11" font-weight="700" fill="#37474f">FIN</text>
+
+</svg>
+</div>
+
+<p class="note">
+  Maqueta de referencia generada a partir del <strong>Diagrama de Caso de Uso del Software</strong> ·
+  Carriles = actores del sistema (Cliente, Administrador, Supervisor) + el propio Software (Sistema).
+  El inventario maneja únicamente <strong>stock de insumos</strong>: la <strong>entrada</strong> ocurre al registrar una compra a proveedor
+  y la <strong>salida</strong> al consumirlos en la producción. No se maneja inventario de producto terminado.
+</p>
+</div>
+
+</body>
+</html>

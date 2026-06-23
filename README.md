@@ -2,34 +2,39 @@
 
 > **Sistema web integral para la gestión textil, desarrollado con Laravel 10.**
 
-Este proyecto es una solución tecnológica desarrollada por el **Grupo Textil de la Sección 536 del PNF en Informática de la UPTP "JJ Montilla"**, como parte del Proyecto Socio-Tecnológico III. Su objetivo es automatizar y optimizar los procesos operativos, administrativos y de producción de la empresa **Manufacturas R.J. Atlántico C.A.**
+Este proyecto es una solución tecnológica desarrollada por el **Grupo Textil de la Sección 636 del PNF en Informática de la UPTP "JJ Montilla"**, como parte del Proyecto Socio-Tecnológico III. Su objetivo es automatizar y optimizar los procesos operativos, administrativos y de producción de la empresa **Manufacturas R.J. Atlántico C.A.**
 
 ---
 
 ## 📘 Descripción General
 
-El sistema permite la administración eficiente de todo el ciclo de vida de la producción textil, desde la gestión de clientes y pedidos hasta el control de inventario y la supervisión de la producción diaria. Implementando una arquitectura **MVC (Modelo-Vista-Controlador)**, garantiza un código organizado, escalable y mantenible.
+El sistema permite la administración eficiente de todo el ciclo de vida de la producción textil, desde la gestión de clientes y cotizaciones hasta la producción, las compras y el control de existencias de insumos. Implementando una arquitectura **MVC (Modelo-Vista-Controlador)** con una capa de servicios, garantiza un código organizado, escalable y mantenible.
 
 ### 🌟 Características Principales
 
-#### 📦 Gestión Comercial
-*   **Clientes**: Registro, edición y consulta de clientes con historial de pedidos.
-*   **Pedidos**: Flujo completo desde la solicitud hasta la entrega. Control de estados (Pendiente, En Proceso, Completado).
-*   **Cotizaciones**: Generación de presupuestos profesionales exportables a PDF.
+#### 🗂️ Gestión General (Maestros)
+*   **Clientes y Proveedores**: Registro con historial; una misma persona es reutilizable como cliente, empleado o proveedor, y el tipo (Natural / Jurídico / Gubernamental) se deriva del documento.
+*   **Productos**: Catálogo por **Tipo de Producto** con variantes dinámicas (tela + atributos con valores) que se eligen al cotizar, generando un SKU determinístico.
+*   **Insumos**: Catálogo de materiales (telas, hilos, etc.) con tipos gestionables y control de existencias (Mínimo / Actual / Máximo).
+*   **Recursos Humanos**: Empleados con sus catálogos de **Departamentos** y **Cargos**.
+*   **Catálogos**: Colores, Atributos y Valores, y Tipos de Insumo, todos administrables.
 
-#### 🏭 Gestión de Producción
-*   **Órdenes de Producción**: Planificación y asignación de tareas a operarios.
-*   **Producción Diaria**: Registro de avances por operario y control de eficiencia.
-*   **Control de Calidad**: Monitoreo de estándares en cada etapa de fabricación.
+#### ⚙️ Gestión Operativa (Transacciones)
+*   **Cotizaciones**: Asistente (wizard) de 3 pasos, con servicio de bordado y precios en USD con su equivalente en bolívares (tasa BCV). Exportables a PDF.
+*   **Pedidos**: Asistente de 4 pasos; un pedido nace de una cotización aprobada, con pago multi-método y abono mínimo configurable.
+*   **Órdenes de Producción**: Asistente que escala de 1 a N órdenes; una orden por línea, con asignación a varios empleados y división de cantidades.
+*   **Compras**: Registro de compras a proveedores con ciclo *borrador → recibida → anular → clonar*, en bolívares e IVA por línea; al recibirse genera la entrada de existencias.
+*   **Movimiento de Insumos**: Entradas y salidas de existencias con panel de existencias y alertas automáticas de stock bajo.
+*   **Control de Calidad** y **Garantías**: *Módulos planificados para una próxima etapa.*
 
-#### 🧰 Gestión de Inventario
-*   **Insumos**: Catálogo de materiales (telas, hilos, etc.) con control de costos.
-*   **Movimientos**: Registro detallado de entradas y salidas de almacén.
-*   **Alertas de Stock**: Notificaciones automáticas cuando los insumos alcanzan el nivel mínimo.
+#### 📊 Consultas y Reportes
+*   **Dashboard Interactivo**: KPIs operativos en tiempo real y tendencia mensual de producción.
+*   **Reportes PDF**: Informes de producción, eficiencia, insumos y empleados, con filtros previos a la exportación.
 
-#### 📊 Reportes y Análisis
-*   **Dashboard Interactivo**: KPIs en tiempo real (Stock, Órdenes en proceso, Producción total).
-*   **Reportes PDF**: Generación de informes de eficiencia, consumo de materiales y rendimiento de operarios.
+#### 🔐 Configuración y Seguridad
+*   **Panel de Configuración**: Parámetros del sistema editables sin tocar código (impuestos/IVA, abono mínimo, vigencia de cotización, días de entrega).
+*   **Roles y Permisos**: Control de acceso (RBAC) con autorización en tiempo de ejecución sobre rutas e interfaz.
+*   **Recuperación de cuenta**: Multi-método (correo electrónico, preguntas de seguridad y reset por administrador) con bloqueo escalado.
 
 ---
 
@@ -54,11 +59,12 @@ El sistema está construido sobre un stack moderno y robusto:
 
 ## 👥 Roles y Permisos
 
-El sistema cuenta con un control de acceso basado en roles (RBAC):
+El sistema cuenta con un control de acceso basado en roles (RBAC) con **permisos configurables**: los roles son dinámicos y cada uno define qué módulos y acciones puede usar. Roles base incluidos:
 
 1.  **Administrador**: Control total del sistema, gestión de usuarios y configuraciones globales.
-2.  **Supervisor**: Gestión de inventario, aprobación de órdenes de producción y monitoreo de reportes.
-3.  **Operario**: Acceso limitado para registrar su producción diaria y visualizar tareas asignadas.
+2.  **Supervisor**: Gestión operativa (existencias, producción y reportes) según los permisos asignados.
+
+> Se pueden crear roles adicionales y ajustar sus permisos desde el módulo de Seguridad.
 
 ---
 
@@ -94,7 +100,7 @@ Sigue estos pasos para desplegar el proyecto en un entorno local:
         DB_CONNECTION=mysql
         DB_HOST=127.0.0.1
         DB_PORT=3306
-        DB_DATABASE=atlantico_db
+        DB_DATABASE=sistema_atlantico
         DB_USERNAME=root
         DB_PASSWORD=
         ```
@@ -105,12 +111,12 @@ Sigue estos pasos para desplegar el proyecto en un entorno local:
     ```
 
 6.  **Base de Datos**:
-    *   Crea una base de datos vacía llamada `atlantico_db` en tu gestor MySQL (phpMyAdmin, etc.).
+    *   Crea una base de datos vacía llamada `sistema_atlantico` en tu gestor MySQL (phpMyAdmin, etc.).
     *   Ejecuta las migraciones y seeders:
         ```bash
         php artisan migrate --seed
         ```
-    *   *Alternativa*: Puedes importar el archivo SQL incluido en `database/atlantico_db.sql` si prefieres una base de datos pre-cargada.
+    *   *Alternativa (recomendada)*: Importa el dump incluido en `database/sistema_atlantico.sql` para una base de datos pre-cargada.
 
 7.  **Ejecutar el proyecto**:
     En una terminal:
@@ -129,7 +135,7 @@ Sigue estos pasos para desplegar el proyecto en un entorno local:
 
 ## 👨‍💻 Equipo de Desarrollo
 
-**PNF Informática - UPTP "JJ Montilla" (Sección 536)**
+**PNF Informática - UPTP "JJ Montilla" (Sección 636)**
 
 *   **Emmanuel Arroyo** - *Desarrollador*
 *   **Santiago Mendoza** - *Desarrollador*

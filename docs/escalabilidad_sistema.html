@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Escalabilidad del Sistema — Manufacturas R.J. Atlántico C.A.</title>
+<style>
+  :root{
+    --navy:#263238; --ink:#1f2d34; --muted:#5b6b73; --line:#dce4e7;
+    --bg:#eceff1; --card:#ffffff;
+    /* secciones reales del sistema */
+    --s-maestros:#1e3c72; --s-operativa:#10b981; --s-reportes:#0ea5e9;
+    --s-config:#7E57C2; --s-plat:#FB8C00;
+    /* meses */
+    --c-ene:#78909C; --c-feb:#26A69A; --c-mar:#42A5F5;
+    --c-abr:#7E57C2; --c-may:#EC407A; --c-jun:#FB8C00;
+    --accent:#2E7D32;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:'Segoe UI',Roboto,Arial,sans-serif;line-height:1.55}
+
+  /* ---------- Topbar ---------- */
+  .topbar{display:flex;align-items:center;justify-content:space-between;
+    padding:14px 26px;background:var(--navy);color:#fff;flex-wrap:wrap;gap:10px;
+    position:sticky;top:0;z-index:20}
+  .topbar h1{font-size:18px;margin:0;font-weight:600}
+  .topbar small{display:block;font-weight:400;opacity:.72;font-size:12px;margin-top:2px}
+  .topbar button{background:var(--accent);color:#fff;border:0;border-radius:6px;
+    padding:9px 16px;font-size:13px;font-weight:600;cursor:pointer}
+  .topbar button:hover{background:#43A047}
+
+  .wrap{max-width:1080px;margin:0 auto;padding:28px 22px 60px}
+
+  /* ---------- Hero ---------- */
+  .hero{background:linear-gradient(135deg,var(--navy) 0%,#37474F 100%);
+    color:#fff;border-radius:14px;padding:34px 34px 30px;box-shadow:0 10px 28px rgba(38,50,56,.22)}
+  .hero .eyebrow{font-size:12px;letter-spacing:.14em;text-transform:uppercase;
+    opacity:.7;font-weight:600;margin:0 0 10px}
+  .hero h2{font-size:29px;line-height:1.18;margin:0 0 12px;font-weight:700}
+  .hero p{margin:0;max-width:780px;opacity:.92;font-size:15px}
+  .hero .period{display:inline-flex;align-items:center;gap:8px;margin-top:18px;
+    background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.18);
+    padding:7px 14px;border-radius:30px;font-size:13px;font-weight:600}
+
+  /* ---------- Section title ---------- */
+  .section-title{display:flex;align-items:center;gap:10px;font-size:13px;
+    letter-spacing:.12em;text-transform:uppercase;color:var(--muted);
+    font-weight:700;margin:44px 0 16px}
+  .section-title::after{content:"";flex:1;height:1px;background:var(--line)}
+
+  /* ---------- Metrics ---------- */
+  .metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px}
+  .metric{background:var(--card);border:1px solid var(--line);border-radius:12px;
+    padding:18px 18px 16px;box-shadow:0 2px 8px rgba(38,50,56,.05)}
+  .metric .num{font-size:30px;font-weight:800;color:var(--navy);line-height:1}
+  .metric .lbl{font-size:12.5px;color:var(--muted);margin-top:6px}
+  .metric .sub{font-size:11px;color:#90a4ae;margin-top:2px}
+
+  /* ---------- Chart ---------- */
+  .chart-card{background:var(--card);border:1px solid var(--line);border-radius:12px;
+    padding:24px 26px 18px;box-shadow:0 2px 8px rgba(38,50,56,.05)}
+  .chart{display:flex;align-items:flex-end;gap:18px;height:250px;padding-top:10px}
+  .bar-col{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%}
+  .bar-val{font-size:13px;font-weight:700;color:var(--ink);margin-bottom:6px}
+  .bar{width:100%;max-width:62px;border-radius:7px 7px 0 0}
+  .bar-lbl{font-size:12px;color:var(--muted);margin-top:9px;font-weight:600}
+  .chart-cap{font-size:11.5px;color:#90a4ae;margin:14px 2px 0;text-align:center}
+
+  /* ---------- Timeline ---------- */
+  .timeline{margin-top:6px;padding-left:6px}
+  .phase{position:relative;padding:0 0 8px 42px;margin-bottom:24px}
+  .phase::before{content:"";position:absolute;left:12px;top:6px;bottom:-24px;width:2px;background:var(--line)}
+  .phase:last-child::before{display:none}
+  .phase .dot{position:absolute;left:4px;top:3px;width:18px;height:18px;border-radius:50%;
+    border:3px solid #fff;box-shadow:0 0 0 2px var(--line)}
+  .phase-card{background:var(--card);border:1px solid var(--line);border-radius:12px;
+    box-shadow:0 2px 8px rgba(38,50,56,.05);overflow:hidden}
+  .phase-head{padding:15px 20px 13px;border-bottom:1px solid var(--line)}
+  .phase-month{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.08em;
+    text-transform:uppercase;color:#fff;padding:3px 10px;border-radius:20px;margin-bottom:8px}
+  .phase-head h3{margin:2px 0 4px;font-size:17px;color:var(--navy)}
+  .phase-head .tag{font-size:12.5px;color:var(--muted)}
+  .phase-body{padding:13px 20px 16px}
+  .phase-body ul{margin:0;padding-left:18px}
+  .phase-body li{margin:5px 0;font-size:13.5px}
+  .phase-body li b{color:var(--navy)}
+  .scaled{margin-top:13px;background:#f1f8f4;border:1px solid #cfe8d8;border-radius:9px;
+    padding:9px 13px;font-size:12.5px;color:#256b42}
+  .scaled b{color:#1b5e3a}
+
+  /* ---------- Themes (3 secciones de color) ---------- */
+  .themes{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
+  .theme{border-radius:12px;padding:18px 18px 16px;color:#fff;box-shadow:0 4px 14px rgba(38,50,56,.12)}
+  .theme .chip{font-size:10.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;opacity:.85}
+  .theme h4{margin:8px 0 4px;font-size:17px}
+  .theme p{margin:0;font-size:12.5px;opacity:.9}
+  .theme code{background:rgba(255,255,255,.18);padding:1px 7px;border-radius:5px;font-size:11px}
+
+  /* ---------- Feature blocks ---------- */
+  .fblock{background:var(--card);border:1px solid var(--line);border-radius:12px;
+    box-shadow:0 2px 8px rgba(38,50,56,.05);overflow:hidden;margin-bottom:18px}
+  .fblock-head{display:flex;align-items:center;gap:12px;padding:15px 20px;border-left:6px solid var(--navy)}
+  .fblock-head .ico{font-size:22px}
+  .fblock-head h3{margin:0;font-size:16.5px;color:var(--navy)}
+  .fblock-head .sub{font-size:12px;color:var(--muted);margin-top:1px}
+  .fgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:1px;background:var(--line)}
+  .feat{background:var(--card);padding:13px 18px}
+  .feat .ft{font-size:13.5px;font-weight:700;color:var(--navy);margin-bottom:3px;display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+  .feat .fd{font-size:12.5px;color:var(--muted)}
+  .badge{font-size:9.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;
+    padding:2px 7px;border-radius:20px;color:#fff}
+  .b-new{background:#e53935}
+  .b-mejora{background:#1565C0}
+  .b-plan{background:#90a4ae}
+
+  /* ---------- Analysis callout ---------- */
+  .analysis{background:#fff8ef;border:1px solid #ffd9a8;border-left:6px solid #FB8C00;
+    border-radius:12px;padding:20px 22px}
+  .analysis h3{margin:0 0 4px;font-size:16px;color:#b25800;display:flex;align-items:center;gap:8px}
+  .analysis .lead{font-size:12.5px;color:#9c6526;margin:0 0 14px}
+  .analysis ul{margin:0;padding-left:20px;columns:2;column-gap:32px}
+  .analysis li{margin:7px 0;font-size:13px;color:#5d4324;break-inside:avoid}
+  .analysis li b{color:#7a3e00}
+
+  /* ---------- Axes ---------- */
+  .axes{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:16px}
+  .axis{background:var(--card);border:1px solid var(--line);border-radius:12px;
+    padding:20px;box-shadow:0 2px 8px rgba(38,50,56,.05)}
+  .axis .ico{font-size:24px}
+  .axis h4{margin:10px 0 6px;font-size:15px;color:var(--navy)}
+  .axis p{margin:0;font-size:12.5px;color:var(--muted)}
+
+  .foot{margin-top:46px;padding-top:18px;border-top:1px solid var(--line);
+    font-size:12px;color:#90a4ae;text-align:center}
+
+  @media print{
+    .topbar button{display:none} body{background:#fff}
+    .hero,.metric,.phase-card,.axis,.chart-card,.fblock,.theme{box-shadow:none}
+    .phase,.fblock,.feat{break-inside:avoid}
+  }
+  @media (max-width:600px){.hero h2{font-size:22px}.chart{gap:8px}.analysis ul{columns:1}}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <h1>Escalabilidad del Sistema
+    <small>SGPMRJA — Manufacturas R.J. Atlántico C.A. · Evolución del software · Semestre 2026-I</small>
+  </h1>
+  <button onclick="window.print()">🖨 Imprimir / Guardar PDF</button>
+</div>
+
+<div class="wrap">
+
+  <!-- ===================== HERO ===================== -->
+  <section class="hero">
+    <p class="eyebrow">Ingeniería de Software · Evolución del producto</p>
+    <h2>De un módulo local a una plataforma de gestión<br>construida en equipo, en la nube.</h2>
+    <p>
+      Este documento traza cómo el <b>Sistema de Gestión para Manufacturas R.J. Atlántico C.A. (SGPMRJA)</b>
+      escaló durante el semestre: desde la subida inicial a GitHub —cuando el equipo pasó a trabajar con
+      control de versiones y ramas— hasta una plataforma con flujo completo
+      Cotización → Pedido → Producción → Existencias → Compras, configurable, multi-rol y con un design system propio.
+      Escalar no fue solo agregar pantallas: fue ganar arquitectura, datos normalizados, proceso y trabajo en paralelo.
+    </p>
+    <span class="period">📅 10 de enero — 20 de junio de 2026 · ~6 meses de desarrollo continuo</span>
+  </section>
+
+  <!-- ===================== MÉTRICAS ===================== -->
+  <div class="section-title">El semestre en cifras</div>
+  <div class="metrics">
+    <div class="metric"><div class="num">686</div><div class="lbl">Commits</div><div class="sub">historial versionado</div></div>
+    <div class="metric"><div class="num">17</div><div class="lbl">Pull Requests</div><div class="sub">integración revisada</div></div>
+    <div class="metric"><div class="num">7</div><div class="lbl">Integrantes</div><div class="sub">Sección 636</div></div>
+    <div class="metric"><div class="num">43</div><div class="lbl">Tablas en BD</div><div class="sub">modelo normalizado</div></div>
+    <div class="metric"><div class="num">3</div><div class="lbl">Wizards</div><div class="sub">cotización · pedido · OP</div></div>
+    <div class="metric"><div class="num">1</div><div class="lbl">Módulo nuevo</div><div class="sub">Compras</div></div>
+  </div>
+
+  <!-- ===================== ACTIVIDAD POR MES ===================== -->
+  <div class="section-title">Ritmo de desarrollo · commits por mes</div>
+  <div class="chart-card">
+    <div class="chart">
+      <div class="bar-col"><span class="bar-val">27</span><div class="bar" style="height:20px;background:var(--c-ene)"></div><span class="bar-lbl">Ene</span></div>
+      <div class="bar-col"><span class="bar-val">44</span><div class="bar" style="height:33px;background:var(--c-feb)"></div><span class="bar-lbl">Feb</span></div>
+      <div class="bar-col"><span class="bar-val">96</span><div class="bar" style="height:71px;background:var(--c-mar)"></div><span class="bar-lbl">Mar</span></div>
+      <div class="bar-col"><span class="bar-val">64</span><div class="bar" style="height:47px;background:var(--c-abr)"></div><span class="bar-lbl">Abr</span></div>
+      <div class="bar-col"><span class="bar-val">157</span><div class="bar" style="height:116px;background:var(--c-may)"></div><span class="bar-lbl">May</span></div>
+      <div class="bar-col"><span class="bar-val">298</span><div class="bar" style="height:220px;background:var(--c-jun)"></div><span class="bar-lbl">Jun</span></div>
+    </div>
+    <p class="chart-cap">La curva ascendente refleja madurez del equipo: más colaboración en paralelo, ramas por feature y mayor velocidad conforme se consolidó la arquitectura.</p>
+  </div>
+
+  <!-- ===================== LÍNEA DE TIEMPO ===================== -->
+  <div class="section-title">Cómo escaló, etapa por etapa</div>
+  <div class="timeline">
+
+    <div class="phase">
+      <span class="dot" style="background:var(--c-ene)"></span>
+      <div class="phase-card">
+        <div class="phase-head">
+          <span class="phase-month" style="background:var(--c-ene)">Enero · 27 commits</span>
+          <h3>Arranque y migración a la nube</h3>
+          <span class="tag">El sistema pasa de local a control de versiones colaborativo</span>
+        </div>
+        <div class="phase-body"><ul>
+          <li><b>Subida inicial</b> a GitHub: repositorio compartido del equipo.</li>
+          <li>Documentación, README, licencia y respaldo SQL versionado.</li>
+          <li>Se suma el equipo: primeros <b>Pull Requests</b> y ramas por persona.</li>
+          <li>Validación en tiempo real de campos únicos y estandarización de tablas.</li>
+        </ul>
+        <div class="scaled"><b>Qué escaló:</b> de un proyecto individual a un flujo de trabajo en equipo con Git, ramas y revisión por PR.</div></div>
+      </div>
+    </div>
+
+    <div class="phase">
+      <span class="dot" style="background:var(--c-feb)"></span>
+      <div class="phase-card">
+        <div class="phase-head">
+          <span class="phase-month" style="background:var(--c-feb)">Febrero · 44 commits</span>
+          <h3>Arquitectura y design system</h3>
+          <span class="tag">Se sientan las bases que permiten crecer sin romper</span>
+        </div>
+        <div class="phase-body"><ul>
+          <li>Refactor masivo de UI/UX y <b>capa de servicios</b> (lógica fuera de los controllers).</li>
+          <li><b>Dashboard reestructurado</b> con widgets y gráficas (antes era ambiguo).</li>
+          <li>Auditoría del sistema: endurecimiento de seguridad y migraciones consolidadas.</li>
+          <li>Design system Atlántico: dark mode persistente, SweetAlert2 y DataTables estandarizados.</li>
+        </ul>
+        <div class="scaled"><b>Qué escaló:</b> un lenguaje visual y una arquitectura comunes — las nuevas pantallas reutilizan patrones en vez de reinventarlos.</div></div>
+      </div>
+    </div>
+
+    <div class="phase">
+      <span class="dot" style="background:var(--c-mar)"></span>
+      <div class="phase-card">
+        <div class="phase-head">
+          <span class="phase-month" style="background:var(--c-mar)">Marzo · 96 commits</span>
+          <h3>Sprint en equipo y robustez de datos</h3>
+          <span class="tag">El equipo avanzando en paralelo sobre la misma base</span>
+        </div>
+        <div class="phase-body"><ul>
+          <li><b>Sprint v3</b> distribuido por lotes de tareas entre los integrantes.</li>
+          <li>Inhabilitación lógica (soft-deletes) e historial en los maestros.</li>
+          <li>Proveedores jurídicos, selects estado/municipio y filtros avanzados colapsables.</li>
+          <li>Rediseño del login y layouts dinámicos según tipo de persona.</li>
+        </ul>
+        <div class="scaled"><b>Qué escaló:</b> trabajo en paralelo real — varias ramas integrándose por PR sin pisarse.</div></div>
+      </div>
+    </div>
+
+    <div class="phase">
+      <span class="dot" style="background:var(--c-abr)"></span>
+      <div class="phase-card">
+        <div class="phase-head">
+          <span class="phase-month" style="background:var(--c-abr)">Abril · 64 commits</span>
+          <h3>Validación, recuperación y RR.HH.</h3>
+          <span class="tag">El sistema se vuelve confiable de cara al usuario</span>
+        </div>
+        <div class="phase-body"><ul>
+          <li><b>Validaciones JS completas</b> (onblur + cruzadas) en 9 módulos.</li>
+          <li><b>Recuperación de contraseña multi-método</b> (email + preguntas + reset por admin).</li>
+          <li>Patrón "Person Registry": una persona reutilizable como cliente, empleado o proveedor.</li>
+          <li>RR.HH.: nuevos maestros Departamentos y Cargos + búsqueda unificada de personas.</li>
+        </ul>
+        <div class="scaled"><b>Qué escaló:</b> integridad de datos y seguridad de acceso — menos errores de captura y un modelo de personas sin duplicar.</div></div>
+      </div>
+    </div>
+
+    <div class="phase">
+      <span class="dot" style="background:var(--c-may)"></span>
+      <div class="phase-card">
+        <div class="phase-head">
+          <span class="phase-month" style="background:var(--c-may)">Mayo · 157 commits</span>
+          <h3>Variantes dinámicas, SDD y wizards</h3>
+          <span class="tag">El catálogo y los flujos escalan a complejidad de negocio real</span>
+        </div>
+        <div class="phase-body"><ul>
+          <li><b>Refactor a variantes/atributos</b>: SKU determinístico, sin explotar el catálogo en miles de filas.</li>
+          <li>Adopción de <b>SDD (Spec-Driven Development)</b>: specs y tasks formales por feature.</li>
+          <li><b>Wizard de Pedidos</b> de 4 pasos y <b>wizard de Cotizaciones</b> de 3 pasos.</li>
+          <li>Notificaciones de stock bajo, menú de acciones ⋮ unificado e inhabilitación estándar.</li>
+        </ul>
+        <div class="scaled"><b>Qué escaló:</b> el proceso (SDD) y el modelo de productos — el negocio crece sin reescribir el catálogo.</div></div>
+      </div>
+    </div>
+
+    <div class="phase">
+      <span class="dot" style="background:var(--c-jun)"></span>
+      <div class="phase-card">
+        <div class="phase-head">
+          <span class="phase-month" style="background:var(--c-jun)">Junio · 298 commits</span>
+          <h3>Plataforma configurable y gobernada</h3>
+          <span class="tag">El sistema se vuelve parametrizable y multi-rol</span>
+        </div>
+        <div class="phase-body"><ul>
+          <li><b>Wizard de Órdenes 1..N</b>: división de cantidades por línea y asignación multi-empleado.</li>
+          <li><b>Módulo Compras nuevo</b> + integración monetaria con tasa BCV y equivalente en Bs.</li>
+          <li><b>Panel de configuración</b> (FEAT-004) y <b>roles + permisos</b> (FEAT-005).</li>
+          <li>Sidebar colapsable, catálogos gestionables y documentación de diagramas.</li>
+        </ul>
+        <div class="scaled"><b>Qué escaló:</b> de "código fijo" a una plataforma <b>configurable y multi-rol</b> que se adapta sin tocar el código.</div></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ===================== ARQUITECTURA POR SECCIONES ===================== -->
+  <div class="section-title">Arquitectura de navegación · tres secciones con identidad de color</div>
+  <div class="themes">
+    <div class="theme" style="background:linear-gradient(135deg,#1e3c72,#2a5298)">
+      <span class="chip">Navy · #1e3c72</span>
+      <h4>Gestión General</h4>
+      <p>Los <b>maestros</b>: Clientes, Productos, Atributos, Colores, Proveedores, Insumos y Recursos Humanos.</p>
+    </div>
+    <div class="theme" style="background:linear-gradient(135deg,#0f9d6b,#10b981)">
+      <span class="chip">Emerald · #10b981</span>
+      <h4>Gestión Operativa</h4>
+      <p>Las <b>transacciones</b>: Cotizaciones, Pedidos, Órdenes de Producción, Compras y Movimiento de Insumos.</p>
+    </div>
+    <div class="theme" style="background:linear-gradient(135deg,#0284c7,#0ea5e9)">
+      <span class="chip">Sky · #0ea5e9</span>
+      <h4>Consultas y Reportes</h4>
+      <p>Los <b>reportes</b>: Producción, Eficiencia, Insumos y Empleados, con exportación a PDF.</p>
+    </div>
+  </div>
+
+  <!-- ===================== BLOQUE: MAESTROS ===================== -->
+  <div class="section-title">Gestión General · qué cambió en los maestros</div>
+
+  <div class="fblock">
+    <div class="fblock-head" style="border-left-color:#1e3c72">
+      <span class="ico">🗂️</span>
+      <div><h3>Datos maestros</h3><div class="sub">Nuevos catálogos, productos por variantes y datos normalizados</div></div>
+    </div>
+    <div class="fgrid">
+      <div class="feat"><div class="ft">Maestro de Colores <span class="badge b-new">Nuevo</span></div><div class="fd">Catálogo de colores gestionable, usado en productos y variantes.</div></div>
+      <div class="feat"><div class="ft">Departamentos y Cargos <span class="badge b-new">Nuevo</span></div><div class="fd">Sub-grupo Recursos Humanos con catálogos dedicados y selects en cascada.</div></div>
+      <div class="feat"><div class="ft">Empleados (RR.HH.) <span class="badge b-new">Nuevo</span></div><div class="fd">Módulo de empleados con departamento y cargo normalizados por FK.</div></div>
+      <div class="feat"><div class="ft">Atributos y Valores <span class="badge b-new">Nuevo</span></div><div class="fd">CRUD master-detail de atributos (talla, color…) y sus valores posibles.</div></div>
+      <div class="feat"><div class="ft">Tipos de Insumo <span class="badge b-new">Nuevo</span></div><div class="fd">El tipo de insumo deja de ser texto fijo: ahora es un catálogo administrable.</div></div>
+      <div class="feat"><div class="ft">Productos por variantes <span class="badge b-mejora">Mejorado</span></div><div class="fd">El catálogo es por <b>Tipo de Producto</b>; tela + atributos con valores se eligen <b>en la cotización</b>, generando un SKU determinístico sin miles de filas.</div></div>
+      <div class="feat"><div class="ft">Inhabilitación lógica <span class="badge b-mejora">Mejorado</span></div><div class="fd">Estándar en Clientes, Proveedores, Empleados y Productos: soft-delete + historial + restaurar (no se borra, se inhabilita).</div></div>
+      <div class="feat"><div class="ft">Person Registry <span class="badge b-mejora">Mejorado</span></div><div class="fd">Una misma persona reutilizable como cliente, empleado o proveedor — sin duplicar el dato.</div></div>
+      <div class="feat"><div class="ft">Normalización de BD <span class="badge b-mejora">Mejorado</span></div><div class="fd">Pagos en <code>pago_pedido</code>, logos con FK, proveedores jurídicos → Persona, soft-deletes en 6 maestros.</div></div>
+    </div>
+  </div>
+
+  <!-- ===================== BLOQUE: TRANSACCIONES ===================== -->
+  <div class="section-title">Gestión Operativa · transacciones reconstruidas como wizards</div>
+
+  <div class="fblock">
+    <div class="fblock-head" style="border-left-color:#10b981">
+      <span class="ico">⚙️</span>
+      <div><h3>Flujo operativo</h3><div class="sub">Cotización → Pedido → Producción → Compras → Existencias</div></div>
+    </div>
+    <div class="fgrid">
+      <div class="feat"><div class="ft">Cotizaciones · wizard 3 pasos <span class="badge b-mejora">Mejorado</span></div><div class="fd">Cliente → Productos → Resumen; configurador de variantes, servicio de bordado y vigencia de precios.</div></div>
+      <div class="feat"><div class="ft">Pedidos · wizard 4 pasos <span class="badge b-mejora">Mejorado</span></div><div class="fd">Nace de una cotización aprobada; pago multi-método, abono mínimo y entrega estimada obligatoria.</div></div>
+      <div class="feat"><div class="ft">Órdenes de Producción · wizard 1..N <span class="badge b-mejora">Mejorado</span></div><div class="fd">Una orden por línea, división de cantidades, multi-empleado e insumos por tipo.</div></div>
+      <div class="feat"><div class="ft">Módulo Compras <span class="badge b-new">Nuevo</span></div><div class="fd">Flujo borrador → recibida → anular → clonar; compras en bolívares e IVA por línea; genera movimientos de existencias.</div></div>
+      <div class="feat"><div class="ft">Movimiento de Insumos <span class="badge b-mejora">Mejorado</span></div><div class="fd">Entradas solo por Compras; existencias Mín/Actual/Máx; <code>is_inventoriable</code> bloquea consumo; panel de existencias.</div></div>
+      <div class="feat"><div class="ft">Integración monetaria Bs <span class="badge b-new">Nuevo</span></div><div class="fd">Tasa BCV y equivalente en bolívares visibles en todo el flujo (requisito local).</div></div>
+      <div class="feat"><div class="ft">Control de Calidad <span class="badge b-plan">Planificado</span></div><div class="fd">Apartado previsto en la sección operativa, pendiente de implementación.</div></div>
+      <div class="feat"><div class="ft">Garantías <span class="badge b-plan">Planificado</span></div><div class="fd">Apartado previsto en la sección operativa, pendiente de implementación.</div></div>
+    </div>
+  </div>
+
+  <!-- ===================== BLOQUE: REPORTES ===================== -->
+  <div class="section-title">Consultas y Reportes · información para decidir</div>
+
+  <div class="fblock">
+    <div class="fblock-head" style="border-left-color:#0ea5e9">
+      <span class="ico">📊</span>
+      <div><h3>Reportes y consultas</h3><div class="sub">Vistas analíticas con exportación a PDF</div></div>
+    </div>
+    <div class="fgrid">
+      <div class="feat"><div class="ft">Reporte de Producción <span class="badge b-new">Nuevo</span></div><div class="fd">Estado y avance de las órdenes de producción.</div></div>
+      <div class="feat"><div class="ft">Reporte de Eficiencia <span class="badge b-new">Nuevo</span></div><div class="fd">Rendimiento del proceso productivo.</div></div>
+      <div class="feat"><div class="ft">Reporte de Insumos <span class="badge b-new">Nuevo</span></div><div class="fd">Existencias y consumo de materiales.</div></div>
+      <div class="feat"><div class="ft">Reporte de Empleados <span class="badge b-new">Nuevo</span></div><div class="fd">Datos de personal por departamento y cargo.</div></div>
+      <div class="feat"><div class="ft">PDFs con arquitectura DRY <span class="badge b-mejora">Mejorado</span></div><div class="fd">Layout corporativo reutilizable + modal de filtros antes de exportar en cada módulo.</div></div>
+      <div class="feat"><div class="ft">Reportes Generales <span class="badge b-plan">Planificado</span></div><div class="fd">Vista unificada de reportes, prevista en el sidebar.</div></div>
+    </div>
+  </div>
+
+  <!-- ===================== BLOQUE: CONFIGURACIÓN Y SEGURIDAD ===================== -->
+  <div class="section-title">Configuración y seguridad · el sistema se gobierna a sí mismo</div>
+
+  <div class="fblock">
+    <div class="fblock-head" style="border-left-color:#7E57C2">
+      <span class="ico">🛡️</span>
+      <div><h3>Configuración y control de acceso</h3><div class="sub">Parámetros editables, roles, permisos y recuperación de cuentas</div></div>
+    </div>
+    <div class="fgrid">
+      <div class="feat"><div class="ft">Panel de Configuración <span class="badge b-new">Nuevo</span></div><div class="fd">Hub <code>/configuracion</code>: el administrador ajusta parámetros del sistema sin tocar código.</div></div>
+      <div class="feat"><div class="ft">Configuración de Impuestos <span class="badge b-new">Nuevo</span></div><div class="fd">El IVA se centraliza en la tabla <code>impuesto</code> (catálogo gestionable), única fuente de verdad.</div></div>
+      <div class="feat"><div class="ft">Parámetros del Pedido <span class="badge b-new">Nuevo</span></div><div class="fd">Abono mínimo, vigencia de cotización y días de entrega, todos configurables.</div></div>
+      <div class="feat"><div class="ft">Roles y Permisos <span class="badge b-new">Nuevo</span></div><div class="fd">Roles dinámicos con autorización en runtime: rutas y UI gobernadas por permisos.</div></div>
+      <div class="feat"><div class="ft">Recuperación de usuario <span class="badge b-new">Nuevo</span></div><div class="fd">Multi-método: correo + preguntas de seguridad + reset por admin, con bloqueo escalado por intentos.</div></div>
+      <div class="feat"><div class="ft">Política de cuentas <span class="badge b-mejora">Mejorado</span></div><div class="fd">Las cuentas nunca se eliminan, solo se inhabilitan (estado), reforzando la trazabilidad.</div></div>
+    </div>
+  </div>
+
+  <!-- ===================== BLOQUE: PLATAFORMA TRANSVERSAL ===================== -->
+  <div class="section-title">Plataforma transversal · UI/UX y calidad de código</div>
+
+  <div class="fblock">
+    <div class="fblock-head" style="border-left-color:#FB8C00">
+      <span class="ico">✨</span>
+      <div><h3>Experiencia y base técnica</h3><div class="sub">Lo que atraviesa todo el sistema y lo hace consistente</div></div>
+    </div>
+    <div class="fgrid">
+      <div class="feat"><div class="ft">CSS global Atlántico <span class="badge b-mejora">Mejorado</span></div><div class="fd">Todo el estilo vive en <code>custom.css</code>: gradientes, modales, tablas y componentes unificados.</div></div>
+      <div class="feat"><div class="ft">Modo oscuro persistente <span class="badge b-new">Nuevo</span></div><div class="fd">Dark mode con persistencia y sin parpadeo (FOUC) al cargar.</div></div>
+      <div class="feat"><div class="ft">Sidebar colapsable <span class="badge b-new">Nuevo</span></div><div class="fd">Se contrae a íconos con tooltips; recuerda su estado entre sesiones.</div></div>
+      <div class="feat"><div class="ft">Notificaciones del sistema <span class="badge b-new">Nuevo</span></div><div class="fd">Campanita en el header con alertas (ej. stock bajo).</div></div>
+      <div class="feat"><div class="ft">Dashboard mejorado <span class="badge b-mejora">Mejorado</span></div><div class="fd">De un tablero ambiguo a KPIs operativos, tendencia mensual y gráficas reales.</div></div>
+      <div class="feat"><div class="ft">Componentes propios <span class="badge b-new">Nuevo</span></div><div class="fd">AtlanticoSelect (realce de selects) y AtlanticoGuard (aviso de cambios sin guardar) globales.</div></div>
+      <div class="feat"><div class="ft">Menú de acciones ⋮ <span class="badge b-mejora">Mejorado</span></div><div class="fd">Columna de acciones unificada y color-coded en todas las tablas.</div></div>
+      <div class="feat"><div class="ft">Optimización de código <span class="badge b-mejora">Mejorado</span></div><div class="fd">Vistas adelgazadas (un index de 2712 → 159 líneas), capa de servicios y patrones reutilizables.</div></div>
+    </div>
+  </div>
+
+  <!-- ===================== ANÁLISIS: LO QUE SE TE ESCAPABA ===================== -->
+  <div class="section-title">Análisis · otras mejoras que también cuentan como escalabilidad</div>
+  <div class="analysis">
+    <h3>🔎 Esto también lo hicieron y vale la pena destacar</h3>
+    <p class="lead">Revisando el historial del repositorio, estas mejoras suelen pasar desapercibidas pero son escalabilidad pura:</p>
+    <ul>
+      <li><b>Adopción de SDD</b> (Spec-Driven Development): cada feature nace de una especificación y se descompone en tasks rastreables — un proceso, no solo código.</li>
+      <li><b>Servicio de bordado de punta a punta</b>: ubicaciones, configuración y precio en bolívares dentro de cotización y pedido.</li>
+      <li><b>SKU determinístico e inmutable</b> + <b>snapshots históricos</b>: cotizaciones y pedidos congelan sus datos, así un cambio futuro no altera documentos pasados.</li>
+      <li><b>Catálogo de logos normalizado</b> con relación por FK (marca corporativa reutilizable).</li>
+      <li><b>Búsqueda unificada de personas</b>: un solo buscador encuentra clientes, empleados y proveedores activos.</li>
+      <li><b>Tallas, unidades de medida y bancos</b> migrados a catálogos/selects en BD (dejaron de ser texto libre).</li>
+      <li><b>DataTables server-side</b> en todos los listados: las tablas escalan a miles de filas sin cargar todo en memoria.</li>
+      <li><b>Documentación técnica</b>: convenciones del equipo (<code>docs/conventions</code>) y diagramas (caso de uso, actividad) para StarUML.</li>
+      <li><b>Reportes PDF con filtros</b> y layout corporativo DRY reutilizado en 7+ vistas.</li>
+      <li><b>Pagos multi-método aditivos</b> por pedido, con validación de abono y registro en tabla dedicada.</li>
+    </ul>
+  </div>
+
+  <!-- ===================== EJES DE ESCALABILIDAD ===================== -->
+  <div class="section-title">Ejes de la escalabilidad lograda</div>
+  <div class="axes">
+    <div class="axis"><div class="ico">🏗️</div><h4>Técnica</h4><p>Capa de servicios, catálogos gestionables (no ENUMs), variantes dinámicas, soft-deletes y configuración centralizada: crecer sin reescribir.</p></div>
+    <div class="axis"><div class="ico">🧩</div><h4>Funcional</h4><p>De maestros sueltos a un flujo end-to-end Cotización → Pedido → Producción → Existencias → Compras con wizards reutilizables.</p></div>
+    <div class="axis"><div class="ico">👥</div><h4>De equipo</h4><p>GitHub, ramas por persona, 17 PRs revisados y un design system común: 7 integrantes en paralelo sin colisiones.</p></div>
+    <div class="axis"><div class="ico">📐</div><h4>De proceso</h4><p>Spec-Driven Development: cada feature parte de una especificación y se descompone en tasks rastreables.</p></div>
+  </div>
+
+  <div class="foot">
+    SGPMRJA · Manufacturas R.J. Atlántico C.A. — Documento de escalabilidad del software · Semestre 2026-I ·
+    Generado a partir del historial real del repositorio (686 commits, 10-ene a 20-jun-2026).
+  </div>
+
+</div>
+</body>
+</html>

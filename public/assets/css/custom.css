@@ -3472,6 +3472,18 @@ header#page-topbar,
 }
 .cot-grouped-table tbody tr:last-child td { border-bottom: 0; }
 
+/* Pie de la grilla (p.ej. subtotal de líneas en el detalle de compra) */
+.cot-grouped-table tfoot td {
+    padding: 11px 12px;
+    border-top: 2px solid rgba(30, 60, 114, 0.12);
+    background: #f8fafc;
+    font-size: 0.88rem;
+}
+[data-bs-theme="dark"] .cot-grouped-table tfoot td {
+    border-top-color: rgba(255, 255, 255, 0.14);
+    background: #11151f;
+}
+
 /* Columnas */
 .cot-grouped-table .cot-col-num {
     width: 44px;
@@ -8165,6 +8177,23 @@ select.js-readonly:not(.afs-native) {
 .navbar-menu .navbar-nav .nav-item:not([class*="section-"]) .menu-link.nav-link.active i {
     color: #1e3c72 !important;
 }
+
+/* ── Equivalente USD en vivo bajo los inputs en Bs (paso 2 de la compra) ──
+   Hint sutil, alineado a la derecha; reserva alto fijo para que la fila no
+   salte al aparecer/desaparecer el valor. */
+.c-usd-hint {
+    display: block;
+    text-align: right;
+    font-size: 0.7rem;
+    line-height: 1.1;
+    margin-top: 2px;
+    min-height: 0.85rem;
+    color: #10b981;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.2px;
+}
+[data-bs-theme="dark"] .c-usd-hint { color: #34d399; }
 
 /* ════════════════════════════════════════════════════════════════════
    COMPRAS — Wizard "Nueva Compra" (paso 3: ticket de totales)

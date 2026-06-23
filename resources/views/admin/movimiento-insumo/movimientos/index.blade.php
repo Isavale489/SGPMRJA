@@ -48,12 +48,6 @@
                                         </button>
                                         <ul class="dropdown-menu dropdown-menu-end actions-menu">
                                             <li>
-                                                <button type="button" class="dropdown-item act-item act-primary"
-                                                    data-bs-toggle="modal" data-bs-target="#masivoModal">
-                                                    <span class="act-ic"><i class="ri-stack-line"></i></span>Movimiento masivo
-                                                </button>
-                                            </li>
-                                            <li>
                                                 <a class="dropdown-item act-item act-warn" href="{{ route('movimiento-insumo.alertas') }}">
                                                     <span class="act-ic"><i class="ri-alarm-warning-line"></i></span>Alertas de Stock
                                                 </a>
@@ -245,7 +239,6 @@
     </div>
 
     @include('admin.movimiento-insumo.movimientos.modals.create')
-    @include('admin.movimiento-insumo.movimientos.modals.masivo')
     @include('admin.movimiento-insumo.movimientos.modals.view')
     @include('admin.movimiento-insumo.movimientos.modals.create_insumo')
 

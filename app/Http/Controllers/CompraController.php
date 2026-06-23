@@ -269,6 +269,7 @@ class CompraController extends Controller
             ],
             'items' => $compra->detalles->map(fn($d) => [
                 'nombre'            => $d->insumo?->nombre ?? 'N/A',
+                'codigo'            => $d->insumo?->codigo,
                 'tipo'              => $d->insumo?->tipo ?? '—',
                 'unidad'            => $d->insumo?->unidad_medida ?? '—',
                 'cantidad'          => number_format($d->cantidad, 2, ',', '.'),
