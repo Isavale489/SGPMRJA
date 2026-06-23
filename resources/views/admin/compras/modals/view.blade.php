@@ -3,7 +3,7 @@
      Prefijo de IDs: cv- (compra-view)
 --}}
 <div class="modal fade atlantico-modal atlantico-modal--op" id="viewCompraModal" tabindex="-1"
-    aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-xl">
         <div class="modal-content">
 
@@ -68,13 +68,11 @@
                 <section class="wiz-step-content is-active" data-step="1">
 
                     {{-- Información de la compra (proveedor + comprobante) --}}
-                    <div class="card border-0 shadow-sm mb-3">
-                        <div class="card-header border-0 bg-soft-primary">
-                            <h6 class="mb-0 text-atlantico-dark">
-                                <i class="ri-file-list-3-line me-2"></i>Información de la Compra
-                            </h6>
+                    <div class="cli-view-card mb-3">
+                        <div class="cli-view-card-header">
+                            <i class="ri-file-list-3-line"></i>Información de la Compra
                         </div>
-                        <div class="card-body">
+                        <div class="cli-view-card-body">
                             {{-- Card proveedor --}}
                             <div class="cot-cliente-card mb-3">
                                 <div class="cot-cliente-avatar" id="cv-prov-ini">—</div>
@@ -125,13 +123,11 @@
                     </div>
 
                     {{-- Registro --}}
-                    <div class="card border-0 shadow-sm mb-0">
-                        <div class="card-header border-0 bg-soft-primary">
-                            <h6 class="mb-0 text-atlantico-dark">
-                                <i class="ri-user-line me-2"></i>Registro
-                            </h6>
+                    <div class="cli-view-card mb-0">
+                        <div class="cli-view-card-header">
+                            <i class="ri-user-line"></i>Registro
                         </div>
-                        <div class="card-body">
+                        <div class="cli-view-card-body">
                             <div class="row g-3 align-items-center">
                                 <div class="col-md-6">
                                     <div class="d-flex align-items-center gap-2">
@@ -242,21 +238,21 @@
 
             </div>{{-- /modal-body --}}
 
-            <div class="modal-footer wiz-wizard-footer py-2 px-3">
+            <div class="modal-footer wiz-wizard-footer">
                 <div class="wiz-wizard-footer-info">
                     <a id="cv-pdf-btn" href="#" target="_blank" class="btn btn-danger">
                         <i class="ri-file-pdf-line align-bottom me-1"></i> Exportar PDF
                     </a>
                 </div>
                 <div class="wiz-wizard-footer-actions">
-                    <button type="button" class="btn btn-sm btn-light border" id="cv-prev" style="display:none;">
+                    <button type="button" class="btn btn-light wiz-wizard-btn-prev" id="cv-prev" style="display:none;">
                         <i class="ri-arrow-left-line me-1"></i>Anterior
                     </button>
-                    <button type="button" class="btn btn-sm btn-primary" id="cv-next">
-                        Siguiente<i class="ri-arrow-right-line ms-1"></i>
-                    </button>
-                    <button type="button" class="btn btn-sm btn-light border" data-bs-dismiss="modal" id="cv-close" style="display:none;">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">
                         <i class="ri-close-line me-1"></i>Cerrar
+                    </button>
+                    <button type="button" class="btn btn-atlantico-brand wiz-wizard-btn-next" id="cv-next">
+                        Continuar<i class="ri-arrow-right-line ms-1"></i>
                     </button>
                 </div>
             </div>

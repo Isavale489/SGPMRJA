@@ -63,7 +63,7 @@ $(document).ready(function () {
                 }
             },
             {
-                data: 'estado_badge', name: 'estado',
+                data: 'estado_badge', name: 'estado', className: 'text-center',
                 orderable: false, searchable: false
             },
             {
@@ -100,7 +100,7 @@ $(document).ready(function () {
 
     // ── Ver detalle ─────────────────────────────────────────────────────────
     window.verDetalleCompra = function verDetalleCompra(compraId) {
-        var badgeMap = { recibida: 'success', borrador: 'warning', anulada: 'danger' };
+        var badgeMap = { recibida: 'success', borrador: 'warning', anulada: 'danger', info: 'info' };
 
         $.ajax({
             url: '/compras/' + compraId + '/detalle',
@@ -109,9 +109,11 @@ $(document).ready(function () {
                 // Header y hero
                 $('#cv-titulo').html('<i class="ri-shopping-bag-3-line me-1"></i>Compra #' + d.id);
                 $('#cv-hero-titulo').text('Compra #' + d.id);
-                var badgeColor = badgeMap[d.estado] || 'secondary';
-                $('#cv-estado-badge').attr('class', 'badge bg-' + badgeColor).text(
-                    d.estado.charAt(0).toUpperCase() + d.estado.slice(1)
+                var badgeColor = badgeMap[d.estado] || 'info';
+                var iconMap = { recibida: 'ri-checkbox-circle-line', borrador: 'ri-draft-line', anulada: 'ri-close-circle-line' };
+                var estadoIcon = iconMap[d.estado] || 'ri-question-line';
+                $('#cv-estado-badge').attr('class', 'badge badge-soft-' + badgeColor).html(
+                    '<i class="' + estadoIcon + ' me-1"></i>' + d.estado.charAt(0).toUpperCase() + d.estado.slice(1)
                 );
                 $('#cv-hero-proveedor').text(d.proveedor.nombre);
                 $('#cv-hero-fecha').text(d.fecha_compra);
@@ -231,7 +233,6 @@ $(document).ready(function () {
             });
             $('#cv-prev').toggle(n > 1);
             $('#cv-next').toggle(n < TOTAL);
-            $('#cv-close').toggle(n === TOTAL);
         };
         $(document).on('click', '#cv-next', function () { if (step < TOTAL) window.viewCompraShowStep(step + 1); });
         $(document).on('click', '#cv-prev', function () { if (step > 1) window.viewCompraShowStep(step - 1); });

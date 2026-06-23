@@ -342,8 +342,10 @@ class CompraController extends Controller
             ->addColumn('fecha_formateada', fn($c) => $c->fecha_compra?->format('d/m/Y') ?? '')
             ->addColumn('estado_badge', function ($c) {
                 $map   = ['recibida' => 'success', 'borrador' => 'warning', 'anulada' => 'danger'];
-                $color = $map[$c->estado] ?? 'secondary';
-                $html  = '<span class="badge bg-' . $color . '">' . ucfirst($c->estado) . '</span>';
+                $icons = ['recibida' => 'ri-checkbox-circle-line', 'borrador' => 'ri-draft-line', 'anulada' => 'ri-close-circle-line'];
+                $color = $map[$c->estado] ?? 'info';
+                $icon  = $icons[$c->estado] ?? 'ri-question-line';
+                $html  = '<span class="badge badge-soft-' . $color . '"><i class="' . $icon . ' me-1"></i>' . ucfirst($c->estado) . '</span>';
 
                 if ($c->estado === 'anulada' && $c->anuladoPor) {
                     $nombre = e($c->anuladoPor->name);
