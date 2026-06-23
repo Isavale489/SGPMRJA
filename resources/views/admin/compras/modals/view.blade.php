@@ -87,16 +87,16 @@
                                     </div>
                                     <p class="cot-cliente-doc">
                                         <i class="ri-bank-card-line"></i>
-                                        <span id="cv-prov-doc">—</span>
+                                        <span class="cli-copyable" id="cv-prov-doc">—</span>
                                     </p>
                                     <div class="cot-cliente-contact-row">
                                         <span class="cot-cliente-contact-item" id="cv-prov-tel-wrap">
                                             <i class="ri-phone-line"></i>
-                                            <span id="cv-prov-tel">—</span>
+                                            <span class="cli-copyable" id="cv-prov-tel">—</span>
                                         </span>
                                         <span class="cot-cliente-contact-item" id="cv-prov-email-wrap">
                                             <i class="ri-mail-line"></i>
-                                            <span id="cv-prov-email">—</span>
+                                            <span class="cli-copyable" id="cv-prov-email">—</span>
                                         </span>
                                     </div>
                                 </div>
@@ -106,7 +106,7 @@
                             <div class="row g-3">
                                 <div class="col-md-4">
                                     <small class="text-muted d-block mb-1"><i class="ri-receipt-line me-1"></i>N° de Factura</small>
-                                    <span class="fw-semibold" id="cv-factura">—</span>
+                                    <span class="fw-semibold cli-copyable" id="cv-factura">—</span>
                                 </div>
                                 <div class="col-md-4">
                                     <small class="text-muted d-block mb-1"><i class="ri-calendar-event-line me-1"></i>Fecha de Compra</small>
