@@ -1,5 +1,6 @@
-{{-- Tab Permisos: selector de rol → matriz módulo × acción (desde config/modulos.php).
-     El Administrador no aparece (acceso total). 'ver' es prerrequisito del módulo. --}}
+{{-- Tab Permisos: selector de rol → grilla de tarjetas por módulo (módulo × acción
+     desde config/modulos.php). El Administrador no aparece (acceso total).
+     'ver' es prerrequisito del módulo. --}}
 @php
     // Roles editables en la matriz: todos menos el Administrador (acceso total).
     $rolesEditables = $roles->reject(fn ($r) => $r->es_sistema && $r->nombre === 'Administrador');
@@ -29,46 +30,64 @@
 </div>
 
 <div id="seg-matriz-wrapper" class="seg-matriz-wrapper d-none">
-    <div class="table-responsive">
-        <table class="table table-bordered align-middle seg-matriz mb-0">
-            <thead class="table-light">
-                <tr>
-                    <th style="width: 28%;">Módulo</th>
-                    <th>Acciones</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach ($modulos as $modulo)
-                    <tr data-modulo="{{ $modulo['slug'] }}">
-                        <td>
-                            <div class="fw-medium">{{ $modulo['nombre'] }}</div>
-                            <div class="form-check form-check-sm mt-1">
-                                <input class="form-check-input seg-all" type="checkbox"
-                                    id="seg-all-{{ $modulo['slug'] }}">
-                                <label class="form-check-label text-muted small" for="seg-all-{{ $modulo['slug'] }}">
-                                    Todo el módulo
-                                </label>
-                            </div>
-                        </td>
-                        <td>
-                            <div class="d-flex flex-wrap gap-2">
-                                @foreach ($modulo['acciones'] as $accion => $descripcion)
-                                    <label class="seg-accion-chip" title="{{ $descripcion }}">
-                                        <input class="form-check-input seg-perm" type="checkbox"
-                                            value="{{ $modulo['slug'] }}.{{ $accion }}"
-                                            data-accion="{{ $accion }}">
-                                        <span>{{ ucfirst($accion) }}</span>
-                                    </label>
-                                @endforeach
-                            </div>
-                        </td>
-                    </tr>
-                @endforeach
-            </tbody>
-        </table>
+
+    {{-- Barra de herramientas: buscar módulo + acciones globales + contador --}}
+    <div class="seg-matriz-toolbar">
+        <div class="seg-matriz-search">
+            <i class="ri-search-line"></i>
+            <input type="text" id="seg-mod-search" class="form-control"
+                placeholder="Buscar módulo…" autocomplete="off">
+        </div>
+        <div class="seg-matriz-toolbar-actions">
+            <span class="seg-global-count" id="seg-global-count">0 permisos</span>
+            <button type="button" class="btn btn-sm btn-light" id="seg-marcar-todo">
+                <i class="ri-checkbox-multiple-line align-bottom me-1"></i>Marcar todo
+            </button>
+            <button type="button" class="btn btn-sm btn-light" id="seg-limpiar-todo">
+                <i class="ri-eraser-line align-bottom me-1"></i>Limpiar
+            </button>
+        </div>
     </div>
 
-    <div class="d-flex justify-content-end mt-3">
+    {{-- Grilla de tarjetas: una por módulo --}}
+    <div class="seg-matriz-grid" id="seg-matriz-grid">
+        @foreach ($modulos as $modulo)
+            <div class="seg-mod-card" data-modulo="{{ $modulo['slug'] }}"
+                data-nombre="{{ \Illuminate\Support\Str::lower($modulo['nombre']) }}">
+                <div class="seg-mod-card-head">
+                    <span class="seg-mod-name">{{ $modulo['nombre'] }}</span>
+                    <span class="seg-mod-count" title="Acciones otorgadas">0/{{ count($modulo['acciones']) }}</span>
+                </div>
+                <div class="seg-mod-actions">
+                    @foreach ($modulo['acciones'] as $accion => $descripcion)
+                        <label class="seg-accion-chip" title="{{ $descripcion }}">
+                            <input class="form-check-input seg-perm" type="checkbox"
+                                value="{{ $modulo['slug'] }}.{{ $accion }}" data-accion="{{ $accion }}">
+                            <span>{{ ucfirst($accion) }}</span>
+                        </label>
+                    @endforeach
+                </div>
+                <div class="seg-mod-card-foot">
+                    <label class="form-check mb-0 seg-all-wrap" for="seg-all-{{ $modulo['slug'] }}">
+                        <input class="form-check-input seg-all" type="checkbox" id="seg-all-{{ $modulo['slug'] }}">
+                        <span class="form-check-label">Todo el módulo</span>
+                    </label>
+                </div>
+            </div>
+        @endforeach
+    </div>
+
+    {{-- Estado vacío del buscador --}}
+    <div id="seg-mod-search-empty" class="text-center text-muted py-4 d-none">
+        <i class="ri-search-eye-line fs-3 d-block mb-2 opacity-50"></i>
+        Ningún módulo coincide con la búsqueda.
+    </div>
+
+    {{-- Barra de guardado fija al pie --}}
+    <div class="seg-save-bar">
+        <span class="text-muted small seg-save-hint">
+            <i class="ri-information-line align-bottom me-1"></i>Los cambios se aplican al guardar.
+        </span>
         <button type="button" class="btn btn-success" id="seg-guardar-permisos" disabled>
             <i class="ri-save-3-line align-bottom me-1"></i> Guardar permisos
         </button>
