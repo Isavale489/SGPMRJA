@@ -432,25 +432,12 @@
                     $('#view-fecha-pedido').text(formatDate(data.fecha_pedido));
                     $('#view-fecha-entrega-estimada').text(formatDate(data.fecha_entrega_estimada));
 
-                    // Mostrar estado con badge
-                    let estadoBadgeClass = '';
-                    switch (data.estado) {
-                        case 'Pendiente':
-                            estadoBadgeClass = 'bg-info';
-                            break;
-                        case 'Procesando':
-                            estadoBadgeClass = 'bg-warning';
-                            break;
-                        case 'Completado':
-                            estadoBadgeClass = 'bg-success';
-                            break;
-                        case 'Cancelado':
-                            estadoBadgeClass = 'bg-danger';
-                            break;
-                        default:
-                            estadoBadgeClass = 'bg-secondary';
-                    }
-                    $('#view-estado').html(`<span class="badge ${estadoBadgeClass}">${data.estado}</span>`);
+                    // Mostrar estado con badge — estilo + ícono consistentes con el índice
+                    var pedEstadoClasses = { 'Pendiente':'status-pendiente','Procesando':'status-procesando','Completado':'status-completado','Cancelado':'status-cancelado' };
+                    var pedEstadoIcons   = { 'Pendiente':'ri-time-line','Procesando':'ri-loader-4-line','Completado':'ri-check-double-line','Cancelado':'ri-close-circle-line' };
+                    let estadoBadgeClass = pedEstadoClasses[data.estado] || '';
+                    let estadoIcon       = pedEstadoIcons[data.estado] || 'ri-question-line';
+                    $('#view-estado').html(`<span class="badge badge-status ${estadoBadgeClass} rounded-pill"><i class="${estadoIcon} me-1"></i>${data.estado}</span>`);
 
                     var totalUsd = parseFloat(data.total);
                     $('#view-total-resumen').text('$' + totalUsd.toFixed(2));
