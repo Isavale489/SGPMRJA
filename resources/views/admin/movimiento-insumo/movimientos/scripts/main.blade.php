@@ -371,7 +371,6 @@
                 });
                 $('#mv-prev').toggle(n > 1);
                 $('#mv-next').toggle(n < TOTAL);
-                $('#mv-close').toggle(n === TOTAL);
             };
             $(document).on('click', '#mv-next', function () { if (step < TOTAL) window.viewMovShowStep(step + 1); });
             $(document).on('click', '#mv-prev', function () { if (step > 1) window.viewMovShowStep(step - 1); });
