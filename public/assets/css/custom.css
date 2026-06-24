@@ -9031,3 +9031,87 @@ select.js-readonly:not(.afs-native) {
 .seg-roles-table td {
     vertical-align: middle;
 }
+
+/* ============================================================
+   COMPONENTE — Teléfonos múltiples (telefonos-repeater)
+   Partial: admin/partials/telefonos-field.blade.php
+   ============================================================ */
+.tel-repeater-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    max-height: min(40vh, 22rem);
+    overflow-y: auto;
+    padding-right: 2px;
+}
+.tel-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.tel-row .tel-tipo {
+    flex: 0 0 110px;
+    max-width: 110px;
+}
+.tel-row .tel-numero-group {
+    flex: 1 1 auto;
+}
+.tel-row .tel-numero-group .tel-prefijo {
+    flex: 0 0 92px;
+    max-width: 92px;
+}
+/* Estrella "principal" (radio oculto + estrella gris→dorada) */
+.tel-principal {
+    flex: 0 0 auto;
+    margin: 0;
+    cursor: pointer;
+    line-height: 1;
+}
+.tel-principal input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+.tel-principal .tel-star {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    color: #cbd5e1;
+    font-size: 1rem;
+    transition: color .15s, background .15s, transform .15s;
+}
+.tel-principal:hover .tel-star {
+    color: #f59e0b;
+    background: rgba(245, 158, 11, .12);
+}
+.tel-principal input[type="radio"]:checked + .tel-star {
+    color: #f59e0b;
+    background: rgba(245, 158, 11, .15);
+}
+.tel-principal input[type="radio"]:focus-visible + .tel-star {
+    outline: 2px solid #f59e0b;
+    outline-offset: 1px;
+}
+.tel-row .tel-remove {
+    flex: 0 0 auto;
+    color: #ef4444;
+    border: none;
+    background: transparent;
+    padding: .35rem .5rem;
+    line-height: 1;
+}
+.tel-row .tel-remove:hover {
+    color: #fff;
+    background: #ef4444;
+}
+.tel-add-btn {
+    margin-top: 0.5rem;
+}
+/* Dark mode */
+[data-bs-theme="dark"] .tel-principal .tel-star {
+    color: #475569;
+}
