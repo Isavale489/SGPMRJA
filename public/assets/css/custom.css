@@ -4032,101 +4032,140 @@ header#page-topbar,
 .cfg-talla-cell-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 .cfg-talla-cell-input { appearance: textfield; -moz-appearance: textfield; }
 
-/* ── Grilla 2D talla × género (configurador) ── */
-/* Toggle de escala de tallas (Letras / Numéricas / Única) */
+/* ══ Grilla 2D talla × género (configurador) ══ */
+
+/* Segmented control de escala (Letras / Numéricas / Única) */
 .cfg-tg-groups {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    margin-bottom: 10px;
+    display: inline-flex;
+    gap: 2px;
+    background: #f1f5f9;
+    border-radius: 10px;
+    padding: 3px;
+    margin-bottom: 16px;
 }
 .cfg-tg-group-btn {
-    border: 1.5px solid #e2e8f0;
-    background: #fff;
+    border: 0;
+    background: transparent;
     color: #64748b;
-    border-radius: 8px;
-    padding: 4px 12px;
-    font-size: 0.78rem;
+    border-radius: 7px;
+    padding: 5px 14px;
+    font-size: 0.8rem;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.15s;
+    transition: color 0.15s, background 0.15s, box-shadow 0.15s;
     display: inline-flex;
     align-items: center;
     gap: 6px;
+    white-space: nowrap;
 }
-.cfg-tg-group-btn:hover { border-color: #1e3c72; color: #1e3c72; }
+.cfg-tg-group-btn:hover { color: #1e3c72; }
 .cfg-tg-group-btn.is-active {
-    border-color: #1e3c72;
-    background: #1e3c72;
-    color: #fff;
+    background: #ffffff;
+    color: #1e3c72;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.12);
 }
 .cfg-tg-group-badge {
     background: #00d9a5;
     color: #06251d;
     border-radius: 999px;
-    font-size: 0.66rem;
+    font-size: 0.64rem;
     font-weight: 700;
     padding: 0 6px;
-    line-height: 1.5;
+    line-height: 1.55;
 }
-[data-bs-theme="dark"] .cfg-tg-group-btn { background: #0f172a; border-color: #334155; color: #94a3b8; }
-[data-bs-theme="dark"] .cfg-tg-group-btn.is-active { background: #3b82f6; border-color: #3b82f6; color: #fff; }
 
+/* Matriz minimalista: sin bordes pesados, separadores sutiles por fila */
 .cfg-tg {
     display: grid;
-    grid-template-columns: minmax(60px, 0.8fr) repeat(var(--cfg-tg-cols, 3), 1fr);
-    gap: 6px;
+    grid-template-columns: minmax(52px, 0.6fr) repeat(var(--cfg-tg-cols, 3), 1fr);
+    gap: 0;
     align-items: stretch;
 }
 .cfg-tg-row { display: contents; }
 .cfg-tg-talla {
     display: flex;
     align-items: center;
-    font-size: 0.72rem;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: #64748b;
+    font-size: 0.8rem;
+    color: #475569;
     font-weight: 600;
-    padding: 0 4px;
+    padding: 4px 8px 4px 2px;
+    border-bottom: 1px solid #f1f5f9;
+}
+.cfg-tg-head .cfg-tg-talla,
+.cfg-tg-head .cfg-tg-genhead {
+    border-bottom: 1.5px solid #e2e8f0;
+    padding-bottom: 8px;
 }
 .cfg-tg-head .cfg-tg-genhead {
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 4px;
-    text-align: center;
-    font-size: 0.7rem;
+    font-size: 0.68rem;
     font-weight: 700;
-    color: #1e3c72;
+    color: #64748b;
     text-transform: uppercase;
     letter-spacing: 0.04em;
-    padding: 4px 2px;
 }
-.cfg-tg-corner { color: #94a3b8; }
+.cfg-tg-corner {
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #94a3b8;
+}
+
+/* Celda: −  [input]  +  */
+.cfg-tg-cell {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1px;
+    padding: 3px 2px;
+    border-bottom: 1px solid #f1f5f9;
+    border-radius: 10px;
+    transition: background 0.15s, box-shadow 0.15s;
+}
+.cfg-tg-cell.is-active { background: rgba(0, 217, 165, 0.07); }
+.cfg-tg-cell:focus-within {
+    background: #ffffff;
+    box-shadow: inset 0 0 0 2px rgba(30, 60, 114, 0.35);
+}
 .cfg-tg-input {
-    width: 100%;
-    border: 1.5px solid #e2e8f0;
-    border-radius: 9px;
-    background: #fff;
+    width: 38px;
+    border: 0;
+    background: transparent;
     text-align: center;
-    font-size: 1rem;
-    font-weight: 700;
-    color: #1e3c72;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #cbd5e1; /* vacío = tenue */
     font-variant-numeric: tabular-nums;
     outline: none;
-    padding: 8px 2px;
-    transition: all 0.15s;
+    padding: 5px 0;
+    appearance: textfield;
+    -moz-appearance: textfield;
 }
-.cfg-tg-input:hover { border-color: #1e3c72; }
-.cfg-tg-input:focus { border-color: #1e3c72; box-shadow: 0 0 0 3px rgba(30, 60, 114, 0.12); }
-.cfg-tg-input.is-active {
-    border-color: #00d9a5;
-    background: rgba(0, 217, 165, 0.06);
-    box-shadow: 0 4px 10px -6px rgba(0, 217, 165, 0.4);
-}
+.cfg-tg-input::placeholder { color: #cbd5e1; }
 .cfg-tg-input::-webkit-outer-spin-button,
 .cfg-tg-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-.cfg-tg-input { appearance: textfield; -moz-appearance: textfield; }
+.cfg-tg-cell.is-active .cfg-tg-input { color: #0f3a2e; font-weight: 700; }
+.cfg-tg-step {
+    border: 0;
+    background: transparent;
+    color: #cbd5e1;
+    cursor: pointer;
+    width: 20px;
+    height: 22px;
+    border-radius: 6px;
+    font-size: 1.05rem;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.12s, color 0.12s;
+    flex: 0 0 auto;
+}
+.cfg-tg-step:hover { background: #eef2f7; color: #1e3c72; }
+.cfg-tg-cell.is-active .cfg-tg-step { color: #94a3b8; }
 
 /* Chip de género en listas de resumen/agrupado */
 .cot-chip-gen {
@@ -4147,10 +4186,24 @@ header#page-topbar,
     font-size: 0.66rem;
     font-weight: 600;
 }
-[data-bs-theme="dark"] .cfg-tg-input { background: #0f172a; border-color: #334155; color: #fff; }
-[data-bs-theme="dark"] .cfg-tg-input.is-active { border-color: #34d399; background: rgba(52, 211, 153, 0.1); }
-[data-bs-theme="dark"] .cfg-tg-genhead { color: #93c5fd; }
-[data-bs-theme="dark"] .cfg-tg-talla { color: #94a3b8; }
+
+/* ── Dark mode ── */
+[data-bs-theme="dark"] .cfg-tg-groups { background: #1e293b; }
+[data-bs-theme="dark"] .cfg-tg-group-btn { color: #94a3b8; }
+[data-bs-theme="dark"] .cfg-tg-group-btn.is-active { background: #0f172a; color: #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4); }
+[data-bs-theme="dark"] .cfg-tg-talla { color: #cbd5e1; border-bottom-color: #1e293b; }
+[data-bs-theme="dark"] .cfg-tg-head .cfg-tg-talla,
+[data-bs-theme="dark"] .cfg-tg-head .cfg-tg-genhead { border-bottom-color: #334155; }
+[data-bs-theme="dark"] .cfg-tg-genhead,
+[data-bs-theme="dark"] .cfg-tg-corner { color: #94a3b8; }
+[data-bs-theme="dark"] .cfg-tg-cell { border-bottom-color: #1e293b; }
+[data-bs-theme="dark"] .cfg-tg-cell.is-active { background: rgba(52, 211, 153, 0.12); }
+[data-bs-theme="dark"] .cfg-tg-cell:focus-within { background: #0f172a; box-shadow: inset 0 0 0 2px rgba(59, 130, 246, 0.5); }
+[data-bs-theme="dark"] .cfg-tg-input { color: #475569; }
+[data-bs-theme="dark"] .cfg-tg-input::placeholder { color: #475569; }
+[data-bs-theme="dark"] .cfg-tg-cell.is-active .cfg-tg-input { color: #6ee7b7; }
+[data-bs-theme="dark"] .cfg-tg-step { color: #475569; }
+[data-bs-theme="dark"] .cfg-tg-step:hover { background: #1e293b; color: #93c5fd; }
 [data-bs-theme="dark"] .cot-chip-gen,
 [data-bs-theme="dark"] .cot-linea-genero { background: #1e293b; color: #93c5fd; }
 

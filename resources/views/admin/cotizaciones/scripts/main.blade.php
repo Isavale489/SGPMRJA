@@ -4815,10 +4815,14 @@
                     var cells = generos.map(function (g) {
                         var qty = byGen[g.id] || '';
                         return (
-                            '<input type="number" class="cfg-tg-input' + (qty ? ' is-active' : '') + '"' +
-                                ' min="0" step="1" placeholder="0" value="' + qty + '"' +
-                                ' data-talla-id="' + t.id + '" data-genero-id="' + g.id + '"' +
-                                ' aria-label="' + escForHtml(label + ' · ' + (g.etiqueta || g.nombre)) + '">'
+                            '<div class="cfg-tg-cell' + (qty ? ' is-active' : '') + '">' +
+                                '<button type="button" class="cfg-tg-step" data-step="-1" tabindex="-1" aria-label="Restar">&minus;</button>' +
+                                '<input type="number" class="cfg-tg-input" inputmode="numeric"' +
+                                    ' min="0" step="1" placeholder="0" value="' + qty + '"' +
+                                    ' data-talla-id="' + t.id + '" data-genero-id="' + g.id + '"' +
+                                    ' aria-label="' + escForHtml(label + ' · ' + (g.etiqueta || g.nombre)) + '">' +
+                                '<button type="button" class="cfg-tg-step" data-step="1" tabindex="-1" aria-label="Sumar">+</button>' +
+                            '</div>'
                         );
                     }).join('');
                     return (
@@ -5010,8 +5014,17 @@
                 } else {
                     cfgState.tallas[tid][gid] = v;
                 }
-                $(this).toggleClass('is-active', has);
+                $(this).closest('.cfg-tg-cell').toggleClass('is-active', has);
                 refreshSummary();
+            });
+
+            // Steppers +/- de cada celda: ajustan el input y reusan su lógica de estado.
+            $(document).on('click', '#cfg-tallas-grid .cfg-tg-step', function () {
+                var $inp = $(this).closest('.cfg-tg-cell').find('.cfg-tg-input');
+                var delta = parseInt($(this).data('step'), 10) || 0;
+                var v = (parseInt($inp.val(), 10) || 0) + delta;
+                if (v < 0) v = 0;
+                $inp.val(v > 0 ? v : '').trigger('input');
             });
 
             // Distribuir uniforme: reparte un total entre las tallas para un
