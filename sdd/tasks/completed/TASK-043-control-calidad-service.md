@@ -2,7 +2,7 @@
 
 **Feature**: FEAT-006 — control-calidad
 **Spec**: `sdd/specs/control-calidad.spec.md`
-**Status**: pending
+**Status**: done
 **Priority**: high
 **Esfuerzo estimado**: M
 **Depends-on**: TASK-042
