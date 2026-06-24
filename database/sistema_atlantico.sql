@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1:3308
--- Tiempo de generación: 18-06-2026 a las 05:18:38
+-- Tiempo de generación: 24-06-2026 a las 17:20:15
 -- Versión del servidor: 10.4.32-MariaDB
 -- Versión de PHP: 8.2.12
 
@@ -366,7 +366,8 @@ CREATE TABLE `compra` (
 --
 
 INSERT INTO `compra` (`id`, `proveedor_id`, `user_id`, `numero_factura`, `fecha_compra`, `subtotal`, `iva`, `iva_porcentaje`, `tasa_cambio`, `total`, `observaciones`, `estado`, `clonada`, `anulado_por_id`, `fecha_anulacion`, `created_at`, `updated_at`, `deleted_at`) VALUES
-(1, 1, 1, '0001', '2026-06-09', 9500.00, 1520.00, 16.00, 567.6828, 11020.00, NULL, 'recibida', 0, NULL, NULL, '2026-06-10 01:41:22', '2026-06-10 01:41:45', NULL);
+(1, 1, 1, '0001', '2026-06-09', 9500.00, 1520.00, 16.00, 567.6828, 11020.00, NULL, 'recibida', 0, NULL, NULL, '2026-06-10 01:41:22', '2026-06-10 01:41:45', NULL),
+(2, 8, 1, '423', '2026-06-18', 20.00, 0.00, 16.00, 602.3324, 20.00, NULL, 'recibida', 0, NULL, NULL, '2026-06-19 03:01:16', '2026-06-19 03:01:25', NULL);
 
 -- --------------------------------------------------------
 
@@ -393,7 +394,9 @@ CREATE TABLE `compra_detalle` (
 
 INSERT INTO `compra_detalle` (`id`, `compra_id`, `insumo_id`, `cantidad`, `costo_unitario`, `costo_unitario_bs`, `aplica_iva`, `subtotal`, `created_at`, `updated_at`) VALUES
 (1, 1, 2, 500.00, 1.00, 567.68, 1, 500.00, '2026-06-10 01:41:22', '2026-06-10 01:41:22'),
-(2, 1, 8, 500.00, 18.00, 10218.29, 1, 9000.00, '2026-06-10 01:41:22', '2026-06-10 01:41:22');
+(2, 1, 8, 500.00, 18.00, 10218.29, 1, 9000.00, '2026-06-10 01:41:22', '2026-06-10 01:41:22'),
+(3, 2, 16, 10.00, 1.00, 602.33, 0, 10.00, '2026-06-19 03:01:16', '2026-06-19 03:01:16'),
+(4, 2, 14, 10.00, 1.00, 602.33, 0, 10.00, '2026-06-19 03:01:16', '2026-06-19 03:01:16');
 
 -- --------------------------------------------------------
 
@@ -649,402 +652,6 @@ CREATE TABLE `detalle_pedido_insumo` (
 -- --------------------------------------------------------
 
 --
--- Estructura de tabla para la tabla `estado`
---
-
-CREATE TABLE `estado` (
-  `id` bigint(20) UNSIGNED NOT NULL,
-  `nombre` varchar(100) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
---
--- Volcado de datos para la tabla `estado`
---
-
-INSERT INTO `estado` (`id`, `nombre`) VALUES
-(1, 'Amazonas'),
-(2, 'Anzoátegui'),
-(3, 'Apure'),
-(4, 'Aragua'),
-(5, 'Barinas'),
-(6, 'Bolívar'),
-(7, 'Carabobo'),
-(8, 'Cojedes'),
-(9, 'Delta Amacuro'),
-(10, 'Distrito Capital'),
-(11, 'Falcón'),
-(12, 'Guárico'),
-(13, 'La Guaira'),
-(14, 'Lara'),
-(15, 'Mérida'),
-(16, 'Miranda'),
-(17, 'Monagas'),
-(18, 'Nueva Esparta'),
-(19, 'Portuguesa'),
-(20, 'Sucre'),
-(21, 'Táchira'),
-(22, 'Trujillo'),
-(23, 'Yaracuy'),
-(24, 'Zulia');
-
--- --------------------------------------------------------
-
---
--- Estructura de tabla para la tabla `municipio`
---
-
-CREATE TABLE `municipio` (
-  `id` bigint(20) UNSIGNED NOT NULL,
-  `estado_id` bigint(20) UNSIGNED NOT NULL,
-  `nombre` varchar(120) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
---
--- Volcado de datos para la tabla `municipio`
---
-
-INSERT INTO `municipio` (`id`, `estado_id`, `nombre`) VALUES
-(1, 1, 'Alto Orinoco'),
-(2, 1, 'Atabapo'),
-(3, 1, 'Atures'),
-(4, 1, 'Autana'),
-(5, 1, 'Manapiare'),
-(6, 1, 'Maroa'),
-(7, 1, 'Río Negro'),
-(8, 2, 'Anaco'),
-(9, 2, 'Aragua'),
-(10, 2, 'Bolívar'),
-(11, 2, 'Bruzual'),
-(12, 2, 'Cajigal'),
-(13, 2, 'Carvajal'),
-(14, 2, 'Diego Bautista Urbaneja'),
-(15, 2, 'Freites'),
-(16, 2, 'Guanipa'),
-(17, 2, 'Guanta'),
-(18, 2, 'Independencia'),
-(19, 2, 'Libertad'),
-(20, 2, 'McGregor'),
-(21, 2, 'Miranda'),
-(22, 2, 'Monagas'),
-(23, 2, 'Peñalver'),
-(24, 2, 'Píritu'),
-(25, 2, 'San José de Guanipa'),
-(26, 2, 'San Juan de Capistrano'),
-(27, 2, 'Santa Ana'),
-(28, 2, 'Simón Rodríguez'),
-(29, 2, 'Sotillo'),
-(30, 3, 'Achaguas'),
-(31, 3, 'Biruaca'),
-(32, 3, 'Muñoz'),
-(33, 3, 'Páez'),
-(34, 3, 'Pedro Camejo'),
-(35, 3, 'Rómulo Gallegos'),
-(36, 3, 'San Fernando'),
-(37, 4, 'Bolívar'),
-(38, 4, 'Camatagua'),
-(39, 4, 'Francisco Linares Alcántara'),
-(40, 4, 'Girardot'),
-(41, 4, 'José Ángel Lamas'),
-(42, 4, 'José Félix Ribas'),
-(43, 4, 'José Rafael Revenga'),
-(44, 4, 'Libertador'),
-(45, 4, 'Mario Briceño Iragorry'),
-(46, 4, 'Ocumare de la Costa de Oro'),
-(47, 4, 'San Casimiro'),
-(48, 4, 'San Sebastián'),
-(49, 4, 'Santiago Mariño'),
-(50, 4, 'Santos Michelena'),
-(51, 4, 'Sucre'),
-(52, 4, 'Tovar'),
-(53, 4, 'Urdaneta'),
-(54, 4, 'Zamora'),
-(55, 5, 'Alberto Arvelo Torrealba'),
-(56, 5, 'Andrés Eloy Blanco'),
-(57, 5, 'Antonio José de Sucre'),
-(58, 5, 'Arismendi'),
-(59, 5, 'Barinas'),
-(60, 5, 'Bolívar'),
-(61, 5, 'Cruz Paredes'),
-(62, 5, 'Ezequiel Zamora'),
-(63, 5, 'Obispos'),
-(64, 5, 'Pedraza'),
-(65, 5, 'Rojas'),
-(66, 5, 'Sosa'),
-(67, 6, 'Caroní'),
-(68, 6, 'Cedeño'),
-(69, 6, 'El Callao'),
-(70, 6, 'Gran Sabana'),
-(71, 6, 'Heres'),
-(72, 6, 'Piar'),
-(73, 6, 'Angostura del Orinoco'),
-(74, 6, 'Roscio'),
-(75, 6, 'Sifontes'),
-(76, 6, 'Sucre'),
-(77, 6, 'Padre Pedro Chien'),
-(78, 7, 'Bejuma'),
-(79, 7, 'Carlos Arvelo'),
-(80, 7, 'Diego Ibarra'),
-(81, 7, 'Guacara'),
-(82, 7, 'Juan José Mora'),
-(83, 7, 'Libertador'),
-(84, 7, 'Los Guayos'),
-(85, 7, 'Miranda'),
-(86, 7, 'Montalbán'),
-(87, 7, 'Naguanagua'),
-(88, 7, 'Puerto Cabello'),
-(89, 7, 'San Diego'),
-(90, 7, 'San Joaquín'),
-(91, 7, 'Valencia'),
-(92, 8, 'Anzoátegui'),
-(93, 8, 'Ezequiel Zamora'),
-(94, 8, 'Falcón'),
-(95, 8, 'Girardot'),
-(96, 8, 'Lima Blanco'),
-(97, 8, 'Pao de San Juan Bautista'),
-(98, 8, 'Ricaurte'),
-(99, 8, 'Rómulo Gallegos'),
-(100, 8, 'Tinaco'),
-(101, 9, 'Antonio Díaz'),
-(102, 9, 'Casacoima'),
-(103, 9, 'Pedernales'),
-(104, 9, 'Tucupita'),
-(105, 10, 'Libertador'),
-(106, 11, 'Acosta'),
-(107, 11, 'Bolívar'),
-(108, 11, 'Buchivacoa'),
-(109, 11, 'Cacique Manaure'),
-(110, 11, 'Carirubana'),
-(111, 11, 'Colina'),
-(112, 11, 'Dabajuro'),
-(113, 11, 'Democracia'),
-(114, 11, 'Falcón'),
-(115, 11, 'Federación'),
-(116, 11, 'Jacura'),
-(117, 11, 'Los Taques'),
-(118, 11, 'Mauroa'),
-(119, 11, 'Miranda'),
-(120, 11, 'Monseñor Iturriza'),
-(121, 11, 'Palmasola'),
-(122, 11, 'Petit'),
-(123, 11, 'Píritu'),
-(124, 11, 'San Francisco'),
-(125, 11, 'Silva'),
-(126, 11, 'Sucre'),
-(127, 11, 'Tocópero'),
-(128, 11, 'Unión'),
-(129, 11, 'Urumaco'),
-(130, 11, 'Zamora'),
-(131, 12, 'Camaguán'),
-(132, 12, 'Chaguaramas'),
-(133, 12, 'El Socorro'),
-(134, 12, 'Infante'),
-(135, 12, 'Las Mercedes'),
-(136, 12, 'Leonardo Infante'),
-(137, 12, 'Mellado'),
-(138, 12, 'Miranda'),
-(139, 12, 'Monagas'),
-(140, 12, 'Ortíz'),
-(141, 12, 'Ribas'),
-(142, 12, 'Roscio'),
-(143, 12, 'San Gerónimo de Guayabal'),
-(144, 12, 'San José de Guaribe'),
-(145, 12, 'Santa María de Ipire'),
-(146, 12, 'Zaraza'),
-(147, 13, 'Vargas'),
-(148, 14, 'Andrés Eloy Blanco'),
-(149, 14, 'Crespo'),
-(150, 14, 'Iribarren'),
-(151, 14, 'Jiménez'),
-(152, 14, 'Morán'),
-(153, 14, 'Palavecino'),
-(154, 14, 'Simón Planas'),
-(155, 14, 'Torres'),
-(156, 14, 'Urdaneta'),
-(157, 15, 'Alberto Adriani'),
-(158, 15, 'Andrés Bello'),
-(159, 15, 'Antonio Pinto Salinas'),
-(160, 15, 'Aricagua'),
-(161, 15, 'Arzobispo Chacón'),
-(162, 15, 'Campo Elías'),
-(163, 15, 'Caracciolo Parra Olmedo'),
-(164, 15, 'Cardenal Quintero'),
-(165, 15, 'Guaraque'),
-(166, 15, 'Julio César Salas'),
-(167, 15, 'Justo Briceño'),
-(168, 15, 'Libertador'),
-(169, 15, 'Miranda'),
-(170, 15, 'Obispo Ramos de Lora'),
-(171, 15, 'Padre Noguera'),
-(172, 15, 'Pueblo Llano'),
-(173, 15, 'Rangel'),
-(174, 15, 'Rivas Dávila'),
-(175, 15, 'Santos Marquina'),
-(176, 15, 'Sucre'),
-(177, 15, 'Tovar'),
-(178, 15, 'Tulio Febres Cordero'),
-(179, 15, 'Zea'),
-(180, 16, 'Acevedo'),
-(181, 16, 'Andrés Bello'),
-(182, 16, 'Baruta'),
-(183, 16, 'Brión'),
-(184, 16, 'Buroz'),
-(185, 16, 'Carrizal'),
-(186, 16, 'Chacao'),
-(187, 16, 'Cristóbal Rojas'),
-(188, 16, 'El Hatillo'),
-(189, 16, 'Guaicaipuro'),
-(190, 16, 'Independencia'),
-(191, 16, 'Lander'),
-(192, 16, 'Los Salias'),
-(193, 16, 'Páez'),
-(194, 16, 'Paz Castillo'),
-(195, 16, 'Pedro Gual'),
-(196, 16, 'Plaza'),
-(197, 16, 'Simón Bolívar'),
-(198, 16, 'Sucre'),
-(199, 16, 'Urdaneta'),
-(200, 16, 'Zamora'),
-(201, 17, 'Acosta'),
-(202, 17, 'Aguasay'),
-(203, 17, 'Bolívar'),
-(204, 17, 'Caripe'),
-(205, 17, 'Cedeño'),
-(206, 17, 'Ezequiel Zamora'),
-(207, 17, 'Libertador'),
-(208, 17, 'Maturín'),
-(209, 17, 'Piar'),
-(210, 17, 'Punceres'),
-(211, 17, 'Santa Bárbara'),
-(212, 17, 'Sotillo'),
-(213, 17, 'Uracoa'),
-(214, 18, 'Antolín del Campo'),
-(215, 18, 'Arismendi'),
-(216, 18, 'Díaz'),
-(217, 18, 'García'),
-(218, 18, 'Gómez'),
-(219, 18, 'Maneiro'),
-(220, 18, 'Marcano'),
-(221, 18, 'Mariño'),
-(222, 18, 'Península de Macanao'),
-(223, 18, 'Tubores'),
-(224, 18, 'Villalba'),
-(225, 19, 'Agua Blanca'),
-(226, 19, 'Araure'),
-(227, 19, 'Esteller'),
-(228, 19, 'Guanare'),
-(229, 19, 'Guanarito'),
-(230, 19, 'Monseñor José Vicente de Unda'),
-(231, 19, 'Ospino'),
-(232, 19, 'Páez'),
-(233, 19, 'Papelón'),
-(234, 19, 'San Genaro de Boconoíto'),
-(235, 19, 'San Rafael de Onoto'),
-(236, 19, 'Santa Rosalía'),
-(237, 19, 'Sucre'),
-(238, 19, 'Turén'),
-(239, 20, 'Andrés Eloy Blanco'),
-(240, 20, 'Andrés Mata'),
-(241, 20, 'Arismendi'),
-(242, 20, 'Benítez'),
-(243, 20, 'Bermúdez'),
-(244, 20, 'Bolívar'),
-(245, 20, 'Cajigal'),
-(246, 20, 'Cruz Salmerón Acosta'),
-(247, 20, 'Libertador'),
-(248, 20, 'Mariño'),
-(249, 20, 'Mejía'),
-(250, 20, 'Montes'),
-(251, 20, 'Ribero'),
-(252, 20, 'Sucre'),
-(253, 20, 'Valdez'),
-(254, 21, 'Andrés Bello'),
-(255, 21, 'Antonio Rómulo Costa'),
-(256, 21, 'Ayacucho'),
-(257, 21, 'Bolívar'),
-(258, 21, 'Cárdenas'),
-(259, 21, 'Córdoba'),
-(260, 21, 'Fernández Feo'),
-(261, 21, 'Francisco de Miranda'),
-(262, 21, 'García de Hevia'),
-(263, 21, 'Guásimos'),
-(264, 21, 'Independencia'),
-(265, 21, 'Jáuregui'),
-(266, 21, 'José María Vargas'),
-(267, 21, 'Junín'),
-(268, 21, 'Libertad'),
-(269, 21, 'Libertador'),
-(270, 21, 'Lobatera'),
-(271, 21, 'Michelena'),
-(272, 21, 'Panamericano'),
-(273, 21, 'Pedro María Ureña'),
-(274, 21, 'Rafael Urdaneta'),
-(275, 21, 'Samuel Darío Maldonado'),
-(276, 21, 'San Cristóbal'),
-(277, 21, 'Seboruco'),
-(278, 21, 'Simón Rodríguez'),
-(279, 21, 'Sucre'),
-(280, 21, 'Torbes'),
-(281, 21, 'Uribante'),
-(282, 21, 'San Judas Tadeo'),
-(283, 22, 'Andrés Bello'),
-(284, 22, 'Boconó'),
-(285, 22, 'Bolívar'),
-(286, 22, 'Candelaria'),
-(287, 22, 'Carache'),
-(288, 22, 'Escuque'),
-(289, 22, 'José Felipe Márquez Cañizales'),
-(290, 22, 'Juan Vicente Campo Elías'),
-(291, 22, 'La Ceiba'),
-(292, 22, 'Miranda'),
-(293, 22, 'Monte Carmelo'),
-(294, 22, 'Motatán'),
-(295, 22, 'Pampán'),
-(296, 22, 'Pampanito'),
-(297, 22, 'Rafael Rangel'),
-(298, 22, 'San Rafael de Carvajal'),
-(299, 22, 'Sucre'),
-(300, 22, 'Trujillo'),
-(301, 22, 'Urdaneta'),
-(302, 22, 'Valera'),
-(303, 23, 'Arístides Bastidas'),
-(304, 23, 'Bolívar'),
-(305, 23, 'Bruzual'),
-(306, 23, 'Cocorote'),
-(307, 23, 'Independencia'),
-(308, 23, 'José Antonio Páez'),
-(309, 23, 'La Trinidad'),
-(310, 23, 'Manuel Monge'),
-(311, 23, 'Nirgua'),
-(312, 23, 'Peña'),
-(313, 23, 'San Felipe'),
-(314, 23, 'Sucre'),
-(315, 23, 'Urachiche'),
-(316, 23, 'Veroes'),
-(317, 24, 'Almirante Padilla'),
-(318, 24, 'Baralt'),
-(319, 24, 'Cabimas'),
-(320, 24, 'Catatumbo'),
-(321, 24, 'Colón'),
-(322, 24, 'Francisco Javier Pulgar'),
-(323, 24, 'Jesús Enrique Lossada'),
-(324, 24, 'Jesús María Semprún'),
-(325, 24, 'La Cañada de Urdaneta'),
-(326, 24, 'Lagunillas'),
-(327, 24, 'Machiques de Perijá'),
-(328, 24, 'Mara'),
-(329, 24, 'Maracaibo'),
-(330, 24, 'Miranda'),
-(331, 24, 'Páez'),
-(332, 24, 'Rosario de Perijá'),
-(333, 24, 'San Francisco'),
-(334, 24, 'Santa Rita'),
-(335, 24, 'Simón Bolívar'),
-(336, 24, 'Sucre'),
-(337, 24, 'Valmore Rodríguez');
-
--- --------------------------------------------------------
-
---
 -- Estructura de tabla para la tabla `direccion`
 --
 
@@ -1168,6 +775,47 @@ INSERT INTO `empleado` (`id`, `persona_id`, `codigo_empleado`, `fecha_ingreso`, 
 -- --------------------------------------------------------
 
 --
+-- Estructura de tabla para la tabla `estado`
+--
+
+CREATE TABLE `estado` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `nombre` varchar(100) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Volcado de datos para la tabla `estado`
+--
+
+INSERT INTO `estado` (`id`, `nombre`) VALUES
+(1, 'Amazonas'),
+(2, 'Anzoátegui'),
+(3, 'Apure'),
+(4, 'Aragua'),
+(5, 'Barinas'),
+(6, 'Bolívar'),
+(7, 'Carabobo'),
+(8, 'Cojedes'),
+(9, 'Delta Amacuro'),
+(10, 'Distrito Capital'),
+(11, 'Falcón'),
+(12, 'Guárico'),
+(13, 'La Guaira'),
+(14, 'Lara'),
+(15, 'Mérida'),
+(16, 'Miranda'),
+(17, 'Monagas'),
+(18, 'Nueva Esparta'),
+(19, 'Portuguesa'),
+(20, 'Sucre'),
+(21, 'Táchira'),
+(22, 'Trujillo'),
+(23, 'Yaracuy'),
+(24, 'Zulia');
+
+-- --------------------------------------------------------
+
+--
 -- Estructura de tabla para la tabla `failed_jobs`
 --
 
@@ -1180,6 +828,31 @@ CREATE TABLE `failed_jobs` (
   `exception` longtext NOT NULL,
   `failed_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `impuesto`
+--
+
+CREATE TABLE `impuesto` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `codigo` varchar(20) NOT NULL,
+  `nombre` varchar(100) NOT NULL,
+  `porcentaje` decimal(5,2) NOT NULL DEFAULT 0.00,
+  `descripcion` varchar(255) DEFAULT NULL,
+  `estado` enum('activo','inactivo') NOT NULL DEFAULT 'activo',
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Volcado de datos para la tabla `impuesto`
+--
+
+INSERT INTO `impuesto` (`id`, `codigo`, `nombre`, `porcentaje`, `descripcion`, `estado`, `created_at`, `updated_at`, `deleted_at`) VALUES
+(1, 'IVA', 'IVA (Impuesto al Valor Agregado)', 16.00, 'Impuesto general aplicado a las líneas gravables de las compras.', 'activo', '2026-06-18 05:52:16', '2026-06-18 05:52:16', NULL);
 
 -- --------------------------------------------------------
 
@@ -1217,8 +890,8 @@ INSERT INTO `insumo` (`id`, `nombre`, `codigo`, `tipo`, `unidad_medida`, `is_inv
 (8, 'Oxford', 'OXF', 'Tela', 'Metro', 1, 18.00, 1, 594.00, 0.00, 0.00, 1, '2026-05-07 17:15:29', '2026-06-11 03:22:26', NULL),
 (9, 'Microfibra', 'MFB', 'Tela', 'Metro', 1, 14.00, 1, 110.00, 0.00, 0.00, 1, '2026-05-07 17:15:29', '2026-06-11 03:22:26', NULL),
 (10, 'Gabardina / Dril', 'GBD', 'Tela', 'Metro', 1, 22.00, 1, 110.00, 0.00, 0.00, 1, '2026-05-07 17:15:29', '2026-06-11 03:22:26', NULL),
-(14, 'Etiqueta Atlantico', 'EATL', 'Etiqueta', 'Unidad', 1, 1.00, 1, 610.00, 100.00, 5000.00, 1, '2026-06-07 01:07:14', '2026-06-11 03:22:26', NULL),
-(16, 'Cinta para delantal', 'CTDLN', 'Cinta', 'Unidad', 1, 1.00, 1, 210.00, 10.00, 500.00, 1, '2026-06-07 01:55:10', '2026-06-11 03:22:26', NULL),
+(14, 'Etiqueta Atlantico', 'EATL', 'Etiqueta', 'Unidad', 1, 1.00, 1, 620.00, 100.00, 5000.00, 1, '2026-06-07 01:07:14', '2026-06-19 03:01:25', NULL),
+(16, 'Cinta para delantal', 'CTDLN', 'Cinta', 'Unidad', 1, 1.00, 1, 220.00, 10.00, 500.00, 1, '2026-06-07 01:55:10', '2026-06-19 03:01:25', NULL),
 (17, 'Hilo poliéster', 'HL', 'Hilo', 'Metro', 1, 3.00, 1, 160.00, 10.00, 100.00, 1, '2026-06-07 02:01:57', '2026-06-11 03:22:26', NULL);
 
 -- --------------------------------------------------------
@@ -1419,11 +1092,12 @@ INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES
 (144, '2026_06_15_000001_create_rol_table', 80),
 (145, '2026_06_15_000002_create_permiso_rol_table', 80),
 (146, '2026_06_15_000003_migrate_user_role_enum_to_role_id', 80),
-(147, '2026_06_23_000001_drop_apellido_from_persona_table', 81),
-(148, '2026_06_23_000002_move_fecha_nacimiento_genero_to_empleado', 82),
-(149, '2026_06_24_000001_create_estado_municipio_and_refactor_direccion', 83),
-(150, '2026_06_24_000002_drop_tipo_from_direccion_table', 84),
-(151, '2026_06_24_000003_drop_es_principal_from_direccion_table', 85);
+(147, '2026_06_18_000001_create_impuesto_table', 81),
+(148, '2026_06_23_000001_drop_apellido_from_persona_table', 82),
+(149, '2026_06_23_000002_move_fecha_nacimiento_genero_to_empleado', 82),
+(150, '2026_06_24_000001_create_estado_municipio_and_refactor_direccion', 83),
+(151, '2026_06_24_000002_drop_tipo_from_direccion_table', 83),
+(152, '2026_06_24_000003_drop_es_principal_from_direccion_table', 83);
 
 -- --------------------------------------------------------
 
@@ -1474,7 +1148,364 @@ INSERT INTO `movimiento_insumo` (`id`, `insumo_id`, `tipo_movimiento`, `cantidad
 (37, 10, 'Entrada', 10.00, 100.00, 110.00, 'llenado general', 1, '2026-06-11 03:22:26', '2026-06-11 03:22:26'),
 (38, 14, 'Entrada', 10.00, 600.00, 610.00, 'llenado general', 1, '2026-06-11 03:22:26', '2026-06-11 03:22:26'),
 (39, 16, 'Entrada', 10.00, 200.00, 210.00, 'llenado general', 1, '2026-06-11 03:22:26', '2026-06-11 03:22:26'),
-(40, 17, 'Entrada', 10.00, 150.00, 160.00, 'llenado general', 1, '2026-06-11 03:22:26', '2026-06-11 03:22:26');
+(40, 17, 'Entrada', 10.00, 150.00, 160.00, 'llenado general', 1, '2026-06-11 03:22:26', '2026-06-11 03:22:26'),
+(41, 14, 'Entrada', 10.00, 610.00, 620.00, 'Compra #2 — Fact: 423', 1, '2026-06-19 03:01:25', '2026-06-19 03:01:25'),
+(42, 16, 'Entrada', 10.00, 210.00, 220.00, 'Compra #2 — Fact: 423', 1, '2026-06-19 03:01:25', '2026-06-19 03:01:25');
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `municipio`
+--
+
+CREATE TABLE `municipio` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `estado_id` bigint(20) UNSIGNED NOT NULL,
+  `nombre` varchar(120) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Volcado de datos para la tabla `municipio`
+--
+
+INSERT INTO `municipio` (`id`, `estado_id`, `nombre`) VALUES
+(1, 1, 'Alto Orinoco'),
+(2, 1, 'Atabapo'),
+(3, 1, 'Atures'),
+(4, 1, 'Autana'),
+(5, 1, 'Manapiare'),
+(6, 1, 'Maroa'),
+(7, 1, 'Río Negro'),
+(8, 2, 'Anaco'),
+(9, 2, 'Aragua'),
+(10, 2, 'Bolívar'),
+(11, 2, 'Bruzual'),
+(12, 2, 'Cajigal'),
+(13, 2, 'Carvajal'),
+(14, 2, 'Diego Bautista Urbaneja'),
+(15, 2, 'Freites'),
+(16, 2, 'Guanipa'),
+(17, 2, 'Guanta'),
+(18, 2, 'Independencia'),
+(19, 2, 'Libertad'),
+(20, 2, 'McGregor'),
+(21, 2, 'Miranda'),
+(22, 2, 'Monagas'),
+(23, 2, 'Peñalver'),
+(24, 2, 'Píritu'),
+(25, 2, 'San José de Guanipa'),
+(26, 2, 'San Juan de Capistrano'),
+(27, 2, 'Santa Ana'),
+(28, 2, 'Simón Rodríguez'),
+(29, 2, 'Sotillo'),
+(30, 3, 'Achaguas'),
+(31, 3, 'Biruaca'),
+(32, 3, 'Muñoz'),
+(33, 3, 'Páez'),
+(34, 3, 'Pedro Camejo'),
+(35, 3, 'Rómulo Gallegos'),
+(36, 3, 'San Fernando'),
+(37, 4, 'Bolívar'),
+(38, 4, 'Camatagua'),
+(39, 4, 'Francisco Linares Alcántara'),
+(40, 4, 'Girardot'),
+(41, 4, 'José Ángel Lamas'),
+(42, 4, 'José Félix Ribas'),
+(43, 4, 'José Rafael Revenga'),
+(44, 4, 'Libertador'),
+(45, 4, 'Mario Briceño Iragorry'),
+(46, 4, 'Ocumare de la Costa de Oro'),
+(47, 4, 'San Casimiro'),
+(48, 4, 'San Sebastián'),
+(49, 4, 'Santiago Mariño'),
+(50, 4, 'Santos Michelena'),
+(51, 4, 'Sucre'),
+(52, 4, 'Tovar'),
+(53, 4, 'Urdaneta'),
+(54, 4, 'Zamora'),
+(55, 5, 'Alberto Arvelo Torrealba'),
+(56, 5, 'Andrés Eloy Blanco'),
+(57, 5, 'Antonio José de Sucre'),
+(58, 5, 'Arismendi'),
+(59, 5, 'Barinas'),
+(60, 5, 'Bolívar'),
+(61, 5, 'Cruz Paredes'),
+(62, 5, 'Ezequiel Zamora'),
+(63, 5, 'Obispos'),
+(64, 5, 'Pedraza'),
+(65, 5, 'Rojas'),
+(66, 5, 'Sosa'),
+(73, 6, 'Angostura del Orinoco'),
+(67, 6, 'Caroní'),
+(68, 6, 'Cedeño'),
+(69, 6, 'El Callao'),
+(70, 6, 'Gran Sabana'),
+(71, 6, 'Heres'),
+(77, 6, 'Padre Pedro Chien'),
+(72, 6, 'Piar'),
+(74, 6, 'Roscio'),
+(75, 6, 'Sifontes'),
+(76, 6, 'Sucre'),
+(78, 7, 'Bejuma'),
+(79, 7, 'Carlos Arvelo'),
+(80, 7, 'Diego Ibarra'),
+(81, 7, 'Guacara'),
+(82, 7, 'Juan José Mora'),
+(83, 7, 'Libertador'),
+(84, 7, 'Los Guayos'),
+(85, 7, 'Miranda'),
+(86, 7, 'Montalbán'),
+(87, 7, 'Naguanagua'),
+(88, 7, 'Puerto Cabello'),
+(89, 7, 'San Diego'),
+(90, 7, 'San Joaquín'),
+(91, 7, 'Valencia'),
+(92, 8, 'Anzoátegui'),
+(93, 8, 'Ezequiel Zamora'),
+(94, 8, 'Falcón'),
+(95, 8, 'Girardot'),
+(96, 8, 'Lima Blanco'),
+(97, 8, 'Pao de San Juan Bautista'),
+(98, 8, 'Ricaurte'),
+(99, 8, 'Rómulo Gallegos'),
+(100, 8, 'Tinaco'),
+(101, 9, 'Antonio Díaz'),
+(102, 9, 'Casacoima'),
+(103, 9, 'Pedernales'),
+(104, 9, 'Tucupita'),
+(105, 10, 'Libertador'),
+(106, 11, 'Acosta'),
+(107, 11, 'Bolívar'),
+(108, 11, 'Buchivacoa'),
+(109, 11, 'Cacique Manaure'),
+(110, 11, 'Carirubana'),
+(111, 11, 'Colina'),
+(112, 11, 'Dabajuro'),
+(113, 11, 'Democracia'),
+(114, 11, 'Falcón'),
+(115, 11, 'Federación'),
+(116, 11, 'Jacura'),
+(117, 11, 'Los Taques'),
+(118, 11, 'Mauroa'),
+(119, 11, 'Miranda'),
+(120, 11, 'Monseñor Iturriza'),
+(121, 11, 'Palmasola'),
+(122, 11, 'Petit'),
+(123, 11, 'Píritu'),
+(124, 11, 'San Francisco'),
+(125, 11, 'Silva'),
+(126, 11, 'Sucre'),
+(127, 11, 'Tocópero'),
+(128, 11, 'Unión'),
+(129, 11, 'Urumaco'),
+(130, 11, 'Zamora'),
+(131, 12, 'Camaguán'),
+(132, 12, 'Chaguaramas'),
+(133, 12, 'El Socorro'),
+(134, 12, 'Infante'),
+(135, 12, 'Las Mercedes'),
+(136, 12, 'Leonardo Infante'),
+(137, 12, 'Mellado'),
+(138, 12, 'Miranda'),
+(139, 12, 'Monagas'),
+(140, 12, 'Ortíz'),
+(141, 12, 'Ribas'),
+(142, 12, 'Roscio'),
+(143, 12, 'San Gerónimo de Guayabal'),
+(144, 12, 'San José de Guaribe'),
+(145, 12, 'Santa María de Ipire'),
+(146, 12, 'Zaraza'),
+(147, 13, 'Vargas'),
+(148, 14, 'Andrés Eloy Blanco'),
+(149, 14, 'Crespo'),
+(150, 14, 'Iribarren'),
+(151, 14, 'Jiménez'),
+(152, 14, 'Morán'),
+(153, 14, 'Palavecino'),
+(154, 14, 'Simón Planas'),
+(155, 14, 'Torres'),
+(156, 14, 'Urdaneta'),
+(157, 15, 'Alberto Adriani'),
+(158, 15, 'Andrés Bello'),
+(159, 15, 'Antonio Pinto Salinas'),
+(160, 15, 'Aricagua'),
+(161, 15, 'Arzobispo Chacón'),
+(162, 15, 'Campo Elías'),
+(163, 15, 'Caracciolo Parra Olmedo'),
+(164, 15, 'Cardenal Quintero'),
+(165, 15, 'Guaraque'),
+(166, 15, 'Julio César Salas'),
+(167, 15, 'Justo Briceño'),
+(168, 15, 'Libertador'),
+(169, 15, 'Miranda'),
+(170, 15, 'Obispo Ramos de Lora'),
+(171, 15, 'Padre Noguera'),
+(172, 15, 'Pueblo Llano'),
+(173, 15, 'Rangel'),
+(174, 15, 'Rivas Dávila'),
+(175, 15, 'Santos Marquina'),
+(176, 15, 'Sucre'),
+(177, 15, 'Tovar'),
+(178, 15, 'Tulio Febres Cordero'),
+(179, 15, 'Zea'),
+(180, 16, 'Acevedo'),
+(181, 16, 'Andrés Bello'),
+(182, 16, 'Baruta'),
+(183, 16, 'Brión'),
+(184, 16, 'Buroz'),
+(185, 16, 'Carrizal'),
+(186, 16, 'Chacao'),
+(187, 16, 'Cristóbal Rojas'),
+(188, 16, 'El Hatillo'),
+(189, 16, 'Guaicaipuro'),
+(190, 16, 'Independencia'),
+(191, 16, 'Lander'),
+(192, 16, 'Los Salias'),
+(193, 16, 'Páez'),
+(194, 16, 'Paz Castillo'),
+(195, 16, 'Pedro Gual'),
+(196, 16, 'Plaza'),
+(197, 16, 'Simón Bolívar'),
+(198, 16, 'Sucre'),
+(199, 16, 'Urdaneta'),
+(200, 16, 'Zamora'),
+(201, 17, 'Acosta'),
+(202, 17, 'Aguasay'),
+(203, 17, 'Bolívar'),
+(204, 17, 'Caripe'),
+(205, 17, 'Cedeño'),
+(206, 17, 'Ezequiel Zamora'),
+(207, 17, 'Libertador'),
+(208, 17, 'Maturín'),
+(209, 17, 'Piar'),
+(210, 17, 'Punceres'),
+(211, 17, 'Santa Bárbara'),
+(212, 17, 'Sotillo'),
+(213, 17, 'Uracoa'),
+(214, 18, 'Antolín del Campo'),
+(215, 18, 'Arismendi'),
+(216, 18, 'Díaz'),
+(217, 18, 'García'),
+(218, 18, 'Gómez'),
+(219, 18, 'Maneiro'),
+(220, 18, 'Marcano'),
+(221, 18, 'Mariño'),
+(222, 18, 'Península de Macanao'),
+(223, 18, 'Tubores'),
+(224, 18, 'Villalba'),
+(225, 19, 'Agua Blanca'),
+(226, 19, 'Araure'),
+(227, 19, 'Esteller'),
+(228, 19, 'Guanare'),
+(229, 19, 'Guanarito'),
+(230, 19, 'Monseñor José Vicente de Unda'),
+(231, 19, 'Ospino'),
+(232, 19, 'Páez'),
+(233, 19, 'Papelón'),
+(234, 19, 'San Genaro de Boconoíto'),
+(235, 19, 'San Rafael de Onoto'),
+(236, 19, 'Santa Rosalía'),
+(237, 19, 'Sucre'),
+(238, 19, 'Turén'),
+(239, 20, 'Andrés Eloy Blanco'),
+(240, 20, 'Andrés Mata'),
+(241, 20, 'Arismendi'),
+(242, 20, 'Benítez'),
+(243, 20, 'Bermúdez'),
+(244, 20, 'Bolívar'),
+(245, 20, 'Cajigal'),
+(246, 20, 'Cruz Salmerón Acosta'),
+(247, 20, 'Libertador'),
+(248, 20, 'Mariño'),
+(249, 20, 'Mejía'),
+(250, 20, 'Montes'),
+(251, 20, 'Ribero'),
+(252, 20, 'Sucre'),
+(253, 20, 'Valdez'),
+(254, 21, 'Andrés Bello'),
+(255, 21, 'Antonio Rómulo Costa'),
+(256, 21, 'Ayacucho'),
+(257, 21, 'Bolívar'),
+(258, 21, 'Cárdenas'),
+(259, 21, 'Córdoba'),
+(260, 21, 'Fernández Feo'),
+(261, 21, 'Francisco de Miranda'),
+(262, 21, 'García de Hevia'),
+(263, 21, 'Guásimos'),
+(264, 21, 'Independencia'),
+(265, 21, 'Jáuregui'),
+(266, 21, 'José María Vargas'),
+(267, 21, 'Junín'),
+(268, 21, 'Libertad'),
+(269, 21, 'Libertador'),
+(270, 21, 'Lobatera'),
+(271, 21, 'Michelena'),
+(272, 21, 'Panamericano'),
+(273, 21, 'Pedro María Ureña'),
+(274, 21, 'Rafael Urdaneta'),
+(275, 21, 'Samuel Darío Maldonado'),
+(276, 21, 'San Cristóbal'),
+(282, 21, 'San Judas Tadeo'),
+(277, 21, 'Seboruco'),
+(278, 21, 'Simón Rodríguez'),
+(279, 21, 'Sucre'),
+(280, 21, 'Torbes'),
+(281, 21, 'Uribante'),
+(283, 22, 'Andrés Bello'),
+(284, 22, 'Boconó'),
+(285, 22, 'Bolívar'),
+(286, 22, 'Candelaria'),
+(287, 22, 'Carache'),
+(288, 22, 'Escuque'),
+(289, 22, 'José Felipe Márquez Cañizales'),
+(290, 22, 'Juan Vicente Campo Elías'),
+(291, 22, 'La Ceiba'),
+(292, 22, 'Miranda'),
+(293, 22, 'Monte Carmelo'),
+(294, 22, 'Motatán'),
+(295, 22, 'Pampán'),
+(296, 22, 'Pampanito'),
+(297, 22, 'Rafael Rangel'),
+(298, 22, 'San Rafael de Carvajal'),
+(299, 22, 'Sucre'),
+(300, 22, 'Trujillo'),
+(301, 22, 'Urdaneta'),
+(302, 22, 'Valera'),
+(303, 23, 'Arístides Bastidas'),
+(304, 23, 'Bolívar'),
+(305, 23, 'Bruzual'),
+(306, 23, 'Cocorote'),
+(307, 23, 'Independencia'),
+(308, 23, 'José Antonio Páez'),
+(309, 23, 'La Trinidad'),
+(310, 23, 'Manuel Monge'),
+(311, 23, 'Nirgua'),
+(312, 23, 'Peña'),
+(313, 23, 'San Felipe'),
+(314, 23, 'Sucre'),
+(315, 23, 'Urachiche'),
+(316, 23, 'Veroes'),
+(317, 24, 'Almirante Padilla'),
+(318, 24, 'Baralt'),
+(319, 24, 'Cabimas'),
+(320, 24, 'Catatumbo'),
+(321, 24, 'Colón'),
+(322, 24, 'Francisco Javier Pulgar'),
+(323, 24, 'Jesús Enrique Lossada'),
+(324, 24, 'Jesús María Semprún'),
+(325, 24, 'La Cañada de Urdaneta'),
+(326, 24, 'Lagunillas'),
+(327, 24, 'Machiques de Perijá'),
+(328, 24, 'Mara'),
+(329, 24, 'Maracaibo'),
+(330, 24, 'Miranda'),
+(331, 24, 'Páez'),
+(332, 24, 'Rosario de Perijá'),
+(333, 24, 'San Francisco'),
+(334, 24, 'Santa Rita'),
+(335, 24, 'Simón Bolívar'),
+(336, 24, 'Sucre'),
+(337, 24, 'Valmore Rodríguez');
 
 -- --------------------------------------------------------
 
@@ -2079,7 +2110,10 @@ INSERT INTO `tasa_cambio` (`id`, `moneda`, `valor`, `fecha_bcv`, `fuente`, `crea
 (59, 'USD', 572.6784, '2026-06-10', 'BCV (DolarAPI)', '2026-06-11 02:17:24', '2026-06-11 02:17:24'),
 (60, 'USD', 577.5461, '2026-06-11', 'BCV (DolarAPI)', '2026-06-11 04:48:02', '2026-06-11 04:48:02'),
 (61, 'USD', 587.4059, '2026-06-15', 'BCV (DolarAPI)', '2026-06-16 02:23:16', '2026-06-16 02:23:16'),
-(62, 'USD', 596.7824, '2026-06-17', 'BCV (DolarAPI)', '2026-06-18 01:25:03', '2026-06-18 01:25:03');
+(62, 'USD', 596.7824, '2026-06-17', 'BCV (DolarAPI)', '2026-06-18 01:25:03', '2026-06-18 01:25:03'),
+(63, 'USD', 602.3324, '2026-06-18', 'BCV (DolarAPI)', '2026-06-18 04:05:26', '2026-06-18 04:05:26'),
+(64, 'USD', 607.3919, '2026-06-19', 'BCV (DolarAPI)', '2026-06-19 04:11:17', '2026-06-19 04:11:17'),
+(65, 'USD', 617.6388, '2026-06-23', 'BCV (DolarAPI)', '2026-06-24 02:41:08', '2026-06-24 02:41:08');
 
 -- --------------------------------------------------------
 
@@ -2543,20 +2577,6 @@ ALTER TABLE `detalle_pedido_insumo`
   ADD KEY `detalle_pedido_insumo_insumo_id_foreign` (`insumo_id`);
 
 --
--- Indices de la tabla `estado`
---
-ALTER TABLE `estado`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `estado_nombre_unique` (`nombre`);
-
---
--- Indices de la tabla `municipio`
---
-ALTER TABLE `municipio`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `municipio_estado_id_nombre_unique` (`estado_id`,`nombre`);
-
---
 -- Indices de la tabla `direccion`
 --
 ALTER TABLE `direccion`
@@ -2576,11 +2596,25 @@ ALTER TABLE `empleado`
   ADD KEY `empleado_cargo_id_foreign` (`cargo_id`);
 
 --
+-- Indices de la tabla `estado`
+--
+ALTER TABLE `estado`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `estado_nombre_unique` (`nombre`);
+
+--
 -- Indices de la tabla `failed_jobs`
 --
 ALTER TABLE `failed_jobs`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `failed_jobs_uuid_unique` (`uuid`);
+
+--
+-- Indices de la tabla `impuesto`
+--
+ALTER TABLE `impuesto`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `impuesto_codigo_unique` (`codigo`);
 
 --
 -- Indices de la tabla `insumo`
@@ -2613,6 +2647,13 @@ ALTER TABLE `movimiento_insumo`
   ADD KEY `movimientos_insumos_created_by_foreign` (`created_by`),
   ADD KEY `idx_mov_created_at` (`created_at`),
   ADD KEY `idx_mov_insumo_created` (`insumo_id`,`created_at`);
+
+--
+-- Indices de la tabla `municipio`
+--
+ALTER TABLE `municipio`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `municipio_estado_id_nombre_unique` (`estado_id`,`nombre`);
 
 --
 -- Indices de la tabla `orden_produccion`
@@ -2877,13 +2918,13 @@ ALTER TABLE `color`
 -- AUTO_INCREMENT de la tabla `compra`
 --
 ALTER TABLE `compra`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT de la tabla `compra_detalle`
 --
 ALTER TABLE `compra_detalle`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT de la tabla `configuracion`
@@ -2940,34 +2981,34 @@ ALTER TABLE `detalle_pedido_insumo`
   MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
+-- AUTO_INCREMENT de la tabla `direccion`
+--
+ALTER TABLE `direccion`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=68;
+
+--
+-- AUTO_INCREMENT de la tabla `empleado`
+--
+ALTER TABLE `empleado`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
+
+--
 -- AUTO_INCREMENT de la tabla `estado`
 --
 ALTER TABLE `estado`
   MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=25;
 
 --
--- AUTO_INCREMENT de la tabla `municipio`
---
-ALTER TABLE `municipio`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=338;
-
---
--- AUTO_INCREMENT de la tabla `direccion`
---
-ALTER TABLE `direccion`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=67;
-
---
--- AUTO_INCREMENT de la tabla `empleado`
---
-ALTER TABLE `empleado`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
-
---
 -- AUTO_INCREMENT de la tabla `failed_jobs`
 --
 ALTER TABLE `failed_jobs`
   MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT de la tabla `impuesto`
+--
+ALTER TABLE `impuesto`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT de la tabla `insumo`
@@ -2985,13 +3026,19 @@ ALTER TABLE `logo`
 -- AUTO_INCREMENT de la tabla `migrations`
 --
 ALTER TABLE `migrations`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=147;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=153;
 
 --
 -- AUTO_INCREMENT de la tabla `movimiento_insumo`
 --
 ALTER TABLE `movimiento_insumo`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=41;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=43;
+
+--
+-- AUTO_INCREMENT de la tabla `municipio`
+--
+ALTER TABLE `municipio`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=338;
 
 --
 -- AUTO_INCREMENT de la tabla `orden_produccion`
@@ -3027,7 +3074,7 @@ ALTER TABLE `permiso_rol`
 -- AUTO_INCREMENT de la tabla `persona`
 --
 ALTER TABLE `persona`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=72;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=73;
 
 --
 -- AUTO_INCREMENT de la tabla `personal_access_tokens`
@@ -3093,13 +3140,13 @@ ALTER TABLE `talla`
 -- AUTO_INCREMENT de la tabla `tasa_cambio`
 --
 ALTER TABLE `tasa_cambio`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=63;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=66;
 
 --
 -- AUTO_INCREMENT de la tabla `telefono`
 --
 ALTER TABLE `telefono`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=68;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=69;
 
 --
 -- AUTO_INCREMENT de la tabla `tipo_insumo`
@@ -3244,18 +3291,12 @@ ALTER TABLE `detalle_pedido_insumo`
   ADD CONSTRAINT `detalle_pedido_insumo_insumo_id_foreign` FOREIGN KEY (`insumo_id`) REFERENCES `insumo` (`id`) ON DELETE CASCADE;
 
 --
--- Filtros para la tabla `municipio`
---
-ALTER TABLE `municipio`
-  ADD CONSTRAINT `municipio_estado_id_foreign` FOREIGN KEY (`estado_id`) REFERENCES `estado` (`id`) ON DELETE CASCADE;
-
---
 -- Filtros para la tabla `direccion`
 --
 ALTER TABLE `direccion`
-  ADD CONSTRAINT `direccion_persona_id_foreign` FOREIGN KEY (`persona_id`) REFERENCES `persona` (`id`) ON DELETE CASCADE,
   ADD CONSTRAINT `direccion_estado_id_foreign` FOREIGN KEY (`estado_id`) REFERENCES `estado` (`id`) ON DELETE SET NULL,
-  ADD CONSTRAINT `direccion_municipio_id_foreign` FOREIGN KEY (`municipio_id`) REFERENCES `municipio` (`id`) ON DELETE SET NULL;
+  ADD CONSTRAINT `direccion_municipio_id_foreign` FOREIGN KEY (`municipio_id`) REFERENCES `municipio` (`id`) ON DELETE SET NULL,
+  ADD CONSTRAINT `direccion_persona_id_foreign` FOREIGN KEY (`persona_id`) REFERENCES `persona` (`id`) ON DELETE CASCADE;
 
 --
 -- Filtros para la tabla `empleado`
@@ -3271,6 +3312,12 @@ ALTER TABLE `empleado`
 ALTER TABLE `movimiento_insumo`
   ADD CONSTRAINT `movimientos_insumos_created_by_foreign` FOREIGN KEY (`created_by`) REFERENCES `user` (`id`),
   ADD CONSTRAINT `movimientos_insumos_insumo_id_foreign` FOREIGN KEY (`insumo_id`) REFERENCES `insumo` (`id`);
+
+--
+-- Filtros para la tabla `municipio`
+--
+ALTER TABLE `municipio`
+  ADD CONSTRAINT `municipio_estado_id_foreign` FOREIGN KEY (`estado_id`) REFERENCES `estado` (`id`) ON DELETE CASCADE;
 
 --
 -- Filtros para la tabla `orden_produccion`
