@@ -190,6 +190,7 @@ class PedidoService
                 'lleva_bordado' => $item['lleva_bordado'] ?? false,
                 'color_id' => $item['color_id'] ?? null,
                 'talla_id' => $item['talla_id'] ?? null,
+                'genero_id' => $item['genero_id'] ?? null,
                 'precio_unitario' => $precioUnitarioFinal,
             ]);
 

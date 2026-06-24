@@ -181,6 +181,7 @@ class CotizacionService
                     'lleva_bordado' => $detalle->lleva_bordado ?? false,
                     'color_id' => $detalle->color_id,
                     'talla_id' => $detalle->talla_id,
+                    'genero_id' => $detalle->genero_id,
                 ]);
 
                 foreach ($detalle->bordados as $index => $bordado) {
@@ -297,6 +298,7 @@ class CotizacionService
                 'lleva_bordado' => $item['lleva_bordado'] ?? false,
                 'color_id' => $item['color_id'] ?? null,
                 'talla_id' => $item['talla_id'] ?? null,
+                'genero_id' => $item['genero_id'] ?? null,
                 'precio_unitario' => $precioUnitarioFinal,
             ]);
 

@@ -44,6 +44,15 @@ class UpdatePedidoRequest extends FormRequest
             'productos.*.bordados.*.cantidad' => 'nullable|integer|min:1',
             'productos.*.color_id' => ['nullable', 'integer', Rule::exists('color', 'id')],
             'productos.*.talla_id' => ['nullable', 'integer', Rule::exists('talla', 'id')],
+            'productos.*.genero_id' => ['required', 'integer', Rule::exists('genero', 'id')],
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'productos.*.genero_id.required' => 'El género es obligatorio.',
+            'productos.*.genero_id.exists' => 'El género seleccionado no es válido.',
         ];
     }
 }
