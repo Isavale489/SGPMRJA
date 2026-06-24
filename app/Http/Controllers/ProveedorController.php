@@ -281,7 +281,7 @@ class ProveedorController extends Controller
         $proveedor = Proveedor::withTrashed()->with('persona.telefonos', 'persona.direcciones')->findOrFail($id);
         $persona = $proveedor->persona;
         $telefonoPrincipal = $persona ? $persona->telefonos->where('es_principal', true)->first() : null;
-        $direccionPrincipal = $persona ? $persona->direcciones->where('es_principal', true)->first() : null;
+        $direccionPrincipal = $persona ? $persona->direccion : null;
 
         $data = [
             'id' => $proveedor->id,

@@ -54,7 +54,6 @@ class ClienteService
                         'persona_id' => $persona->id,
                         'direccion' => $data['direccion'] ?? '',
                         ...Direccion::resolverUbicacion($data['estado_territorial'] ?? null, $data['ciudad'] ?? null),
-                        'es_principal' => true,
                     ]);
                 }
             } else {
@@ -88,7 +87,6 @@ class ClienteService
                         'persona_id' => $persona->id,
                         'direccion' => $data['direccion'] ?? '',
                         ...Direccion::resolverUbicacion($data['estado_territorial'] ?? null, $data['ciudad'] ?? null),
-                        'es_principal' => true,
                     ]);
                 }
             }
@@ -138,7 +136,7 @@ class ClienteService
 
                 // Actualizar o crear dirección principal
                 if (!empty($data['direccion']) || !empty($data['ciudad']) || !empty($data['estado_territorial'])) {
-                    $direccionPrincipal = $cliente->persona->direcciones()->where('es_principal', true)->first();
+                    $direccionPrincipal = $cliente->persona->direccion;
                     if ($direccionPrincipal) {
                         $direccionPrincipal->update([
                             'direccion' => $data['direccion'] ?? '',
@@ -149,7 +147,6 @@ class ClienteService
                             'persona_id' => $cliente->persona->id,
                             'direccion' => $data['direccion'] ?? '',
                             ...Direccion::resolverUbicacion($data['estado_territorial'] ?? null, $data['ciudad'] ?? null),
-                            'es_principal' => true,
                         ]);
                     }
                 }

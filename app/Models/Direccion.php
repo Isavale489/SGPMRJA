@@ -17,11 +17,6 @@ class Direccion extends Model
         'direccion',
         'estado_id',
         'municipio_id',
-        'es_principal',
-    ];
-
-    protected $casts = [
-        'es_principal' => 'boolean',
     ];
 
     /**
@@ -90,13 +85,5 @@ class Direccion extends Model
         }
 
         return ['estado_id' => $estadoId, 'municipio_id' => $municipioId];
-    }
-
-    /**
-     * Scope para obtener solo direcciones principales
-     */
-    public function scopePrincipal($query)
-    {
-        return $query->where('es_principal', true);
     }
 }

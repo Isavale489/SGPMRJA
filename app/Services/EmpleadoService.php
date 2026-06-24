@@ -131,7 +131,6 @@ class EmpleadoService
                 'persona_id' => $personaId,
                 'direccion' => $data['direccion'] ?? '',
                 ...Direccion::resolverUbicacion($data['estado_geografico'] ?? null, $data['ciudad'] ?? null),
-                'es_principal' => true,
             ]);
         }
     }
@@ -156,7 +155,7 @@ class EmpleadoService
     private function actualizarDireccion(Persona $persona, array $data): void
     {
         if (!empty($data['direccion']) || !empty($data['ciudad'])) {
-            $direccionPrincipal = $persona->direcciones()->where('es_principal', true)->first();
+            $direccionPrincipal = $persona->direccion;
             if ($direccionPrincipal) {
                 $direccionPrincipal->update([
                     'direccion' => $data['direccion'] ?? '',
@@ -167,7 +166,6 @@ class EmpleadoService
                     'persona_id' => $persona->id,
                     'direccion' => $data['direccion'] ?? '',
                     ...Direccion::resolverUbicacion($data['estado_geografico'] ?? null, $data['ciudad'] ?? null),
-                    'es_principal' => true,
                 ]);
             }
         }
