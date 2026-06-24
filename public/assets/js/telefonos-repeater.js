@@ -23,6 +23,18 @@
     function rows(root) {
         return Array.prototype.slice.call(root.querySelectorAll('[data-tel-row]'));
     }
+    function maxRows(root) {
+        return parseInt(root.dataset.telMax, 10) || 3;
+    }
+    // Habilita/inhabilita el botón "Agregar" según el tope de teléfonos.
+    function refreshAddButton(root) {
+        var btn = root.querySelector('[data-tel-add]');
+        if (!btn) return;
+        var lleno = rows(root).length >= maxRows(root);
+        btn.disabled = lleno;
+        btn.classList.toggle('disabled', lleno);
+        btn.title = lleno ? ('Máximo ' + maxRows(root) + ' teléfonos') : '';
+    }
 
     function bindRow(root, row) {
         var radio = row.querySelector('[data-tel-principal]');
@@ -36,6 +48,10 @@
 
         // Quitar fila (no permitir quedarse sin ninguna)
         row.querySelector('[data-tel-remove]').addEventListener('click', function () {
+            // Evita que el tooltip nativo del botón quede flotando al remover
+            // el elemento que estaba bajo el cursor (bug visual en Chromium).
+            this.removeAttribute('title');
+            this.blur();
             var eraPrincipal = radio.checked;
             row.remove();
             var restantes = rows(root);
@@ -44,6 +60,7 @@
             } else if (eraPrincipal) {
                 restantes[0].querySelector('[data-tel-principal]').checked = true;
             }
+            refreshAddButton(root);
         });
     }
 
@@ -66,6 +83,7 @@
 
         bindRow(root, row);
         list(root).appendChild(row);
+        refreshAddButton(root);
         return row;
     }
 
@@ -81,6 +99,7 @@
         } else {
             addRow(root); // una fila vacía marcada principal
         }
+        refreshAddButton(root);
     }
 
     function collect(root) {
@@ -130,9 +149,10 @@
         if (!root || root.dataset.telInit === '1') return;
         root.dataset.telInit = '1';
         root.querySelector('[data-tel-add]').addEventListener('click', function () {
-            addRow(root);
+            if (rows(root).length < maxRows(root)) addRow(root);
         });
         if (rows(root).length === 0) addRow(root);
+        refreshAddButton(root);
     }
 
     window.TelefonosRepeater = {

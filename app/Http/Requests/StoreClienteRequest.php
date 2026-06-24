@@ -28,7 +28,7 @@ class StoreClienteRequest extends FormRequest
             'tipo_cliente' => 'required|in:natural,juridico',
             'email' => 'nullable|string|email:rfc|max:255',
             // Multi-teléfono: arreglo telefonos[i][numero|tipo|es_principal]
-            'telefonos' => 'required|array|min:1',
+            'telefonos' => 'required|array|min:1|max:3',
             'telefonos.*.numero' => ['required', 'string', 'regex:/^[0-9]{4}-[0-9]{7}$/'],
             'telefonos.*.tipo' => 'required|in:movil,casa,trabajo',
             'telefonos.*.es_principal' => 'required|boolean',
@@ -74,6 +74,7 @@ class StoreClienteRequest extends FormRequest
             'email.unique' => 'Este email ya está registrado en el sistema.',
             'telefonos.required' => 'Agrega al menos un teléfono.',
             'telefonos.min' => 'Agrega al menos un teléfono.',
+            'telefonos.max' => 'Máximo 3 teléfonos por persona.',
             'telefonos.*.numero.required' => 'El número de teléfono es obligatorio.',
             'telefonos.*.numero.regex' => 'El teléfono debe tener el formato 0424-1234567.',
             'telefonos.*.tipo.in' => 'El tipo de teléfono no es válido.',

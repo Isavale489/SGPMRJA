@@ -408,15 +408,15 @@
                         <div class="modal-form-section-title"><i class="ri-contacts-book-2-line"></i>Contacto</div>
 
                         <div class="row g-2 mb-2">
-                            <div class="col-md-6">
+                            <div class="col-12">
                                 <x-forms.input name="email" label="Email" type="email" placeholder="correo@ejemplo.com"
                                     id="email-field" />
                             </div>
                         </div>
-                    </div>
 
-                    {{-- Teléfonos múltiples (componente reutilizable) --}}
-                    @include('admin.partials.telefonos-field', ['telId' => 'cli-tel'])
+                        {{-- Teléfonos múltiples (componente reutilizable), dentro de Contacto --}}
+                        @include('admin.partials.telefonos-field', ['telId' => 'cli-tel'])
+                    </div>
 
                     <div class="modal-form-section">
                         <div class="modal-form-section-title"><i class="ri-map-pin-2-line"></i>Ubicación</div>

@@ -9044,21 +9044,28 @@ select.js-readonly:not(.afs-native) {
     overflow-y: auto;
     padding-right: 2px;
 }
+/* Grid de columnas fijas: estrella · tipo · número · quitar.
+   Garantiza filas alineadas al agregar/quitar (independiente del contenido). */
 .tel-row {
-    display: flex;
+    display: grid;
+    grid-template-columns: auto 110px minmax(0, 1fr) auto;
     align-items: center;
     gap: 0.5rem;
 }
 .tel-row .tel-tipo {
-    flex: 0 0 110px;
-    max-width: 110px;
+    width: 100%;
+    min-width: 0;
 }
 .tel-row .tel-numero-group {
-    flex: 1 1 auto;
+    min-width: 0;
+    flex-wrap: nowrap;
 }
 .tel-row .tel-numero-group .tel-prefijo {
     flex: 0 0 92px;
     max-width: 92px;
+}
+.tel-row .tel-numero-group .tel-numero {
+    min-width: 0;
 }
 /* Estrella "principal" (radio oculto + estrella gris→dorada) */
 .tel-principal {
