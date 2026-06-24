@@ -10,6 +10,7 @@ use App\Http\Controllers\TipoInsumoController;
 use App\Http\Controllers\MovimientoInsumoController;
 use App\Http\Controllers\NotificacionController;
 use App\Http\Controllers\OrdenProduccionController;
+use App\Http\Controllers\ControlCalidadController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProductoController;
 use App\Http\Controllers\ProveedorController;
@@ -273,6 +274,12 @@ Route::middleware(['auth', 'throttle:60,1', 'active.user', 'recovery.questions.r
         Route::patch('ordenes/{orden}/subordenes/{subId}/estado', [OrdenProduccionController::class, 'updateSubOrdenEstado'])->name('ordenes.subordenes.estado');
         Route::get('ordenes/reporte/pdf', [OrdenProduccionController::class, 'reportePdf'])->name('ordenes.reporte.pdf');
         Route::resource('ordenes', OrdenProduccionController::class);
+
+        // Control de Calidad (FEAT-006) — inspección de órdenes finalizadas
+        Route::get('calidad', [ControlCalidadController::class, 'index'])->name('calidad.index');
+        Route::get('calidad-data', [ControlCalidadController::class, 'getOrdenesCalidad'])->name('calidad.data');
+        Route::get('calidad/{orden}/detalle', [ControlCalidadController::class, 'detalle'])->name('calidad.detalle');
+        Route::post('calidad/{orden}/inspeccionar', [ControlCalidadController::class, 'inspeccionar'])->name('calidad.inspeccionar');
 
         // Control de Insumos por Orden
         Route::get('ordenes/{orden}/insumos', [DetalleOrdenInsumoController::class, 'index'])->name('ordenes.insumos.index');
