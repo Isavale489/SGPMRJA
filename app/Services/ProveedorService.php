@@ -157,7 +157,6 @@ class ProveedorService
             'persona_id' => $personaId,
             'direccion' => $data['direccion'],
             ...Direccion::resolverUbicacion($data['estado_territorial'] ?? null, $data['ciudad'] ?? null),
-            'tipo' => 'trabajo',
             'es_principal' => true,
         ]);
     }
@@ -191,7 +190,6 @@ class ProveedorService
                     'persona_id' => $persona->id,
                     'direccion' => $data['direccion'],
                     ...Direccion::resolverUbicacion($data['estado_territorial'] ?? null, $data['ciudad'] ?? null),
-                    'tipo' => 'trabajo',
                     'es_principal' => true,
                 ]);
             }

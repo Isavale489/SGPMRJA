@@ -131,7 +131,6 @@ class EmpleadoService
                 'persona_id' => $personaId,
                 'direccion' => $data['direccion'] ?? '',
                 ...Direccion::resolverUbicacion($data['estado_geografico'] ?? null, $data['ciudad'] ?? null),
-                'tipo' => 'casa',
                 'es_principal' => true,
             ]);
         }
@@ -168,7 +167,6 @@ class EmpleadoService
                     'persona_id' => $persona->id,
                     'direccion' => $data['direccion'] ?? '',
                     ...Direccion::resolverUbicacion($data['estado_geografico'] ?? null, $data['ciudad'] ?? null),
-                    'tipo' => 'casa',
                     'es_principal' => true,
                 ]);
             }

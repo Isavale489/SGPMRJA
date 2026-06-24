@@ -17,7 +17,6 @@ class Direccion extends Model
         'direccion',
         'estado_id',
         'municipio_id',
-        'tipo',
         'es_principal',
     ];
 
@@ -36,15 +35,6 @@ class Direccion extends Model
      * accessors `estado` y `ciudad` sin incurrir en consultas N+1.
      */
     protected $with = ['estadoRel', 'municipioRel'];
-
-    /**
-     * Tipos de dirección disponibles
-     */
-    public const TIPOS = [
-        'casa' => 'Casa',
-        'trabajo' => 'Trabajo',
-        'envio' => 'Envío',
-    ];
 
     /**
      * Relación con Persona
@@ -108,21 +98,5 @@ class Direccion extends Model
     public function scopePrincipal($query)
     {
         return $query->where('es_principal', true);
-    }
-
-    /**
-     * Obtener el nombre del tipo
-     */
-    public function getTipoNombreAttribute()
-    {
-        return self::TIPOS[$this->tipo] ?? $this->tipo;
-    }
-
-    /**
-     * Obtener dirección completa
-     */
-    public function getDireccionCompletaAttribute()
-    {
-        return $this->direccion . ($this->ciudad ? ', ' . $this->ciudad : '');
     }
 }
