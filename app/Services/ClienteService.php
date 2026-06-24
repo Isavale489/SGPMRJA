@@ -41,7 +41,7 @@ class ClienteService
                     ]);
                 }
                 // Reutilizar la persona existente — sincronizar teléfonos/dirección
-                $this->sincronizarTelefonos($persona, $data['telefonos'] ?? []);
+                Telefono::sincronizar($persona, $data['telefonos'] ?? []);
                 if (!empty($data['direccion']) || !empty($data['ciudad']) || !empty($data['estado_territorial'])) {
                     Direccion::create([
                         'persona_id' => $persona->id,
@@ -65,7 +65,7 @@ class ClienteService
                 ]);
 
                 // Crear teléfonos
-                $this->sincronizarTelefonos($persona, $data['telefonos'] ?? []);
+                Telefono::sincronizar($persona, $data['telefonos'] ?? []);
 
                 // Crear dirección principal
                 if (!empty($data['direccion']) || !empty($data['ciudad']) || !empty($data['estado_territorial'])) {
@@ -106,7 +106,7 @@ class ClienteService
                 ]);
 
                 // Sincronizar el set completo de teléfonos
-                $this->sincronizarTelefonos($cliente->persona, $data['telefonos'] ?? []);
+                Telefono::sincronizar($cliente->persona, $data['telefonos'] ?? []);
 
                 // Actualizar o crear dirección principal
                 if (!empty($data['direccion']) || !empty($data['ciudad']) || !empty($data['estado_territorial'])) {
@@ -134,42 +134,4 @@ class ClienteService
         });
     }
 
-    /**
-     * Sincroniza el conjunto de teléfonos de la persona con el set recibido
-     * (reemplazo completo). Garantiza exactamente un principal.
-     *
-     * @param array $telefonos lista de ['numero', 'tipo', 'es_principal']
-     */
-    private function sincronizarTelefonos(Persona $persona, array $telefonos): void
-    {
-        // Normalizar: descartar vacíos y asegurar un único principal
-        $telefonos = array_values(array_filter($telefonos, fn ($t) => !empty($t['numero'])));
-        if (empty($telefonos)) {
-            return; // sin teléfonos: no se toca el set actual
-        }
-
-        $principalAsignado = false;
-        foreach ($telefonos as $i => &$t) {
-            $esPrincipal = !empty($t['es_principal']) && !$principalAsignado;
-            $t['es_principal'] = $esPrincipal;
-            if ($esPrincipal) {
-                $principalAsignado = true;
-            }
-        }
-        unset($t);
-        if (!$principalAsignado) {
-            $telefonos[0]['es_principal'] = true;
-        }
-
-        // Reemplazo completo del set (forceDelete evita acumular soft-deleted)
-        $persona->telefonos()->forceDelete();
-        foreach ($telefonos as $t) {
-            Telefono::create([
-                'persona_id' => $persona->id,
-                'numero' => $t['numero'],
-                'tipo' => $t['tipo'] ?? 'movil',
-                'es_principal' => $t['es_principal'],
-            ]);
-        }
-    }
 }

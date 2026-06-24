@@ -142,7 +142,10 @@ class EmpleadoController extends Controller
             'documento_identidad' => 'required|string|min:6|max:15|regex:/^[0-9]+$/',
             'tipo_documento'      => 'required|in:V-,E-,J-,G-',
             'email'               => 'nullable|email:rfc|max:255',
-            'telefono'            => 'nullable|string|regex:/^[0-9]{4}-[0-9]{7}$/',
+            'telefonos'           => 'required|array|min:1|max:3',
+            'telefonos.*.numero'  => ['required', 'string', 'regex:/^[0-9]{4}-[0-9]{7}$/'],
+            'telefonos.*.tipo'    => 'required|in:movil,casa,trabajo',
+            'telefonos.*.es_principal' => 'required|boolean',
             'direccion'           => 'nullable|string|max:500',
             'ciudad'              => 'nullable|string|max:100',
             'estado_geografico'   => 'nullable|string|max:100',
@@ -169,7 +172,10 @@ class EmpleadoController extends Controller
             'documento_identidad.regex'    => 'El documento solo puede contener números',
             'tipo_documento.required'      => 'Debe seleccionar el tipo de documento',
             'email.email'                  => 'El email debe ser una dirección válida',
-            'telefono.regex'               => 'El teléfono debe tener el formato 0424-1234567',
+            'telefonos.required'           => 'Agrega al menos un teléfono.',
+            'telefonos.max'                => 'Máximo 3 teléfonos por persona.',
+            'telefonos.*.numero.required'  => 'El número de teléfono es obligatorio.',
+            'telefonos.*.numero.regex'     => 'El teléfono debe tener el formato 0424-1234567.',
             'fecha_nacimiento.before'      => 'El empleado debe ser mayor de 18 años',
             'fecha_ingreso.required'       => 'La fecha de ingreso es obligatoria',
             'fecha_ingreso.before_or_equal' => 'La fecha de ingreso no puede ser futura',
@@ -193,6 +199,7 @@ class EmpleadoController extends Controller
 
         $data                = $empleado->toArray();
         $data['telefono']    = $empleado->telefono;
+        $data['telefonos']   = $empleado->persona ? $empleado->persona->telefonos : [];
         $data['direccion']   = $empleado->direccion;
         $data['ciudad']      = $empleado->ciudad;
         $data['cargo']       = $empleado->cargo ? $empleado->cargo->nombre : null;
@@ -217,6 +224,7 @@ class EmpleadoController extends Controller
             : null;
 
         $data['telefono']         = $empleado->telefono;
+        $data['telefonos']        = $empleado->persona ? $empleado->persona->telefonos : [];
         $data['direccion']        = $empleado->direccion;
         $data['ciudad']           = $empleado->ciudad;
         // El estado de ubicación vive ahora en la dirección (no en persona)
@@ -246,7 +254,10 @@ class EmpleadoController extends Controller
             'nombre'              => 'required|string|min:2|max:100|regex:/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/',
             'apellido'            => 'required|string|min:2|max:100|regex:/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/',
             'email'               => 'nullable|email:rfc|max:255|unique:persona,email,' . $persona->id,
-            'telefono'            => 'nullable|string|regex:/^[0-9]{4}-[0-9]{7}$/',
+            'telefonos'           => 'required|array|min:1|max:3',
+            'telefonos.*.numero'  => ['required', 'string', 'regex:/^[0-9]{4}-[0-9]{7}$/'],
+            'telefonos.*.tipo'    => 'required|in:movil,casa,trabajo',
+            'telefonos.*.es_principal' => 'required|boolean',
             'direccion'           => 'nullable|string|max:500',
             'ciudad'              => 'nullable|string|max:100',
             'estado_geografico'   => 'nullable|string|max:100',
@@ -270,7 +281,10 @@ class EmpleadoController extends Controller
             'apellido.regex'                => 'El apellido solo puede contener letras y espacios',
             'email.email'                   => 'El email debe ser una dirección válida',
             'email.unique'                  => 'Este email ya está registrado',
-            'telefono.regex'                => 'El teléfono debe tener el formato 0424-1234567',
+            'telefonos.required'            => 'Agrega al menos un teléfono.',
+            'telefonos.max'                 => 'Máximo 3 teléfonos por persona.',
+            'telefonos.*.numero.required'   => 'El número de teléfono es obligatorio.',
+            'telefonos.*.numero.regex'      => 'El teléfono debe tener el formato 0424-1234567.',
             'fecha_nacimiento.before'       => 'El empleado debe ser mayor de 18 años',
             'fecha_ingreso.required'        => 'La fecha de ingreso es obligatoria',
             'fecha_ingreso.before_or_equal' => 'La fecha de ingreso no puede ser futura',
@@ -324,6 +338,7 @@ class EmpleadoController extends Controller
                     'tipo_documento'    => $persona->tipo_documento,
                     'email'             => $persona->email ?? '',
                     'telefono'          => $persona->telefonoPrincipal ?? '',
+                    'telefonos'         => $persona->telefonos,
                     // fecha_nacimiento/genero ya no viven en persona; al promover un
                     // cliente a empleado estos campos se capturan en el form de empleado.
                     'genero'            => '',

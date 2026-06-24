@@ -257,8 +257,8 @@
                                     <div class="emp-icon-box emp-icon-box--navy rounded-circle me-2 flex-shrink-0 d-flex align-items-center justify-content-center">
                                         <i class="ri-phone-line emp-icon--navy"></i>
                                     </div>
-                                    <div><small class="text-muted d-block fs-12">Teléfono</small>
-                                    <span class="fw-semibold fs-13" id="view-telefono">-</span></div>
+                                    <div><small class="text-muted d-block fs-12">Teléfonos</small>
+                                    <div class="fw-semibold fs-13" id="view-telefonos">-</div></div>
                                 </div>
                             </div>
                             <div class="col-sm-6" id="view-contacto-section">
@@ -377,30 +377,13 @@
                                 <div class="modal-form-section-title"><i class="ri-contacts-book-line"></i>Contacto</div>
 
                                 <div class="row mb-0">
-                                    <div class="col-md-6 mb-3">
-                                        <x-forms.input name="telefono_jur_number" label="Teléfono"
-                                            id="telefono-jur-number-field" maxlength="7" placeholder="1234567" required
-                                            prependRaw="true">
-                                            <x-slot:prepend>
-                                                <select class="form-select" id="telefono-jur-prefix-field"
-                                                    style="max-width: 100px; min-width: 100px;">
-                                                    <option value="0212">0212</option>
-                                                    <option value="0251">0251</option>
-                                                    <option value="0241">0241</option>
-                                                    <option value="0255">0255</option>
-                                                    <option value="0412">0412</option>
-                                                    <option value="0414">0414</option>
-                                                    <option value="0424" selected>0424</option>
-                                                    <option value="0416">0416</option>
-                                                    <option value="0426">0426</option>
-                                                </select>
-                                            </x-slot:prepend>
-                                        </x-forms.input>
-                                        <input type="hidden" id="telefono-jur-field" name="telefono" />
-                                    </div>
-                                    <div class="col-md-6 mb-3">
+                                    <div class="col-12 mb-3">
                                         <x-forms.input name="email" label="Email" type="email"
                                             placeholder="correo@empresa.com" id="email-jur-field" />
+                                    </div>
+                                    <div class="col-12">
+                                        {{-- Teléfonos múltiples de la empresa (componente reutilizable) --}}
+                                        @include('admin.partials.telefonos-field', ['telId' => 'prov-jur-tel'])
                                     </div>
                                 </div>
                             </div>
@@ -484,27 +467,13 @@
                                 <div class="modal-form-section-title"><i class="ri-contacts-book-line"></i>Contacto</div>
 
                                 <div class="row mb-0">
-                                    <div class="col-md-6 mb-3">
-                                        <x-forms.input name="telefono_nat_number" label="Teléfono"
-                                            id="telefono-nat-number-field" maxlength="7" placeholder="1234567" required
-                                            prependRaw="true">
-                                            <x-slot:prepend>
-                                                <select class="form-select" id="telefono-nat-prefix-field"
-                                                    style="max-width: 100px; min-width: 100px;">
-                                                    <option value="0412">0412</option>
-                                                    <option value="0422">0422</option>
-                                                    <option value="0414">0414</option>
-                                                    <option value="0424" selected>0424</option>
-                                                    <option value="0416">0416</option>
-                                                    <option value="0426">0426</option>
-                                                </select>
-                                            </x-slot:prepend>
-                                        </x-forms.input>
-                                        <input type="hidden" id="telefono-nat-field" name="telefono" />
-                                    </div>
-                                    <div class="col-md-6 mb-3">
+                                    <div class="col-12 mb-3">
                                         <x-forms.input name="email" label="Email" type="email"
                                             placeholder="correo@email.com" id="email-nat-field" />
+                                    </div>
+                                    <div class="col-12">
+                                        {{-- Teléfonos múltiples (componente reutilizable) --}}
+                                        @include('admin.partials.telefonos-field', ['telId' => 'prov-nat-tel'])
                                     </div>
                                 </div>
                             </div>
@@ -605,6 +574,7 @@
     <script src="https://cdn.datatables.net/responsive/2.2.9/js/responsive.bootstrap5.min.js"></script>
     <script src="{{ URL::asset('assets/libs/sweetalert2/sweetalert2.min.js') }}"></script>
     <script src="{{ asset('assets/js/municipios-venezuela.js') }}"></script>
+    <script src="{{ asset('assets/js/telefonos-repeater.js') }}"></script>
 
     <script>
         // Formatea a dd/mm/aaaa (sin hora) — igual que en los demás módulos del estándar "Ver".
@@ -677,7 +647,7 @@
                         $(this).attr('required', 'required').removeAttr('data-required');
                     });
                     // Limpiar campos jurídicos (NO el documento, que es compartido)
-                    $('#razon-social-field, #direccion-jur-field, #telefono-jur-field, #email-jur-field, #contacto-field, #telefono-contacto-field, #estado-territorial-jur-field').val('');
+                    $('#razon-social-field, #direccion-jur-field, #email-jur-field, #contacto-field, #telefono-contacto-field, #estado-territorial-jur-field').val('');
                     $('#ciudad-jur-field').empty().append('<option value="">Primero seleccione un estado</option>');
                 } else {
                     $jur.show();
@@ -689,13 +659,23 @@
                         $(this).attr('required', 'required').removeAttr('data-required');
                     });
                     // Limpiar campos naturales (NO el documento, que es compartido)
-                    $('#nombre-field, #apellido-field, #telefono-nat-field, #email-nat-field, #direccion-nat-field, #ciudad-field, #estado-territorial-field').val('');
+                    $('#nombre-field, #apellido-field, #email-nat-field, #direccion-nat-field, #ciudad-field, #estado-territorial-field').val('');
                 }
             }
 
             // El tipo se deriva del prefijo del documento.
             $('#tipo-documento-field').on('change', toggleCampos);
             toggleCampos(); // Inicializar: tipo + visibilidad + required según el prefijo
+
+            // Repetidores de teléfono (uno por bloque: jurídico y natural)
+            ['prov-jur-tel', 'prov-nat-tel'].forEach(function (tid) {
+                var r = document.getElementById(tid + '-repeater');
+                if (window.TelefonosRepeater && r) { TelefonosRepeater.init(r); }
+            });
+            // Devuelve el repetidor del bloque activo según el tipo de proveedor
+            function telRootActivo(tipo) {
+                return document.getElementById((tipo === 'natural' ? 'prov-nat-tel' : 'prov-jur-tel') + '-repeater');
+            }
 
             // Dropdown dependiente: Poblar municipios cuando cambia el estado (Natural)
             $("#estado-territorial-field").on('change', function () {
@@ -870,7 +850,16 @@
                     $("#view-hero-doc").text(heroDoc);
                     $("#view-hero-date").text(formatDate(data.created_at));
 
-                    $("#view-telefono").text(data.telefono || 'No especificado');
+                    // Lista de teléfonos (principal con estrella)
+                    var tipoTel = { movil: 'Móvil', casa: 'Casa', trabajo: 'Trabajo' };
+                    if (Array.isArray(data.telefonos) && data.telefonos.length) {
+                        $("#view-telefonos").html(data.telefonos.map(function (t) {
+                            return '<div>' + (t.es_principal ? '<i class="ri-star-fill text-warning me-1"></i>' : '')
+                                + t.numero + ' <small class="text-muted">· ' + (tipoTel[t.tipo] || t.tipo) + '</small></div>';
+                        }).join(''));
+                    } else {
+                        $("#view-telefonos").text(data.telefono || 'No especificado');
+                    }
                     $("#view-email").text(data.email || 'No especificado');
                     $("#view-direccion").text(data.direccion || 'No especificada');
                     $("#view-estatus").html(data.trashed ?
@@ -921,15 +910,11 @@
                         $("#nombre-field").val(data.nombre);
                         $("#apellido-field").val(data.apellido);
 
-                        // Separar teléfono en prefijo y número
-                        var telefono = data.telefono || '';
-                        var telMatch = telefono.match(/^(0412|0422|0414|0424|0416|0426)-(.+)$/);
-                        if (telMatch) {
-                            $("#telefono-nat-prefix-field").val(telMatch[1]);
-                            $("#telefono-nat-number-field").val(telMatch[2]);
-                        } else {
-                            $("#telefono-nat-prefix-field").val('0424');
-                            $("#telefono-nat-number-field").val(telefono.replace(/^0\d{3}-?/, ''));
+                        // Cargar teléfonos en el repetidor natural
+                        var _natRoot = document.getElementById('prov-nat-tel-repeater');
+                        if (window.TelefonosRepeater && _natRoot) {
+                            TelefonosRepeater.load(_natRoot, data.telefonos
+                                || (data.telefono ? [{ numero: data.telefono, tipo: 'movil', es_principal: true }] : []));
                         }
 
                         $("#email-nat-field").val(data.email);
@@ -963,15 +948,11 @@
                             select.val(data.ciudad);
                         }
 
-                        // Separar teléfono principal en prefijo y número
-                        var telJur = data.telefono || '';
-                        var telJurMatch = telJur.match(/^(0212|0251|0241|0255|0412|0414|0424|0416|0426)-(.+)$/);
-                        if (telJurMatch) {
-                            $("#telefono-jur-prefix-field").val(telJurMatch[1]);
-                            $("#telefono-jur-number-field").val(telJurMatch[2]);
-                        } else {
-                            $("#telefono-jur-prefix-field").val('0424');
-                            $("#telefono-jur-number-field").val(telJur.replace(/^0\d{3}-?/, ''));
+                        // Cargar teléfonos en el repetidor jurídico
+                        var _jurRoot = document.getElementById('prov-jur-tel-repeater');
+                        if (window.TelefonosRepeater && _jurRoot) {
+                            TelefonosRepeater.load(_jurRoot, data.telefonos
+                                || (data.telefono ? [{ numero: data.telefono, tipo: 'movil', es_principal: true }] : []));
                         }
 
                         $("#email-jur-field").val(data.email);
@@ -1011,6 +992,14 @@
                 var method = id ? "PUT" : "POST";
                 var tipo = tipoDesdePrefijo($('#tipo-documento-field').val());
 
+                // Teléfonos: sincronizar SOLO el repetidor del bloque activo en
+                // inputs ocultos telefonos[i][...] (el inactivo no aporta ninguno).
+                if (window.TelefonosRepeater) {
+                    $('#proveedorForm input[data-tel-hidden]').remove();
+                    var _telRoot = telRootActivo(tipo);
+                    if (_telRoot) TelefonosRepeater.syncHiddenInputs(this, _telRoot);
+                }
+
                 var formData = new FormData(this);
                 formData.set('tipo_proveedor', tipo);
 
@@ -1019,10 +1008,6 @@
                     var rifPrefix = $('#tipo-documento-field').val();
                     var rifNumber = $('#documento-identidad-field').val();
                     formData.set('rif', rifPrefix + rifNumber);
-
-                    // Concatenar teléfono principal: prefijo-número
-                    var telefonoJurCompleto = $('#telefono-jur-prefix-field').val() + '-' + $('#telefono-jur-number-field').val();
-                    formData.set('telefono', telefonoJurCompleto);
 
                     formData.set('email', $('#email-jur-field').val());
                     formData.set('direccion', $('#direccion-jur-field').val());
@@ -1039,9 +1024,6 @@
                     formData.delete('nombre');
                     formData.delete('apellido');
                 } else {
-                    // Concatenar teléfono: prefijo-número
-                    var telefonoCompleto = $('#telefono-nat-prefix-field').val() + '-' + $('#telefono-nat-number-field').val();
-                    formData.set('telefono', telefonoCompleto);
                     formData.set('email', $('#email-nat-field').val());
                     formData.set('direccion', $('#direccion-nat-field').val());
 
@@ -1203,6 +1185,11 @@
                 $("#id-field").val("");
                 $("#tipo-documento-field").val("V-");
                 toggleCampos();
+                // Resetear ambos repetidores de teléfono a una fila vacía
+                ['prov-jur-tel', 'prov-nat-tel'].forEach(function (tid) {
+                    var r = document.getElementById(tid + '-repeater');
+                    if (window.TelefonosRepeater && r) { TelefonosRepeater.load(r, []); }
+                });
                 $("#add-btn").show().prop('disabled', false);
                 $("#edit-btn").hide();
                 // Desbloquear el documento unificado
@@ -1225,7 +1212,7 @@
                 this.value = this.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '');
             });
             // Solo dígitos en campos numéricos de teléfono y documento
-            $(document).on('input', '#telefono-jur-number-field, #telefono-nat-number-field, #telefono-contacto-number-field', function () {
+            $(document).on('input', '#telefono-contacto-number-field', function () {
                 this.value = this.value.replace(/[^0-9]/g, '').slice(0, 7);
             });
             $(document).on('input', '#documento-identidad-field', function () {
@@ -1310,31 +1297,9 @@
                 }
             });
 
-            // 6. Teléfono principal — Jurídico
-            $(document).on('blur', '#telefono-jur-number-field', function () {
-                var val = $(this).val().trim();
-                if (val.length === 0) {
-                    marcarInvalido($(this), 'El teléfono es obligatorio.');
-                } else if (!/^[0-9]{7}$/.test(val)) {
-                    marcarInvalido($(this), 'Debe tener exactamente 7 dígitos.');
-                } else {
-                    marcarValido($(this));
-                }
-            });
+            // (Los teléfonos principales los valida telefonos-repeater.js)
 
-            // 7. Teléfono principal — Natural
-            $(document).on('blur', '#telefono-nat-number-field', function () {
-                var val = $(this).val().trim();
-                if (val.length === 0) {
-                    marcarInvalido($(this), 'El teléfono es obligatorio.');
-                } else if (!/^[0-9]{7}$/.test(val)) {
-                    marcarInvalido($(this), 'Debe tener exactamente 7 dígitos.');
-                } else {
-                    marcarValido($(this));
-                }
-            });
-
-            // 8. Teléfono de Contacto (Jurídico, opcional)
+            // Teléfono de Contacto (Jurídico, opcional)
             $(document).on('blur', '#telefono-contacto-number-field', function () {
                 var val = $(this).val().trim();
                 if (val.length === 0) { limpiarValidacion($(this)); return; }
@@ -1419,11 +1384,6 @@
                         marcarInvalido($razon, 'La Razón Social es obligatoria.');
                         esValido = false;
                     }
-                    var $telJur = $('#telefono-jur-number-field');
-                    if (!/^[0-9]{7}$/.test($telJur.val().trim())) {
-                        marcarInvalido($telJur, 'El teléfono debe tener 7 dígitos.');
-                        esValido = false;
-                    }
                     var $dirJur = $('#direccion-jur-field');
                     if ($dirJur.val().trim().length < 5) {
                         marcarInvalido($dirJur, 'La dirección es obligatoria (mín. 5 caracteres).');
@@ -1445,11 +1405,6 @@
                         marcarInvalido($doc, 'El documento debe tener al menos 6 dígitos.');
                         esValido = false;
                     }
-                    var $telNat = $('#telefono-nat-number-field');
-                    if (!/^[0-9]{7}$/.test($telNat.val().trim())) {
-                        marcarInvalido($telNat, 'El teléfono debe tener 7 dígitos.');
-                        esValido = false;
-                    }
                     var $dirNat = $('#direccion-nat-field');
                     if ($dirNat.val().trim().length < 5) {
                         marcarInvalido($dirNat, 'La dirección es obligatoria (mín. 5 caracteres).');
@@ -1463,6 +1418,16 @@
                 if (emailVal.length > 0 && !emailRegex.test(emailVal)) {
                     marcarInvalido(emailActivo, 'Ingrese un email válido.');
                     esValido = false;
+                }
+
+                // Teléfonos del bloque activo (componente reutilizable)
+                if (window.TelefonosRepeater) {
+                    var telRoot = telRootActivo(tipo);
+                    if (telRoot) {
+                        var telChk = TelefonosRepeater.validate(telRoot);
+                        $(telRoot).find('[data-tel-error]').toggle(!telChk.ok).text(telChk.message || '');
+                        if (!telChk.ok) esValido = false;
+                    }
                 }
 
                 return esValido;

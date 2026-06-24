@@ -23,7 +23,7 @@ class ProveedorService
                 'email' => $data['email'],
             ]);
 
-            $this->crearTelefono($persona->id, $data['telefono']);
+            Telefono::sincronizar($persona, $data['telefonos'] ?? []);
 
             if (!empty($data['direccion'])) {
                 $this->crearDireccion($persona->id, $data);
@@ -59,7 +59,7 @@ class ProveedorService
                 'email' => $data['email'],
             ]);
 
-            $this->crearTelefono($persona->id, $data['telefono']);
+            Telefono::sincronizar($persona, $data['telefonos'] ?? []);
 
             if (!empty($data['direccion'])) {
                 $this->crearDireccion($persona->id, $data);
@@ -89,7 +89,7 @@ class ProveedorService
                     'email' => $data['email'],
                 ]);
 
-                $this->actualizarTelefono($proveedor->persona, $data['telefono']);
+                Telefono::sincronizar($proveedor->persona, $data['telefonos'] ?? []);
                 $this->actualizarDireccion($proveedor->persona, $data);
             } else {
                 // Convertir de jurídico a natural: crear persona
@@ -100,7 +100,7 @@ class ProveedorService
                     'email' => $data['email'],
                 ]);
 
-                $this->crearTelefono($persona->id, $data['telefono']);
+                Telefono::sincronizar($persona, $data['telefonos'] ?? []);
 
                 if (!empty($data['direccion'])) {
                     $this->crearDireccion($persona->id, $data);
@@ -129,7 +129,7 @@ class ProveedorService
                     'email' => $data['email'],
                 ]);
 
-                $this->actualizarTelefono($persona, $data['telefono']);
+                Telefono::sincronizar($persona, $data['telefonos'] ?? []);
                 $this->actualizarDireccion($persona, $data);
             }
 
@@ -141,16 +141,6 @@ class ProveedorService
         });
     }
 
-    private function crearTelefono(int $personaId, string $numero): void
-    {
-        Telefono::create([
-            'persona_id' => $personaId,
-            'numero' => $numero,
-            'tipo' => 'movil',
-            'es_principal' => true,
-        ]);
-    }
-
     private function crearDireccion(int $personaId, array $data): void
     {
         Direccion::create([
@@ -158,21 +148,6 @@ class ProveedorService
             'direccion' => $data['direccion'],
             ...Direccion::resolverUbicacion($data['estado_territorial'] ?? null, $data['ciudad'] ?? null),
         ]);
-    }
-
-    private function actualizarTelefono(Persona $persona, string $numero): void
-    {
-        $telefonoPrincipal = $persona->telefonos()->where('es_principal', true)->first();
-        if ($telefonoPrincipal) {
-            $telefonoPrincipal->update(['numero' => $numero]);
-        } else {
-            Telefono::create([
-                'persona_id' => $persona->id,
-                'numero' => $numero,
-                'tipo' => 'movil',
-                'es_principal' => true,
-            ]);
-        }
     }
 
     private function actualizarDireccion(Persona $persona, array $data): void

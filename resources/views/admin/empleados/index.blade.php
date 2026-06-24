@@ -321,8 +321,8 @@
                                     <div class="emp-icon-box emp-icon-box--navy rounded-circle me-2 flex-shrink-0 d-flex align-items-center justify-content-center">
                                         <i class="ri-phone-line emp-icon--navy"></i>
                                     </div>
-                                    <div><small class="text-muted d-block fs-12">Teléfono</small>
-                                    <span class="fw-semibold fs-13" id="view-telefono">-</span></div>
+                                    <div><small class="text-muted d-block fs-12">Teléfonos</small>
+                                    <div class="fw-semibold fs-13" id="view-telefonos">-</div></div>
                                 </div>
                             </div>
                             <div class="col-sm-6">
@@ -414,24 +414,12 @@
                             </div>
 
                             <div class="row mb-3">
-                                <div class="col-md-6">
+                                <div class="col-12">
                                     <x-forms.input name="email" label="Email" type="email" placeholder="correo@ejemplo.com" />
                                 </div>
-                                <div class="col-md-6">
-                                    <x-forms.input name="telefono_number" label="Teléfono" id="telefono-number-field"
-                                        maxlength="7" placeholder="1234567" prependRaw="true">
-                                        <x-slot:prepend>
-                                            <select class="form-select phone-prefix-select" id="telefono-prefix-field">
-                                                <option value="0412">0412</option>
-                                                <option value="0422">0422</option>
-                                                <option value="0414">0414</option>
-                                                <option value="0424" selected>0424</option>
-                                                <option value="0416">0416</option>
-                                                <option value="0426">0426</option>
-                                            </select>
-                                        </x-slot:prepend>
-                                    </x-forms.input>
-                                    <input type="hidden" id="telefono-field" name="telefono" />
+                                <div class="col-12 mt-3">
+                                    {{-- Teléfonos múltiples (componente reutilizable) --}}
+                                    @include('admin.partials.telefonos-field', ['telId' => 'emp-tel'])
                                 </div>
                             </div>
 
@@ -656,6 +644,7 @@
 @push('scripts')
     <script src="{{ URL::asset('/assets/libs/sweetalert2/sweetalert2.min.js') }}"></script>
     <script src="{{ URL::asset('/assets/js/municipios-venezuela.js') }}"></script>
+    <script src="{{ URL::asset('/assets/js/telefonos-repeater.js') }}"></script>
     <script>
         $(function () {
             // Tooltips
@@ -727,11 +716,11 @@
                 $('#field-apellido').val(p.apellido || '').prop('readonly', true).addClass('bg-light').css('cursor', 'not-allowed');
                 $('#field-email').val(p.email || '').prop('readonly', true).addClass('bg-light').css('cursor', 'not-allowed');
 
-                // Teléfono
-                if (p.telefono && p.telefono.includes('-')) {
-                    var parts = p.telefono.split('-');
-                    $('#telefono-prefix-field').val(parts[0]).prop('disabled', true);
-                    $('#telefono-number-field').val(parts[1]).prop('readonly', true).addClass('bg-light').css('cursor', 'not-allowed');
+                // Teléfonos (de la persona reutilizada)
+                var _telRoot = document.getElementById('emp-tel-repeater');
+                if (window.TelefonosRepeater && _telRoot) {
+                    TelefonosRepeater.load(_telRoot, p.telefonos
+                        || (p.telefono ? [{ numero: p.telefono, tipo: 'movil', es_principal: true }] : []));
                 }
 
                 // Opcionales
@@ -806,22 +795,7 @@
             }
         });
 
-        // Sanitización del número de teléfono (solo dígitos, máx 7)
-        $(document).on('input', '#telefono-number-field', function () {
-            this.value = this.value.replace(/[^0-9]/g, '').slice(0, 7);
-        });
-
-        // Validación onblur para teléfono (opcional — solo valida si hay valor)
-        $(document).on('blur', '#telefono-number-field', function () {
-            let value = $(this).val().trim();
-            if (value.length === 0) {
-                limpiarValidacion($(this));
-            } else if (!/^[0-9]{7}$/.test(value)) {
-                marcarInvalido($(this), 'El número debe tener exactamente 7 dígitos.');
-            } else {
-                marcarValido($(this));
-            }
-        });
+        // (La validación/sanitización de teléfonos la maneja telefonos-repeater.js)
     </script>
     <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/1.11.5/js/dataTables.bootstrap5.min.js"></script>
@@ -995,6 +969,9 @@
             });
 
             // === Funciones del modal crear/editar (estándar Clientes) ===
+            var telRoot = document.getElementById('emp-tel-repeater');
+            if (window.TelefonosRepeater && telRoot) { TelefonosRepeater.init(telRoot); }
+
             function resetForm() {
                 $("#empleadoForm").trigger("reset");
                 $("#id-field").val("");
@@ -1004,9 +981,8 @@
                 $("#field-codigo_empleado").val("");
                 $("#tipo-documento-field").val("V-").prop('disabled', false).removeClass('campo-protegido');
                 $("#field-documento_identidad").prop('disabled', false).removeClass('campo-protegido');
-                // Resetear teléfono
-                $("#telefono-prefix-field").val("0424");
-                $("#telefono-number-field").val("");
+                // Resetear teléfonos
+                if (window.TelefonosRepeater && telRoot) { TelefonosRepeater.load(telRoot, []); }
                 // Resetear departamento y cargo
                 $("#field-departamento_id").val("");
                 $("#field-cargo_id").empty().append('<option value="">Elija un departamento</option>').prop('disabled', true);
@@ -1018,8 +994,8 @@
                 $("#empleadoForm .is-invalid").removeClass("is-invalid");
                 $("#empleadoForm .is-valid").removeClass("is-valid");
                 // Desbloquear campos vinculados de persona existente
-                $('#field-nombre, #field-apellido, #field-email, #field-fecha_nacimiento, #field-direccion, #telefono-number-field').prop('readonly', false).removeClass('bg-light').css('cursor', '');
-                $('#telefono-prefix-field, #field-genero, #estado_geografico-field, #ciudad-field').prop('disabled', false);
+                $('#field-nombre, #field-apellido, #field-email, #field-fecha_nacimiento, #field-direccion').prop('readonly', false).removeClass('bg-light').css('cursor', '');
+                $('#field-genero, #estado_geografico-field, #ciudad-field').prop('disabled', false);
                 $('#documento-persona-card').addClass('d-none');
                 $('#documento-vinculado-notice').addClass('d-none');
                 $('#edit-shared-persona-notice').addClass('d-none');
@@ -1110,11 +1086,11 @@
                     }
                 }
 
-                // Teléfono (opcional — solo valida si se ingresó número)
-                let $telNum = $('#telefono-number-field');
-                if ($telNum.val().trim().length > 0 && !/^[0-9]{7}$/.test($telNum.val().trim())) {
-                    marcarInvalido($telNum, 'El número debe tener exactamente 7 dígitos.');
-                    esValido = false;
+                // Teléfonos (componente reutilizable)
+                if (window.TelefonosRepeater && telRoot) {
+                    var telChk = TelefonosRepeater.validate(telRoot);
+                    $(telRoot).find('[data-tel-error]').toggle(!telChk.ok).text(telChk.message || '');
+                    if (!telChk.ok) esValido = false;
                 }
 
                 return esValido;
@@ -1133,9 +1109,10 @@
                 var id = $("#id-field").val();
                 var url = id ? "{{ route('empleados.update', ':id') }}".replace(':id', id) : "{{ route('empleados.store') }}";
                 var method = id ? "PUT" : "POST";
-                // Concatenar teléfono: prefijo-número → campo oculto
-                var telefonoCompleto = $("#telefono-prefix-field").val() + "-" + $("#telefono-number-field").val();
-                $("#telefono-field").val(telefonoCompleto);
+                // Teléfonos → inputs ocultos telefonos[i][...]
+                if (window.TelefonosRepeater && telRoot) {
+                    TelefonosRepeater.syncHiddenInputs(this, telRoot);
+                }
                 var formData = $(this).serialize();
                 if (method === 'PUT') { formData += '&_method=PUT'; }
 
@@ -1170,7 +1147,16 @@
                     $("#view-nombre-completo").text(nombreCompleto.trim());
                     $("#view-documento").text(documento);
                     $("#view-email").text(data.persona.email || 'N/A');
-                    $("#view-telefono").text(data.telefono || 'N/A');
+                    // Lista de teléfonos (principal con estrella)
+                    var tipoTel = { movil: 'Móvil', casa: 'Casa', trabajo: 'Trabajo' };
+                    if (Array.isArray(data.telefonos) && data.telefonos.length) {
+                        $("#view-telefonos").html(data.telefonos.map(function (t) {
+                            return '<div>' + (t.es_principal ? '<i class="ri-star-fill text-warning me-1"></i>' : '')
+                                + t.numero + ' <small class="text-muted">· ' + (tipoTel[t.tipo] || t.tipo) + '</small></div>';
+                        }).join(''));
+                    } else {
+                        $("#view-telefonos").text(data.telefono || 'N/A');
+                    }
                     $("#view-direccion").text(data.direccion || 'N/A');
                     $("#view-ciudad").text(data.ciudad || 'N/A');
                     $("#view-fecha-nacimiento").text(formatDate(data.fecha_nacimiento));
@@ -1197,17 +1183,10 @@
                     $("#tipo-documento-field").val(data.persona.tipo_documento);
                     $("#field-documento_identidad").val(data.persona.documento_identidad);
                     $("#field-email").val(data.persona.email);
-                    // Separar teléfono en prefijo y número
-                    if (data.telefono && data.telefono.includes('-')) {
-                        var telParts = data.telefono.split('-');
-                        $("#telefono-prefix-field").val(telParts[0]);
-                        $("#telefono-number-field").val(telParts[1]);
-                    } else if (data.telefono) {
-                        $("#telefono-prefix-field").val(data.telefono.slice(0, 4));
-                        $("#telefono-number-field").val(data.telefono.slice(4));
-                    } else {
-                        $("#telefono-prefix-field").val("0424");
-                        $("#telefono-number-field").val("");
+                    // Cargar los teléfonos en el componente
+                    if (window.TelefonosRepeater && telRoot) {
+                        TelefonosRepeater.load(telRoot, data.telefonos
+                            || (data.telefono ? [{ numero: data.telefono, tipo: 'movil', es_principal: true }] : []));
                     }
                     $("#field-direccion").val(data.direccion || '');
                     // Estado y municipio dependiente

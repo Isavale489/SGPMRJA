@@ -27,7 +27,7 @@ class EmpleadoService
                     ]);
                 }
                 // Reutilizar la persona existente — agregar teléfono/dirección si se proveyeron
-                $this->crearTelefono($persona->id, $data);
+                Telefono::sincronizar($persona, $data['telefonos'] ?? []);
                 $this->crearDireccion($persona->id, $data);
             } else {
                 // Persona nueva — verificar unicidad de email antes de crear
@@ -44,7 +44,7 @@ class EmpleadoService
                     'email' => $data['email'] ?? null,
                 ]);
 
-                $this->crearTelefono($persona->id, $data);
+                Telefono::sincronizar($persona, $data['telefonos'] ?? []);
                 $this->crearDireccion($persona->id, $data);
             }
 
@@ -97,7 +97,7 @@ class EmpleadoService
                 'email' => $data['email'] ?? null,
             ]);
 
-            $this->actualizarTelefono($persona, $data);
+            Telefono::sincronizar($persona, $data['telefonos'] ?? []);
             $this->actualizarDireccion($persona, $data);
 
             $empleado->update([
@@ -112,18 +112,6 @@ class EmpleadoService
         });
     }
 
-    private function crearTelefono(int $personaId, array $data): void
-    {
-        if (!empty($data['telefono'])) {
-            Telefono::create([
-                'persona_id' => $personaId,
-                'numero' => $data['telefono'],
-                'tipo' => 'movil',
-                'es_principal' => true,
-            ]);
-        }
-    }
-
     private function crearDireccion(int $personaId, array $data): void
     {
         if (!empty($data['direccion']) || !empty($data['ciudad'])) {
@@ -132,23 +120,6 @@ class EmpleadoService
                 'direccion' => $data['direccion'] ?? '',
                 ...Direccion::resolverUbicacion($data['estado_geografico'] ?? null, $data['ciudad'] ?? null),
             ]);
-        }
-    }
-
-    private function actualizarTelefono(Persona $persona, array $data): void
-    {
-        if (!empty($data['telefono'])) {
-            $telefonoPrincipal = $persona->telefonos()->where('es_principal', true)->first();
-            if ($telefonoPrincipal) {
-                $telefonoPrincipal->update(['numero' => $data['telefono']]);
-            } else {
-                Telefono::create([
-                    'persona_id' => $persona->id,
-                    'numero' => $data['telefono'],
-                    'tipo' => 'movil',
-                    'es_principal' => true,
-                ]);
-            }
         }
     }
 
