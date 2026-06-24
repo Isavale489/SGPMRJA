@@ -3985,9 +3985,10 @@ header#page-topbar,
 
 /* ── Matrix de tallas ────────────────────────────────────────── */
 .cfg-tallas-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
-    gap: 8px;
+    /* Contenedor en stack vertical: segmented control arriba, matriz debajo.
+       (antes era un grid de 70px que aplastaba el control de escala) */
+    display: flex;
+    flex-direction: column;
 }
 .cfg-talla-cell {
     background: #ffffff;
@@ -4036,7 +4037,8 @@ header#page-topbar,
 
 /* Segmented control de escala (Letras / Numéricas / Única) */
 .cfg-tg-groups {
-    display: inline-flex;
+    display: flex;
+    width: 100%;
     gap: 2px;
     background: #f1f5f9;
     border-radius: 10px;
@@ -4044,17 +4046,19 @@ header#page-topbar,
     margin-bottom: 16px;
 }
 .cfg-tg-group-btn {
+    flex: 1 1 0;
     border: 0;
     background: transparent;
     color: #64748b;
     border-radius: 7px;
-    padding: 5px 14px;
+    padding: 6px 14px;
     font-size: 0.8rem;
     font-weight: 600;
     cursor: pointer;
     transition: color 0.15s, background 0.15s, box-shadow 0.15s;
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: 6px;
     white-space: nowrap;
 }
