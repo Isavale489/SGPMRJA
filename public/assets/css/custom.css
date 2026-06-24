@@ -4032,6 +4032,89 @@ header#page-topbar,
 .cfg-talla-cell-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 .cfg-talla-cell-input { appearance: textfield; -moz-appearance: textfield; }
 
+/* ── Grilla 2D talla × género (configurador) ── */
+.cfg-tg {
+    display: grid;
+    grid-template-columns: minmax(60px, 0.8fr) repeat(var(--cfg-tg-cols, 3), 1fr);
+    gap: 6px;
+    align-items: stretch;
+}
+.cfg-tg-row { display: contents; }
+.cfg-tg-talla {
+    display: flex;
+    align-items: center;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #64748b;
+    font-weight: 600;
+    padding: 0 4px;
+}
+.cfg-tg-head .cfg-tg-genhead {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    text-align: center;
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: #1e3c72;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 4px 2px;
+}
+.cfg-tg-corner { color: #94a3b8; }
+.cfg-tg-input {
+    width: 100%;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 9px;
+    background: #fff;
+    text-align: center;
+    font-size: 1rem;
+    font-weight: 700;
+    color: #1e3c72;
+    font-variant-numeric: tabular-nums;
+    outline: none;
+    padding: 8px 2px;
+    transition: all 0.15s;
+}
+.cfg-tg-input:hover { border-color: #1e3c72; }
+.cfg-tg-input:focus { border-color: #1e3c72; box-shadow: 0 0 0 3px rgba(30, 60, 114, 0.12); }
+.cfg-tg-input.is-active {
+    border-color: #00d9a5;
+    background: rgba(0, 217, 165, 0.06);
+    box-shadow: 0 4px 10px -6px rgba(0, 217, 165, 0.4);
+}
+.cfg-tg-input::-webkit-outer-spin-button,
+.cfg-tg-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.cfg-tg-input { appearance: textfield; -moz-appearance: textfield; }
+
+/* Chip de género en listas de resumen/agrupado */
+.cot-chip-gen {
+    margin-left: 4px;
+    padding: 0 5px;
+    border-radius: 5px;
+    background: rgba(30, 60, 114, 0.08);
+    color: #1e3c72;
+    font-size: 0.7rem;
+    font-weight: 600;
+}
+.cot-linea-genero {
+    margin: 0 3px;
+    padding: 0 4px;
+    border-radius: 4px;
+    background: rgba(30, 60, 114, 0.08);
+    color: #1e3c72;
+    font-size: 0.66rem;
+    font-weight: 600;
+}
+[data-bs-theme="dark"] .cfg-tg-input { background: #0f172a; border-color: #334155; color: #fff; }
+[data-bs-theme="dark"] .cfg-tg-input.is-active { border-color: #34d399; background: rgba(52, 211, 153, 0.1); }
+[data-bs-theme="dark"] .cfg-tg-genhead { color: #93c5fd; }
+[data-bs-theme="dark"] .cfg-tg-talla { color: #94a3b8; }
+[data-bs-theme="dark"] .cot-chip-gen,
+[data-bs-theme="dark"] .cot-linea-genero { background: #1e293b; color: #93c5fd; }
+
 .cfg-tallas-summary {
     margin-top: 12px;
     padding: 10px 14px;

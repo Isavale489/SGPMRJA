@@ -1124,13 +1124,35 @@
                 // Cerrar modal antes de agregar
                 cerrarModalSeguro();
                 // Agregar item
-                addProductItem(producto.id, 1, producto.precio_base, '', false, '', '', '', []);
+                addProductItem(producto.id, 1, producto.precio_base, '', false, '', '', '', defaultGeneroId(), []);
                 // Recalcular
                 calculateCotizacionTotals();
             }
         }
 
         var tallasArray = [];
+
+        // Catálogo de género de prenda (Dama/Caballero/Unisex), inyectado desde el
+        // View Composer (set estable, cacheado). Lo consume el configurador para el
+        // cruce talla × género.
+        var generosArray = @json($generosCatalogo ?? []);
+
+        function getGenerosArray() {
+            return Array.isArray(generosArray) ? generosArray : [];
+        }
+
+        function getGeneroNombre(generoId) {
+            if (!generoId) return '';
+            var g = getGenerosArray().find(function (x) { return x.id == generoId; });
+            return g ? (g.etiqueta || g.nombre) : '';
+        }
+
+        // Género por defecto (Unisex) para rutas de alta rápida sin configurador.
+        function defaultGeneroId() {
+            var arr = getGenerosArray();
+            var uni = arr.find(function (g) { return String(g.nombre || '').toLowerCase() === 'unisex'; });
+            return uni ? uni.id : (arr[0] ? arr[0].id : '');
+        }
 
         function cargarTallasCatalogo(callback) {
             $.get("{{ route('tallas.data') }}", function (data) {
@@ -1846,7 +1868,7 @@
         // === FIN LÓGICA MODAL DE UBICACIÓN DE BORDADO ===
         // ============================================================
 
-        function addProductItem(productoId = '', cantidad = '', precioUnitario = '', descripcion = '', llevaBordado = false, _unused = '', colorId = null, tallaId = null, bordados = []) {
+        function addProductItem(productoId = '', cantidad = '', precioUnitario = '', descripcion = '', llevaBordado = false, _unused = '', colorId = null, tallaId = null, generoId = null, bordados = []) {
             var productoDisplay = 'Clic para buscar producto...';
             var textClass = 'text-muted';
             var cardVariant = productItemIndex % 2;
@@ -1964,6 +1986,9 @@
                                     style="background-color: #fff !important; cursor:text;" />
                                 <input type="hidden" name="productos[${productItemIndex}][talla_id]"
                                     class="talla-input-value" value="${tallaId || ''}" />
+                                <input type="hidden" name="productos[${productItemIndex}][genero_id]"
+                                    class="genero-id-input" value="${generoId || ''}"
+                                    data-genero-label="${escAttr(getGeneroNombre(generoId))}" />
                                 <button type="button"
                                     class="btn btn-sm btn-atlantico-brand buscar-talla-trigger px-2"
                                     data-bs-toggle="tooltip" data-bs-placement="top"
@@ -2546,6 +2571,7 @@
                                 '',
                                 detalle.color_id || null,
                                 detalle.talla_id || null,
+                                detalle.genero_id || defaultGeneroId(),
                                 detalle.bordados || []
                             );
 
@@ -2657,7 +2683,9 @@
 
                 var tallasHtml = items.map(function (it) {
                     var lbl = getTallaLabel(it.talla_id) || 'S/T';
-                    return '<span class="cot-chip cot-chip-talla">' + lbl + '<span class="cot-chip-x">×</span>' + it.cantidad + '</span>';
+                    var gen = getGeneroNombre(it.genero_id);
+                    var genHtml = gen ? '<span class="cot-chip-gen">' + gen + '</span>' : '';
+                    return '<span class="cot-chip cot-chip-talla">' + lbl + genHtml + '<span class="cot-chip-x">×</span>' + it.cantidad + '</span>';
                 }).join('');
 
                 var totalQty = items.reduce(function (a, it) { return a + parseInt(it.cantidad); }, 0);
@@ -4597,7 +4625,8 @@
                     cfgState.colorId = opts.existing.colorId || null;
                     cfgState.colorNombre = opts.existing.colorNombre || '';
                     cfgState.colorHex = opts.existing.colorHex || null;
-                    cfgState.tallas = Object.assign({}, opts.existing.tallas || {});
+                    // Clon profundo: la estructura es 2D { tallaId: { generoId: qty } }
+                    cfgState.tallas = JSON.parse(JSON.stringify(opts.existing.tallas || {}));
                     cfgState.precioUnitario = (opts.existing.precioUnitario != null)
                         ? parseFloat(opts.existing.precioUnitario) : basePrice;
                 } else {
@@ -4698,33 +4727,57 @@
                 $('#cfg-color-selected').text(cfgState.colorNombre || 'Sin seleccionar');
             }
 
+            // Grilla 2D: filas = tallas, columnas = género. Cada celda es la
+            // cantidad de esa talla para ese género. cfgState.tallas tiene forma
+            // { tallaId: { generoId: cantidad } }.
             function renderTallasGrid() {
                 var tallas = getTallasArray();
+                var generos = getGenerosArray();
                 var $grid = $('#cfg-tallas-grid');
-                if (!tallas.length) {
+                if (!tallas.length || !generos.length) {
                     $grid.html('<p class="text-muted small mb-0"><em>Cargando tallas…</em></p>');
                     return;
                 }
 
-                var html = tallas.map(function (t) {
+                var head = '<div class="cfg-tg-row cfg-tg-head">' +
+                    '<span class="cfg-tg-talla cfg-tg-corner">Talla</span>' +
+                    generos.map(function (g) {
+                        var ic = g.icono ? '<i class="' + escForHtml(g.icono) + '"></i> ' : '';
+                        return '<span class="cfg-tg-genhead">' + ic + escForHtml(g.etiqueta || g.nombre) + '</span>';
+                    }).join('') +
+                    '</div>';
+
+                var rows = tallas.map(function (t) {
                     var label = t.etiqueta || t.nombre || '—';
-                    var qty = cfgState.tallas[t.id] || '';
+                    var byGen = cfgState.tallas[t.id] || {};
+                    var cells = generos.map(function (g) {
+                        var qty = byGen[g.id] || '';
+                        return (
+                            '<input type="number" class="cfg-tg-input' + (qty ? ' is-active' : '') + '"' +
+                                ' min="0" step="1" placeholder="0" value="' + qty + '"' +
+                                ' data-talla-id="' + t.id + '" data-genero-id="' + g.id + '"' +
+                                ' aria-label="' + escForHtml(label + ' · ' + (g.etiqueta || g.nombre)) + '">'
+                        );
+                    }).join('');
                     return (
-                        '<div class="cfg-talla-cell" data-talla-id="' + t.id + '" data-talla-label="' + escForHtml(label) + '">' +
-                            '<span class="cfg-talla-cell-label">' + escForHtml(label) + '</span>' +
-                            '<input type="number" class="cfg-talla-cell-input" min="0" step="1" placeholder="0"' +
-                                ' value="' + qty + '" data-talla-id="' + t.id + '">' +
+                        '<div class="cfg-tg-row" data-talla-id="' + t.id + '">' +
+                            '<span class="cfg-tg-talla">' + escForHtml(label) + '</span>' + cells +
                         '</div>'
                     );
                 }).join('');
 
-                $grid.html(html);
+                $grid.html('<div class="cfg-tg" style="--cfg-tg-cols:' + generos.length + '">' + head + rows + '</div>');
             }
 
             function totalTallas() {
-                return Object.keys(cfgState.tallas).reduce(function (acc, k) {
-                    return acc + (parseInt(cfgState.tallas[k] || 0, 10) || 0);
-                }, 0);
+                var total = 0;
+                Object.keys(cfgState.tallas).forEach(function (tid) {
+                    var byGen = cfgState.tallas[tid] || {};
+                    Object.keys(byGen).forEach(function (gid) {
+                        total += parseInt(byGen[gid] || 0, 10) || 0;
+                    });
+                });
+                return total;
             }
 
             function renderPrecio() {
@@ -4877,50 +4930,71 @@
             })();
 
             // Cambio en cantidad por talla
-            $(document).on('input', '#cfg-tallas-grid .cfg-talla-cell-input', function () {
+            $(document).on('input', '#cfg-tallas-grid .cfg-tg-input', function () {
                 var tid = parseInt($(this).data('talla-id'), 10);
+                var gid = parseInt($(this).data('genero-id'), 10);
                 var v = parseInt($(this).val(), 10);
-                if (isNaN(v) || v <= 0) {
-                    delete cfgState.tallas[tid];
+                var has = !(isNaN(v) || v <= 0);
+                if (!cfgState.tallas[tid]) cfgState.tallas[tid] = {};
+                if (!has) {
+                    delete cfgState.tallas[tid][gid];
+                    if (Object.keys(cfgState.tallas[tid]).length === 0) delete cfgState.tallas[tid];
                 } else {
-                    cfgState.tallas[tid] = v;
+                    cfgState.tallas[tid][gid] = v;
                 }
-                // Resaltar la celda con valor
-                $(this).closest('.cfg-talla-cell').toggleClass('is-active', !!cfgState.tallas[tid]);
+                $(this).toggleClass('is-active', has);
                 refreshSummary();
             });
 
-            // Distribuir uniforme
+            // Distribuir uniforme: reparte un total entre las tallas para un
+            // género elegido (las celdas de los otros géneros se conservan).
             $(document).on('click', '#cfg-distribute-btn', function () {
+                var generos = getGenerosArray();
+                if (!generos.length) return;
+                var inputOptions = {};
+                generos.forEach(function (g) { inputOptions[g.id] = g.etiqueta || g.nombre; });
+
                 Swal.fire({
                     title: 'Distribuir uniforme',
-                    text: '¿Cuántas unidades en total?',
-                    input: 'number',
-                    inputAttributes: { min: 1, step: 1 },
-                    inputValue: 50,
+                    text: '¿Para qué género?',
+                    input: 'select',
+                    inputOptions: inputOptions,
+                    inputValue: String(generos[0].id),
                     showCancelButton: true,
-                    confirmButtonText: 'Distribuir',
+                    confirmButtonText: 'Siguiente',
                     cancelButtonText: 'Cancelar',
                     customClass: { container: 'swal-over-modal' }
-                }).then(function (res) {
-                    if (!res.isConfirmed) return;
-                    var total = parseInt(res.value, 10);
-                    if (!total || total < 1) return;
-                    var tallas = getTallasArray();
-                    if (!tallas.length) return;
-                    var per = Math.floor(total / tallas.length);
-                    var rem = total % tallas.length;
-                    cfgState.tallas = {};
-                    tallas.forEach(function (t, i) {
-                        var v = per + (i < rem ? 1 : 0);
-                        if (v > 0) cfgState.tallas[t.id] = v;
+                }).then(function (r1) {
+                    if (!r1.isConfirmed) return;
+                    var gid = parseInt(r1.value, 10);
+                    Swal.fire({
+                        title: 'Distribuir uniforme',
+                        text: '¿Cuántas unidades en total para ' + (inputOptions[gid] || '') + '?',
+                        input: 'number',
+                        inputAttributes: { min: 1, step: 1 },
+                        inputValue: 50,
+                        showCancelButton: true,
+                        confirmButtonText: 'Distribuir',
+                        cancelButtonText: 'Cancelar',
+                        customClass: { container: 'swal-over-modal' }
+                    }).then(function (r2) {
+                        if (!r2.isConfirmed) return;
+                        var total = parseInt(r2.value, 10);
+                        if (!total || total < 1) return;
+                        var tallas = getTallasArray();
+                        if (!tallas.length) return;
+                        var per = Math.floor(total / tallas.length);
+                        var rem = total % tallas.length;
+                        tallas.forEach(function (t, i) {
+                            var v = per + (i < rem ? 1 : 0);
+                            if (!cfgState.tallas[t.id]) cfgState.tallas[t.id] = {};
+                            if (v > 0) cfgState.tallas[t.id][gid] = v;
+                            else delete cfgState.tallas[t.id][gid];
+                            if (Object.keys(cfgState.tallas[t.id]).length === 0) delete cfgState.tallas[t.id];
+                        });
+                        renderTallasGrid();
+                        refreshSummary();
                     });
-                    renderTallasGrid();
-                    // Restaurar visual de inputs activos
-                    Object.keys(cfgState.tallas).forEach(function (tid) {
-                        $('#cfg-tallas-grid .cfg-talla-cell[data-talla-id="' + tid + '"]').addClass('is-active');
-                    });
-                    refreshSummary();
                 });
             });
 
@@ -4985,14 +5059,23 @@
                 if (!cfgState.colorId || totalTallas() === 0) return;
                 var p = cfgState.producto;
 
-                var tallasItems = Object.keys(cfgState.tallas).map(function (tid) {
+                // Una entrada por celda (talla × género) con cantidad > 0.
+                var tallasItems = [];
+                Object.keys(cfgState.tallas).forEach(function (tid) {
                     var t = getTallasArray().find(function (x) { return x.id == tid; });
-                    return {
-                        tallaId: parseInt(tid, 10),
-                        tallaLabel: t ? (t.etiqueta || t.nombre) : '—',
-                        qty: parseInt(cfgState.tallas[tid], 10) || 0
-                    };
-                }).filter(function (x) { return x.qty > 0; });
+                    var byGen = cfgState.tallas[tid] || {};
+                    Object.keys(byGen).forEach(function (gid) {
+                        var qty = parseInt(byGen[gid], 10) || 0;
+                        if (qty <= 0) return;
+                        tallasItems.push({
+                            tallaId: parseInt(tid, 10),
+                            tallaLabel: t ? (t.etiqueta || t.nombre) : '—',
+                            generoId: parseInt(gid, 10),
+                            generoNombre: getGeneroNombre(gid),
+                            qty: qty
+                        });
+                    });
+                });
 
                 var totalQty = tallasItems.reduce(function (a, x) { return a + x.qty; }, 0);
                 var basePrice = parseFloat(p.precio_base || 0);
@@ -5017,7 +5100,7 @@
                     precioCustom: unit !== basePrice,
                     subtotal: subtotal,
                     summary: cfgState.colorNombre + ' · ' +
-                             tallasItems.map(function (x) { return x.tallaLabel + '×' + x.qty; }).join(' · ') +
+                             tallasItems.map(function (x) { return x.tallaLabel + '·' + x.generoNombre + '×' + x.qty; }).join(' · ') +
                              (unit !== basePrice ? ' · @' + formatMoney(unit) : '')
                 };
 
@@ -5113,6 +5196,7 @@
                             '',                 // _unused
                             item.colorId,
                             t.tallaId,
+                            t.generoId,
                             []                  // bordados vacíos
                         );
                         totalLineas++;
@@ -5206,11 +5290,15 @@
                     var unit = base + recargo;
                     var tallaId = $card.find('.talla-input-value').val() || '';
                     var tallaLabel = $card.find('.talla-input-display').val() || '';
+                    var generoId = $card.find('.genero-id-input').val() || '';
+                    var generoNombre = $card.find('.genero-id-input').attr('data-genero-label') || getGeneroNombre(generoId);
                     byKey[key].cards.push({
                         $card: $card,
                         productIndex: $card.data('product-index'),
                         tallaId: tallaId,
                         tallaLabel: tallaLabel,
+                        generoId: generoId,
+                        generoNombre: generoNombre,
                         qty: qty,
                         base: base,
                         unit: unit
@@ -5275,8 +5363,9 @@
                     var lightHex = (String(colorHex).toUpperCase() === '#FFFFFF' || String(colorHex).toUpperCase() === '#FFFDD0');
 
                     var tallasChips = g.cards.map(function (c) {
+                        var gen = c.generoNombre ? '<span class="cot-chip-gen">' + escForHtml(c.generoNombre) + '</span>' : '';
                         return '<span class="cot-chip cot-chip-talla">' +
-                                    escForHtml(c.tallaLabel || '?') + '<span class="cot-chip-x">×</span>' +
+                                    escForHtml(c.tallaLabel || '?') + gen + '<span class="cot-chip-x">×</span>' +
                                     '<strong>' + c.qty + '</strong>' +
                                '</span>';
                     }).join('');
@@ -5405,8 +5494,12 @@
                     var cid = parseInt($c.find('.color-id-input').val(), 10);
                     if (pid !== String(prodId) || cid !== colorId) return;
                     var tid = parseInt($c.find('.talla-input-value').val(), 10);
+                    var gid = parseInt($c.find('.genero-id-input').val(), 10);
                     var qty = parseInt($c.find('.cantidad-input').val(), 10) || 0;
-                    if (tid && qty > 0) tallasMap[tid] = qty;
+                    if (tid && gid && qty > 0) {
+                        if (!tallasMap[tid]) tallasMap[tid] = {};
+                        tallasMap[tid][gid] = qty;
+                    }
                     var price = parseFloat($c.find('.precio-unitario-input').val());
                     if (precioFromCards == null && !isNaN(price)) precioFromCards = price;
                 });
@@ -5505,7 +5598,7 @@
                             if (!t.qty || t.qty <= 0) return;
                             addProductItem(
                                 lastItem.productoId, t.qty, unit, '', false, '',
-                                lastItem.colorId, t.tallaId, []
+                                lastItem.colorId, t.tallaId, t.generoId, []
                             );
                         });
 
@@ -5776,7 +5869,7 @@
                             ? window.cotBuildVariantLabel(g.producto)
                             : '';
                         var colorName = g.color ? g.color.nombre : (g.colorId ? '#' + g.colorId : '');
-                        var tallasTxt = g.cards.map(function (c) { return c.tallaLabel + '×' + c.qty; }).join(' · ');
+                        var tallasTxt = g.cards.map(function (c) { return c.tallaLabel + (c.generoNombre ? '·' + c.generoNombre : '') + '×' + c.qty; }).join(' · ');
                         var bordadoBadge = g.llevaBordado
                             ? ' <span class="cot-resumen-bordado-pill"><i class="ri-scissors-cut-line"></i> bordado</span>'
                             : '';
@@ -5788,7 +5881,8 @@
                         var tipoNombre = (g.producto && g.producto.tipo_producto) ? g.producto.tipo_producto.nombre : '(sin tipo)';
                         var colorHex = g.color ? g.color.hex_referencial : null;
                         var tallasPills = g.cards.map(function (c) {
-                            return '<span class="cot-linea-talla">' + escHtmlW(c.tallaLabel) + '<b>×' + c.qty + '</b></span>';
+                            var gen = c.generoNombre ? '<span class="cot-linea-genero">' + escHtmlW(c.generoNombre) + '</span>' : '';
+                            return '<span class="cot-linea-talla">' + escHtmlW(c.tallaLabel) + gen + '<b>×' + c.qty + '</b></span>';
                         }).join('');
                         var imgUrl = (g.producto && g.producto.imagen) ? g.producto.imagen : '';
                         var thumb = imgUrl

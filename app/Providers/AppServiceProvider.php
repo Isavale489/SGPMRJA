@@ -94,5 +94,23 @@ class AppServiceProvider extends ServiceProvider
 
             $view->with('estadosVe', $estadosVe)->with('mapaMunicipiosVe', $mapaMunicipiosVe);
         });
+
+        // Compartir el catálogo de género de prenda (Dama/Caballero/Unisex) con
+        // el admin. Set estable → cacheado. Lo consumen los wizards de
+        // cotización/pedido para el cruce talla × género del configurador.
+        View::composer('admin.*', function ($view) {
+            try {
+                $generosCatalogo = Cache::remember('catalogo_genero', now()->addDay(), function () {
+                    return \App\Models\Genero::activo()
+                        ->orderBy('orden')
+                        ->get(['id', 'nombre', 'etiqueta', 'icono'])
+                        ->toArray();
+                });
+            } catch (\Exception $e) {
+                $generosCatalogo = [];
+            }
+
+            $view->with('generosCatalogo', $generosCatalogo);
+        });
     }
 }
