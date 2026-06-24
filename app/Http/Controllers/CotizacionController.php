@@ -385,7 +385,16 @@ class CotizacionController extends Controller
             $query->whereDate('created_at', '<=', $request->fecha_hasta);
         }
         $cotizaciones = $query->get();
-        $pdf = PDF::loadView('admin.cotizaciones.reporte_pdf', compact('cotizaciones'))
+
+        $filtros = [];
+        if ($request->filled('estado')) {
+            $filtros['Estado'] = $request->estado;
+        }
+        if ($rango = \App\Support\ReporteFiltros::rango($request->fecha_desde, $request->fecha_hasta)) {
+            $filtros['Fecha de emisión'] = $rango;
+        }
+
+        $pdf = PDF::loadView('admin.cotizaciones.reporte_pdf', compact('cotizaciones', 'filtros'))
             ->setPaper('a4', 'portrait');
         return $pdf->download('reporte_cotizaciones_' . now()->format('Ymd_His') . '.pdf');
     }

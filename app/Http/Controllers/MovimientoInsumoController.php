@@ -47,7 +47,20 @@ class MovimientoInsumoController extends Controller
         }
 
         $movimientos = $query->get();
-        $pdf = \PDF::loadView('admin.movimiento-insumo.movimientos.reporte_pdf', compact('movimientos'))
+
+        $filtros = [];
+        if ($request->filled('tipo_movimiento')) {
+            $filtros['Tipo de movimiento'] = ucfirst($request->tipo_movimiento);
+        }
+        if ($request->filled('insumo_id')) {
+            $filtros['Insumo'] = optional(\App\Models\Insumo::find($request->insumo_id))->nombre
+                ?? ('#' . $request->insumo_id);
+        }
+        if ($rango = \App\Support\ReporteFiltros::rango($request->fecha_desde, $request->fecha_hasta)) {
+            $filtros['Fecha'] = $rango;
+        }
+
+        $pdf = \PDF::loadView('admin.movimiento-insumo.movimientos.reporte_pdf', compact('movimientos', 'filtros'))
             ->setPaper('a4', 'landscape');
         return $pdf->download('movimientos_insumo_' . now()->format('Y-m-d_H-i-s') . '.pdf');
     }

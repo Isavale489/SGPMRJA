@@ -420,7 +420,19 @@ class ProveedorController extends Controller
             $query->whereDate('created_at', '<=', $request->fecha_hasta);
         }
         $proveedores = $query->get();
-        $pdf = \PDF::loadView('admin.proveedores.reporte_pdf', compact('proveedores'))
+
+        $filtros = [];
+        if ($request->filled('tipo_proveedor')) {
+            $filtros['Tipo'] = ucfirst($request->tipo_proveedor);
+        }
+        if ($request->input('estatus') === '0') {
+            $filtros['Estatus'] = 'Inhabilitados';
+        }
+        if ($rango = \App\Support\ReporteFiltros::rango($request->fecha_desde, $request->fecha_hasta)) {
+            $filtros['Fecha de registro'] = $rango;
+        }
+
+        $pdf = \PDF::loadView('admin.proveedores.reporte_pdf', compact('proveedores', 'filtros'))
             ->setPaper('a4', 'landscape');
         return $pdf->download('proveedores_' . now()->format('Y-m-d_H-i-s') . '.pdf');
     }

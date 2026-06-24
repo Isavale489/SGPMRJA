@@ -253,7 +253,20 @@ class InsumoController extends Controller
             $query->whereDate('created_at', '<=', $request->fecha_hasta);
         }
         $insumos = $query->get();
-        $pdf = \PDF::loadView('admin.insumos.reporte_pdf', compact('insumos'))
+
+        $filtros = [];
+        if ($request->filled('tipo')) {
+            $filtros['Tipo'] = ucfirst($request->tipo);
+        }
+        if ($request->filled('stock')) {
+            $filtros['Stock'] = $request->stock === 'con_stock' ? 'Con stock'
+                : ($request->stock === 'agotado' ? 'Agotado' : $request->stock);
+        }
+        if ($rango = \App\Support\ReporteFiltros::rango($request->fecha_desde, $request->fecha_hasta)) {
+            $filtros['Fecha de registro'] = $rango;
+        }
+
+        $pdf = \PDF::loadView('admin.insumos.reporte_pdf', compact('insumos', 'filtros'))
             ->setPaper('a4', 'landscape');
         return $pdf->download('insumos_' . now()->format('Y-m-d_H-i-s') . '.pdf');
     }

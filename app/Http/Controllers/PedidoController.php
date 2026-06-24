@@ -321,7 +321,16 @@ class PedidoController extends Controller
             $query->whereDate('fecha_entrega', '<=', $request->fecha_hasta);
         }
         $pedidos = $query->get();
-        $pdf = PDF::loadView('admin.pedidos.reporte_pdf', compact('pedidos'))
+
+        $filtros = [];
+        if ($request->filled('estado')) {
+            $filtros['Estado'] = $request->estado;
+        }
+        if ($rango = \App\Support\ReporteFiltros::rango($request->fecha_desde, $request->fecha_hasta)) {
+            $filtros['Fecha de entrega'] = $rango;
+        }
+
+        $pdf = PDF::loadView('admin.pedidos.reporte_pdf', compact('pedidos', 'filtros'))
             ->setPaper('a4', 'portrait');
         return $pdf->download('reporte_pedidos_' . now()->format('Ymd_His') . '.pdf');
     }

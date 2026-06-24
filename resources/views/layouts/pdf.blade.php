@@ -88,6 +88,35 @@
             font-weight: 600;
         }
 
+        /* ── Filter Bar (parámetros aplicados al listado) ── */
+        .filter-bar {
+            background-color: #eef2f9;
+            border: 1px solid #dfe6f0;
+            border-left: 3px solid #1e3c72;
+            padding: 5px 12px;
+            margin: 0 2px 10px 2px;
+            font-size: 8.5px;
+            color: #2d3436;
+            line-height: 1.7;
+        }
+
+        .filter-bar .filter-bar-label {
+            color: #1e3c72;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-right: 6px;
+        }
+
+        .filter-bar .filter-chip {
+            display: inline-block;
+            margin-right: 14px;
+        }
+
+        .filter-bar .filter-chip strong {
+            color: #3d4852;
+        }
+
         /* ── Summary Bar ── */
         .summary-bar {
             background-color: #f1f3f8;
@@ -300,6 +329,16 @@
 
     {{-- ═══════ REPORT TITLE ═══════ --}}
     <div class="report-title">@yield('report-title')</div>
+
+    {{-- ═══════ FILTROS APLICADOS (listados) ═══════ --}}
+    @if(!empty($filtros ?? []))
+        <div class="filter-bar">
+            <span class="filter-bar-label">Filtros aplicados</span>
+            @foreach($filtros as $etiqueta => $valor)
+                <span class="filter-chip"><strong>{{ $etiqueta }}:</strong> {{ $valor }}</span>
+            @endforeach
+        </div>
+    @endif
 
     {{-- ═══════ SUMMARY BAR ═══════ --}}
     @hasSection('summary-bar')

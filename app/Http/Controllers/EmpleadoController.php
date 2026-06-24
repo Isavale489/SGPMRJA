@@ -369,7 +369,24 @@ class EmpleadoController extends Controller
             $query->whereDate('fecha_ingreso', '<=', $request->fecha_hasta);
         }
         $empleados = $query->get();
-        $pdf = \PDF::loadView('admin.empleados.reporte_pdf', compact('empleados'))
+
+        $filtros = [];
+        if ($request->filled('departamento_id')) {
+            $filtros['Departamento'] = optional(Departamento::find($request->departamento_id))->nombre
+                ?? ('#' . $request->departamento_id);
+        }
+        if ($request->filled('cargo_id')) {
+            $filtros['Cargo'] = optional(Cargo::find($request->cargo_id))->nombre
+                ?? ('#' . $request->cargo_id);
+        }
+        if ($request->input('estatus') === '0') {
+            $filtros['Estatus'] = 'Inhabilitados';
+        }
+        if ($rango = \App\Support\ReporteFiltros::rango($request->fecha_desde, $request->fecha_hasta)) {
+            $filtros['Fecha de ingreso'] = $rango;
+        }
+
+        $pdf = \PDF::loadView('admin.empleados.reporte_pdf', compact('empleados', 'filtros'))
             ->setPaper('a4', 'landscape');
         return $pdf->download('reporte_empleados_' . now()->format('Ymd_His') . '.pdf');
     }

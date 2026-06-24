@@ -907,7 +907,16 @@ class OrdenProduccionController extends Controller
         }
 
         $ordenes = $query->get();
-        $pdf = \PDF::loadView('admin.ordenes.reporte_pdf', compact('ordenes'))
+
+        $filtros = [];
+        if ($request->filled('estado')) {
+            $filtros['Estado'] = $request->estado;
+        }
+        if ($rango = \App\Support\ReporteFiltros::rango($request->fecha_desde, $request->fecha_hasta)) {
+            $filtros['Entrega estimada'] = $rango;
+        }
+
+        $pdf = \PDF::loadView('admin.ordenes.reporte_pdf', compact('ordenes', 'filtros'))
             ->setPaper('a4', 'landscape');
         return $pdf->download('ordenes_produccion_' . now()->format('Y-m-d_H-i-s') . '.pdf');
     }

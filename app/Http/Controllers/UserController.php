@@ -221,7 +221,22 @@ class UserController extends Controller
             $query->whereDate('created_at', '<=', $request->fecha_hasta);
         }
         $users = $query->orderBy('name')->get();
-        $pdf = \PDF::loadView('admin.users.reporte_pdf', compact('users'))
+
+        $filtros = [];
+        if ($request->filled('role_id')) {
+            $filtros['Rol'] = optional(\App\Models\Rol::find($request->role_id))->nombre
+                ?? ('#' . $request->role_id);
+        }
+        if ($request->input('estatus') === '1') {
+            $filtros['Estatus'] = 'Activos';
+        } elseif ($request->input('estatus') === '0') {
+            $filtros['Estatus'] = 'Inhabilitados';
+        }
+        if ($rango = \App\Support\ReporteFiltros::rango($request->fecha_desde, $request->fecha_hasta)) {
+            $filtros['Fecha de registro'] = $rango;
+        }
+
+        $pdf = \PDF::loadView('admin.users.reporte_pdf', compact('users', 'filtros'))
             ->setPaper('a4', 'landscape');
         return $pdf->download('usuarios_' . now()->format('Y-m-d_H-i-s') . '.pdf');
     }

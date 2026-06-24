@@ -346,7 +346,19 @@ class ClienteController extends Controller
             $query->whereDate('created_at', '<=', $request->fecha_hasta);
         }
         $clientes = $query->get();
-        $pdf = Pdf::loadView('admin.clientes.reporte_pdf', compact('clientes'))->setPaper('a4', 'landscape');
+
+        $filtros = [];
+        if ($request->input('estado') === '0') {
+            $filtros['Estatus'] = 'Inhabilitados';
+        }
+        if ($request->filled('tipo_cliente')) {
+            $filtros['Tipo'] = ucfirst($request->tipo_cliente);
+        }
+        if ($rango = \App\Support\ReporteFiltros::rango($request->fecha_desde, $request->fecha_hasta)) {
+            $filtros['Fecha de registro'] = $rango;
+        }
+
+        $pdf = Pdf::loadView('admin.clientes.reporte_pdf', compact('clientes', 'filtros'))->setPaper('a4', 'landscape');
         return $pdf->download('reporte_clientes_' . now()->format('Ymd_His') . '.pdf');
     }
 

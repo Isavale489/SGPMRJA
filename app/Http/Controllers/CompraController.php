@@ -403,7 +403,19 @@ class CompraController extends Controller
 
         $compras = $query->orderByDesc('fecha_compra')->orderByDesc('id')->get();
 
-        $pdf = PDF::loadView('admin.compras.reporte_pdf', compact('compras'))
+        $filtros = [];
+        if ($request->filled('estado')) {
+            $filtros['Estado'] = ucfirst($request->estado);
+        }
+        if ($request->filled('proveedor_id')) {
+            $filtros['Proveedor'] = optional(\App\Models\Proveedor::find($request->proveedor_id))->nombre
+                ?? ('#' . $request->proveedor_id);
+        }
+        if ($rango = \App\Support\ReporteFiltros::rango($request->fecha_desde, $request->fecha_hasta)) {
+            $filtros['Fecha de compra'] = $rango;
+        }
+
+        $pdf = PDF::loadView('admin.compras.reporte_pdf', compact('compras', 'filtros'))
             ->setPaper('a4', 'portrait');
 
         return $pdf->download('reporte_compras_' . now()->format('Ymd_His') . '.pdf');
