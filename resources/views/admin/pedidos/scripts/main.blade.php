@@ -860,6 +860,13 @@ $(document).ready(function () {
         var pedColoresHex = @json($colores->mapWithKeys(function ($c) {
             return [$c->id => $c->hex_referencial];
         }));
+        var pedGenerosArr = @json($generosCatalogo ?? []);
+        var pedGenerosCatalogo = {};
+        pedGenerosArr.forEach(function (g) { pedGenerosCatalogo[g.id] = (g.etiqueta || g.nombre); });
+        function pedDefaultGeneroId() {
+            var u = pedGenerosArr.find(function (g) { return String(g.nombre || '').toLowerCase() === 'unisex'; });
+            return u ? u.id : (pedGenerosArr[0] ? pedGenerosArr[0].id : null);
+        }
 
         function pedFmt(n) {
             // Formato es-VE (estándar de la app): $1.234,56
@@ -931,7 +938,7 @@ $(document).ready(function () {
                 var g = byKey[key];
                 g.totalQty      += (it.cantidad || 0);
                 g.totalSubtotal += (it.subtotal || 0);
-                g.tallas.push({ label: it.talla_label || 'Única', qty: it.cantidad || 0 });
+                g.tallas.push({ label: it.talla_label || 'Única', genero: it.genero_label || '', qty: it.cantidad || 0 });
                 if (it.bordados && it.bordados.length) {
                     g.llevaBordado = true;
                     // Bordados por unidad (las tallas del mismo producto+color comparten config)
@@ -953,7 +960,8 @@ $(document).ready(function () {
                 var hex = g.color_id ? (pedColoresHex[g.color_id] || '') : '';
                 var colorDot = '<span class="cot-color-dot" style="background:' + (hex || '#e2e8f0') + ';border-color:#cbd5e1;"></span>';
                 var tallasChips = g.tallas.map(function (t) {
-                    return '<span class="cot-chip cot-chip-talla">' + pedEscHtml(t.label) +
+                    var gen = t.genero ? '<span class="cot-chip-gen">' + pedEscHtml(t.genero) + '</span>' : '';
+                    return '<span class="cot-chip cot-chip-talla">' + pedEscHtml(t.label) + gen +
                            '<span class="cot-chip-x">×</span><strong>' + t.qty + '</strong></span>';
                 }).join('');
                 var bordadoLine;
@@ -1009,6 +1017,7 @@ $(document).ready(function () {
                 $('#ped-prod-cantidad-field').val(item.cantidad);
                 $('#ped-prod-talla-field').val(item.talla_id || '');
                 $('#ped-prod-color-field').val(item.color_id || '');
+                $('#ped-prod-genero-field').val(item.genero_id || pedDefaultGeneroId());
                 $('#ped-prod-precio-field').val(item.precio_unitario);
                 pedRecalcularSubtotal();
             } else {
@@ -1019,6 +1028,7 @@ $(document).ready(function () {
                 $('#ped-prod-cantidad-field').val(1);
                 $('#ped-prod-talla-field').val('');
                 $('#ped-prod-color-field').val('');
+                $('#ped-prod-genero-field').val(pedDefaultGeneroId());
                 $('#ped-prod-precio-field').val('');
                 $('#ped-prod-subtotal-display').text('$0.00');
             }
@@ -1085,6 +1095,7 @@ $(document).ready(function () {
             var precio   = parseFloat($('#ped-prod-precio-field').val());
             var tallaId  = $('#ped-prod-talla-field').val() || null;
             var colorId  = $('#ped-prod-color-field').val() || null;
+            var generoId = $('#ped-prod-genero-field').val() || null;
 
             if (!nombre) {
                 Swal.fire({ icon: 'warning', title: 'Producto requerido',
@@ -1102,6 +1113,11 @@ $(document).ready(function () {
                     text: 'Ingresa un precio unitario válido.', timer: 2000, showConfirmButton: false });
                 return;
             }
+            if (!generoId) {
+                Swal.fire({ icon: 'warning', title: 'Género requerido',
+                    text: 'Selecciona el género de la prenda.', timer: 2000, showConfirmButton: false });
+                return;
+            }
 
             var item = {
                 producto_id:  $('#ped-prod-id-field').val() || null,
@@ -1111,6 +1127,8 @@ $(document).ready(function () {
                 talla_label:  tallaId ? (pedTallasCatalogo[tallaId] || '') : '',
                 color_id:     colorId ? parseInt(colorId, 10) : null,
                 color_label:  colorId ? (pedColoresCatalogo[colorId] || '') : '',
+                genero_id:    generoId ? parseInt(generoId, 10) : null,
+                genero_label: generoId ? (pedGenerosCatalogo[generoId] || '') : '',
                 precio_unitario: precio,
                 subtotal:     cantidad * precio,
                 heredado_cotizacion_id: null
@@ -1187,6 +1205,8 @@ $(document).ready(function () {
                             talla_label:  p.talla_id ? (pedTallasCatalogo[p.talla_id] || '') : '',
                             color_id:     p.color_id || null,
                             color_label:  p.color_id ? (pedColoresCatalogo[p.color_id] || '') : '',
+                            genero_id:    p.genero_id || null,
+                            genero_label: p.genero_id ? (pedGenerosCatalogo[p.genero_id] || '') : '',
                     color_hex:    p.color_id ? (pedColoresHex[p.color_id] || '') : '',
                     sku:          p.sku || '',
                     imagen_url:   p.imagen_url || '',
@@ -1231,6 +1251,8 @@ $(document).ready(function () {
                     talla_label:  p.talla_id ? (pedTallasCatalogo[p.talla_id] || '') : '',
                     color_id:     p.color_id || null,
                     color_label:  p.color_id ? (pedColoresCatalogo[p.color_id] || '') : '',
+                    genero_id:    p.genero_id || null,
+                    genero_label: p.genero_id ? (pedGenerosCatalogo[p.genero_id] || '') : '',
                     color_hex:    p.color_id ? (pedColoresHex[p.color_id] || '') : '',
                     sku:          p.sku || '',
                     imagen_url:   p.imagen_url || '',
@@ -1544,7 +1566,8 @@ $(document).ready(function () {
                 var bordadoChip = it.lleva_bordado
                     ? '<span class="cot-resumen-bordado-pill"><i class="ri-scissors-cut-line"></i> bordado</span>'
                     : '';
-                var tallaPill = '<span class="cot-linea-talla">' + esc(it.talla_label || 'Única') + '<b>×' + it.cantidad + '</b></span>';
+                var genTxt = it.genero_label ? '<span class="cot-linea-genero">' + esc(it.genero_label) + '</span>' : '';
+                var tallaPill = '<span class="cot-linea-talla">' + esc(it.talla_label || 'Única') + genTxt + '<b>×' + it.cantidad + '</b></span>';
                 var thumb = it.imagen_url
                     ? '<img src="' + esc(it.imagen_url) + '" alt="" class="ped-prod-thumb-img">'
                     : '<div class="ped-prod-thumb-ph"><i class="ri-t-shirt-2-line"></i></div>';
@@ -1665,6 +1688,7 @@ $(document).ready(function () {
                         cantidad:    it.cantidad,
                         talla_id:    it.talla_id || null,
                         color_id:    it.color_id || null,
+                        genero_id:   it.genero_id || null,
                         // precio_unitario = BASE (sin bordado); el backend re-suma el recargo.
                         // Si por algún motivo no hay precio_base, cae al precio mostrado.
                         precio_unitario: (it.precio_base != null ? it.precio_base : it.precio_unitario),
@@ -1989,6 +2013,7 @@ $(document).ready(function () {
                         cantidad:        d.cantidad,
                         talla_id:        d.talla_id || null,
                         color_id:        d.color_id || null,
+                        genero_id:       d.genero_id || null,
                         precio_unitario: d.precio_unitario,
                         bordados:        Array.isArray(d.bordados) ? d.bordados : []
                     };

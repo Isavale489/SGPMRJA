@@ -1036,6 +1036,14 @@
                             @endforeach
                         </select>
                     </div>
+                    <div class="col-md-4">
+                        <label for="ped-prod-genero-field" class="form-label small fw-semibold mb-1">Género <span class="text-danger">*</span></label>
+                        <select id="ped-prod-genero-field" class="form-select">
+                            @foreach($generosCatalogo as $g)
+                                <option value="{{ $g['id'] }}" {{ ($g['nombre'] ?? '') === 'Unisex' ? 'selected' : '' }}>{{ $g['etiqueta'] ?? $g['nombre'] }}</option>
+                            @endforeach
+                        </select>
+                    </div>
                     <div class="col-md-6">
                         <label for="ped-prod-precio-field" class="form-label small fw-semibold mb-1">
                             Precio unitario ($) <span class="text-danger">*</span>

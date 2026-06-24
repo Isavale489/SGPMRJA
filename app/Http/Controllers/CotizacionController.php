@@ -539,6 +539,7 @@ class CotizacionController extends Controller
                     'cantidad_logo' => $cantidadLegacy ?: null,
                     'talla_id' => $detalle->talla_id,
                     'color_id' => $detalle->color_id,
+                    'genero_id' => $detalle->genero_id,
                     'precio_unitario' => $detalle->precio_unitario,
                 ];
             }),
