@@ -14,7 +14,7 @@ class StoreClienteRequest extends FormRequest
     public function rules(): array
     {
         // Extraer número de documento para validación custom
-        $documento = $this->documento;
+        $documento = (string) $this->documento;
         $numeroDocumento = $documento;
         if (preg_match('/^(V-|J-|E-|G-)(.+)$/', $documento, $matches)) {
             $numeroDocumento = $matches[2];

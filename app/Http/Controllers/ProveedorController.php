@@ -162,7 +162,7 @@ class ProveedorController extends Controller
                 'direccion' => 'required|string|max:255',
                 'ciudad' => 'nullable|string|max:100',
                 'estado_territorial' => 'nullable|string|max:50',
-            ]);
+            ], $this->telefonosMessages());
 
             $proveedor = $this->proveedorService->crearNatural($request->all());
             return response()->json([
@@ -182,7 +182,7 @@ class ProveedorController extends Controller
                 'email' => 'required|email|max:100|unique:persona,email',
                 'contacto' => 'nullable|string|max:100',
                 'telefono_contacto' => 'nullable|string|max:20',
-            ]);
+            ], $this->telefonosMessages());
 
             $proveedor = $this->proveedorService->crearJuridico($request->all());
             return response()->json([
@@ -260,6 +260,22 @@ class ProveedorController extends Controller
             'reused'    => false,
             'proveedor' => $this->proveedorPayload($proveedor),
         ]);
+    }
+
+    /**
+     * Mensajes de validación (ES) para el conjunto de teléfonos. Compartidos por
+     * los validate() de store/update (natural y jurídico).
+     */
+    private function telefonosMessages(): array
+    {
+        return [
+            'telefonos.required' => 'Agrega al menos un teléfono.',
+            'telefonos.min' => 'Agrega al menos un teléfono.',
+            'telefonos.max' => 'Máximo 3 teléfonos por persona.',
+            'telefonos.*.numero.required' => 'El número de teléfono es obligatorio.',
+            'telefonos.*.numero.regex' => 'El teléfono debe tener el formato 0424-1234567.',
+            'telefonos.*.tipo.in' => 'El tipo de teléfono no es válido.',
+        ];
     }
 
     /**
@@ -343,7 +359,7 @@ class ProveedorController extends Controller
                 'direccion' => 'required|string|max:255',
                 'ciudad' => 'nullable|string|max:100',
                 'estado_territorial' => 'nullable|string|max:50',
-            ]);
+            ], $this->telefonosMessages());
 
             $this->proveedorService->actualizarNatural($proveedor, $request->all());
             return response()->json(['success' => 'Proveedor actualizado exitosamente.']);
@@ -361,7 +377,7 @@ class ProveedorController extends Controller
                 'telefono_contacto' => 'nullable|string|max:20',
                 'ciudad' => 'nullable|string|max:100',
                 'estado_territorial' => 'nullable|string|max:50',
-            ]);
+            ], $this->telefonosMessages());
 
             $this->proveedorService->actualizarJuridico($proveedor, $request->all());
             return response()->json(['success' => 'Proveedor actualizado exitosamente.']);
