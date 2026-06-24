@@ -220,14 +220,16 @@
             font-weight: 600;
         }
 
-        /* ── Footer ── */
+        /* ── Footer (fijo: se repite en cada página) ── */
         .doc-footer {
-            width: 100%;
+            position: fixed;
+            left: 0;
+            right: 0;
+            bottom: -30px;
             border-top: 1px solid #dfe6f0;
-            padding-top: 8px;
-            margin-top: 14px;
-            font-size: 9px;
-            color: #555555;
+            padding-top: 6px;
+            font-size: 8px;
+            color: #777777;
             font-weight: 600;
         }
 
@@ -239,11 +241,27 @@
         .doc-footer td {
             border: none;
             padding: 0;
+            vertical-align: middle;
         }
 
-        /* ── Page break helper ── */
+        .doc-footer .ft-center {
+            text-align: center;
+            color: #555555;
+            font-weight: normal;
+        }
+
+        .doc-footer .ft-right {
+            text-align: right;
+            white-space: nowrap;
+        }
+
+        /* Paginación: contadores nativos de DomPDF (requieren position:fixed) */
+        .doc-footer .pg-cur:after { content: counter(page); }
+        .doc-footer .pg-tot:after { content: counter(pages); }
+
+        /* ── Page break helper ── (margen inferior extra reservado para el footer fijo) */
         @page {
-            margin: 35px 45px;
+            margin: 35px 45px 58px 45px;
         }
 
         /* ── Estilos extra inyectados por la vista hija ── */
@@ -297,12 +315,16 @@
     {{-- ═══════ CONTENT ═══════ --}}
     @yield('content')
 
-    {{-- ═══════ FOOTER ═══════ --}}
+    {{-- ═══════ FOOTER (estandarizado · se repite en cada página) ═══════ --}}
     <div class="doc-footer">
         <table>
             <tr>
-                <td>Manufacturas R.J. Atlántico C.A. — Sistema de Gestión de Pedidos</td>
-                <td style="text-align: right;">Página 1</td>
+                <td>Manufacturas R.J. Atlántico C.A. &middot; RIF J-40391423-0</td>
+                <td class="ft-center">
+                    Emitido por {{ optional(auth()->user())->name ?? 'Sistema' }}
+                    &middot; {{ now()->format('d/m/Y h:i A') }}
+                </td>
+                <td class="ft-right">Página <span class="pg-cur"></span> de <span class="pg-tot"></span></td>
             </tr>
         </table>
     </div>
