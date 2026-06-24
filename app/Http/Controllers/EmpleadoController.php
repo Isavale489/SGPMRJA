@@ -207,9 +207,11 @@ class EmpleadoController extends Controller
         $empleado = Empleado::with(['persona.telefonos', 'persona.direcciones', 'cargo', 'departamento'])->findOrFail($id);
 
         $data = $empleado->toArray();
-        $data['persona']['fecha_nacimiento'] = $empleado->persona->fecha_nacimiento
-            ? $empleado->persona->fecha_nacimiento->format('Y-m-d')
+        // fecha_nacimiento y genero ahora viven en empleado (no en persona)
+        $data['fecha_nacimiento'] = $empleado->fecha_nacimiento
+            ? $empleado->fecha_nacimiento->format('Y-m-d')
             : null;
+        $data['genero'] = $empleado->genero;
         $data['fecha_ingreso'] = $empleado->fecha_ingreso
             ? \Carbon\Carbon::parse($empleado->fecha_ingreso)->format('Y-m-d')
             : null;
@@ -319,8 +321,10 @@ class EmpleadoController extends Controller
                     'tipo_documento'    => $persona->tipo_documento,
                     'email'             => $persona->email ?? '',
                     'telefono'          => $persona->telefonoPrincipal ?? '',
-                    'genero'            => $persona->genero ?? '',
-                    'fecha_nacimiento'  => $persona->fecha_nacimiento?->format('Y-m-d') ?? '',
+                    // fecha_nacimiento/genero ya no viven en persona; al promover un
+                    // cliente a empleado estos campos se capturan en el form de empleado.
+                    'genero'            => '',
+                    'fecha_nacimiento'  => '',
                     'estado_geografico' => $persona->estado_geografico ?? ($dir?->estado ?? ''),
                     'ciudad'            => $dir?->ciudad ?? '',
                     'direccion'         => $dir?->direccion ?? '',

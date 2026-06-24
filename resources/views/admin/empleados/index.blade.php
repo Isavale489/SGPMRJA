@@ -1194,8 +1194,8 @@
                     $("#view-telefono").text(data.telefono || 'N/A');
                     $("#view-direccion").text(data.direccion || 'N/A');
                     $("#view-ciudad").text(data.ciudad || 'N/A');
-                    $("#view-fecha-nacimiento").text(formatDate(data.persona.fecha_nacimiento));
-                    $("#view-genero").text(data.persona.genero || 'N/A');
+                    $("#view-fecha-nacimiento").text(formatDate(data.fecha_nacimiento));
+                    $("#view-genero").text(data.genero || 'N/A');
                     $("#view-codigo").text(data.codigo_empleado);
                     $("#view-cargo").text(data.cargo);
                     $("#view-departamento").text(data.departamento);
@@ -1245,8 +1245,8 @@
                         });
                     }
                     $ciudadEdit.val(data.ciudad || '');
-                    $("#field-fecha_nacimiento").val(data.persona.fecha_nacimiento);
-                    $("#field-genero").val(data.persona.genero);
+                    $("#field-fecha_nacimiento").val(data.fecha_nacimiento || '');
+                    $("#field-genero").val(data.genero || '');
                     $("#field-codigo_empleado").val(data.codigo_empleado);
                     $("#field-fecha_ingreso").val(data.fecha_ingreso);
 

@@ -17,16 +17,10 @@ class Persona extends Model
         'documento_identidad',
         'tipo_documento',
         'email',
-        'estado_geografico',
-        'fecha_nacimiento',
-        'genero'
+        'estado_geografico'
     ];
 
     protected $appends = ['nombre_completo'];
-
-    protected $casts = [
-        'fecha_nacimiento' => 'date'
-    ];
 
     // Relaciones
     public function user()

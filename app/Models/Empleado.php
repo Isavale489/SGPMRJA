@@ -16,6 +16,8 @@ class Empleado extends Model
         'persona_id',
         'codigo_empleado',
         'fecha_ingreso',
+        'fecha_nacimiento',
+        'genero',
         'cargo_id',
         'departamento_id',
         'salario',
@@ -24,6 +26,7 @@ class Empleado extends Model
 
     protected $casts = [
         'fecha_ingreso' => 'date',
+        'fecha_nacimiento' => 'date',
         'salario' => 'decimal:2',
         'estado' => 'boolean'
     ];

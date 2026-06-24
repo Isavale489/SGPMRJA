@@ -43,8 +43,6 @@ class EmpleadoService
                     'tipo_documento' => $data['tipo_documento'],
                     'email' => $data['email'] ?? null,
                     'estado_geografico' => $data['estado_geografico'] ?? null,
-                    'fecha_nacimiento' => $data['fecha_nacimiento'] ?? null,
-                    'genero' => $data['genero'] ?? null,
                 ]);
 
                 $this->crearTelefono($persona->id, $data);
@@ -68,11 +66,13 @@ class EmpleadoService
             }
 
             $empleado = Empleado::create([
-                'persona_id'      => $persona->id,
-                'codigo_empleado' => $codigoEmpleado,
-                'fecha_ingreso'   => $data['fecha_ingreso'],
-                'cargo_id'        => $data['cargo_id'],
-                'departamento_id' => $data['departamento_id'],
+                'persona_id'       => $persona->id,
+                'codigo_empleado'  => $codigoEmpleado,
+                'fecha_ingreso'    => $data['fecha_ingreso'],
+                'fecha_nacimiento' => $data['fecha_nacimiento'] ?? null,
+                'genero'           => $data['genero'] ?? null,
+                'cargo_id'         => $data['cargo_id'],
+                'departamento_id'  => $data['departamento_id'],
                 // 'estado' (laboral) ya no se edita: activo=1 por defecto. La inhabilitación
                 // se maneja con SoftDeletes (deleted_at), igual que Clientes/Proveedores.
                 'estado'          => $data['estado'] ?? 1,
@@ -97,18 +97,18 @@ class EmpleadoService
                 'tipo_documento' => $data['tipo_documento'] ?? $persona->tipo_documento,
                 'email' => $data['email'] ?? null,
                 'estado_geografico' => $data['estado_geografico'] ?? null,
-                'fecha_nacimiento' => $data['fecha_nacimiento'] ?? null,
-                'genero' => $data['genero'] ?? null,
             ]);
 
             $this->actualizarTelefono($persona, $data);
             $this->actualizarDireccion($persona, $data);
 
             $empleado->update([
-                'codigo_empleado' => $data['codigo_empleado'],
-                'fecha_ingreso'   => $data['fecha_ingreso'],
-                'cargo_id'        => $data['cargo_id'],
-                'departamento_id' => $data['departamento_id'],
+                'codigo_empleado'  => $data['codigo_empleado'],
+                'fecha_ingreso'    => $data['fecha_ingreso'],
+                'fecha_nacimiento' => $data['fecha_nacimiento'] ?? null,
+                'genero'           => $data['genero'] ?? null,
+                'cargo_id'         => $data['cargo_id'],
+                'departamento_id'  => $data['departamento_id'],
                 // 'estado' (laboral) ya no se edita aquí; la baja se hace con SoftDeletes
             ]);
         });
