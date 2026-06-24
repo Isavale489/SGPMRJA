@@ -431,17 +431,17 @@
                                 <div id="telefono-error" class="invalid-feedback" style="display: none;"></div>
                             </div>
                         </div>
+                    </div>
 
-                        <div class="row g-2 mb-0">
+                    <div class="modal-form-section">
+                        <div class="modal-form-section-title"><i class="ri-map-pin-2-line"></i>Ubicación</div>
+
+                        <div class="row g-2 mb-2">
                             <div class="col-12">
                                 <x-forms.textarea name="direccion" label="Dirección" placeholder="Dirección completa"
                                     maxlength="500" required id="direccion-field" rows="2" />
                             </div>
                         </div>
-                    </div>
-
-                    <div class="modal-form-section">
-                        <div class="modal-form-section-title"><i class="ri-map-pin-2-line"></i>Ubicación</div>
 
                         <div class="row g-2">
                             <div class="col-md-6">
