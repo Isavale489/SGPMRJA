@@ -4033,6 +4033,45 @@ header#page-topbar,
 .cfg-talla-cell-input { appearance: textfield; -moz-appearance: textfield; }
 
 /* ── Grilla 2D talla × género (configurador) ── */
+/* Toggle de escala de tallas (Letras / Numéricas / Única) */
+.cfg-tg-groups {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 10px;
+}
+.cfg-tg-group-btn {
+    border: 1.5px solid #e2e8f0;
+    background: #fff;
+    color: #64748b;
+    border-radius: 8px;
+    padding: 4px 12px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+.cfg-tg-group-btn:hover { border-color: #1e3c72; color: #1e3c72; }
+.cfg-tg-group-btn.is-active {
+    border-color: #1e3c72;
+    background: #1e3c72;
+    color: #fff;
+}
+.cfg-tg-group-badge {
+    background: #00d9a5;
+    color: #06251d;
+    border-radius: 999px;
+    font-size: 0.66rem;
+    font-weight: 700;
+    padding: 0 6px;
+    line-height: 1.5;
+}
+[data-bs-theme="dark"] .cfg-tg-group-btn { background: #0f172a; border-color: #334155; color: #94a3b8; }
+[data-bs-theme="dark"] .cfg-tg-group-btn.is-active { background: #3b82f6; border-color: #3b82f6; color: #fff; }
+
 .cfg-tg {
     display: grid;
     grid-template-columns: minmax(60px, 0.8fr) repeat(var(--cfg-tg-cols, 3), 1fr);

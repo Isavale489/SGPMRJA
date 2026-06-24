@@ -4579,11 +4579,12 @@
                 colorId: null,
                 colorNombre: '',
                 colorHex: null,
-                tallas: {},             // { tallaId: cantidad }
+                tallas: {},             // { tallaId: { generoId: cantidad } }
                 precioUnitario: null,   // precio editable, default = producto.precio_base
                 cartItemId: null        // si edita un item existente del carrito
             };
             var cfgModalInstance = null;
+            var cfgTallaGrupo = null;   // escala de tallas visible (Letras/Numéricas/Única)
 
             function $cfg(id) { return document.getElementById(id); }
 
@@ -4637,6 +4638,7 @@
                     cfgState.precioUnitario = basePrice;
                 }
 
+                cfgTallaGrupo = null; // re-elige escala según los datos del producto
                 renderInfo();
                 renderColorGrid();
                 renderTallasGrid();
@@ -4727,9 +4729,51 @@
                 $('#cfg-color-selected').text(cfgState.colorNombre || 'Sin seleccionar');
             }
 
-            // Grilla 2D: filas = tallas, columnas = género. Cada celda es la
-            // cantidad de esa talla para ese género. cfgState.tallas tiene forma
-            // { tallaId: { generoId: cantidad } }.
+            // ── Escala de tallas activa (Letras / Numéricas / Única) ──
+            // Solo se muestran las tallas del grupo elegido para no abrumar con
+            // las ~15 del catálogo. Los datos de otros grupos se conservan en
+            // cfgState.tallas y cuentan en el total.
+            function tallaGruposDisponibles() {
+                var seen = [];
+                getTallasArray().forEach(function (t) {
+                    var g = t.grupo || 'Otras';
+                    if (seen.indexOf(g) === -1) seen.push(g);
+                });
+                return seen;
+            }
+            function tallaGrupoDeId(tid) {
+                var t = getTallasArray().find(function (x) { return x.id == tid; });
+                return t ? (t.grupo || 'Otras') : null;
+            }
+            function unidadesPorGrupo() {
+                var acc = {};
+                Object.keys(cfgState.tallas).forEach(function (tid) {
+                    var g = tallaGrupoDeId(tid);
+                    if (!g) return;
+                    var byGen = cfgState.tallas[tid] || {};
+                    Object.keys(byGen).forEach(function (gid) {
+                        acc[g] = (acc[g] || 0) + (parseInt(byGen[gid] || 0, 10) || 0);
+                    });
+                });
+                return acc;
+            }
+            function ensureTallaGrupo() {
+                var grupos = tallaGruposDisponibles();
+                if (!grupos.length) { cfgTallaGrupo = null; return; }
+                if (cfgTallaGrupo && grupos.indexOf(cfgTallaGrupo) !== -1) return;
+                // Preferir el grupo que ya tiene datos (al editar); si no, Letras; si no, el primero.
+                var conDatos = Object.keys(unidadesPorGrupo());
+                if (conDatos.length && grupos.indexOf(conDatos[0]) !== -1) {
+                    cfgTallaGrupo = conDatos[0];
+                } else if (grupos.indexOf('Letras') !== -1) {
+                    cfgTallaGrupo = 'Letras';
+                } else {
+                    cfgTallaGrupo = grupos[0];
+                }
+            }
+
+            // Grilla 2D: filas = tallas (solo del grupo activo), columnas = género.
+            // cfgState.tallas tiene forma { tallaId: { generoId: cantidad } }.
             function renderTallasGrid() {
                 var tallas = getTallasArray();
                 var generos = getGenerosArray();
@@ -4739,6 +4783,24 @@
                     return;
                 }
 
+                ensureTallaGrupo();
+                var grupos = tallaGruposDisponibles();
+                var porGrupo = unidadesPorGrupo();
+
+                // Toggle de escala (solo si hay más de un grupo). El badge muestra
+                // cuántas unidades hay cargadas en escalas no visibles.
+                var toggle = '';
+                if (grupos.length > 1) {
+                    toggle = '<div class="cfg-tg-groups">' + grupos.map(function (g) {
+                        var n = porGrupo[g] || 0;
+                        var badge = (n && g !== cfgTallaGrupo) ? '<span class="cfg-tg-group-badge">' + n + '</span>' : '';
+                        return '<button type="button" class="cfg-tg-group-btn' + (g === cfgTallaGrupo ? ' is-active' : '') +
+                            '" data-grupo="' + escForHtml(g) + '">' + escForHtml(g) + badge + '</button>';
+                    }).join('') + '</div>';
+                }
+
+                var visibles = tallas.filter(function (t) { return (t.grupo || 'Otras') === cfgTallaGrupo; });
+
                 var head = '<div class="cfg-tg-row cfg-tg-head">' +
                     '<span class="cfg-tg-talla cfg-tg-corner">Talla</span>' +
                     generos.map(function (g) {
@@ -4747,7 +4809,7 @@
                     }).join('') +
                     '</div>';
 
-                var rows = tallas.map(function (t) {
+                var rows = visibles.map(function (t) {
                     var label = t.etiqueta || t.nombre || '—';
                     var byGen = cfgState.tallas[t.id] || {};
                     var cells = generos.map(function (g) {
@@ -4766,7 +4828,7 @@
                     );
                 }).join('');
 
-                $grid.html('<div class="cfg-tg" style="--cfg-tg-cols:' + generos.length + '">' + head + rows + '</div>');
+                $grid.html(toggle + '<div class="cfg-tg" style="--cfg-tg-cols:' + generos.length + '">' + head + rows + '</div>');
             }
 
             function totalTallas() {
@@ -4930,6 +4992,12 @@
             })();
 
             // Cambio en cantidad por talla
+            // Cambiar de escala de tallas (Letras / Numéricas / Única)
+            $(document).on('click', '#cfg-tallas-grid .cfg-tg-group-btn', function () {
+                cfgTallaGrupo = $(this).data('grupo');
+                renderTallasGrid();
+            });
+
             $(document).on('input', '#cfg-tallas-grid .cfg-tg-input', function () {
                 var tid = parseInt($(this).data('talla-id'), 10);
                 var gid = parseInt($(this).data('genero-id'), 10);
@@ -4981,7 +5049,8 @@
                         if (!r2.isConfirmed) return;
                         var total = parseInt(r2.value, 10);
                         if (!total || total < 1) return;
-                        var tallas = getTallasArray();
+                        // Repartir solo entre las tallas de la escala visible.
+                        var tallas = getTallasArray().filter(function (t) { return (t.grupo || 'Otras') === cfgTallaGrupo; });
                         if (!tallas.length) return;
                         var per = Math.floor(total / tallas.length);
                         var rem = total % tallas.length;
