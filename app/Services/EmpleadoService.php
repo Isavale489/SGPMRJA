@@ -42,7 +42,6 @@ class EmpleadoService
                     'documento_identidad' => $data['documento_identidad'],
                     'tipo_documento' => $data['tipo_documento'],
                     'email' => $data['email'] ?? null,
-                    'estado_geografico' => $data['estado_geografico'] ?? null,
                 ]);
 
                 $this->crearTelefono($persona->id, $data);
@@ -96,7 +95,6 @@ class EmpleadoService
                 'documento_identidad' => $data['documento_identidad'] ?? $persona->documento_identidad,
                 'tipo_documento' => $data['tipo_documento'] ?? $persona->tipo_documento,
                 'email' => $data['email'] ?? null,
-                'estado_geografico' => $data['estado_geografico'] ?? null,
             ]);
 
             $this->actualizarTelefono($persona, $data);
@@ -132,7 +130,7 @@ class EmpleadoService
             Direccion::create([
                 'persona_id' => $personaId,
                 'direccion' => $data['direccion'] ?? '',
-                'ciudad' => $data['ciudad'] ?? null,
+                ...Direccion::resolverUbicacion($data['estado_geografico'] ?? null, $data['ciudad'] ?? null),
                 'tipo' => 'casa',
                 'es_principal' => true,
             ]);
@@ -163,13 +161,13 @@ class EmpleadoService
             if ($direccionPrincipal) {
                 $direccionPrincipal->update([
                     'direccion' => $data['direccion'] ?? '',
-                    'ciudad' => $data['ciudad'] ?? null,
+                    ...Direccion::resolverUbicacion($data['estado_geografico'] ?? null, $data['ciudad'] ?? null),
                 ]);
             } else {
                 Direccion::create([
                     'persona_id' => $persona->id,
                     'direccion' => $data['direccion'] ?? '',
-                    'ciudad' => $data['ciudad'] ?? null,
+                    ...Direccion::resolverUbicacion($data['estado_geografico'] ?? null, $data['ciudad'] ?? null),
                     'tipo' => 'casa',
                     'es_principal' => true,
                 ]);

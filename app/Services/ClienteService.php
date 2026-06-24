@@ -53,8 +53,7 @@ class ClienteService
                     Direccion::create([
                         'persona_id' => $persona->id,
                         'direccion' => $data['direccion'] ?? '',
-                        'estado' => $data['estado_territorial'] ?? null,
-                        'ciudad' => $data['ciudad'] ?? null,
+                        ...Direccion::resolverUbicacion($data['estado_territorial'] ?? null, $data['ciudad'] ?? null),
                         'tipo' => 'casa',
                         'es_principal' => true,
                     ]);
@@ -89,8 +88,7 @@ class ClienteService
                     Direccion::create([
                         'persona_id' => $persona->id,
                         'direccion' => $data['direccion'] ?? '',
-                        'estado' => $data['estado_territorial'] ?? null,
-                        'ciudad' => $data['ciudad'] ?? null,
+                        ...Direccion::resolverUbicacion($data['estado_territorial'] ?? null, $data['ciudad'] ?? null),
                         'tipo' => 'casa',
                         'es_principal' => true,
                     ]);
@@ -146,15 +144,13 @@ class ClienteService
                     if ($direccionPrincipal) {
                         $direccionPrincipal->update([
                             'direccion' => $data['direccion'] ?? '',
-                            'estado' => $data['estado_territorial'] ?? null,
-                            'ciudad' => $data['ciudad'] ?? null,
+                            ...Direccion::resolverUbicacion($data['estado_territorial'] ?? null, $data['ciudad'] ?? null),
                         ]);
                     } else {
                         Direccion::create([
                             'persona_id' => $cliente->persona->id,
                             'direccion' => $data['direccion'] ?? '',
-                            'estado' => $data['estado_territorial'] ?? null,
-                            'ciudad' => $data['ciudad'] ?? null,
+                            ...Direccion::resolverUbicacion($data['estado_territorial'] ?? null, $data['ciudad'] ?? null),
                             'tipo' => 'casa',
                             'es_principal' => true,
                         ]);

@@ -460,30 +460,9 @@
                                     <label for="estado_geografico-field" class="form-label">Estado</label>
                                     <select name="estado_geografico" id="estado_geografico-field" class="form-select">
                                         <option value="">Seleccione estado</option>
-                                        <option value="Amazonas">Amazonas</option>
-                                        <option value="Anzoátegui">Anzoátegui</option>
-                                        <option value="Apure">Apure</option>
-                                        <option value="Aragua">Aragua</option>
-                                        <option value="Barinas">Barinas</option>
-                                        <option value="Bolívar">Bolívar</option>
-                                        <option value="Carabobo">Carabobo</option>
-                                        <option value="Cojedes">Cojedes</option>
-                                        <option value="Delta Amacuro">Delta Amacuro</option>
-                                        <option value="Distrito Capital">Distrito Capital</option>
-                                        <option value="Falcón">Falcón</option>
-                                        <option value="Guárico">Guárico</option>
-                                        <option value="La Guaira">La Guaira</option>
-                                        <option value="Lara">Lara</option>
-                                        <option value="Mérida">Mérida</option>
-                                        <option value="Miranda">Miranda</option>
-                                        <option value="Monagas">Monagas</option>
-                                        <option value="Nueva Esparta">Nueva Esparta</option>
-                                        <option value="Portuguesa">Portuguesa</option>
-                                        <option value="Sucre">Sucre</option>
-                                        <option value="Táchira">Táchira</option>
-                                        <option value="Trujillo">Trujillo</option>
-                                        <option value="Yaracuy">Yaracuy</option>
-                                        <option value="Zulia">Zulia</option>
+                                        @foreach ($estadosVe as $__est)
+                                            <option value="{{ $__est }}">{{ $__est }}</option>
+                                        @endforeach
                                     </select>
                                 </div>
                                 <div class="col-md-6">

@@ -1219,6 +1219,11 @@
             });
         })();
     </script>
+
+    {{-- Catálogo geográfico (estado → municipios) desde BD, consumido por municipios-venezuela.js --}}
+    <script>
+        window.municipiosVenezuela = @json(($mapaMunicipiosVe ?? []) ?: null);
+    </script>
     @stack('scripts')
 </body>
 

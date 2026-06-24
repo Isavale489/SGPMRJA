@@ -77,7 +77,7 @@ class ProveedorController extends Controller
         if ($request->filled('filter_estado_territorial')) {
             $estado = $request->input('filter_estado_territorial');
             $query->whereHas('persona.direcciones', function ($q) use ($estado) {
-                $q->where('estado', $estado);
+                $q->whereHas('estadoRel', fn ($e) => $e->where('nombre', $estado));
             });
         }
 

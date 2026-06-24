@@ -79,7 +79,7 @@ class PersonaController extends Controller
                 'email'           => $persona->email ?? '',
                 'telefono'        => $persona->telefonoPrincipal ?? '',
                 'direccion'       => $direccion?->direccion ?? '',
-                'estado'          => $direccion?->estado ?? ($persona->estado_geografico ?? ''),
+                'estado'          => $direccion?->estado ?? '',
                 'ciudad'          => $direccion?->ciudad ?? '',
                 'roles'           => $roles,
                 // Mini-stats del cliente (null si la persona aún no es cliente)

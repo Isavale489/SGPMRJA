@@ -219,6 +219,9 @@ class EmpleadoController extends Controller
         $data['telefono']         = $empleado->telefono;
         $data['direccion']        = $empleado->direccion;
         $data['ciudad']           = $empleado->ciudad;
+        // El estado de ubicación vive ahora en la dirección (no en persona)
+        $dirPrincipal = $empleado->persona?->direccionPrincipal;
+        $data['persona']['estado_geografico'] = $dirPrincipal?->estado;
         $data['cargo']            = $empleado->cargo ? $empleado->cargo->nombre : null;
         $data['departamento']     = $empleado->departamento ? $empleado->departamento->nombre : null;
         $data['cargo_id']         = $empleado->cargo_id;
@@ -325,7 +328,7 @@ class EmpleadoController extends Controller
                     // cliente a empleado estos campos se capturan en el form de empleado.
                     'genero'            => '',
                     'fecha_nacimiento'  => '',
-                    'estado_geografico' => $persona->estado_geografico ?? ($dir?->estado ?? ''),
+                    'estado_geografico' => $dir?->estado ?? '',
                     'ciudad'            => $dir?->ciudad ?? '',
                     'direccion'         => $dir?->direccion ?? '',
                 ];

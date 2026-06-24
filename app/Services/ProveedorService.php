@@ -156,8 +156,7 @@ class ProveedorService
         Direccion::create([
             'persona_id' => $personaId,
             'direccion' => $data['direccion'],
-            'ciudad' => $data['ciudad'] ?? null,
-            'estado' => $data['estado_territorial'] ?? null,
+            ...Direccion::resolverUbicacion($data['estado_territorial'] ?? null, $data['ciudad'] ?? null),
             'tipo' => 'trabajo',
             'es_principal' => true,
         ]);
@@ -185,15 +184,13 @@ class ProveedorService
             if ($direccionPrincipal) {
                 $direccionPrincipal->update([
                     'direccion' => $data['direccion'],
-                    'ciudad' => $data['ciudad'] ?? null,
-                    'estado' => $data['estado_territorial'] ?? null,
+                    ...Direccion::resolverUbicacion($data['estado_territorial'] ?? null, $data['ciudad'] ?? null),
                 ]);
             } else {
                 Direccion::create([
                     'persona_id' => $persona->id,
                     'direccion' => $data['direccion'],
-                    'ciudad' => $data['ciudad'] ?? null,
-                    'estado' => $data['estado_territorial'] ?? null,
+                    ...Direccion::resolverUbicacion($data['estado_territorial'] ?? null, $data['ciudad'] ?? null),
                     'tipo' => 'trabajo',
                     'es_principal' => true,
                 ]);

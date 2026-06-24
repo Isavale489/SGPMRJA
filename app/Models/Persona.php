@@ -16,8 +16,7 @@ class Persona extends Model
         'nombre',
         'documento_identidad',
         'tipo_documento',
-        'email',
-        'estado_geografico'
+        'email'
     ];
 
     protected $appends = ['nombre_completo'];

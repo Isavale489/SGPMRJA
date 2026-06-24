@@ -57,7 +57,7 @@ class ClienteController extends Controller
         if ($request->filled('filter_estado_territorial')) {
             $estado = $request->input('filter_estado_territorial');
             $query->whereHas('persona.direcciones', function ($q) use ($estado) {
-                $q->where('estado', $estado);
+                $q->whereHas('estadoRel', fn ($e) => $e->where('nombre', $estado));
             });
         }
 
@@ -313,7 +313,7 @@ class ClienteController extends Controller
                     'tipo_documento'   => $persona->tipo_documento,
                     'email'            => $persona->email ?? '',
                     'telefono'         => $persona->telefonoPrincipal ?? '',
-                    'estado_geografico'=> $persona->estado_geografico ?? ($dir?->estado ?? ''),
+                    'estado_geografico'=> $dir?->estado ?? '',
                     'ciudad'           => $dir?->ciudad ?? '',
                     'direccion'        => $dir?->direccion ?? '',
                 ];

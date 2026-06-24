@@ -73,5 +73,26 @@ class AppServiceProvider extends ServiceProvider
                 $view->with('tasaBcv', null);
             }
         });
+
+        // Compartir el catálogo geográfico (estados + municipios) con el admin.
+        // Fuente de verdad: tablas estado/municipio. Cacheado porque es estático.
+        View::composer('admin.*', function ($view) {
+            try {
+                [$estadosVe, $mapaMunicipiosVe] = Cache::remember('catalogo_geografico_ve', now()->addDay(), function () {
+                    $estados = \App\Models\Estado::with('municipios:id,estado_id,nombre')
+                        ->orderBy('nombre')->get();
+                    $mapa = [];
+                    foreach ($estados as $e) {
+                        $mapa[$e->nombre] = $e->municipios->pluck('nombre')->values()->all();
+                    }
+                    return [$estados->pluck('nombre')->values()->all(), $mapa];
+                });
+            } catch (\Exception $e) {
+                $estadosVe = [];
+                $mapaMunicipiosVe = [];
+            }
+
+            $view->with('estadosVe', $estadosVe)->with('mapaMunicipiosVe', $mapaMunicipiosVe);
+        });
     }
 }
