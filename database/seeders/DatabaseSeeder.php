@@ -24,6 +24,7 @@ class DatabaseSeeder extends Seeder
             LogoSeeder::class,
             ColorSeeder::class,
             TallaSeeder::class,
+            GeneroSeeder::class,
             BordadoUbicacionSeeder::class,
             ProductoVariantesSeeder::class,
         ]);
