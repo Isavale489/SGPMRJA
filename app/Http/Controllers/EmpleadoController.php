@@ -28,11 +28,6 @@ class EmpleadoController extends Controller
         return view('admin.empleados.index', compact('departamentos', 'cargos', 'historial'));
     }
 
-    public function create()
-    {
-        $departamentos = Departamento::orderBy('nombre')->pluck('nombre', 'id');
-        return view('admin.empleados.create', compact('departamentos'));
-    }
 
     public function getEmpleados(Request $request)
     {

@@ -611,29 +611,13 @@
                         <div class="modal-form-section">
                             <div class="modal-form-section-title"><i class="ri-contacts-book-line"></i>Contacto</div>
                             <div class="row mb-0">
-                                <div class="col-md-6 mb-3">
-                                    <x-forms.input name="telefono_jur_number" label="Teléfono"
-                                        id="cpr-telefono-jur-number-field" maxlength="7" placeholder="1234567" required
-                                        prependRaw="true">
-                                        <x-slot:prepend>
-                                            <select class="form-select" id="cpr-telefono-jur-prefix-field"
-                                                style="max-width: 100px; min-width: 100px;">
-                                                <option value="0212">0212</option>
-                                                <option value="0251">0251</option>
-                                                <option value="0241">0241</option>
-                                                <option value="0255">0255</option>
-                                                <option value="0412">0412</option>
-                                                <option value="0414">0414</option>
-                                                <option value="0424" selected>0424</option>
-                                                <option value="0416">0416</option>
-                                                <option value="0426">0426</option>
-                                            </select>
-                                        </x-slot:prepend>
-                                    </x-forms.input>
-                                </div>
-                                <div class="col-md-6 mb-3">
+                                <div class="col-12 mb-3">
                                     <x-forms.input name="email_jur" label="Email" type="email"
                                         placeholder="correo@empresa.com" id="cpr-email-jur-field" />
+                                </div>
+                                <div class="col-12">
+                                    {{-- Teléfonos múltiples de la empresa (componente reutilizable) --}}
+                                    @include('admin.partials.telefonos-field', ['telId' => 'cpr-jur-tel'])
                                 </div>
                             </div>
                         </div>
@@ -707,26 +691,13 @@
                         <div class="modal-form-section">
                             <div class="modal-form-section-title"><i class="ri-contacts-book-line"></i>Contacto</div>
                             <div class="row mb-0">
-                                <div class="col-md-6 mb-3">
-                                    <x-forms.input name="telefono_nat_number" label="Teléfono"
-                                        id="cpr-telefono-nat-number-field" maxlength="7" placeholder="1234567" required
-                                        prependRaw="true">
-                                        <x-slot:prepend>
-                                            <select class="form-select" id="cpr-telefono-nat-prefix-field"
-                                                style="max-width: 100px; min-width: 100px;">
-                                                <option value="0412">0412</option>
-                                                <option value="0422">0422</option>
-                                                <option value="0414">0414</option>
-                                                <option value="0424" selected>0424</option>
-                                                <option value="0416">0416</option>
-                                                <option value="0426">0426</option>
-                                            </select>
-                                        </x-slot:prepend>
-                                    </x-forms.input>
-                                </div>
-                                <div class="col-md-6 mb-3">
+                                <div class="col-12 mb-3">
                                     <x-forms.input name="email_nat" label="Email" type="email"
                                         placeholder="correo@email.com" id="cpr-email-nat-field" />
+                                </div>
+                                <div class="col-12">
+                                    {{-- Teléfonos múltiples (componente reutilizable) --}}
+                                    @include('admin.partials.telefonos-field', ['telId' => 'cpr-nat-tel'])
                                 </div>
                             </div>
                         </div>

@@ -656,7 +656,11 @@ $(document).ready(function () {
             $('#modalClienteTitle').text('Crear Cliente');
             $('#add-btn-cliente').show();
             $('#documento-prefix-field-cliente').val('V-');
-            $('#telefono-prefix-field-cliente').val('0424');
+            // Reset teléfonos del repetidor
+            (function () {
+                var r = document.getElementById('ped-cli-tel-repeater');
+                if (window.TelefonosRepeater && r) { TelefonosRepeater.init(r); TelefonosRepeater.load(r, []); }
+            })();
             $('#estatus-field-cliente').prop('checked', true);
             $('#estatus-label-cliente').text('Activo');
             $('#ciudad-field-cliente').html('<option value="">Primero seleccione un estado</option>');
@@ -731,9 +735,6 @@ $(document).ready(function () {
         $(document).on('input', '#documento-number-field-cliente', function () {
             this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);
         });
-        $(document).on('input', '#telefono-number-field-cliente', function () {
-            this.value = this.value.replace(/[^0-9]/g, '').slice(0, 7);
-        });
         $(document).on('change', '#estatus-field-cliente', function () {
             $('#estatus-label-cliente').text($(this).is(':checked') ? 'Activo' : 'Inactivo');
         });
@@ -744,9 +745,19 @@ $(document).ready(function () {
 
             // Concatenar campos compuestos antes de validar
             var documentoCompleto = $('#documento-prefix-field-cliente').val() + $('#documento-number-field-cliente').val();
-            var telefonoCompleto  = $('#telefono-prefix-field-cliente').val() + '-' + $('#telefono-number-field-cliente').val();
             $('#documento-field-cliente').val(documentoCompleto);
-            $('#telefono-field-cliente').val(telefonoCompleto);
+
+            // Teléfonos: validar el repetidor
+            var telRootPed = document.getElementById('ped-cli-tel-repeater');
+            if (window.TelefonosRepeater && telRootPed) {
+                var telChkPed = TelefonosRepeater.validate(telRootPed);
+                if (!telChkPed.ok) {
+                    Swal.fire({ icon: 'warning', title: 'Teléfonos', text: telChkPed.message });
+                    return;
+                }
+            }
+            var pedTels = (window.TelefonosRepeater && telRootPed) ? TelefonosRepeater.collect(telRootPed) : [];
+            var telefonoCompleto = ((pedTels.find(function (t) { return t.es_principal; }) || pedTels[0] || {}).numero) || '';
 
             // Validar apellido explícitamente
             var tipo     = $('#tipo_cliente-field-cliente').val();
@@ -776,6 +787,9 @@ $(document).ready(function () {
 
             $(this).prop('disabled', true);
 
+            if (window.TelefonosRepeater && telRootPed) {
+                TelefonosRepeater.syncHiddenInputs(document.getElementById('clienteFormCotizacion'), telRootPed);
+            }
             var formData = $('#clienteFormCotizacion').serialize() + '&_token=' + $('meta[name="csrf-token"]').attr('content');
 
             $.ajax({

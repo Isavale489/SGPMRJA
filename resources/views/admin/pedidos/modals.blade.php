@@ -908,29 +908,15 @@
                         <i class="ri-contacts-book-2-line"></i>Contacto
                     </div>
                     <div class="row g-2 mb-2">
-                        <div class="col-md-6">
+                        <div class="col-12">
                             <label for="email-field-cliente" class="form-label">Email</label>
                             <input type="email" id="email-field-cliente" name="email" class="form-control"
                                 placeholder="correo@ejemplo.com" />
                             <div id="email-error-cliente" class="invalid-feedback"></div>
                         </div>
-                        <div class="col-md-6">
-                            <label for="telefono-number-field-cliente" class="form-label required">Teléfono</label>
-                            <div class="input-group">
-                                <select class="form-select" id="telefono-prefix-field-cliente"
-                                    style="max-width: 100px; min-width: 100px;">
-                                    <option value="0412">0412</option>
-                                    <option value="0422">0422</option>
-                                    <option value="0414">0414</option>
-                                    <option value="0424" selected>0424</option>
-                                    <option value="0416">0416</option>
-                                    <option value="0426">0426</option>
-                                </select>
-                                <input type="text" id="telefono-number-field-cliente" class="form-control"
-                                    placeholder="1234567" maxlength="7" required />
-                            </div>
-                            <input type="hidden" id="telefono-field-cliente" name="telefono" />
-                            <div id="telefono-error-cliente" class="invalid-feedback" style="display: none;"></div>
+                        <div class="col-12 mt-2">
+                            {{-- Teléfonos múltiples (componente reutilizable) --}}
+                            @include('admin.partials.telefonos-field', ['telId' => 'ped-cli-tel'])
                         </div>
                     </div>
                     <div class="row g-2 mb-0">

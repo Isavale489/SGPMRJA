@@ -991,9 +991,6 @@ $(document).ready(function () {
                 if (!$('#cpr-razon-social-field').val().trim()) {
                     marcarInvalido($('#cpr-razon-social-field'), 'La razón social es requerida.'); valido = false;
                 } else { marcarValido($('#cpr-razon-social-field')); }
-                if (!$('#cpr-telefono-jur-number-field').val().trim()) {
-                    marcarInvalido($('#cpr-telefono-jur-number-field'), 'El teléfono es requerido.'); valido = false;
-                } else { marcarValido($('#cpr-telefono-jur-number-field')); }
             } else if (tipo === 'natural') {
                 if (!$('#cpr-nombre-field').val().trim()) {
                     marcarInvalido($('#cpr-nombre-field'), 'El nombre es requerido.'); valido = false;
@@ -1001,9 +998,13 @@ $(document).ready(function () {
                 if (!$('#cpr-apellido-field').val().trim()) {
                     marcarInvalido($('#cpr-apellido-field'), 'El apellido es requerido.'); valido = false;
                 } else { marcarValido($('#cpr-apellido-field')); }
-                if (!$('#cpr-telefono-nat-number-field').val().trim()) {
-                    marcarInvalido($('#cpr-telefono-nat-number-field'), 'El teléfono es requerido.'); valido = false;
-                } else { marcarValido($('#cpr-telefono-nat-number-field')); }
+            }
+            // Teléfonos del bloque activo (componente reutilizable)
+            var _cprTelRoot = document.getElementById((tipo === 'natural' ? 'cpr-nat-tel' : 'cpr-jur-tel') + '-repeater');
+            if (window.TelefonosRepeater && tipo && _cprTelRoot) {
+                var _cprTelChk = TelefonosRepeater.validate(_cprTelRoot);
+                $(_cprTelRoot).find('[data-tel-error]').toggle(!_cprTelChk.ok).text(_cprTelChk.message || '');
+                if (!_cprTelChk.ok) valido = false;
             }
             return valido;
         }
@@ -1018,11 +1019,6 @@ $(document).ready(function () {
             if (!$(this).val().trim()) marcarInvalido($(this), 'La razón social es requerida.');
             else marcarValido($(this));
         });
-        $('#cpr-telefono-jur-number-field').on('blur', function () {
-            if ($('#cpr-tipo-proveedor-field').val() !== 'juridico') return;
-            if (!$(this).val().trim()) marcarInvalido($(this), 'El teléfono es requerido.');
-            else marcarValido($(this));
-        });
         $('#cpr-nombre-field').on('blur', function () {
             if ($('#cpr-tipo-proveedor-field').val() !== 'natural') return;
             if (!$(this).val().trim()) marcarInvalido($(this), 'El nombre es requerido.');
@@ -1033,15 +1029,10 @@ $(document).ready(function () {
             if (!$(this).val().trim()) marcarInvalido($(this), 'El apellido es requerido.');
             else marcarValido($(this));
         });
-        $('#cpr-telefono-nat-number-field').on('blur', function () {
-            if ($('#cpr-tipo-proveedor-field').val() !== 'natural') return;
-            if (!$(this).val().trim()) marcarInvalido($(this), 'El teléfono es requerido.');
-            else marcarValido($(this));
-        });
+        // (Los teléfonos los valida telefonos-repeater.js)
 
         $('#crearProveedorRapidoModal').on('hidden.bs.modal', function () {
-            $('#cpr-tipo-proveedor-field, #cpr-razon-social-field, #cpr-telefono-jur-number-field, ' +
-              '#cpr-nombre-field, #cpr-apellido-field, #cpr-telefono-nat-number-field').each(function () {
+            $('#cpr-tipo-proveedor-field, #cpr-razon-social-field, #cpr-nombre-field, #cpr-apellido-field').each(function () {
                 limpiarValidacion($(this));
             });
         });
@@ -1049,6 +1040,11 @@ $(document).ready(function () {
         // Abrir el mini-modal, prellenando el documento escrito en el buscador
         $('#c-prov-create-btn').on('click', function () {
             $('#cprForm')[0].reset();
+            // Repetidores de teléfono (jurídico + natural): init + una fila vacía
+            ['cpr-jur-tel', 'cpr-nat-tel'].forEach(function (tid) {
+                var r = document.getElementById(tid + '-repeater');
+                if (window.TelefonosRepeater && r) { TelefonosRepeater.init(r); TelefonosRepeater.load(r, []); }
+            });
             $('#cpr-ciudad-jur-field, #cpr-ciudad-field').empty()
                 .append('<option value="">Primero seleccione un estado</option>');
 
@@ -1078,7 +1074,7 @@ $(document).ready(function () {
                 payload.rif               = $('#cpr-rif-prefix-field').val() + $('#cpr-rif-number-field').val().trim();
                 payload.razon_social      = $('#cpr-razon-social-field').val().trim();
                 payload.direccion         = $('#cpr-direccion-jur-field').val().trim();
-                payload.telefono          = $('#cpr-telefono-jur-prefix-field').val() + '-' + $('#cpr-telefono-jur-number-field').val().trim();
+                payload.telefonos         = window.TelefonosRepeater ? TelefonosRepeater.collect(document.getElementById('cpr-jur-tel-repeater')) : [];
                 payload.email             = $('#cpr-email-jur-field').val().trim();
                 payload.contacto          = $('#cpr-contacto-field').val().trim() || null;
                 payload.telefono_contacto = $('#cpr-telefono-contacto-number-field').val().trim()
@@ -1092,7 +1088,7 @@ $(document).ready(function () {
                 payload.nombre              = $('#cpr-nombre-field').val().trim();
                 payload.apellido            = $('#cpr-apellido-field').val().trim();
                 payload.direccion           = $('#cpr-direccion-nat-field').val().trim();
-                payload.telefono            = $('#cpr-telefono-nat-prefix-field').val() + '-' + $('#cpr-telefono-nat-number-field').val().trim();
+                payload.telefonos           = window.TelefonosRepeater ? TelefonosRepeater.collect(document.getElementById('cpr-nat-tel-repeater')) : [];
                 payload.email               = $('#cpr-email-nat-field').val().trim();
                 payload.estado_territorial  = $('#cpr-estado-territorial-field').val();
                 payload.ciudad              = $('#cpr-ciudad-field').val();

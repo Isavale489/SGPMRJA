@@ -3259,10 +3259,7 @@
             this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);
         });
 
-        // Validación en tiempo real para teléfono (solo números)
-        $(document).on('input', '#telefono-number-field-cliente', function () {
-            this.value = this.value.replace(/[^0-9]/g, '').slice(0, 7);
-        });
+        // (Teléfonos los maneja telefonos-repeater.js)
 
         // Validación onblur para nombre
         $(document).on('blur', '#nombre-field-cliente', function () {
@@ -3300,17 +3297,6 @@
             }
         });
 
-        // Validación onblur para teléfono
-        $(document).on('blur', '#telefono-number-field-cliente', function () {
-            let value = $(this).val().trim();
-            if (value.length < 7) {
-                $(this).addClass('is-invalid');
-                $('#telefono-error-cliente').text('El teléfono debe tener 7 dígitos.').show();
-            } else {
-                $(this).removeClass('is-invalid').addClass('is-valid');
-                $('#telefono-error-cliente').hide();
-            }
-        });
 
         // Validación onblur para email
         $(document).on('blur', '#email-field-cliente', function () {
@@ -3424,7 +3410,11 @@
             $('#edit-btn-cliente').hide();
             // Reset valores por defecto
             $('#documento-prefix-field-cliente').val('V-');
-            $('#telefono-prefix-field-cliente').val('0424');
+            // Reset teléfonos del repetidor
+            (function () {
+                var r = document.getElementById('cot-cli-tel-repeater');
+                if (window.TelefonosRepeater && r) { TelefonosRepeater.init(r); TelefonosRepeater.load(r, []); }
+            })();
             $('#ciudad-field-cliente').html('<option value="">Primero seleccione un estado</option>');
             $('#tipo_cliente-field-cliente').val('');
             toggleClienteFieldsCotizacion();
@@ -3439,9 +3429,17 @@
             var documentoCompleto = $('#documento-prefix-field-cliente').val() + $('#documento-number-field-cliente').val();
             $('#documento-field-cliente').val(documentoCompleto);
 
-            // Concatenar teléfono completo
-            var telefonoCompleto = $('#telefono-prefix-field-cliente').val() + '-' + $('#telefono-number-field-cliente').val();
-            $('#telefono-field-cliente').val(telefonoCompleto);
+            // Teléfonos: validar el repetidor del bloque
+            var telRootCot = document.getElementById('cot-cli-tel-repeater');
+            if (window.TelefonosRepeater && telRootCot) {
+                var telChkCot = TelefonosRepeater.validate(telRootCot);
+                if (!telChkCot.ok) {
+                    Swal.fire({ icon: 'warning', title: 'Teléfonos', text: telChkCot.message });
+                    return;
+                }
+            }
+            var telTels = (window.TelefonosRepeater && telRootCot) ? TelefonosRepeater.collect(telRootCot) : [];
+            var telefonoCompleto = ((telTels.find(function (t) { return t.es_principal; }) || telTels[0] || {}).numero) || '';
 
             // Validar campo apellido explícitamente
             var apellido = $('#apellido-field-cliente').val().trim();
@@ -3479,7 +3477,10 @@
             // Deshabilitar botón para evitar múltiples envíos
             $(this).prop('disabled', true);
 
-            // Enviar por AJAX
+            // Enviar por AJAX (sincronizar teléfonos[] en el form antes de serializar)
+            if (window.TelefonosRepeater && telRootCot) {
+                TelefonosRepeater.syncHiddenInputs(document.getElementById('clienteFormCotizacion'), telRootCot);
+            }
             var formData = $('#clienteFormCotizacion').serialize() + '&_token=' + $('meta[name="csrf-token"]').attr('content');
 
             $.ajax({

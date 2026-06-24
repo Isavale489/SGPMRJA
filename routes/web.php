@@ -99,7 +99,8 @@ Route::middleware(['auth', 'throttle:60,1', 'active.user', 'recovery.questions.r
         Route::get('personas-search', [PersonaController::class, 'search'])->name('personas.search');
 
         // Empleados
-        Route::resource('empleados', EmpleadoController::class);
+        // 'create' excluido: el alta se hace por el modal del index (no hay página aparte)
+        Route::resource('empleados', EmpleadoController::class)->except(['create']);
         Route::post('empleados/{id}/restore', [EmpleadoController::class, 'restore'])->name('empleados.restore');
         Route::get('empleados-data', [EmpleadoController::class, 'getEmpleados'])->name('empleados.data');
         Route::get('empleados-check-documento', [EmpleadoController::class, 'checkDocumento'])->name('empleados.check-documento');
