@@ -8,7 +8,7 @@ base_branch: enmanuel
 **Feature ID**: FEAT-006
 **Fecha**: 2026-06-25
 **Autor**: Emmanuel Arroyo
-**Status**: approved
+**Status**: shipped
 **Versión objetivo**: cierre del ciclo de transacciones
 
 ---
