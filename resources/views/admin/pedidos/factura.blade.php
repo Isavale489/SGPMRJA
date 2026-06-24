@@ -150,6 +150,9 @@
                     $telaSnap = $detalle->tela_snapshot;
                     $atrSnap  = $detalle->atributos_snapshot;
                     $variantPartes = [];
+                    if ($detalle->genero) {
+                        $variantPartes[] = 'Género: ' . $detalle->genero->nombre;
+                    }
                     if (is_array($telaSnap) && !empty($telaSnap['nombre'])) {
                         $variantPartes[] = 'Tela: ' . $telaSnap['nombre'];
                     }

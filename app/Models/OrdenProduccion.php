@@ -69,15 +69,21 @@ class OrdenProduccion extends Model
      */
     public function getNombreProductoAttribute(): string
     {
+        $d = $this->detallePedido;
+        $genero = ($d && $d->genero) ? $d->genero->nombre : null;
+
         if ($this->producto) {
-            return $this->producto->nombre;
+            return $this->producto->nombre . ($genero ? ' · ' . $genero : '');
         }
 
-        $d = $this->detallePedido;
         if ($d) {
             $partes = [];
             if ($d->tipoProducto) {
                 $partes[] = $d->tipoProducto->nombre;
+            }
+            // Género justo tras el tipo: define el patronaje (dama/caballero/unisex).
+            if ($genero) {
+                $partes[] = $genero;
             }
             if (is_array($d->tela_snapshot) && !empty($d->tela_snapshot['nombre'])) {
                 $partes[] = $d->tela_snapshot['nombre'];

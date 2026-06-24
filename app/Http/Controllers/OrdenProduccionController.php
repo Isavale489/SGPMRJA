@@ -61,7 +61,7 @@ class OrdenProduccionController extends Controller
 
     public function getOrdenes(Request $request)
     {
-        $ordenes = OrdenProduccion::with(['producto.tipoProducto', 'detallePedido.tipoProducto', 'empleado.persona', 'creadoPor:id,name', 'pedido.cliente.persona'])
+        $ordenes = OrdenProduccion::with(['producto.tipoProducto', 'detallePedido.tipoProducto', 'detallePedido.genero', 'empleado.persona', 'creadoPor:id,name', 'pedido.cliente.persona'])
             ->select('orden_produccion.*');
 
         if ($request->filled('filter_estado')) {
@@ -142,6 +142,7 @@ class OrdenProduccionController extends Controller
                 'productos.tipoProducto.insumosDefault', // líneas dinámicas (sin producto)
                 'productos.color',
                 'productos.talla',
+                'productos.genero',
                 'productos.bordados',
             ])
             ->whereNotIn('estado', ['Cancelado', 'Completado'])
@@ -221,6 +222,7 @@ class OrdenProduccionController extends Controller
                     'ordenes_activas'    => (int) ($asignadoPorDetalle[$d->id]->ordenes ?? 0),
                     'color'              => $d->color->nombre ?? null,
                     'talla'              => $d->talla ? ($d->talla->etiqueta ?: $d->talla->nombre) : null,
+                    'genero'             => $d->genero->nombre ?? null,
                     'precio_unitario'    => (float) $d->precio_unitario,
                     'subtotal'           => round($d->cantidad * $d->precio_unitario, 2),
                     'lleva_bordado'      => (bool) $d->lleva_bordado,
@@ -263,7 +265,7 @@ class OrdenProduccionController extends Controller
     {
         $empleado = Empleado::with('persona')->findOrFail($empleadoId);
 
-        $ordenes = OrdenProduccion::with(['producto', 'detallePedido.tipoProducto', 'pedido'])
+        $ordenes = OrdenProduccion::with(['producto', 'detallePedido.tipoProducto', 'detallePedido.genero', 'pedido'])
             ->where('empleado_id', $empleadoId)
             ->orderByRaw("FIELD(estado,'En Proceso','Pendiente','Finalizado','Cancelado')")
             ->orderBy('fecha_fin_estimada')
@@ -494,7 +496,7 @@ class OrdenProduccionController extends Controller
                 'producto.tipoProducto',
                 'empleado.persona',
                 'empleadosAsignados.persona',
-                'detallePedido.tipoProducto',
+                'detallePedido.tipoProducto', 'detallePedido.genero',
                 'detallePedido.bordados.logo',
                 'detallePedido.color',
                 'detallePedido.talla',
@@ -561,7 +563,7 @@ class OrdenProduccionController extends Controller
                 'empleado.persona',
                 'empleadosAsignados.persona',
                 'pedido.cliente',
-                'detallePedido.tipoProducto',
+                'detallePedido.tipoProducto', 'detallePedido.genero',
                 'detallePedido.color',
                 'detallePedido.talla',
                 'detallePedido.bordados',
@@ -891,7 +893,7 @@ class OrdenProduccionController extends Controller
      */
     public function reportePdf(Request $request)
     {
-        $query = OrdenProduccion::with(['producto', 'pedido', 'detallePedido.tipoProducto'])
+        $query = OrdenProduccion::with(['producto', 'pedido', 'detallePedido.tipoProducto', 'detallePedido.genero'])
             ->orderBy('created_at', 'desc');
 
         if ($request->filled('estado')) {

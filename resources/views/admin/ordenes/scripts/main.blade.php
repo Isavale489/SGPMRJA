@@ -150,6 +150,9 @@
             const chips = [];
             chips.push('<span class="' + cls + '"><i class="ri-palette-line me-1"></i>' + escHtml(l.color || 'Sin color') + '</span>');
             chips.push('<span class="' + cls + '"><i class="ri-ruler-line me-1"></i>' + escHtml(l.talla || 'Talla única') + '</span>');
+            if (l.genero) {
+                chips.push('<span class="' + cls + '"><i class="ri-user-line me-1"></i>' + escHtml(l.genero) + '</span>');
+            }
             if (l.lleva_bordado) {
                 chips.push('<span class="' + cls + '"><i class="ri-scissors-cut-line me-1"></i>' + (l.bordados_count || 0) + ' bordado(s)</span>');
             }
@@ -203,6 +206,7 @@
                 cantidad: pendiente,
                 color: l.color,
                 talla: l.talla,
+                genero: l.genero,
                 lleva_bordado: l.lleva_bordado,
                 bordados_count: l.bordados_count,
                 empleado_ids: [],
@@ -225,6 +229,7 @@
                 cantidad: unidades,
                 color: l.color,
                 talla: l.talla,
+                genero: l.genero,
                 lleva_bordado: l.lleva_bordado,
                 bordados_count: l.bordados_count,
                 empleado_ids: [],
@@ -326,7 +331,7 @@
                 // Regla de negocio: sin abono mínimo no se pueden generar órdenes.
                 const abonoOk = p.cumple_abono !== false;
                 const lineasHtml = p.lineas.map(function (l) {
-                    const meta = [l.cantidad + ' u', l.color || 'Sin color', l.talla || 'Talla única'].join(' · ');
+                    const meta = [l.cantidad + ' u', l.color || 'Sin color', l.talla || 'Talla única'].concat(l.genero ? [l.genero] : []).join(' · ');
                     const bordadoBadge = l.lleva_bordado
                         ? `<span class="badge bg-info-subtle text-info ms-1"><i class="ri-scissors-cut-line"></i> ${l.bordados_count} bordado(s)</span>`
                         : '';
@@ -1125,6 +1130,7 @@
                     cantidad_maxima: data.cantidad_maxima || data.cantidad_solicitada,
                     color: det.color ? det.color.nombre : null,
                     talla: det.talla ? (det.talla.etiqueta || det.talla.nombre) : null,
+                    genero: det.genero ? det.genero.nombre : null,
                     lleva_bordado: !!(det.bordados && det.bordados.length),
                     bordados_count: det.bordados ? det.bordados.length : 0,
                     empleado_ids: (data.empleados_asignados || []).map(function (e) { return String(e.id); }),
