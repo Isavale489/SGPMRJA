@@ -38,6 +38,7 @@
 
     .data-table tbody td.text-center { text-align: center; }
     .data-table tbody td.text-right  { text-align: right; }
+    .data-table tbody td .bs-eq { color: #777777; font-size: 8px; font-weight: normal; }
 
     /* ── Bloque de totales ── */
     .totals-block {
@@ -170,8 +171,14 @@
                     <td class="col-logo">{{ $detalle->lleva_bordado ? ($logosTexto ?: ($detalle->nombre_logo ?: '-')) : '-' }}</td>
                     <td class="col-ubic">{{ $detalle->lleva_bordado ? ($ubicacionesTexto ?: '-') : '-' }}</td>
                     <td class="col-bord text-center">{{ $detalle->lleva_bordado ? ($cantidadBordados ?: '-') : '-' }}</td>
-                    <td class="col-punit text-right">{{ number_format($detalle->precio_unitario, 2) }}</td>
-                    <td class="col-monto text-right">{{ number_format($detalle->cantidad * $detalle->precio_unitario, 2) }}</td>
+                    <td class="col-punit text-right">
+                        $ {{ number_format($detalle->precio_unitario, 2) }}
+                        @if($tasaValor)<br><span class="bs-eq">Bs {{ number_format($detalle->precio_unitario * $tasaValor, 2, ',', '.') }}</span>@endif
+                    </td>
+                    <td class="col-monto text-right">
+                        $ {{ number_format($detalle->cantidad * $detalle->precio_unitario, 2) }}
+                        @if($tasaValor)<br><span class="bs-eq">Bs {{ number_format($detalle->cantidad * $detalle->precio_unitario * $tasaValor, 2, ',', '.') }}</span>@endif
+                    </td>
                 </tr>
             @endforeach
         </tbody>
@@ -199,7 +206,7 @@
                 <table class="totals-inner">
                     @if($cotizacion->tasa_cambio_valor)
                     <tr>
-                        <td class="t-label" style="font-size:8.5px; color:#555;">Tasa BCV (USD→Bs):</td>
+                        <td class="t-label" style="font-size:8.5px; color:#555;">Tasa BCV{{ $tasaFecha ? ' (al ' . \Carbon\Carbon::parse($tasaFecha)->format('d/m/Y') . ')' : ' (USD→Bs)' }}:</td>
                         <td class="t-value" style="font-size:8.5px; color:#555;">Bs {{ number_format($cotizacion->tasa_cambio_valor, 4) }}</td>
                     </tr>
                     @endif

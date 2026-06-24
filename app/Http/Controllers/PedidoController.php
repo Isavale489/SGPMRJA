@@ -344,7 +344,7 @@ class PedidoController extends Controller
     public function pedidoPdf(Pedido $pedido)
     {
         // Cargar relaciones necesarias
-        $pedido->load(['user:id,name', 'productos.producto', 'productos.bordados.logo:id,name', 'cliente', 'cliente.persona', 'cotizacion:id,tasa_cambio_valor']);
+        $pedido->load(['user:id,name', 'productos.producto', 'productos.genero', 'productos.bordados.logo:id,name', 'cliente', 'cliente.persona', 'cotizacion:id,tasa_cambio_valor,created_at']);
 
         // Cálculos financieros
         $ivaTasa = 0.16; // 16 %
@@ -353,12 +353,26 @@ class PedidoController extends Controller
         $iva = round(($subtotal - $descuento) * $ivaTasa, 2);
         $totalPagar = round($subtotal - $descuento + $iva, 2);
 
+        // Tasa de cambio para el equivalente en Bs + su fecha exacta (trazabilidad).
+        // Prefiere el snapshot de la cotización de origen; si no hay, la BCV vigente.
+        $tasaValor = optional($pedido->cotizacion)->tasa_cambio_valor;
+        if ($tasaValor) {
+            $refFecha = optional(optional($pedido->cotizacion)->created_at ?? $pedido->fecha_pedido)->toDateString();
+            $tasaFecha = optional(\App\Models\TasaCambio::tasaVigente($refFecha ?? now()->toDateString(), 'USD'))->fecha_bcv;
+        } else {
+            $row = \App\Models\TasaCambio::obtenerTasaActual('USD');
+            $tasaValor = optional($row)->valor;
+            $tasaFecha = optional($row)->fecha_bcv;
+        }
+
         $pdf = PDF::loadView('admin.pedidos.factura', [
             'pedido' => $pedido,
             'subtotal' => $subtotal,
             'descuento' => $descuento,
             'iva' => $iva,
             'totalPagar' => $totalPagar,
+            'tasaValor' => $tasaValor,
+            'tasaFecha' => $tasaFecha,
         ])->setPaper('a4', 'portrait');
 
         return $pdf->download('pedido_' . $pedido->id . '.pdf');

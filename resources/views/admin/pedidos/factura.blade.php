@@ -38,6 +38,7 @@
     .data-table tbody td.text-center { text-align: center; }
     .data-table tbody td.text-right  { text-align: right; }
     .data-table tbody td small { color: #6b7280; font-size: 8px; }
+    .data-table tbody td .bs-eq { color: #777777; font-size: 8px; font-weight: normal; }
 
     /* ── Bloque de totales ── */
     .totals-block {
@@ -184,8 +185,14 @@
                             -
                         @endif
                     </td>
-                    <td class="col-cunit text-right">{{ number_format($detalle->precio_unitario, 2) }}</td>
-                    <td class="col-monto text-right">{{ number_format($detalle->precio_unitario * $detalle->cantidad, 2) }}</td>
+                    <td class="col-cunit text-right">
+                        $ {{ number_format($detalle->precio_unitario, 2) }}
+                        @if($tasaValor)<br><small class="bs-eq">Bs {{ number_format($detalle->precio_unitario * $tasaValor, 2, ',', '.') }}</small>@endif
+                    </td>
+                    <td class="col-monto text-right">
+                        $ {{ number_format($detalle->precio_unitario * $detalle->cantidad, 2) }}
+                        @if($tasaValor)<br><small class="bs-eq">Bs {{ number_format($detalle->precio_unitario * $detalle->cantidad * $tasaValor, 2, ',', '.') }}</small>@endif
+                    </td>
                 </tr>
             @endforeach
         </tbody>
@@ -193,7 +200,7 @@
 
     {{-- Tasa BCV heredada de la cotización de origen + costo del servicio de bordado --}}
     @php
-        $tasaPedido = optional($pedido->cotizacion)->tasa_cambio_valor;
+        $tasaPedido = $tasaValor; // valor resuelto en el controlador (snapshot o BCV vigente)
         $totalBordadoUsd = $pedido->productos->sum(function ($d) {
             if (!$d->lleva_bordado) {
                 return 0;
@@ -213,7 +220,9 @@
                 <table class="totals-inner">
                     @if($tasaPedido)
                     <tr>
-                        <td class="t-label" style="font-size:8.5px; color:#555;">Tasa BCV (USD→Bs):</td>
+                        <td class="t-label" style="font-size:8.5px; color:#555;">
+                            Tasa BCV{{ $tasaFecha ? ' (al ' . \Carbon\Carbon::parse($tasaFecha)->format('d/m/Y') . ')' : '' }}:
+                        </td>
                         <td class="t-value" style="font-size:8.5px; color:#555;">Bs {{ number_format($tasaPedido, 4) }}</td>
                     </tr>
                     @endif

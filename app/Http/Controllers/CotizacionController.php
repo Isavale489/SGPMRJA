@@ -417,6 +417,8 @@ class CotizacionController extends Controller
             'productos.producto' => function ($query) {
                 $query->withTrashed()->with('tipoProducto');
             },
+            'productos.tipoProducto',
+            'productos.genero',
             'productos.bordados.logo:id,name',
         ]);
 
@@ -427,12 +429,22 @@ class CotizacionController extends Controller
         $iva = round(($subtotal - $descuento) * $ivaTasa, 2);
         $totalPagar = round($subtotal - $descuento + $iva, 2);
 
+        // Tasa de cambio aplicada (snapshot de la cotización) + su fecha BCV exacta.
+        $tasaValor = $cotizacion->tasa_cambio_valor;
+        $tasaFecha = $tasaValor
+            ? optional(\App\Models\TasaCambio::tasaVigente(
+                \Illuminate\Support\Carbon::parse($cotizacion->fecha_cotizacion ?? $cotizacion->created_at)->toDateString(), 'USD'
+            ))->fecha_bcv
+            : null;
+
         $pdf = PDF::loadView('admin.cotizaciones.factura', [
             'cotizacion' => $cotizacion,
             'subtotal' => $subtotal,
             'descuento' => $descuento,
             'iva' => $iva,
             'totalPagar' => $totalPagar,
+            'tasaValor' => $tasaValor,
+            'tasaFecha' => $tasaFecha,
         ])->setPaper('a4', 'portrait');
 
         return $pdf->download('cotizacion_' . $cotizacion->id . '.pdf');
