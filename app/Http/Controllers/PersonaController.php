@@ -71,7 +71,8 @@ class PersonaController extends Controller
                 'tipo_documento'  => $persona->tipo_documento,
                 'documento_num'   => $persona->documento_identidad,
                 'nombre'          => $persona->nombre,
-                'apellido'        => $persona->apellido ?? '',
+                // `nombre` ya consolida nombre+apellido; apellido del form queda vacío.
+                'apellido'        => '',
                 'razon_social'    => $persona->proveedor?->tipo_proveedor === 'juridico'
                     ? ($persona->proveedor->razon_social ?? null)
                     : null,

@@ -17,8 +17,7 @@ class ProveedorService
     {
         return DB::transaction(function () use ($data) {
             $persona = Persona::create([
-                'nombre' => $data['nombre'],
-                'apellido' => $data['apellido'],
+                'nombre' => trim($data['nombre'] . ' ' . ($data['apellido'] ?? '')),
                 'tipo_documento' => $data['tipo_documento'],
                 'documento_identidad' => $data['documento_identidad'],
                 'email' => $data['email'],
@@ -55,7 +54,6 @@ class ProveedorService
 
             $persona = Persona::create([
                 'nombre' => $data['razon_social'],
-                'apellido' => '',
                 'tipo_documento' => $tipoDoc,
                 'documento_identidad' => $docId,
                 'email' => $data['email'],
@@ -85,8 +83,7 @@ class ProveedorService
         DB::transaction(function () use ($proveedor, $data) {
             if ($proveedor->persona_id && $proveedor->persona) {
                 $proveedor->persona->update([
-                    'nombre' => $data['nombre'],
-                    'apellido' => $data['apellido'],
+                    'nombre' => trim($data['nombre'] . ' ' . ($data['apellido'] ?? '')),
                     'tipo_documento' => $data['tipo_documento'],
                     'documento_identidad' => $data['documento_identidad'],
                     'email' => $data['email'],
@@ -97,8 +94,7 @@ class ProveedorService
             } else {
                 // Convertir de jurídico a natural: crear persona
                 $persona = Persona::create([
-                    'nombre' => $data['nombre'],
-                    'apellido' => $data['apellido'],
+                    'nombre' => trim($data['nombre'] . ' ' . ($data['apellido'] ?? '')),
                     'tipo_documento' => $data['tipo_documento'],
                     'documento_identidad' => $data['documento_identidad'],
                     'email' => $data['email'],

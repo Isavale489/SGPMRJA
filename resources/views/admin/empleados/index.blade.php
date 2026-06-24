@@ -1214,7 +1214,7 @@
                     }
                     $("#id-field").val(data.id);
                     $("#field-nombre").val(data.persona.nombre);
-                    $("#field-apellido").val(data.persona.apellido);
+                    $("#field-apellido").val(data.persona.apellido || '');
                     $("#tipo-documento-field").val(data.persona.tipo_documento);
                     $("#field-documento_identidad").val(data.persona.documento_identidad);
                     $("#field-email").val(data.persona.email);

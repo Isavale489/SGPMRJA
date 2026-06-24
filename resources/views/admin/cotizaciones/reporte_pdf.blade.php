@@ -63,8 +63,7 @@
                 <tr class="{{ $index % 2 === 1 ? 'zebra' : '' }}">
                     <td class="col-num">{{ $index + 1 }}</td>
                     <td class="col-nro">{{ $cotizacion->id }}</td>
-                    <td class="col-cliente">{{ $cotizacion->cliente ? ($cotizacion->cliente->nombre . ' ' . ($cotizacion->cliente->apellido ?? '')) : 'Sin cliente' }}
-                    </td>
+                    <td class="col-cliente">{{ $cotizacion->cliente ? $cotizacion->cliente->nombre : 'Sin cliente' }}</td>
                     <td class="col-fecha">{{ \Carbon\Carbon::parse($cotizacion->fecha_cotizacion)->format('d/m/Y') }}</td>
                     <td class="col-total">{{ number_format($cotizacion->total, 2) }}</td>
                     <td class="col-estado">{{ $cotizacion->estado }}</td>

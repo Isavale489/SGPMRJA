@@ -100,8 +100,7 @@
     <table class="info-block">
         <tr>
             <td>
-                <span class="label">Cliente:</span> {{ $cotizacion->cliente->nombre ?? '-' }}
-                {{ $cotizacion->cliente->apellido ?? '' }}<br>
+                <span class="label">Cliente:</span> {{ $cotizacion->cliente->nombre ?? '-' }}<br>
                 <span class="label">Email:</span> {{ $cotizacion->cliente->email ?? '-' }}<br>
                 <span class="label">Teléfono:</span> {{ $cotizacion->cliente->telefono ?? '-' }}<br>
                 <span class="label">Documento:</span> {{ $cotizacion->cliente->documento ?? '-' }}

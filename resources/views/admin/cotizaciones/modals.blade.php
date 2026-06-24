@@ -60,15 +60,8 @@
                                             <div class="emp-icon-box emp-icon-box--navy rounded-circle me-2 flex-shrink-0 d-flex align-items-center justify-content-center">
                                                 <i class="ri-user-line emp-icon--navy"></i>
                                             </div>
-                                            <div><small class="text-muted d-block fs-12">Nombre</small>
+                                            <div><small class="text-muted d-block fs-12">Nombre / Razón Social</small>
                                             <span class="fw-semibold fs-13" id="view-cliente-nombre">-</span></div>
-                                        </div>
-                                        <div class="col-6 d-flex align-items-start">
-                                            <div class="emp-icon-box emp-icon-box--navy rounded-circle me-2 flex-shrink-0 d-flex align-items-center justify-content-center">
-                                                <i class="ri-user-follow-line emp-icon--navy"></i>
-                                            </div>
-                                            <div><small class="text-muted d-block fs-12">Apellido</small>
-                                            <span class="fw-semibold fs-13" id="view-cliente-apellido">-</span></div>
                                         </div>
                                         <div class="col-6 d-flex align-items-start">
                                             <div class="emp-icon-box emp-icon-box--green rounded-circle me-2 flex-shrink-0 d-flex align-items-center justify-content-center">
@@ -1420,7 +1413,7 @@
                 <div class="input-group mb-3">
                     <span class="input-group-text"><i class="ri-search-2-line"></i></span>
                     <input type="text" id="bcl-input" class="form-control"
-                        placeholder="Buscar por nombre, apellido o documento..." autocomplete="off">
+                        placeholder="Buscar por nombre, razón social o documento..." autocomplete="off">
                     <button type="button" class="btn btn-light" id="bcl-clear-btn" title="Limpiar">
                         <i class="ri-close-line"></i>
                     </button>

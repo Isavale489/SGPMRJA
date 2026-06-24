@@ -318,9 +318,7 @@ class Pedido extends Model
     {
         if (!$this->cliente)
             return null;
-        $nombre = $this->cliente->nombre ?? '';
-        $apellido = $this->cliente->apellido ?? '';
-        return trim($nombre . ' ' . $apellido) ?: null;
+        return trim((string) ($this->cliente->nombre ?? '')) ?: null;
     }
 
     /**

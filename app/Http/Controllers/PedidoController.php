@@ -83,9 +83,7 @@ class PedidoController extends Controller
             })
             ->filterColumn('cliente_nombre_display', function ($query, $keyword) {
                 $query->where(function ($q) use ($keyword) {
-                    $q->where('persona.nombre', 'like', "{$keyword}%")
-                        ->orWhere('persona.apellido', 'like', "{$keyword}%")
-                        ->orWhereRaw("CONCAT(persona.nombre, ' ', persona.apellido) like ?", ["{$keyword}%"]);
+                    $q->where('persona.nombre', 'like', "%{$keyword}%");
                 });
             })
 
@@ -123,7 +121,7 @@ class PedidoController extends Controller
                 return [
                     'id' => $cotizacion->id,
                     'cliente_nombre' => $cotizacion->cliente ?
-                        trim(($cotizacion->cliente->nombre ?? '') . ' ' . ($cotizacion->cliente->apellido ?? '')) :
+                        (trim((string) ($cotizacion->cliente->nombre ?? '')) ?: 'N/A') :
                         'N/A',
                     'cliente_documento' => $cotizacion->cliente->documento ?? 'N/A',
                     'fecha_cotizacion' => $cotizacion->fecha_cotizacion ?

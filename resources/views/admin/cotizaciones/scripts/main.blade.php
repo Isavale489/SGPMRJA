@@ -2757,13 +2757,12 @@
                         $('#view-cliente-nombre').html(nombreHtml);
                         var muted = data.cliente.eliminado;
                         function vm(v) { return muted ? '<span class="text-muted">' + (v || '') + '</span>' : (v || 'N/A'); }
-                        $('#view-cliente-apellido').html(vm(data.cliente.apellido));
                         $('#view-cliente-email').html(vm(data.cliente.email));
                         $('#view-cliente-telefono').html(vm(data.cliente.telefono));
                         $('#view-ci-rif').html(vm(data.cliente.documento));
                     } else {
                         $('#view-cliente-nombre').html('<span class="text-danger">Cliente no encontrado</span>');
-                        $('#view-cliente-apellido, #view-cliente-email, #view-cliente-telefono, #view-ci-rif').text('N/A');
+                        $('#view-cliente-email, #view-cliente-telefono, #view-ci-rif').text('N/A');
                     }
 
                     function formatDate(dateStr) {

@@ -88,9 +88,7 @@ class CotizacionController extends Controller
             ->filterColumn('cliente_nombre', function ($query, $keyword) {
                 $query->whereHas('cliente', function ($clienteQuery) use ($keyword) {
                     $clienteQuery->withTrashed()->whereHas('persona', function ($personaQuery) use ($keyword) {
-                        $personaQuery->where('nombre', 'like', "{$keyword}%")
-                            ->orWhere('apellido', 'like', "{$keyword}%")
-                            ->orWhereRaw("CONCAT(nombre, ' ', apellido) like ?", ["{$keyword}%"]);
+                        $personaQuery->where('nombre', 'like', "%{$keyword}%");
                     });
                 });
             })
@@ -99,9 +97,7 @@ class CotizacionController extends Controller
             })
             ->addColumn('cliente_nombre', function ($cotizacion) {
                 if ($cotizacion->cliente) {
-                    $nombre = $cotizacion->cliente->nombre ?? '';
-                    $apellido = $cotizacion->cliente->apellido ?? '';
-                    $nombreCompleto = trim($nombre . ' ' . $apellido) ?: 'Sin nombre';
+                    $nombreCompleto = trim((string) ($cotizacion->cliente->nombre ?? '')) ?: 'Sin nombre';
                     // Indicar si el cliente fue eliminado
                     if ($cotizacion->cliente->deleted_at) {
                         return $nombreCompleto . ' <span class="badge bg-danger ms-1" title="Cliente eliminado">Eliminado</span>';
@@ -249,7 +245,7 @@ class CotizacionController extends Controller
             $clienteData = [
                 'id' => $cotizacion->cliente->id,
                 'nombre' => $cotizacion->cliente->nombre,
-                'apellido' => $cotizacion->cliente->apellido,
+                'apellido' => '',
                 'email' => $cotizacion->cliente->email,
                 'telefono' => $cotizacion->cliente->telefono,
                 'documento' => $cotizacion->cliente->documento,
@@ -479,7 +475,7 @@ class CotizacionController extends Controller
             'cliente' => $cotizacion->cliente ? [
                 'id' => $cotizacion->cliente->id,
                 'nombre' => $cotizacion->cliente->nombre,
-                'apellido' => $cotizacion->cliente->apellido,
+                'apellido' => '',
                 'email' => $cotizacion->cliente->email,
                 'telefono' => $cotizacion->cliente->telefono,
                 'documento' => $cotizacion->cliente->documento,

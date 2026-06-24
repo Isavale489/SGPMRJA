@@ -33,8 +33,7 @@ class ProveedorController extends Controller
 
         if ($q) {
             $query->whereHas('persona', function ($sub) use ($q) {
-                $sub->where('nombre', 'like', "{$q}%")
-                    ->orWhere('apellido', 'like', "{$q}%")
+                $sub->where('nombre', 'like', "%{$q}%")
                     ->orWhere('documento_identidad', 'like', "{$q}%");
             });
         }
@@ -127,10 +126,9 @@ class ProveedorController extends Controller
                     return;
                 }
                 $query->whereHas('persona', function ($p) use ($keyword) {
-                    $p->where('nombre', 'like', "{$keyword}%")
-                      ->orWhere('apellido', 'like', "{$keyword}%")
+                    // `nombre` ya contiene el nombre completo / razón social.
+                    $p->where('nombre', 'like', "%{$keyword}%")
                       ->orWhere('email', 'like', "{$keyword}%")
-                      ->orWhereRaw("CONCAT(nombre, ' ', apellido) like ?", ["{$keyword}%"])
                       ->orWhereRaw("CONCAT(tipo_documento, documento_identidad) like ?", ["{$keyword}%"]);
                 });
             }, true)
@@ -304,7 +302,8 @@ class ProveedorController extends Controller
 
         if ($proveedor->esNatural() && $persona) {
             $data['nombre'] = $persona->nombre;
-            $data['apellido'] = $persona->apellido;
+            // `nombre` ya consolida nombre+apellido; el campo apellido queda vacío en edición.
+            $data['apellido'] = '';
             $data['tipo_documento'] = $persona->tipo_documento;
             $data['documento_identidad'] = $persona->documento_identidad;
             $data['ciudad'] = $direccionPrincipal ? $direccionPrincipal->ciudad : null;

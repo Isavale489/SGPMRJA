@@ -251,33 +251,14 @@
                                     <span class="fw-semibold fs-13" id="view-tipo_cliente">-</span></div>
                                 </div>
                             </div>
-                            {{-- Natural: Nombre + Apellido (cada uno col-6) --}}
-                            <div class="col-sm-6" id="view-block-nombre">
+                            {{-- Identidad unificada: nombre completo (natural) o razón social (jurídico) --}}
+                            <div class="col-12" id="view-block-nombre">
                                 <div class="d-flex align-items-start">
                                     <div class="emp-icon-box emp-icon-box--navy rounded-circle me-2 flex-shrink-0 d-flex align-items-center justify-content-center">
                                         <i class="ri-user-line emp-icon--navy"></i>
                                     </div>
-                                    <div><small class="text-muted d-block fs-12">Nombre</small>
+                                    <div><small class="text-muted d-block fs-12">Nombre / Razón Social</small>
                                     <span class="fw-semibold fs-13" id="view-nombre">-</span></div>
-                                </div>
-                            </div>
-                            <div class="col-sm-6" id="view-block-apellido">
-                                <div class="d-flex align-items-start">
-                                    <div class="emp-icon-box emp-icon-box--navy rounded-circle me-2 flex-shrink-0 d-flex align-items-center justify-content-center">
-                                        <i class="ri-user-follow-line emp-icon--navy"></i>
-                                    </div>
-                                    <div><small class="text-muted d-block fs-12">Apellido</small>
-                                    <span class="fw-semibold fs-13" id="view-apellido">-</span></div>
-                                </div>
-                            </div>
-                            {{-- Jurídico/Gubernamental: Razón Social (col-12 cuando visible) --}}
-                            <div class="col-12 d-none" id="view-block-razon-social">
-                                <div class="d-flex align-items-start">
-                                    <div class="emp-icon-box emp-icon-box--navy rounded-circle me-2 flex-shrink-0 d-flex align-items-center justify-content-center">
-                                        <i class="ri-building-line emp-icon--navy"></i>
-                                    </div>
-                                    <div><small class="text-muted d-block fs-12">Razón Social</small>
-                                    <span class="fw-semibold fs-13" id="view-razon-social">-</span></div>
                                 </div>
                             </div>
                         </div>
@@ -966,10 +947,8 @@
                     {                                                 // col 1
                         data: null,
                         render: function (data, type, row) {
-                            if (row.tipo_cliente === 'juridico' || row.tipo_cliente === 'gubernamental') {
-                                return row.nombre || 'N/A';
-                            }
-                            return (row.nombre || '') + ' ' + (row.apellido || '');
+                            // `nombre` ya consolida nombre completo / razón social
+                            return row.nombre || 'N/A';
                         }
                     },
                     {                                                 // col 2
@@ -1254,24 +1233,11 @@
                 $.get("{{ route('clientes.show', '') }}/" + id, function (data) {
                     $("#viewModal").modal("show");
                     var tipoTexto = data.tipo_cliente === 'natural' ? 'Natural' : (data.tipo_cliente === 'juridico' ? 'Jurídico' : 'Gubernamental');
-                    var fullName, initials;
-                    if (data.tipo_cliente === 'natural') {
-                        $("#view-block-nombre").removeClass('d-none');
-                        $("#view-block-apellido").removeClass('d-none');
-                        $("#view-block-razon-social").addClass('d-none');
-                        $("#view-nombre").text(data.nombre || 'N/A');
-                        $("#view-apellido").text(data.apellido || 'N/A');
-                        fullName = (data.nombre || '') + (data.apellido ? ' ' + data.apellido : '');
-                        initials = (data.nombre ? data.nombre.charAt(0) : '') + (data.apellido ? data.apellido.charAt(0) : '');
-                    } else {
-                        $("#view-block-nombre").addClass('d-none');
-                        $("#view-block-apellido").addClass('d-none');
-                        $("#view-block-razon-social").removeClass('d-none');
-                        $("#view-razon-social").text(data.nombre || 'N/A');
-                        fullName = data.nombre || 'N/A';
-                        var words = (data.nombre || '').trim().split(/\s+/);
-                        initials = words.length >= 2 ? words[0].charAt(0) + words[1].charAt(0) : (words[0] ? words[0].charAt(0) : '?');
-                    }
+                    // `nombre` ya consolida nombre+apellido (natural) o razón social (jurídico)
+                    $("#view-nombre").text(data.nombre || 'N/A');
+                    var fullName = data.nombre || 'N/A';
+                    var words = (data.nombre || '').trim().split(/\s+/);
+                    var initials = words.length >= 2 ? words[0].charAt(0) + words[1].charAt(0) : (words[0] ? words[0].charAt(0) : '?');
                     $("#view-hero-avatar").text(initials.toUpperCase());
                     $("#view-hero-name").text(fullName.trim() || 'N/A');
                     $("#view-hero-doc").text(data.documento || 'N/A');

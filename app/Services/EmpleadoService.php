@@ -38,8 +38,7 @@ class EmpleadoService
                 }
 
                 $persona = Persona::create([
-                    'nombre' => $data['nombre'],
-                    'apellido' => $data['apellido'],
+                    'nombre' => trim($data['nombre'] . ' ' . ($data['apellido'] ?? '')),
                     'documento_identidad' => $data['documento_identidad'],
                     'tipo_documento' => $data['tipo_documento'],
                     'email' => $data['email'] ?? null,
@@ -92,8 +91,7 @@ class EmpleadoService
             $persona = $empleado->persona;
 
             $persona->update([
-                'nombre' => $data['nombre'],
-                'apellido' => $data['apellido'],
+                'nombre' => trim($data['nombre'] . ' ' . ($data['apellido'] ?? '')),
                 // Documento inmutable: si no viene (campo deshabilitado en edición) se conserva el actual
                 'documento_identidad' => $data['documento_identidad'] ?? $persona->documento_identidad,
                 'tipo_documento' => $data['tipo_documento'] ?? $persona->tipo_documento,

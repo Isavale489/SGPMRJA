@@ -93,10 +93,9 @@ class EmpleadoController extends Controller
                 }
                 $query->where(function ($q) use ($keyword) {
                     $q->whereHas('persona', function ($p) use ($keyword) {
-                        $p->where('nombre', 'like', "{$keyword}%")
-                          ->orWhere('apellido', 'like', "{$keyword}%")
+                        // `nombre` ya contiene el nombre completo del empleado.
+                        $p->where('nombre', 'like', "%{$keyword}%")
                           ->orWhere('email', 'like', "{$keyword}%")
-                          ->orWhereRaw("CONCAT(nombre, ' ', apellido) like ?", ["{$keyword}%"])
                           ->orWhereRaw("CONCAT(tipo_documento, documento_identidad) like ?", ["{$keyword}%"]);
                     })
                     ->orWhereHas('cargo', fn($c) => $c->where('nombre', 'like', "{$keyword}%"))
@@ -316,7 +315,7 @@ class EmpleadoController extends Controller
                 $dir = $persona->direccionPrincipal;
                 $personaData = [
                     'nombre'            => $persona->nombre,
-                    'apellido'          => $persona->apellido ?? '',
+                    'apellido'          => '',
                     'tipo_documento'    => $persona->tipo_documento,
                     'email'             => $persona->email ?? '',
                     'telefono'          => $persona->telefonoPrincipal ?? '',

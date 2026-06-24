@@ -14,7 +14,6 @@ class Persona extends Model
 
     protected $fillable = [
         'nombre',
-        'apellido',
         'documento_identidad',
         'tipo_documento',
         'email',
@@ -67,9 +66,12 @@ class Persona extends Model
     }
 
     // Accessors
+    // El nombre completo vive ya consolidado en `nombre` (natural: nombre +
+    // apellido; jurídica: razón social). Se conserva el accessor por
+    // compatibilidad con el código existente que lo invoca.
     public function getNombreCompletoAttribute()
     {
-        return "{$this->nombre} {$this->apellido}";
+        return trim((string) $this->nombre);
     }
 
     public function getDocumentoCompletoAttribute()

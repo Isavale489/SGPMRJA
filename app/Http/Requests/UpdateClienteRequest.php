@@ -18,7 +18,9 @@ class UpdateClienteRequest extends FormRequest
         $personaId = $cliente ? ($cliente->persona_id ?? 'NULL') : 'NULL';
 
         return [
-            'nombre' => 'required|string|min:2|max:100|regex:/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/',
+            // `nombre` recibe el nombre (natural) o la razón social (jurídico/gubernamental),
+            // por eso el regex admite números y signos comunes de razón social (. , & - ').
+            'nombre' => 'required|string|min:2|max:200|regex:/^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s.,&\'\-]+$/',
             'apellido' => 'nullable|string|max:100|regex:/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]*$/',
             'tipo_cliente' => 'required|in:natural,juridico',
             'email' => 'nullable|string|email:rfc|max:255|unique:persona,email,' . $personaId,
@@ -34,8 +36,8 @@ class UpdateClienteRequest extends FormRequest
         return [
             'nombre.required' => 'El nombre es obligatorio.',
             'nombre.min' => 'El nombre debe tener al menos 2 caracteres.',
-            'nombre.max' => 'El nombre no puede exceder los 100 caracteres.',
-            'nombre.regex' => 'El nombre solo puede contener letras y espacios.',
+            'nombre.max' => 'El nombre o razón social no puede exceder los 200 caracteres.',
+            'nombre.regex' => 'El nombre o razón social contiene caracteres no permitidos.',
             'apellido.max' => 'El apellido no puede exceder los 100 caracteres.',
             'apellido.regex' => 'El apellido solo puede contener letras y espacios.',
             'tipo_cliente.required' => 'Debe seleccionar el tipo de cliente.',

@@ -71,7 +71,7 @@
                 <tr class="{{ $index % 2 === 1 ? 'zebra' : '' }}">
                     <td class="col-num">{{ $index + 1 }}</td>
                     <td class="col-codigo">{{ $empleado->codigo_empleado }}</td>
-                    <td class="col-nombre">{{ $empleado->persona->nombre }} {{ $empleado->persona->apellido }}</td>
+                    <td class="col-nombre">{{ $empleado->persona->nombre }}</td>
                     <td class="col-documento">{{ $empleado->persona->tipo_documento }}{{ $empleado->persona->documento_identidad }}</td>
                     <td class="col-cargo">{{ $empleado->cargo?->nombre ?? '—' }}</td>
                     <td class="col-depto">{{ $empleado->departamento?->nombre ?? '—' }}</td>

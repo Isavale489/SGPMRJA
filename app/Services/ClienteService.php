@@ -68,8 +68,7 @@ class ClienteService
                 }
 
                 $persona = Persona::create([
-                    'nombre' => $data['nombre'],
-                    'apellido' => $data['apellido'] ?? '',
+                    'nombre' => trim($data['nombre'] . ' ' . ($data['apellido'] ?? '')),
                     'documento_identidad' => $numeroDocumento,
                     'tipo_documento' => $tipoDocumento,
                     'email' => $data['email'] ?? null,
@@ -122,8 +121,7 @@ class ClienteService
             // Actualizar persona (sin documento)
             if ($cliente->persona) {
                 $cliente->persona->update([
-                    'nombre' => $data['nombre'],
-                    'apellido' => $data['apellido'] ?? '',
+                    'nombre' => trim($data['nombre'] . ' ' . ($data['apellido'] ?? '')),
                     'email' => $data['email'] ?? null,
                 ]);
 

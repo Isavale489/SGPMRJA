@@ -331,8 +331,6 @@ class CompraController extends Controller
                       ->orWhereRaw("DATE_FORMAT(compra.fecha_compra, '%d/%m/%Y') like ?", ["%{$keyword}%"])
                       ->orWhereHas('proveedor.persona', function ($p) use ($keyword) {
                           $p->where('nombre', 'like', "%{$keyword}%")
-                            ->orWhere('apellido', 'like', "%{$keyword}%")
-                            ->orWhereRaw("CONCAT(nombre, ' ', apellido) like ?", ["%{$keyword}%"])
                             ->orWhereRaw("CONCAT(tipo_documento, documento_identidad) like ?", ["%{$keyword}%"]);
                       });
                 });

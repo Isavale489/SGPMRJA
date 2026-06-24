@@ -246,33 +246,14 @@
                                     <span class="fw-semibold fs-13" id="view-tipo">-</span></div>
                                 </div>
                             </div>
-                            {{-- Natural: Nombre + Apellido --}}
+                            {{-- Identidad unificada: nombre completo (natural) o razón social (jurídico) --}}
                             <div class="col-sm-6" id="view-block-prov-nombre">
                                 <div class="d-flex align-items-start">
                                     <div class="emp-icon-box emp-icon-box--navy rounded-circle me-2 flex-shrink-0 d-flex align-items-center justify-content-center">
                                         <i class="ri-user-line emp-icon--navy"></i>
                                     </div>
-                                    <div><small class="text-muted d-block fs-12">Nombre</small>
+                                    <div><small class="text-muted d-block fs-12">Nombre / Razón Social</small>
                                     <span class="fw-semibold fs-13" id="view-nombre">-</span></div>
-                                </div>
-                            </div>
-                            <div class="col-sm-6" id="view-block-prov-apellido">
-                                <div class="d-flex align-items-start">
-                                    <div class="emp-icon-box emp-icon-box--navy rounded-circle me-2 flex-shrink-0 d-flex align-items-center justify-content-center">
-                                        <i class="ri-user-follow-line emp-icon--navy"></i>
-                                    </div>
-                                    <div><small class="text-muted d-block fs-12">Apellido</small>
-                                    <span class="fw-semibold fs-13" id="view-apellido">-</span></div>
-                                </div>
-                            </div>
-                            {{-- Jurídico: Razón Social --}}
-                            <div class="col-12 d-none" id="view-block-prov-razon-social">
-                                <div class="d-flex align-items-start">
-                                    <div class="emp-icon-box emp-icon-box--navy rounded-circle me-2 flex-shrink-0 d-flex align-items-center justify-content-center">
-                                        <i class="ri-building-line emp-icon--navy"></i>
-                                    </div>
-                                    <div><small class="text-muted d-block fs-12">Razón Social</small>
-                                    <span class="fw-semibold fs-13" id="view-razon-social">-</span></div>
                                 </div>
                             </div>
                         </div>
@@ -930,29 +911,22 @@
 
                     var heroName, heroInitials, heroDoc;
                     // Layout dinámico según tipo de proveedor
+                    // `nombre` (natural) o `razon_social` (jurídico) ya traen la identidad completa
+                    var identidad = data.tipo_proveedor === 'natural'
+                        ? (data.nombre || 'N/A')
+                        : (data.razon_social || data.nombre || 'N/A');
+                    $("#view-nombre").text(identidad);
                     if (data.tipo_proveedor === 'natural') {
-                        $("#view-block-prov-nombre").removeClass('d-none');
-                        $("#view-block-prov-apellido").removeClass('d-none');
-                        $("#view-block-prov-razon-social").addClass('d-none');
-                        $("#view-nombre").text(data.nombre || 'N/A');
-                        $("#view-apellido").text(data.apellido || 'N/A');
                         $("#view-label-documento").text('Documento de Identidad');
                         heroDoc = data.documento_display || data.documento_identidad || 'N/A';
-                        $("#view-documento").text(heroDoc);
-                        heroName = (data.nombre || '') + (data.apellido ? ' ' + data.apellido : '');
-                        heroInitials = (data.nombre ? data.nombre.charAt(0) : '') + (data.apellido ? data.apellido.charAt(0) : '');
                     } else {
-                        $("#view-block-prov-nombre").addClass('d-none');
-                        $("#view-block-prov-apellido").addClass('d-none');
-                        $("#view-block-prov-razon-social").removeClass('d-none');
-                        $("#view-razon-social").text(data.razon_social || 'N/A');
                         $("#view-label-documento").text('RIF');
                         heroDoc = data.rif || 'N/A';
-                        $("#view-documento").text(heroDoc);
-                        heroName = data.razon_social || 'N/A';
-                        var words = (data.razon_social || '').trim().split(/\s+/);
-                        heroInitials = words.length >= 2 ? words[0].charAt(0) + words[1].charAt(0) : (words[0] ? words[0].charAt(0) : '?');
                     }
+                    $("#view-documento").text(heroDoc);
+                    heroName = identidad;
+                    var words = (identidad || '').trim().split(/\s+/);
+                    heroInitials = words.length >= 2 ? words[0].charAt(0) + words[1].charAt(0) : (words[0] ? words[0].charAt(0) : '?');
 
                     $("#view-hero-avatar").text((heroInitials || '?').toUpperCase());
                     $("#view-hero-name").text(heroName.trim() || 'N/A');
