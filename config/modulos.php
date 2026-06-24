@@ -304,6 +304,18 @@ return [
         ],
     ],
 
+    'calidad' => [
+        'nombre'   => 'Control de Calidad',
+        'acciones' => [
+            'ver'          => 'Ver ordenes pendientes de calidad e historial de inspecciones',
+            'inspeccionar' => 'Registrar inspeccion de calidad de una orden',
+        ],
+        'rutas' => [
+            'calidad.index|calidad.data|calidad.detalle' => 'ver',
+            'calidad.inspeccionar'                       => 'inspeccionar',
+        ],
+    ],
+
     'compras' => [
         'nombre'   => 'Compras',
         'acciones' => [
