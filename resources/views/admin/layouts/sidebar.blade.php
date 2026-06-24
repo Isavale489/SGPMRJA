@@ -573,8 +573,7 @@
                                     </li>
                                     @endif
                                     <li class="nav-item">
-                                        {{-- TODO: Crear ruta y controlador para Control de Calidad --}}
-                                        <a href="#"
+                                        <a href="{{ route('calidad.index') }}"
                                             class="nav-link {{ request()->is('calidad*') ? 'active' : '' }}">
                                             <i class="ri-shield-check-line me-1"></i> Control de Calidad
                                         </a>

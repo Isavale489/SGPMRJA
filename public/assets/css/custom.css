@@ -9301,3 +9301,21 @@ select.js-readonly:not(.afs-native) {
 [data-bs-theme="dark"] .tel-principal .tel-star {
     color: #475569;
 }
+
+/* ============================================================
+   FEAT-006 — Control de Calidad: historial de inspecciones en el modal
+   ============================================================ */
+.cc-historial-list {
+    max-height: 9rem;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+.cc-historial-item {
+    border: 1px solid var(--vz-border-color, #e9ebec);
+    border-radius: 0.375rem;
+    padding: 0.4rem 0.6rem;
+    font-size: 0.8rem;
+    line-height: 1.4;
+}
