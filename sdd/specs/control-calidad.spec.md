@@ -8,7 +8,7 @@ base_branch: enmanuel
 **Feature ID**: FEAT-006
 **Fecha**: 2026-06-25
 **Autor**: Emmanuel Arroyo
-**Status**: draft
+**Status**: approved
 **Versión objetivo**: cierre del ciclo de transacciones
 
 ---
@@ -285,7 +285,7 @@ Route::post('ordenes/{orden}/avance', [OrdenProduccionController::class, 'regist
 |---|---|
 | Reproceso vs. máquina de estados por subórdenes: bajar `cantidad_producida` recalcula a `En Proceso`, pero las subórdenes siguen `Finalizado` → ¿el endpoint de avance acepta nuevo avance? | Verificar `OrdenProduccionController::registrarAvance` y, si bloquea, reabrir/crear sububorden o permitir avance mientras `cantidad_producida < cantidad_solicitada`. **Detallar en la TASK del Service.** |
 | Doble inspección concurrente de la misma orden | `lockForUpdate()` + re-chequear `estado === 'Finalizado'` dentro de la transacción |
-| Inconsistencia `cantidad_defectuosa` acumulada en reprocesos sucesivos | Definir si `cantidad_defectuosa` acumula histórico o refleja el último ciclo (ver Pregunta abierta #3) |
+| `cantidad_defectuosa` en reprocesos sucesivos | **Resuelto (#3): acumula histórico** — cada rechazo hace `+= rechazadas`. El listado de "pendientes de calidad" se basa en el estado/última inspección, no en esta columna |
 
 ### Dependencias externas
 | Paquete | Versión | Razón |
@@ -298,10 +298,10 @@ Route::post('ordenes/{orden}/avance', [OrdenProduccionController::class, 'regist
 
 > Resolver antes de mergear. Marcar con [x] al cerrar y dejar la respuesta.
 
-- [ ] **#1 — ¿"Registrar entrega y cobro de saldo" entra en este FEAT-006 o es un FEAT aparte?** El diagrama lo pone como paso Admin posterior a calidad. Propuesta: aquí solo la **compuerta** (pedido no "listo" sin calidad OK); la pantalla de entrega/cobro = FEAT futuro. — *Owner: Emmanuel*
-- [ ] **#2 — ¿Cómo se marca que una orden ya está "aprobada por calidad"?** Opción A (propuesta): derivar de los registros `control_calidad` (última inspección `aprobado/observado` y sin reproceso pendiente). Opción B: un flag/columna en `orden_produccion`. — *Owner: Emmanuel*
-- [ ] **#3 — ¿`cantidad_defectuosa` acumula histórico** (suma de todos los rechazos en reprocesos) o refleja solo el ciclo vigente? — *Owner: Emmanuel/profesor*
-- [ ] **#4 — Inspector: ¿`User` (sesión) o `Empleado` del depto. Producción?** El diagrama dice actor "Supervisor". Propuesta: `User` logueado (consistente con `created_by`). — *Owner: Emmanuel*
+- [x] **#1 — ¿"Registrar entrega y cobro de saldo" entra en este FEAT-006 o es un FEAT aparte?** → **FEAT aparte.** FEAT-006 solo deja la **compuerta** (el pedido no se da por "listo para entrega" si tiene órdenes sin aprobar calidad). La pantalla de entrega/cobro de saldo será un FEAT futuro.
+- [x] **#2 — ¿Cómo se marca que una orden ya está "aprobada por calidad"?** → **Opción A:** se **deriva de los registros `control_calidad`** (no se agrega columna ni estado a `orden_produccion`). Una orden está "aprobada por calidad" si tiene una inspección con resultado `aprobado`/`observado` y no quedó reproceso pendiente.
+- [x] **#3 — ¿`cantidad_defectuosa` acumula histórico o solo el ciclo vigente?** → **Acumula histórico:** cada rechazo suma a `orden.cantidad_defectuosa` (refleja el total de defectuosas detectadas en todos los ciclos de reproceso de esa orden).
+- [x] **#4 — Inspector: ¿`User` o `Empleado`?** → **`User`** (el usuario logueado, consistente con `created_by`). El actor "Supervisor" del diagrama se modela vía rol/permiso, no como FK a `empleado`.
 
 ---
 
@@ -310,3 +310,4 @@ Route::post('ordenes/{orden}/avance', [OrdenProduccionController::class, 'regist
 | Versión | Fecha | Autor | Cambio |
 |---|---|---|---|
 | 0.1 | 2026-06-25 | Emmanuel Arroyo | Borrador inicial — derivado del diagrama de actividad + business-flows + decisiones del dueño del producto |
+| 0.2 | 2026-06-25 | Emmanuel Arroyo | Resueltas las 4 preguntas abiertas (#1 entrega=FEAT aparte, #2 derivar de control_calidad, #3 defectuosa acumula, #4 inspector=User). Status → approved |
