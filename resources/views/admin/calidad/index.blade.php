@@ -61,62 +61,84 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
                 </div>
                 <form id="inspeccionForm">
-                    <div class="modal-body">
+                    <div class="modal-body qc-body">
                         <input type="hidden" id="cc-orden-id">
+                        <input type="hidden" id="cc-resultado">
 
-                        {{-- Resumen de la orden --}}
-                        <div class="row g-2 mb-3">
-                            <div class="col-md-6"><small class="text-muted d-block">Producto</small>
-                                <span class="fw-semibold" id="cc-producto">-</span></div>
-                            <div class="col-md-3"><small class="text-muted d-block">Pedido</small>
-                                <span class="fw-semibold" id="cc-pedido">-</span></div>
-                            <div class="col-md-3"><small class="text-muted d-block">Producido</small>
-                                <span class="fw-semibold" id="cc-producido">-</span></div>
-                        </div>
-
-                        {{-- Cantidades --}}
-                        <div class="row g-2 mb-2">
-                            <div class="col-md-4">
-                                <label for="cc-inspeccionada" class="form-label required">Inspeccionadas</label>
-                                <input type="number" min="1" class="form-control" id="cc-inspeccionada" required>
-                                <div class="invalid-feedback" id="cc-inspeccionada-error"></div>
+                        {{-- Contexto del lote --}}
+                        <div class="qc-context">
+                            <div class="qc-ctx">
+                                <span class="qc-ctx-label">Producto</span>
+                                <span class="qc-ctx-value" id="cc-producto">—</span>
                             </div>
-                            <div class="col-md-4">
-                                <label for="cc-aprobada" class="form-label required">Aprobadas (conformes)</label>
-                                <input type="number" min="0" class="form-control" id="cc-aprobada" required>
-                                <div class="invalid-feedback" id="cc-aprobada-error"></div>
+                            <div class="qc-ctx">
+                                <span class="qc-ctx-label">Pedido</span>
+                                <span class="qc-ctx-value" id="cc-pedido">—</span>
                             </div>
-                            <div class="col-md-4">
-                                <label for="cc-rechazada" class="form-label">Rechazadas (defectuosas)</label>
-                                <input type="number" class="form-control bg-light" id="cc-rechazada" readonly>
+                            <div class="qc-ctx qc-ctx--count">
+                                <span class="qc-ctx-label">Producidas</span>
+                                <span class="qc-ctx-value" id="cc-producido">—</span>
                             </div>
                         </div>
 
-                        {{-- Resultado (derivado) + motivo --}}
-                        <div class="row g-2 mb-2">
-                            <div class="col-md-4">
-                                <label class="form-label">Resultado</label>
-                                <input type="text" class="form-control bg-light" id="cc-resultado-label" readonly>
-                                <input type="hidden" id="cc-resultado">
+                        {{-- Control de partición: defectuosas (entrada) → conformes (derivado) --}}
+                        <p class="qc-prompt">Del lote, marca cuántas unidades resultaron <strong>defectuosas</strong>.</p>
+                        <div class="qc-split">
+                            <div class="qc-counter qc-counter--bad">
+                                <span class="qc-counter-label"><i class="ri-close-circle-line"></i> Defectuosas</span>
+                                <div class="qc-stepper">
+                                    <button type="button" class="qc-step" data-step="-1" aria-label="Quitar una">−</button>
+                                    <input type="number" id="cc-rechazada" class="qc-step-input" value="0" min="0" inputmode="numeric">
+                                    <button type="button" class="qc-step" data-step="1" aria-label="Sumar una">+</button>
+                                </div>
                             </div>
-                            <div class="col-md-8">
-                                <label for="cc-observaciones" class="form-label" id="cc-observaciones-label">Motivo / observaciones</label>
-                                <textarea class="form-control" id="cc-observaciones" rows="2" maxlength="1000"
-                                    placeholder="Describe el defecto si hay unidades rechazadas..."></textarea>
-                                <div class="invalid-feedback" id="cc-observaciones-error"></div>
+                            <div class="qc-counter qc-counter--ok">
+                                <span class="qc-counter-label"><i class="ri-checkbox-circle-line"></i> Conformes</span>
+                                <span class="qc-counter-num" id="cc-aprobada-num">0</span>
                             </div>
+                        </div>
+
+                        {{-- Barra de conformidad (verde conformes / rojo defectuosas) --}}
+                        <div class="qc-bar" id="cc-bar">
+                            <div class="qc-bar-seg qc-bar-ok" id="cc-bar-ok"></div>
+                            <div class="qc-bar-seg qc-bar-bad" id="cc-bar-bad"></div>
+                        </div>
+
+                        {{-- Inspeccionadas (subconjunto opcional) --}}
+                        <div class="qc-inspeccionadas">
+                            <label for="cc-inspeccionada">Unidades inspeccionadas</label>
+                            <input type="number" id="cc-inspeccionada" min="1" class="form-control form-control-sm">
+                            <small class="text-muted">Por defecto se inspeccionan todas las producidas.</small>
+                            <div class="invalid-feedback d-block" id="cc-qty-error"></div>
+                        </div>
+
+                        {{-- Veredicto en vivo --}}
+                        <div class="qc-verdict" id="cc-verdict">
+                            <i class="qc-verdict-icon" id="cc-verdict-icon"></i>
+                            <div class="qc-verdict-text">
+                                <span class="qc-verdict-title" id="cc-verdict-title"></span>
+                                <span class="qc-verdict-sub" id="cc-verdict-sub"></span>
+                            </div>
+                        </div>
+
+                        {{-- Motivo: solo cuando hay defectuosas --}}
+                        <div class="qc-motivo d-none" id="cc-motivo-wrap">
+                            <label for="cc-observaciones" class="form-label required">Motivo del rechazo</label>
+                            <textarea class="form-control" id="cc-observaciones" rows="2" maxlength="1000"
+                                placeholder="Describe el defecto encontrado (costura, mancha, talla…)"></textarea>
+                            <div class="invalid-feedback" id="cc-observaciones-error"></div>
                         </div>
 
                         {{-- Historial de inspecciones previas --}}
-                        <div id="cc-historial-wrap" class="mt-3 d-none">
-                            <h6 class="fs-13 text-muted mb-2"><i class="ri-history-line me-1"></i>Inspecciones previas</h6>
+                        <div id="cc-historial-wrap" class="qc-historial-wrap d-none">
+                            <h6 class="qc-historial-title"><i class="ri-history-line me-1"></i>Inspecciones previas</h6>
                             <div id="cc-historial" class="cc-historial-list"></div>
                         </div>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
                         <button type="submit" class="btn btn-success" id="cc-submit-btn">
-                            <i class="ri-save-line me-1"></i>Registrar inspección
+                            <i class="ri-shield-check-line me-1"></i><span id="cc-submit-label">Aprobar inspección</span>
                         </button>
                     </div>
                 </form>
@@ -165,28 +187,34 @@
                 language: lenguajeData
             });
 
+            // Estado del lote actual en el modal
+            var producidas = 0;
+
             // ── Abrir modal: cargar detalle de la orden ──
             $('#calidad-table').on('click', '.inspeccionar-btn', function () {
                 var id = $(this).data('id');
                 $.get('{{ url('calidad') }}/' + id + '/detalle', function (d) {
                     $('#inspeccionForm')[0].reset();
                     $('.is-invalid').removeClass('is-invalid');
+                    producidas = parseInt(d.cantidad_producida, 10) || 0;
+
                     $('#cc-orden-id').val(d.id);
                     $('#cc-producto').text(d.producto);
                     $('#cc-pedido').text(d.pedido);
-                    $('#cc-producido').text(d.cantidad_producida);
-                    // Defaults: inspeccionar todo lo producido, todo conforme
-                    $('#cc-inspeccionada').val(d.cantidad_producida).attr('max', d.cantidad_producida);
-                    $('#cc-aprobada').val(d.cantidad_producida).attr('max', d.cantidad_producida);
-                    recalcular();
+                    $('#cc-producido').text(producidas);
+                    // Defaults: inspeccionar todo, 0 defectuosas
+                    $('#cc-inspeccionada').val(producidas).attr('max', producidas);
+                    $('#cc-rechazada').val(0).attr('max', producidas);
+                    render();
 
                     // Historial
                     if (d.historial && d.historial.length) {
                         $('#cc-historial').html(d.historial.map(function (h) {
+                            var tono = h.resultado === 'rechazado' ? 'danger' : (h.resultado === 'observado' ? 'warning' : 'success');
                             return '<div class="cc-historial-item">'
-                                + '<span class="badge bg-' + (h.resultado === 'rechazado' ? 'danger' : (h.resultado === 'observado' ? 'warning' : 'success')) + '-subtle text-' + (h.resultado === 'rechazado' ? 'danger' : (h.resultado === 'observado' ? 'warning' : 'success')) + '">' + (RESULTADO_LABEL[h.resultado] || h.resultado) + '</span> '
+                                + '<span class="badge bg-' + tono + '-subtle text-' + tono + '">' + (RESULTADO_LABEL[h.resultado] || h.resultado) + '</span> '
                                 + '<small class="text-muted">' + h.fecha + ' · ' + h.inspector + '</small><br>'
-                                + '<small>Insp. ' + h.inspeccionada + ' · Aprob. ' + h.aprobada + ' · Rech. ' + h.rechazada + (h.observaciones ? ' · ' + h.observaciones : '') + '</small>'
+                                + '<small>Insp. ' + h.inspeccionada + ' · Conf. ' + h.aprobada + ' · Def. ' + h.rechazada + (h.observaciones ? ' · ' + h.observaciones : '') + '</small>'
                                 + '</div>';
                         }).join(''));
                         $('#cc-historial-wrap').removeClass('d-none');
@@ -198,39 +226,68 @@
                 });
             });
 
-            // ── Recalcular rechazadas + resultado derivado ──
-            function recalcular() {
-                var insp = parseInt($('#cc-inspeccionada').val(), 10) || 0;
-                var aprob = parseInt($('#cc-aprobada').val(), 10) || 0;
-                var rech = Math.max(0, insp - aprob);
-                $('#cc-rechazada').val(rech);
-                var resultado = rech > 0 ? 'rechazado' : 'aprobado';
-                $('#cc-resultado').val(resultado);
-                $('#cc-resultado-label').val(RESULTADO_LABEL[resultado]);
-                // Motivo obligatorio si hay rechazadas
-                $('#cc-observaciones-label').toggleClass('required', rech > 0);
+            // ── Lee y normaliza las cantidades del modal ──
+            function leer() {
+                var insp = Math.min(Math.max(parseInt($('#cc-inspeccionada').val(), 10) || 0, 0), producidas || 0);
+                var rech = Math.min(Math.max(parseInt($('#cc-rechazada').val(), 10) || 0, 0), insp);
+                return { insp: insp, rech: rech, aprob: insp - rech };
             }
-            $('#cc-inspeccionada, #cc-aprobada').on('input', recalcular);
+
+            // ── Render en vivo: conformes, barra, veredicto, motivo, botón ──
+            function render() {
+                var q = leer();
+                $('#cc-rechazada').val(q.rech);
+                $('#cc-aprobada-num').text(q.aprob);
+
+                // Barra de conformidad
+                var total = q.insp || 1;
+                $('#cc-bar-ok').css('width', (q.aprob / total * 100) + '%');
+                $('#cc-bar-bad').css('width', (q.rech / total * 100) + '%');
+
+                var conforme = q.rech === 0;
+                $('#cc-resultado').val(conforme ? 'aprobado' : 'rechazado');
+
+                // Veredicto
+                var $v = $('#cc-verdict').removeClass('is-ok is-reproceso').addClass(conforme ? 'is-ok' : 'is-reproceso');
+                $('#cc-verdict-icon').attr('class', 'qc-verdict-icon ' + (conforme ? 'ri-checkbox-circle-fill' : 'ri-error-warning-fill'));
+                $('#cc-verdict-title').text(conforme ? 'Conforme' : 'Reproceso');
+                $('#cc-verdict-sub').text(conforme
+                    ? (q.aprob + ' unidad' + (q.aprob === 1 ? '' : 'es') + ' lista' + (q.aprob === 1 ? '' : 's') + ' para entrega.')
+                    : (q.rech + ' unidad' + (q.rech === 1 ? '' : 'es') + ' vuelve' + (q.rech === 1 ? '' : 'n') + ' a producción para rehacerse.'));
+
+                // Motivo solo si hay defectuosas
+                $('#cc-motivo-wrap').toggleClass('d-none', conforme);
+
+                // Botón primario
+                $('#cc-submit-label').text(conforme ? 'Aprobar inspección' : 'Registrar reproceso');
+                $('#cc-submit-btn').toggleClass('btn-success', conforme).toggleClass('btn-warning', !conforme);
+            }
+
+            // Stepper de defectuosas
+            $('.qc-stepper .qc-step').on('click', function () {
+                var step = parseInt($(this).data('step'), 10);
+                $('#cc-rechazada').val((parseInt($('#cc-rechazada').val(), 10) || 0) + step);
+                render();
+            });
+            $('#cc-rechazada, #cc-inspeccionada').on('input', render);
 
             // ── Submit ──
             $('#inspeccionForm').on('submit', function (e) {
                 e.preventDefault();
                 $('.is-invalid').removeClass('is-invalid');
+                $('#cc-qty-error').text('');
 
-                var insp = parseInt($('#cc-inspeccionada').val(), 10) || 0;
-                var aprob = parseInt($('#cc-aprobada').val(), 10) || 0;
-                var rech = parseInt($('#cc-rechazada').val(), 10) || 0;
+                var q = leer();
                 var ok = true;
-
-                if (insp < 1) { $('#cc-inspeccionada').addClass('is-invalid'); $('#cc-inspeccionada-error').text('Indica al menos 1 unidad.'); ok = false; }
-                if (aprob < 0 || aprob > insp) { $('#cc-aprobada').addClass('is-invalid'); $('#cc-aprobada-error').text('Las aprobadas no pueden superar las inspeccionadas.'); ok = false; }
-                if (rech > 0 && !$('#cc-observaciones').val().trim()) {
+                if (q.insp < 1) { $('#cc-inspeccionada').addClass('is-invalid'); $('#cc-qty-error').text('Inspecciona al menos 1 unidad.'); ok = false; }
+                if (q.rech > 0 && !$('#cc-observaciones').val().trim()) {
                     $('#cc-observaciones').addClass('is-invalid');
-                    $('#cc-observaciones-error').text('El motivo es obligatorio cuando hay unidades rechazadas.');
+                    $('#cc-observaciones-error').text('El motivo es obligatorio cuando hay unidades defectuosas.');
                     ok = false;
                 }
                 if (!ok) return;
 
+                var insp = q.insp, aprob = q.aprob, rech = q.rech;
                 var id = $('#cc-orden-id').val();
                 var $btn = $('#cc-submit-btn').prop('disabled', true);
                 $.ajax({
