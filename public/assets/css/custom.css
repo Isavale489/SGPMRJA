@@ -9124,6 +9124,10 @@ select.js-readonly:not(.afs-native) {
 }
 .cli-copy-btn i { font-size: 0.92rem; line-height: 1; }
 .cli-view-card-body .align-items-start:hover .cli-copy-btn,
+/* Gestión Operativa (cotizaciones, pedidos, compras): revela el botón al pasar
+   el mouse por el contenedor del valor, sin depender de .cli-view-card-body. */
+#viewModal *:hover > .cli-copy-btn,
+#viewCompraModal *:hover > .cli-copy-btn,
 .cli-copy-btn:focus-visible { opacity: 1; }
 .cli-copy-btn:hover { background: rgba(42, 82, 152, 0.10); color: #2a5298; }
 .cli-copy-btn.is-copied { background: rgba(34, 197, 94, 0.14); color: #16a34a; opacity: 1; }
