@@ -315,10 +315,10 @@ class PedidoController extends Controller
             $query->where('estado', $request->estado);
         }
         if ($request->filled('fecha_desde')) {
-            $query->whereDate('fecha_entrega', '>=', $request->fecha_desde);
+            $query->whereDate('fecha_entrega_estimada', '>=', $request->fecha_desde);
         }
         if ($request->filled('fecha_hasta')) {
-            $query->whereDate('fecha_entrega', '<=', $request->fecha_hasta);
+            $query->whereDate('fecha_entrega_estimada', '<=', $request->fecha_hasta);
         }
         $pedidos = $query->get();
 
