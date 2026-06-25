@@ -4265,6 +4265,15 @@ header#page-topbar,
 }
 .cfg-tg-step:hover { background: #eef2f7; color: #1e3c72; }
 .cfg-tg-cell.is-active .cfg-tg-step { color: #94a3b8; }
+/* Celda vacía: ocultar los steppers para bajar el ruido de "− 0 +" repetido;
+   queda solo el 0 tenue. Se revelan al pasar el cursor o enfocar, y al llenar
+   la celda pasa a .is-active y permanecen visibles. */
+.cfg-tg-cell:not(.is-active) .cfg-tg-step {
+    opacity: 0;
+    transition: opacity 0.12s;
+}
+.cfg-tg-cell:not(.is-active):hover .cfg-tg-step,
+.cfg-tg-cell:not(.is-active):focus-within .cfg-tg-step { opacity: 1; }
 
 /* Chip de género en listas de resumen/agrupado */
 .cot-chip-gen {
