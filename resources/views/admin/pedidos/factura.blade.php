@@ -39,6 +39,12 @@
     .data-table tbody td.text-right  { text-align: right; }
     .data-table tbody td small { color: #6b7280; font-size: 8px; }
     .data-table tbody td .bs-eq { color: #777777; font-size: 8px; font-weight: normal; }
+    .data-table tbody td .prod-code {
+        font-family: 'DejaVu Sans Mono', monospace;
+        font-size: 8px;
+        color: #1e3c72;
+        font-weight: bold;
+    }
 
     /* ── Bloque de totales ── */
     .totals-block {
@@ -166,7 +172,11 @@
                 <tr class="{{ $index % 2 === 1 ? 'zebra' : '' }}">
                     <td class="col-cant text-center">{{ $detalle->cantidad }}</td>
                     <td class="col-concep">
-                        {{ $detalle->producto->nombre }}
+                        @php
+                            $prodCodigo = optional($detalle->producto)->codigo ?? ($detalle->sku_snapshot ?: null);
+                            $prodNombre = optional($detalle->producto)->nombre ?? (optional($detalle->tipoProducto)->nombre ?? 'Variante');
+                        @endphp
+                        @if($prodCodigo)<span class="prod-code">{{ $prodCodigo }}</span> @endif<strong>{{ $prodNombre }}</strong>
                         @if(!empty($variantPartes))
                             <br><small>{{ implode(' · ', $variantPartes) }}</small>
                         @endif

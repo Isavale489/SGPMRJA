@@ -344,7 +344,7 @@ class PedidoController extends Controller
     public function pedidoPdf(Pedido $pedido)
     {
         // Cargar relaciones necesarias
-        $pedido->load(['user:id,name', 'productos.producto', 'productos.genero', 'productos.bordados.logo:id,name', 'cliente', 'cliente.persona', 'cotizacion:id,tasa_cambio_valor,created_at']);
+        $pedido->load(['user:id,name', 'productos.producto', 'productos.tipoProducto', 'productos.genero', 'productos.bordados.logo:id,name', 'cliente', 'cliente.persona', 'cotizacion:id,tasa_cambio_valor,created_at']);
 
         // Cálculos financieros
         $ivaTasa = 0.16; // 16 %

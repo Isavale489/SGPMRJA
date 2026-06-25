@@ -26,15 +26,27 @@
     }
 
     /* ── Anchos de columnas de la tabla de productos ── */
-    .col-cant     { width: 6%;  text-align: center; }
-    .col-prod     { width: 22%; }
-    .col-desc     { width: 16%; }
-    .col-talla    { width: 7%;  text-align: center; }
-    .col-logo     { width: 13%; }
-    .col-ubic     { width: 12%; }
-    .col-bord     { width: 6%;  text-align: center; }
-    .col-punit    { width: 9%;  text-align: right; }
-    .col-monto    { width: 9%;  text-align: right; }
+    .col-cant     { width: 5%;    text-align: center; }
+    .col-codigo   { width: 10%; }
+    .col-prod     { width: 21%; }
+    .col-desc     { width: 13%; }
+    .col-talla    { width: 6%;    text-align: center; }
+    .col-logo     { width: 11%; }
+    .col-ubic     { width: 10%; }
+    .col-bord     { width: 5%;    text-align: center; }
+    .col-punit    { width: 9.5%;  text-align: right; }
+    .col-monto    { width: 9.5%;  text-align: right; }
+
+    /* Código del producto (SKU): legible y sin cortarse */
+    .col-codigo .prod-code {
+        font-family: 'DejaVu Sans Mono', monospace;
+        font-size: 8px;
+        color: #1e3c72;
+        font-weight: bold;
+        word-break: break-all;
+    }
+    .col-prod strong { color: #2d3436; }
+    .col-prod small  { color: #6b7280; }
 
     .data-table tbody td.text-center { text-align: center; }
     .data-table tbody td.text-right  { text-align: right; }
@@ -122,6 +134,7 @@
         <thead>
             <tr>
                 <th class="col-cant">Cant.</th>
+                <th class="col-codigo">Código</th>
                 <th class="col-prod">Producto</th>
                 <th class="col-desc">Descripción</th>
                 <th class="col-talla">Talla</th>
@@ -161,12 +174,20 @@
                             $variantPartes[] = $atrNombre . ': ' . $valNombre;
                         }
                     }
-                    $variantTexto = !empty($variantPartes) ? ' (' . implode(' · ', $variantPartes) . ')' : '';
+                    // Código y nombre robustos: línea legacy (producto) o dinámica
+                    // (sin producto_id → tipo + sku_snapshot). Evita el "-" y los
+                    // warnings de leer ->nombre sobre null.
+                    $prodCodigo = optional($detalle->producto)->codigo ?? ($detalle->sku_snapshot ?: '—');
+                    $prodNombre = optional($detalle->producto)->nombre ?? (optional($detalle->tipoProducto)->nombre ?? 'Variante');
                 @endphp
                 <tr class="{{ $index % 2 === 1 ? 'zebra' : '' }}">
                     <td class="col-cant text-center">{{ $detalle->cantidad }}</td>
-                    <td class="col-prod">{{ ($detalle->producto->nombre ?? '-') }}{{ $variantTexto }}</td>
-                    <td class="col-desc">{{ $detalle->descripcion ?? '-' }}</td>
+                    <td class="col-codigo"><span class="prod-code">{{ $prodCodigo }}</span></td>
+                    <td class="col-prod">
+                        <strong>{{ $prodNombre }}</strong>
+                        @if(!empty($variantPartes))<br><small>{{ implode(' · ', $variantPartes) }}</small>@endif
+                    </td>
+                    <td class="col-desc">{{ $detalle->descripcion ?: '—' }}</td>
                     <td class="col-talla text-center">{{ $detalle->talla?->etiqueta ?? '-' }}</td>
                     <td class="col-logo">{{ $detalle->lleva_bordado ? ($logosTexto ?: ($detalle->nombre_logo ?: '-')) : '-' }}</td>
                     <td class="col-ubic">{{ $detalle->lleva_bordado ? ($ubicacionesTexto ?: '-') : '-' }}</td>
