@@ -114,19 +114,21 @@
                         <input type="hidden" id="cc-orden-id">
                         <input type="hidden" id="cc-resultado">
 
-                        {{-- Contexto del lote --}}
+                        {{-- Contexto del lote: producto a ancho completo (puede envolver) + fila Pedido/Producidas --}}
                         <div class="qc-context">
-                            <div class="qc-ctx">
+                            <div class="qc-ctx qc-ctx--full">
                                 <span class="qc-ctx-label">Producto</span>
-                                <span class="qc-ctx-value" id="cc-producto">—</span>
+                                <span class="qc-ctx-value qc-ctx-prod" id="cc-producto">—</span>
                             </div>
-                            <div class="qc-ctx">
-                                <span class="qc-ctx-label">Pedido</span>
-                                <span class="qc-ctx-value" id="cc-pedido">—</span>
-                            </div>
-                            <div class="qc-ctx qc-ctx--count">
-                                <span class="qc-ctx-label">Producidas</span>
-                                <span class="qc-ctx-value" id="cc-producido">—</span>
+                            <div class="qc-context-row">
+                                <div class="qc-ctx">
+                                    <span class="qc-ctx-label">Pedido</span>
+                                    <span class="qc-ctx-value" id="cc-pedido">—</span>
+                                </div>
+                                <div class="qc-ctx qc-ctx--count">
+                                    <span class="qc-ctx-label">Producidas</span>
+                                    <span class="qc-ctx-value" id="cc-producido">—</span>
+                                </div>
                             </div>
                         </div>
 
