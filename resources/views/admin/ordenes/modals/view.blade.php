@@ -1,8 +1,7 @@
 <!-- Modal — Detalles de Orden de Producción (wizard) -->
 {{-- Estilos en public/assets/css/custom.css — sección "MÓDULO ÓRDENES — Modal Detalles" --}}
 
-<div class="modal fade atlantico-modal atlantico-modal--op" id="viewModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static"
-    data-bs-keyboard="false">
+<div class="modal fade atlantico-modal atlantico-modal--op" id="viewModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
 
@@ -56,6 +55,11 @@
 
                         <!-- Metadata en emp-icon-box -->
                         <div class="col-12">
+                            <div class="cli-view-card">
+                                <div class="cli-view-card-header">
+                                    <i class="ri-clipboard-line"></i>Datos de la Orden
+                                </div>
+                                <div class="cli-view-card-body">
                             <div class="row g-2">
                                 <div class="col-sm-4">
                                     <div class="d-flex align-items-start gap-2">
@@ -91,15 +95,17 @@
                                     </div>
                                 </div>
                             </div>
+                                </div>
+                            </div>
                         </div>
 
                         <!-- Timeline -->
                         <div class="col-md-5">
-                            <div class="card border-0 shadow-sm h-100 mb-0">
-                                <div class="card-body p-3">
-                                    <p class="text-uppercase text-muted mb-3 kpi-label">
-                                        <i class="ri-calendar-2-line me-1 text-op-accent"></i>Cronograma
-                                    </p>
+                            <div class="cli-view-card h-100 mb-0">
+                                <div class="cli-view-card-header">
+                                    <i class="ri-calendar-2-line"></i>Cronograma
+                                </div>
+                                <div class="cli-view-card-body">
                                     <div class="d-flex gap-3 mb-0">
                                         <div class="d-flex flex-column align-items-center flex-shrink-0">
                                             <div class="rounded-circle flex-shrink-0 timeline-dot timeline-dot-start"></div>
@@ -135,11 +141,11 @@
 
                         <!-- Diseño / Bordado -->
                         <div class="col-md-7">
-                            <div class="card border-0 shadow-sm h-100 mb-0">
-                                <div class="card-body p-3">
-                                    <p class="text-uppercase text-muted mb-2 kpi-label">
-                                        <i class="ri-paint-brush-line me-1 text-op-accent"></i>Diseño / Bordado
-                                    </p>
+                            <div class="cli-view-card h-100 mb-0">
+                                <div class="cli-view-card-header">
+                                    <i class="ri-paint-brush-line"></i>Diseño / Bordado
+                                </div>
+                                <div class="cli-view-card-body">
                                     <div class="fs-13 view-content-area" id="view-logo"></div>
                                 </div>
                             </div>
@@ -150,26 +156,24 @@
 
                 <!-- ─ Paso 2: Insumos ────────────────────────────────── -->
                 <section class="wiz-step-content" data-step="2">
-                    <div class="card border-0 shadow-sm mb-0">
-                        <div class="card-body p-0">
-                            <div class="table-responsive" id="view-insumos-tablewrap">
-                                <table class="table table-nowrap table-sm align-middle mb-0">
-                                    <thead class="table-light">
-                                        <tr>
-                                            <th>Insumo</th>
-                                            <th class="text-center">Est.</th>
-                                            <th class="text-center">Utilizado</th>
-                                            <th>Progreso</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="view-insumos"></tbody>
-                                </table>
-                            </div>
-                            <div id="view-insumos-empty" class="text-center py-4" style="display:none;">
-                                <i class="ri-box-3-line text-muted" style="font-size:2rem;opacity:.4;"></i>
-                                <p class="text-muted fs-13 mt-2 mb-0">Sin insumos registrados para esta orden.</p>
-                            </div>
-                        </div>
+                    <div class="cot-grouped-tablewrap" id="view-insumos-tablewrap">
+                        <table class="cot-grouped-table">
+                            <thead>
+                                <tr>
+                                    <th class="cot-col-num text-center" style="width:38px;">#</th>
+                                    <th style="min-width:170px;">Insumo</th>
+                                    <th class="cot-cell-num">Estimado</th>
+                                    <th class="cot-cell-num">Utilizado</th>
+                                    <th style="min-width:170px;">Progreso</th>
+                                </tr>
+                            </thead>
+                            <tbody id="view-insumos"></tbody>
+                        </table>
+                    </div>
+                    <div id="view-insumos-empty" class="cot-empty-state" style="display:none;">
+                        <div class="cot-empty-icon"><i class="ri-box-3-line"></i></div>
+                        <h6 class="cot-empty-title">Sin insumos</h6>
+                        <p class="cot-empty-desc">Sin insumos registrados para esta orden.</p>
                     </div>
                 </section>
 
@@ -177,30 +181,28 @@
                 <section class="wiz-step-content" data-step="3">
                     <div class="row g-3">
 
-                        <!-- Hero card de progreso -->
+                        <!-- Card de progreso de producción -->
                         <div class="col-12">
                             <div class="cot-resumen-card">
-                                <div class="cot-resumen-card-body">
-                                <div class="d-flex justify-content-between align-items-start mb-3">
-                                    <p class="text-uppercase opacity-75 mb-0 fs-11" style="letter-spacing:.08em;">Progreso de producción</p>
-                                    <span class="fw-bold" style="font-size:2rem;line-height:1;"><span id="view-progreso-pct">0</span>%</span>
-                                </div>
-                                <div class="progress mb-4" style="height:10px;background:rgba(255,255,255,.2);">
-                                    <div id="view-progreso" class="progress-bar" role="progressbar"
-                                        style="background:#00d9a5;transition:width .5s;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
-                                </div>
-                                <div class="row g-0 text-center">
-                                    <div class="col-6 border-end border-white border-opacity-25">
-                                        <p class="opacity-75 mb-1 fs-11 text-uppercase">Solicitada</p>
-                                        <p class="fw-bold mb-0" style="font-size:2rem;" id="view-cantidad-solicitada"></p>
-                                        <p class="opacity-60 fs-11 mb-0">unidades</p>
+                                <div class="ord-prog-body">
+                                    <div class="ord-prog-head">
+                                        <span class="ord-prog-title">Progreso de producción</span>
+                                        <span class="ord-prog-pct"><span id="view-progreso-pct">0</span>%</span>
                                     </div>
-                                    <div class="col-6">
-                                        <p class="opacity-75 mb-1 fs-11 text-uppercase">Producida</p>
-                                        <p class="fw-bold mb-0" style="font-size:2rem;" id="view-cantidad-producida"></p>
-                                        <p class="opacity-60 fs-11 mb-0">unidades</p>
+                                    <div class="progress ord-prog-bar">
+                                        <div id="view-progreso" class="progress-bar" role="progressbar"
+                                            style="width:0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
                                     </div>
-                                </div>
+                                    <div class="ord-prog-stats">
+                                        <div class="ord-prog-stat">
+                                            <span class="ord-prog-stat-label">Solicitada</span>
+                                            <span class="ord-prog-stat-num"><span id="view-cantidad-solicitada">0</span><small>u</small></span>
+                                        </div>
+                                        <div class="ord-prog-stat">
+                                            <span class="ord-prog-stat-label">Producida</span>
+                                            <span class="ord-prog-stat-num"><span id="view-cantidad-producida">0</span><small>u</small></span>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -239,17 +241,17 @@
             </div>{{-- /modal-body --}}
 
             <!-- ══ Footer del wizard ══════════════════════════════════ -->
-            <div class="modal-footer wiz-wizard-footer py-2 px-3">
+            <div class="modal-footer wiz-wizard-footer">
                 <div class="wiz-wizard-footer-info"></div>
                 <div class="wiz-wizard-footer-actions">
-                    <button type="button" class="btn btn-sm btn-light border" id="btn-view-ord-prev" style="display:none;">
+                    <button type="button" class="btn btn-light wiz-wizard-btn-prev" id="btn-view-ord-prev" style="display:none;">
                         <i class="ri-arrow-left-line me-1"></i>Anterior
                     </button>
-                    <button type="button" class="btn btn-sm btn-primary" id="btn-view-ord-next">
-                        Siguiente<i class="ri-arrow-right-line ms-1"></i>
-                    </button>
-                    <button type="button" class="btn btn-sm btn-light border" data-bs-dismiss="modal" id="btn-view-ord-close" style="display:none;">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">
                         <i class="ri-close-line me-1"></i>Cerrar
+                    </button>
+                    <button type="button" class="btn btn-atlantico-brand wiz-wizard-btn-next" id="btn-view-ord-next">
+                        Continuar<i class="ri-arrow-right-line ms-1"></i>
                     </button>
                 </div>
             </div>

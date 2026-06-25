@@ -2039,6 +2039,75 @@ header#page-topbar,
 .cot-resumen-card--compact .cot-resumen-divider { margin: 4px 0; }
 .cot-resumen-card--compact .cot-resumen-row--total .cot-resumen-row-value { font-size: 1.4rem; }
 
+/* ── Paso 3 Órdenes — card de progreso de producción (compacta) ──
+   Reusa el gradiente navy de .cot-resumen-card; aquí solo el layout interno. */
+.ord-prog-body { padding: 16px 20px; }
+.ord-prog-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+}
+.ord-prog-title {
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.72);
+}
+.ord-prog-pct {
+    font-size: 1.5rem;
+    font-weight: 800;
+    line-height: 1;
+    color: #00d9a5;
+}
+.ord-prog-bar {
+    height: 7px;
+    background: rgba(255, 255, 255, 0.16);
+    border-radius: 99px;
+    margin-bottom: 16px;
+    overflow: hidden;
+}
+.ord-prog-bar .progress-bar {
+    background: #00d9a5;
+    border-radius: 99px;
+    transition: width 0.5s ease;
+}
+.ord-prog-stats {
+    display: flex;
+    gap: 2px;
+    border-radius: 10px;
+    overflow: hidden;
+}
+.ord-prog-stat {
+    flex: 1;
+    text-align: center;
+    padding: 10px 8px;
+    background: rgba(255, 255, 255, 0.05);
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+.ord-prog-stat-label {
+    font-size: 0.62rem;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.62);
+}
+.ord-prog-stat-num {
+    font-size: 1.4rem;
+    font-weight: 700;
+    line-height: 1;
+    color: #ffffff;
+}
+.ord-prog-stat-num small {
+    font-size: 0.6rem;
+    font-weight: 500;
+    opacity: 0.6;
+    margin-left: 1px;
+}
+
 .cot-resumen-tabla-wrap { max-height: 220px; overflow-y: auto; }
 .cot-resumen-tabla thead th {
     background: #f3f6fc;
@@ -2542,8 +2611,21 @@ header#page-topbar,
     display: inline-flex;
     align-items: center;
     gap: 5px;
+    /* FEAT-006 TASK-043: permitir que un email/dato largo encoja y quiebre
+       dentro del item en vez de desbordar la card */
+    min-width: 0;
+    max-width: 100%;
 }
 .cot-cliente-contact-item i { color: #94a3b8; font-size: 0.95rem; }
+/* FEAT-006 TASK-043: quiebre de email largo (overflow-wrap:anywhere reduce el
+   tamaño mínimo del flex item, así el texto rompe en vez de desbordar). Aplica
+   al detalle "Ver" (#view-cliente-email) y a la card del wizard de edición. */
+#view-cliente-email,
+#cot-cliente-email-display {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    min-width: 0;
+}
 .cot-cliente-stats {
     display: flex;
     flex-wrap: wrap;
@@ -9124,6 +9206,10 @@ select.js-readonly:not(.afs-native) {
 }
 .cli-copy-btn i { font-size: 0.92rem; line-height: 1; }
 .cli-view-card-body .align-items-start:hover .cli-copy-btn,
+/* Gestión Operativa (cotizaciones, pedidos, compras): revela el botón al pasar
+   el mouse por el contenedor del valor, sin depender de .cli-view-card-body. */
+#viewModal *:hover > .cli-copy-btn,
+#viewCompraModal *:hover > .cli-copy-btn,
 .cli-copy-btn:focus-visible { opacity: 1; }
 .cli-copy-btn:hover { background: rgba(42, 82, 152, 0.10); color: #2a5298; }
 .cli-copy-btn.is-copied { background: rgba(34, 197, 94, 0.14); color: #16a34a; opacity: 1; }
@@ -9300,4 +9386,278 @@ select.js-readonly:not(.afs-native) {
 /* Dark mode */
 [data-bs-theme="dark"] .tel-principal .tel-star {
     color: #475569;
+}
+
+/* ============================================================
+   FEAT-006 — Control de Calidad: historial de inspecciones en el modal
+   ============================================================ */
+.cc-historial-list {
+    max-height: 9rem;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+.cc-historial-item {
+    border: 1px solid var(--vz-border-color, #e9ebec);
+    border-radius: 0.375rem;
+    padding: 0.4rem 0.6rem;
+    font-size: 0.8rem;
+    line-height: 1.4;
+}
+
+/* ============================================================
+   FEAT-006 — Modal de inspección de Control de Calidad (compacto)
+   ============================================================ */
+.qc-body { padding: 1rem 1.25rem; }
+
+/* Contexto del lote: producto a ancho completo (envuelve) + fila Pedido/Producidas */
+.qc-context {
+    background: #f8fafc;
+    border: 1px solid #e9ecef;
+    border-radius: 0.5rem;
+    padding: 0.6rem 0.9rem;
+    margin-bottom: 0.9rem;
+}
+.qc-ctx { display: flex; flex-direction: column; gap: 0.1rem; min-width: 0; }
+.qc-ctx--full { padding-bottom: 0.5rem; }
+.qc-context-row {
+    display: flex;
+    border-top: 1px solid #e9ecef;
+    padding-top: 0.5rem;
+}
+.qc-context-row .qc-ctx { flex: 1 1 0; min-width: 0; padding-left: 0.9rem; justify-content: center; }
+.qc-context-row .qc-ctx:first-child { padding-left: 0; }
+.qc-context-row .qc-ctx + .qc-ctx { border-left: 1px solid #e9ecef; }
+.qc-ctx-label { font-size: 0.66rem; text-transform: uppercase; letter-spacing: .04em; color: #94a3b8; font-weight: 600; }
+.qc-ctx-value { font-size: 0.85rem; font-weight: 600; color: #1e293b; }
+.qc-ctx-prod { font-size: 0.95rem; line-height: 1.3; }
+.qc-ctx--count .qc-ctx-value { font-size: 1.3rem; line-height: 1; color: #0f766e; }
+
+/* Fila de control compacta: 3 celdas (inspeccionadas · defectuosas · conformes) */
+.qc-controls {
+    display: flex;
+    align-items: center;
+    border: 1px solid #e9ecef;
+    border-radius: 0.5rem;
+    padding: 0.5rem 0;
+    margin-bottom: 0.6rem;
+}
+.qc-field { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 0.3rem; border-left: 1px solid #e9ecef; padding: 0 0.75rem; }
+.qc-field:first-child { border-left: 0; }
+.qc-field-label { font-size: 0.66rem; text-transform: uppercase; letter-spacing: .04em; color: #94a3b8; font-weight: 600; }
+.qc-label-bad { color: #dc2626; }
+.qc-label-ok  { color: #16a34a; }
+.qc-mini-input {
+    width: 70px; height: 31px; text-align: center; font-weight: 600;
+    border: 1px solid #ced4da; border-radius: 0.375rem; background: #fff; color: #1e293b;
+}
+.qc-field-num { font-size: 1.5rem; font-weight: 700; line-height: 1; color: #16a34a; }
+
+/* Stepper − [n] + (compacto) */
+.qc-stepper { display: inline-flex; align-items: center; gap: 0.3rem; }
+.qc-step {
+    width: 28px; height: 28px; border-radius: 50%;
+    border: 1px solid #fca5a5; background: #fff; color: #dc2626;
+    font-size: 1.05rem; font-weight: 700; line-height: 1;
+    display: inline-flex; align-items: center; justify-content: center;
+    cursor: pointer; transition: background .12s, transform .08s;
+}
+.qc-step:hover { background: #dc2626; color: #fff; }
+.qc-step:active { transform: scale(.9); }
+.qc-step-input {
+    width: 46px; height: 31px; text-align: center; font-size: 1.05rem; font-weight: 700;
+    border: 1px solid #fecaca; border-radius: 0.375rem; color: #b91c1c; background: #fff;
+}
+.qc-step-input::-webkit-outer-spin-button,
+.qc-step-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.qc-step-input, .qc-mini-input { -moz-appearance: textfield; }
+
+/* Barra de conformidad */
+.qc-bar { display: flex; height: 8px; border-radius: 999px; overflow: hidden; background: #e5e7eb; margin-bottom: 0.5rem; }
+.qc-bar-seg { height: 100%; transition: width .35s ease; }
+.qc-bar-ok  { background: #22c55e; }
+.qc-bar-bad { background: #ef4444; }
+
+/* Veredicto en vivo (slim) */
+.qc-verdict {
+    display: flex; align-items: center; gap: 0.6rem;
+    border-radius: 0.5rem; padding: 0.55rem 0.8rem;
+    border: 1px solid transparent; transition: background .2s, border-color .2s;
+}
+.qc-verdict.is-ok        { background: #f0fdf4; border-color: #bbf7d0; }
+.qc-verdict.is-reproceso { background: #fffbeb; border-color: #fde68a; }
+.qc-verdict-icon { font-size: 1.35rem; line-height: 1; }
+.qc-verdict.is-ok .qc-verdict-icon        { color: #16a34a; }
+.qc-verdict.is-reproceso .qc-verdict-icon { color: #d97706; }
+.qc-verdict-text { display: flex; flex-direction: column; line-height: 1.25; }
+.qc-verdict-title { font-weight: 700; font-size: 0.9rem; }
+.qc-verdict.is-ok .qc-verdict-title        { color: #15803d; }
+.qc-verdict.is-reproceso .qc-verdict-title { color: #b45309; }
+.qc-verdict-sub { font-size: 0.78rem; color: #64748b; }
+
+.qc-motivo { margin-top: 0.8rem; }
+.qc-historial-wrap { margin-top: 0.9rem; border-top: 1px dashed #e9ecef; padding-top: 0.7rem; }
+.qc-historial-title { font-size: 0.78rem; color: #94a3b8; font-weight: 600; margin-bottom: 0.45rem; }
+.cc-historial-list { max-height: 8rem; overflow-y: auto; display: flex; flex-direction: column; gap: 0.4rem; }
+.cc-historial-item { border: 1px solid #e9ecef; border-radius: 0.375rem; padding: 0.4rem 0.6rem; font-size: 0.78rem; line-height: 1.4; }
+
+/* ── Dark mode ── */
+[data-bs-theme="dark"] .qc-context,
+[data-bs-theme="dark"] .qc-controls { background: rgba(255,255,255,.03); border-color: rgba(255,255,255,.08); }
+[data-bs-theme="dark"] .qc-field,
+[data-bs-theme="dark"] .qc-context-row .qc-ctx + .qc-ctx { border-left-color: rgba(255,255,255,.08); }
+[data-bs-theme="dark"] .qc-context-row { border-top-color: rgba(255,255,255,.08); }
+[data-bs-theme="dark"] .qc-ctx-value { color: #e2e8f0; }
+[data-bs-theme="dark"] .qc-ctx--count .qc-ctx-value { color: #5eead4; }
+[data-bs-theme="dark"] .qc-mini-input { background: transparent; color: #e2e8f0; border-color: rgba(255,255,255,.15); }
+[data-bs-theme="dark"] .qc-step { background: transparent; }
+[data-bs-theme="dark"] .qc-step-input { background: transparent; color: #fca5a5; }
+[data-bs-theme="dark"] .qc-bar { background: rgba(255,255,255,.1); }
+[data-bs-theme="dark"] .qc-verdict.is-ok        { background: rgba(34,197,94,.08); border-color: rgba(34,197,94,.3); }
+[data-bs-theme="dark"] .qc-verdict.is-reproceso { background: rgba(245,158,11,.08); border-color: rgba(245,158,11,.3); }
+[data-bs-theme="dark"] .qc-verdict-sub { color: #94a3b8; }
+[data-bs-theme="dark"] .qc-historial-wrap { border-top-color: rgba(255,255,255,.08); }
+[data-bs-theme="dark"] .cc-historial-item { border-color: rgba(255,255,255,.08); }
+/* Eliminar bloqueado (rol de sistema o con usuarios): atenuado pero clickeable,
+   para explicar el motivo en vez de quedar como un botón muerto. */
+.seg-del-rol.is-blocked { opacity: 0.45; }
+.seg-del-rol.is-blocked:hover { opacity: 0.7; }
+
+/* ===================================================================
+   Matriz de permisos — grilla de tarjetas por módulo (reemplaza la
+   tabla módulo×acción que se veía escalonada con los chips envueltos).
+   =================================================================== */
+
+/* Barra de herramientas: buscar módulo + acciones globales + contador */
+.seg-matriz-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+}
+.seg-matriz-search {
+    position: relative;
+    flex: 1 1 240px;
+    min-width: 200px;
+}
+.seg-matriz-search > i {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--vz-secondary-color);
+    pointer-events: none;
+}
+.seg-matriz-search .form-control { padding-left: 34px; }
+.seg-matriz-toolbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: auto;
+    flex-wrap: wrap;
+}
+.seg-global-count {
+    font-size: 0.8rem;
+    color: var(--vz-secondary-color);
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+/* Grilla responsiva: las tarjetas tilean parejo (sin escalera) */
+.seg-matriz-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 14px;
+}
+
+.seg-mod-card {
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--vz-border-color);
+    border-radius: 12px;
+    background: var(--vz-card-bg, #fff);
+    overflow: hidden;
+    transition: border-color .15s ease, box-shadow .15s ease;
+}
+.seg-mod-card:hover {
+    border-color: #1e3c72;
+    box-shadow: 0 2px 10px rgba(16, 24, 40, .06);
+}
+.seg-mod-card.has-perms { border-color: rgba(30, 60, 114, .35); }
+
+.seg-mod-card-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--vz-border-color);
+    background: rgba(30, 60, 114, .03);
+}
+.seg-mod-name {
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--vz-heading-color, #1e293b);
+}
+.seg-mod-count {
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--vz-secondary-color);
+    background: var(--vz-light, #f3f6f9);
+    border-radius: 999px;
+    padding: 2px 9px;
+    white-space: nowrap;
+}
+.seg-mod-card.has-perms .seg-mod-count {
+    background: rgba(30, 60, 114, .12);
+    color: #1e3c72;
+}
+.seg-mod-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+    padding: 14px;
+    flex: 1 1 auto;
+    align-content: flex-start;
+}
+.seg-mod-card-foot {
+    padding: 9px 14px;
+    border-top: 1px dashed var(--vz-border-color);
+    background: rgba(0, 0, 0, .012);
+}
+.seg-all-wrap {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    cursor: pointer;
+    margin: 0;
+    font-size: 0.8rem;
+    color: var(--vz-secondary-color);
+}
+.seg-all-wrap .form-check-input { margin: 0; cursor: pointer; float: none; }
+
+/* Barra de guardado fija al pie del panel */
+.seg-save-bar {
+    position: sticky;
+    bottom: 0;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-top: 1rem;
+    padding: 12px 0 2px;
+    background: linear-gradient(to top, var(--vz-card-bg, #fff) 70%, transparent);
+}
+
+[data-bs-theme="dark"] .seg-mod-card-head { background: rgba(157, 180, 230, .06); }
+[data-bs-theme="dark"] .seg-mod-card-foot { background: rgba(255, 255, 255, .02); }
+[data-bs-theme="dark"] .seg-mod-card:hover,
+[data-bs-theme="dark"] .seg-mod-card.has-perms { border-color: #9db4e6; }
+[data-bs-theme="dark"] .seg-mod-card.has-perms .seg-mod-count {
+    background: rgba(157, 180, 230, .16);
+    color: #cdd9f2;
 }

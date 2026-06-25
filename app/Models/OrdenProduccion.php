@@ -144,6 +144,15 @@ class OrdenProduccion extends Model
     }
 
     /**
+     * Inspecciones de control de calidad de esta orden (FEAT-006).
+     * 1:N por los ciclos de reproceso (cada rechazo genera una nueva inspección).
+     */
+    public function controlesCalidad()
+    {
+        return $this->hasMany(ControlCalidad::class, 'orden_produccion_id');
+    }
+
+    /**
      * Recalcula el estado de la OP en función de las sub-órdenes activas
      * (excluye Canceladas). Solo actúa cuando hay sub-órdenes no canceladas.
      * No modifica la OP si ella misma está Cancelada.

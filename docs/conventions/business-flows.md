@@ -78,12 +78,22 @@ ORDEN → Finalizado
 4. **Producción Diaria es aditiva**: cada registro suma al acumulado de la orden, no lo reemplaza.
 5. **Movimiento de Inventario es inmutable**: una vez creado un movimiento, no se edita. Para corregir, crear otro movimiento compensatorio.
 
+## Control de Calidad (`ControlCalidad`) — FEAT-006
+
+- **Cuándo**: una Orden de Producción en `Finalizado` queda **pendiente de calidad**.
+- **Quién**: el **Supervisor** (permisos `calidad.ver` / `calidad.inspeccionar`).
+- **Qué registra**: por inspección → `cantidad_inspeccionada`, `cantidad_aprobada` (conformes), `cantidad_rechazada` (defectuosas), `resultado` (`aprobado`/`rechazado`/`observado`) y motivo. Alimenta `orden_produccion.cantidad_defectuosa` (acumula histórico).
+- **Veredicto** ("¿Producto conforme?" del diagrama de actividad):
+  - **Conforme** (sin rechazadas) → la orden queda aprobada por calidad. El estado de calidad se **deriva** de los registros `control_calidad` (sin columna nueva en la orden).
+  - **No conforme** (hay rechazadas) → **reproceso**: `cantidad_producida -= rechazadas`, la orden vuelve a `En Proceso` y `registrarAvance` la deja re-producir hasta re-finalizar y re-inspeccionar.
+- **Invariante**: la inspección **NO toca stock** (no crea `MovimientoInsumo`); el consumo extra por reproceso ocurre por la vía normal de producción.
+- **Compuerta**: un pedido no se da por listo para entrega mientras tenga órdenes sin aprobar calidad (la pantalla de "entrega y cobro de saldo" es un FEAT aparte).
+
 ## Módulos placeholder (sin implementar)
 
-- **Control de Calidad** — pendiente.
 - **Garantías** — pendiente.
 
-Ambos están en el sidebar como placeholders pero sin implementación. Son candidatos prioritarios para próximos sprints SDD.
+Está en el sidebar como placeholder pero sin implementación. Candidato prioritario para próximos sprints SDD.
 
 ## Cómo aplicar este documento
 

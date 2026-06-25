@@ -613,8 +613,11 @@
                 }
             });
 
-            // Validación de documento (mínimo 6 dígitos)
-            $(document).on('blur', '#documento-number-field, #documento-identidad-field, input[name="documento_identidad"]', function () {
+            // Validación de documento (mínimo 6 dígitos).
+            // NOTA: #documento-number-field (Clientes) se excluye a propósito: ese
+            // módulo tiene su propia validación con rango "entre 6 y N" sobre
+            // #documento-error; el handler global creaba un feedback duplicado.
+            $(document).on('blur', '#documento-identidad-field, input[name="documento_identidad"]', function () {
                 let value = $(this).val().trim();
                 if (value.length < 6) {
                     marcarInvalido($(this), 'El documento debe tener al menos 6 dígitos.');
@@ -1033,10 +1036,13 @@
         })();
 
         // ──────────────────────────────────────────────────────────────────
-        // AtlanticoCopy — copiar al portapapeles desde los modales "Ver" del
-        // estándar hero + cards (clientes, empleados, insumos, proveedores,
-        // users). Inyecta un botón de copiar junto a cada valor real y avisa
-        // con un toast. Global: cualquier #viewModal con .cli-view-card-body.
+        // AtlanticoCopy — copiar al portapapeles desde los modales "Ver".
+        // Inyecta un botón de copiar junto a cada valor real y avisa con un
+        // toast. Global, cubre dos familias de modales:
+        //   · Gestión General (clientes, empleados, insumos, proveedores,
+        //     users): #viewModal con .cli-view-card-body span.fs-13
+        //   · Gestión Operativa (cotizaciones, pedidos): #viewModal con
+        //     .card-body span.fs-13; compras: #viewCompraModal con .cli-copyable
         // ──────────────────────────────────────────────────────────────────
         (function () {
             function copyText(text) {
@@ -1062,22 +1068,33 @@
                 backdrop: false, heightAuto: false, scrollbarPadding: false
             });
 
-            // Inyecta los botones al abrir cualquier modal "Ver" del estándar.
-            $(document).on('shown.bs.modal', '#viewModal', function () {
-                var $modal = $(this);
+            // Valores copiables dentro de un modal "Ver":
+            //   · .cli-view-card-body span.fs-13 → estándar hero + cards (Gestión General)
+            //   · .card-body span.fs-13          → modales "Ver" de cotizaciones y pedidos
+            //   · .cli-copyable                  → marca explícita (compras: factura, doc/tel/email)
+            var COPY_VAL_SELECTOR = '.cli-view-card-body span.fs-13, .card-body span.fs-13, .cli-copyable';
+
+            function inyectarBotonesCopiar($modal) {
                 $modal.find('.cli-copy-btn').remove();   // evita duplicados al reabrir
-                $modal.find('.cli-view-card-body span.fs-13').each(function () {
+                $modal.find(COPY_VAL_SELECTOR).each(function () {
+                    if ($(this).next('.cli-copy-btn').length) return;   // ya marcado en esta pasada
                     var val = $.trim($(this).text());
-                    if (!val || val === '-') return;     // salta vacíos / placeholder
+                    if (!val || val === '-' || val === '—') return;     // salta vacíos / placeholder
                     $('<button type="button" class="cli-copy-btn" title="Copiar">' +
                       '<i class="ri-file-copy-line"></i></button>').insertAfter(this);
                 });
+            }
+
+            // Inyecta los botones al abrir cualquier modal "Ver" del estándar.
+            // (#viewCompraModal usa otro id por convención del módulo de compras.)
+            $(document).on('shown.bs.modal', '#viewModal, #viewCompraModal', function () {
+                inyectarBotonesCopiar($(this));
             });
 
             // Click delegado: copia el valor hermano y avisa.
-            $(document).on('click', '#viewModal .cli-copy-btn', function () {
+            $(document).on('click', '#viewModal .cli-copy-btn, #viewCompraModal .cli-copy-btn', function () {
                 var $btn = $(this);
-                var text = $.trim($btn.prev('span.fs-13').text());
+                var text = $.trim($btn.prev().text());
                 if (!text) return;
                 copyText(text).then(function () {
                     $btn.addClass('is-copied').find('i')

@@ -2778,7 +2778,13 @@
                 success: function (data) {
                     // Paso 1 — Cliente
                     if (data.cliente) {
-                        var nombreHtml = data.cliente.nombre || 'N/A';
+                        // Jurídico (J-/G-): mostrar Razón Social como nombre y ocultar "Apellido".
+                        // Natural (V-/E-): Nombre + Apellido como siempre.
+                        var esJuridico = ['J-', 'G-'].includes(String(data.cliente.tipo_documento || '').toUpperCase());
+                        var nombreBase = esJuridico
+                            ? (data.cliente.razon_social || data.cliente.nombre || 'N/A')
+                            : (data.cliente.nombre || 'N/A');
+                        var nombreHtml = nombreBase;
                         if (data.cliente.eliminado) {
                             nombreHtml += ' <span class="badge bg-danger ms-1" title="Este cliente fue eliminado">Eliminado</span>';
                         }
@@ -2829,7 +2835,7 @@
                             .toLocaleString('es-VE', { minimumFractionDigits: 4, maximumFractionDigits: 4 }));
                     }
 
-                    // PDF
+                    // PDF de ESTA cotización
                     $('#view-pdf-btn').attr('href', '/cotizaciones/' + id + '/pdf');
 
                     $('#viewModal').modal('show');

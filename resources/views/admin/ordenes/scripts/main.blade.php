@@ -1611,13 +1611,14 @@
                 } else {
                     $('#view-insumos-tablewrap').show();
                     $('#view-insumos-empty').hide();
-                    insumos.forEach(insumo => {
+                    insumos.forEach((insumo, idx) => {
                         let pct = (insumo.pivot.cantidad_utilizada / insumo.pivot.cantidad_estimada * 100).toFixed(2);
                         $('#view-insumos').append(`
-                            <tr>
-                                <td><h6 class="fs-13 mb-0">${escHtml(insumo.nombre)}</h6></td>
-                                <td class="text-center">${insumo.pivot.cantidad_estimada} ${insumo.unidad_medida}</td>
-                                <td class="text-center">${insumo.pivot.cantidad_utilizada} ${insumo.unidad_medida}</td>
+                            <tr class="cot-grouped-row">
+                                <td class="cot-col-num text-center">${idx + 1}</td>
+                                <td><div class="cot-prod-modelo">${escHtml(insumo.nombre)}</div></td>
+                                <td class="cot-cell-num">${insumo.pivot.cantidad_estimada} ${insumo.unidad_medida}</td>
+                                <td class="cot-cell-num">${insumo.pivot.cantidad_utilizada} ${insumo.unidad_medida}</td>
                                 <td>
                                     <div class="progress animated-progress custom-progress progress-sm">
                                         <div class="progress-bar bg-success" role="progressbar" style="width: ${pct}%"
@@ -1837,7 +1838,6 @@
                 }
                 $('#btn-view-ord-prev').toggle(step > 1);
                 $('#btn-view-ord-next').toggle(step < TOTAL);
-                $('#btn-view-ord-close').toggle(step === TOTAL);
 
                 // Carga lazy del Kanban al llegar al paso 4
                 if (step === 4 && viewKanbanOrdenId) {

@@ -126,7 +126,7 @@
                                     <th>N° Factura</th>
                                     <th>Fecha</th>
                                     <th class="text-end">Total</th>
-                                    <th>Estado</th>
+                                    <th class="text-center">Estado</th>
                                     <th>Acciones</th>
                                 </tr>
                             </thead>

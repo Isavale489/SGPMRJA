@@ -539,13 +539,13 @@
                         {{-- ================================== --}}
                         {{-- 3. TRANSACCIONES --}}
                         {{-- ================================== --}}
-                        <li class="nav-item section-operativa {{ request()->is('cotizaciones*', 'pedidos*', 'ordenes*', 'calidad*', 'movimiento-insumo*', 'compras*', 'garantias*') ? 'section-is-active' : '' }}">
+                        <li class="nav-item section-operativa {{ request()->is('cotizaciones*', 'pedidos*', 'ordenes*', 'calidad*', 'movimiento-insumo*', 'compras*') ? 'section-is-active' : '' }}">
                             <a class="nav-link menu-link" href="#sidebarTransacciones" data-bs-toggle="collapse" role="button"
-                                aria-expanded="{{ request()->is('cotizaciones*') || request()->is('pedidos*') || request()->is('ordenes*') || request()->is('calidad*') || request()->is('movimiento-insumo*') || request()->is('compras*') || request()->is('garantias*') ? 'true' : 'false' }}"
+                                aria-expanded="{{ request()->is('cotizaciones*') || request()->is('pedidos*') || request()->is('ordenes*') || request()->is('calidad*') || request()->is('movimiento-insumo*') || request()->is('compras*') ? 'true' : 'false' }}"
                                 aria-controls="sidebarTransacciones">
                                 <i class="ri-exchange-funds-line"></i> <span data-key="t-transacciones">Gestión Operativa</span>
                             </a>
-                            <div class="collapse menu-dropdown {{ request()->is('cotizaciones*') || request()->is('pedidos*') || request()->is('ordenes*') || request()->is('calidad*') || request()->is('movimiento-insumo*') || request()->is('compras*') || request()->is('garantias*') ? 'show' : '' }}"
+                            <div class="collapse menu-dropdown {{ request()->is('cotizaciones*') || request()->is('pedidos*') || request()->is('ordenes*') || request()->is('calidad*') || request()->is('movimiento-insumo*') || request()->is('compras*') ? 'show' : '' }}"
                                 id="sidebarTransacciones">
                                 <ul class="nav nav-sm flex-column">
                                     @if (tienePermiso('cotizaciones.ver'))
@@ -573,8 +573,7 @@
                                     </li>
                                     @endif
                                     <li class="nav-item">
-                                        {{-- TODO: Crear ruta y controlador para Control de Calidad --}}
-                                        <a href="#"
+                                        <a href="{{ route('calidad.index') }}"
                                             class="nav-link {{ request()->is('calidad*') ? 'active' : '' }}">
                                             <i class="ri-shield-check-line me-1"></i> Control de Calidad
                                         </a>
@@ -611,13 +610,16 @@
                                         </div>
                                     </li>
                                     @endif
+                                    {{-- Módulo Garantías DIFERIDO a próximo semestre (no entra en esta defensa).
+                                         Se conserva documentado en el código pero NO se muestra en la UI.
+                                         Para reactivarlo: descomentar este <li> y crear ruta/controlador.
                                     <li class="nav-item">
-                                        {{-- TODO: Crear ruta y controlador para Garantías --}}
                                         <a href="#"
                                             class="nav-link {{ request()->is('garantias*') ? 'active' : '' }}">
                                             <i class="ri-shield-star-line me-1"></i> Garantías
                                         </a>
                                     </li>
+                                    --}}
                                 </ul>
                             </div>
                         </li>
