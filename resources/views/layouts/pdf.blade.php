@@ -252,9 +252,9 @@
         /* ── Footer (fijo: se repite en cada página) ── */
         .doc-footer {
             position: fixed;
-            left: 0;
-            right: 0;
-            bottom: -28px;
+            left: 30px;
+            right: 30px;
+            bottom: 14px;
             border-top: 1px solid #cbd5e1;
             padding-top: 5px;
             font-size: 8.5px;
@@ -363,7 +363,7 @@
                     Emitido por {{ optional(auth()->user())->name ?? 'Sistema' }}
                     &middot; {{ now()->format('d/m/Y h:i A') }}
                 </td>
-                <td class="ft-right">Página <span class="pg-cur"></span> de <span class="pg-tot"></span></td>
+                <td class="ft-right">Página <span class="pg-cur"></span></td>
             </tr>
         </table>
     </div>

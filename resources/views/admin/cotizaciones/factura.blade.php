@@ -51,6 +51,14 @@
     .data-table tbody td.text-right  { text-align: right; }
     .data-table tbody td .bs-eq { color: #777777; font-size: 8px; font-weight: normal; }
 
+    /* ── Bloque anclado al pie de la página (montos + condiciones) ── */
+    .doc-bottom {
+        position: fixed;
+        left: 30px;
+        right: 30px;
+        bottom: 42px;
+    }
+
     /* ── Bloque de totales ── */
     .totals-block {
         width: 100%;
@@ -215,6 +223,9 @@
         });
     @endphp
 
+    {{-- Bloque anclado al pie de la página: montos + condiciones (estándar de documento) --}}
+    <div class="doc-bottom">
+
     {{-- ═══════ Totales ═══════ --}}
     <table class="totals-block">
         <tr>
@@ -281,4 +292,6 @@
         &bull; Anticipo del 50% para programar y 50% a la entrega; tiempo estimado de 7 a 10 días hábiles.
     </div>
     @endif
+
+    </div>{{-- /.doc-bottom --}}
 @endsection
