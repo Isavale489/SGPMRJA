@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1:3308
--- Tiempo de generación: 24-06-2026 a las 17:20:15
+-- Tiempo de generación: 25-06-2026 a las 06:17:51
 -- Versión del servidor: 10.4.32-MariaDB
 -- Versión de PHP: 8.2.12
 
@@ -444,7 +444,9 @@ INSERT INTO `cotizacion` (`id`, `cliente_id`, `fecha_cotizacion`, `fecha_validez
 (1, 23, '2026-06-06', '2026-06-22', 'Convertida', 352.00, 563.2892, 'Para el director de compañia de tecnologia', NULL, 7, 'Normal', '2026-06-07 03:23:23', '2026-06-07 06:02:13', NULL),
 (2, 14, '2026-06-07', '2026-06-22', 'Convertida', 70.00, 563.2892, 'Para encargada de grupo musical', NULL, 7, 'Normal', '2026-06-07 17:22:52', '2026-06-07 17:24:05', NULL),
 (3, 42, '2026-06-07', '2026-06-22', 'Convertida', 62.00, 563.2892, 'Para evento', NULL, 7, 'Normal', '2026-06-07 17:25:28', '2026-06-07 17:26:16', NULL),
-(4, 9, '2026-06-09', '2026-06-24', 'Convertida', 264.00, 567.6828, NULL, NULL, 1, 'Normal', '2026-06-09 19:54:20', '2026-06-09 20:55:33', NULL);
+(4, 9, '2026-06-09', '2026-06-24', 'Convertida', 264.00, 567.6828, NULL, NULL, 1, 'Normal', '2026-06-09 19:54:20', '2026-06-09 20:55:33', NULL),
+(6, 39, '2026-06-24', '2026-07-24', 'Convertida', 324.00, 617.6388, NULL, NULL, 1, 'Normal', '2026-06-24 19:57:07', '2026-06-24 19:58:08', NULL),
+(7, 41, '2026-06-25', '2026-07-25', 'Pendiente', 27.00, 617.6388, 'pipi', NULL, 1, 'Normal', '2026-06-25 01:27:59', '2026-06-25 01:27:59', NULL);
 
 -- --------------------------------------------------------
 
@@ -490,6 +492,7 @@ CREATE TABLE `detalle_cotizacion` (
   `lleva_bordado` tinyint(1) NOT NULL DEFAULT 0,
   `color_id` bigint(20) UNSIGNED DEFAULT NULL,
   `talla_id` bigint(20) UNSIGNED DEFAULT NULL,
+  `genero_id` bigint(20) UNSIGNED NOT NULL,
   `precio_unitario` decimal(10,2) NOT NULL DEFAULT 0.00,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL
@@ -499,14 +502,18 @@ CREATE TABLE `detalle_cotizacion` (
 -- Volcado de datos para la tabla `detalle_cotizacion`
 --
 
-INSERT INTO `detalle_cotizacion` (`id`, `cotizacion_id`, `producto_id`, `tipo_producto_id`, `tela_snapshot`, `atributos_snapshot`, `sku_snapshot`, `cantidad`, `descripcion`, `lleva_bordado`, `color_id`, `talla_id`, `precio_unitario`, `created_at`, `updated_at`) VALUES
-(1, 1, NULL, 10, '{\"id\":10,\"nombre\":\"Gabardina \\/ Dril\",\"codigo\":\"GBD\",\"costo_unitario\":22,\"unidad_medida\":\"Metro\",\"snapshot_at\":\"2026-06-06\"}', '{\"Modelo Delantal\":\"2 bolsillos\"}', 'DLNT-GBD-2BL-001', 11, NULL, 1, 11, 11, 32.00, '2026-06-07 03:23:23', '2026-06-07 03:23:23'),
-(2, 2, NULL, 1, '{\"id\":3,\"nombre\":\"Pique\",\"codigo\":\"PIQ\",\"costo_unitario\":50,\"unidad_medida\":\"Kg\",\"snapshot_at\":\"2026-06-07\"}', '{\"Manga\":\"Corta\",\"Cuello\":\"Cl\\u00e1sico\",\"Corte\":\"Clasico\"}', 'CHM-PIQ-C-CLA-CL-001', 2, NULL, 0, 2, 11, 14.00, '2026-06-07 17:22:52', '2026-06-07 17:22:52'),
-(3, 2, NULL, 2, '{\"id\":5,\"nombre\":\"Jersey\",\"codigo\":\"AJR\",\"costo_unitario\":3,\"unidad_medida\":\"Kg\",\"snapshot_at\":\"2026-06-07\"}', '{\"Manga\":\"Corta\",\"Cuello\":\"Redondo\"}', 'FRN-AJR-C-R-001', 2, NULL, 0, 2, 11, 11.00, '2026-06-07 17:22:52', '2026-06-07 17:22:52'),
-(4, 2, NULL, 9, NULL, '{\"Modelo de Gorra\":\"Gorra Clasica\"}', 'GO-GC-001', 2, NULL, 0, 2, 1, 10.00, '2026-06-07 17:22:52', '2026-06-07 17:22:52'),
-(5, 3, NULL, 1, '{\"id\":3,\"nombre\":\"Pique\",\"codigo\":\"PIQ\",\"costo_unitario\":50,\"unidad_medida\":\"Kg\",\"snapshot_at\":\"2026-06-07\"}', '{\"Manga\":\"Corta\",\"Cuello\":\"Redondo\",\"Corte\":\"Clasico\"}', 'CHM-PIQ-C-R-CL-001', 1, NULL, 0, 6, 11, 62.00, '2026-06-07 17:25:28', '2026-06-07 17:25:28'),
-(6, 4, NULL, 3, '{\"id\":8,\"nombre\":\"Oxford\",\"codigo\":\"OXF\",\"costo_unitario\":18,\"unidad_medida\":\"Metro\",\"snapshot_at\":\"2026-06-09\"}', '{\"Manga\":\"Corta\",\"Cuello\":\"Con Tapa Botones\",\"Corte\":\"Columbia I\"}', 'CAM-OXF-C-CTB-CLM1-001', 4, NULL, 0, 10, 11, 33.00, '2026-06-09 19:54:20', '2026-06-09 19:54:20'),
-(7, 4, NULL, 3, '{\"id\":8,\"nombre\":\"Oxford\",\"codigo\":\"OXF\",\"costo_unitario\":18,\"unidad_medida\":\"Metro\",\"snapshot_at\":\"2026-06-09\"}', '{\"Manga\":\"Corta\",\"Cuello\":\"Con Tapa Botones\",\"Corte\":\"Columbia I\"}', 'CAM-OXF-C-CTB-CLM1-001', 4, NULL, 0, 10, 12, 33.00, '2026-06-09 19:54:20', '2026-06-09 19:54:20');
+INSERT INTO `detalle_cotizacion` (`id`, `cotizacion_id`, `producto_id`, `tipo_producto_id`, `tela_snapshot`, `atributos_snapshot`, `sku_snapshot`, `cantidad`, `descripcion`, `lleva_bordado`, `color_id`, `talla_id`, `genero_id`, `precio_unitario`, `created_at`, `updated_at`) VALUES
+(1, 1, NULL, 10, '{\"id\":10,\"nombre\":\"Gabardina \\/ Dril\",\"codigo\":\"GBD\",\"costo_unitario\":22,\"unidad_medida\":\"Metro\",\"snapshot_at\":\"2026-06-06\"}', '{\"Modelo Delantal\":\"2 bolsillos\"}', 'DLNT-GBD-2BL-001', 11, NULL, 1, 11, 11, 3, 32.00, '2026-06-07 03:23:23', '2026-06-07 03:23:23'),
+(2, 2, NULL, 1, '{\"id\":3,\"nombre\":\"Pique\",\"codigo\":\"PIQ\",\"costo_unitario\":50,\"unidad_medida\":\"Kg\",\"snapshot_at\":\"2026-06-07\"}', '{\"Manga\":\"Corta\",\"Cuello\":\"Cl\\u00e1sico\",\"Corte\":\"Clasico\"}', 'CHM-PIQ-C-CLA-CL-001', 2, NULL, 0, 2, 11, 3, 14.00, '2026-06-07 17:22:52', '2026-06-07 17:22:52'),
+(3, 2, NULL, 2, '{\"id\":5,\"nombre\":\"Jersey\",\"codigo\":\"AJR\",\"costo_unitario\":3,\"unidad_medida\":\"Kg\",\"snapshot_at\":\"2026-06-07\"}', '{\"Manga\":\"Corta\",\"Cuello\":\"Redondo\"}', 'FRN-AJR-C-R-001', 2, NULL, 0, 2, 11, 3, 11.00, '2026-06-07 17:22:52', '2026-06-07 17:22:52'),
+(4, 2, NULL, 9, NULL, '{\"Modelo de Gorra\":\"Gorra Clasica\"}', 'GO-GC-001', 2, NULL, 0, 2, 1, 3, 10.00, '2026-06-07 17:22:52', '2026-06-07 17:22:52'),
+(5, 3, NULL, 1, '{\"id\":3,\"nombre\":\"Pique\",\"codigo\":\"PIQ\",\"costo_unitario\":50,\"unidad_medida\":\"Kg\",\"snapshot_at\":\"2026-06-07\"}', '{\"Manga\":\"Corta\",\"Cuello\":\"Redondo\",\"Corte\":\"Clasico\"}', 'CHM-PIQ-C-R-CL-001', 1, NULL, 0, 6, 11, 3, 62.00, '2026-06-07 17:25:28', '2026-06-07 17:25:28'),
+(6, 4, NULL, 3, '{\"id\":8,\"nombre\":\"Oxford\",\"codigo\":\"OXF\",\"costo_unitario\":18,\"unidad_medida\":\"Metro\",\"snapshot_at\":\"2026-06-09\"}', '{\"Manga\":\"Corta\",\"Cuello\":\"Con Tapa Botones\",\"Corte\":\"Columbia I\"}', 'CAM-OXF-C-CTB-CLM1-001', 4, NULL, 0, 10, 11, 3, 33.00, '2026-06-09 19:54:20', '2026-06-09 19:54:20'),
+(7, 4, NULL, 3, '{\"id\":8,\"nombre\":\"Oxford\",\"codigo\":\"OXF\",\"costo_unitario\":18,\"unidad_medida\":\"Metro\",\"snapshot_at\":\"2026-06-09\"}', '{\"Manga\":\"Corta\",\"Cuello\":\"Con Tapa Botones\",\"Corte\":\"Columbia I\"}', 'CAM-OXF-C-CTB-CLM1-001', 4, NULL, 0, 10, 12, 3, 33.00, '2026-06-09 19:54:20', '2026-06-09 19:54:20'),
+(10, 6, NULL, 3, '{\"id\":7,\"nombre\":\"Dacron\",\"codigo\":\"DAC\",\"costo_unitario\":12,\"unidad_medida\":\"Metro\",\"snapshot_at\":\"2026-06-24\"}', '{\"Cuello de Camisa\":\"Con tapabotones\",\"Manga\":\"Larga\",\"Modelo de Camisa\":\"Clasica\"}', 'CAM-DAC-CT-L-CCL-001', 5, NULL, 0, 21, 11, 1, 27.00, '2026-06-24 19:57:07', '2026-06-24 19:57:07'),
+(11, 6, NULL, 3, '{\"id\":7,\"nombre\":\"Dacron\",\"codigo\":\"DAC\",\"costo_unitario\":12,\"unidad_medida\":\"Metro\",\"snapshot_at\":\"2026-06-24\"}', '{\"Cuello de Camisa\":\"Con tapabotones\",\"Manga\":\"Larga\",\"Modelo de Camisa\":\"Clasica\"}', 'CAM-DAC-CT-L-CCL-001', 5, NULL, 0, 21, 11, 2, 27.00, '2026-06-24 19:57:07', '2026-06-24 19:57:07'),
+(12, 6, NULL, 3, '{\"id\":7,\"nombre\":\"Dacron\",\"codigo\":\"DAC\",\"costo_unitario\":12,\"unidad_medida\":\"Metro\",\"snapshot_at\":\"2026-06-24\"}', '{\"Cuello de Camisa\":\"Con tapabotones\",\"Manga\":\"Larga\",\"Modelo de Camisa\":\"Clasica\"}', 'CAM-DAC-CT-L-CCL-001', 2, NULL, 0, 21, 11, 3, 27.00, '2026-06-24 19:57:07', '2026-06-24 19:57:07'),
+(13, 7, NULL, 3, '{\"id\":7,\"nombre\":\"Dacron\",\"codigo\":\"DAC\",\"costo_unitario\":12,\"unidad_medida\":\"Metro\",\"snapshot_at\":\"2026-06-24\"}', '{\"Cuello de Camisa\":\"Con tapabotones\",\"Manga\":\"Larga\",\"Modelo de Camisa\":\"Clasica\"}', 'CAM-DAC-CT-L-CCL-001', 1, NULL, 0, 11, 10, 2, 27.00, '2026-06-25 01:27:59', '2026-06-25 01:27:59');
 
 -- --------------------------------------------------------
 
@@ -567,7 +574,13 @@ INSERT INTO `detalle_orden_insumo` (`id`, `orden_produccion_id`, `insumo_id`, `c
 (17, 12, 8, 8.00, 8.00, '2026-06-10 02:06:03', '2026-06-10 02:06:03'),
 (18, 12, 2, 32.00, 32.00, '2026-06-10 02:06:03', '2026-06-10 02:06:03'),
 (19, 13, 8, 8.00, 8.00, '2026-06-10 02:06:03', '2026-06-10 02:06:03'),
-(20, 13, 2, 32.00, 32.00, '2026-06-10 02:06:03', '2026-06-10 02:06:03');
+(20, 13, 2, 32.00, 32.00, '2026-06-10 02:06:03', '2026-06-10 02:06:03'),
+(21, 14, 7, 10.00, 10.00, '2026-06-24 19:59:02', '2026-06-24 19:59:02'),
+(22, 14, 2, 40.00, 40.00, '2026-06-24 19:59:02', '2026-06-24 19:59:02'),
+(23, 15, 7, 10.00, 10.00, '2026-06-24 19:59:02', '2026-06-24 19:59:02'),
+(24, 15, 2, 40.00, 40.00, '2026-06-24 19:59:02', '2026-06-24 19:59:02'),
+(25, 16, 7, 4.00, 4.00, '2026-06-24 19:59:02', '2026-06-24 19:59:02'),
+(26, 16, 2, 16.00, 16.00, '2026-06-24 19:59:02', '2026-06-24 19:59:02');
 
 -- --------------------------------------------------------
 
@@ -588,6 +601,7 @@ CREATE TABLE `detalle_pedido` (
   `lleva_bordado` tinyint(1) NOT NULL DEFAULT 0,
   `color_id` bigint(20) UNSIGNED DEFAULT NULL,
   `talla_id` bigint(20) UNSIGNED DEFAULT NULL,
+  `genero_id` bigint(20) UNSIGNED NOT NULL,
   `precio_unitario` decimal(10,2) NOT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL
@@ -597,14 +611,17 @@ CREATE TABLE `detalle_pedido` (
 -- Volcado de datos para la tabla `detalle_pedido`
 --
 
-INSERT INTO `detalle_pedido` (`id`, `pedido_id`, `producto_id`, `tipo_producto_id`, `tela_snapshot`, `atributos_snapshot`, `sku_snapshot`, `cantidad`, `descripcion`, `lleva_bordado`, `color_id`, `talla_id`, `precio_unitario`, `created_at`, `updated_at`) VALUES
-(1, 1, NULL, 10, '{\"id\":10,\"nombre\":\"Gabardina \\/ Dril\",\"codigo\":\"GBD\",\"costo_unitario\":22,\"unidad_medida\":\"Metro\",\"snapshot_at\":\"2026-06-07\"}', '{\"Modelo Delantal\":\"2 bolsillos\"}', 'DLNT-GBD-2BL-001', 11, NULL, 1, 11, 11, 32.00, '2026-06-07 06:02:13', '2026-06-07 06:02:13'),
-(2, 2, NULL, 1, '{\"id\":3,\"nombre\":\"Pique\",\"codigo\":\"PIQ\",\"costo_unitario\":50,\"unidad_medida\":\"Kg\",\"snapshot_at\":\"2026-06-07\"}', '{\"Manga\":\"Corta\",\"Cuello\":\"Cl\\u00e1sico\",\"Corte\":\"Clasico\"}', 'CHM-PIQ-C-CLA-CL-001', 2, NULL, 0, 2, 11, 14.00, '2026-06-07 17:24:05', '2026-06-07 17:24:05'),
-(3, 2, NULL, 2, '{\"id\":5,\"nombre\":\"Jersey\",\"codigo\":\"AJR\",\"costo_unitario\":3,\"unidad_medida\":\"Kg\",\"snapshot_at\":\"2026-06-07\"}', '{\"Manga\":\"Corta\",\"Cuello\":\"Redondo\"}', 'FRN-AJR-C-R-001', 2, NULL, 0, 2, 11, 11.00, '2026-06-07 17:24:05', '2026-06-07 17:24:05'),
-(4, 2, NULL, 9, NULL, '{\"Modelo de Gorra\":\"Gorra Clasica\"}', 'GO-GC-001', 2, NULL, 0, 2, 1, 10.00, '2026-06-07 17:24:05', '2026-06-07 17:24:05'),
-(5, 3, NULL, 1, '{\"id\":3,\"nombre\":\"Pique\",\"codigo\":\"PIQ\",\"costo_unitario\":50,\"unidad_medida\":\"Kg\",\"snapshot_at\":\"2026-06-07\"}', '{\"Manga\":\"Corta\",\"Cuello\":\"Redondo\",\"Corte\":\"Clasico\"}', 'CHM-PIQ-C-R-CL-001', 1, NULL, 0, 6, 11, 62.00, '2026-06-07 17:26:16', '2026-06-07 17:26:16'),
-(6, 6, NULL, 3, '{\"id\":8,\"nombre\":\"Oxford\",\"codigo\":\"OXF\",\"costo_unitario\":18,\"unidad_medida\":\"Metro\",\"snapshot_at\":\"2026-06-09\"}', '{\"Manga\":\"Corta\",\"Cuello\":\"Con Tapa Botones\",\"Corte\":\"Columbia I\"}', 'CAM-OXF-C-CTB-CLM1-001', 4, NULL, 0, 10, 11, 33.00, '2026-06-09 20:55:33', '2026-06-09 20:55:33'),
-(7, 6, NULL, 3, '{\"id\":8,\"nombre\":\"Oxford\",\"codigo\":\"OXF\",\"costo_unitario\":18,\"unidad_medida\":\"Metro\",\"snapshot_at\":\"2026-06-09\"}', '{\"Manga\":\"Corta\",\"Cuello\":\"Con Tapa Botones\",\"Corte\":\"Columbia I\"}', 'CAM-OXF-C-CTB-CLM1-001', 4, NULL, 0, 10, 12, 33.00, '2026-06-09 20:55:33', '2026-06-09 20:55:33');
+INSERT INTO `detalle_pedido` (`id`, `pedido_id`, `producto_id`, `tipo_producto_id`, `tela_snapshot`, `atributos_snapshot`, `sku_snapshot`, `cantidad`, `descripcion`, `lleva_bordado`, `color_id`, `talla_id`, `genero_id`, `precio_unitario`, `created_at`, `updated_at`) VALUES
+(1, 1, NULL, 10, '{\"id\":10,\"nombre\":\"Gabardina \\/ Dril\",\"codigo\":\"GBD\",\"costo_unitario\":22,\"unidad_medida\":\"Metro\",\"snapshot_at\":\"2026-06-07\"}', '{\"Modelo Delantal\":\"2 bolsillos\"}', 'DLNT-GBD-2BL-001', 11, NULL, 1, 11, 11, 3, 32.00, '2026-06-07 06:02:13', '2026-06-07 06:02:13'),
+(2, 2, NULL, 1, '{\"id\":3,\"nombre\":\"Pique\",\"codigo\":\"PIQ\",\"costo_unitario\":50,\"unidad_medida\":\"Kg\",\"snapshot_at\":\"2026-06-07\"}', '{\"Manga\":\"Corta\",\"Cuello\":\"Cl\\u00e1sico\",\"Corte\":\"Clasico\"}', 'CHM-PIQ-C-CLA-CL-001', 2, NULL, 0, 2, 11, 3, 14.00, '2026-06-07 17:24:05', '2026-06-07 17:24:05'),
+(3, 2, NULL, 2, '{\"id\":5,\"nombre\":\"Jersey\",\"codigo\":\"AJR\",\"costo_unitario\":3,\"unidad_medida\":\"Kg\",\"snapshot_at\":\"2026-06-07\"}', '{\"Manga\":\"Corta\",\"Cuello\":\"Redondo\"}', 'FRN-AJR-C-R-001', 2, NULL, 0, 2, 11, 3, 11.00, '2026-06-07 17:24:05', '2026-06-07 17:24:05'),
+(4, 2, NULL, 9, NULL, '{\"Modelo de Gorra\":\"Gorra Clasica\"}', 'GO-GC-001', 2, NULL, 0, 2, 1, 3, 10.00, '2026-06-07 17:24:05', '2026-06-07 17:24:05'),
+(5, 3, NULL, 1, '{\"id\":3,\"nombre\":\"Pique\",\"codigo\":\"PIQ\",\"costo_unitario\":50,\"unidad_medida\":\"Kg\",\"snapshot_at\":\"2026-06-07\"}', '{\"Manga\":\"Corta\",\"Cuello\":\"Redondo\",\"Corte\":\"Clasico\"}', 'CHM-PIQ-C-R-CL-001', 1, NULL, 0, 6, 11, 3, 62.00, '2026-06-07 17:26:16', '2026-06-07 17:26:16'),
+(6, 6, NULL, 3, '{\"id\":8,\"nombre\":\"Oxford\",\"codigo\":\"OXF\",\"costo_unitario\":18,\"unidad_medida\":\"Metro\",\"snapshot_at\":\"2026-06-09\"}', '{\"Manga\":\"Corta\",\"Cuello\":\"Con Tapa Botones\",\"Corte\":\"Columbia I\"}', 'CAM-OXF-C-CTB-CLM1-001', 4, NULL, 0, 10, 11, 3, 33.00, '2026-06-09 20:55:33', '2026-06-09 20:55:33'),
+(7, 6, NULL, 3, '{\"id\":8,\"nombre\":\"Oxford\",\"codigo\":\"OXF\",\"costo_unitario\":18,\"unidad_medida\":\"Metro\",\"snapshot_at\":\"2026-06-09\"}', '{\"Manga\":\"Corta\",\"Cuello\":\"Con Tapa Botones\",\"Corte\":\"Columbia I\"}', 'CAM-OXF-C-CTB-CLM1-001', 4, NULL, 0, 10, 12, 3, 33.00, '2026-06-09 20:55:33', '2026-06-09 20:55:33'),
+(10, 8, NULL, 3, '{\"id\":7,\"nombre\":\"Dacron\",\"codigo\":\"DAC\",\"costo_unitario\":12,\"unidad_medida\":\"Metro\",\"snapshot_at\":\"2026-06-24\"}', '{\"Cuello de Camisa\":\"Con tapabotones\",\"Manga\":\"Larga\",\"Modelo de Camisa\":\"Clasica\"}', 'CAM-DAC-CT-L-CCL-001', 5, NULL, 0, 21, 11, 1, 27.00, '2026-06-24 19:58:08', '2026-06-24 19:58:08'),
+(11, 8, NULL, 3, '{\"id\":7,\"nombre\":\"Dacron\",\"codigo\":\"DAC\",\"costo_unitario\":12,\"unidad_medida\":\"Metro\",\"snapshot_at\":\"2026-06-24\"}', '{\"Cuello de Camisa\":\"Con tapabotones\",\"Manga\":\"Larga\",\"Modelo de Camisa\":\"Clasica\"}', 'CAM-DAC-CT-L-CCL-001', 5, NULL, 0, 21, 11, 2, 27.00, '2026-06-24 19:58:08', '2026-06-24 19:58:08'),
+(12, 8, NULL, 3, '{\"id\":7,\"nombre\":\"Dacron\",\"codigo\":\"DAC\",\"costo_unitario\":12,\"unidad_medida\":\"Metro\",\"snapshot_at\":\"2026-06-24\"}', '{\"Cuello de Camisa\":\"Con tapabotones\",\"Manga\":\"Larga\",\"Modelo de Camisa\":\"Clasica\"}', 'CAM-DAC-CT-L-CCL-001', 2, NULL, 0, 21, 11, 3, 27.00, '2026-06-24 19:58:08', '2026-06-24 19:58:08');
 
 -- --------------------------------------------------------
 
@@ -832,6 +849,33 @@ CREATE TABLE `failed_jobs` (
 -- --------------------------------------------------------
 
 --
+-- Estructura de tabla para la tabla `genero`
+--
+
+CREATE TABLE `genero` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `nombre` varchar(50) NOT NULL COMMENT 'Dama, Caballero, Unisex',
+  `etiqueta` varchar(50) DEFAULT NULL COMMENT 'Etiqueta visual para UI',
+  `icono` varchar(40) DEFAULT NULL COMMENT 'Clase de ícono remixicon para el chip',
+  `orden` int(10) UNSIGNED NOT NULL DEFAULT 0 COMMENT 'Orden de despliegue en UI',
+  `activo` tinyint(1) NOT NULL DEFAULT 1 COMMENT 'Permite desactivar sin borrar',
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Volcado de datos para la tabla `genero`
+--
+
+INSERT INTO `genero` (`id`, `nombre`, `etiqueta`, `icono`, `orden`, `activo`, `created_at`, `updated_at`, `deleted_at`) VALUES
+(1, 'Dama', 'Dama', 'ri-women-line', 1, 1, '2026-06-24 16:11:20', '2026-06-24 16:11:20', NULL),
+(2, 'Caballero', 'Caballero', 'ri-men-line', 2, 1, '2026-06-24 16:11:20', '2026-06-24 16:11:20', NULL),
+(3, 'Unisex', 'Unisex', 'ri-group-line', 3, 1, '2026-06-24 16:11:20', '2026-06-24 16:11:20', NULL);
+
+-- --------------------------------------------------------
+
+--
 -- Estructura de tabla para la tabla `impuesto`
 --
 
@@ -883,10 +927,10 @@ CREATE TABLE `insumo` (
 --
 
 INSERT INTO `insumo` (`id`, `nombre`, `codigo`, `tipo`, `unidad_medida`, `is_inventoriable`, `costo_unitario`, `aplica_iva`, `stock_actual`, `stock_minimo`, `stock_maximo`, `estado`, `created_at`, `updated_at`, `deleted_at`) VALUES
-(2, 'Botón Nacar 18mm', NULL, 'Boton', 'Unidad', 1, 1.00, 1, 546.00, 1000.00, 0.00, 1, '2025-12-04 18:58:28', '2026-06-11 03:22:26', NULL),
+(2, 'Botón Nacar 18mm', NULL, 'Boton', 'Unidad', 1, 1.00, 1, 450.00, 1000.00, 0.00, 1, '2025-12-04 18:58:28', '2026-06-24 19:59:02', NULL),
 (3, 'Pique', 'PIQ', 'Tela', 'Kg', 1, 50.00, 1, 110.00, 5.00, 0.00, 1, '2025-12-11 00:39:02', '2026-06-11 03:22:26', NULL),
 (5, 'Jersey', 'AJR', 'Tela', 'Kg', 1, 3.00, 1, 110.00, 10.00, 0.00, 1, '2026-01-20 20:36:23', '2026-06-11 03:22:26', NULL),
-(7, 'Dacron', 'DAC', 'Tela', 'Metro', 1, 12.00, 1, 110.00, 0.00, 0.00, 1, '2026-05-07 17:15:29', '2026-06-11 03:22:26', NULL),
+(7, 'Dacron', 'DAC', 'Tela', 'Metro', 1, 12.00, 1, 86.00, 0.00, 0.00, 1, '2026-05-07 17:15:29', '2026-06-24 19:59:02', NULL),
 (8, 'Oxford', 'OXF', 'Tela', 'Metro', 1, 18.00, 1, 594.00, 0.00, 0.00, 1, '2026-05-07 17:15:29', '2026-06-11 03:22:26', NULL),
 (9, 'Microfibra', 'MFB', 'Tela', 'Metro', 1, 14.00, 1, 110.00, 0.00, 0.00, 1, '2026-05-07 17:15:29', '2026-06-11 03:22:26', NULL),
 (10, 'Gabardina / Dril', 'GBD', 'Tela', 'Metro', 1, 22.00, 1, 110.00, 0.00, 0.00, 1, '2026-05-07 17:15:29', '2026-06-11 03:22:26', NULL),
@@ -1097,7 +1141,10 @@ INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES
 (149, '2026_06_23_000002_move_fecha_nacimiento_genero_to_empleado', 82),
 (150, '2026_06_24_000001_create_estado_municipio_and_refactor_direccion', 83),
 (151, '2026_06_24_000002_drop_tipo_from_direccion_table', 83),
-(152, '2026_06_24_000003_drop_es_principal_from_direccion_table', 83);
+(152, '2026_06_24_000003_drop_es_principal_from_direccion_table', 83),
+(153, '2026_06_24_000004_create_genero_table', 84),
+(154, '2026_06_24_000005_add_genero_id_to_detalle_cotizacion_table', 84),
+(155, '2026_06_24_000006_add_genero_id_to_detalle_pedido_table', 84);
 
 -- --------------------------------------------------------
 
@@ -1150,7 +1197,13 @@ INSERT INTO `movimiento_insumo` (`id`, `insumo_id`, `tipo_movimiento`, `cantidad
 (39, 16, 'Entrada', 10.00, 200.00, 210.00, 'llenado general', 1, '2026-06-11 03:22:26', '2026-06-11 03:22:26'),
 (40, 17, 'Entrada', 10.00, 150.00, 160.00, 'llenado general', 1, '2026-06-11 03:22:26', '2026-06-11 03:22:26'),
 (41, 14, 'Entrada', 10.00, 610.00, 620.00, 'Compra #2 — Fact: 423', 1, '2026-06-19 03:01:25', '2026-06-19 03:01:25'),
-(42, 16, 'Entrada', 10.00, 210.00, 220.00, 'Compra #2 — Fact: 423', 1, '2026-06-19 03:01:25', '2026-06-19 03:01:25');
+(42, 16, 'Entrada', 10.00, 210.00, 220.00, 'Compra #2 — Fact: 423', 1, '2026-06-19 03:01:25', '2026-06-19 03:01:25'),
+(43, 7, 'Salida', 10.00, 110.00, 100.00, 'Consumo de producción — OP #14', 1, '2026-06-24 19:59:02', '2026-06-24 19:59:02'),
+(44, 2, 'Salida', 40.00, 546.00, 506.00, 'Consumo de producción — OP #14', 1, '2026-06-24 19:59:02', '2026-06-24 19:59:02'),
+(45, 7, 'Salida', 10.00, 100.00, 90.00, 'Consumo de producción — OP #15', 1, '2026-06-24 19:59:02', '2026-06-24 19:59:02'),
+(46, 2, 'Salida', 40.00, 506.00, 466.00, 'Consumo de producción — OP #15', 1, '2026-06-24 19:59:02', '2026-06-24 19:59:02'),
+(47, 7, 'Salida', 4.00, 90.00, 86.00, 'Consumo de producción — OP #16', 1, '2026-06-24 19:59:02', '2026-06-24 19:59:02'),
+(48, 2, 'Salida', 16.00, 466.00, 450.00, 'Consumo de producción — OP #16', 1, '2026-06-24 19:59:02', '2026-06-24 19:59:02');
 
 -- --------------------------------------------------------
 
@@ -1544,7 +1597,10 @@ INSERT INTO `orden_produccion` (`id`, `pedido_id`, `detalle_pedido_id`, `product
 (3, 2, 3, NULL, 11, 2, 0, 0, '2026-06-07', '2026-06-20', NULL, 'Pendiente', NULL, NULL, 7, '2026-06-07 17:55:58', '2026-06-07 17:55:58', NULL),
 (4, 3, 5, NULL, 3, 1, 0, 0, '2026-06-07', '2026-06-21', NULL, 'Pendiente', 'notas', NULL, 7, '2026-06-07 17:57:45', '2026-06-07 18:02:53', NULL),
 (12, 6, 6, NULL, 10, 4, 2, 0, '2026-06-10', '2026-06-22', NULL, 'En Proceso', NULL, NULL, 1, '2026-06-10 02:06:03', '2026-06-10 02:06:23', NULL),
-(13, 6, 7, NULL, 10, 4, 2, 0, '2026-06-10', '2026-06-22', NULL, 'En Proceso', NULL, NULL, 1, '2026-06-10 02:06:03', '2026-06-10 02:06:31', NULL);
+(13, 6, 7, NULL, 10, 4, 2, 0, '2026-06-10', '2026-06-22', NULL, 'En Proceso', NULL, NULL, 1, '2026-06-10 02:06:03', '2026-06-10 02:06:31', NULL),
+(14, 8, 10, NULL, 8, 5, 0, 0, '2026-06-24', '2026-07-22', NULL, 'Pendiente', NULL, NULL, 1, '2026-06-24 19:59:02', '2026-06-24 19:59:02', NULL),
+(15, 8, 11, NULL, 10, 5, 0, 0, '2026-06-24', '2026-07-22', NULL, 'Pendiente', NULL, NULL, 1, '2026-06-24 19:59:02', '2026-06-24 19:59:02', NULL),
+(16, 8, 12, NULL, 9, 2, 0, 0, '2026-06-24', '2026-07-22', NULL, 'Pendiente', NULL, NULL, 1, '2026-06-24 19:59:02', '2026-06-24 19:59:02', NULL);
 
 -- --------------------------------------------------------
 
@@ -1566,7 +1622,10 @@ CREATE TABLE `orden_produccion_empleado` (
 
 INSERT INTO `orden_produccion_empleado` (`id`, `orden_produccion_id`, `empleado_id`, `created_at`, `updated_at`) VALUES
 (8, 12, 10, '2026-06-10 02:06:03', '2026-06-10 02:06:03'),
-(9, 13, 10, '2026-06-10 02:06:03', '2026-06-10 02:06:03');
+(9, 13, 10, '2026-06-10 02:06:03', '2026-06-10 02:06:03'),
+(10, 14, 8, '2026-06-24 19:59:02', '2026-06-24 19:59:02'),
+(11, 15, 10, '2026-06-24 19:59:02', '2026-06-24 19:59:02'),
+(12, 16, 9, '2026-06-24 19:59:02', '2026-06-24 19:59:02');
 
 -- --------------------------------------------------------
 
@@ -1593,7 +1652,8 @@ INSERT INTO `pago_pedido` (`id`, `pedido_id`, `metodo`, `monto`, `banco_id`, `re
 (1, 1, 'efectivo', 100.00, NULL, NULL, '2026-06-07 06:02:12', '2026-06-07 06:02:12'),
 (2, 2, 'efectivo', 40.00, NULL, NULL, '2026-06-07 17:24:05', '2026-06-07 17:24:05'),
 (3, 3, 'efectivo', 30.00, NULL, NULL, '2026-06-07 17:26:16', '2026-06-07 17:26:16'),
-(10, 6, 'efectivo', 132.00, NULL, NULL, '2026-06-09 20:55:33', '2026-06-09 20:55:33');
+(10, 6, 'efectivo', 132.00, NULL, NULL, '2026-06-09 20:55:33', '2026-06-09 20:55:33'),
+(11, 8, 'transferencia', 324.00, 15, '52', '2026-06-24 19:58:08', '2026-06-24 19:58:08');
 
 -- --------------------------------------------------------
 
@@ -1647,7 +1707,8 @@ INSERT INTO `pedido` (`id`, `cotizacion_id`, `cliente_id`, `fecha_pedido`, `fech
 (1, 1, 23, '2026-06-07', '2026-06-22', NULL, 'Pendiente', 'Normal', 352.00, 100.00, 7, '2026-06-07 06:02:12', '2026-06-07 06:02:12', NULL),
 (2, 2, 14, '2026-06-07', '2026-06-22', NULL, 'Pendiente', 'Normal', 70.00, 40.00, 7, '2026-06-07 17:24:05', '2026-06-07 17:24:05', NULL),
 (3, 3, 42, '2026-06-07', '2026-06-22', NULL, 'Pendiente', 'Normal', 62.00, 30.00, 7, '2026-06-07 17:26:16', '2026-06-07 17:26:16', NULL),
-(6, 4, 9, '2026-06-09', '2026-06-24', '2026-06-09', 'Procesando', 'Normal', 264.00, 132.00, 1, '2026-06-09 20:55:33', '2026-06-10 02:06:23', NULL);
+(6, 4, 9, '2026-06-09', '2026-06-24', '2026-06-09', 'Procesando', 'Normal', 264.00, 132.00, 1, '2026-06-09 20:55:33', '2026-06-10 02:06:23', NULL),
+(8, 6, 39, '2026-06-24', '2026-07-24', '2026-06-24', 'Pendiente', 'Normal', 324.00, 324.00, 1, '2026-06-24 19:58:08', '2026-06-24 19:58:08', NULL);
 
 -- --------------------------------------------------------
 
@@ -2529,7 +2590,8 @@ ALTER TABLE `detalle_cotizacion`
   ADD KEY `detalle_cotizaciones_producto_id_foreign` (`producto_id`),
   ADD KEY `detalle_cotizacion_color_id_foreign` (`color_id`),
   ADD KEY `detalle_cotizacion_talla_id_foreign` (`talla_id`),
-  ADD KEY `detalle_cotizacion_tipo_producto_id_foreign` (`tipo_producto_id`);
+  ADD KEY `detalle_cotizacion_tipo_producto_id_foreign` (`tipo_producto_id`),
+  ADD KEY `detalle_cotizacion_genero_id_foreign` (`genero_id`);
 
 --
 -- Indices de la tabla `detalle_cotizacion_bordado`
@@ -2557,7 +2619,8 @@ ALTER TABLE `detalle_pedido`
   ADD KEY `detalle_pedidos_producto_id_foreign` (`producto_id`),
   ADD KEY `detalle_pedido_color_id_foreign` (`color_id`),
   ADD KEY `detalle_pedido_talla_id_foreign` (`talla_id`),
-  ADD KEY `detalle_pedido_tipo_producto_id_foreign` (`tipo_producto_id`);
+  ADD KEY `detalle_pedido_tipo_producto_id_foreign` (`tipo_producto_id`),
+  ADD KEY `detalle_pedido_genero_id_foreign` (`genero_id`);
 
 --
 -- Indices de la tabla `detalle_pedido_bordado`
@@ -2608,6 +2671,13 @@ ALTER TABLE `estado`
 ALTER TABLE `failed_jobs`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `failed_jobs_uuid_unique` (`uuid`);
+
+--
+-- Indices de la tabla `genero`
+--
+ALTER TABLE `genero`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `genero_nombre_unique` (`nombre`);
 
 --
 -- Indices de la tabla `impuesto`
@@ -2936,7 +3006,7 @@ ALTER TABLE `configuracion`
 -- AUTO_INCREMENT de la tabla `cotizacion`
 --
 ALTER TABLE `cotizacion`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
 -- AUTO_INCREMENT de la tabla `departamento`
@@ -2948,7 +3018,7 @@ ALTER TABLE `departamento`
 -- AUTO_INCREMENT de la tabla `detalle_cotizacion`
 --
 ALTER TABLE `detalle_cotizacion`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
 
 --
 -- AUTO_INCREMENT de la tabla `detalle_cotizacion_bordado`
@@ -2960,13 +3030,13 @@ ALTER TABLE `detalle_cotizacion_bordado`
 -- AUTO_INCREMENT de la tabla `detalle_orden_insumo`
 --
 ALTER TABLE `detalle_orden_insumo`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=21;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=27;
 
 --
 -- AUTO_INCREMENT de la tabla `detalle_pedido`
 --
 ALTER TABLE `detalle_pedido`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
 
 --
 -- AUTO_INCREMENT de la tabla `detalle_pedido_bordado`
@@ -3005,6 +3075,12 @@ ALTER TABLE `failed_jobs`
   MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
+-- AUTO_INCREMENT de la tabla `genero`
+--
+ALTER TABLE `genero`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+
+--
 -- AUTO_INCREMENT de la tabla `impuesto`
 --
 ALTER TABLE `impuesto`
@@ -3026,13 +3102,13 @@ ALTER TABLE `logo`
 -- AUTO_INCREMENT de la tabla `migrations`
 --
 ALTER TABLE `migrations`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=153;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=156;
 
 --
 -- AUTO_INCREMENT de la tabla `movimiento_insumo`
 --
 ALTER TABLE `movimiento_insumo`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=43;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=49;
 
 --
 -- AUTO_INCREMENT de la tabla `municipio`
@@ -3044,25 +3120,25 @@ ALTER TABLE `municipio`
 -- AUTO_INCREMENT de la tabla `orden_produccion`
 --
 ALTER TABLE `orden_produccion`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
 
 --
 -- AUTO_INCREMENT de la tabla `orden_produccion_empleado`
 --
 ALTER TABLE `orden_produccion_empleado`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
 
 --
 -- AUTO_INCREMENT de la tabla `pago_pedido`
 --
 ALTER TABLE `pago_pedido`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
 
 --
 -- AUTO_INCREMENT de la tabla `pedido`
 --
 ALTER TABLE `pedido`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- AUTO_INCREMENT de la tabla `permiso_rol`
@@ -3245,6 +3321,7 @@ ALTER TABLE `cotizacion`
 --
 ALTER TABLE `detalle_cotizacion`
   ADD CONSTRAINT `detalle_cotizacion_color_id_foreign` FOREIGN KEY (`color_id`) REFERENCES `color` (`id`) ON DELETE SET NULL,
+  ADD CONSTRAINT `detalle_cotizacion_genero_id_foreign` FOREIGN KEY (`genero_id`) REFERENCES `genero` (`id`),
   ADD CONSTRAINT `detalle_cotizacion_talla_id_foreign` FOREIGN KEY (`talla_id`) REFERENCES `talla` (`id`) ON DELETE SET NULL,
   ADD CONSTRAINT `detalle_cotizacion_tipo_producto_id_foreign` FOREIGN KEY (`tipo_producto_id`) REFERENCES `tipo_producto` (`id`) ON DELETE SET NULL,
   ADD CONSTRAINT `detalle_cotizaciones_cotizacion_id_foreign` FOREIGN KEY (`cotizacion_id`) REFERENCES `cotizacion` (`id`) ON DELETE CASCADE,
@@ -3270,6 +3347,7 @@ ALTER TABLE `detalle_orden_insumo`
 --
 ALTER TABLE `detalle_pedido`
   ADD CONSTRAINT `detalle_pedido_color_id_foreign` FOREIGN KEY (`color_id`) REFERENCES `color` (`id`) ON DELETE SET NULL,
+  ADD CONSTRAINT `detalle_pedido_genero_id_foreign` FOREIGN KEY (`genero_id`) REFERENCES `genero` (`id`),
   ADD CONSTRAINT `detalle_pedido_talla_id_foreign` FOREIGN KEY (`talla_id`) REFERENCES `talla` (`id`) ON DELETE SET NULL,
   ADD CONSTRAINT `detalle_pedido_tipo_producto_id_foreign` FOREIGN KEY (`tipo_producto_id`) REFERENCES `tipo_producto` (`id`) ON DELETE SET NULL,
   ADD CONSTRAINT `detalle_pedidos_pedido_id_foreign` FOREIGN KEY (`pedido_id`) REFERENCES `pedido` (`id`) ON DELETE CASCADE,
