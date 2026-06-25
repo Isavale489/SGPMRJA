@@ -4160,27 +4160,35 @@ header#page-topbar,
     line-height: 1.55;
 }
 
-/* Matriz minimalista: sin bordes pesados, separadores sutiles por fila */
+/* Matriz tipo card-tabla: contenedor con borde, banda de encabezado y
+   separadores verticales entre columnas de género (DAMA/CABALLERO/UNISEX) */
 .cfg-tg {
     display: grid;
-    grid-template-columns: minmax(52px, 0.6fr) repeat(var(--cfg-tg-cols, 3), 1fr);
+    grid-template-columns: minmax(56px, 0.7fr) repeat(var(--cfg-tg-cols, 3), 1fr);
     gap: 0;
     align-items: stretch;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    overflow: hidden;
+    background: #ffffff;
 }
 .cfg-tg-row { display: contents; }
 .cfg-tg-talla {
     display: flex;
     align-items: center;
     font-size: 0.8rem;
-    color: #475569;
+    color: #334155;
     font-weight: 600;
-    padding: 4px 8px 4px 2px;
+    padding: 6px 8px 6px 14px;
     border-bottom: 1px solid #f1f5f9;
 }
+/* Banda de encabezado (fila de títulos) */
 .cfg-tg-head .cfg-tg-talla,
 .cfg-tg-head .cfg-tg-genhead {
+    background: #f8fafc;
     border-bottom: 1.5px solid #e2e8f0;
-    padding-bottom: 8px;
+    padding-top: 9px;
+    padding-bottom: 9px;
 }
 .cfg-tg-head .cfg-tg-genhead {
     display: flex;
@@ -4199,6 +4207,9 @@ header#page-topbar,
     letter-spacing: 0.04em;
     color: #94a3b8;
 }
+/* Separadores verticales entre columnas de género */
+.cfg-tg-genhead,
+.cfg-tg-cell { border-left: 1px solid #f1f5f9; }
 
 /* Celda: −  [input]  +  */
 .cfg-tg-cell {
@@ -4208,7 +4219,6 @@ header#page-topbar,
     gap: 1px;
     padding: 3px 2px;
     border-bottom: 1px solid #f1f5f9;
-    border-radius: 10px;
     transition: background 0.15s, box-shadow 0.15s;
 }
 .cfg-tg-cell.is-active { background: rgba(0, 217, 165, 0.07); }
@@ -4216,6 +4226,9 @@ header#page-topbar,
     background: #ffffff;
     box-shadow: inset 0 0 0 2px rgba(30, 60, 114, 0.35);
 }
+/* Sin doble línea contra el borde inferior de la card */
+.cfg-tg-row:last-child .cfg-tg-talla,
+.cfg-tg-row:last-child .cfg-tg-cell { border-bottom: 0; }
 .cfg-tg-input {
     width: 38px;
     border: 0;
@@ -4277,11 +4290,14 @@ header#page-topbar,
 [data-bs-theme="dark"] .cfg-tg-groups { background: #1e293b; }
 [data-bs-theme="dark"] .cfg-tg-group-btn { color: #94a3b8; }
 [data-bs-theme="dark"] .cfg-tg-group-btn.is-active { background: #0f172a; color: #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4); }
+[data-bs-theme="dark"] .cfg-tg { border-color: #334155; background: #0f172a; }
 [data-bs-theme="dark"] .cfg-tg-talla { color: #cbd5e1; border-bottom-color: #1e293b; }
 [data-bs-theme="dark"] .cfg-tg-head .cfg-tg-talla,
-[data-bs-theme="dark"] .cfg-tg-head .cfg-tg-genhead { border-bottom-color: #334155; }
+[data-bs-theme="dark"] .cfg-tg-head .cfg-tg-genhead { background: #1e293b; border-bottom-color: #334155; }
 [data-bs-theme="dark"] .cfg-tg-genhead,
 [data-bs-theme="dark"] .cfg-tg-corner { color: #94a3b8; }
+[data-bs-theme="dark"] .cfg-tg-genhead,
+[data-bs-theme="dark"] .cfg-tg-cell { border-left-color: #1e293b; }
 [data-bs-theme="dark"] .cfg-tg-cell { border-bottom-color: #1e293b; }
 [data-bs-theme="dark"] .cfg-tg-cell.is-active { background: rgba(52, 211, 153, 0.12); }
 [data-bs-theme="dark"] .cfg-tg-cell:focus-within { background: #0f172a; box-shadow: inset 0 0 0 2px rgba(59, 130, 246, 0.5); }
