@@ -36,11 +36,41 @@ class ControlCalidadController extends Controller
             ->where('estado', 'Finalizado')
             ->whereDoesntHave('controlesCalidad', function ($q) {
                 $q->whereIn('resultado', ['aprobado', 'observado']);
-            })
-            ->select('orden_produccion.*')
-            ->orderBy('fecha_fin_real', 'desc');
+            });
+
+        // Filtro: estado de calidad dentro de la cola pendiente.
+        //   pendiente   = nunca inspeccionada
+        //   reinspeccion = ya tuvo una inspección (rechazo previo) y volvió finalizada
+        $estadoCalidad = $request->input('filter_estado_calidad');
+        if ($estadoCalidad === 'pendiente') {
+            $ordenes->whereDoesntHave('controlesCalidad');
+        } elseif ($estadoCalidad === 'reinspeccion') {
+            $ordenes->whereHas('controlesCalidad');
+        }
+
+        // Orden por fecha de finalización
+        $ordenes->orderBy('fecha_fin_real', $request->input('filter_orden') === 'antiguos' ? 'asc' : 'desc')
+            ->select('orden_produccion.*');
 
         return DataTables::of($ordenes)
+            // Búsqueda global por producto (tipo/nombre) o pedido — las columnas son
+            // derivadas, así que se sobrescribe el buscador de DataTables.
+            ->filter(function ($query) use ($request) {
+                $keyword = trim((string) $request->input('search.value'));
+                if ($keyword === '') {
+                    return;
+                }
+                $num = preg_replace('/\D/', '', $keyword); // dígitos (ej. "Pedido #8" → "8")
+                $query->where(function ($q) use ($keyword, $num) {
+                    // El nombre del producto se deriva del tipo de producto (línea dinámica
+                    // o legacy), no de una columna 'nombre' en `producto`.
+                    $q->whereHas('detallePedido.tipoProducto', fn ($t) => $t->where('nombre', 'like', "%{$keyword}%"))
+                      ->orWhereHas('producto.tipoProducto', fn ($t) => $t->where('nombre', 'like', "%{$keyword}%"));
+                    if ($num !== '') {
+                        $q->orWhere('pedido_id', $num);
+                    }
+                });
+            }, true)
             ->addColumn('pedido_info', function ($orden) {
                 return $orden->pedido_id && $orden->pedido
                     ? 'Pedido #' . $orden->pedido->id

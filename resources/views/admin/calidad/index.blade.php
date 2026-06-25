@@ -32,6 +32,55 @@
                         Inspecciona las órdenes de producción finalizadas. Si hay unidades defectuosas,
                         la orden vuelve a producción (reproceso); si todo está conforme, queda lista para entrega.
                     </p>
+
+                    {{-- Barra unificada de búsqueda + filtros (sección Operativa: tema emerald) --}}
+                    <div class="advanced-filters-wrapper emerald-theme" id="advanced-filters">
+                        <div class="navy-filter-header is-collapsed">
+                            <div class="navy-header-search">
+                                <i class="ri-search-line"></i>
+                                <input type="text" class="navy-search-input" id="custom-search-input"
+                                    placeholder="Buscar por producto o pedido..." autocomplete="off">
+                            </div>
+                            <div class="navy-header-divider"></div>
+                            <button class="navy-filter-btn collapsed" type="button"
+                                data-bs-toggle="collapse" data-bs-target="#filters-collapse-body"
+                                aria-expanded="false" aria-controls="filters-collapse-body">
+                                <i class="ri-filter-3-line"></i>
+                                <span>Filtros</span>
+                                <span class="navy-filter-badge d-none" id="active-filter-count"></span>
+                                <i class="ri-arrow-down-s-line navy-filter-chevron"></i>
+                            </button>
+                        </div>
+                        <div class="collapse" id="filters-collapse-body">
+                            <div class="navy-filter-body">
+                                <div class="row g-3">
+                                    <div class="col-12 col-md-6">
+                                        <label class="navy-filter-label" for="filter-estado-calidad">
+                                            <i class="ri-shield-check-line"></i> Estado de calidad
+                                        </label>
+                                        <select class="form-select navy-filter-select" id="filter-estado-calidad">
+                                            <option value="">Todas</option>
+                                            <option value="pendiente">Pendiente (sin inspeccionar)</option>
+                                            <option value="reinspeccion">Re-inspección (tras reproceso)</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-12 col-md-6">
+                                        <label class="navy-filter-label" for="filter-orden">
+                                            <i class="ri-sort-desc"></i> Ordenar por
+                                        </label>
+                                        <select class="form-select navy-filter-select" id="filter-orden">
+                                            <option value="recientes">Finalización reciente</option>
+                                            <option value="antiguos">Finalización antigua</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="d-flex justify-content-end mt-2">
+                                    <button type="button" class="btn btn-link" id="btn-clear-filters">Limpiar filtros</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <table id="calidad-table"
                         class="table table-bordered table-striped align-middle dt-transactional table-operativa">
                         <thead>
@@ -150,10 +199,22 @@
         $(function () {
             var RESULTADO_LABEL = { aprobado: 'Aprobado', rechazado: 'Rechazado', observado: 'Aprobado con observaciones' };
 
+            function debounce(fn, wait) {
+                var t;
+                return function () { var ctx = this, a = arguments; clearTimeout(t); t = setTimeout(function () { fn.apply(ctx, a); }, wait || 300); };
+            }
+
             var table = $('#calidad-table').DataTable({
                 processing: true,
                 serverSide: true,
-                ajax: { url: '{{ route('calidad.data') }}' },
+                dom: 'rtip',
+                ajax: {
+                    url: '{{ route('calidad.data') }}',
+                    data: function (d) {
+                        d.filter_estado_calidad = $('#filter-estado-calidad').val();
+                        d.filter_orden = $('#filter-orden').val();
+                    }
+                },
                 columns: [
                     { data: 'pedido_info', name: 'pedido.id', className: 'align-middle text-center', orderable: false, searchable: false },
                     { data: 'producto_info', name: 'producto', className: 'align-middle', orderable: false, searchable: false },
@@ -182,6 +243,31 @@
                 responsive: false,
                 language: lenguajeData
             });
+
+            // ── Barra unificada: búsqueda + filtros ──
+            function actualizarBadge() {
+                var n = 0;
+                if ($('#filter-estado-calidad').val()) n++;
+                if (($('#filter-orden').val() || 'recientes') !== 'recientes') n++;
+                $('#active-filter-count').text(n).toggleClass('d-none', n === 0);
+            }
+            $('#custom-search-input').on('input', debounce(function () {
+                table.search(this.value).draw();
+            }, 300));
+            $('#filter-estado-calidad, #filter-orden').on('change', function () {
+                actualizarBadge();
+                table.ajax.reload();
+            });
+            $('#btn-clear-filters').on('click', function () {
+                $('#filter-estado-calidad').val('');
+                $('#filter-orden').val('recientes');
+                $('#custom-search-input').val('');
+                actualizarBadge();
+                table.search('').draw();
+            });
+            $('#filters-collapse-body')
+                .on('show.bs.collapse', function () { $('#advanced-filters .navy-filter-header').removeClass('is-collapsed'); })
+                .on('hidden.bs.collapse', function () { $('#advanced-filters .navy-filter-header').addClass('is-collapsed'); });
 
             // Estado del lote actual en el modal
             var producidas = 0;
