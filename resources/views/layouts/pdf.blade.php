@@ -254,11 +254,11 @@
             position: fixed;
             left: 0;
             right: 0;
-            bottom: -30px;
-            border-top: 1px solid #dfe6f0;
-            padding-top: 6px;
-            font-size: 8px;
-            color: #777777;
+            bottom: -28px;
+            border-top: 1px solid #cbd5e1;
+            padding-top: 5px;
+            font-size: 8.5px;
+            color: #555555;
             font-weight: 600;
         }
 
