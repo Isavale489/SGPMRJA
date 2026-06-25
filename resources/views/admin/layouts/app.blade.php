@@ -610,8 +610,11 @@
                 }
             });
 
-            // Validación de documento (mínimo 6 dígitos)
-            $(document).on('blur', '#documento-number-field, #documento-identidad-field, input[name="documento_identidad"]', function () {
+            // Validación de documento (mínimo 6 dígitos).
+            // NOTA: #documento-number-field (Clientes) se excluye a propósito: ese
+            // módulo tiene su propia validación con rango "entre 6 y N" sobre
+            // #documento-error; el handler global creaba un feedback duplicado.
+            $(document).on('blur', '#documento-identidad-field, input[name="documento_identidad"]', function () {
                 let value = $(this).val().trim();
                 if (value.length < 6) {
                     marcarInvalido($(this), 'El documento debe tener al menos 6 dígitos.');

@@ -341,7 +341,7 @@
                         <div class="row g-2 mb-0">
                             <div class="col-md-6">
                                 <x-forms.input name="documento_number" label="Documento (Cédula o RIF)"
-                                    id="documento-number-field" required maxlength="10" placeholder="Nro. documento"
+                                    id="documento-number-field" required maxlength="9" placeholder="Nro. documento"
                                     prependRaw="true">
                                     <x-slot:prepend>
                                         <select class="form-select" id="documento-prefix-field" style="max-width: 70px;">
@@ -354,8 +354,7 @@
                                 </x-forms.input>
                                 <input type="hidden" id="documento-field" name="documento" />
                                 <small class="text-muted"
-                                    style="margin-top: -6px; display: block; margin-bottom: 6px;">Máximo
-                                    10 dígitos</small>
+                                    style="margin-top: -6px; display: block; margin-bottom: 6px;">Entre 6 y 9 dígitos</small>
                                 <div id="documento-error" class="invalid-feedback" style="display: none;"></div>
                                 <div id="documento-persona-card" class="d-none mt-2 rounded"
                                     style="border:1px solid rgba(8,145,178,0.35); background:rgba(8,145,178,0.06); padding:10px 12px;">
