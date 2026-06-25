@@ -54,7 +54,7 @@
     {{-- ════════ Modal de inspección ════════ --}}
     <div class="modal fade atlantico-modal atlantico-modal--op" id="inspeccionModal" tabindex="-1"
         aria-hidden="true" data-bs-backdrop="static">
-        <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title"><i class="ri-shield-check-line me-1"></i>Registrar inspección de calidad</h5>
@@ -81,20 +81,23 @@
                             </div>
                         </div>
 
-                        {{-- Control de partición: defectuosas (entrada) → conformes (derivado) --}}
-                        <p class="qc-prompt">Del lote, marca cuántas unidades resultaron <strong>defectuosas</strong>.</p>
-                        <div class="qc-split">
-                            <div class="qc-counter qc-counter--bad">
-                                <span class="qc-counter-label"><i class="ri-close-circle-line"></i> Defectuosas</span>
+                        {{-- Control de partición (compacto, una fila): Inspeccionadas · Defectuosas · Conformes --}}
+                        <div class="qc-controls">
+                            <div class="qc-field">
+                                <span class="qc-field-label">Inspeccionadas</span>
+                                <input type="number" id="cc-inspeccionada" min="1" class="qc-mini-input">
+                            </div>
+                            <div class="qc-field">
+                                <span class="qc-field-label qc-label-bad">Defectuosas</span>
                                 <div class="qc-stepper">
                                     <button type="button" class="qc-step" data-step="-1" aria-label="Quitar una">−</button>
                                     <input type="number" id="cc-rechazada" class="qc-step-input" value="0" min="0" inputmode="numeric">
                                     <button type="button" class="qc-step" data-step="1" aria-label="Sumar una">+</button>
                                 </div>
                             </div>
-                            <div class="qc-counter qc-counter--ok">
-                                <span class="qc-counter-label"><i class="ri-checkbox-circle-line"></i> Conformes</span>
-                                <span class="qc-counter-num" id="cc-aprobada-num">0</span>
+                            <div class="qc-field qc-field--ok">
+                                <span class="qc-field-label qc-label-ok">Conformes</span>
+                                <span class="qc-field-num" id="cc-aprobada-num">0</span>
                             </div>
                         </div>
 
@@ -103,16 +106,9 @@
                             <div class="qc-bar-seg qc-bar-ok" id="cc-bar-ok"></div>
                             <div class="qc-bar-seg qc-bar-bad" id="cc-bar-bad"></div>
                         </div>
+                        <div class="invalid-feedback d-block" id="cc-qty-error"></div>
 
-                        {{-- Inspeccionadas (subconjunto opcional) --}}
-                        <div class="qc-inspeccionadas">
-                            <label for="cc-inspeccionada">Unidades inspeccionadas</label>
-                            <input type="number" id="cc-inspeccionada" min="1" class="form-control form-control-sm">
-                            <small class="text-muted">Por defecto se inspeccionan todas las producidas.</small>
-                            <div class="invalid-feedback d-block" id="cc-qty-error"></div>
-                        </div>
-
-                        {{-- Veredicto en vivo --}}
+                        {{-- Veredicto en vivo (slim) --}}
                         <div class="qc-verdict" id="cc-verdict">
                             <i class="qc-verdict-icon" id="cc-verdict-icon"></i>
                             <div class="qc-verdict-text">
