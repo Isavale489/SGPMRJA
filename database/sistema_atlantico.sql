@@ -1,8 +1,8 @@
--- MySQL dump 10.13  Distrib 8.0.46, for Linux (x86_64)
+-- MySQL dump 10.13  Distrib 8.0.46, for Win64 (x86_64)
 --
--- Host: 127.0.0.1    Database: sistema_atlantico7
+-- Host: 127.0.0.1    Database: sistema_atlantico
 -- ------------------------------------------------------
--- Server version	8.0.46-0ubuntu0.24.04.3
+-- Server version	8.0.46
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
@@ -322,8 +322,8 @@ DROP TABLE IF EXISTS `configuracion`;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `configuracion` (
   `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-  `clave` varchar(191) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `valor` varchar(191) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `clave` varchar(191) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `valor` varchar(191) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `updated_by_id` bigint unsigned DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
@@ -357,8 +357,8 @@ CREATE TABLE `control_calidad` (
   `cantidad_inspeccionada` int unsigned NOT NULL,
   `cantidad_aprobada` int unsigned NOT NULL,
   `cantidad_rechazada` int unsigned NOT NULL,
-  `resultado` enum('aprobado','rechazado','observado') COLLATE utf8mb4_unicode_ci NOT NULL,
-  `observaciones` text COLLATE utf8mb4_unicode_ci,
+  `resultado` enum('aprobado','rechazado','observado') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `observaciones` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
   `fecha_inspeccion` timestamp NOT NULL,
   `deleted_at` timestamp NULL DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
@@ -745,7 +745,7 @@ CREATE TABLE `empleado` (
   `codigo_empleado` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `fecha_ingreso` date NOT NULL,
   `fecha_nacimiento` date DEFAULT NULL,
-  `genero` enum('M','F','Otro') COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `genero` enum('M','F','Otro') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `cargo_id` bigint unsigned DEFAULT NULL,
   `departamento_id` bigint unsigned DEFAULT NULL,
   `salario` decimal(10,2) DEFAULT NULL,
@@ -783,7 +783,7 @@ DROP TABLE IF EXISTS `estado`;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `estado` (
   `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-  `nombre` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `nombre` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `estado_nombre_unique` (`nombre`)
 ) ENGINE=InnoDB AUTO_INCREMENT=25 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -837,9 +837,9 @@ DROP TABLE IF EXISTS `genero`;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `genero` (
   `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-  `nombre` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'Dama, Caballero, Unisex',
-  `etiqueta` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'Etiqueta visual para UI',
-  `icono` varchar(40) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'Clase de ícono remixicon para el chip',
+  `nombre` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'Dama, Caballero, Unisex',
+  `etiqueta` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'Etiqueta visual para UI',
+  `icono` varchar(40) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'Clase de ícono remixicon para el chip',
   `orden` int unsigned NOT NULL DEFAULT '0' COMMENT 'Orden de despliegue en UI',
   `activo` tinyint(1) NOT NULL DEFAULT '1' COMMENT 'Permite desactivar sin borrar',
   `created_at` timestamp NULL DEFAULT NULL,
@@ -869,11 +869,11 @@ DROP TABLE IF EXISTS `impuesto`;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `impuesto` (
   `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-  `codigo` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `nombre` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `codigo` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `nombre` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `porcentaje` decimal(5,2) NOT NULL DEFAULT '0.00',
-  `descripcion` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `estado` enum('activo','inactivo') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'activo',
+  `descripcion` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `estado` enum('activo','inactivo') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'activo',
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   `deleted_at` timestamp NULL DEFAULT NULL,
@@ -1034,7 +1034,7 @@ DROP TABLE IF EXISTS `municipio`;
 CREATE TABLE `municipio` (
   `id` bigint unsigned NOT NULL AUTO_INCREMENT,
   `estado_id` bigint unsigned NOT NULL,
-  `nombre` varchar(120) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `nombre` varchar(120) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `municipio_estado_id_nombre_unique` (`estado_id`,`nombre`),
   CONSTRAINT `municipio_estado_id_foreign` FOREIGN KEY (`estado_id`) REFERENCES `estado` (`id`) ON DELETE CASCADE
@@ -1072,7 +1072,7 @@ CREATE TABLE `orden_produccion` (
   `fecha_fin_real` date DEFAULT NULL,
   `estado` enum('Pendiente','En Proceso','Finalizado','Cancelado') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'Pendiente',
   `notas` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
-  `motivo_cancelacion` text COLLATE utf8mb4_unicode_ci,
+  `motivo_cancelacion` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
   `created_by` bigint unsigned NOT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
@@ -1250,7 +1250,7 @@ DROP TABLE IF EXISTS `permiso_rol`;
 CREATE TABLE `permiso_rol` (
   `id` bigint unsigned NOT NULL AUTO_INCREMENT,
   `rol_id` bigint unsigned NOT NULL,
-  `permiso` varchar(191) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `permiso` varchar(191) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
@@ -1513,8 +1513,8 @@ DROP TABLE IF EXISTS `rol`;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `rol` (
   `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-  `nombre` varchar(191) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `descripcion` varchar(191) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `nombre` varchar(191) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `descripcion` varchar(191) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `es_sistema` tinyint(1) NOT NULL DEFAULT '0',
   `deleted_at` timestamp NULL DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
@@ -1937,4 +1937,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-06-25  9:44:19
+-- Dump completed on 2026-06-25 12:03:25
