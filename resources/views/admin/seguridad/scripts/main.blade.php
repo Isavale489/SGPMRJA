@@ -59,21 +59,21 @@
         }
 
         function rolRowHtml(rol) {
-            const conUsuarios = (rol.usuarios_count || 0) > 0;
-            const delAttrs = conUsuarios
-                ? ' disabled title="Tiene usuarios asignados"'
-                : ' title="Eliminar"';
+            const usuarios = rol.usuarios_count || 0;
+            const motivo = usuarios > 0 ? 'usuarios' : '';   // los roles creados nunca son de sistema
+            const delTitle = motivo === 'usuarios' ? 'Tiene usuarios asignados' : 'Eliminar';
             return '' +
                 '<tr data-rol-id="' + rol.id + '" data-rol-nombre="' + esc(rol.nombre) + '"' +
                 ' data-rol-descripcion="' + esc(rol.descripcion || '') + '" data-es-sistema="0"' +
-                ' data-usuarios="' + (rol.usuarios_count || 0) + '">' +
+                ' data-usuarios="' + usuarios + '">' +
                 '<td><span class="fw-medium seg-rol-nombre">' + esc(rol.nombre) + '</span></td>' +
                 '<td class="text-muted seg-rol-desc">' + (rol.descripcion ? esc(rol.descripcion) : '—') + '</td>' +
                 '<td class="text-center"><span class="badge bg-light text-body seg-rol-usuarios">' +
-                    (rol.usuarios_count || 0) + '</span></td>' +
+                    usuarios + '</span></td>' +
                 '<td class="text-center"><div class="d-inline-flex gap-1">' +
                     '<button type="button" class="btn btn-sm btn-soft-primary seg-edit-rol" title="Editar"><i class="ri-pencil-fill"></i></button>' +
-                    '<button type="button" class="btn btn-sm btn-soft-danger seg-del-rol' + (conUsuarios ? ' disabled' : '') + '"' + delAttrs + '><i class="ri-delete-bin-fill"></i></button>' +
+                    '<button type="button" class="btn btn-sm btn-soft-danger seg-del-rol' + (motivo ? ' is-blocked' : '') + '"' +
+                        ' data-motivo="' + motivo + '" title="' + delTitle + '"><i class="ri-delete-bin-fill"></i></button>' +
                 '</div></td>' +
                 '</tr>';
         }
@@ -168,11 +168,32 @@
         });
 
         $(document).on('click', '.seg-del-rol', function () {
-            if ($(this).is('[disabled]') || $(this).hasClass('disabled')) return;
-
-            const $row = $(this).closest('tr');
+            const $btn = $(this);
+            const $row = $btn.closest('tr');
             const id = $row.data('rol-id');
             const nombre = $row.data('rol-nombre');
+            const motivo = $btn.data('motivo');
+
+            // Bloqueos: en vez de un botón muerto, explicamos por qué no se puede.
+            if (motivo === 'sistema') {
+                Swal.fire({
+                    icon: 'info',
+                    title: 'Rol de sistema',
+                    html: 'El rol <strong>' + esc(nombre) + '</strong> es de sistema y no se puede eliminar.',
+                });
+                return;
+            }
+            if (motivo === 'usuarios') {
+                const n = $row.data('usuarios') || 0;
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'No se puede eliminar',
+                    html: 'El rol <strong>' + esc(nombre) + '</strong> tiene <strong>' + n + '</strong> usuario' +
+                        (n === 1 ? '' : 's') + ' asignado' + (n === 1 ? '' : 's') +
+                        '.<br>Reasígnalos a otro rol antes de eliminarlo.',
+                });
+                return;
+            }
 
             Swal.fire({
                 icon: 'warning',
@@ -213,20 +234,29 @@
         });
 
         // =====================================================================
-        // TAB PERMISOS — matriz módulo × acción
+        // TAB PERMISOS — grilla de tarjetas (módulo × acción)
         // =====================================================================
 
-        function $verDe($row) {
-            return $row.find('.seg-perm[data-accion="ver"]');
+        function $verDe($card) {
+            return $card.find('.seg-perm[data-accion="ver"]');
         }
 
-        function syncFila($row) {
-            const $perms = $row.find('.seg-perm');
+        // Sincroniza una tarjeta de módulo: master "Todo", indeterminado y contador.
+        function syncFila($card) {
+            const $perms = $card.find('.seg-perm');
             const total = $perms.length;
             const marcados = $perms.filter(':checked').length;
-            const $all = $row.find('.seg-all');
+            const $all = $card.find('.seg-all');
             $all.prop('checked', total > 0 && marcados === total);
             $all.prop('indeterminate', marcados > 0 && marcados < total);
+            $card.find('.seg-mod-count').text(marcados + '/' + total);
+            $card.toggleClass('has-perms', marcados > 0);
+        }
+
+        // Contador global en la barra de herramientas.
+        function actualizarContadorGlobal() {
+            const marcados = $('.seg-perm:checked').length;
+            $('#seg-global-count').text(marcados === 1 ? '1 permiso' : marcados + ' permisos');
         }
 
         function pintarMatriz(permisos) {
@@ -234,27 +264,57 @@
             (permisos || []).forEach(function (p) {
                 $('.seg-perm').filter(function () { return this.value === p; }).prop('checked', true);
             });
-            $('.seg-matriz tbody tr').each(function () { syncFila($(this)); });
+            $('.seg-mod-card').each(function () { syncFila($(this)); });
+            actualizarContadorGlobal();
         }
 
         // 'ver' es prerrequisito: marcar cualquier acción activa 'ver';
         // desmarcar 'ver' desmarca todas las del módulo.
         $(document).on('change', '.seg-perm', function () {
             const $cb = $(this);
-            const $row = $cb.closest('tr');
+            const $card = $cb.closest('.seg-mod-card');
             if ($cb.data('accion') === 'ver') {
-                if (!$cb.is(':checked')) $row.find('.seg-perm').prop('checked', false);
+                if (!$cb.is(':checked')) $card.find('.seg-perm').prop('checked', false);
             } else if ($cb.is(':checked')) {
-                $verDe($row).prop('checked', true);
+                $verDe($card).prop('checked', true);
             }
-            syncFila($row);
+            syncFila($card);
+            actualizarContadorGlobal();
         });
 
         $(document).on('change', '.seg-all', function () {
-            const $row = $(this).closest('tr');
-            $row.find('.seg-perm').prop('checked', $(this).is(':checked'));
-            syncFila($row);
+            const $card = $(this).closest('.seg-mod-card');
+            $card.find('.seg-perm').prop('checked', $(this).is(':checked'));
+            syncFila($card);
+            actualizarContadorGlobal();
         });
+
+        // Buscar módulo: filtra las tarjetas por nombre o slug.
+        $('#seg-mod-search').on('input', function () {
+            const q = $(this).val().trim().toLowerCase();
+            let visibles = 0;
+            $('.seg-mod-card').each(function () {
+                const $card = $(this);
+                const match = !q
+                    || ($card.data('nombre') + '').indexOf(q) !== -1
+                    || ($card.data('modulo') + '').indexOf(q) !== -1;
+                $card.toggleClass('d-none', !match);
+                if (match) visibles++;
+            });
+            $('#seg-mod-search-empty').toggleClass('d-none', visibles > 0);
+        });
+
+        // Acciones globales: operan sobre las tarjetas visibles (respeta el filtro).
+        function setTodasVisibles(marcar) {
+            $('.seg-mod-card:not(.d-none)').each(function () {
+                const $card = $(this);
+                $card.find('.seg-perm').prop('checked', marcar);
+                syncFila($card);
+            });
+            actualizarContadorGlobal();
+        }
+        $('#seg-marcar-todo').on('click', function () { setTodasVisibles(true); });
+        $('#seg-limpiar-todo').on('click', function () { setTodasVisibles(false); });
 
         $('#seg-rol-select').on('change', function () {
             const rolId = $(this).val();
@@ -272,6 +332,8 @@
                 url: URLS.permisosBase + '/' + rolId,
                 type: 'GET',
                 success: function (res) {
+                    // Reinicia el buscador para mostrar todos los módulos del nuevo rol.
+                    $('#seg-mod-search').val('').trigger('input');
                     pintarMatriz(res.permisos || []);
                     $placeholder.addClass('d-none');
                     $wrapper.removeClass('d-none');

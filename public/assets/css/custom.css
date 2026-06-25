@@ -9433,3 +9433,145 @@ select.js-readonly:not(.afs-native) {
 [data-bs-theme="dark"] .qc-verdict-sub { color: #94a3b8; }
 [data-bs-theme="dark"] .qc-historial-wrap { border-top-color: rgba(255,255,255,.08); }
 [data-bs-theme="dark"] .cc-historial-item { border-color: rgba(255,255,255,.08); }
+/* Eliminar bloqueado (rol de sistema o con usuarios): atenuado pero clickeable,
+   para explicar el motivo en vez de quedar como un botón muerto. */
+.seg-del-rol.is-blocked { opacity: 0.45; }
+.seg-del-rol.is-blocked:hover { opacity: 0.7; }
+
+/* ===================================================================
+   Matriz de permisos — grilla de tarjetas por módulo (reemplaza la
+   tabla módulo×acción que se veía escalonada con los chips envueltos).
+   =================================================================== */
+
+/* Barra de herramientas: buscar módulo + acciones globales + contador */
+.seg-matriz-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+}
+.seg-matriz-search {
+    position: relative;
+    flex: 1 1 240px;
+    min-width: 200px;
+}
+.seg-matriz-search > i {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--vz-secondary-color);
+    pointer-events: none;
+}
+.seg-matriz-search .form-control { padding-left: 34px; }
+.seg-matriz-toolbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: auto;
+    flex-wrap: wrap;
+}
+.seg-global-count {
+    font-size: 0.8rem;
+    color: var(--vz-secondary-color);
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+/* Grilla responsiva: las tarjetas tilean parejo (sin escalera) */
+.seg-matriz-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 14px;
+}
+
+.seg-mod-card {
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--vz-border-color);
+    border-radius: 12px;
+    background: var(--vz-card-bg, #fff);
+    overflow: hidden;
+    transition: border-color .15s ease, box-shadow .15s ease;
+}
+.seg-mod-card:hover {
+    border-color: #1e3c72;
+    box-shadow: 0 2px 10px rgba(16, 24, 40, .06);
+}
+.seg-mod-card.has-perms { border-color: rgba(30, 60, 114, .35); }
+
+.seg-mod-card-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--vz-border-color);
+    background: rgba(30, 60, 114, .03);
+}
+.seg-mod-name {
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--vz-heading-color, #1e293b);
+}
+.seg-mod-count {
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--vz-secondary-color);
+    background: var(--vz-light, #f3f6f9);
+    border-radius: 999px;
+    padding: 2px 9px;
+    white-space: nowrap;
+}
+.seg-mod-card.has-perms .seg-mod-count {
+    background: rgba(30, 60, 114, .12);
+    color: #1e3c72;
+}
+.seg-mod-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+    padding: 14px;
+    flex: 1 1 auto;
+    align-content: flex-start;
+}
+.seg-mod-card-foot {
+    padding: 9px 14px;
+    border-top: 1px dashed var(--vz-border-color);
+    background: rgba(0, 0, 0, .012);
+}
+.seg-all-wrap {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    cursor: pointer;
+    margin: 0;
+    font-size: 0.8rem;
+    color: var(--vz-secondary-color);
+}
+.seg-all-wrap .form-check-input { margin: 0; cursor: pointer; float: none; }
+
+/* Barra de guardado fija al pie del panel */
+.seg-save-bar {
+    position: sticky;
+    bottom: 0;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-top: 1rem;
+    padding: 12px 0 2px;
+    background: linear-gradient(to top, var(--vz-card-bg, #fff) 70%, transparent);
+}
+
+[data-bs-theme="dark"] .seg-mod-card-head { background: rgba(157, 180, 230, .06); }
+[data-bs-theme="dark"] .seg-mod-card-foot { background: rgba(255, 255, 255, .02); }
+[data-bs-theme="dark"] .seg-mod-card:hover,
+[data-bs-theme="dark"] .seg-mod-card.has-perms { border-color: #9db4e6; }
+[data-bs-theme="dark"] .seg-mod-card.has-perms .seg-mod-count {
+    background: rgba(157, 180, 230, .16);
+    color: #cdd9f2;
+}

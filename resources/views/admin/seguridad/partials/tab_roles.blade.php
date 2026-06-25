@@ -43,18 +43,20 @@
                     </td>
                     <td class="text-center">
                         @if ($esAdmin)
-                            <span class="text-muted small">—</span>
+                            <span class="badge bg-light text-muted">Acceso total</span>
                         @else
+                            @php
+                                $motivoBloqueo = $rol->es_sistema ? 'sistema' : ($rol->usuarios_count > 0 ? 'usuarios' : '');
+                            @endphp
                             <div class="d-inline-flex gap-1">
                                 @if (!$rol->es_sistema)
                                     <button type="button" class="btn btn-sm btn-soft-primary seg-edit-rol"
                                         title="Editar"><i class="ri-pencil-fill"></i></button>
                                 @endif
                                 <button type="button"
-                                    class="btn btn-sm btn-soft-danger seg-del-rol {{ $rol->es_sistema || $rol->usuarios_count > 0 ? 'disabled' : '' }}"
-                                    @if ($rol->es_sistema || $rol->usuarios_count > 0) disabled
-                                        title="{{ $rol->es_sistema ? 'Rol de sistema' : 'Tiene usuarios asignados' }}"
-                                    @else title="Eliminar" @endif>
+                                    class="btn btn-sm btn-soft-danger seg-del-rol{{ $motivoBloqueo ? ' is-blocked' : '' }}"
+                                    data-motivo="{{ $motivoBloqueo }}"
+                                    title="{{ $motivoBloqueo === 'sistema' ? 'Rol de sistema (no eliminable)' : ($motivoBloqueo === 'usuarios' ? 'Tiene usuarios asignados' : 'Eliminar') }}">
                                     <i class="ri-delete-bin-fill"></i>
                                 </button>
                             </div>
