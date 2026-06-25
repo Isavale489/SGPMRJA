@@ -240,6 +240,9 @@
     <link href="{{ asset('assets/libs/sweetalert2/sweetalert2.min.css') }}" rel="stylesheet" type="text/css" />
     <script src="{{ asset('assets/libs/sweetalert2/sweetalert2.min.js') }}"></script>
 
+    <!-- Validación lógica global de los filtros de exportación PDF (rango de fechas) -->
+    <script src="{{ asset('assets/js/pdf-export-filtros.js') }}"></script>
+
     <!-- Notificaciones del header (campanita) -->
     @auth
         <script src="{{ asset('assets/js/pages/notifications.js') }}"></script>

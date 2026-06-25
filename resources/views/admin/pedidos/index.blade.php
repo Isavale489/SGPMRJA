@@ -170,7 +170,7 @@
                     <button type="button" class="btn btn-light" data-bs-dismiss="modal">
                         <i class="ri-close-line me-1"></i>Cancelar
                     </button>
-                    <button type="button" class="btn btn-danger" id="btn-generar-pdf">
+                    <button type="button" class="btn btn-danger" id="btn-generar-pdf" data-allow-future="1">
                         <i class="ri-file-pdf-fill me-1"></i>Generar PDF
                     </button>
                 </div>
