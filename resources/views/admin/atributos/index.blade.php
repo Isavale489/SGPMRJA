@@ -157,7 +157,7 @@
                             <i class="ri-close-line me-1"></i> Cerrar
                         </button>
                         <button type="button" class="btn btn-success" id="btn-save-atributo">
-                            <i class="ri-save-line me-1"></i> <span class="btn-label">Guardar</span>
+                            <i class="ri-save-line me-1"></i> <span class="btn-text">Guardar</span>
                         </button>
                     </div>
                 </form>
@@ -203,7 +203,7 @@
                             <i class="ri-close-line me-1"></i> Cerrar
                         </button>
                         <button type="button" class="btn btn-success" id="btn-save-valor">
-                            <i class="ri-save-line me-1"></i> <span class="btn-label">Guardar</span>
+                            <i class="ri-save-line me-1"></i> <span class="btn-text">Guardar</span>
                         </button>
                     </div>
                 </form>
@@ -382,7 +382,7 @@
             // Pre-seleccionar tipos de producto asociados (Select2 refleja el valor al disparar change)
             const ids = (atr?.tipos_producto_ids || []).map(String);
             $('#atr-tipos-producto').val(ids).trigger('change');
-            $('#btn-save-atributo .btn-label').text(isEdit ? 'Actualizar' : 'Crear');
+            $('#btn-save-atributo .btn-text').text(isEdit ? 'Actualizar' : 'Crear');
             new bootstrap.Modal('#atributoModal').show();
         }
 
@@ -513,7 +513,7 @@
             $('#val-nombre').val(val?.nombre || '').removeClass('is-invalid');
             $('#val-codigo').val(val?.codigo || '').removeClass('is-invalid').prop('readonly', isEdit);
             $('#val-orden').val(val?.orden && val.orden !== '—' ? val.orden : '');
-            $('#btn-save-valor .btn-label').text(isEdit ? 'Actualizar' : 'Crear');
+            $('#btn-save-valor .btn-text').text(isEdit ? 'Actualizar' : 'Crear');
             new bootstrap.Modal('#valorModal').show();
         }
 
