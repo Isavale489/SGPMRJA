@@ -419,6 +419,8 @@ class CotizacionController extends Controller
             },
             'productos.tipoProducto',
             'productos.genero',
+            'productos.color',
+            'productos.talla',
             'productos.bordados.logo:id,name',
         ]);
 
