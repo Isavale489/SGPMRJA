@@ -2039,6 +2039,75 @@ header#page-topbar,
 .cot-resumen-card--compact .cot-resumen-divider { margin: 4px 0; }
 .cot-resumen-card--compact .cot-resumen-row--total .cot-resumen-row-value { font-size: 1.4rem; }
 
+/* ── Paso 3 Órdenes — card de progreso de producción (compacta) ──
+   Reusa el gradiente navy de .cot-resumen-card; aquí solo el layout interno. */
+.ord-prog-body { padding: 16px 20px; }
+.ord-prog-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+}
+.ord-prog-title {
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.72);
+}
+.ord-prog-pct {
+    font-size: 1.5rem;
+    font-weight: 800;
+    line-height: 1;
+    color: #00d9a5;
+}
+.ord-prog-bar {
+    height: 7px;
+    background: rgba(255, 255, 255, 0.16);
+    border-radius: 99px;
+    margin-bottom: 16px;
+    overflow: hidden;
+}
+.ord-prog-bar .progress-bar {
+    background: #00d9a5;
+    border-radius: 99px;
+    transition: width 0.5s ease;
+}
+.ord-prog-stats {
+    display: flex;
+    gap: 2px;
+    border-radius: 10px;
+    overflow: hidden;
+}
+.ord-prog-stat {
+    flex: 1;
+    text-align: center;
+    padding: 10px 8px;
+    background: rgba(255, 255, 255, 0.05);
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+.ord-prog-stat-label {
+    font-size: 0.62rem;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.62);
+}
+.ord-prog-stat-num {
+    font-size: 1.4rem;
+    font-weight: 700;
+    line-height: 1;
+    color: #ffffff;
+}
+.ord-prog-stat-num small {
+    font-size: 0.6rem;
+    font-weight: 500;
+    opacity: 0.6;
+    margin-left: 1px;
+}
+
 .cot-resumen-tabla-wrap { max-height: 220px; overflow-y: auto; }
 .cot-resumen-tabla thead th {
     background: #f3f6fc;
@@ -2542,8 +2611,21 @@ header#page-topbar,
     display: inline-flex;
     align-items: center;
     gap: 5px;
+    /* FEAT-006 TASK-043: permitir que un email/dato largo encoja y quiebre
+       dentro del item en vez de desbordar la card */
+    min-width: 0;
+    max-width: 100%;
 }
 .cot-cliente-contact-item i { color: #94a3b8; font-size: 0.95rem; }
+/* FEAT-006 TASK-043: quiebre de email largo (overflow-wrap:anywhere reduce el
+   tamaño mínimo del flex item, así el texto rompe en vez de desbordar). Aplica
+   al detalle "Ver" (#view-cliente-email) y a la card del wizard de edición. */
+#view-cliente-email,
+#cot-cliente-email-display {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    min-width: 0;
+}
 .cot-cliente-stats {
     display: flex;
     flex-wrap: wrap;

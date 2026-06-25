@@ -165,7 +165,7 @@
                 <tr class="{{ $index % 2 === 1 ? 'zebra' : '' }}">
                     <td class="col-cant text-center">{{ $detalle->cantidad }}</td>
                     <td class="col-concep">
-                        {{ $detalle->producto->nombre }}
+                        {{ $detalle->producto?->nombre ?? $detalle->tipoProducto?->nombre ?? 'Producto' }}
                         @if(!empty($variantPartes))
                             <br><small>{{ implode(' · ', $variantPartes) }}</small>
                         @endif

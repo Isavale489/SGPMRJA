@@ -3,8 +3,7 @@
      Pasos: Cliente → Productos → Resumen
      Lógica JS en: cotizaciones/scripts/main.blade.php
      ═══════════════════════════════════════════════════════════════════ --}}
-<div class="modal fade atlantico-modal atlantico-modal--op" id="viewModal" tabindex="-1" aria-hidden="true"
-    data-bs-backdrop="static" data-bs-keyboard="false">
+<div class="modal fade atlantico-modal atlantico-modal--op" id="viewModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-xl modal-fullscreen-sm-down">
         <div class="modal-content">
 
@@ -48,13 +47,11 @@
                     </div>
                     <div class="row g-3">
                         <div class="col-md-6">
-                            <div class="card border-0 shadow-sm h-100">
-                                <div class="card-header border-0 bg-soft-primary py-2 px-3">
-                                    <h6 class="mb-0 text-atlantico-dark fs-13">
-                                        <i class="ri-user-star-line me-1"></i>Información del Cliente
-                                    </h6>
+                            <div class="cli-view-card h-100">
+                                <div class="cli-view-card-header">
+                                    <i class="ri-user-star-line"></i>Información del Cliente
                                 </div>
-                                <div class="card-body p-3">
+                                <div class="cli-view-card-body">
                                     <div class="row g-2">
                                         <div class="col-6 d-flex align-items-start">
                                             <div class="emp-icon-box emp-icon-box--navy rounded-circle me-2 flex-shrink-0 d-flex align-items-center justify-content-center">
@@ -89,13 +86,11 @@
                             </div>
                         </div>
                         <div class="col-md-6">
-                            <div class="card border-0 shadow-sm h-100">
-                                <div class="card-header border-0 bg-soft-primary py-2 px-3">
-                                    <h6 class="mb-0 text-atlantico-dark fs-13">
-                                        <i class="ri-calendar-todo-line me-1"></i>Datos de la Cotización
-                                    </h6>
+                            <div class="cli-view-card h-100">
+                                <div class="cli-view-card-header">
+                                    <i class="ri-calendar-todo-line"></i>Datos de la Cotización
                                 </div>
-                                <div class="card-body p-3">
+                                <div class="cli-view-card-body">
                                     <div class="row g-2">
                                         <div class="col-6 d-flex align-items-start">
                                             <div class="emp-icon-box emp-icon-box--navy rounded-circle me-2 flex-shrink-0 d-flex align-items-center justify-content-center">
@@ -206,8 +201,8 @@
 
             <div class="modal-footer wiz-wizard-footer">
                 <div class="wiz-wizard-footer-info">
-                    <a href="#" id="view-pdf-btn" class="btn btn-sm btn-warning" target="_blank">
-                        <i class="ri-file-pdf-line me-1"></i>PDF
+                    <a href="#" id="view-pdf-btn" class="btn btn-danger" target="_blank">
+                        <i class="ri-file-pdf-line align-bottom me-1"></i> Exportar PDF
                     </a>
                 </div>
                 <div class="wiz-wizard-footer-actions">
