@@ -1,4 +1,4 @@
-# TASK-044: Unificar el botón PDF de las ventanas detalle (Cotizaciones + Compras)
+# TASK-051: Unificar el botón PDF de las ventanas detalle (Cotizaciones + Compras)
 
 **Feature**: FEAT-006 — correcciones-ux-detalles
 **Spec**: `sdd/specs/correcciones-ux-detalles.spec.md`
@@ -112,9 +112,9 @@ $('#cv-pdf-btn').attr('href', '/compras/' + d.id + '/pdf');
 ## Instrucciones para el ejecutor
 
 1. Lee el spec.
-2. Verifica el Codebase Contract con `read` (Cotizaciones comparte archivo con TASK-042/045 → confirma líneas; la zona del footer es distinta del Paso 1).
+2. Verifica el Codebase Contract con `read` (Cotizaciones comparte archivo con TASK-049/045 → confirma líneas; la zona del footer es distinta del Paso 1).
 3. Header: `Status: in-progress`, `Assigned-to: <tu-nombre>`.
-4. Rama: `git checkout -b feat/TASK-044-pdf-detalle-unificado` desde `enmanuel`.
+4. Rama: `git checkout -b feat/TASK-051-pdf-detalle-unificado` desde `enmanuel`.
 5. Implementa con **Edit**.
 6. Verifica criterios + QA.
 7. Mueve a `sdd/tasks/completed/` y rellena la Nota de Completitud.

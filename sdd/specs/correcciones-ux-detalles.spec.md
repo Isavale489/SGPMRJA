@@ -270,7 +270,7 @@ Ninguna. Se reutilizan las existentes (ver Codebase Contract).
 |---|---|---|---|
 | 0.1 | 2026-06-18 | Vane2105 | Borrador inicial (4 correcciones UI/UX de detalle en Cotizaciones) |
 | 0.2 | 2026-06-18 | Vane2105 | Resueltas preguntas abiertas (PDF detalle cotiz+compras; campos dinámicos solo cotizaciones; separación de secciones sin migrar hero). Status → approved |
-| 1.0 | 2026-06-18 | Vane2105 | Implementadas TASK-042..045 + TASK-046 (botón PDF en detalle de Pedidos, mejora de consistencia). Status → shipped |
-| 1.1 | 2026-06-18 | Vane2105 | TASK-047: fix del 500 en el PDF de Pedidos con producto dinámico (bug preexistente detectado vía TASK-046) |
-| 1.2 | 2026-06-18 | Vane2105 | TASK-048: el PDF del detalle se ve y comporta igual que "Exportar PDF" del índice (abre #pdfExportModal); supersede la decisión visual de TASK-044 |
-| 1.3 | 2026-06-18 | Vane2105 | TASK-048 corregida: el detalle solo IGUALA EL LOOK (btn-danger); el comportamiento vuelve a ser por registro (descarga `/<modulo>/{id}/pdf`), no el modal general |
+| 1.0 | 2026-06-18 | Vane2105 | Implementadas TASK-049..045 + TASK-053 (botón PDF en detalle de Pedidos, mejora de consistencia). Status → shipped |
+| 1.1 | 2026-06-18 | Vane2105 | TASK-054: fix del 500 en el PDF de Pedidos con producto dinámico (bug preexistente detectado vía TASK-053) |
+| 1.2 | 2026-06-18 | Vane2105 | TASK-055: el PDF del detalle se ve y comporta igual que "Exportar PDF" del índice (abre #pdfExportModal); supersede la decisión visual de TASK-051 |
+| 1.3 | 2026-06-18 | Vane2105 | TASK-055 corregida: el detalle solo IGUALA EL LOOK (btn-danger); el comportamiento vuelve a ser por registro (descarga `/<modulo>/{id}/pdf`), no el modal general |

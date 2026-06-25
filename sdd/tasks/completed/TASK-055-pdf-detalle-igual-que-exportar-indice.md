@@ -1,18 +1,18 @@
-# TASK-048: PDF del detalle se VE igual que "Exportar PDF" del índice (descarga ESE registro)
+# TASK-055: PDF del detalle se VE igual que "Exportar PDF" del índice (descarga ESE registro)
 
 **Feature**: FEAT-006 — correcciones-ux-detalles
 **Spec**: `sdd/specs/correcciones-ux-detalles.spec.md`
 **Status**: done
 **Priority**: medium
 **Esfuerzo estimado**: S (< 2h)
-**Depends-on**: TASK-044, TASK-046
+**Depends-on**: TASK-051, TASK-053
 **Assigned-to**: vanessa
 
 ---
 
 ## Contexto
 
-Cambio de requerimiento del solicitante: el botón PDF de las ventanas detalle debe **verse igual** que el botón "Exportar PDF" que está afuera, en la barra de la DataTable al lado de "Agregar". **Solo el look** — supersede la decisión visual de TASK-044 (`btn-sm btn-outline-danger`).
+Cambio de requerimiento del solicitante: el botón PDF de las ventanas detalle debe **verse igual** que el botón "Exportar PDF" que está afuera, en la barra de la DataTable al lado de "Agregar". **Solo el look** — supersede la decisión visual de TASK-051 (`btn-sm btn-outline-danger`).
 
 > **Aclaración del solicitante (corrige una primera implementación):** el comportamiento NO debe ser igual. El de afuera es un reporte **general** (modal `#pdfExportModal` con filtros del listado); el del detalle es de **ese registro específico** (descarga `/<modulo>/{id}/pdf`). Solo se iguala la apariencia.
 
@@ -95,5 +95,5 @@ Resultado final:
 **Completado por**: vanessa (con Claude Code)
 **Fecha**: 2026-06-18
 **Commits**: de0d618 (1ª versión: abría el modal general), <este commit> (corrección: descarga el registro)
-**Notas**: Primero se implementó abriendo `#pdfExportModal` (interpretando "comportarse igual"). El solicitante aclaró que el detalle debe ser específico: se corrigió a `<a>` con href por registro, conservando el look sólido rojo del botón de afuera. Supersede la decisión visual de TASK-044 (outline). El dropdown por fila sigue descargando el registro individual.
+**Notas**: Primero se implementó abriendo `#pdfExportModal` (interpretando "comportarse igual"). El solicitante aclaró que el detalle debe ser específico: se corrigió a `<a>` con href por registro, conservando el look sólido rojo del botón de afuera. Supersede la decisión visual de TASK-051 (outline). El dropdown por fila sigue descargando el registro individual.
 **Desviaciones del spec**: Cambio de requerimiento posterior al shipped; documentado como task nueva.

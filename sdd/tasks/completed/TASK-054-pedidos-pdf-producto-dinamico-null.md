@@ -1,18 +1,18 @@
-# TASK-047: Corregir 500 del PDF de Pedidos en líneas con producto dinámico
+# TASK-054: Corregir 500 del PDF de Pedidos en líneas con producto dinámico
 
 **Feature**: FEAT-006 — correcciones-ux-detalles
 **Spec**: `sdd/specs/correcciones-ux-detalles.spec.md`
 **Status**: done
 **Priority**: high
 **Esfuerzo estimado**: S (< 2h)
-**Depends-on**: TASK-046
+**Depends-on**: TASK-053
 **Assigned-to**: vanessa
 
 ---
 
 ## Contexto
 
-Bug **preexistente** detectado al cablear el botón "Descargar PDF" del detalle de Pedidos (TASK-046). La plantilla del PDF (`pedidos/factura.blade.php`) accedía a `$detalle->producto->nombre` sin null-safety. Con la feature de **variantes dinámicas** (`detalle_pedido.producto_id` es nullable, TASK-020), las líneas dinámicas tienen `producto = null`, así que el PDF reventaba con:
+Bug **preexistente** detectado al cablear el botón "Descargar PDF" del detalle de Pedidos (TASK-053). La plantilla del PDF (`pedidos/factura.blade.php`) accedía a `$detalle->producto->nombre` sin null-safety. Con la feature de **variantes dinámicas** (`detalle_pedido.producto_id` es nullable, TASK-020), las líneas dinámicas tienen `producto = null`, así que el PDF reventaba con:
 
 ```
 Attempt to read property "nombre" on null

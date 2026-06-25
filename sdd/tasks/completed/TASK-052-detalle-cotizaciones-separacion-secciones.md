@@ -1,11 +1,11 @@
-# TASK-045: Separación visual de secciones en el detalle de Cotizaciones
+# TASK-052: Separación visual de secciones en el detalle de Cotizaciones
 
 **Feature**: FEAT-006 — correcciones-ux-detalles
 **Spec**: `sdd/specs/correcciones-ux-detalles.spec.md`
 **Status**: done
 **Priority**: medium
 **Esfuerzo estimado**: M (2-4h)
-**Depends-on**: TASK-042
+**Depends-on**: TASK-049
 **Assigned-to**: vanessa
 
 ---
@@ -16,7 +16,7 @@ Implementa el **Módulo 4** del spec. El detalle "Ver" de Cotizaciones (`#viewMo
 
 **Importante**: el detalle de Cotizaciones es un **wizard de pasos**, no el detalle de página única de los módulos maestros. **NO** se migra literalmente el hero `cli-view-*`; se mejora la separación/jerarquía visual de las secciones dentro del wizard, manteniendo el stepper y el paradigma actual.
 
-**Depende de TASK-042** porque ambas tocan el Paso 1 (card de cliente) de `cotizaciones/modals.blade.php`. Tomar TASK-042 primero (o la misma persona hace ambas) para evitar conflicto.
+**Depende de TASK-049** porque ambas tocan el Paso 1 (card de cliente) de `cotizaciones/modals.blade.php`. Tomar TASK-049 primero (o la misma persona hace ambas) para evitar conflicto.
 
 ---
 
@@ -24,14 +24,14 @@ Implementa el **Módulo 4** del spec. El detalle "Ver" de Cotizaciones (`#viewMo
 
 - Mejorar la separación visual entre las secciones del detalle (Paso 1: "Información del Cliente" / "Datos de la Cotización"; y donde aplique en Productos/Resumen): encabezados de sección claros, espaciado y bordes/tarjetas coherentes.
 - Mantener el patrón de dato `emp-icon-box emp-icon-box--navy` + label `text-muted fs-12` + valor `fw-semibold fs-13` ya usado.
-- Respetar la decisión de TASK-042 (campos dinámicos jurídico/natural): el bloque "Apellido" puede estar oculto (`#view-apellido-wrap.d-none`) sin romper la grilla.
+- Respetar la decisión de TASK-049 (campos dinámicos jurídico/natural): el bloque "Apellido" puede estar oculto (`#view-apellido-wrap.d-none`) sin romper la grilla.
 - CSS en `public/assets/css/custom.css`; reusar/extender clases existentes en vez de duplicar.
 
 **NO está en alcance**:
 - Migrar el hero `cli-view-hero` de los módulos maestros al wizard.
 - Unificar los 5 wizards de Gestión Operativa (footer/botón, hero persistente, tamaño de modal) — decisión separada y mayor.
 - Cambiar la lógica JS de poblado (más allá de lo necesario por reordenamiento de markup).
-- El botón PDF (TASK-044) ni el overflow de email (TASK-043).
+- El botón PDF (TASK-051) ni el overflow de email (TASK-050).
 
 ---
 
@@ -107,7 +107,7 @@ Implementa el **Módulo 4** del spec. El detalle "Ver" de Cotizaciones (`#viewMo
 
 - [ ] Las secciones del detalle se ven claramente separadas y coherentes (sensación "Detalles del Insumo").
 - [ ] Se conserva el stepper, los `data-step` y todos los IDs de campos.
-- [ ] Compatible con TASK-042: con cliente jurídico (Apellido oculto) la grilla no queda con huecos.
+- [ ] Compatible con TASK-049: con cliente jurídico (Apellido oculto) la grilla no queda con huecos.
 - [ ] Sin estilos inline; CSS en `custom.css`; dark mode sin regresiones.
 - [ ] PR contra `enmanuel` enlazando esta task.
 
@@ -126,10 +126,10 @@ Implementa el **Módulo 4** del spec. El detalle "Ver" de Cotizaciones (`#viewMo
 ## Instrucciones para el ejecutor
 
 1. Lee el spec.
-2. **Confirma que TASK-042 está en `completed/`** (o impleméntala primero); ambas tocan el Paso 1.
-3. Verifica el Codebase Contract con `read` (líneas pueden haberse movido tras TASK-042).
+2. **Confirma que TASK-049 está en `completed/`** (o impleméntala primero); ambas tocan el Paso 1.
+3. Verifica el Codebase Contract con `read` (líneas pueden haberse movido tras TASK-049).
 4. Header: `Status: in-progress`, `Assigned-to: <tu-nombre>`.
-5. Rama: `git checkout -b feat/TASK-045-detalle-separacion` desde `enmanuel` (con TASK-042 ya integrada).
+5. Rama: `git checkout -b feat/TASK-052-detalle-separacion` desde `enmanuel` (con TASK-049 ya integrada).
 6. Implementa con **Edit**.
 7. Verifica criterios + QA.
 8. Mueve a `sdd/tasks/completed/` y rellena la Nota de Completitud.

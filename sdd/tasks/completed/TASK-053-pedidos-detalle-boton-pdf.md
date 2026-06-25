@@ -1,18 +1,18 @@
-# TASK-046: Añadir botón "Descargar PDF" al detalle de Pedidos
+# TASK-053: Añadir botón "Descargar PDF" al detalle de Pedidos
 
 **Feature**: FEAT-006 — correcciones-ux-detalles
 **Spec**: `sdd/specs/correcciones-ux-detalles.spec.md`
 **Status**: done
 **Priority**: medium
 **Esfuerzo estimado**: S (< 2h)
-**Depends-on**: TASK-044
+**Depends-on**: TASK-051
 **Assigned-to**: vanessa
 
 ---
 
 ## Contexto
 
-Mejora de consistencia surgida durante la implementación de FEAT-006. Tras unificar el botón PDF del detalle en Cotizaciones y Compras (TASK-044), el detalle de **Pedidos** quedó como el único sin botón PDF en el footer del wizard, pese a que la ruta `pedidos/{pedido}/pdf` ya existe. Se añade el mismo botón para que las 3 ventanas detalle (Cotizaciones, Pedidos, Compras) sean idénticas.
+Mejora de consistencia surgida durante la implementación de FEAT-006. Tras unificar el botón PDF del detalle en Cotizaciones y Compras (TASK-051), el detalle de **Pedidos** quedó como el único sin botón PDF en el footer del wizard, pese a que la ruta `pedidos/{pedido}/pdf` ya existe. Se añade el mismo botón para que las 3 ventanas detalle (Cotizaciones, Pedidos, Compras) sean idénticas.
 
 ---
 
@@ -63,7 +63,7 @@ Mejora de consistencia surgida durante la implementación de FEAT-006. Tras unif
 
 - [x] El detalle de Pedidos muestra "Descargar PDF" idéntico al de Cotizaciones/Compras.
 - [x] El botón abre `/pedidos/{id}/pdf` del pedido correcto.
-- [x] Sin estilos inline; dark mode coherente (mismo botón que ya se valida en TASK-044).
+- [x] Sin estilos inline; dark mode coherente (mismo botón que ya se valida en TASK-051).
 
 ---
 

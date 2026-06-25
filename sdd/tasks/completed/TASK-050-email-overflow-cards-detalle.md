@@ -1,4 +1,4 @@
-# TASK-043: Corregir overflow del email en cards de detalle
+# TASK-050: Corregir overflow del email en cards de detalle
 
 **Feature**: FEAT-006 — correcciones-ux-detalles
 **Spec**: `sdd/specs/correcciones-ux-detalles.spec.md`
@@ -108,7 +108,7 @@ El email del wizard de edición se renderiza en `#cot-cliente-email-display` den
 1. Lee el spec.
 2. Verifica el Codebase Contract con `read` (las líneas pudieron moverse).
 3. Header: `Status: in-progress`, `Assigned-to: <tu-nombre>`.
-4. Rama: `git checkout -b feat/TASK-043-email-overflow` desde `enmanuel`.
+4. Rama: `git checkout -b feat/TASK-050-email-overflow` desde `enmanuel`.
 5. Implementa solo CSS (y clase utilitaria si imprescindible).
 6. Verifica criterios + QA.
 7. Mueve a `sdd/tasks/completed/` y rellena la Nota de Completitud.

@@ -1,4 +1,4 @@
-# TASK-042: Campos dinámicos jurídico/natural en detalle de Cotizaciones
+# TASK-049: Campos dinámicos jurídico/natural en detalle de Cotizaciones
 
 **Feature**: FEAT-006 — correcciones-ux-detalles
 **Spec**: `sdd/specs/correcciones-ux-detalles.spec.md`
@@ -26,8 +26,8 @@ Implementa el **Módulo 1** del spec. Tras migrar el detalle de Cotizaciones al 
 
 **NO está en alcance**:
 - Cambios en backend / `CotizacionController` (el payload ya trae los datos).
-- Separación visual de secciones / rediseño de las cards (eso es TASK-045).
-- El botón PDF (TASK-044) ni el overflow de email (TASK-043).
+- Separación visual de secciones / rediseño de las cards (eso es TASK-052).
+- El botón PDF (TASK-051) ni el overflow de email (TASK-050).
 - Replicar esto en Pedidos/Órdenes (verificado: no tienen el bug).
 
 ---
@@ -142,7 +142,7 @@ if (!esJuridico) { $('#view-cliente-apellido').html(vm(data.cliente.apellido)); 
 1. Lee el spec completo.
 2. Verifica el Codebase Contract con `grep`/`read` antes de codear (las líneas pudieron moverse).
 3. Header: `Status: in-progress`, `Assigned-to: <tu-nombre>`.
-4. Rama: `git checkout -b feat/TASK-042-cotiz-detalle-juridico` desde `enmanuel` (o trabaja en `fix/correcciones-ux-detalles`).
+4. Rama: `git checkout -b feat/TASK-049-cotiz-detalle-juridico` desde `enmanuel` (o trabaja en `fix/correcciones-ux-detalles`).
 5. Implementa dentro del scope; usa **Edit** en los blade.
 6. Verifica criterios + QA.
 7. Mueve este archivo a `sdd/tasks/completed/` y rellena la Nota de Completitud.
