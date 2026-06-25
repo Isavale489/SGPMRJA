@@ -26,16 +26,13 @@
     }
 
     /* ── Anchos de columnas de la tabla de productos ── */
-    .col-cant     { width: 5%;    text-align: center; }
-    .col-codigo   { width: 10%; }
-    .col-prod     { width: 21%; }
-    .col-desc     { width: 13%; }
-    .col-talla    { width: 6%;    text-align: center; }
-    .col-logo     { width: 11%; }
-    .col-ubic     { width: 10%; }
-    .col-bord     { width: 5%;    text-align: center; }
-    .col-punit    { width: 9.5%;  text-align: right; }
-    .col-monto    { width: 9.5%;  text-align: right; }
+    .col-num      { width: 4%;    text-align: center; }
+    .col-codigo   { width: 12%; }
+    .col-prod     { width: 40%; }
+    .col-talla    { width: 9%;    text-align: center; }
+    .col-cant     { width: 8%;    text-align: center; }
+    .col-punit    { width: 13.5%; text-align: right; }
+    .col-monto    { width: 13.5%; text-align: right; }
 
     /* Código del producto (SKU): legible y sin cortarse */
     .col-codigo .prod-code {
@@ -47,6 +44,8 @@
     }
     .col-prod strong { color: #2d3436; }
     .col-prod small  { color: #6b7280; }
+    .col-prod .desc-line { color: #6b7280; font-style: italic; }
+    .col-prod .bord-line { color: #1e3c72; }
 
     .data-table tbody td.text-center { text-align: center; }
     .data-table tbody td.text-right  { text-align: right; }
@@ -66,32 +65,31 @@
     }
 
     .totals-inner {
-        width: 230px;
+        width: 260px;
         border: none;
     }
 
     .totals-inner td {
         border: none;
-        padding: 3px 8px;
+        padding: 3px 0;
         font-size: 10px;
     }
 
     .totals-inner .t-label {
-        text-align: right;
         color: #3d4852;
-        font-weight: 600;
     }
 
     .totals-inner .t-value {
         text-align: right;
-        width: 90px;
+        font-weight: bold;
+        color: #1e3c72;
     }
 
     .totals-inner .t-grand {
-        border-top: 2px solid #1e3c72;
-        color: #1e3c72;
-        font-weight: bold;
-        font-size: 11px;
+        font-size: 12px;
+        color: #064e3b;
+        border-top: 1.5px solid #1e3c72;
+        padding-top: 5px;
     }
 
     /* ── Nota especial ── */
@@ -133,16 +131,13 @@
     <table class="data-table">
         <thead>
             <tr>
-                <th class="col-cant">Cant.</th>
+                <th class="col-num">#</th>
                 <th class="col-codigo">Código</th>
                 <th class="col-prod">Producto</th>
-                <th class="col-desc">Descripción</th>
                 <th class="col-talla">Talla</th>
-                <th class="col-logo">Logo</th>
-                <th class="col-ubic">Ubicación</th>
-                <th class="col-bord">N° Bord.</th>
+                <th class="col-cant">Cant.</th>
                 <th class="col-punit">P. Unit.</th>
-                <th class="col-monto">Monto</th>
+                <th class="col-monto">Subtotal</th>
             </tr>
         </thead>
         <tbody>
@@ -181,17 +176,18 @@
                     $prodNombre = optional($detalle->producto)->nombre ?? (optional($detalle->tipoProducto)->nombre ?? 'Variante');
                 @endphp
                 <tr class="{{ $index % 2 === 1 ? 'zebra' : '' }}">
-                    <td class="col-cant text-center">{{ $detalle->cantidad }}</td>
+                    <td class="col-num">{{ $index + 1 }}</td>
                     <td class="col-codigo"><span class="prod-code">{{ $prodCodigo }}</span></td>
                     <td class="col-prod">
                         <strong>{{ $prodNombre }}</strong>
                         @if(!empty($variantPartes))<br><small>{{ implode(' · ', $variantPartes) }}</small>@endif
+                        @if($detalle->descripcion)<br><small class="desc-line">{{ $detalle->descripcion }}</small>@endif
+                        @if($detalle->lleva_bordado)
+                            <br><small class="bord-line"><b>Bordado:</b> {{ $logosTexto ?: ($detalle->nombre_logo ?: 's/logo') }}@if($ubicacionesTexto) — {{ $ubicacionesTexto }}@endif @if($cantidadBordados)(x{{ $cantidadBordados }})@endif</small>
+                        @endif
                     </td>
-                    <td class="col-desc">{{ $detalle->descripcion ?: '—' }}</td>
-                    <td class="col-talla text-center">{{ $detalle->talla?->etiqueta ?? '-' }}</td>
-                    <td class="col-logo">{{ $detalle->lleva_bordado ? ($logosTexto ?: ($detalle->nombre_logo ?: '-')) : '-' }}</td>
-                    <td class="col-ubic">{{ $detalle->lleva_bordado ? ($ubicacionesTexto ?: '-') : '-' }}</td>
-                    <td class="col-bord text-center">{{ $detalle->lleva_bordado ? ($cantidadBordados ?: '-') : '-' }}</td>
+                    <td class="col-talla text-center">{{ $detalle->talla?->etiqueta ?? '—' }}</td>
+                    <td class="col-cant text-center">{{ $detalle->cantidad }}</td>
                     <td class="col-punit text-right">
                         $ {{ number_format($detalle->precio_unitario, 2) }}
                         @if($tasaValor)<br><span class="bs-eq">Bs {{ number_format($detalle->precio_unitario * $tasaValor, 2, ',', '.') }}</span>@endif
@@ -223,48 +219,38 @@
     <table class="totals-block">
         <tr>
             <td>&nbsp;</td>
-            <td style="width: 230px;">
+            <td style="width: 260px;">
                 <table class="totals-inner">
-                    @if($cotizacion->tasa_cambio_valor)
-                    <tr>
-                        <td class="t-label" style="font-size:8.5px; color:#555;">Tasa BCV{{ $tasaFecha ? ' (al ' . \Carbon\Carbon::parse($tasaFecha)->format('d/m/Y') . ')' : ' (USD→Bs)' }}:</td>
-                        <td class="t-value" style="font-size:8.5px; color:#555;">Bs {{ number_format($cotizacion->tasa_cambio_valor, 4) }}</td>
-                    </tr>
-                    @endif
                     <tr>
                         <td class="t-label">Subtotal:</td>
-                        <td class="t-value">{{ number_format($subtotal, 2) }}</td>
+                        <td class="t-value">$ {{ number_format($subtotal, 2) }}</td>
                     </tr>
                     @if($totalBordadoUsd > 0)
                     <tr>
-                        <td class="t-label" style="color:#1e3c72;">Servicio de bordado:</td>
-                        <td class="t-value" style="color:#1e3c72;">{{ number_format($totalBordadoUsd, 2) }}</td>
+                        <td class="t-label">Servicio de bordado:</td>
+                        <td class="t-value">$ {{ number_format($totalBordadoUsd, 2) }}</td>
                     </tr>
-                    @if($cotizacion->tasa_cambio_valor)
-                    <tr>
-                        <td class="t-label" style="font-size:8.5px; color:#555;">Servicio de bordado (Bs):</td>
-                        <td class="t-value" style="font-size:8.5px; color:#555;">Bs {{ number_format($totalBordadoUsd * $cotizacion->tasa_cambio_valor, 2) }}</td>
-                    </tr>
-                    @endif
                     @endif
                     <tr>
                         <td class="t-label">Descuento:</td>
-                        <td class="t-value">{{ number_format($descuento, 2) }}</td>
+                        <td class="t-value">$ {{ number_format($descuento, 2) }}</td>
                     </tr>
                     <tr>
                         <td class="t-label">IVA (16%):</td>
-                        <td class="t-value">{{ number_format($iva, 2) }}</td>
+                        <td class="t-value">$ {{ number_format($iva, 2) }}</td>
                     </tr>
                     <tr>
-                        <td class="t-label t-grand">Total a Pagar:</td>
-                        <td class="t-value t-grand">{{ number_format($totalPagar, 2) }}</td>
+                        <td class="t-label t-grand">Total:</td>
+                        <td class="t-value t-grand">$ {{ number_format($totalPagar, 2) }}</td>
                     </tr>
-                    @if($cotizacion->tasa_cambio_valor)
+                    @if($tasaValor)
                     <tr>
-                        <td class="t-label" style="font-size:8.5px; color:#555;">Equivalente Bs:</td>
-                        <td class="t-value" style="font-size:8.5px; color:#555;">
-                            Bs {{ number_format($totalPagar * $cotizacion->tasa_cambio_valor, 2) }}
-                        </td>
+                        <td class="t-label" style="padding-top:5px;">Tasa aplicada{{ $tasaFecha ? ' (' . \Carbon\Carbon::parse($tasaFecha)->format('d/m/Y') . ')' : '' }}:</td>
+                        <td class="t-value" style="padding-top:5px; font-weight:normal;">Bs {{ number_format($tasaValor, 4, ',', '.') }} / USD</td>
+                    </tr>
+                    <tr>
+                        <td class="t-label">Equivalente Bs:</td>
+                        <td class="t-value">Bs {{ number_format($totalPagar * $tasaValor, 2, ',', '.') }}</td>
                     </tr>
                     @endif
                 </table>
