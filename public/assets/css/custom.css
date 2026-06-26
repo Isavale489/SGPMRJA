@@ -3976,13 +3976,49 @@ header#page-topbar,
     border-radius: 999px;
 }
 
+/* Catálogo de productos oculto mientras el configurador está abierto encima:
+   evita que su cabecera/✕ (más anchos) asomen por los bordes. Se conserva en el
+   DOM con .show para poder restaurarlo al "Volver al catálogo". */
+.modal.cot-modal-hidden-behind {
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* "Distribuir uniforme" — chip de acción secundaria (outline suave),
+   anclado al header pero subordinado al pill sólido de "Nuevo color". */
 .cfg-distribute-btn {
-    color: #00b88c;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+    line-height: 1;
+    color: #00916c;
     text-decoration: none;
     font-size: 0.78rem;
     font-weight: 600;
+    padding: 6px 12px;
+    border-radius: 999px;
+    border: 1px solid rgba(0, 184, 140, 0.35);
+    background: rgba(0, 184, 140, 0.08);
+    cursor: pointer;
+    transition: background 0.12s, border-color 0.12s, color 0.12s;
 }
-.cfg-distribute-btn:hover { color: #008f6c; }
+.cfg-distribute-btn i { font-size: 0.95rem; }
+.cfg-distribute-btn:hover {
+    color: #008f6c;
+    background: rgba(0, 184, 140, 0.15);
+    border-color: rgba(0, 184, 140, 0.55);
+}
+[data-bs-theme="dark"] .cfg-distribute-btn {
+    color: #34d399;
+    border-color: rgba(52, 211, 153, 0.35);
+    background: rgba(52, 211, 153, 0.10);
+}
+[data-bs-theme="dark"] .cfg-distribute-btn:hover {
+    color: #6ee7b7;
+    background: rgba(52, 211, 153, 0.18);
+    border-color: rgba(52, 211, 153, 0.55);
+}
 
 /* Botón "Nuevo color" — pill resaltado en el header de la sección Color */
 .cfg-newcolor-btn {
