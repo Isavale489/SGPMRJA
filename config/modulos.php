@@ -153,7 +153,7 @@ return [
             'gestionar' => 'Crear, editar, cancelar y reactivar pedidos', // solo-admin
         ],
         'rutas' => [
-            'pedidos.index|pedidos.data|pedidos.cotizacionesDisponibles|pedidos.reporteGeneral|pedidos.show' => 'ver',
+            'pedidos.index|pedidos.data|pedidos.cotizacionesDisponibles|pedidos.reporteGeneral|pedidos.show|pedidos.proyeccionInsumos' => 'ver',
             'pedidos.reporte.pdf|pedidos.pdf' => 'pdf',
             // solo-admin (escritura): hoy en el grupo role:Administrador
             'pedidos.store|pedidos.create|pedidos.update|pedidos.cancelar|pedidos.reactivar|pedidos.destroy|pedidos.edit' => 'gestionar',
@@ -169,7 +169,7 @@ return [
             'gestionar'  => 'Crear, editar y eliminar cotizaciones', // solo-admin
         ],
         'rutas' => [
-            'cotizaciones.index|cotizaciones.data|cotizaciones.reporteGeneral|cotizaciones.show|cotizaciones.ubicacionesBordado.data' => 'ver',
+            'cotizaciones.index|cotizaciones.data|cotizaciones.reporteGeneral|cotizaciones.show|cotizaciones.ubicacionesBordado.data|cotizaciones.proyeccionInsumos' => 'ver',
             'cotizaciones.reporte.pdf|cotizaciones.pdf' => 'pdf',
             // conversion a pedido (acceso compartido con Supervisor)
             'cotizaciones.datosParaPedido|cotizaciones.convertirAPedido|cotizaciones.updateEstado|cotizaciones.reactivar' => 'convertir',
@@ -311,8 +311,8 @@ return [
             'inspeccionar' => 'Registrar inspeccion de calidad de una orden',
         ],
         'rutas' => [
-            'calidad.index|calidad.data|calidad.detalle' => 'ver',
-            'calidad.inspeccionar'                       => 'inspeccionar',
+            'calidad.index|calidad.data|calidad.detalle|calidad.reporte.pdf' => 'ver',
+            'calidad.inspeccionar'                                          => 'inspeccionar',
         ],
     ],
 

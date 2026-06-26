@@ -1664,7 +1664,62 @@ $(document).ready(function () {
             pedRenderResDatos();
             pedRenderResProductos();
             pedRenderResPago();
+            pedRefreshProyeccion();
         };
+
+        // Proyección NO bloqueante de insumos para producir el pedido.
+        // Usa las líneas actuales del wizard (pedProdState) → funciona tanto al
+        // crear (desde cotización, aún sin id) como al ver/editar un pedido.
+        function pedRefreshProyeccion() {
+            var bodyEl = document.getElementById('ped-proyeccion-body');
+            var badgeEl = document.getElementById('ped-proyeccion-badge');
+            if (!bodyEl || !window.ProyeccionInsumos) return;
+
+            var items = (window.pedProdState && window.pedProdState.items) || [];
+            var lineas = items
+                .filter(function (it) { return parseInt(it.cantidad, 10) > 0; })
+                .map(function (it) {
+                    return {
+                        producto_id: it.producto_id || null,
+                        tipo_producto_id: it.tipo_producto_id || null,
+                        tela_id: it.insumo_tela_id || null,
+                        cantidad: parseInt(it.cantidad, 10)
+                    };
+                });
+
+            if (!lineas.length) {
+                bodyEl.innerHTML = '<div class="proy-state proy-state--muted">' +
+                    '<i class="ri-information-line me-1"></i>Sin productos para proyectar.</div>';
+                if (badgeEl) badgeEl.hidden = true;
+                return;
+            }
+
+            ProyeccionInsumos.cargar({
+                url: '{{ route("pedidos.proyeccionInsumos") }}',
+                method: 'POST',
+                csrf: $('meta[name="csrf-token"]').attr('content'),
+                payload: { lineas: lineas },
+                bodyEl: bodyEl,
+                badgeEl: badgeEl,
+                contexto: 'pedido'
+            });
+        }
+
+        // Recalcular al volver a esta pestaña (tras procesar una compra en otra
+        // pestaña). offsetParent != null ⇒ el panel está visible (modal + paso 4).
+        document.addEventListener('visibilitychange', function () {
+            if (document.visibilityState !== 'visible') return;
+            var body = document.getElementById('ped-proyeccion-body');
+            if (body && body.offsetParent !== null) pedRefreshProyeccion();
+        });
+
+        // Tiempo real entre pestañas: compra procesada/anulada en otra pestaña.
+        if (window.ProyeccionInsumos && ProyeccionInsumos.onStockChange) {
+            ProyeccionInsumos.onStockChange(function () {
+                var body = document.getElementById('ped-proyeccion-body');
+                if (body && body.offsetParent !== null) pedRefreshProyeccion();
+            });
+        }
 
         // Construir payload para el store
         function pedConstruirPayload() {

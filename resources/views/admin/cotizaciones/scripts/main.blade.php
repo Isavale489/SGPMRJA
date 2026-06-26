@@ -6061,6 +6061,73 @@
                 }
                 var bsLabel = (typeof window.bsEquivalente === 'function') ? window.bsEquivalente(total) : null;
                 $('#cot-resumen-total-bs').text(bsLabel || 'Sin tasa BCV');
+
+                cotRefreshProyeccion();
+            }
+
+            // Recolecta las líneas actuales del wizard (fuente de verdad: los
+            // inputs ocultos de #productos-container) para la proyección de stock.
+            function cotCollectLineasProyeccion() {
+                var lineas = [];
+                $('#productos-container .product-item').each(function () {
+                    var $c = $(this);
+                    var pick = function (suffix) {
+                        var $el = $c.find('[name$="[' + suffix + ']"]').first();
+                        return $el.length ? $el.val() : null;
+                    };
+                    var cantidad = parseInt(pick('cantidad') || '0', 10);
+                    if (!cantidad || cantidad < 1) return;
+                    lineas.push({
+                        producto_id: pick('producto_id') || null,
+                        tipo_producto_id: pick('tipo_producto_id') || null,
+                        tela_id: pick('insumo_tela_id') || null,
+                        cantidad: cantidad
+                    });
+                });
+                return lineas;
+            }
+
+            // Pide y pinta la proyección NO bloqueante de insumos para producción.
+            function cotRefreshProyeccion() {
+                var bodyEl = document.getElementById('cot-proyeccion-body');
+                var badgeEl = document.getElementById('cot-proyeccion-badge');
+                if (!bodyEl || !window.ProyeccionInsumos) return;
+
+                var lineas = cotCollectLineasProyeccion();
+                if (!lineas.length) {
+                    bodyEl.innerHTML = '<div class="proy-state proy-state--muted">' +
+                        '<i class="ri-information-line me-1"></i>Agrega productos para ver la proyección de insumos.</div>';
+                    if (badgeEl) badgeEl.hidden = true;
+                    return;
+                }
+
+                ProyeccionInsumos.cargar({
+                    url: '{{ route("cotizaciones.proyeccionInsumos") }}',
+                    method: 'POST',
+                    csrf: $('meta[name="csrf-token"]').attr('content'),
+                    payload: { lineas: lineas },
+                    bodyEl: bodyEl,
+                    badgeEl: badgeEl,
+                    contexto: 'cotizacion'
+                });
+            }
+
+            // Recalcular al volver a esta pestaña (p.ej. tras procesar una compra
+            // en otra pestaña con el atajo). offsetParent != null ⇒ el panel está
+            // realmente visible (modal abierto + paso 3), así no se pide en vano.
+            document.addEventListener('visibilitychange', function () {
+                if (document.visibilityState !== 'visible') return;
+                var body = document.getElementById('cot-proyeccion-body');
+                if (body && body.offsetParent !== null) cotRefreshProyeccion();
+            });
+
+            // Tiempo real entre pestañas: si en otra pestaña se procesa/anula una
+            // compra, recalcular al instante (sin esperar a recuperar el foco).
+            if (window.ProyeccionInsumos && ProyeccionInsumos.onStockChange) {
+                ProyeccionInsumos.onStockChange(function () {
+                    var body = document.getElementById('cot-proyeccion-body');
+                    if (body && body.offsetParent !== null) cotRefreshProyeccion();
+                });
             }
 
             // === LISTENERS =====================================================

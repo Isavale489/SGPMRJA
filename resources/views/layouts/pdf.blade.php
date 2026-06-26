@@ -101,6 +101,8 @@
         }
 
         .filter-bar .filter-bar-label {
+            display: inline-block;
+            vertical-align: middle;
             color: #1e3c72;
             font-weight: bold;
             text-transform: uppercase;
@@ -110,6 +112,7 @@
 
         .filter-bar .filter-chip {
             display: inline-block;
+            vertical-align: middle;
             margin-right: 14px;
         }
 

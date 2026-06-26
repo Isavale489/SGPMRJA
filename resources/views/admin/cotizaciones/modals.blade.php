@@ -624,6 +624,20 @@
                                         </div>
                                     </div>
                                 </div>
+
+                                {{-- Proyección de producción — aviso NO bloqueante de stock de insumos.
+                                     Informa si para fabricar estas líneas faltará materia prima. No impide guardar. --}}
+                                <div class="card border-0 shadow-sm mt-3" id="cot-proyeccion-card">
+                                    <div class="card-header border-0 bg-soft-primary d-flex align-items-center justify-content-between">
+                                        <h6 class="mb-0 text-atlantico-dark">
+                                            <i class="ri-archive-2-line me-2"></i>Proyección de producción
+                                        </h6>
+                                        <span class="badge rounded-pill" id="cot-proyeccion-badge" hidden></span>
+                                    </div>
+                                    <div class="card-body p-3">
+                                        <div id="cot-proyeccion-body"></div>
+                                    </div>
+                                </div>
                             </div>
 
                             <div class="col-lg-5">

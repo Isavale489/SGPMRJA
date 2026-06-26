@@ -1,0 +1,9 @@
+# Normalización de fin de línea para el repo.
+# Los scripts de shell DEBEN quedar en LF o fallan en Linux/Mac (el \r rompe el shebang).
+*.sh    text eol=lf
+
+# Scripts de PowerShell en CRLF (entorno Windows).
+*.ps1   text eol=crlf
+
+# El dump SQL: LF y tratado como texto para diffs limpios.
+*.sql   text eol=lf

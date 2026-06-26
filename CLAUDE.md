@@ -139,19 +139,45 @@ Migraciones relevantes recientes:
 
 ## Dump SQL — `database/sistema_atlantico.sql`
 
-> El sistema corre sobre **MySQL 8** (no MariaDB; el local es solo el motor de desarrollo). El dump debe quedar siempre en formato MySQL nativo.
+> **ESTÁNDAR DEL EQUIPO (2026-06-25):** todos corren **MySQL 8 local** (igual que producción) y exportan/importan **solo con los scripts** `database/export-db.*` / `database/import-db.*`. **Prohibido** subir dumps de phpMyAdmin o del `mysqldump` de XAMPP/MariaDB.
 
-**Estado al 2026-06-03** (commit `caa618b` en `enmanuel`): dump limpio y funcional, listo para importar directamente en cualquier gestor de DB.
+### Por qué este estándar
+El equipo usaba motores distintos (MariaDB en XAMPP vs MySQL 8 en Ubuntu/producción), y phpMyAdmin generaba dumps incompatibles que fallaban al importar en MySQL 8. Causas concretas detectadas:
+- phpMyAdmin **difería `PRIMARY KEY` + `AUTO_INCREMENT`** a bloques `ALTER TABLE` al final → si la importación se corta, las tablas quedan **sin autoincrement** (`Field 'id' doesn't have a default value`).
+- No desactivaba `FOREIGN_KEY_CHECKS`.
+- Sintaxis MariaDB: `current_timestamp()` (con paréntesis) y anchos `bigint(20)`, que MySQL 8 estricto rechaza o deprecia.
 
-- Header MySQL nativo (`MySQL dump 10.13 Distrib 8.0.46`), DB `sistema_atlantico5`
-- 43 tablas, datos sin basura de testeo
-- `compra`: 2 filas reales (ambas `recibida`); incluye las 3 columnas nuevas (`clonada`, `anulado_por_id`, `fecha_anulacion`) + FK `compra_anulado_por_id_foreign`
-- Migraciones registradas hasta la `121` (batch 68)
+Con todos en MySQL 8 + `mysqldump`, los dumps salen idénticos y siempre importan limpio.
 
-**Para regenerar el dump** (cuidando compatibilidad MySQL):
-- Preferir partir del dump de referencia MySQL nativo + aplicar solo el delta de esquema, en vez de re-dumpear desde la MariaDB local (arrastra header "MariaDB dump", `current_timestamp()`, anchos `bigint(20)` y data de prueba).
-- Cliente/dump en `C:\xampp\mysql\bin\`. **Bash tool**: la redirección `<`/`>` funciona bien. **PowerShell**: NO usar `>` (genera UTF-16/BOM y rompe el archivo) — usar `--result-file`.
-- Validar siempre importando en una BD temporal antes de commitear, y hacer `DROP` al terminar.
+### Exportar la BD al repo (cualquier SO)
+```bash
+# Windows
+powershell -ExecutionPolicy Bypass -File database\export-db.ps1
+# Linux / Mac
+bash database/export-db.sh
+```
+Genera `database/sistema_atlantico.sql` en formato MySQL 8 nativo (lee config del `.env`). Luego `git add database/sistema_atlantico.sql && git commit`.
+
+### Importar la BD desde el repo (cualquier SO)
+```bash
+git pull
+# Windows
+powershell -ExecutionPolicy Bypass -File database\import-db.ps1
+# Linux / Mac
+bash database/import-db.sh
+```
+Crea la BD (nombre tomado del `.env`, default `sistema_atlantico`) e importa el dump. El `.sql` es **agnóstico al nombre de BD** (no trae `CREATE DATABASE`/`USE`), por eso no importa cómo se llame la BD en cada máquina.
+
+### Características del dump generado por los scripts
+- Header MySQL nativo, **sin** `CREATE DATABASE`/`USE` ni `GTID_PURGED`.
+- `PRIMARY KEY` + `AUTO_INCREMENT` **dentro** del `CREATE TABLE`; `FOREIGN_KEY_CHECKS=0`; charset `utf8mb4`.
+- Flags: `--single-transaction --no-tablespaces --set-gtid-purged=OFF --add-drop-table --result-file=…`.
+- **PowerShell**: nunca usar `>` (genera UTF-16/BOM y rompe el archivo) — los scripts usan `--result-file`.
+
+### Setup de MySQL 8 local (una vez por máquina)
+1. Instalar **MySQL Server 8.0** y agregar su carpeta `bin` al PATH (`mysqldump`/`mysql` accesibles).
+2. Ajustar el `.env` (`DB_PORT`, `DB_USERNAME`, `DB_PASSWORD`) a la instancia MySQL 8.
+3. (Alternativa sin importar dump) `php artisan migrate --seed` reconstruye esquema + data de catálogo desde migraciones y seeders.
 
 ---
 
