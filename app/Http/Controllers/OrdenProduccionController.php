@@ -893,8 +893,7 @@ class OrdenProduccionController extends Controller
      */
     public function reportePdf(Request $request)
     {
-        $query = OrdenProduccion::with(['producto', 'pedido', 'detallePedido.tipoProducto', 'detallePedido.genero'])
-            ->orderBy('created_at', 'desc');
+        $query = OrdenProduccion::with(['producto', 'pedido', 'detallePedido.tipoProducto', 'detallePedido.genero']);
 
         if ($request->filled('estado')) {
             $query->where('estado', $request->estado);
@@ -906,6 +905,21 @@ class OrdenProduccionController extends Controller
             $query->whereDate('fecha_fin_estimada', '<=', $request->fecha_hasta);
         }
 
+        // Orden (paridad con el "Ordenar por" del listado en pantalla).
+        $orden = $request->input('orden', 'recientes');
+        switch ($orden) {
+            case 'progreso_desc':
+                $query->orderByRaw('(cantidad_producida / NULLIF(cantidad_solicitada, 0)) desc');
+                break;
+            case 'progreso_asc':
+                $query->orderByRaw('(cantidad_producida / NULLIF(cantidad_solicitada, 0)) asc');
+                break;
+            default:
+                $orden = 'recientes';
+                $query->orderBy('created_at', 'desc');
+                break;
+        }
+
         $ordenes = $query->get();
 
         $filtros = [];
@@ -915,6 +929,7 @@ class OrdenProduccionController extends Controller
         if ($rango = \App\Support\ReporteFiltros::rango($request->fecha_desde, $request->fecha_hasta)) {
             $filtros['Entrega estimada'] = $rango;
         }
+        $filtros['Orden'] = ['recientes' => 'Más recientes', 'progreso_desc' => 'Mayor progreso', 'progreso_asc' => 'Menor progreso'][$orden];
 
         $pdf = \PDF::loadView('admin.ordenes.reporte_pdf', compact('ordenes', 'filtros'))
             ->setPaper('a4', 'landscape');

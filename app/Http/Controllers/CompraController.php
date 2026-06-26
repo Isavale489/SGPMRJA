@@ -403,7 +403,22 @@ class CompraController extends Controller
             $query->whereDate('fecha_compra', '<=', $request->fecha_hasta);
         }
 
-        $compras = $query->orderByDesc('fecha_compra')->orderByDesc('id')->get();
+        // Orden del reporte.
+        $orden = $request->input('orden', 'recientes');
+        switch ($orden) {
+            case 'monto_desc':
+                $query->orderByDesc('total')->orderByDesc('id');
+                break;
+            case 'monto_asc':
+                $query->orderBy('total')->orderByDesc('id');
+                break;
+            default:
+                $orden = 'recientes';
+                $query->orderByDesc('fecha_compra')->orderByDesc('id');
+                break;
+        }
+
+        $compras = $query->get();
 
         $filtros = [];
         if ($request->filled('estado')) {
@@ -416,6 +431,7 @@ class CompraController extends Controller
         if ($rango = \App\Support\ReporteFiltros::rango($request->fecha_desde, $request->fecha_hasta)) {
             $filtros['Fecha de compra'] = $rango;
         }
+        $filtros['Orden'] = ['recientes' => 'Fecha reciente', 'monto_desc' => 'Mayor monto', 'monto_asc' => 'Menor monto'][$orden];
 
         $pdf = PDF::loadView('admin.compras.reporte_pdf', compact('compras', 'filtros'))
             ->setPaper('a4', 'portrait');
