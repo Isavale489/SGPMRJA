@@ -277,6 +277,7 @@ Route::middleware(['auth', 'throttle:60,1', 'active.user', 'recovery.questions.r
 
         // Control de Calidad (FEAT-006) — inspección de órdenes finalizadas
         Route::get('calidad', [ControlCalidadController::class, 'index'])->name('calidad.index');
+        Route::get('calidad/reporte/pdf', [ControlCalidadController::class, 'reportePdf'])->name('calidad.reporte.pdf');
         Route::get('calidad-data', [ControlCalidadController::class, 'getOrdenesCalidad'])->name('calidad.data');
         Route::get('calidad/{orden}/detalle', [ControlCalidadController::class, 'detalle'])->name('calidad.detalle');
         Route::post('calidad/{orden}/inspeccionar', [ControlCalidadController::class, 'inspeccionar'])->name('calidad.inspeccionar');

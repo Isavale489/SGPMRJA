@@ -3,8 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreControlCalidadRequest;
+use App\Models\ControlCalidad;
 use App\Models\OrdenProduccion;
 use App\Services\ControlCalidadService;
+use App\Support\ReporteFiltros;
 use Illuminate\Http\Request;
 use Yajra\DataTables\DataTables;
 
@@ -112,6 +114,48 @@ class ControlCalidadController extends Controller
                 ];
             }),
         ]);
+    }
+
+    /**
+     * Reporte PDF — historial de inspecciones de calidad (registro de auditoría).
+     * Filtros: resultado del veredicto + rango de fecha de inspección.
+     */
+    public function reportePdf(Request $request)
+    {
+        $query = ControlCalidad::query()
+            ->with([
+                'inspector:id,name',
+                'ordenProduccion.producto.tipoProducto',
+                'ordenProduccion.detallePedido.tipoProducto',
+                'ordenProduccion.detallePedido.genero',
+                'ordenProduccion.pedido',
+            ])
+            ->orderByDesc('fecha_inspeccion');
+
+        if ($request->filled('resultado')) {
+            $query->where('resultado', $request->resultado);
+        }
+        if ($request->filled('fecha_desde')) {
+            $query->whereDate('fecha_inspeccion', '>=', $request->fecha_desde);
+        }
+        if ($request->filled('fecha_hasta')) {
+            $query->whereDate('fecha_inspeccion', '<=', $request->fecha_hasta);
+        }
+
+        $inspecciones = $query->get();
+
+        $filtros = [];
+        if ($request->filled('resultado')) {
+            $filtros['Resultado'] = ControlCalidad::RESULTADOS[$request->resultado] ?? ucfirst($request->resultado);
+        }
+        if ($rango = ReporteFiltros::rango($request->fecha_desde, $request->fecha_hasta)) {
+            $filtros['Fecha de inspección'] = $rango;
+        }
+
+        $pdf = \PDF::loadView('admin.calidad.reporte_pdf', compact('inspecciones', 'filtros'))
+            ->setPaper('a4', 'landscape');
+
+        return $pdf->download('inspecciones_calidad_' . now()->format('Y-m-d_H-i-s') . '.pdf');
     }
 
     /**

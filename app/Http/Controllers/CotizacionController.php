@@ -378,21 +378,52 @@ class CotizacionController extends Controller
         if ($request->filled('estado')) {
             $query->where('estado', $request->estado);
         }
+        // Cliente: coincidencia parcial por nombre/razón social o documento.
+        if ($request->filled('cliente')) {
+            $term = trim($request->cliente);
+            $query->whereHas('cliente', function ($c) use ($term) {
+                $c->withTrashed()->whereHas('persona', function ($p) use ($term) {
+                    $p->where('nombre', 'like', "%{$term}%")
+                      ->orWhere('documento_identidad', 'like', "%{$term}%");
+                });
+            });
+        }
+        // Fecha de negocio de la cotización (paridad con el listado y la factura).
         if ($request->filled('fecha_desde')) {
-            $query->whereDate('created_at', '>=', $request->fecha_desde);
+            $query->whereDate('fecha_cotizacion', '>=', $request->fecha_desde);
         }
         if ($request->filled('fecha_hasta')) {
-            $query->whereDate('created_at', '<=', $request->fecha_hasta);
+            $query->whereDate('fecha_cotizacion', '<=', $request->fecha_hasta);
         }
+
+        // Orden (paridad con el "Ordenar por" del listado en pantalla).
+        $orden = $request->input('orden', 'recientes');
+        switch ($orden) {
+            case 'total_desc':
+                $query->orderBy('total', 'desc');
+                break;
+            case 'total_asc':
+                $query->orderBy('total', 'asc');
+                break;
+            default:
+                $orden = 'recientes';
+                $query->orderBy('created_at', 'desc');
+                break;
+        }
+
         $cotizaciones = $query->get();
 
         $filtros = [];
         if ($request->filled('estado')) {
             $filtros['Estado'] = $request->estado;
         }
+        if ($request->filled('cliente')) {
+            $filtros['Cliente'] = trim($request->cliente);
+        }
         if ($rango = \App\Support\ReporteFiltros::rango($request->fecha_desde, $request->fecha_hasta)) {
             $filtros['Fecha de emisión'] = $rango;
         }
+        $filtros['Orden'] = ['recientes' => 'Más recientes', 'total_desc' => 'Mayor total', 'total_asc' => 'Menor total'][$orden];
 
         $pdf = PDF::loadView('admin.cotizaciones.reporte_pdf', compact('cotizaciones', 'filtros'))
             ->setPaper('a4', 'portrait');

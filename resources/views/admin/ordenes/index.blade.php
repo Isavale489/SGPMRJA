@@ -168,6 +168,14 @@
                             <input type="date" class="form-control" id="pdf-fecha-hasta">
                         </div>
                     </div>
+                    <div class="mt-3">
+                        <label class="form-label fw-semibold" for="pdf-filter-orden">Ordenar por</label>
+                        <select class="form-select" id="pdf-filter-orden">
+                            <option value="recientes">Más recientes</option>
+                            <option value="progreso_desc">Mayor progreso</option>
+                            <option value="progreso_asc">Menor progreso</option>
+                        </select>
+                    </div>
                 </div>
                 <div class="modal-footer bg-light border-0">
                     <button type="button" class="btn btn-light" data-bs-dismiss="modal">
@@ -213,14 +221,17 @@
             var estado = $('#pdf-filter-estado').val();
             var fdesde = $('#pdf-fecha-desde').val();
             var fhasta = $('#pdf-fecha-hasta').val();
+            var orden  = $('#pdf-filter-orden').val();
             if (estado) params.push('estado=' + encodeURIComponent(estado));
             if (fdesde) params.push('fecha_desde=' + encodeURIComponent(fdesde));
             if (fhasta) params.push('fecha_hasta=' + encodeURIComponent(fhasta));
+            if (orden && orden !== 'recientes') params.push('orden=' + encodeURIComponent(orden));
             window.open(baseUrl + (params.length ? '?' + params.join('&') : ''), '_blank');
             bootstrap.Modal.getInstance(document.getElementById('pdfExportModal'))?.hide();
         });
         $('#pdfExportModal').on('show.bs.modal', function () {
             $('#pdf-filter-estado, #pdf-fecha-desde, #pdf-fecha-hasta').val('');
+            $('#pdf-filter-orden').val('recientes');
         });
     </script>
 @endpush

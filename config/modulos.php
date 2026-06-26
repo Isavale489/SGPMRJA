@@ -311,8 +311,8 @@ return [
             'inspeccionar' => 'Registrar inspeccion de calidad de una orden',
         ],
         'rutas' => [
-            'calidad.index|calidad.data|calidad.detalle' => 'ver',
-            'calidad.inspeccionar'                       => 'inspeccionar',
+            'calidad.index|calidad.data|calidad.detalle|calidad.reporte.pdf' => 'ver',
+            'calidad.inspeccionar'                                          => 'inspeccionar',
         ],
     ],
 

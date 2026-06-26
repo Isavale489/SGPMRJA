@@ -148,7 +148,12 @@
                             <option value="Cancelada">Cancelada</option>
                         </select>
                     </div>
-                    <div class="row g-2 mb-0">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold" for="pdf-filter-cliente">Cliente</label>
+                        <input type="text" class="form-control" id="pdf-filter-cliente"
+                            placeholder="Nombre, razón social o documento" autocomplete="off">
+                    </div>
+                    <div class="row g-2 mb-3">
                         <div class="col-6">
                             <label class="form-label fw-semibold" for="pdf-fecha-desde">Fecha Desde</label>
                             <input type="date" class="form-control" id="pdf-fecha-desde">
@@ -157,6 +162,14 @@
                             <label class="form-label fw-semibold" for="pdf-fecha-hasta">Fecha Hasta</label>
                             <input type="date" class="form-control" id="pdf-fecha-hasta">
                         </div>
+                    </div>
+                    <div class="mb-0">
+                        <label class="form-label fw-semibold" for="pdf-filter-orden">Ordenar por</label>
+                        <select class="form-select" id="pdf-filter-orden">
+                            <option value="recientes">Más recientes</option>
+                            <option value="total_desc">Mayor total</option>
+                            <option value="total_asc">Menor total</option>
+                        </select>
                     </div>
                 </div>
                 <div class="modal-footer bg-light border-0">
@@ -185,18 +198,24 @@
             var baseUrl = '{{ route('cotizaciones.reporte.pdf') }}';
             var params  = [];
             var estado  = $('#pdf-filter-estado').val();
+            var cliente = $('#pdf-filter-cliente').val().trim();
             var desde   = $('#pdf-fecha-desde').val();
             var hasta   = $('#pdf-fecha-hasta').val();
+            var orden   = $('#pdf-filter-orden').val();
             if (estado) params.push('estado='       + encodeURIComponent(estado));
+            if (cliente) params.push('cliente='     + encodeURIComponent(cliente));
             if (desde)  params.push('fecha_desde='  + encodeURIComponent(desde));
             if (hasta)  params.push('fecha_hasta='  + encodeURIComponent(hasta));
+            if (orden && orden !== 'recientes') params.push('orden=' + encodeURIComponent(orden));
             window.open(baseUrl + (params.length ? '?' + params.join('&') : ''), '_blank');
             bootstrap.Modal.getInstance(document.getElementById('pdfExportModal'))?.hide();
         });
         $('#pdfExportModal').on('show.bs.modal', function () {
             $('#pdf-filter-estado').val('');
+            $('#pdf-filter-cliente').val('');
             $('#pdf-fecha-desde').val('');
             $('#pdf-fecha-hasta').val('');
+            $('#pdf-filter-orden').val('recientes');
         });
     </script>
 @endpush

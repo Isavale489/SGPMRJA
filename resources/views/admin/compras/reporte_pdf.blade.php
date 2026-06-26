@@ -34,7 +34,6 @@
     <table class="data-table">
         <thead>
             <tr>
-                <th class="col-num">#</th>
                 <th class="col-nro">N° Compra</th>
                 <th class="col-prov">Proveedor</th>
                 <th class="col-fact">N° Factura</th>
@@ -46,7 +45,6 @@
         <tbody>
             @forelse($compras as $index => $compra)
                 <tr class="{{ $index % 2 === 1 ? 'zebra' : '' }}">
-                    <td class="col-num">{{ $index + 1 }}</td>
                     <td class="col-nro">{{ str_pad($compra->id, 5, '0', STR_PAD_LEFT) }}</td>
                     <td class="col-prov">{{ $compra->proveedor?->nombre_completo ?? 'N/A' }}</td>
                     <td class="col-fact">{{ $compra->numero_factura ?: 'S/N' }}</td>
@@ -58,7 +56,7 @@
                 </tr>
             @empty
                 <tr>
-                    <td colspan="7" style="text-align:center; padding:14px; color:#888;">
+                    <td colspan="6" style="text-align:center; padding:14px; color:#888;">
                         No se encontraron compras con los filtros seleccionados.
                     </td>
                 </tr>

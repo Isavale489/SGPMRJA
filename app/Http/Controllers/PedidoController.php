@@ -314,21 +314,51 @@ class PedidoController extends Controller
         if ($request->filled('estado')) {
             $query->where('estado', $request->estado);
         }
+        // Cliente: coincidencia parcial por nombre/razón social o documento.
+        if ($request->filled('cliente')) {
+            $term = trim($request->cliente);
+            $query->whereHas('cliente', function ($c) use ($term) {
+                $c->withTrashed()->whereHas('persona', function ($p) use ($term) {
+                    $p->where('nombre', 'like', "%{$term}%")
+                      ->orWhere('documento_identidad', 'like', "%{$term}%");
+                });
+            });
+        }
         if ($request->filled('fecha_desde')) {
             $query->whereDate('fecha_entrega_estimada', '>=', $request->fecha_desde);
         }
         if ($request->filled('fecha_hasta')) {
             $query->whereDate('fecha_entrega_estimada', '<=', $request->fecha_hasta);
         }
+
+        // Orden (paridad con el "Ordenar por" del listado en pantalla).
+        $orden = $request->input('orden', 'recientes');
+        switch ($orden) {
+            case 'monto_desc':
+                $query->orderBy('total', 'desc');
+                break;
+            case 'entrega_asc':
+                $query->orderBy('fecha_entrega_estimada', 'asc');
+                break;
+            default:
+                $orden = 'recientes';
+                $query->orderBy('created_at', 'desc');
+                break;
+        }
+
         $pedidos = $query->get();
 
         $filtros = [];
         if ($request->filled('estado')) {
             $filtros['Estado'] = $request->estado;
         }
+        if ($request->filled('cliente')) {
+            $filtros['Cliente'] = trim($request->cliente);
+        }
         if ($rango = \App\Support\ReporteFiltros::rango($request->fecha_desde, $request->fecha_hasta)) {
             $filtros['Fecha de entrega'] = $rango;
         }
+        $filtros['Orden'] = ['recientes' => 'Más recientes', 'monto_desc' => 'Mayor monto', 'entrega_asc' => 'Entrega más próxima'][$orden];
 
         $pdf = PDF::loadView('admin.pedidos.reporte_pdf', compact('pedidos', 'filtros'))
             ->setPaper('a4', 'portrait');
