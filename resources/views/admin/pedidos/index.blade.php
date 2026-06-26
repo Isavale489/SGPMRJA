@@ -209,6 +209,7 @@
     <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/fuse.js@6.6.2/dist/fuse.min.js"></script>
     <script src="{{ URL::asset('/assets/js/municipios-venezuela.js') }}"></script>
+    <script src="{{ URL::asset('/assets/js/proyeccion-insumos.js') }}"></script>
 
     @include('admin.pedidos.scripts.listado')
     @include('admin.pedidos.scripts.cotizacion_selection')
