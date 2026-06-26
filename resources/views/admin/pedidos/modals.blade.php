@@ -797,16 +797,26 @@
                             </div>
                         </div>
                         <div class="col-lg-7">
-                            <div class="card border-0 shadow-sm h-100">
-                                <div class="card-header border-0 bg-soft-primary py-2 px-3">
-                                    <h6 class="mb-0 text-atlantico-dark fs-13">
-                                        <i class="ri-wallet-line me-1"></i>Métodos de Pago
-                                    </h6>
+                            <div class="ped-pagos-card h-100">
+                                <div class="ped-pagos-card-header">
+                                    <i class="ri-wallet-3-line"></i>
+                                    <span class="ped-pagos-title">Métodos de Pago</span>
+                                    <span class="ped-pagos-count" id="view-pagos-count">0 pagos</span>
                                 </div>
-                                <div class="card-body p-0">
-                                    <div id="view-pagos-list" class="p-3">
-                                        <p class="text-muted fs-12 mb-0">Sin pagos registrados.</p>
+                                <div class="ped-pagos-body" id="view-pagos-list">
+                                    <div class="ped-pagos-empty">
+                                        <i class="ri-wallet-3-line"></i>
+                                        <span>Sin pagos registrados.</span>
                                     </div>
+                                </div>
+                                <div class="ped-pagos-footer">
+                                    <span class="ped-pagos-status ped-pagos-status--none" id="view-pagos-status">
+                                        <i class="ri-information-line"></i>Sin pagos
+                                    </span>
+                                    <span class="ped-pagos-total">
+                                        <span class="ped-pagos-total-label">Total pagado</span>
+                                        <span class="ped-pagos-total-value" id="view-pagos-total">$0.00</span>
+                                    </span>
                                 </div>
                             </div>
                         </div>
