@@ -25,6 +25,10 @@
                 <div class="card-header">
                     <div class="d-flex align-items-center">
                         <h5 class="card-title mb-0 flex-grow-1">Órdenes finalizadas pendientes de inspección</h5>
+                        <button type="button" class="btn btn-danger btn-sm" data-bs-toggle="modal"
+                            data-bs-target="#pdfExportModal">
+                            <i class="ri-file-pdf-fill align-bottom me-1"></i> Exportar PDF
+                        </button>
                     </div>
                 </div>
                 <div class="card-body">
@@ -192,6 +196,47 @@
             </div>
         </div>
     </div>
+    {{-- ════════ Modal: Exportar PDF (historial de inspecciones) ════════ --}}
+    <div class="modal fade atlantico-modal" id="pdfExportModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" style="max-width: 380px;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="ri-file-pdf-line me-2"></i>Exportar PDF</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <p class="text-muted small mb-3">Filtra qué inspecciones incluir en el reporte.</p>
+                    <div class="mb-0">
+                        <label class="form-label fw-semibold" for="pdf-filter-resultado">Resultado</label>
+                        <select class="form-select" id="pdf-filter-resultado">
+                            <option value="">Todos los resultados</option>
+                            <option value="aprobado">Aprobado</option>
+                            <option value="observado">Aprobado con observaciones</option>
+                            <option value="rechazado">Rechazado</option>
+                        </select>
+                    </div>
+                    <div class="row g-2 mt-3">
+                        <div class="col-6">
+                            <label class="form-label fw-semibold" for="pdf-fecha-desde">Inspección desde</label>
+                            <input type="date" class="form-control" id="pdf-fecha-desde">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label fw-semibold" for="pdf-fecha-hasta">Inspección hasta</label>
+                            <input type="date" class="form-control" id="pdf-fecha-hasta">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light border-0">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">
+                        <i class="ri-close-line me-1"></i>Cancelar
+                    </button>
+                    <button type="button" class="btn btn-danger" id="btn-generar-pdf">
+                        <i class="ri-file-pdf-fill me-1"></i>Generar PDF
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 @endsection
 
 @push('scripts')
@@ -270,6 +315,24 @@
             $('#filters-collapse-body')
                 .on('show.bs.collapse', function () { $('#advanced-filters .navy-filter-header').removeClass('is-collapsed'); })
                 .on('hidden.bs.collapse', function () { $('#advanced-filters .navy-filter-header').addClass('is-collapsed'); });
+
+            // ── Exportar PDF — historial de inspecciones ──
+            // La validación de rango de fechas la aplica el script global pdf-export-filtros.js
+            $('#btn-generar-pdf').on('click', function () {
+                var baseUrl = '{{ route('calidad.reporte.pdf') }}';
+                var params = [];
+                var resultado = $('#pdf-filter-resultado').val();
+                var fdesde = $('#pdf-fecha-desde').val();
+                var fhasta = $('#pdf-fecha-hasta').val();
+                if (resultado) params.push('resultado=' + encodeURIComponent(resultado));
+                if (fdesde) params.push('fecha_desde=' + encodeURIComponent(fdesde));
+                if (fhasta) params.push('fecha_hasta=' + encodeURIComponent(fhasta));
+                window.open(baseUrl + (params.length ? '?' + params.join('&') : ''), '_blank');
+                bootstrap.Modal.getInstance(document.getElementById('pdfExportModal'))?.hide();
+            });
+            $('#pdfExportModal').on('show.bs.modal', function () {
+                $('#pdf-filter-resultado, #pdf-fecha-desde, #pdf-fecha-hasta').val('');
+            });
 
             // Estado del lote actual en el modal
             var producidas = 0;

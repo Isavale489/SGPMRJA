@@ -76,6 +76,14 @@
         color: #2d3436;
         margin-top: 4px;
     }
+
+    /* ── Bloque anclado al pie de la página (montos + observaciones) ── */
+    .doc-bottom {
+        position: fixed;
+        left: 30px;
+        right: 30px;
+        bottom: 42px;
+    }
 @endsection
 
 @section('summary-bar')
@@ -148,6 +156,8 @@
         </tbody>
     </table>
 
+    {{-- ═══════ Pie anclado: totales + observaciones ═══════ --}}
+    <div class="doc-bottom">
     {{-- ═══════ Totales ═══════ --}}
     <table class="totals-block">
         <tr>
@@ -201,4 +211,5 @@
             {!! nl2br(e($compra->observaciones)) !!}
         </div>
     @endif
+    </div>{{-- /.doc-bottom --}}
 @endsection
