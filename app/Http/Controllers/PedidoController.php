@@ -198,6 +198,7 @@ class PedidoController extends Controller
         $data['creador'] = $pedido->user ? [
             'name' => $pedido->user->name,
             'avatar_url' => $pedido->user->avatar_url,
+            'fecha' => optional($pedido->created_at)->format('d/m/Y H:i'),
         ] : null;
 
         // Formalización: el front congela las líneas y deja editar solo pagos.

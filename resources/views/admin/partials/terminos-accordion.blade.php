@@ -6,13 +6,11 @@
 --}}
 @php($tcPrefix = $prefix ?? 'tc')
 @php($tcAbonoPct = \App\Models\Pedido::porcentajeAbonoMinimo())
-<div class="card border-0 shadow-sm">
-    <div class="card-header border-0 bg-soft-primary">
-        <h6 class="mb-0 text-atlantico-dark">
-            <i class="ri-file-shield-2-line me-2"></i>Términos y Condiciones
-        </h6>
+<div class="cot-terminos-block">
+    <div class="cot-terminos-block-title">
+        <i class="ri-file-shield-2-line me-1"></i>Términos y Condiciones
     </div>
-    <div class="card-body p-2">
+    <div>
         <div class="accordion cot-terminos-accordion" id="{{ $tcPrefix }}TerminosAccordion">
             <div class="accordion-item">
                 <h2 class="accordion-header" id="{{ $tcPrefix }}TermPedidosHead">

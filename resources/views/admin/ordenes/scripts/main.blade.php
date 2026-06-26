@@ -1569,6 +1569,7 @@
                 }
                 $('#view-estado').html(`<span class="badge badge-status ${estadoClases[data.estado] || 'badge-soft-secondary'} rounded-pill"><i class="${iconEstadoOrden(data.estado)} me-1"></i>${data.estado}</span>`);
                 $('#view-creado-por').text(data.creado_por ? data.creado_por.name : 'Sin especificar');
+                if (data.creador && data.creador.avatar_url) $('#view-ord-creador-avatar').attr('src', data.creador.avatar_url);
 
                 // Equipo completo (multi-empleado); fallback al responsable legacy
                 const empNoms = (data.empleados_asignados && data.empleados_asignados.length)

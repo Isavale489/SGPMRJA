@@ -266,6 +266,7 @@ class CotizacionController extends Controller
         $response['creador'] = $cotizacion->user ? [
             'name' => $cotizacion->user->name,
             'avatar_url' => $cotizacion->user->avatar_url,
+            'fecha' => optional($cotizacion->created_at)->format('d/m/Y H:i'),
         ] : null;
 
         return response()->json($response);

@@ -34,7 +34,22 @@
                         <span class="wiz-step-label">Resumen</span>
                     </button>
                 </div>
-                <div class="wiz-stepper-side wiz-stepper-side--right"></div>
+                {{-- Chip "Creada por" — gutter derecho del stepper (estándar de las transacciones) --}}
+                <div class="wiz-stepper-side wiz-stepper-side--right">
+                    <div class="wiz-client-banner wiz-client-banner--creator" title="Creada por">
+                        <span class="wiz-client-banner-label">Creada por:</span>
+                        <img class="wiz-client-banner-avatar wiz-client-banner-avatar--img"
+                            id="view-cot-creador-avatar" src="" alt="" />
+                        <div class="wiz-client-banner-main">
+                            <span class="wiz-client-banner-name" id="view-usuario-creador">—</span>
+                            <span class="wiz-client-banner-sub">
+                                <span class="wiz-client-banner-doc">
+                                    <i class="ri-time-line me-1"></i><span id="view-cot-creador-fecha">—</span>
+                                </span>
+                            </span>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <div class="modal-body p-0 wiz-wizard-body">
@@ -112,13 +127,6 @@
                                             </div>
                                             <div><small class="text-muted d-block fs-12">Estado</small>
                                             <span class="fs-13" id="view-estado">-</span></div>
-                                        </div>
-                                        <div class="col-6 d-flex align-items-start">
-                                            <div class="emp-icon-box emp-icon-box--navy rounded-circle me-2 flex-shrink-0 d-flex align-items-center justify-content-center">
-                                                <i class="ri-user-settings-line emp-icon--navy"></i>
-                                            </div>
-                                            <div><small class="text-muted d-block fs-12">Creado por</small>
-                                            <span class="fw-semibold fs-13" id="view-usuario-creador">-</span></div>
                                         </div>
                                     </div>
                                 </div>
@@ -325,13 +333,11 @@
                         <div class="row g-3">
                             {{-- Card Cliente --}}
                             <div class="col-lg-7">
-                                <div class="card border-0 shadow-sm h-100">
-                                    <div class="card-header border-0 bg-soft-primary">
-                                        <h6 class="mb-0 text-atlantico-dark">
-                                            <i class="ri-user-3-line me-2"></i>Datos del Cliente
-                                        </h6>
+                                <div class="cli-view-card cli-view-card--flat h-100">
+                                    <div class="cli-view-card-header">
+                                        <i class="ri-user-3-line"></i>Datos del Cliente
                                     </div>
-                                    <div class="card-body">
+                                    <div class="cli-view-card-body">
                                         {{-- Buscador de documento con icono de lupa --}}
                                         <label for="ci-rif-number-field" class="form-label small fw-semibold mb-1">
                                             Documento de identidad <span class="text-danger">*</span>
@@ -441,13 +447,11 @@
 
                             {{-- Card Detalles + Estado --}}
                             <div class="col-lg-5">
-                                <div class="card border-0 shadow-sm mb-3">
-                                    <div class="card-header border-0 bg-soft-primary">
-                                        <h6 class="mb-0 text-atlantico-dark">
-                                            <i class="ri-calendar-event-line me-2"></i>Detalles de la cotización
-                                        </h6>
+                                <div class="cli-view-card cli-view-card--flat">
+                                    <div class="cli-view-card-header">
+                                        <i class="ri-calendar-event-line"></i>Detalles de la cotización
                                     </div>
-                                    <div class="card-body">
+                                    <div class="cli-view-card-body">
                                         <div class="row g-2">
                                             <div class="col-md-6">
                                                 <label for="fecha-cotizacion-field"
@@ -590,13 +594,11 @@
 
                         <div class="row g-3">
                             <div class="col-lg-7">
-                                <div class="card border-0 shadow-sm">
-                                    <div class="card-header border-0 bg-soft-primary">
-                                        <h6 class="mb-0 text-atlantico-dark">
-                                            <i class="ri-sticky-note-line me-2"></i>Notas internas
-                                        </h6>
+                                <div class="cli-view-card cli-view-card--flat">
+                                    <div class="cli-view-card-header">
+                                        <i class="ri-sticky-note-line"></i>Notas internas
                                     </div>
-                                    <div class="card-body">
+                                    <div class="cli-view-card-body">
                                         <textarea id="notas-field" name="notas" class="form-control"
                                             rows="3"
                                             placeholder="Observaciones internas sobre la cotización..."
@@ -610,13 +612,11 @@
                                     </div>
                                 </div>
 
-                                <div class="card border-0 shadow-sm mt-3">
-                                    <div class="card-header border-0 bg-soft-primary">
-                                        <h6 class="mb-0 text-atlantico-dark">
-                                            <i class="ri-list-check-2 me-2"></i>Líneas incluidas
-                                        </h6>
+                                <div class="cli-view-card cli-view-card--flat mt-3">
+                                    <div class="cli-view-card-header">
+                                        <i class="ri-list-check-2"></i>Líneas incluidas
                                     </div>
-                                    <div class="card-body p-3">
+                                    <div class="cli-view-card-body">
                                         <div id="cot-resumen-lineas" class="cot-lineas-list">
                                             <div class="cot-lineas-empty text-center text-muted py-3 small">
                                                 Sin productos agregados
@@ -627,14 +627,14 @@
 
                                 {{-- Proyección de producción — aviso NO bloqueante de stock de insumos.
                                      Informa si para fabricar estas líneas faltará materia prima. No impide guardar. --}}
-                                <div class="card border-0 shadow-sm mt-3" id="cot-proyeccion-card">
-                                    <div class="card-header border-0 bg-soft-primary d-flex align-items-center justify-content-between">
-                                        <h6 class="mb-0 text-atlantico-dark">
-                                            <i class="ri-archive-2-line me-2"></i>Proyección de producción
-                                        </h6>
+                                <div class="cli-view-card cli-view-card--flat mt-3" id="cot-proyeccion-card">
+                                    <div class="cli-view-card-header justify-content-between">
+                                        <span class="d-inline-flex align-items-center gap-1">
+                                            <i class="ri-archive-2-line"></i>Proyección de producción
+                                        </span>
                                         <span class="badge rounded-pill" id="cot-proyeccion-badge" hidden></span>
                                     </div>
-                                    <div class="card-body p-3">
+                                    <div class="cli-view-card-body">
                                         <div id="cot-proyeccion-body"></div>
                                     </div>
                                 </div>

@@ -1950,6 +1950,18 @@ header#page-topbar,
 }
 
 /* ── Acordeón informativo de Términos y Condiciones (paso 3 cotización) ── */
+/* Bloque sin marco: el acordeón ya es un panel autónomo; solo un título ligero. */
+.cot-terminos-block-title {
+    display: flex;
+    align-items: center;
+    margin-bottom: 0.5rem;
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: #1e3c72;
+}
+.cot-terminos-block-title i { font-size: 1rem; color: #2a5298; }
+[data-bs-theme="dark"] .cot-terminos-block-title { color: #cdd9f0; }
+[data-bs-theme="dark"] .cot-terminos-block-title i { color: #9db4e6; }
 .cot-terminos-accordion { --bs-accordion-border-color: rgba(30, 60, 114, 0.10); }
 .cot-terminos-accordion .accordion-item {
     border-color: rgba(30, 60, 114, 0.10);
@@ -9107,6 +9119,40 @@ select.js-readonly:not(.afs-native) {
     color: #2a5298;
 }
 .cli-view-card-body { padding: 1rem; }
+
+/* Variante sin elevación al hover — para cards de FORMULARIO (wizards de
+   gestión operativa), donde el "lift" del estándar estorba al interactuar
+   con los inputs. Conserva el resto del look (borde, acento, header). */
+.cli-view-card--flat:hover {
+    transform: none;
+    box-shadow: 0 1px 2px rgba(16, 24, 40, 0.05), 0 6px 18px -8px rgba(16, 24, 40, 0.10);
+}
+
+/* ── Card "blanda" de resumen (Gestión Operativa) ──
+   Para bloques INFORMATIVOS que ya tienen su propio diseño interno (resumen de
+   pago, etc.). A diferencia del .cli-view-card de datos, NO lleva el acento navy
+   a la izquierda ni el header en mayúsculas: deja respirar el contenido. */
+.op-summary-card {
+    border: 1px solid #e9eef5;
+    border-radius: 12px;
+    background: #fff;
+    box-shadow: 0 1px 2px rgba(16, 24, 40, 0.05), 0 6px 18px -8px rgba(16, 24, 40, 0.10);
+    overflow: hidden;
+}
+.op-summary-card-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.7rem 1rem 0.4rem;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #1e3c72;
+}
+.op-summary-card-header i { font-size: 1.05rem; color: #2a5298; }
+.op-summary-card-body { padding: 0.25rem 1rem 1rem; }
+[data-bs-theme="dark"] .op-summary-card { background: #1a2236; border-color: #2a3447; }
+[data-bs-theme="dark"] .op-summary-card-header { color: #cdd9f0; }
+[data-bs-theme="dark"] .op-summary-card-header i { color: #9db4e6; }
 
 /* Acentos por sección — paleta monocromática navy, POR POSICIÓN.
    Global para los 5 módulos del estándar "Ver" (clientes, empleados, insumos,

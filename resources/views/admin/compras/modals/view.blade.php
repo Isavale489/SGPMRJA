@@ -33,7 +33,23 @@
                         <span class="wiz-step-label">Totales</span>
                     </button>
                 </div>
-                <div class="wiz-stepper-side wiz-stepper-side--right"></div>
+                {{-- Chip "Registrado por" — gutter derecho del stepper (estándar de las
+                     transacciones: el registro va arriba a la derecha, no en una card al fondo) --}}
+                <div class="wiz-stepper-side wiz-stepper-side--right">
+                    <div class="wiz-client-banner wiz-client-banner--creator" title="Registrado por">
+                        <span class="wiz-client-banner-label">Registrado por:</span>
+                        <img class="wiz-client-banner-avatar wiz-client-banner-avatar--img"
+                            id="cv-reg-avatar" src="" alt="" />
+                        <div class="wiz-client-banner-main">
+                            <span class="wiz-client-banner-name" id="cv-reg-nombre">—</span>
+                            <span class="wiz-client-banner-sub">
+                                <span class="wiz-client-banner-doc">
+                                    <i class="ri-time-line me-1"></i><span id="cv-reg-fecha">—</span>
+                                </span>
+                            </span>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             {{-- Hero persistente: número + estado + total (visible en todos los pasos) --}}
@@ -122,43 +138,16 @@
                         </div>
                     </div>
 
-                    {{-- Registro --}}
-                    <div class="cli-view-card mb-0">
-                        <div class="cli-view-card-header">
-                            <i class="ri-user-line"></i>Registro
-                        </div>
-                        <div class="cli-view-card-body">
-                            <div class="row g-3 align-items-center">
-                                <div class="col-md-6">
-                                    <div class="d-flex align-items-center gap-2">
-                                        <img id="cv-reg-avatar" src="" alt=""
-                                            class="rounded-circle" width="40" height="40" style="object-fit:cover;">
-                                        <div>
-                                            <small class="text-muted d-block">Registrado por</small>
-                                            <span class="fw-semibold" id="cv-reg-nombre">—</span>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <small class="text-muted d-block mb-1"><i class="ri-time-line me-1"></i>Fecha de registro</small>
-                                    <span id="cv-reg-fecha">—</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
                 </section>
 
                 {{-- ─ Paso 2: Ítems ─────────────────────────────────────── --}}
                 <section class="wiz-step-content" data-step="2" hidden>
-                    <div class="card border-0 shadow-sm mb-0">
-                        <div class="card-header border-0 bg-soft-primary">
-                            <h6 class="mb-0 text-atlantico-dark">
-                                <i class="ri-archive-line me-2"></i>Ítems de la Compra
-                                <span class="text-muted fw-normal ms-1" id="cv-items-count">(0)</span>
-                            </h6>
+                    <div class="cli-view-card mb-0">
+                        <div class="cli-view-card-header">
+                            <i class="ri-archive-line"></i>Ítems de la Compra
+                            <span class="text-muted fw-normal ms-1" id="cv-items-count">(0)</span>
                         </div>
-                        <div class="card-body p-0">
+                        <div class="cli-view-card-body p-0">
                             <div class="cot-grouped-tablewrap">
                                 <table class="cot-grouped-table">
                                     <thead>
@@ -193,13 +182,11 @@
                 <section class="wiz-step-content" data-step="3" hidden>
                     <div class="row justify-content-center">
                         <div class="col-md-7 col-lg-6">
-                            <div class="card border-0 shadow-sm mb-0">
-                                <div class="card-header border-0 bg-soft-primary">
-                                    <h6 class="mb-0 text-atlantico-dark">
-                                        <i class="ri-calculator-line me-2"></i>Totales
-                                    </h6>
+                            <div class="cli-view-card mb-0">
+                                <div class="cli-view-card-header">
+                                    <i class="ri-calculator-line"></i>Totales
                                 </div>
-                                <div class="card-body">
+                                <div class="cli-view-card-body">
                                     <div class="c-ticket">
                                         <div class="c-ticket-row">
                                             <span class="c-ticket-label">Subtotal</span>
