@@ -178,6 +178,7 @@
     <script src="https://cdn.datatables.net/1.11.5/js/dataTables.bootstrap5.min.js"></script>
     <script src="{{ URL::asset('/assets/js/municipios-venezuela.js') }}"></script>
     <script src="{{ URL::asset('/assets/js/telefonos-repeater.js') }}"></script>
+    <script src="{{ URL::asset('/assets/js/proyeccion-insumos.js') }}"></script>
     @include('admin.cotizaciones.scripts.main')
     <script>
         // PDF Export Modal — Cotizaciones

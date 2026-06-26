@@ -858,6 +858,60 @@ $(document).ready(function () {
             }
         }
 
+        // ── Precarga desde "Crear compra con faltantes" (Cotización/Pedido) ──
+        // Abre el modal en modo Nueva Compra y carga los insumos faltantes con la
+        // cantidad sugerida. El usuario ajusta proveedor/costos y guarda borrador.
+        // NO llama resetModal() tras abrir para conservar la tasa BCV ya cargada
+        // por el handler show.bs.modal.
+        window.compraPrefillFaltantes = function (insumos) {
+            if (!Array.isArray(insumos) || !insumos.length) return;
+            var modalEl = document.getElementById('createCompraModal');
+            if (!modalEl) return;
+
+            var aplicar = function () {
+                $('#c-edit-id').val('');
+                $('#compraModalTitle').html('<i class="ri-shopping-bag-3-line me-1"></i>Nueva Compra');
+                $('#c-items-tbody').empty();
+                rowCount = 0;
+
+                var agregadas = 0, noMapeados = [];
+                insumos.forEach(function (f) {
+                    var ins = findInsumo(f.insumo_id);
+                    if (!ins) { noMapeados.push(f.nombre || ('#' + f.insumo_id)); return; }
+                    var $tr = addItemRow(false);
+                    selectInsumoEnFila($tr, ins);
+                    var qty = parseFloat(f.cantidad) || 0;
+                    if (qty > 0) $tr.find('.c-cantidad').val(qty).trigger('input');
+                    agregadas++;
+                });
+                updateEmpty();
+                recalcular();
+                showStep(1);
+
+                if (window.Swal) {
+                    Swal.fire({
+                        icon: agregadas ? 'info' : 'warning',
+                        title: agregadas ? 'Insumos faltantes precargados' : 'Sin coincidencias en el catálogo',
+                        html: agregadas
+                            ? ('Se cargaron <b>' + agregadas + '</b> insumo(s) faltante(s). Revisa el <b>proveedor</b> y los costos, luego guarda como borrador.'
+                               + (noMapeados.length ? '<br><small class="text-muted">No mapeados: ' + noMapeados.join(', ') + '</small>' : ''))
+                            : 'No se pudieron mapear los insumos faltantes al catálogo de insumos.',
+                        timer: agregadas ? 4500 : 3500, showConfirmButton: false
+                    });
+                }
+            };
+
+            if (modalEl.classList.contains('show')) {
+                aplicar();
+            } else {
+                modalEl.addEventListener('shown.bs.modal', function () {
+                    // Respiro para que aplicarTasaPorFecha (show.bs.modal) corra antes.
+                    setTimeout(aplicar, 60);
+                }, { once: true });
+                bootstrap.Modal.getOrCreateInstance(modalEl).show();
+            }
+        };
+
         // Estado inicial: fija display:none inline en la card (vence al display:flex)
         renderProveedorSeleccionado();
 

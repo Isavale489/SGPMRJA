@@ -485,6 +485,22 @@
                                 </div>
                             </div>
 
+                            {{-- Card: Proyección de producción — aviso NO bloqueante de stock.
+                                 Para producir el pedido se necesitan insumos; aquí se avisa si faltan. --}}
+                            <div class="col-12">
+                                <div class="card border-0 shadow-sm" id="ped-proyeccion-card">
+                                    <div class="card-header border-0 bg-soft-primary py-2 px-3 d-flex align-items-center justify-content-between">
+                                        <h6 class="mb-0 text-atlantico-dark fs-13">
+                                            <i class="ri-archive-2-line me-1"></i>Proyección de producción
+                                        </h6>
+                                        <span class="badge rounded-pill" id="ped-proyeccion-badge" hidden></span>
+                                    </div>
+                                    <div class="card-body p-3">
+                                        <div id="ped-proyeccion-body"></div>
+                                    </div>
+                                </div>
+                            </div>
+
                             {{-- Card: Pago --}}
                             <div class="col-lg-8">
                                 <div class="card border-0 shadow-sm h-100">

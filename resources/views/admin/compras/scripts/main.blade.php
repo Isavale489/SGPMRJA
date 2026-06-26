@@ -262,6 +262,8 @@ $(document).ready(function () {
                 data: { _method: 'PATCH', _token: '{{ csrf_token() }}' },
                 success: function (response) {
                     window.comprasTable.ajax.reload(null, false);
+                    // Procesar mueve stock → avisar a otras pestañas (cotización/pedido).
+                    if (window.ProyeccionInsumos) ProyeccionInsumos.notifyStockChange('compra-procesada');
                     Swal.fire({
                         title: 'Procesada',
                         text: response.message,
@@ -401,6 +403,8 @@ $(document).ready(function () {
                 data: { _method: 'PATCH', _token: '{{ csrf_token() }}' },
                 success: function (response) {
                     window.comprasTable.ajax.reload(null, false);
+                    // Anular revierte stock → avisar a otras pestañas.
+                    if (window.ProyeccionInsumos) ProyeccionInsumos.notifyStockChange('compra-anulada');
                     Swal.fire({
                         title: 'Anulada',
                         text: response.message,

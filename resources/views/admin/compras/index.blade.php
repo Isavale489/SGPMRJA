@@ -204,6 +204,7 @@
     <script src="{{ URL::asset('/assets/libs/sweetalert2/sweetalert2.min.js') }}"></script>
     <script src="{{ asset('assets/js/municipios-venezuela.js') }}"></script>
     <script src="{{ asset('assets/js/telefonos-repeater.js') }}"></script>
+    <script src="{{ asset('assets/js/proyeccion-insumos.js') }}"></script>
     <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/1.11.5/js/dataTables.bootstrap5.min.js"></script>
     <script src="https://cdn.datatables.net/responsive/2.2.9/js/dataTables.responsive.min.js"></script>
@@ -211,6 +212,27 @@
     @include('admin.compras.scripts.main')
     @include('admin.compras.scripts.create')
     <script>
+        // Precarga de compra desde "Crear compra con faltantes" (Cotización/Pedido).
+        // Llega por ?prefill=1 + payload en localStorage (lo deja proyeccion-insumos.js).
+        $(function () {
+            var params = new URLSearchParams(window.location.search);
+            if (params.get('prefill') !== '1') return;
+            var raw = null;
+            try { raw = localStorage.getItem('sgpmrja_compra_prefill'); } catch (e) {}
+            // Limpiar el flag y el query param para no re-disparar al recargar.
+            try { localStorage.removeItem('sgpmrja_compra_prefill'); } catch (e) {}
+            if (window.history.replaceState) {
+                window.history.replaceState({}, '', window.location.pathname);
+            }
+            if (!raw) return;
+            var data;
+            try { data = JSON.parse(raw); } catch (e) { return; }
+            if (!data || !Array.isArray(data.insumos) || !data.insumos.length) return;
+            if (typeof window.compraPrefillFaltantes === 'function') {
+                window.compraPrefillFaltantes(data.insumos);
+            }
+        });
+
         // Exportar PDF con filtros — Compras
         $('#btn-generar-pdf').on('click', function () {
             var baseUrl = '{{ route('compras.reporte.pdf') }}';

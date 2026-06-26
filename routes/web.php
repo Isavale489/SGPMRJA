@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\CompraController;
 use App\Http\Controllers\ConfiguracionController;
+use App\Http\Controllers\DisponibilidadInsumoController;
 use App\Http\Controllers\ImpuestoController;
 use App\Http\Controllers\DetalleOrdenInsumoController;
 use App\Http\Controllers\HomeController;
@@ -163,12 +164,16 @@ Route::middleware(['auth', 'throttle:60,1', 'active.user', 'recovery.questions.r
         Route::get('pedidos/cotizaciones-disponibles', [PedidoController::class, 'getCotizacionesDisponibles'])->name('pedidos.cotizacionesDisponibles');
         Route::get('pedidos/reporte/pdf', [PedidoController::class, 'reportePdf'])->name('pedidos.reporte.pdf');
         Route::get('pedidos/reporte', [PedidoController::class, 'reporteGeneral'])->name('pedidos.reporteGeneral');
+        // Proyección de insumos para producción (aviso NO bloqueante de stock).
+        Route::post('pedidos/proyeccion-insumos', [DisponibilidadInsumoController::class, 'proyectarLineas'])->name('pedidos.proyeccionInsumos');
         Route::get('pedidos/{pedido}', [PedidoController::class, 'show'])->name('pedidos.show');
         Route::get('pedidos/{pedido}/pdf', [PedidoController::class, 'pedidoPdf'])->name('pedidos.pdf');
 
         // Cotizaciones (lectura + conversión)
         Route::get('cotizaciones', [CotizacionController::class, 'index'])->name('cotizaciones.index');
         Route::get('cotizaciones-data', [CotizacionController::class, 'getCotizaciones'])->name('cotizaciones.data');
+        // Proyección en vivo de insumos desde el wizard (líneas aún sin guardar).
+        Route::post('cotizaciones/proyeccion-insumos', [DisponibilidadInsumoController::class, 'proyectarLineas'])->name('cotizaciones.proyeccionInsumos');
         Route::get('cotizaciones/reporte/pdf', [CotizacionController::class, 'reportePdf'])->name('cotizaciones.reporte.pdf');
         Route::get('cotizaciones/reporte', [CotizacionController::class, 'reporteGeneral'])->name('cotizaciones.reporteGeneral');
         Route::get('cotizaciones/{cotizacion}', [CotizacionController::class, 'show'])->name('cotizaciones.show');
