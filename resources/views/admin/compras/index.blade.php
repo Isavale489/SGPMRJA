@@ -127,7 +127,7 @@
                                     <th>Fecha</th>
                                     <th class="text-end">Total</th>
                                     <th class="text-center">Estado</th>
-                                    <th>Acciones</th>
+                                    <th class="text-center">Acciones</th>
                                 </tr>
                             </thead>
                             <tbody></tbody>

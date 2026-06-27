@@ -428,7 +428,7 @@ class CotizacionController extends Controller
 
         $pdf = PDF::loadView('admin.cotizaciones.reporte_pdf', compact('cotizaciones', 'filtros'))
             ->setPaper('a4', 'portrait');
-        return $pdf->download('reporte_cotizaciones_' . now()->format('Ymd_His') . '.pdf');
+        return $pdf->stream('reporte_cotizaciones_' . now()->format('Ymd_His') . '.pdf');
     }
 
     public function reporteGeneral()
@@ -481,7 +481,7 @@ class CotizacionController extends Controller
             'tasaFecha' => $tasaFecha,
         ])->setPaper('a4', 'portrait');
 
-        return $pdf->download('cotizacion_' . $cotizacion->id . '.pdf');
+        return $pdf->stream('cotizacion_' . $cotizacion->id . '.pdf');
     }
 
     /**

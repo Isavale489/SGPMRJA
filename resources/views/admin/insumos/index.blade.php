@@ -48,6 +48,9 @@
                                     data-bs-target="#showModal">
                                     <i class="ri-add-line align-bottom me-1"></i> Agregar Insumo
                                 </button>
+                                <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#pdfExportModal">
+                                    <i class="ri-file-pdf-fill align-bottom me-1"></i> Exportar PDF
+                                </button>
                                 {{-- Acciones secundarias agrupadas — estándar .actions-menu --}}
                                 <div class="dropdown">
                                     <button type="button" class="btn btn-soft-secondary dropdown-toggle"
@@ -59,13 +62,6 @@
                                             <button type="button" class="dropdown-item act-item act-primary"
                                                 data-bs-toggle="modal" data-bs-target="#tiposInsumoModal">
                                                 <span class="act-ic"><i class="ri-settings-3-line"></i></span>Gestionar Tipos
-                                            </button>
-                                        </li>
-                                        <li><hr class="dropdown-divider"></li>
-                                        <li>
-                                            <button type="button" class="dropdown-item act-item act-pdf"
-                                                data-bs-toggle="modal" data-bs-target="#pdfExportModal">
-                                                <span class="act-ic"><i class="ri-file-pdf-fill"></i></span>Exportar PDF
                                             </button>
                                         </li>
                                     </ul>

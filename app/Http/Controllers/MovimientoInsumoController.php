@@ -62,7 +62,7 @@ class MovimientoInsumoController extends Controller
 
         $pdf = \PDF::loadView('admin.movimiento-insumo.movimientos.reporte_pdf', compact('movimientos', 'filtros'))
             ->setPaper('a4', 'landscape');
-        return $pdf->download('movimientos_insumo_' . now()->format('Y-m-d_H-i-s') . '.pdf');
+        return $pdf->stream('movimientos_insumo_' . now()->format('Y-m-d_H-i-s') . '.pdf');
     }
 
     public function getMovimientos(Request $request)

@@ -61,10 +61,19 @@
         padding-top: 5px;
     }
 
-    /* ── Estado ── */
-    .estado-recibida { background-color: #d4edda; color: #155724; padding: 2px 8px; font-size: 8.5px; font-weight: 600; }
-    .estado-borrador { background-color: #fff3cd; color: #856404; padding: 2px 8px; font-size: 8.5px; font-weight: 600; }
-    .estado-anulada  { background-color: #f8d7da; color: #721c24; padding: 2px 8px; font-size: 8.5px; font-weight: 600; }
+    /* ── Estado (badge alineado verticalmente con la etiqueta) ── */
+    .estado-recibida, .estado-borrador, .estado-anulada {
+        display: inline-block;
+        vertical-align: middle;
+        padding: 2px 8px;
+        border-radius: 10px;
+        font-size: 8.5px;
+        font-weight: 600;
+        line-height: 1.3;
+    }
+    .estado-recibida { background-color: #d4edda; color: #155724; }
+    .estado-borrador { background-color: #fff3cd; color: #856404; }
+    .estado-anulada  { background-color: #f8d7da; color: #721c24; }
 
     /* ── Nota de observaciones ── */
     .nota-obs {

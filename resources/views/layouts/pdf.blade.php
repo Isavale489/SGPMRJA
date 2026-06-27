@@ -93,31 +93,42 @@
             background-color: #eef2f9;
             border: 1px solid #dfe6f0;
             border-left: 3px solid #1e3c72;
-            padding: 5px 12px;
+            padding: 7px 12px;
             margin: 0 2px 10px 2px;
             font-size: 8.5px;
             color: #2d3436;
-            line-height: 1.7;
+            line-height: 1.6;
         }
 
+        /* Label como badge (encabezado claramente diferenciado de los chips) */
         .filter-bar .filter-bar-label {
             display: inline-block;
             vertical-align: middle;
-            color: #1e3c72;
+            background-color: #1e3c72;
+            color: #ffffff;
             font-weight: bold;
             text-transform: uppercase;
             letter-spacing: 0.5px;
-            margin-right: 6px;
+            padding: 2px 8px;
+            border-radius: 3px;
+            margin-right: 14px;
         }
 
         .filter-bar .filter-chip {
             display: inline-block;
             vertical-align: middle;
-            margin-right: 14px;
+            margin-right: 16px;
         }
 
+        /* Etiqueta del chip (atenuada) vs valor (negrita, resaltado) */
         .filter-bar .filter-chip strong {
-            color: #3d4852;
+            color: #6b7480;
+            font-weight: 600;
+        }
+
+        .filter-bar .filter-chip .chip-val {
+            font-weight: bold;
+            color: #1e3c72;
         }
 
         /* ── Summary Bar ── */
@@ -338,7 +349,7 @@
         <div class="filter-bar">
             <span class="filter-bar-label">Filtros aplicados</span>
             @foreach($filtros as $etiqueta => $valor)
-                <span class="filter-chip"><strong>{{ $etiqueta }}:</strong> {{ $valor }}</span>
+                <span class="filter-chip"><strong>{{ $etiqueta }}:</strong> <span class="chip-val">{{ $valor }}</span></span>
             @endforeach
         </div>
     @endif

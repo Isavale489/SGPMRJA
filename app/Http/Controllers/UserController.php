@@ -238,7 +238,7 @@ class UserController extends Controller
 
         $pdf = \PDF::loadView('admin.users.reporte_pdf', compact('users', 'filtros'))
             ->setPaper('a4', 'landscape');
-        return $pdf->download('usuarios_' . now()->format('Y-m-d_H-i-s') . '.pdf');
+        return $pdf->stream('usuarios_' . now()->format('Y-m-d_H-i-s') . '.pdf');
     }
 
     /**

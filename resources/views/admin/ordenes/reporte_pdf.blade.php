@@ -11,10 +11,12 @@
     .col-fecha { width: 13%; text-align: center; }
     .op-estado {
         display: inline-block;
+        vertical-align: middle;
         padding: 2px 8px;
         border-radius: 10px;
         font-size: 10px;
         font-weight: 600;
+        line-height: 1.3;
     }
     .op-Pendiente { background: #fff4e0; color: #9a6700; }
     .op-EnProceso { background: #e7f0ff; color: #0d6efd; }

@@ -114,13 +114,13 @@
                     <table id="ordenes-table" class="table table-bordered table-striped align-middle dt-transactional table-operativa">
                         <thead>
                             <tr>
-                                <th>Nro. Orden</th>
-                                <th>Nro. Pedido</th>
+                                <th class="text-center">Nro. Orden</th>
+                                <th class="text-center">Nro. Pedido</th>
                                 <th>Producto</th>
-                                <th>Cant. Solicitada</th>
-                                <th>Progreso</th>
-                                <th>Estado</th>
-                                <th>Acciones</th>
+                                <th class="text-center">Cant. Solicitada</th>
+                                <th class="text-center">Progreso</th>
+                                <th class="text-center">Estado</th>
+                                <th class="text-center">Acciones</th>
                             </tr>
                         </thead>
                         <tbody>

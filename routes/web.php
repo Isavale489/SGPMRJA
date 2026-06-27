@@ -278,6 +278,7 @@ Route::middleware(['auth', 'throttle:60,1', 'active.user', 'recovery.questions.r
         Route::delete('ordenes/{orden}/subordenes/{subId}', [OrdenProduccionController::class, 'destroySubOrden'])->name('ordenes.subordenes.destroy');
         Route::patch('ordenes/{orden}/subordenes/{subId}/estado', [OrdenProduccionController::class, 'updateSubOrdenEstado'])->name('ordenes.subordenes.estado');
         Route::get('ordenes/reporte/pdf', [OrdenProduccionController::class, 'reportePdf'])->name('ordenes.reporte.pdf');
+        Route::get('ordenes/{orden}/pdf', [OrdenProduccionController::class, 'ordenPdf'])->name('ordenes.pdf');
         Route::resource('ordenes', OrdenProduccionController::class);
 
         // Control de Calidad (FEAT-006) — inspección de órdenes finalizadas

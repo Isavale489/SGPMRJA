@@ -12,10 +12,12 @@
     .col-inspector{ width: 13%; }
     .qc-result {
         display: inline-block;
+        vertical-align: middle;
         padding: 2px 8px;
         border-radius: 10px;
         font-size: 9px;
         font-weight: 600;
+        line-height: 1.3;
     }
     .qc-aprobado  { background: #e7f7ef; color: #1a7f5a; }
     .qc-observado { background: #fff4e0; color: #9a6700; }

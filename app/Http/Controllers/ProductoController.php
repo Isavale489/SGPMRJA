@@ -253,7 +253,7 @@ class ProductoController extends Controller
             'filtros'   => ['Vista' => $historial ? 'Historial (inhabilitados)' : 'Activos'],
         ];
         $pdf = PDF::loadView('admin.productos.reporte_pdf', $data);
-        return $pdf->download('catalogo-tipos-' . time() . '.pdf');
+        return $pdf->stream('catalogo-tipos-' . time() . '.pdf');
     }
 
     /**

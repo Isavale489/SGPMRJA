@@ -360,6 +360,7 @@ class CompraController extends Controller
             ->addColumn('actions', function ($c) {
                 $btn = '<div class="d-flex gap-2 justify-content-center">';
                 $btn .= '<button class="btn btn-sm btn-soft-info ver-btn" data-id="' . $c->id . '" title="Ver detalle"><i class="ri-eye-fill"></i></button>';
+                $btn .= '<a href="' . route('compras.pdf', $c->id) . '" target="_blank" class="btn btn-sm btn-soft-danger" title="Ver PDF"><i class="ri-file-pdf-fill"></i></a>';
 
                 if ($c->estado === 'borrador') {
                     $btn .= '<button class="btn btn-sm btn-soft-warning editar-btn" data-id="' . $c->id . '" title="Editar borrador"><i class="ri-pencil-fill"></i></button>';
@@ -436,7 +437,7 @@ class CompraController extends Controller
         $pdf = PDF::loadView('admin.compras.reporte_pdf', compact('compras', 'filtros'))
             ->setPaper('a4', 'portrait');
 
-        return $pdf->download('reporte_compras_' . now()->format('Ymd_His') . '.pdf');
+        return $pdf->stream('reporte_compras_' . now()->format('Ymd_His') . '.pdf');
     }
 
     public function compraPdf(Compra $compra)
@@ -446,6 +447,6 @@ class CompraController extends Controller
         $pdf = PDF::loadView('admin.compras.comprobante', compact('compra'))
             ->setPaper('a4', 'portrait');
 
-        return $pdf->download('compra_' . str_pad($compra->id, 5, '0', STR_PAD_LEFT) . '.pdf');
+        return $pdf->stream('compra_' . str_pad($compra->id, 5, '0', STR_PAD_LEFT) . '.pdf');
     }
 }

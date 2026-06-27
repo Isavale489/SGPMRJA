@@ -300,7 +300,7 @@ return [
             'ordenes.create|ordenes.store|ordenes.edit|ordenes.update|ordenes.destroy|ordenes.batch|ordenes.subordenes.store|ordenes.subordenes.destroy|ordenes.subordenes.estado|ordenes.insumos.store|ordenes.insumos.update|ordenes.insumos.destroy' => 'gestionar',
             'ordenes.avance'      => 'avance',
             'ordenes.cancelar'    => 'cancelar',
-            'ordenes.reporte.pdf' => 'pdf',
+            'ordenes.reporte.pdf|ordenes.pdf' => 'pdf',
         ],
     ],
 

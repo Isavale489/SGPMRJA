@@ -359,7 +359,7 @@ class ClienteController extends Controller
         }
 
         $pdf = Pdf::loadView('admin.clientes.reporte_pdf', compact('clientes', 'filtros'))->setPaper('a4', 'landscape');
-        return $pdf->download('reporte_clientes_' . now()->format('Ymd_His') . '.pdf');
+        return $pdf->stream('reporte_clientes_' . now()->format('Ymd_His') . '.pdf');
     }
 
     public function checkEmail(Request $request)
