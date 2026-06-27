@@ -5226,6 +5226,11 @@
 
             // Cargar colores/tallas si aún no están cargados al abrir
             $('#cotConfiguradorModal').on('show.bs.modal', function () {
+                // El catálogo (más ancho) queda abierto detrás; ocultarlo para que
+                // su cabecera/✕ no asomen por los bordes del configurador.
+                var catEl = document.getElementById('catalogoProductosModal');
+                if (catEl && catEl.classList.contains('show')) catEl.classList.add('cot-modal-hidden-behind');
+
                 if (typeof coloresArray !== 'undefined' && (!coloresArray || coloresArray.length === 0)) {
                     $.get("{{ route('colores.data') }}", function (data) {
                         coloresArray = data;
@@ -5237,6 +5242,12 @@
                         cargarTallasCatalogo(renderTallasGrid);
                     }
                 }
+            });
+
+            // Al cerrar el configurador, restaurar el catálogo (para "Volver al catálogo")
+            $('#cotConfiguradorModal').on('hide.bs.modal', function () {
+                var catEl = document.getElementById('catalogoProductosModal');
+                if (catEl) catEl.classList.remove('cot-modal-hidden-behind');
             });
 
             // Reset al cerrar

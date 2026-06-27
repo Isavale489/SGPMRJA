@@ -463,35 +463,40 @@
                     var metodoBoxCls = { efectivo: 'emp-icon-box--green', transferencia: 'emp-icon-box--navy', pago_movil: 'emp-icon-box--teal' };
                     var metodoIcoCls = { efectivo: 'emp-icon--green', transferencia: 'emp-icon--navy', pago_movil: 'emp-icon--teal' };
 
-                    if (data.pagos && data.pagos.length > 0) {
+                    var totalPagado = 0;
+                    var nPagos = (data.pagos && data.pagos.length) ? data.pagos.length : 0;
+
+                    if (nPagos > 0) {
                         var cardsHtml = '';
                         data.pagos.forEach(function (pago) {
                             var label  = metodoLabels[pago.metodo]  || pago.metodo;
                             var icon   = metodoIcons[pago.metodo]   || 'ri-money-dollar-circle-line';
                             var boxCls = metodoBoxCls[pago.metodo]  || 'emp-icon-box--navy';
                             var icoCls = metodoIcoCls[pago.metodo]  || 'emp-icon--navy';
-                            var monto  = parseFloat(pago.monto).toFixed(2);
+                            var montoNum = parseFloat(pago.monto) || 0;
+                            totalPagado += montoNum;
+                            var monto = montoNum.toFixed(2);
 
                             var extraHtml = '';
                             if (pago.metodo !== 'efectivo') {
                                 var bancoNombre = pago.banco ? pago.banco.nombre : 'Sin banco';
                                 var referencia  = pago.referencia || 'Sin referencia';
                                 extraHtml =
-                                    '<div class="fs-12 text-muted d-flex flex-wrap gap-3 mt-1">' +
-                                        '<span><i class="ri-bank-line me-1"></i>' + bancoNombre + '</span>' +
-                                        '<span><i class="ri-hashtag me-1"></i>' + referencia + '</span>' +
+                                    '<div class="ped-pago-meta">' +
+                                        '<span><i class="ri-bank-line"></i>' + bancoNombre + '</span>' +
+                                        '<span><i class="ri-hashtag"></i>' + referencia + '</span>' +
                                     '</div>';
                             }
 
                             cardsHtml +=
-                                '<div class="d-flex align-items-start gap-2 px-3 py-2 border-bottom">' +
-                                    '<div class="emp-icon-box ' + boxCls + ' rounded-circle flex-shrink-0 d-flex align-items-center justify-content-center mt-1">' +
+                                '<div class="ped-pago-item">' +
+                                    '<div class="ped-pago-icon ' + boxCls + '">' +
                                         '<i class="' + icon + ' ' + icoCls + '"></i>' +
                                     '</div>' +
-                                    '<div class="flex-grow-1">' +
-                                        '<div class="d-flex justify-content-between align-items-center">' +
-                                            '<span class="fw-semibold fs-13 text-atlantico-dark">' + label + '</span>' +
-                                            '<span class="fw-bold fs-13 text-atlantico-dark">$' + monto + '</span>' +
+                                    '<div class="ped-pago-main">' +
+                                        '<div class="ped-pago-top">' +
+                                            '<span class="ped-pago-metodo">' + label + '</span>' +
+                                            '<span class="ped-pago-monto">$' + monto + '</span>' +
                                         '</div>' +
                                         extraHtml +
                                     '</div>' +
@@ -499,7 +504,29 @@
                         });
                         $pagosEl.html(cardsHtml);
                     } else {
-                        $pagosEl.html('<p class="text-muted fs-12 mb-0">Sin pagos registrados.</p>');
+                        $pagosEl.html(
+                            '<div class="ped-pagos-empty">' +
+                                '<i class="ri-wallet-3-line"></i>' +
+                                '<span>Sin pagos registrados.</span>' +
+                            '</div>'
+                        );
+                    }
+
+                    // Footer del card: conteo, total pagado y estado de pago
+                    $('#view-pagos-count').text(nPagos + (nPagos === 1 ? ' pago' : ' pagos'));
+                    $('#view-pagos-total').text('$' + totalPagado.toFixed(2));
+
+                    var totalPed = parseFloat(data.total) || 0;
+                    var $estadoPago = $('#view-pagos-status');
+                    if (nPagos === 0) {
+                        $estadoPago.attr('class', 'ped-pagos-status ped-pagos-status--none')
+                            .html('<i class="ri-information-line"></i>Sin pagos');
+                    } else if (totalPagado + 0.001 >= totalPed) {
+                        $estadoPago.attr('class', 'ped-pagos-status ped-pagos-status--full')
+                            .html('<i class="ri-checkbox-circle-line"></i>Pagado completo');
+                    } else {
+                        $estadoPago.attr('class', 'ped-pagos-status ped-pagos-status--part')
+                            .html('<i class="ri-progress-3-line"></i>Abono parcial');
                     }
 
                     // Mostrar prioridad con badge

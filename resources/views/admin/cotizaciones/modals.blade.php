@@ -1043,9 +1043,8 @@
                                     <h6 class="cfg-section-title">Tallas y cantidades</h6>
                                     <p class="cfg-section-desc">Indica cuántas unidades de cada talla.</p>
                                 </div>
-                                <button type="button" class="btn btn-sm btn-link cfg-distribute-btn"
-                                    id="cfg-distribute-btn">
-                                    <i class="ri-equalizer-line me-1"></i>Distribuir uniforme
+                                <button type="button" class="cfg-distribute-btn" id="cfg-distribute-btn">
+                                    <i class="ri-equalizer-line"></i>Distribuir uniforme
                                 </button>
                             </header>
                             <div class="cfg-tallas-grid" id="cfg-tallas-grid">

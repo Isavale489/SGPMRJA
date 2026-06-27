@@ -793,14 +793,26 @@
                             </div>
                         </div>
                         <div class="col-lg-7">
-                            <div class="cli-view-card cli-view-card--flat h-100">
-                                <div class="cli-view-card-header">
-                                    <i class="ri-wallet-line"></i>Métodos de Pago
+                            <div class="ped-pagos-card h-100">
+                                <div class="ped-pagos-card-header">
+                                    <i class="ri-wallet-3-line"></i>
+                                    <span class="ped-pagos-title">Métodos de Pago</span>
+                                    <span class="ped-pagos-count" id="view-pagos-count">0 pagos</span>
                                 </div>
-                                <div class="cli-view-card-body p-0">
-                                    <div id="view-pagos-list" class="p-3">
-                                        <p class="text-muted fs-12 mb-0">Sin pagos registrados.</p>
+                                <div class="ped-pagos-body" id="view-pagos-list">
+                                    <div class="ped-pagos-empty">
+                                        <i class="ri-wallet-3-line"></i>
+                                        <span>Sin pagos registrados.</span>
                                     </div>
+                                </div>
+                                <div class="ped-pagos-footer">
+                                    <span class="ped-pagos-status ped-pagos-status--none" id="view-pagos-status">
+                                        <i class="ri-information-line"></i>Sin pagos
+                                    </span>
+                                    <span class="ped-pagos-total">
+                                        <span class="ped-pagos-total-label">Total pagado</span>
+                                        <span class="ped-pagos-total-value" id="view-pagos-total">$0.00</span>
+                                    </span>
                                 </div>
                             </div>
                         </div>

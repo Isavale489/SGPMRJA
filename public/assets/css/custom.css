@@ -2051,6 +2051,159 @@ header#page-topbar,
 .cot-resumen-card--compact .cot-resumen-divider { margin: 4px 0; }
 .cot-resumen-card--compact .cot-resumen-row--total .cot-resumen-row-value { font-size: 1.4rem; }
 
+/* ── Pedidos · paso 3 (vista detalle) — card "Métodos de Pago" ──
+   White card que iguala el alto del resumen navy: cabecera + lista scrollable + footer con total pagado. */
+.ped-pagos-card {
+    display: flex;
+    flex-direction: column;
+    background: #ffffff;
+    border: 1px solid #e9eef5;
+    border-radius: 14px;
+    box-shadow: 0 16px 32px -20px rgba(30, 60, 114, 0.35);
+    overflow: hidden;
+}
+.ped-pagos-card-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 18px;
+    border-bottom: 1px solid #eef2f7;
+    background: linear-gradient(135deg, rgba(30, 60, 114, 0.05), rgba(0, 217, 165, 0.05));
+}
+.ped-pagos-card-header > i { font-size: 1.05rem; color: #1e3c72; }
+.ped-pagos-title {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: #1e3c72;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin: 0;
+}
+.ped-pagos-count {
+    margin-left: auto;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: #1e3c72;
+    background: rgba(30, 60, 114, 0.08);
+    padding: 2px 10px;
+    border-radius: 999px;
+    white-space: nowrap;
+}
+.ped-pagos-body {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    max-height: 260px;
+}
+.ped-pagos-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 140px;
+    height: 100%;
+    color: #94a3b8;
+    font-size: 0.82rem;
+}
+.ped-pagos-empty i { font-size: 1.8rem; opacity: 0.5; }
+
+.ped-pago-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px 18px;
+}
+.ped-pago-item + .ped-pago-item { border-top: 1px solid #f1f5f9; }
+.ped-pago-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 1.05rem;
+}
+.ped-pago-main { flex: 1 1 auto; min-width: 0; }
+.ped-pago-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+.ped-pago-metodo { font-size: 0.88rem; font-weight: 600; color: #1e293b; }
+.ped-pago-monto {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: #1e3c72;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+.ped-pago-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 14px;
+    margin-top: 4px;
+    font-size: 0.76rem;
+    color: #64748b;
+}
+.ped-pago-meta span { display: inline-flex; align-items: center; gap: 4px; min-width: 0; }
+.ped-pago-meta i { font-size: 0.85rem; opacity: 0.7; }
+
+.ped-pagos-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 12px 18px;
+    border-top: 1px solid #eef2f7;
+    background: #fafcff;
+}
+.ped-pagos-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.74rem;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 999px;
+    white-space: nowrap;
+}
+.ped-pagos-status i { font-size: 0.85rem; }
+.ped-pagos-status--full { color: #047857; background: rgba(16, 185, 129, 0.12); }
+.ped-pagos-status--part { color: #b45309; background: rgba(245, 158, 11, 0.14); }
+.ped-pagos-status--none { color: #64748b; background: rgba(100, 116, 139, 0.12); }
+.ped-pagos-total { text-align: right; line-height: 1.15; }
+.ped-pagos-total-label {
+    display: block;
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #94a3b8;
+}
+.ped-pagos-total-value {
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: #1e3c72;
+    font-variant-numeric: tabular-nums;
+}
+
+[data-bs-theme="dark"] .ped-pagos-card { background: #1a2236; border-color: #2a3447; }
+[data-bs-theme="dark"] .ped-pagos-card-header {
+    border-bottom-color: #2a3447;
+    background: linear-gradient(135deg, rgba(157, 180, 230, 0.08), rgba(0, 217, 165, 0.06));
+}
+[data-bs-theme="dark"] .ped-pagos-card-header > i,
+[data-bs-theme="dark"] .ped-pagos-title { color: #cdd9f0; }
+[data-bs-theme="dark"] .ped-pagos-count { color: #cdd9f0; background: rgba(157, 180, 230, 0.14); }
+[data-bs-theme="dark"] .ped-pago-item + .ped-pago-item { border-top-color: #242d42; }
+[data-bs-theme="dark"] .ped-pago-metodo { color: #e2e8f0; }
+[data-bs-theme="dark"] .ped-pago-monto { color: #9db4e6; }
+[data-bs-theme="dark"] .ped-pago-meta { color: #94a3b8; }
+[data-bs-theme="dark"] .ped-pagos-footer { background: #161d2e; border-top-color: #2a3447; }
+[data-bs-theme="dark"] .ped-pagos-total-label { color: #64748b; }
+[data-bs-theme="dark"] .ped-pagos-total-value { color: #9db4e6; }
+
 /* ── Paso 3 Órdenes — card de progreso de producción (compacta) ──
    Reusa el gradiente navy de .cot-resumen-card; aquí solo el layout interno. */
 .ord-prog-body { padding: 16px 20px; }
@@ -3988,13 +4141,49 @@ header#page-topbar,
     border-radius: 999px;
 }
 
+/* Catálogo de productos oculto mientras el configurador está abierto encima:
+   evita que su cabecera/✕ (más anchos) asomen por los bordes. Se conserva en el
+   DOM con .show para poder restaurarlo al "Volver al catálogo". */
+.modal.cot-modal-hidden-behind {
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* "Distribuir uniforme" — chip de acción secundaria (outline suave),
+   anclado al header pero subordinado al pill sólido de "Nuevo color". */
 .cfg-distribute-btn {
-    color: #00b88c;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+    line-height: 1;
+    color: #00916c;
     text-decoration: none;
     font-size: 0.78rem;
     font-weight: 600;
+    padding: 6px 12px;
+    border-radius: 999px;
+    border: 1px solid rgba(0, 184, 140, 0.35);
+    background: rgba(0, 184, 140, 0.08);
+    cursor: pointer;
+    transition: background 0.12s, border-color 0.12s, color 0.12s;
 }
-.cfg-distribute-btn:hover { color: #008f6c; }
+.cfg-distribute-btn i { font-size: 0.95rem; }
+.cfg-distribute-btn:hover {
+    color: #008f6c;
+    background: rgba(0, 184, 140, 0.15);
+    border-color: rgba(0, 184, 140, 0.55);
+}
+[data-bs-theme="dark"] .cfg-distribute-btn {
+    color: #34d399;
+    border-color: rgba(52, 211, 153, 0.35);
+    background: rgba(52, 211, 153, 0.10);
+}
+[data-bs-theme="dark"] .cfg-distribute-btn:hover {
+    color: #6ee7b7;
+    background: rgba(52, 211, 153, 0.18);
+    border-color: rgba(52, 211, 153, 0.55);
+}
 
 /* Botón "Nuevo color" — pill resaltado en el header de la sección Color */
 .cfg-newcolor-btn {
@@ -4172,27 +4361,35 @@ header#page-topbar,
     line-height: 1.55;
 }
 
-/* Matriz minimalista: sin bordes pesados, separadores sutiles por fila */
+/* Matriz tipo card-tabla: contenedor con borde, banda de encabezado y
+   separadores verticales entre columnas de género (DAMA/CABALLERO/UNISEX) */
 .cfg-tg {
     display: grid;
-    grid-template-columns: minmax(52px, 0.6fr) repeat(var(--cfg-tg-cols, 3), 1fr);
+    grid-template-columns: minmax(56px, 0.7fr) repeat(var(--cfg-tg-cols, 3), 1fr);
     gap: 0;
     align-items: stretch;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    overflow: hidden;
+    background: #ffffff;
 }
 .cfg-tg-row { display: contents; }
 .cfg-tg-talla {
     display: flex;
     align-items: center;
     font-size: 0.8rem;
-    color: #475569;
+    color: #334155;
     font-weight: 600;
-    padding: 4px 8px 4px 2px;
+    padding: 6px 8px 6px 14px;
     border-bottom: 1px solid #f1f5f9;
 }
+/* Banda de encabezado (fila de títulos) */
 .cfg-tg-head .cfg-tg-talla,
 .cfg-tg-head .cfg-tg-genhead {
+    background: #f8fafc;
     border-bottom: 1.5px solid #e2e8f0;
-    padding-bottom: 8px;
+    padding-top: 9px;
+    padding-bottom: 9px;
 }
 .cfg-tg-head .cfg-tg-genhead {
     display: flex;
@@ -4211,6 +4408,9 @@ header#page-topbar,
     letter-spacing: 0.04em;
     color: #94a3b8;
 }
+/* Separadores verticales entre columnas de género */
+.cfg-tg-genhead,
+.cfg-tg-cell { border-left: 1px solid #f1f5f9; }
 
 /* Celda: −  [input]  +  */
 .cfg-tg-cell {
@@ -4220,7 +4420,6 @@ header#page-topbar,
     gap: 1px;
     padding: 3px 2px;
     border-bottom: 1px solid #f1f5f9;
-    border-radius: 10px;
     transition: background 0.15s, box-shadow 0.15s;
 }
 .cfg-tg-cell.is-active { background: rgba(0, 217, 165, 0.07); }
@@ -4228,6 +4427,9 @@ header#page-topbar,
     background: #ffffff;
     box-shadow: inset 0 0 0 2px rgba(30, 60, 114, 0.35);
 }
+/* Sin doble línea contra el borde inferior de la card */
+.cfg-tg-row:last-child .cfg-tg-talla,
+.cfg-tg-row:last-child .cfg-tg-cell { border-bottom: 0; }
 .cfg-tg-input {
     width: 38px;
     border: 0;
@@ -4264,6 +4466,15 @@ header#page-topbar,
 }
 .cfg-tg-step:hover { background: #eef2f7; color: #1e3c72; }
 .cfg-tg-cell.is-active .cfg-tg-step { color: #94a3b8; }
+/* Celda vacía: ocultar los steppers para bajar el ruido de "− 0 +" repetido;
+   queda solo el 0 tenue. Se revelan al pasar el cursor o enfocar, y al llenar
+   la celda pasa a .is-active y permanecen visibles. */
+.cfg-tg-cell:not(.is-active) .cfg-tg-step {
+    opacity: 0;
+    transition: opacity 0.12s;
+}
+.cfg-tg-cell:not(.is-active):hover .cfg-tg-step,
+.cfg-tg-cell:not(.is-active):focus-within .cfg-tg-step { opacity: 1; }
 
 /* Chip de género en listas de resumen/agrupado */
 .cot-chip-gen {
@@ -4289,11 +4500,14 @@ header#page-topbar,
 [data-bs-theme="dark"] .cfg-tg-groups { background: #1e293b; }
 [data-bs-theme="dark"] .cfg-tg-group-btn { color: #94a3b8; }
 [data-bs-theme="dark"] .cfg-tg-group-btn.is-active { background: #0f172a; color: #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4); }
+[data-bs-theme="dark"] .cfg-tg { border-color: #334155; background: #0f172a; }
 [data-bs-theme="dark"] .cfg-tg-talla { color: #cbd5e1; border-bottom-color: #1e293b; }
 [data-bs-theme="dark"] .cfg-tg-head .cfg-tg-talla,
-[data-bs-theme="dark"] .cfg-tg-head .cfg-tg-genhead { border-bottom-color: #334155; }
+[data-bs-theme="dark"] .cfg-tg-head .cfg-tg-genhead { background: #1e293b; border-bottom-color: #334155; }
 [data-bs-theme="dark"] .cfg-tg-genhead,
 [data-bs-theme="dark"] .cfg-tg-corner { color: #94a3b8; }
+[data-bs-theme="dark"] .cfg-tg-genhead,
+[data-bs-theme="dark"] .cfg-tg-cell { border-left-color: #1e293b; }
 [data-bs-theme="dark"] .cfg-tg-cell { border-bottom-color: #1e293b; }
 [data-bs-theme="dark"] .cfg-tg-cell.is-active { background: rgba(52, 211, 153, 0.12); }
 [data-bs-theme="dark"] .cfg-tg-cell:focus-within { background: #0f172a; box-shadow: inset 0 0 0 2px rgba(59, 130, 246, 0.5); }
