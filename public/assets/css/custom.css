@@ -8905,6 +8905,40 @@ select.js-readonly:not(.afs-native) {
     line-height: 1;
 }
 
+/* Hero del modal "Ver" de Órdenes — ícono navy (tema de producción).
+   Mueve producto/estado/meta FUERA del header con degradado, donde el texto
+   oscuro/muted no contrastaba; aquí va sobre card blanca, legible. */
+.ord-show-hero-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+    color: #fff;
+    font-size: 1.5rem;
+    flex-shrink: 0;
+    box-shadow: 0 6px 16px -6px rgba(30, 60, 114, 0.5);
+    overflow: hidden;
+}
+/* Cuando muestra foto del producto: marco neutro (sin degradado ni glow navy). */
+.ord-show-hero-icon.is-photo {
+    background: #fff;
+    border: 1px solid #e9eef5;
+    box-shadow: 0 2px 8px -4px rgba(16, 24, 40, 0.18);
+}
+.ord-show-hero-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+[data-bs-theme="dark"] .ord-show-hero-icon.is-photo {
+    background: #1a2236;
+    border-color: #2a3447;
+}
+
 /* Unidad de medida embebida en el input de cantidad (input-group append) */
 .c-unit-addon {
     min-width: 38px;

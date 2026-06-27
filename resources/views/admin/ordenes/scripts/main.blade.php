@@ -1543,6 +1543,19 @@
 
                 // Nombre legible: cubre líneas dinámicas (producto_id null) vía accessor
                 $('#view-producto').text(data.nombre_producto || (data.producto ? data.producto.nombre : 'Producto'));
+
+                // Foto del producto en el hero (cae al ícono genérico si el tipo no tiene imagen)
+                var prodImg = (data.detalle_pedido && data.detalle_pedido.tipo_producto && data.detalle_pedido.tipo_producto.imagen_url)
+                    || (data.producto && data.producto.tipo_producto && data.producto.tipo_producto.imagen_url) || '';
+                if (prodImg) {
+                    $('#view-prod-thumb').attr('src', prodImg).removeClass('d-none');
+                    $('#view-prod-thumb-ph').addClass('d-none');
+                    $('#view-prod-thumb').closest('.ord-show-hero-icon').addClass('is-photo');
+                } else {
+                    $('#view-prod-thumb').addClass('d-none').attr('src', '');
+                    $('#view-prod-thumb-ph').removeClass('d-none');
+                    $('#view-prod-thumb').closest('.ord-show-hero-icon').removeClass('is-photo');
+                }
                 $('#view-cantidad-solicitada').text(data.cantidad_solicitada);
                 $('#view-cantidad-producida').text(data.cantidad_producida);
 

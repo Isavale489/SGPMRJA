@@ -5,18 +5,10 @@
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
 
-            <!-- ══ Encabezado dinámico ════════════════════════════════ -->
-            <div class="modal-header border-0 pb-0">
-                <div class="flex-grow-1 me-3">
-                    <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
-                        <h6 class="fw-bold mb-0 text-atlantico-dark" id="view-producto"></h6>
-                        <div id="view-estado"></div>
-                    </div>
-                    <p class="text-muted mb-0 fs-12">
-                        <i class="ri-file-list-2-line opacity-50 me-1"></i><span id="view-pedido-info"></span>
-                    </p>
-                </div>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            <!-- ══ Encabezado ═════════════════════════════════════════ -->
+            <div class="modal-header">
+                <h5 class="modal-title">Detalle de Orden de Producción</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
 
             <!-- ══ Stepper ════════════════════════════════════════════ -->
@@ -64,6 +56,28 @@
                                     <i class="ri-time-line me-1"></i><span id="view-created">—</span>
                                 </span>
                             </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ══ Hero: producto + estado + meta del pedido (legible, fuera del degradado) ══ -->
+            <div class="px-3 pt-3">
+                <div class="card border-0 shadow-sm mb-0">
+                    <div class="card-body d-flex align-items-center gap-3 p-3">
+                        <div class="ord-show-hero-icon">
+                            <img id="view-prod-thumb" class="ord-show-hero-img d-none" alt=""
+                                onerror="this.classList.add('d-none');document.getElementById('view-prod-thumb-ph').classList.remove('d-none')" />
+                            <i class="ri-t-shirt-2-line" id="view-prod-thumb-ph"></i>
+                        </div>
+                        <div class="flex-grow-1 min-w-0">
+                            <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
+                                <h5 class="mb-0 fw-bold text-atlantico-dark" id="view-producto"></h5>
+                                <div id="view-estado"></div>
+                            </div>
+                            <p class="text-muted mb-0 fs-12">
+                                <i class="ri-file-list-2-line opacity-75 me-1"></i><span id="view-pedido-info"></span>
+                            </p>
                         </div>
                     </div>
                 </div>
