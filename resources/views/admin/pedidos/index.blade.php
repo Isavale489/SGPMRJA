@@ -115,12 +115,12 @@
                     <table id="pedidos-table" class="table table-bordered table-striped table-sm align-middle dt-transactional table-operativa">
                         <thead>
                             <tr>
-                                <th>Pedido</th>
+                                <th class="text-center">Pedido</th>
                                 <th>Cliente</th>
                                 <th>Fecha Entrega</th>
                                 <th>Total</th>
-                                <th>Estado</th>
-                                <th>Acciones</th>
+                                <th class="text-center">Estado</th>
+                                <th class="text-center">Acciones</th>
                             </tr>
                         </thead>
                         <tbody>

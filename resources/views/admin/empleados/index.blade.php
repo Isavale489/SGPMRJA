@@ -60,6 +60,9 @@
                                         <i class="ri-add-line align-bottom me-1"></i> Agregar Empleado
                                     </button>
                                 @endif
+                                <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#pdfExportModal">
+                                    <i class="ri-file-pdf-fill align-bottom me-1"></i> Exportar PDF
+                                </button>
                                 {{-- Acciones secundarias agrupadas — estándar .actions-menu --}}
                                 <div class="dropdown">
                                     <button type="button" class="btn btn-soft-secondary dropdown-toggle"
@@ -76,13 +79,6 @@
                                             <a class="dropdown-item act-item act-warn" href="{{ url('cargos') }}">
                                                 <span class="act-ic"><i class="ri-briefcase-line"></i></span>Cargos
                                             </a>
-                                        </li>
-                                        <li><hr class="dropdown-divider"></li>
-                                        <li>
-                                            <button type="button" class="dropdown-item act-item act-pdf"
-                                                data-bs-toggle="modal" data-bs-target="#pdfExportModal">
-                                                <span class="act-ic"><i class="ri-file-pdf-fill"></i></span>Exportar PDF
-                                            </button>
                                         </li>
                                     </ul>
                                 </div>

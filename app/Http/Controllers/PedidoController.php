@@ -362,7 +362,7 @@ class PedidoController extends Controller
 
         $pdf = PDF::loadView('admin.pedidos.reporte_pdf', compact('pedidos', 'filtros'))
             ->setPaper('a4', 'portrait');
-        return $pdf->download('reporte_pedidos_' . now()->format('Ymd_His') . '.pdf');
+        return $pdf->stream('reporte_pedidos_' . now()->format('Ymd_His') . '.pdf');
     }
 
     public function reporteGeneral()
@@ -405,6 +405,6 @@ class PedidoController extends Controller
             'tasaFecha' => $tasaFecha,
         ])->setPaper('a4', 'portrait');
 
-        return $pdf->download('pedido_' . $pedido->id . '.pdf');
+        return $pdf->stream('pedido_' . $pedido->id . '.pdf');
     }
 }

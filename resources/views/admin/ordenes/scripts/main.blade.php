@@ -1,5 +1,3 @@
-<!-- SortableJS — solo para el módulo Órdenes (Kanban de sub-órdenes) -->
-<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.3/Sortable.min.js"></script>
 <script>
     // ─────────────────────────────────────────────────────────────
     // Validaciones onblur de modales auxiliares (insumo nested + avance)
@@ -56,8 +54,6 @@
         // ══════════════════════════════════════════════════════
         // Helpers
         // ══════════════════════════════════════════════════════
-        var viewKanbanOrdenId = null; // ID de la OP actualmente en viewModal
-
         function escHtml(s) {
             return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
         }
@@ -1465,6 +1461,7 @@
                         const sVer = `<button class="btn btn-sm btn-soft-info view-btn" data-id="${data}" title="Ver detalle"><i class="ri-eye-fill"></i></button>`;
 
                         let items = '';
+                        items += `<li><a class="dropdown-item act-item act-pdf" href="/ordenes/${data}/pdf" target="_blank"><span class="act-ic"><i class="ri-file-pdf-fill"></i></span>Ver PDF</a></li>`;
                         if (estadoActivo) {
                             items += `<li><button type="button" class="dropdown-item act-item act-primary avance-btn" data-id="${data}"><span class="act-ic"><i class="ri-add-circle-line"></i></span>Registrar avance</button></li>`;
                         }
@@ -1535,7 +1532,7 @@
         // ══════════════════════════════════════════════════════
         $(document).on('click', '.view-btn', function () {
             let id = $(this).data('id');
-            viewKanbanOrdenId = id;
+            $('#btn-view-ord-print').attr('href', "{{ url('ordenes') }}/" + id + '/pdf');
             $.get("{{ route('ordenes.show', ':id') }}".replace(':id', id), function (data) {
                 const estadoClases = {
                     'Pendiente':  'status-pendiente badge-soft-warning',
@@ -1811,15 +1808,13 @@
 
         $('#viewModal').on('hidden.bs.modal', function () {
             viewOrdShowStep(1);
-            kanbanReset();
-            viewKanbanOrdenId = null;
         });
 
         // ══════════════════════════════════════════════════════
-        // Wizard navegación — viewModal (read-only, 4 pasos)
+        // Wizard navegación — viewModal (read-only, 3 pasos)
         // ══════════════════════════════════════════════════════
         (function () {
-            var TOTAL = 4;
+            var TOTAL = 3;
             var currentStep = 1;
 
             window.viewOrdShowStep = function (step) {
@@ -1838,11 +1833,6 @@
                 }
                 $('#btn-view-ord-prev').toggle(step > 1);
                 $('#btn-view-ord-next').toggle(step < TOTAL);
-
-                // Carga lazy del Kanban al llegar al paso 4
-                if (step === 4 && viewKanbanOrdenId) {
-                    kanbanLoad(viewKanbanOrdenId);
-                }
             };
 
             $(document).on('click', '#btn-view-ord-next', function () {
@@ -1854,188 +1844,6 @@
             $('#viewModal').on('click', '.wiz-step-marker', function () {
                 viewOrdShowStep(parseInt($(this).data('step')));
             });
-        }());
-
-        // ══════════════════════════════════════════════════════
-        // KANBAN — Tablero por sub-órdenes
-        // ══════════════════════════════════════════════════════
-        (function () {
-            var ESTADOS = ['Pendiente', 'En Proceso', 'Finalizado', 'Cancelado'];
-            var COL_CSS  = { 'Pendiente': 'pendiente', 'En Proceso': 'en-proceso', 'Finalizado': 'finalizado', 'Cancelado': 'cancelado' };
-            var sortables = [];
-            var kanbanLoaded = false; // evita recargas si ya está montado
-
-            // Convierte estado a slug CSS
-            function colSlug(estado) { return COL_CSS[estado] || 'pendiente'; }
-
-            // Crea el HTML de un ticket
-            function ticketHtml(sub) {
-                var empBadges = (sub.empleados || []).map(function (e) {
-                    var nombre = (e.persona && e.persona.nombre_completo)
-                        ? e.persona.nombre_completo.split(' ')[0]
-                        : ('Emp. ' + e.id);
-                    return '<span class="kanban-ticket-emp">' + escHtml(nombre) + '</span>';
-                }).join('');
-                var cantHtml = sub.cantidad_asignada
-                    ? '<span class="kanban-ticket-cant"><i class="ri-stack-line me-1"></i>' + sub.cantidad_asignada + ' uds.</span>'
-                    : '';
-                return '<div class="kanban-ticket kanban-ticket--' + colSlug(sub.estado) + '" data-suborden-id="' + sub.id + '">'
-                    + '<div class="kanban-ticket-nombre">' + escHtml(sub.nombre) + '</div>'
-                    + '<div class="kanban-ticket-meta">' + cantHtml + empBadges + '</div>'
-                    + '</div>';
-            }
-
-            // Renderiza todas las columnas con sus tickets
-            function renderBoard(subordenes) {
-                var $board = $('#kanban-board').empty();
-
-                ESTADOS.forEach(function (estado) {
-                    var slug = colSlug(estado);
-                    var tickets = subordenes.filter(function (s) { return s.estado === estado; });
-                    var countBadge = tickets.length > 0 ? tickets.length : '&mdash;';
-
-                    var $col = $('<div class="kanban-col kanban-col--' + slug + '" data-estado="' + escHtml(estado) + '">'
-                        + '<div class="kanban-col-header">'
-                        + '<span class="kanban-col-title">' + escHtml(estado) + '</span>'
-                        + '<span class="kanban-col-count" id="kanban-count-' + slug + '">' + countBadge + '</span>'
-                        + '</div>'
-                        + '<div class="kanban-col-body" id="kanban-col-' + slug + '" data-estado="' + escHtml(estado) + '"></div>'
-                        + '</div>');
-
-                    tickets.forEach(function (sub) {
-                        $col.find('.kanban-col-body').append(ticketHtml(sub));
-                    });
-
-                    $board.append($col);
-                });
-
-                // Inicializa SortableJS en cada columna
-                destroySortables();
-                ESTADOS.forEach(function (estado) {
-                    var el = document.getElementById('kanban-col-' + colSlug(estado));
-                    if (!el) return;
-                    sortables.push(Sortable.create(el, {
-                        group: 'kanban-op',
-                        animation: 150,
-                        ghostClass: 'kanban-ghost',
-                        dragClass: 'kanban-drag',
-                        onStart: function () {
-                            document.querySelectorAll('.kanban-col-body').forEach(function (c) {
-                                c.classList.add('sortable-over');
-                            });
-                        },
-                        onEnd: function (evt) {
-                            document.querySelectorAll('.kanban-col-body').forEach(function (c) {
-                                c.classList.remove('sortable-over');
-                            });
-                            var nuevoEstado = evt.to.dataset.estado;
-                            var viejoEstado = evt.from.dataset.estado;
-                            if (nuevoEstado === viejoEstado) return;
-
-                            var subId = evt.item.dataset.subordenId;
-                            var $ticket = $(evt.item);
-
-                            $.ajax({
-                                url: '{{ url("ordenes") }}/' + viewKanbanOrdenId + '/subordenes/' + subId + '/estado',
-                                method: 'PATCH',
-                                data: { estado: nuevoEstado, _token: '{{ csrf_token() }}' },
-                                success: function (res) {
-                                    // Actualiza clase del ticket
-                                    $ticket.removeClass(function (i, cls) {
-                                        return (cls.match(/kanban-ticket--\S+/g) || []).join(' ');
-                                    }).addClass('kanban-ticket--' + colSlug(nuevoEstado));
-
-                                    // Actualiza contadores de columnas
-                                    updateColCounts();
-
-                                    // Actualiza badge estado de la OP en el header del modal
-                                    if (res.op_estado) {
-                                        updateViewEstadoBadge(res.op_estado);
-                                        // Refresca la DataTable para reflejar el nuevo estado
-                                        if (table) table.ajax.reload(null, false);
-                                    }
-                                },
-                                error: function (xhr) {
-                                    // Revierte moviendo el ticket de vuelta a la columna original
-                                    var $fromCol = $('#kanban-col-' + colSlug(viejoEstado));
-                                    if (evt.oldIndex === 0) {
-                                        $fromCol.prepend($ticket);
-                                    } else {
-                                        $fromCol.append($ticket);
-                                    }
-                                    // 422 con motivo (p. ej. faltan avances por registrar) → mostrarlo
-                                    var msg = (xhr.responseJSON && xhr.responseJSON.message) || 'No se pudo actualizar el estado.';
-                                    var esBloqueo = xhr.status === 422 && xhr.responseJSON && xhr.responseJSON.message;
-                                    Swal.fire(esBloqueo
-                                        ? { icon: 'warning', title: 'Etapa bloqueada', text: msg }
-                                        : { icon: 'error', title: 'Error', text: msg, timer: 2500, showConfirmButton: false });
-                                }
-                            });
-                        }
-                    }));
-                });
-            }
-
-            // Actualiza los contadores de cada columna
-            function updateColCounts() {
-                ESTADOS.forEach(function (estado) {
-                    var slug = colSlug(estado);
-                    var count = $('#kanban-col-' + slug + ' .kanban-ticket').length;
-                    $('#kanban-count-' + slug).text(count > 0 ? count : '—');
-                });
-            }
-
-            // Destruye instancias previas de SortableJS
-            function destroySortables() {
-                sortables.forEach(function (s) { try { s.destroy(); } catch (e) {} });
-                sortables = [];
-            }
-
-            // Actualiza el badge de estado de la OP en el header del viewModal
-            function updateViewEstadoBadge(estado) {
-                var estadoClases = {
-                    'Pendiente':  'status-pendiente badge-soft-warning',
-                    'En Proceso': 'status-procesando badge-soft-info',
-                    'Finalizado': 'status-finalizado badge-soft-success',
-                    'Cancelado':  'status-cancelado badge-soft-danger'
-                };
-                $('#view-estado').html(
-                    '<span class="badge badge-status ' + (estadoClases[estado] || 'badge-soft-secondary') + ' rounded-pill">'
-                    + '<i class="' + iconEstadoOrden(estado) + ' me-1"></i>' + escHtml(estado) + '</span>'
-                );
-            }
-
-            // Carga el Kanban desde el backend (llamado al activar paso 4)
-            window.kanbanLoad = function (ordenId) {
-                if (kanbanLoaded) return; // ya montado para esta OP
-                $('#kanban-loading').show();
-                $('#kanban-empty').hide();
-                $('#kanban-board').hide();
-
-                $.get('{{ url("ordenes") }}/' + ordenId + '/subordenes', function (res) {
-                    var subs = res.subordenes || [];
-                    $('#kanban-loading').hide();
-                    if (!subs.length) {
-                        $('#kanban-empty').show();
-                    } else {
-                        renderBoard(subs);
-                        $('#kanban-board').show();
-                    }
-                    kanbanLoaded = true;
-                }).fail(function () {
-                    $('#kanban-loading').hide();
-                    $('#kanban-empty').show();
-                });
-            };
-
-            // Limpia el Kanban al cerrar el modal
-            window.kanbanReset = function () {
-                destroySortables();
-                $('#kanban-board').empty().hide();
-                $('#kanban-loading').hide();
-                $('#kanban-empty').hide();
-                kanbanLoaded = false;
-            };
         }());
 
     });

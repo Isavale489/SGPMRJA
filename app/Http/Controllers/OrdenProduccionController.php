@@ -933,6 +933,32 @@ class OrdenProduccionController extends Controller
 
         $pdf = \PDF::loadView('admin.ordenes.reporte_pdf', compact('ordenes', 'filtros'))
             ->setPaper('a4', 'landscape');
-        return $pdf->download('ordenes_produccion_' . now()->format('Y-m-d_H-i-s') . '.pdf');
+        return $pdf->stream('ordenes_produccion_' . now()->format('Y-m-d_H-i-s') . '.pdf');
+    }
+
+    /**
+     * Comprobante individual de una Orden de Producción (documento por registro):
+     * datos de la orden, progreso, cronograma, diseño/bordado, insumos y sub-órdenes.
+     */
+    public function ordenPdf($id)
+    {
+        $orden = OrdenProduccion::with([
+                'producto.tipoProducto',
+                'empleado.persona',
+                'empleadosAsignados.persona',
+                'detallePedido.tipoProducto', 'detallePedido.genero',
+                'detallePedido.color', 'detallePedido.talla',
+                'detallePedido.bordados.logo',
+                'insumos',
+                'subordenes.empleados.persona',
+                'pedido.cliente.persona',
+                'creadoPor:id,name',
+            ])->findOrFail($id);
+
+        $orden->append('nombre_producto');
+
+        $pdf = \PDF::loadView('admin.ordenes.comprobante', compact('orden'))
+            ->setPaper('a4', 'portrait');
+        return $pdf->stream('orden_produccion_' . str_pad($orden->id, 5, '0', STR_PAD_LEFT) . '.pdf');
     }
 }

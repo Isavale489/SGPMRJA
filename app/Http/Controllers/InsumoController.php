@@ -268,6 +268,6 @@ class InsumoController extends Controller
 
         $pdf = \PDF::loadView('admin.insumos.reporte_pdf', compact('insumos', 'filtros'))
             ->setPaper('a4', 'landscape');
-        return $pdf->download('insumos_' . now()->format('Y-m-d_H-i-s') . '.pdf');
+        return $pdf->stream('insumos_' . now()->format('Y-m-d_H-i-s') . '.pdf');
     }
 }

@@ -114,8 +114,8 @@
                                 <th>Cliente</th>
                                 <th>Fecha</th>
                                 <th>Total</th>
-                                <th>Estado</th>
-                                <th>Acciones</th>
+                                <th class="text-center">Estado</th>
+                                <th class="text-center">Acciones</th>
                             </tr>
                         </thead>
                         <tbody>

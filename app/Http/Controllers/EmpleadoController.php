@@ -388,7 +388,7 @@ class EmpleadoController extends Controller
 
         $pdf = \PDF::loadView('admin.empleados.reporte_pdf', compact('empleados', 'filtros'))
             ->setPaper('a4', 'landscape');
-        return $pdf->download('reporte_empleados_' . now()->format('Ymd_His') . '.pdf');
+        return $pdf->stream('reporte_empleados_' . now()->format('Ymd_His') . '.pdf');
     }
 
     public function checkEmail(Request $request)

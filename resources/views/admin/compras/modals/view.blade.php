@@ -240,8 +240,8 @@
 
             <div class="modal-footer wiz-wizard-footer">
                 <div class="wiz-wizard-footer-info">
-                    <a id="cv-pdf-btn" href="#" target="_blank" class="btn btn-danger">
-                        <i class="ri-file-pdf-line align-bottom me-1"></i> Exportar PDF
+                    <a id="cv-pdf-btn" href="#" target="_blank" class="btn btn-soft-danger">
+                        <i class="ri-file-pdf-fill align-bottom me-1"></i> Ver PDF
                     </a>
                 </div>
                 <div class="wiz-wizard-footer-actions">

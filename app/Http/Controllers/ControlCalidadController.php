@@ -155,7 +155,7 @@ class ControlCalidadController extends Controller
         $pdf = \PDF::loadView('admin.calidad.reporte_pdf', compact('inspecciones', 'filtros'))
             ->setPaper('a4', 'landscape');
 
-        return $pdf->download('inspecciones_calidad_' . now()->format('Y-m-d_H-i-s') . '.pdf');
+        return $pdf->stream('inspecciones_calidad_' . now()->format('Y-m-d_H-i-s') . '.pdf');
     }
 
     /**

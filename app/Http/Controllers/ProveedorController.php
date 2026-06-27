@@ -434,7 +434,7 @@ class ProveedorController extends Controller
 
         $pdf = \PDF::loadView('admin.proveedores.reporte_pdf', compact('proveedores', 'filtros'))
             ->setPaper('a4', 'landscape');
-        return $pdf->download('proveedores_' . now()->format('Y-m-d_H-i-s') . '.pdf');
+        return $pdf->stream('proveedores_' . now()->format('Y-m-d_H-i-s') . '.pdf');
     }
 
     public function checkRif(Request $request)

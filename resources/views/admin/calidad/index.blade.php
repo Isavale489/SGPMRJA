@@ -25,7 +25,7 @@
                 <div class="card-header">
                     <div class="d-flex align-items-center">
                         <h5 class="card-title mb-0 flex-grow-1">Órdenes finalizadas pendientes de inspección</h5>
-                        <button type="button" class="btn btn-danger btn-sm" data-bs-toggle="modal"
+                        <button type="button" class="btn btn-danger" data-bs-toggle="modal"
                             data-bs-target="#pdfExportModal">
                             <i class="ri-file-pdf-fill align-bottom me-1"></i> Exportar PDF
                         </button>
