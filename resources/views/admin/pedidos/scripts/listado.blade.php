@@ -443,7 +443,11 @@
                     $('#view-total-resumen').text('$' + totalUsd.toFixed(2));
                     var bsLbl = (typeof window.bsEquivalente === 'function') ? window.bsEquivalente(totalUsd) : null;
                     $('#view-total-resumen-bs').text(bsLbl || 'Sin tasa BCV');
-                    $('#view-usuario-creador').text(data.user ? data.user.name : 'N/A');
+                    // Chip "Creado por" (gutter derecho del stepper)
+                    var pedCreador = data.creador || (data.user ? { name: data.user.name } : null);
+                    $('#view-usuario-creador').text(pedCreador ? pedCreador.name : 'N/A');
+                    if (pedCreador && pedCreador.avatar_url) $('#view-ped-creador-avatar').attr('src', pedCreador.avatar_url);
+                    $('#view-ped-creador-fecha').text(pedCreador && pedCreador.fecha ? pedCreador.fecha : '—');
 
                     // Cargar y mostrar nuevos campos de pago y prioridad
                     $('#view-abono').text('$' + parseFloat(data.abono).toFixed(2));

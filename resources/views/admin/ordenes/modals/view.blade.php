@@ -43,7 +43,22 @@
                         <span class="wiz-step-label">Kanban</span>
                     </button>
                 </div>
-                <div class="wiz-stepper-side wiz-stepper-side--right"></div>
+                {{-- Chip "Creado por" — gutter derecho del stepper (estándar de las transacciones) --}}
+                <div class="wiz-stepper-side wiz-stepper-side--right">
+                    <div class="wiz-client-banner wiz-client-banner--creator" title="Creado por">
+                        <span class="wiz-client-banner-label">Creado por:</span>
+                        <img class="wiz-client-banner-avatar wiz-client-banner-avatar--img"
+                            id="view-ord-creador-avatar" src="" alt="" />
+                        <div class="wiz-client-banner-main">
+                            <span class="wiz-client-banner-name" id="view-creado-por">—</span>
+                            <span class="wiz-client-banner-sub">
+                                <span class="wiz-client-banner-doc">
+                                    <i class="ri-time-line me-1"></i><span id="view-created">—</span>
+                                </span>
+                            </span>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- ══ Body del wizard ════════════════════════════════════ -->
@@ -61,7 +76,7 @@
                                 </div>
                                 <div class="cli-view-card-body">
                             <div class="row g-2">
-                                <div class="col-sm-4">
+                                <div class="col-12">
                                     <div class="d-flex align-items-start gap-2">
                                         <div class="emp-icon-box emp-icon-box--navy rounded-circle flex-shrink-0 d-flex align-items-center justify-content-center">
                                             <i class="ri-user-star-line emp-icon--navy"></i>
@@ -69,28 +84,6 @@
                                         <div>
                                             <p class="text-muted mb-0 fs-11 text-uppercase" id="view-empleado-label">Empleado</p>
                                             <p class="fw-semibold fs-13 mb-0" id="view-empleado"></p>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-sm-4">
-                                    <div class="d-flex align-items-start gap-2">
-                                        <div class="emp-icon-box emp-icon-box--teal rounded-circle flex-shrink-0 d-flex align-items-center justify-content-center">
-                                            <i class="ri-user-line emp-icon--teal"></i>
-                                        </div>
-                                        <div>
-                                            <p class="text-muted mb-0 fs-11 text-uppercase">Creado por</p>
-                                            <p class="fw-semibold fs-13 mb-0" id="view-creado-por"></p>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-sm-4">
-                                    <div class="d-flex align-items-start gap-2">
-                                        <div class="emp-icon-box emp-icon-box--green rounded-circle flex-shrink-0 d-flex align-items-center justify-content-center">
-                                            <i class="ri-time-line emp-icon--green"></i>
-                                        </div>
-                                        <div>
-                                            <p class="text-muted mb-0 fs-11 text-uppercase">Registrado</p>
-                                            <p class="fw-semibold fs-13 mb-0" id="view-created"></p>
                                         </div>
                                     </div>
                                 </div>
@@ -209,11 +202,11 @@
 
                         <!-- Notas -->
                         <div class="col-12">
-                            <div class="card border-0 shadow-sm mb-0">
-                                <div class="card-body p-3">
-                                    <p class="text-uppercase text-muted mb-2 kpi-label">
-                                        <i class="ri-sticky-note-line me-1 text-op-accent"></i>Notas
-                                    </p>
+                            <div class="cli-view-card mb-0">
+                                <div class="cli-view-card-header">
+                                    <i class="ri-sticky-note-line"></i>Notas
+                                </div>
+                                <div class="cli-view-card-body">
                                     <p class="text-muted mb-0 fs-13 view-content-area" id="view-notas"></p>
                                 </div>
                             </div>

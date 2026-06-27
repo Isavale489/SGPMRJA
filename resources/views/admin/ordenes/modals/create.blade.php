@@ -285,13 +285,11 @@
                             <div id="ord-resumen"></div>
 
                             {{-- Notas (compartidas para todas las órdenes del lote) --}}
-                            <div class="card border-0 shadow-sm mt-2 mb-0">
-                                <div class="card-header border-0 bg-soft-primary py-2 px-3">
-                                    <h6 class="mb-0 text-atlantico-dark fs-13">
-                                        <i class="ri-sticky-note-line me-1"></i>Notas <span class="text-muted fw-normal" id="ord-notas-scope"></span>
-                                    </h6>
+                            <div class="cli-view-card cli-view-card--flat mt-2 mb-0">
+                                <div class="cli-view-card-header">
+                                    <i class="ri-sticky-note-line"></i>Notas <span class="text-muted fw-normal" id="ord-notas-scope"></span>
                                 </div>
-                                <div class="card-body p-3">
+                                <div class="cli-view-card-body">
                                     <textarea id="ord-notas-global" class="form-control form-control-sm" rows="2"
                                         placeholder="Observaciones sobre la orden (opcional)..."></textarea>
                                 </div>

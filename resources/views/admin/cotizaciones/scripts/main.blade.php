@@ -2814,7 +2814,11 @@
                     var badgeClass = estadoClasses[data.estado] || '';
                     var icon       = estadoIcons[data.estado]   || 'ri-question-line';
                     $('#view-estado').html('<span class="badge badge-status ' + badgeClass + ' rounded-pill"><i class="' + icon + ' me-1"></i>' + data.estado + '</span>');
-                    $('#view-usuario-creador').text(data.user ? data.user.name : '');
+                    // Chip "Creada por" (gutter derecho del stepper)
+                    var cotCreador = data.creador || (data.user ? { name: data.user.name } : null);
+                    $('#view-usuario-creador').text(cotCreador ? cotCreador.name : '');
+                    if (cotCreador && cotCreador.avatar_url) $('#view-cot-creador-avatar').attr('src', cotCreador.avatar_url);
+                    $('#view-cot-creador-fecha').text(cotCreador && cotCreador.fecha ? cotCreador.fecha : '—');
 
                     // Paso 2 — Productos (grilla)
                     viewRenderProductosGrilla(data.productos, data.tasa_cambio_valor);

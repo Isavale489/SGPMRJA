@@ -81,7 +81,7 @@
 
                     {{-- Banner de formalización (solo al editar un pedido formalizado):
                          las líneas quedan congeladas; solo se permite registrar pagos. --}}
-                    <div id="ped-formalizado-banner" class="alert alert-warning d-flex align-items-start gap-2 m-3 mb-0 d-none" role="alert">
+                    <div id="ped-formalizado-banner" class="alert alert-warning d-flex align-items-start gap-2 mb-4 d-none" role="alert">
                         <i class="ri-lock-2-line fs-5 lh-1 mt-1"></i>
                         <div class="small">
                             <strong>Pedido formalizado</strong> — las líneas (productos, tallas, cantidades y diseño) están congeladas. Solo puedes registrar pagos.
@@ -108,13 +108,11 @@
 
                             {{-- Card Cliente --}}
                             <div class="col-lg-7">
-                                <div class="card border-0 shadow-sm h-100">
-                                    <div class="card-header border-0 bg-soft-primary">
-                                        <h6 class="mb-0 text-atlantico-dark">
-                                            <i class="ri-user-3-line me-2"></i>Datos del Cliente
-                                        </h6>
+                                <div class="cli-view-card cli-view-card--flat h-100">
+                                    <div class="cli-view-card-header">
+                                        <i class="ri-user-3-line"></i>Datos del Cliente
                                     </div>
-                                    <div class="card-body">
+                                    <div class="cli-view-card-body">
                                         {{-- Buscador de documento --}}
                                         <label for="ped-ci-rif-number-field" class="form-label small fw-semibold mb-1">
                                             Documento de identidad <span class="text-danger">*</span>
@@ -202,13 +200,11 @@
 
                             {{-- Card Detalles + Estado --}}
                             <div class="col-lg-5">
-                                <div class="card border-0 shadow-sm mb-3">
-                                    <div class="card-header border-0 bg-soft-primary">
-                                        <h6 class="mb-0 text-atlantico-dark">
-                                            <i class="ri-calendar-event-line me-2"></i>Detalles del pedido
-                                        </h6>
+                                <div class="cli-view-card cli-view-card--flat">
+                                    <div class="cli-view-card-header">
+                                        <i class="ri-calendar-event-line"></i>Detalles del pedido
                                     </div>
-                                    <div class="card-body">
+                                    <div class="cli-view-card-body">
                                         <div class="row g-2">
                                             <div class="col-md-6">
                                                 <label for="ped-fecha-pedido-field"
@@ -271,14 +267,12 @@
                                 </div>
 
                                 {{-- Card Estado (solo en modo edición) --}}
-                                <div class="card border-0 shadow-sm" id="ped-estado-field-wrapper"
+                                <div class="cli-view-card cli-view-card--flat" id="ped-estado-field-wrapper"
                                     style="display: none;">
-                                    <div class="card-header border-0 bg-soft-secondary">
-                                        <h6 class="mb-0 text-atlantico-green">
-                                            <i class="ri-flag-line me-2"></i>Estado del pedido
-                                        </h6>
+                                    <div class="cli-view-card-header">
+                                        <i class="ri-flag-line"></i>Estado del pedido
                                     </div>
-                                    <div class="card-body py-3">
+                                    <div class="cli-view-card-body">
                                         <div class="ped-estado-readonly">
                                             <span class="badge" id="ped-estado-badge">—</span>
                                             <span class="ped-estado-auto-hint">
@@ -377,11 +371,11 @@
                         <input type="hidden" id="ped-pago-abono-field" />
 
                         {{-- Card: Métodos de pago (agregar + lista) --}}
-                        <div class="card border-0 shadow-sm">
-                            <div class="card-header border-0 bg-soft-primary ped-pay-card-head">
-                                <h6 class="mb-0 text-atlantico-dark">
-                                    <i class="ri-bank-card-line me-2"></i>Métodos de pago
-                                </h6>
+                        <div class="cli-view-card cli-view-card--flat">
+                            <div class="cli-view-card-header ped-pay-card-head">
+                                <span class="d-inline-flex align-items-center gap-1">
+                                    <i class="ri-bank-card-line"></i>Métodos de pago
+                                </span>
                                 <div class="ped-pay-add-btns">
                                     <button type="button" class="ped-pay-add-btn" data-metodo="efectivo" id="ped-pay-add-efectivo">
                                         <i class="ri-add-line"></i><span>Efectivo</span>
@@ -394,7 +388,7 @@
                                     </button>
                                 </div>
                             </div>
-                            <div class="card-body">
+                            <div class="cli-view-card-body">
                                 {{-- Lista de pagos --}}
                                 <div class="ped-pay-list" id="ped-pay-list"></div>
 
@@ -442,13 +436,11 @@
 
                             {{-- Card: Cliente --}}
                             <div class="col-md-6">
-                                <div class="card border-0 shadow-sm h-100">
-                                    <div class="card-header border-0 bg-soft-primary py-2 px-3">
-                                        <h6 class="mb-0 text-atlantico-dark fs-13">
-                                            <i class="ri-user-star-line me-1"></i>Cliente
-                                        </h6>
+                                <div class="cli-view-card cli-view-card--flat h-100">
+                                    <div class="cli-view-card-header">
+                                        <i class="ri-user-star-line"></i>Cliente
                                     </div>
-                                    <div class="card-body p-3" id="ped-res-cliente-bloque">
+                                    <div class="cli-view-card-body" id="ped-res-cliente-bloque">
                                         <p class="text-muted small mb-0">—</p>
                                     </div>
                                 </div>
@@ -456,13 +448,11 @@
 
                             {{-- Card: Datos del pedido --}}
                             <div class="col-md-6">
-                                <div class="card border-0 shadow-sm h-100">
-                                    <div class="card-header border-0 bg-soft-primary py-2 px-3">
-                                        <h6 class="mb-0 text-atlantico-dark fs-13">
-                                            <i class="ri-calendar-todo-line me-1"></i>Datos del pedido
-                                        </h6>
+                                <div class="cli-view-card cli-view-card--flat h-100">
+                                    <div class="cli-view-card-header">
+                                        <i class="ri-calendar-todo-line"></i>Datos del pedido
                                     </div>
-                                    <div class="card-body p-3" id="ped-res-datos-bloque">
+                                    <div class="cli-view-card-body" id="ped-res-datos-bloque">
                                         <p class="text-muted small mb-0">—</p>
                                     </div>
                                 </div>
@@ -470,14 +460,12 @@
 
                             {{-- Card: Productos --}}
                             <div class="col-12">
-                                <div class="card border-0 shadow-sm">
-                                    <div class="card-header border-0 bg-soft-primary py-2 px-3">
-                                        <h6 class="mb-0 text-atlantico-dark fs-13">
-                                            <i class="ri-shopping-bag-3-line me-1"></i>Productos
-                                            (<span id="ped-res-lineas">0</span>&nbsp;línea(s))
-                                        </h6>
+                                <div class="cli-view-card cli-view-card--flat">
+                                    <div class="cli-view-card-header">
+                                        <i class="ri-shopping-bag-3-line"></i>Productos
+                                        (<span id="ped-res-lineas">0</span>&nbsp;línea(s))
                                     </div>
-                                    <div class="card-body p-3">
+                                    <div class="cli-view-card-body">
                                         <div id="ped-res-productos-list" class="cot-lineas-list">
                                             <div class="cot-lineas-empty text-center text-muted py-3 small">Sin productos</div>
                                         </div>
@@ -488,28 +476,28 @@
                             {{-- Card: Proyección de producción — aviso NO bloqueante de stock.
                                  Para producir el pedido se necesitan insumos; aquí se avisa si faltan. --}}
                             <div class="col-12">
-                                <div class="card border-0 shadow-sm" id="ped-proyeccion-card">
-                                    <div class="card-header border-0 bg-soft-primary py-2 px-3 d-flex align-items-center justify-content-between">
-                                        <h6 class="mb-0 text-atlantico-dark fs-13">
-                                            <i class="ri-archive-2-line me-1"></i>Proyección de producción
-                                        </h6>
+                                <div class="cli-view-card cli-view-card--flat" id="ped-proyeccion-card">
+                                    <div class="cli-view-card-header justify-content-between">
+                                        <span class="d-inline-flex align-items-center gap-1">
+                                            <i class="ri-archive-2-line"></i>Proyección de producción
+                                        </span>
                                         <span class="badge rounded-pill" id="ped-proyeccion-badge" hidden></span>
                                     </div>
-                                    <div class="card-body p-3">
+                                    <div class="cli-view-card-body">
                                         <div id="ped-proyeccion-body"></div>
                                     </div>
                                 </div>
                             </div>
 
-                            {{-- Card: Pago --}}
+                            {{-- Card: Pago — bloque informativo (resumen de pago con
+                                 su propio diseño: progreso + métodos). Card blanda, sin
+                                 el marco de datos del estándar cli-view-card. --}}
                             <div class="col-lg-8">
-                                <div class="card border-0 shadow-sm h-100">
-                                    <div class="card-header border-0 bg-soft-primary py-2 px-3">
-                                        <h6 class="mb-0 text-atlantico-dark fs-13">
-                                            <i class="ri-wallet-line me-1"></i>Pago
-                                        </h6>
+                                <div class="op-summary-card h-100">
+                                    <div class="op-summary-card-header">
+                                        <i class="ri-wallet-line"></i>Pago
                                     </div>
-                                    <div class="card-body p-3" id="ped-res-pago-bloque">
+                                    <div class="op-summary-card-body" id="ped-res-pago-bloque">
                                         <p class="text-muted small mb-0">—</p>
                                     </div>
                                 </div>
@@ -629,7 +617,22 @@
                         <span class="wiz-step-label">Resumen</span>
                     </button>
                 </div>
-                <div class="wiz-stepper-side wiz-stepper-side--right"></div>
+                {{-- Chip "Creado por" — gutter derecho del stepper (estándar de las transacciones) --}}
+                <div class="wiz-stepper-side wiz-stepper-side--right">
+                    <div class="wiz-client-banner wiz-client-banner--creator" title="Creado por">
+                        <span class="wiz-client-banner-label">Creado por:</span>
+                        <img class="wiz-client-banner-avatar wiz-client-banner-avatar--img"
+                            id="view-ped-creador-avatar" src="" alt="" />
+                        <div class="wiz-client-banner-main">
+                            <span class="wiz-client-banner-name" id="view-usuario-creador">—</span>
+                            <span class="wiz-client-banner-sub">
+                                <span class="wiz-client-banner-doc">
+                                    <i class="ri-time-line me-1"></i><span id="view-ped-creador-fecha">—</span>
+                                </span>
+                            </span>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <div class="modal-body p-0 wiz-wizard-body">
@@ -715,13 +718,6 @@
                                             <div><small class="text-muted d-block fs-12">Estado</small>
                                             <span class="fs-13" id="view-estado">-</span></div>
                                         </div>
-                                        <div class="col-12 d-flex align-items-start">
-                                            <div class="emp-icon-box emp-icon-box--navy rounded-circle me-2 flex-shrink-0 d-flex align-items-center justify-content-center">
-                                                <i class="ri-user-settings-line emp-icon--navy"></i>
-                                            </div>
-                                            <div><small class="text-muted d-block fs-12">Creado por</small>
-                                            <span class="fw-semibold fs-13" id="view-usuario-creador">-</span></div>
-                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -797,13 +793,11 @@
                             </div>
                         </div>
                         <div class="col-lg-7">
-                            <div class="card border-0 shadow-sm h-100">
-                                <div class="card-header border-0 bg-soft-primary py-2 px-3">
-                                    <h6 class="mb-0 text-atlantico-dark fs-13">
-                                        <i class="ri-wallet-line me-1"></i>Métodos de Pago
-                                    </h6>
+                            <div class="cli-view-card cli-view-card--flat h-100">
+                                <div class="cli-view-card-header">
+                                    <i class="ri-wallet-line"></i>Métodos de Pago
                                 </div>
-                                <div class="card-body p-0">
+                                <div class="cli-view-card-body p-0">
                                     <div id="view-pagos-list" class="p-3">
                                         <p class="text-muted fs-12 mb-0">Sin pagos registrados.</p>
                                     </div>
