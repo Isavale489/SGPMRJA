@@ -37,10 +37,10 @@
                 {{-- Chip "Creada por" — gutter derecho del stepper (estándar de las transacciones) --}}
                 <div class="wiz-stepper-side wiz-stepper-side--right">
                     <div class="wiz-client-banner wiz-client-banner--creator" title="Creada por">
-                        <span class="wiz-client-banner-label">Creada por:</span>
                         <img class="wiz-client-banner-avatar wiz-client-banner-avatar--img"
-                            id="view-cot-creador-avatar" src="" alt="" />
+                            id="view-cot-creador-avatar" src="" alt="" onerror="this.onerror=null;this.src=window.AMS_AVATAR_FALLBACK" />
                         <div class="wiz-client-banner-main">
+                            <span class="wiz-client-banner-eyebrow">Creada por</span>
                             <span class="wiz-client-banner-name" id="view-usuario-creador">—</span>
                             <span class="wiz-client-banner-sub">
                                 <span class="wiz-client-banner-doc">
@@ -306,10 +306,10 @@
                 <div class="wiz-stepper-side wiz-stepper-side--right">
                     <div class="wiz-client-banner wiz-client-banner--creator" id="cot-creador-banner" hidden
                         aria-hidden="true" title="Creada por">
-                        <span class="wiz-client-banner-label">Creada por:</span>
                         <img class="wiz-client-banner-avatar wiz-client-banner-avatar--img"
-                            id="cot-creador-avatar" src="{{ Auth::user()->avatar_url }}" alt="" />
+                            id="cot-creador-avatar" src="{{ Auth::user()->avatar_url }}" alt="" onerror="this.onerror=null;this.src=window.AMS_AVATAR_FALLBACK" />
                         <div class="wiz-client-banner-main">
+                            <span class="wiz-client-banner-eyebrow">Creada por</span>
                             <span class="wiz-client-banner-name" id="cot-creador-name">{{ Auth::user()->name }}</span>
                         </div>
                     </div>

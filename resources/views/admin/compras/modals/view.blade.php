@@ -37,10 +37,10 @@
                      transacciones: el registro va arriba a la derecha, no en una card al fondo) --}}
                 <div class="wiz-stepper-side wiz-stepper-side--right">
                     <div class="wiz-client-banner wiz-client-banner--creator" title="Registrado por">
-                        <span class="wiz-client-banner-label">Registrado por:</span>
                         <img class="wiz-client-banner-avatar wiz-client-banner-avatar--img"
-                            id="cv-reg-avatar" src="" alt="" />
+                            id="cv-reg-avatar" src="" alt="" onerror="this.onerror=null;this.src=window.AMS_AVATAR_FALLBACK" />
                         <div class="wiz-client-banner-main">
+                            <span class="wiz-client-banner-eyebrow">Registrado por</span>
                             <span class="wiz-client-banner-name" id="cv-reg-nombre">—</span>
                             <span class="wiz-client-banner-sub">
                                 <span class="wiz-client-banner-doc">

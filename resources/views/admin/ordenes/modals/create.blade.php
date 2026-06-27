@@ -69,10 +69,10 @@
                         aria-hidden="true" title="Creada por"
                         data-default-name="{{ Auth::user()->name }}"
                         data-default-avatar="{{ Auth::user()->avatar_url }}">
-                        <span class="wiz-client-banner-label">Creada por:</span>
                         <img class="wiz-client-banner-avatar wiz-client-banner-avatar--img"
-                            id="ord-creador-avatar" src="{{ Auth::user()->avatar_url }}" alt="" />
+                            id="ord-creador-avatar" src="{{ Auth::user()->avatar_url }}" alt="" onerror="this.onerror=null;this.src=window.AMS_AVATAR_FALLBACK" />
                         <div class="wiz-client-banner-main">
+                            <span class="wiz-client-banner-eyebrow">Creada por</span>
                             <span class="wiz-client-banner-name" id="ord-creador-name">{{ Auth::user()->name }}</span>
                         </div>
                     </div>

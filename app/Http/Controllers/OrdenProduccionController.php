@@ -501,12 +501,23 @@ class OrdenProduccionController extends Controller
                 'detallePedido.color',
                 'detallePedido.talla',
                 'insumos',
-                'creadoPor:id,name',
+                'creadoPor:id,name,avatar',
+                'pedido.cliente',
             ])->findOrFail($id);
 
         $orden->append('nombre_producto');
 
-        return response()->json($orden);
+        $data = $orden->toArray();
+        // Creador real para el chip "Creado por" (nombre + avatar con fallback del accessor).
+        $data['creador'] = $orden->creadoPor ? [
+            'name'       => $orden->creadoPor->name,
+            'avatar_url' => $orden->creadoPor->avatar_url,
+        ] : null;
+        // Cliente del pedido ligado, para el chip espejo "Cliente" (gutter izquierdo).
+        $data['cliente_nombre']    = $orden->pedido?->cliente_nombre_completo;
+        $data['cliente_documento'] = $orden->pedido?->cliente_documento;
+
+        return response()->json($data);
     }
 
     /**

@@ -1568,8 +1568,19 @@
                     $('#view-fecha-fin-real').text('Aún en curso').addClass('fst-italic text-muted');
                 }
                 $('#view-estado').html(`<span class="badge badge-status ${estadoClases[data.estado] || 'badge-soft-secondary'} rounded-pill"><i class="${iconEstadoOrden(data.estado)} me-1"></i>${data.estado}</span>`);
-                $('#view-creado-por').text(data.creado_por ? data.creado_por.name : 'Sin especificar');
-                if (data.creador && data.creador.avatar_url) $('#view-ord-creador-avatar').attr('src', data.creador.avatar_url);
+                $('#view-creado-por').text(data.creador ? data.creador.name : 'Sin especificar');
+                $('#view-ord-creador-avatar').attr('src', (data.creador && data.creador.avatar_url) ? data.creador.avatar_url : window.AMS_AVATAR_FALLBACK).css('display', '');
+
+                // Chip espejo "Cliente" — cliente del pedido ligado (oculto en órdenes manuales sin cliente)
+                var clienteNom = (data.cliente_nombre || '').trim();
+                if (clienteNom) {
+                    $('#view-ord-cliente-nombre').text(clienteNom);
+                    $('#view-ord-cliente-ini').text(clienteNom.charAt(0).toUpperCase());
+                    $('#view-ord-cliente-doc').text(data.cliente_documento || '');
+                    $('#view-ord-cliente-chip').removeAttr('hidden').attr('aria-hidden', 'false');
+                } else {
+                    $('#view-ord-cliente-chip').attr('hidden', true).attr('aria-hidden', 'true');
+                }
 
                 // Equipo completo (multi-empleado); fallback al responsable legacy
                 const empNoms = (data.empleados_asignados && data.empleados_asignados.length)

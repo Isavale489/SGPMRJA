@@ -178,8 +178,8 @@ $(document).ready(function () {
                 $('#cv-items-foot-usd').text(d.subtotal);
 
                 // Registro
-                $('#cv-reg-avatar').attr('src', d.registrado_por.avatar_url);
-                $('#cv-reg-nombre').text(d.registrado_por.name);
+                $('#cv-reg-avatar').attr('src', (d.registrado_por && d.registrado_por.avatar_url) ? d.registrado_por.avatar_url : window.AMS_AVATAR_FALLBACK).css('display', '');
+                $('#cv-reg-nombre').text(d.registrado_por ? d.registrado_por.name : '—');
                 $('#cv-reg-fecha').text(d.created_at);
 
                 // Totales en bolívares (lo pagado) + equivalente USD y tasa

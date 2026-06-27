@@ -446,7 +446,7 @@
                     // Chip "Creado por" (gutter derecho del stepper)
                     var pedCreador = data.creador || (data.user ? { name: data.user.name } : null);
                     $('#view-usuario-creador').text(pedCreador ? pedCreador.name : 'N/A');
-                    if (pedCreador && pedCreador.avatar_url) $('#view-ped-creador-avatar').attr('src', pedCreador.avatar_url);
+                    $('#view-ped-creador-avatar').attr('src', (pedCreador && pedCreador.avatar_url) ? pedCreador.avatar_url : window.AMS_AVATAR_FALLBACK).css('display', '');
                     $('#view-ped-creador-fecha').text(pedCreador && pedCreador.fecha ? pedCreador.fecha : '—');
 
                     // Cargar y mostrar nuevos campos de pago y prioridad

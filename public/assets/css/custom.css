@@ -1597,7 +1597,8 @@ header#page-topbar,
     display: flex;
     align-items: center;
 }
-.wiz-stepper-side--right { justify-content: flex-end; }
+.wiz-stepper-side--left { justify-content: center; }
+.wiz-stepper-side--right { justify-content: center; }
 
 /* ── Chip cliente persistente (visible en pasos 2+) ─────────────────
    Vive en el espacio libre a la derecha del stepper. Mantiene visible
@@ -1692,6 +1693,56 @@ header#page-topbar,
 .wiz-client-banner--sm .wiz-client-banner-name {
     font-size: 0.78rem;
 }
+
+/* Variantes compactas "Creado por" (gutter derecho) y "Cliente" espejo (gutter
+   izquierdo): info secundaria. La etiqueta va como EYEBROW sobre el nombre (no
+   en línea), así el chip ocupa poco ancho horizontal y el nombre/fecha caben
+   sin romperse letra a letra ni inflar el pill cuando el gutter queda angosto. */
+.wiz-client-banner--creator,
+.wiz-client-banner--client {
+    padding: 4px 12px 4px 5px;
+    gap: 8px;
+}
+.wiz-client-banner--creator .wiz-client-banner-avatar,
+.wiz-client-banner--client .wiz-client-banner-avatar {
+    width: 30px;
+    height: 30px;
+}
+.wiz-client-banner--creator .wiz-client-banner-main,
+.wiz-client-banner--client .wiz-client-banner-main {
+    overflow: hidden;
+    min-width: 0;
+}
+.wiz-client-banner-eyebrow {
+    font-size: 0.54rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #94a3b8;
+    line-height: 1.1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.wiz-client-banner--creator .wiz-client-banner-name,
+.wiz-client-banner--client .wiz-client-banner-name {
+    font-size: 0.8rem;
+    line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    word-break: normal;
+}
+.wiz-client-banner--creator .wiz-client-banner-sub,
+.wiz-client-banner--client .wiz-client-banner-sub {
+    flex-wrap: nowrap;
+    margin-top: 0;
+}
+.wiz-client-banner--creator .wiz-client-banner-doc,
+.wiz-client-banner--client .wiz-client-banner-doc {
+    white-space: nowrap;
+}
+[data-bs-theme="dark"] .wiz-client-banner-eyebrow { color: #64748b; }
 
 /* Pantallas chicas: los chips bajan apilados y centrados bajo el stepper */
 @media (max-width: 991.98px) {

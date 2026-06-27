@@ -21,7 +21,20 @@
 
             <!-- ══ Stepper ════════════════════════════════════════════ -->
             <div class="wiz-stepper-wrapper">
-                <div class="wiz-stepper-side wiz-stepper-side--left"></div>
+                {{-- Chip espejo "Cliente" — cliente del pedido ligado (oculto en órdenes manuales sin cliente) --}}
+                <div class="wiz-stepper-side wiz-stepper-side--left">
+                    <div class="wiz-client-banner wiz-client-banner--client" id="view-ord-cliente-chip"
+                        title="Cliente del pedido" hidden aria-hidden="true">
+                        <div class="wiz-client-banner-avatar" id="view-ord-cliente-ini">—</div>
+                        <div class="wiz-client-banner-main">
+                            <span class="wiz-client-banner-eyebrow">Cliente</span>
+                            <span class="wiz-client-banner-name" id="view-ord-cliente-nombre">—</span>
+                            <span class="wiz-client-banner-sub">
+                                <span class="wiz-client-banner-doc" id="view-ord-cliente-doc">—</span>
+                            </span>
+                        </div>
+                    </div>
+                </div>
                 <div class="wiz-stepper" role="tablist">
                     <button type="button" class="wiz-step-marker is-active" data-step="1" role="tab">
                         <span class="wiz-step-dot">1</span>
@@ -46,10 +59,10 @@
                 {{-- Chip "Creado por" — gutter derecho del stepper (estándar de las transacciones) --}}
                 <div class="wiz-stepper-side wiz-stepper-side--right">
                     <div class="wiz-client-banner wiz-client-banner--creator" title="Creado por">
-                        <span class="wiz-client-banner-label">Creado por:</span>
                         <img class="wiz-client-banner-avatar wiz-client-banner-avatar--img"
-                            id="view-ord-creador-avatar" src="" alt="" />
+                            id="view-ord-creador-avatar" src="" alt="" onerror="this.onerror=null;this.src=window.AMS_AVATAR_FALLBACK" />
                         <div class="wiz-client-banner-main">
+                            <span class="wiz-client-banner-eyebrow">Creado por</span>
                             <span class="wiz-client-banner-name" id="view-creado-por">—</span>
                             <span class="wiz-client-banner-sub">
                                 <span class="wiz-client-banner-doc">

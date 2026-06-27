@@ -56,10 +56,10 @@
                 <div class="wiz-stepper-side wiz-stepper-side--right">
                     <div class="wiz-client-banner wiz-client-banner--creator" id="c-creador-banner"
                         aria-hidden="true" title="Registrada por">
-                        <span class="wiz-client-banner-label">Registra:</span>
                         <img class="wiz-client-banner-avatar wiz-client-banner-avatar--img"
-                            src="{{ Auth::user()->avatar_url }}" alt="" />
+                            src="{{ Auth::user()->avatar_url }}" alt="" onerror="this.onerror=null;this.src=window.AMS_AVATAR_FALLBACK" />
                         <div class="wiz-client-banner-main">
+                            <span class="wiz-client-banner-eyebrow">Registrada por</span>
                             <span class="wiz-client-banner-name">{{ Auth::user()->name }}</span>
                             <div class="wiz-client-banner-sub">
                                 <span style="font-size:0.7rem; opacity:.8;">

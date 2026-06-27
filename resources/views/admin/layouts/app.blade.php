@@ -195,6 +195,12 @@
         });
     </script>
 
+    <script>
+        // Avatar de respaldo (silueta neutra) para chips de usuario cuando no hay
+        // foto, el registro no tiene creador, o falla la carga (p. ej. ui-avatars bloqueado).
+        window.AMS_AVATAR_FALLBACK = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc0MCcgaGVpZ2h0PSc0MCc+PHJlY3Qgd2lkdGg9JzQwJyBoZWlnaHQ9JzQwJyByeD0nMjAnIGZpbGw9JyNjYmQ1ZTEnLz48Y2lyY2xlIGN4PScyMCcgY3k9JzE2JyByPSc2JyBmaWxsPScjZWVmMmY3Jy8+PHBhdGggZD0nTTkgMzRjMS41LTcuNSAyMC41LTcuNSAyMiAweicgZmlsbD0nI2VlZjJmNycvPjwvc3ZnPg==";
+    </script>
+
     <!-- JAVASCRIPT -->
     <script src="{{ asset('assets/libs/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
     <script>

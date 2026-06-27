@@ -2817,7 +2817,7 @@
                     // Chip "Creada por" (gutter derecho del stepper)
                     var cotCreador = data.creador || (data.user ? { name: data.user.name } : null);
                     $('#view-usuario-creador').text(cotCreador ? cotCreador.name : '');
-                    if (cotCreador && cotCreador.avatar_url) $('#view-cot-creador-avatar').attr('src', cotCreador.avatar_url);
+                    $('#view-cot-creador-avatar').attr('src', (cotCreador && cotCreador.avatar_url) ? cotCreador.avatar_url : window.AMS_AVATAR_FALLBACK).css('display', '');
                     $('#view-cot-creador-fecha').text(cotCreador && cotCreador.fecha ? cotCreador.fecha : '—');
 
                     // Paso 2 — Productos (grilla)

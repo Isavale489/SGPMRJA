@@ -61,10 +61,10 @@
                 <div class="wiz-stepper-side wiz-stepper-side--right">
                     <div class="wiz-client-banner wiz-client-banner--creator" id="ped-creador-banner" hidden
                         aria-hidden="true" title="Creado por">
-                        <span class="wiz-client-banner-label">Creado por:</span>
                         <img class="wiz-client-banner-avatar wiz-client-banner-avatar--img"
-                            id="ped-creador-avatar" src="{{ Auth::user()->avatar_url }}" alt="" />
+                            id="ped-creador-avatar" src="{{ Auth::user()->avatar_url }}" alt="" onerror="this.onerror=null;this.src=window.AMS_AVATAR_FALLBACK" />
                         <div class="wiz-client-banner-main">
+                            <span class="wiz-client-banner-eyebrow">Creado por</span>
                             <span class="wiz-client-banner-name" id="ped-creador-name">{{ Auth::user()->name }}</span>
                         </div>
                     </div>
@@ -620,10 +620,10 @@
                 {{-- Chip "Creado por" — gutter derecho del stepper (estándar de las transacciones) --}}
                 <div class="wiz-stepper-side wiz-stepper-side--right">
                     <div class="wiz-client-banner wiz-client-banner--creator" title="Creado por">
-                        <span class="wiz-client-banner-label">Creado por:</span>
                         <img class="wiz-client-banner-avatar wiz-client-banner-avatar--img"
-                            id="view-ped-creador-avatar" src="" alt="" />
+                            id="view-ped-creador-avatar" src="" alt="" onerror="this.onerror=null;this.src=window.AMS_AVATAR_FALLBACK" />
                         <div class="wiz-client-banner-main">
+                            <span class="wiz-client-banner-eyebrow">Creado por</span>
                             <span class="wiz-client-banner-name" id="view-usuario-creador">—</span>
                             <span class="wiz-client-banner-sub">
                                 <span class="wiz-client-banner-doc">
