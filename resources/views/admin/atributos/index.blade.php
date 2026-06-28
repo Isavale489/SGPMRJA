@@ -376,8 +376,10 @@
             const isEdit = !!atr;
             $('#atributoModalTitle').text(isEdit ? 'Editar Atributo' : 'Nuevo Atributo');
             $('#atr-id').val(atr?.id || '');
-            $('#atr-nombre').val(atr?.nombre || '').removeClass('is-invalid');
-            $('#atr-codigo').val(atr?.codigo || '').removeClass('is-invalid').prop('readonly', isEdit);
+            $('#atr-nombre').val(atr?.nombre || '').removeClass('is-invalid is-valid');
+            $('#atr-codigo').val(atr?.codigo || '').removeClass('is-invalid is-valid').prop('readonly', isEdit);
+            $('#atr-nombre-error, #atr-codigo-error').text('').hide();
+            $('#btn-save-atributo').prop('disabled', false);
             $('#atr-descripcion').val(atr?.descripcion || '');
             // Pre-seleccionar tipos de producto asociados (Select2 refleja el valor al disparar change)
             const ids = (atr?.tipos_producto_ids || []).map(String);
@@ -387,6 +389,36 @@
         }
 
         $('#btn-save-atributo').on('click', saveAtributo);
+
+        // Validación en vivo del nombre: avisa "ya está registrado" al salir del campo
+        // (equivalente al Tipo de Producto). Soporta edición vía exclude_id.
+        $('#atr-nombre').on('blur', function () {
+            const $input = $(this);
+            const value = $input.val().trim();
+            const id = $('#atr-id').val();
+
+            if (value.length < 3) {
+                marcarInvalido($input, 'Mínimo 3 caracteres.');
+                return;
+            }
+
+            $.get('{{ route('atributos.check-nombre') }}', { nombre: value, exclude_id: id }, function (res) {
+                if (res.exists) {
+                    marcarInvalido($input, 'Este nombre ya está registrado.');
+                    $('#btn-save-atributo').prop('disabled', true);
+                } else {
+                    marcarValido($input);
+                    $('#btn-save-atributo').prop('disabled', false);
+                }
+            });
+        });
+
+        // Al volver a escribir, limpia el estado y reactiva el guardado.
+        $('#atr-nombre').on('input', function () {
+            $(this).removeClass('is-invalid is-valid');
+            $('#atr-nombre-error').text('').hide();
+            $('#btn-save-atributo').prop('disabled', false);
+        });
 
         function saveAtributo() {
             const id = $('#atr-id').val();
