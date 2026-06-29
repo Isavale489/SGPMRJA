@@ -320,10 +320,13 @@
                 var subtotal = items.reduce(function (a, it) { return a + parseFloat(it.precio_unitario) * parseInt(it.cantidad); }, 0);
                 var llevaBordado = items.some(function (it) { return it.lleva_bordado; });
 
-                // Chips de talla (patrón cotizaciones)
+                // Chips de talla + género (patrón cotizaciones / wizard de pedido)
                 var tallasHtml = items.map(function (it) {
                     var lbl = getTallaLabel(it.talla_id) || 'S/T';
-                    return '<span class="cot-chip cot-chip-talla">' + lbl + '<span class="cot-chip-x">×</span>' + it.cantidad + '</span>';
+                    var genObj = it.genero || null;
+                    var genLbl = genObj ? (genObj.etiqueta || genObj.nombre) : '';
+                    var gen = genLbl ? '<span class="cot-chip-gen">' + genLbl + '</span>' : '';
+                    return '<span class="cot-chip cot-chip-talla">' + lbl + gen + '<span class="cot-chip-x">×</span>' + it.cantidad + '</span>';
                 }).join('');
 
                 // Detalle bordados compacto en la columna producto

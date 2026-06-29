@@ -157,6 +157,7 @@ class PedidoController extends Controller
             'user:id,name,avatar',
             'productos.producto.tipoProducto',
             'productos.tipoProducto.atributos.valores',
+            'productos.genero',
             'productos.bordados.logo:id,name',
             'pagos.banco:id,nombre',
             'cliente.persona.telefonos',
