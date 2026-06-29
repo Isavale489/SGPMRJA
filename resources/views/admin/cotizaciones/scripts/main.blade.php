@@ -4799,23 +4799,36 @@
 
                 // Toggle de escala (solo si hay más de un grupo). El badge muestra
                 // cuántas unidades hay cargadas en escalas no visibles.
+                // Ícono por escala de tallas (con respaldo neutro si aparece otra).
+                var TG_GROUP_ICONS = { 'Única': 'ri-focus-3-line', 'Numéricas': 'ri-hashtag', 'Letras': 'ri-font-size' };
                 var toggle = '';
                 if (grupos.length > 1) {
                     toggle = '<div class="cfg-tg-groups">' + grupos.map(function (g) {
                         var n = porGrupo[g] || 0;
                         var badge = (n && g !== cfgTallaGrupo) ? '<span class="cfg-tg-group-badge">' + n + '</span>' : '';
+                        var ico = '<i class="' + (TG_GROUP_ICONS[g] || 'ri-ruler-2-line') + '"></i>';
                         return '<button type="button" class="cfg-tg-group-btn' + (g === cfgTallaGrupo ? ' is-active' : '') +
-                            '" data-grupo="' + escForHtml(g) + '">' + escForHtml(g) + badge + '</button>';
+                            '" data-grupo="' + escForHtml(g) + '">' + ico + '<span>' + escForHtml(g) + '</span>' + badge + '</button>';
                     }).join('') + '</div>';
                 }
 
                 var visibles = tallas.filter(function (t) { return (t.grupo || 'Otras') === cfgTallaGrupo; });
 
+                // Slug semántico del género para colorear su columna por CSS
+                // (no por posición → robusto ante cambios de orden/catálogo).
+                function generoSlug(g) {
+                    var n = String(g.nombre || g.etiqueta || '').toLowerCase().trim();
+                    if (n.indexOf('dama') !== -1 || n.indexOf('mujer') !== -1) return 'dama';
+                    if (n.indexOf('caballero') !== -1 || n.indexOf('hombre') !== -1) return 'caballero';
+                    if (n.indexOf('unisex') !== -1) return 'unisex';
+                    return 'otro';
+                }
+
                 var head = '<div class="cfg-tg-row cfg-tg-head">' +
-                    '<span class="cfg-tg-talla cfg-tg-corner">Talla</span>' +
+                    '<span class="cfg-tg-talla cfg-tg-corner"><i class="ri-ruler-2-line"></i> Talla</span>' +
                     generos.map(function (g) {
                         var ic = g.icono ? '<i class="' + escForHtml(g.icono) + '"></i> ' : '';
-                        return '<span class="cfg-tg-genhead">' + ic + escForHtml(g.etiqueta || g.nombre) + '</span>';
+                        return '<span class="cfg-tg-genhead" data-genero="' + generoSlug(g) + '">' + ic + escForHtml(g.etiqueta || g.nombre) + '</span>';
                     }).join('') +
                     '</div>';
 
@@ -4825,7 +4838,7 @@
                     var cells = generos.map(function (g) {
                         var qty = byGen[g.id] || '';
                         return (
-                            '<div class="cfg-tg-cell' + (qty ? ' is-active' : '') + '">' +
+                            '<div class="cfg-tg-cell' + (qty ? ' is-active' : '') + '" data-genero="' + generoSlug(g) + '">' +
                                 '<button type="button" class="cfg-tg-step" data-step="-1" tabindex="-1" aria-label="Restar">&minus;</button>' +
                                 '<input type="number" class="cfg-tg-input" inputmode="numeric"' +
                                     ' min="0" step="1" placeholder="0" value="' + qty + '"' +

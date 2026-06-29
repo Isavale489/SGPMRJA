@@ -4396,12 +4396,15 @@ header#page-topbar,
     gap: 6px;
     white-space: nowrap;
 }
-.cfg-tg-group-btn:hover { color: #1e3c72; }
+.cfg-tg-group-btn i { font-size: 0.95rem; opacity: 0.8; }
+.cfg-tg-group-btn:hover { color: #1e3c72; background: rgba(255, 255, 255, 0.55); }
+/* Activo: relleno navy sólido + texto blanco → inequívoco cuál escala está activa */
 .cfg-tg-group-btn.is-active {
-    background: #ffffff;
-    color: #1e3c72;
-    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.12);
+    background: #1e3c72;
+    color: #ffffff;
+    box-shadow: 0 2px 6px rgba(30, 60, 114, 0.30);
 }
+.cfg-tg-group-btn.is-active i { opacity: 1; }
 .cfg-tg-group-badge {
     background: #00d9a5;
     color: #06251d;
@@ -4457,8 +4460,31 @@ header#page-topbar,
     font-size: 0.68rem;
     text-transform: uppercase;
     letter-spacing: 0.04em;
-    color: #94a3b8;
+    color: #1e3c72;
+    font-weight: 700;
 }
+.cfg-tg-corner i { font-size: 0.9rem; opacity: 0.85; }
+/* Color por género en el encabezado: cada columna gana identidad (fondo
+   tintado suave + ícono/texto a color + borde inferior de acento). Semántico
+   por data-genero (no por posición). Dama=rosa · Caballero=azul · Unisex=teal. */
+.cfg-tg-head .cfg-tg-genhead[data-genero="dama"] {
+    background: rgba(225, 29, 72, 0.07);
+    color: #be123c;
+    border-bottom-color: #fb7185;
+}
+.cfg-tg-head .cfg-tg-genhead[data-genero="dama"] i { color: #e11d48; }
+.cfg-tg-head .cfg-tg-genhead[data-genero="caballero"] {
+    background: rgba(37, 99, 235, 0.07);
+    color: #1d4ed8;
+    border-bottom-color: #60a5fa;
+}
+.cfg-tg-head .cfg-tg-genhead[data-genero="caballero"] i { color: #2563eb; }
+.cfg-tg-head .cfg-tg-genhead[data-genero="unisex"] {
+    background: rgba(13, 148, 136, 0.08);
+    color: #0f766e;
+    border-bottom-color: #5eead4;
+}
+.cfg-tg-head .cfg-tg-genhead[data-genero="unisex"] i { color: #0d9488; }
 /* Separadores verticales entre columnas de género */
 .cfg-tg-genhead,
 .cfg-tg-cell { border-left: 1px solid #f1f5f9; }
@@ -4550,13 +4576,27 @@ header#page-topbar,
 /* ── Dark mode ── */
 [data-bs-theme="dark"] .cfg-tg-groups { background: #1e293b; }
 [data-bs-theme="dark"] .cfg-tg-group-btn { color: #94a3b8; }
-[data-bs-theme="dark"] .cfg-tg-group-btn.is-active { background: #0f172a; color: #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4); }
+[data-bs-theme="dark"] .cfg-tg-group-btn:hover { color: #e2e8f0; background: rgba(255, 255, 255, 0.04); }
+[data-bs-theme="dark"] .cfg-tg-group-btn.is-active { background: #3b5fa8; color: #fff; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45); }
 [data-bs-theme="dark"] .cfg-tg { border-color: #334155; background: #0f172a; }
 [data-bs-theme="dark"] .cfg-tg-talla { color: #cbd5e1; border-bottom-color: #1e293b; }
 [data-bs-theme="dark"] .cfg-tg-head .cfg-tg-talla,
 [data-bs-theme="dark"] .cfg-tg-head .cfg-tg-genhead { background: #1e293b; border-bottom-color: #334155; }
-[data-bs-theme="dark"] .cfg-tg-genhead,
-[data-bs-theme="dark"] .cfg-tg-corner { color: #94a3b8; }
+[data-bs-theme="dark"] .cfg-tg-genhead { color: #94a3b8; }
+[data-bs-theme="dark"] .cfg-tg-corner { color: #cbd5e1; }
+/* Color por género en oscuro: tintes desaturados sobre fondo profundo */
+[data-bs-theme="dark"] .cfg-tg-head .cfg-tg-genhead[data-genero="dama"] {
+    background: rgba(244, 63, 94, 0.14); color: #fda4af; border-bottom-color: #fb7185;
+}
+[data-bs-theme="dark"] .cfg-tg-head .cfg-tg-genhead[data-genero="dama"] i { color: #fb7185; }
+[data-bs-theme="dark"] .cfg-tg-head .cfg-tg-genhead[data-genero="caballero"] {
+    background: rgba(59, 130, 246, 0.14); color: #93c5fd; border-bottom-color: #60a5fa;
+}
+[data-bs-theme="dark"] .cfg-tg-head .cfg-tg-genhead[data-genero="caballero"] i { color: #60a5fa; }
+[data-bs-theme="dark"] .cfg-tg-head .cfg-tg-genhead[data-genero="unisex"] {
+    background: rgba(45, 212, 191, 0.14); color: #5eead4; border-bottom-color: #2dd4bf;
+}
+[data-bs-theme="dark"] .cfg-tg-head .cfg-tg-genhead[data-genero="unisex"] i { color: #2dd4bf; }
 [data-bs-theme="dark"] .cfg-tg-genhead,
 [data-bs-theme="dark"] .cfg-tg-cell { border-left-color: #1e293b; }
 [data-bs-theme="dark"] .cfg-tg-cell { border-bottom-color: #1e293b; }
