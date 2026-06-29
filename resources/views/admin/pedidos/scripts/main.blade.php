@@ -1390,6 +1390,12 @@ $(document).ready(function () {
             }
 
             $('#ped-pay-list').append($row);
+            // Realza el <select> de banco recién clonado al estándar AtlanticoSelect
+            // (el <template> no pasa por el barrido global de selects). Se usa
+            // enhanceOne para que funcione aun si el paso 3 está oculto (hidratar edit).
+            if (window.AtlanticoSelect && meta.banco) {
+                window.AtlanticoSelect.enhanceOne($row.find('.ped-pay-banco')[0]);
+            }
             pedRecalcularPago();
             if (!data) $row.find('.ped-pay-monto').trigger('focus');
             return $row;

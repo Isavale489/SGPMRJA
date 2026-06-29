@@ -1243,6 +1243,11 @@
                     });
                 }, 0);
             });
+
+            // API pública: realzar selects agregados dinámicamente por JS
+            // (filas clonadas de <template>, repetidores, etc.). Pasa el nodo/
+            // contexto recién insertado; solo realza los aún no realzados y visibles.
+            window.AtlanticoSelect = { enhance: enhanceVisible, enhanceOne: enhance };
         })();
     </script>
 

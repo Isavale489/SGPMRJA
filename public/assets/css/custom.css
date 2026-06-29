@@ -8524,6 +8524,10 @@ select.js-readonly:not(.afs-native) {
     overflow-y: auto;
     padding-right: 4px;
 }
+/* Mientras un dropdown de banco (AtlanticoSelect) está abierto, libera el scroll
+   del contenedor para que el menú no quede recortado por el overflow de la lista
+   (mismo patrón que .table-responsive:has(.actions-menu.show)). */
+.ped-pay-list:has(.afs-menu.show) { overflow: visible; }
 .ped-pay-row {
     display: flex;
     align-items: center;
@@ -8559,6 +8563,9 @@ select.js-readonly:not(.afs-native) {
 .ped-pay-row-fields { display: flex; gap: 8px; flex: 1 1 240px; min-width: 190px; }
 .ped-pay-row-fields .ped-pay-banco { flex: 1 1 45%; min-width: 0; }
 .ped-pay-row-fields .ped-pay-ref { flex: 1 1 55%; min-width: 0; }
+/* Al realzar el banco con AtlanticoSelect, el .afs-wrap pasa a ser el flex item
+   visible (el <select> nativo queda oculto) → hereda el reparto 45/55. */
+.ped-pay-row-fields > .afs-wrap { flex: 1 1 45%; min-width: 0; }
 .ped-pay-amount { width: 140px; margin-left: auto; flex-shrink: 0; }
 .ped-pay-amount .ped-pay-monto { text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
 .ped-pay-fill {
