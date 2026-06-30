@@ -39,7 +39,7 @@ class StorePedidoRequest extends FormRequest
             'productos.*.precio_unitario' => 'nullable|numeric|min:0',
             'productos.*.descripcion' => 'nullable|string|max:500',
             'productos.*.lleva_bordado' => 'nullable|boolean',
-            'productos.*.bordados' => 'nullable|array|required_if:productos.*.lleva_bordado,true|min:1',
+            'productos.*.bordados' => 'nullable|array|required_if:productos.*.lleva_bordado,true|min:1|max:' . parametro('cotizaciones.max_bordados_producto'),
             'productos.*.bordados.*.ubicacion_bordado_id' => 'nullable|exists:bordado_ubicacion,id',
             'productos.*.bordados.*.nombre_aplicado' => 'required|string|max:120',
             'productos.*.bordados.*.logo_id' => 'required|exists:logo,id',
@@ -57,6 +57,7 @@ class StorePedidoRequest extends FormRequest
         return [
             'productos.*.genero_id.required' => 'El género es obligatorio.',
             'productos.*.genero_id.exists' => 'El género seleccionado no es válido.',
+            'productos.*.bordados.max' => 'No se pueden agregar más de ' . parametro('cotizaciones.max_bordados_producto') . ' bordados por producto.',
         ];
     }
 }

@@ -744,6 +744,11 @@
         var logoModal = null;
         var currentLogoInput = null; // Referencia al nombre-logo-input de la fila activa
 
+        // Estándar de negocio: máximo de líneas de bordado por producto (configurable
+        // en /configuracion → cotizaciones.max_bordados_producto). El backend valida
+        // lo mismo; este tope es la primera línea de defensa en el configurador.
+        var MAX_BORDADOS = parseInt(@json($maxBordadosProducto ?? 6), 10) || 6;
+
         // Inicializar modal de logos
         try {
             logoModal = new bootstrap.Modal(document.getElementById('logoSearchModal'));
@@ -1656,6 +1661,17 @@
             });
         }
 
+        // Cuenta las líneas de bordado actualmente seleccionadas en el configurador:
+        // ubicaciones estándar marcadas + personalizadas con nombre. Es la unidad que
+        // se compara contra MAX_BORDADOS (mismo criterio que el backend).
+        function contarBordadosSeleccionados() {
+            var count = $('#ubicacionesCatalogoGrid .ubicacion-std-check:checked').length;
+            $('#ubicacionesPersonalizadasContainer .ubicacion-personalizada-row').each(function () {
+                if (String($(this).find('.ubicacion-personalizada-nombre').val() || '').trim()) count++;
+            });
+            return count;
+        }
+
         function actualizarResumenRecargoModal() {
             var recargo = 0;
             var activeCount = 0;
@@ -1678,7 +1694,9 @@
             });
 
             $('#resumenRecargoBordadoModal').text(formatMoney(recargo));
-            $('#bordado-oc-active-count').text(activeCount);
+            $('#bordado-oc-active-count')
+                .text(activeCount + ' / ' + MAX_BORDADOS)
+                .toggleClass('text-danger', activeCount >= MAX_BORDADOS);
 
             // Equivalente en Bolívares (VES) del servicio de bordado — tasa BCV vigente
             var bsBordado = (typeof window.bsEquivalente === 'function') ? window.bsEquivalente(recargo) : null;
@@ -1690,6 +1708,19 @@
         function aplicarBordadosDesdeModal() {
             // Permitir aplicar tanto desde una card concreta como desde un grupo de la grilla
             if (!currentBordadoCard && !currentBordadoGroupKey) return;
+
+            // Tope de líneas de bordado por producto (estándar configurable).
+            if (contarBordadosSeleccionados() > MAX_BORDADOS) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Máximo de bordados por producto',
+                    text: 'No se pueden agregar más de ' + MAX_BORDADOS + ' bordados por producto. Quita alguna ubicación antes de aplicar.',
+                    customClass: { confirmButton: 'btn btn-primary w-xs me-2' },
+                    buttonsStyling: false,
+                    showCloseButton: true
+                });
+                return;
+            }
 
             var bordados = [];
             var erroresLogo = [];
@@ -1810,8 +1841,24 @@
         });
 
         $(document).on('change', '.ubicacion-std-check', function () {
-            var row = $(this).closest('.ubicacion-std-row');
             var enabled = $(this).is(':checked');
+
+            // Tope de líneas de bordado: al marcar (el check ya cuenta en el conteo),
+            // si se supera el máximo se revierte y se avisa.
+            if (enabled && contarBordadosSeleccionados() > MAX_BORDADOS) {
+                $(this).prop('checked', false);
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Máximo de bordados por producto',
+                    text: 'Solo se permiten ' + MAX_BORDADOS + ' bordados por producto.',
+                    customClass: { confirmButton: 'btn btn-primary w-xs me-2' },
+                    buttonsStyling: false,
+                    showCloseButton: true
+                });
+                return;
+            }
+
+            var row = $(this).closest('.ubicacion-std-row');
             row.find('.ubicacion-std-logo, .bordado-logo-picker').prop('disabled', !enabled);
             if (!enabled) {
                 row.find('.ubicacion-std-logo').val('');
@@ -1846,6 +1893,18 @@
         });
 
         $('#agregarUbicacionPersonalizadaBtn').on('click', function () {
+            // Tope de líneas de bordado: no permitir agregar más si ya se alcanzó.
+            if (contarBordadosSeleccionados() >= MAX_BORDADOS) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Máximo de bordados por producto',
+                    text: 'Ya alcanzaste el máximo de ' + MAX_BORDADOS + ' bordados por producto.',
+                    customClass: { confirmButton: 'btn btn-primary w-xs me-2' },
+                    buttonsStyling: false,
+                    showCloseButton: true
+                });
+                return;
+            }
             var container = $('#ubicacionesPersonalizadasContainer');
             if (container.find('small.text-muted').length) container.empty();
             container.append(crearFilaUbicacionPersonalizada('', 0, 1, null, ''));
