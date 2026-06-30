@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Carbon\Carbon;
 
 class TasaCambio extends Model
 {
@@ -24,13 +25,14 @@ class TasaCambio extends Model
     ];
 
     /**
-     * Obtiene la tasa más reciente de una moneda
+     * Tasa actualmente VIGENTE de una moneda. Una tasa que el BCV publica en la
+     * tarde rige legalmente desde las 00:00 del día siguiente, por lo que aquí se
+     * aplica el techo `fecha_bcv <= hoy`: cualquier tasa con fecha futura queda
+     * invisible hasta la medianoche. Reutiliza tasaVigente() (la lógica del techo).
      */
     public static function obtenerTasaActual(string $moneda = 'USD'): ?self
     {
-        return self::where('moneda', strtoupper($moneda))
-            ->orderBy('fecha_bcv', 'desc')
-            ->first();
+        return self::tasaVigente(Carbon::today()->toDateString(), $moneda);
     }
 
     /**

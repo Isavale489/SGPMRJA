@@ -45,9 +45,12 @@ class AppServiceProvider extends ServiceProvider
         // Compartir tasa BCV con todas las vistas del admin
         View::composer('admin.*', function ($view) {
             try {
+                // Tasa VIGENTE hoy (techo fecha_bcv <= hoy; ignora tasas futuras).
                 $tasaBcv = TasaCambio::obtenerTasaActual('USD');
 
-                // Verificar si la tasa está desactualizada (no es de hoy)
+                // Está desactualizada si no hay tasa vigente para hoy (la vigente
+                // quedó en un día anterior), lo que indica que falta capturar la
+                // publicación reciente del BCV.
                 $hoy = Carbon::today()->toDateString();
                 $necesitaActualizar = !$tasaBcv || Carbon::parse($tasaBcv->fecha_bcv)->toDateString() !== $hoy;
 
@@ -55,11 +58,12 @@ class AppServiceProvider extends ServiceProvider
                 if ($necesitaActualizar && !Cache::has('bcv_actualizado_hoy')) {
                     try {
                         $service = app(TasaBcvService::class);
-                        $resultado = $service->actualizarTasas();
+                        $service->actualizarTasas();
 
-                        if ($resultado['success']) {
-                            $tasaBcv = $resultado['tasa'];
-                        }
+                        // Re-leer la VIGENTE: la tasa recién guardada puede estar
+                        // fechada a mañana (vigencia = publicación + 1), así que no
+                        // se usa directo para no mostrar una tasa futura antes de tiempo.
+                        $tasaBcv = TasaCambio::obtenerTasaActual('USD');
 
                         // Marcar como actualizado por 1 hora para evitar múltiples intentos
                         Cache::put('bcv_actualizado_hoy', true, now()->addHour());
