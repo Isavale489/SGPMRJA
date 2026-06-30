@@ -176,30 +176,29 @@
         line-height: 1.2;
     }
 
-    /* ─── Overlay difuminador del wizard cuando el offcanvas está abierto ── */
-    #bordado-modal-overlay {
-        position: fixed;
-        inset: 0;
-        z-index: 1065;
-        background: rgba(10, 18, 40, 0.45);
-        backdrop-filter: blur(3px);
-        -webkit-backdrop-filter: blur(3px);
-        opacity: 0;
-        pointer-events: none;
-        transition: opacity 0.28s ease;
+    /* ─── Modal configurador de bordados (sobre el modal de cotización) ──── */
+    /* z-index por encima del modal padre (#showModal, 1055). El backdrop se
+       ajusta en JS para quedar entre ambos (patrón del modal de logos). */
+    .bordado-modal {
+        z-index: 1075;
     }
 
-    #bordado-modal-overlay.is-active {
-        opacity: 1;
-        pointer-events: auto;
-        cursor: pointer;
+    .bordado-modal-dialog {
+        max-width: 560px;
     }
 
-    /* ─── Offcanvas configurador de bordados ─────────────────────────────── */
-    #bordadoOffcanvas {
-        width: 480px !important;
-        max-width: 95vw;
-        z-index: 1070;
+    /* modal-content acotado en alto + flex column para que la lista scrollee
+       internamente y header/buscador/footer queden fijos. */
+    .bordado-modal .modal-content {
+        max-height: 90vh;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        border: none;
+    }
+
+    #bordadoOffcanvas .modal-body {
+        min-height: 0;
     }
 
     .bordado-oc-header {
@@ -300,8 +299,8 @@
         font-size: 1.05rem;
     }
 
-    /* Dark mode — offcanvas bordados */
-    [data-bs-theme="dark"] #bordadoOffcanvas .offcanvas-body {
+    /* Dark mode — modal bordados */
+    [data-bs-theme="dark"] #bordadoOffcanvas .modal-body {
         background: #1a2035;
     }
 
@@ -1301,7 +1300,7 @@
         window.cotGroupBordadosState = window.cotGroupBordadosState || {};
 
         if (ubicacionModalEl) {
-            ubicacionModal = new bootstrap.Offcanvas(ubicacionModalEl);
+            ubicacionModal = new bootstrap.Modal(ubicacionModalEl);
         }
 
         function cargarUbicacionesBordado(callback) {
@@ -1812,21 +1811,21 @@
         }
 
         if (ubicacionModalEl) {
-            var $bordadoOverlay = $('#bordado-modal-overlay');
-
-            ubicacionModalEl.addEventListener('show.bs.offcanvas', function () {
-                $bordadoOverlay.addClass('is-active');
+            // El configurador es un modal SOBRE el modal de cotización (#showModal).
+            // Se ajusta su z-index y el de su backdrop para quedar por encima del
+            // modal padre (mismo patrón que el modal de logos).
+            ubicacionModalEl.addEventListener('show.bs.modal', function () {
+                var zIndex = $('#showModal').hasClass('show') ? 1080 : 1075;
+                $(ubicacionModalEl).css('z-index', zIndex);
+                window.requestAnimationFrame(function () {
+                    var $lastBackdrop = $('.modal-backdrop').last();
+                    if ($lastBackdrop.length) {
+                        $lastBackdrop.css('z-index', zIndex - 1).addClass('bordado-modal-backdrop');
+                    }
+                });
             });
 
-            ubicacionModalEl.addEventListener('hidden.bs.offcanvas', function () {
-                $bordadoOverlay.removeClass('is-active');
-            });
-
-            $bordadoOverlay.on('click', function () {
-                if (ubicacionModal) ubicacionModal.hide();
-            });
-
-            ubicacionModalEl.addEventListener('shown.bs.offcanvas', function () {
+            ubicacionModalEl.addEventListener('shown.bs.modal', function () {
                 $('#buscarUbicacionModal').val('').trigger('focus');
 
                 if (!ubicacionesBordadoArray.length) {
@@ -1840,6 +1839,21 @@
 
                 renderizarUbicacionesPersonalizadasModal();
                 renderizarUbicacionesModal('');
+            });
+
+            // Al cerrar, el modal de cotización sigue abierto: se restaura su
+            // scroll-lock y se eliminan backdrops sobrantes (igual que el de logos).
+            ubicacionModalEl.addEventListener('hidden.bs.modal', function () {
+                $(ubicacionModalEl).css('z-index', '');
+                $('.modal-backdrop.bordado-modal-backdrop').removeClass('bordado-modal-backdrop').css('z-index', '');
+
+                if ($('#showModal').hasClass('show')) {
+                    $('body').addClass('modal-open');
+                    var backdrops = $('.modal-backdrop');
+                    if (backdrops.length > 1) {
+                        backdrops.not(backdrops.first()).remove();
+                    }
+                }
             });
         }
 
@@ -2285,7 +2299,7 @@
         // "lleva bordado" pero SIN ubicaciones vuelve a "Sin bordado".
         // (Abrir y cerrar el panel sin agregar nada NO debe comprometer bordado
         // ni bloquear el guardado pidiendo una ubicación.)
-        $(document).on('hidden.bs.offcanvas', '#bordadoOffcanvas', function () {
+        $(document).on('hidden.bs.modal', '#bordadoOffcanvas', function () {
             $('#productos-container .product-item').each(function () {
                 var $card = $(this);
                 var marcado = parseInt($card.find('.lleva-bordado-value').val() || 0, 10) === 1;
@@ -5774,7 +5788,7 @@
                 if (typeof ubicacionModal !== 'undefined' && ubicacionModal && typeof ubicacionModal.show === 'function') {
                     ubicacionModal.show();
                 } else if (offcanvasEl) {
-                    bootstrap.Offcanvas.getOrCreateInstance(offcanvasEl).show();
+                    bootstrap.Modal.getOrCreateInstance(offcanvasEl).show();
                 } else {
                     Swal.fire({ icon: 'error', title: 'Panel de bordados no disponible',
                         text: 'El sistema de bordados no se cargó correctamente.',

@@ -191,26 +191,22 @@
     </div>
 </div>
 
-{{-- Overlay entre el wizard modal y el offcanvas de bordados.
-     z-index 1065: por encima del modal (1055) pero debajo del offcanvas (1070).
-     Al hacer clic sobre él se cierra el offcanvas (dismiss intuitivo). --}}
-<div id="bordado-modal-overlay"></div>
 
 {{-- ═══════════════════════════════════════════════════════════════════
-     Offcanvas Configurador de Bordados
-     Reemplaza el modal anidado ubicacionCatalogoModal.
-     data-bs-backdrop="false" + data-bs-scroll="true" permiten que
-     el wizard modal del fondo siga visible mientras el usuario
-     configura el bordado del producto seleccionado.
-     IDs internos preservados: el JS de main.blade.php no cambia su lógica.
+     Modal Configurador de Bordados (sobre el modal de cotización #showModal).
+     Antes era un offcanvas lateral; se convirtió a modal centrado para mejor
+     UX. El z-index del modal y su backdrop se ajustan en main.blade.php
+     (show.bs.modal) para quedar por encima del modal padre. El id histórico
+     #bordadoOffcanvas se conserva para no tocar todo el JS dependiente.
      ═══════════════════════════════════════════════════════════════════ --}}
-<div class="offcanvas offcanvas-end" id="bordadoOffcanvas" tabindex="-1"
-    aria-labelledby="bordadoOffcanvasLabel"
-    data-bs-backdrop="false" data-bs-scroll="true"
-    style="width: 480px; max-width: 95vw; z-index: 1070;">
+<div class="modal fade atlantico-modal bordado-modal" id="bordadoOffcanvas" tabindex="-1"
+    aria-labelledby="bordadoOffcanvasLabel" aria-hidden="true"
+    data-bs-backdrop="static" data-bs-keyboard="false">
+  <div class="modal-dialog modal-dialog-centered bordado-modal-dialog">
+    <div class="modal-content">
 
     {{-- Header: identidad del producto que se está configurando --}}
-    <div class="offcanvas-header bordado-oc-header">
+    <div class="bordado-oc-header d-flex align-items-center justify-content-between">
         <div class="d-flex align-items-center gap-3 flex-grow-1 overflow-hidden">
             <div class="bordado-oc-icon">
                 <i class="ri-scissors-cut-line"></i>
@@ -226,12 +222,12 @@
                 </div>
             </div>
         </div>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
             aria-label="Cerrar"></button>
     </div>
 
     {{-- Cuerpo: flex column con zona scrollable interna --}}
-    <div class="offcanvas-body p-0 d-flex flex-column" style="overflow: hidden; min-height: 0;">
+    <div class="modal-body p-0 d-flex flex-column" style="overflow: hidden; min-height: 0;">
 
         {{-- Buscador fijo en la parte superior --}}
         <div class="bordado-oc-search px-3 pt-3 pb-2">
@@ -293,7 +289,7 @@
                 </div>
             </div>
             <div class="d-flex gap-2">
-                <button type="button" class="btn btn-sm btn-light flex-fill" data-bs-dismiss="offcanvas">
+                <button type="button" class="btn btn-sm btn-light flex-fill" data-bs-dismiss="modal">
                     <i class="ri-close-line me-1"></i>Cancelar
                 </button>
                 <button type="button" class="btn btn-sm btn-atlantico-brand flex-fill" id="aplicarUbicacionesBordadoBtn">
@@ -302,5 +298,7 @@
             </div>
         </div>
 
-    </div>
-</div>
+    </div>{{-- /modal-body --}}
+    </div>{{-- /modal-content --}}
+  </div>{{-- /modal-dialog --}}
+</div>{{-- /modal #bordadoOffcanvas --}}
