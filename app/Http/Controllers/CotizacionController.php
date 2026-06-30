@@ -12,6 +12,8 @@ use App\Models\Banco;
 use App\Models\Cliente;
 use App\Models\BordadoUbicacion;
 use App\Services\CotizacionService;
+use App\Services\BordadoPricingService;
+use Illuminate\Validation\ValidationException;
 use Illuminate\Http\Request;
 use Yajra\DataTables\DataTables;
 use Illuminate\Support\Facades\Auth;
@@ -158,6 +160,27 @@ class CotizacionController extends Controller
         return response()->json($catalogo);
     }
 
+    /**
+     * Lanza ValidationException si algún producto excede el máximo de bordados
+     * por prenda. La unidad es la SUMA de cantidades de cada línea de bordado
+     * (una ubicación con cantidad 10 son 10 bordados), no el número de líneas.
+     */
+    private function assertMaxBordados(Request $request, int $max): void
+    {
+        $indices = BordadoPricingService::indicesQueExcedenMaximo($request->input('productos', []), $max);
+
+        if (empty($indices)) {
+            return;
+        }
+
+        $errores = [];
+        foreach ($indices as $i) {
+            $errores["productos.$i.bordados"] = "No se pueden agregar más de {$max} bordados por producto.";
+        }
+
+        throw ValidationException::withMessages($errores);
+    }
+
     public function store(Request $request)
     {
         $maxBordados = parametro('cotizaciones.max_bordados_producto');
@@ -183,7 +206,7 @@ class CotizacionController extends Controller
             'productos.*.insumos' => 'nullable|array',
             'productos.*.insumos.*.id' => 'required|exists:insumo,id',
             'productos.*.insumos.*.cantidad_estimada' => 'required|numeric|min:0.01',
-            'productos.*.bordados' => 'nullable|array|required_if:productos.*.lleva_bordado,true|min:1|max:' . $maxBordados,
+            'productos.*.bordados' => 'nullable|array|required_if:productos.*.lleva_bordado,true|min:1',
             'productos.*.bordados.*.ubicacion_bordado_id' => 'nullable|exists:bordado_ubicacion,id',
             'productos.*.bordados.*.nombre_aplicado' => 'required|string|max:120',
             'productos.*.bordados.*.logo_id' => 'required|exists:logo,id',
@@ -212,7 +235,6 @@ class CotizacionController extends Controller
             'productos.*.bordados.*.logo_id.exists' => 'El logo seleccionado no existe en el catálogo.',
             'productos.*.bordados.required_if' => 'Debe seleccionar al menos una ubicación de bordado.',
             'productos.*.bordados.min' => 'Debe seleccionar al menos una ubicación de bordado.',
-            'productos.*.bordados.max' => 'No se pueden agregar más de ' . $maxBordados . ' bordados por producto.',
             'productos.*.bordados.*.nombre_aplicado.required' => 'Cada bordado debe tener un nombre de ubicación.',
             'productos.*.bordados.*.precio_aplicado.required' => 'Cada bordado debe tener un precio aplicado.',
             'productos.*.bordados.*.precio_aplicado.numeric' => 'El precio aplicado de cada bordado debe ser numérico.',
@@ -229,6 +251,8 @@ class CotizacionController extends Controller
             'productos.*.insumos.*.cantidad_estimada.numeric' => 'La cantidad estimada debe ser un número.',
             'productos.*.insumos.*.cantidad_estimada.min' => 'La cantidad estimada debe ser mayor a 0.',
         ]);
+
+        $this->assertMaxBordados($request, $maxBordados);
 
         $this->cotizacionService->crear($request->all());
 
@@ -302,7 +326,7 @@ class CotizacionController extends Controller
             'productos.*.insumos' => 'nullable|array',
             'productos.*.insumos.*.id' => 'required|exists:insumo,id',
             'productos.*.insumos.*.cantidad_estimada' => 'required|numeric|min:0.01',
-            'productos.*.bordados' => 'nullable|array|required_if:productos.*.lleva_bordado,true|min:1|max:' . $maxBordados,
+            'productos.*.bordados' => 'nullable|array|required_if:productos.*.lleva_bordado,true|min:1',
             'productos.*.bordados.*.ubicacion_bordado_id' => 'nullable|exists:bordado_ubicacion,id',
             'productos.*.bordados.*.nombre_aplicado' => 'required|string|max:120',
             'productos.*.bordados.*.logo_id' => 'required|exists:logo,id',
@@ -333,7 +357,6 @@ class CotizacionController extends Controller
             'productos.*.bordados.*.logo_id.exists' => 'El logo seleccionado no existe en el catálogo.',
             'productos.*.bordados.required_if' => 'Debe seleccionar al menos una ubicación de bordado.',
             'productos.*.bordados.min' => 'Debe seleccionar al menos una ubicación de bordado.',
-            'productos.*.bordados.max' => 'No se pueden agregar más de ' . $maxBordados . ' bordados por producto.',
             'productos.*.bordados.*.nombre_aplicado.required' => 'Cada bordado debe tener un nombre de ubicación.',
             'productos.*.bordados.*.precio_aplicado.required' => 'Cada bordado debe tener un precio aplicado.',
             'productos.*.bordados.*.precio_aplicado.numeric' => 'El precio aplicado de cada bordado debe ser numérico.',
@@ -350,6 +373,8 @@ class CotizacionController extends Controller
             'productos.*.insumos.*.cantidad_estimada.numeric' => 'La cantidad estimada debe ser un número.',
             'productos.*.insumos.*.cantidad_estimada.min' => 'La cantidad estimada debe ser mayor a 0.',
         ]);
+
+        $this->assertMaxBordados($request, $maxBordados);
 
         $cotizacion = Cotizacion::findOrFail($id);
 

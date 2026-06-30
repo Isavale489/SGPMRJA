@@ -35,6 +35,37 @@ class BordadoPricingService
     }
 
     /**
+     * Índices de los productos cuya cantidad total de bordados excede el máximo.
+     *
+     * La unidad de negocio es "bordados por prenda" = suma de `cantidad` de cada
+     * línea (una ubicación con cantidad 10 son 10 bordados, no 1). Devuelve los
+     * índices del arreglo `productos` que violan el tope, para construir errores
+     * de validación apuntando al producto correcto.
+     */
+    public static function indicesQueExcedenMaximo(array $productos, int $max): array
+    {
+        $violan = [];
+
+        foreach ($productos as $i => $prod) {
+            $bordados = $prod['bordados'] ?? null;
+            if (!is_array($bordados) || empty($bordados)) {
+                continue;
+            }
+
+            $total = 0;
+            foreach ($bordados as $bordado) {
+                $total += max(1, (int) ($bordado['cantidad'] ?? 1));
+            }
+
+            if ($total > $max) {
+                $violan[] = $i;
+            }
+        }
+
+        return $violan;
+    }
+
+    /**
      * Calcula el recargo unitario total por bordado.
      */
     public function calcularRecargoBordadoUnitario(array $bordados): float

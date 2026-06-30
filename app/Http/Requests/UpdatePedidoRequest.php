@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests;
 
+use App\Services\BordadoPricingService;
+use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -35,7 +37,7 @@ class UpdatePedidoRequest extends FormRequest
             'productos.*.precio_unitario' => 'nullable|numeric|min:0',
             'productos.*.descripcion' => 'nullable|string|max:500',
             'productos.*.lleva_bordado' => 'nullable|boolean',
-            'productos.*.bordados' => 'nullable|array|required_if:productos.*.lleva_bordado,true|min:1|max:' . parametro('cotizaciones.max_bordados_producto'),
+            'productos.*.bordados' => 'nullable|array|required_if:productos.*.lleva_bordado,true|min:1',
             'productos.*.bordados.*.ubicacion_bordado_id' => 'nullable|exists:bordado_ubicacion,id',
             'productos.*.bordados.*.nombre_aplicado' => 'required|string|max:120',
             'productos.*.bordados.*.logo_id' => 'required|exists:logo,id',
@@ -53,7 +55,20 @@ class UpdatePedidoRequest extends FormRequest
         return [
             'productos.*.genero_id.required' => 'El género es obligatorio.',
             'productos.*.genero_id.exists' => 'El género seleccionado no es válido.',
-            'productos.*.bordados.max' => 'No se pueden agregar más de ' . parametro('cotizaciones.max_bordados_producto') . ' bordados por producto.',
         ];
+    }
+
+    /**
+     * Tope de bordados por producto (suma de cantidades por línea). Misma política
+     * que la cotización; ver App\Services\BordadoPricingService.
+     */
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $v) {
+            $max = parametro('cotizaciones.max_bordados_producto');
+            foreach (BordadoPricingService::indicesQueExcedenMaximo($this->input('productos', []), $max) as $i) {
+                $v->errors()->add("productos.$i.bordados", "No se pueden agregar más de {$max} bordados por producto.");
+            }
+        });
     }
 }

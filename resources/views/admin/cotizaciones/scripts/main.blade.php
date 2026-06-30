@@ -744,9 +744,10 @@
         var logoModal = null;
         var currentLogoInput = null; // Referencia al nombre-logo-input de la fila activa
 
-        // Estándar de negocio: máximo de líneas de bordado por producto (configurable
-        // en /configuracion → cotizaciones.max_bordados_producto). El backend valida
-        // lo mismo; este tope es la primera línea de defensa en el configurador.
+        // Estándar de negocio: máximo de bordados por producto (suma de cantidades
+        // de todas las ubicaciones), configurable en /configuracion →
+        // cotizaciones.max_bordados_producto. El backend valida lo mismo; este tope
+        // es la primera línea de defensa en el configurador.
         var MAX_BORDADOS = parseInt(@json($maxBordadosProducto ?? 6), 10) || 6;
 
         // Inicializar modal de logos
@@ -1661,15 +1662,21 @@
             });
         }
 
-        // Cuenta las líneas de bordado actualmente seleccionadas en el configurador:
-        // ubicaciones estándar marcadas + personalizadas con nombre. Es la unidad que
-        // se compara contra MAX_BORDADOS (mismo criterio que el backend).
+        // Total de bordados seleccionados en el configurador = SUMA de cantidades
+        // por línea (no número de líneas): una ubicación con cantidad 10 son 10
+        // bordados. Es la unidad que se compara contra MAX_BORDADOS (igual que el
+        // backend en BordadoPricingService::indicesQueExcedenMaximo).
         function contarBordadosSeleccionados() {
-            var count = $('#ubicacionesCatalogoGrid .ubicacion-std-check:checked').length;
-            $('#ubicacionesPersonalizadasContainer .ubicacion-personalizada-row').each(function () {
-                if (String($(this).find('.ubicacion-personalizada-nombre').val() || '').trim()) count++;
+            var total = 0;
+            $('#ubicacionesCatalogoGrid .ubicacion-std-check:checked').each(function () {
+                var row = $(this).closest('.ubicacion-std-row');
+                total += Math.max(1, parseInt(row.find('.ubicacion-std-cantidad').val() || 1, 10));
             });
-            return count;
+            $('#ubicacionesPersonalizadasContainer .ubicacion-personalizada-row').each(function () {
+                if (!String($(this).find('.ubicacion-personalizada-nombre').val() || '').trim()) return;
+                total += Math.max(1, parseInt($(this).find('.ubicacion-personalizada-cantidad').val() || 1, 10));
+            });
+            return total;
         }
 
         function actualizarResumenRecargoModal() {
@@ -1843,7 +1850,7 @@
         $(document).on('change', '.ubicacion-std-check', function () {
             var enabled = $(this).is(':checked');
 
-            // Tope de líneas de bordado: al marcar (el check ya cuenta en el conteo),
+            // Tope de bordados: al marcar (el check ya suma su cantidad al total),
             // si se supera el máximo se revierte y se avisa.
             if (enabled && contarBordadosSeleccionados() > MAX_BORDADOS) {
                 $(this).prop('checked', false);
@@ -1892,8 +1899,40 @@
             actualizarResumenRecargoModal();
         });
 
+        // Validación lógica de la cantidad por línea (on-blur): la SUMA de bordados
+        // del producto no puede pasar de MAX_BORDADOS. Si al salir del campo la suma
+        // se excede, se capea la cantidad de ESTA línea al máximo posible y se avisa.
+        // Ej.: con tope 6, poner 10 en la manga se recorta a 6.
+        $(document).on('blur', '.ubicacion-std-cantidad, .ubicacion-personalizada-cantidad', function () {
+            var $inp = $(this);
+            var val = Math.max(1, parseInt($inp.val() || 1, 10));
+            $inp.val(val);
+
+            var total = contarBordadosSeleccionados();
+            if (total > MAX_BORDADOS) {
+                var capped = Math.max(1, val - (total - MAX_BORDADOS));
+                $inp.val(capped);
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Máximo de bordados por producto',
+                    text: 'El total de bordados por producto no puede pasar de ' + MAX_BORDADOS +
+                        '. La cantidad de esta ubicación se ajustó a ' + capped + '.',
+                    customClass: { confirmButton: 'btn btn-primary w-xs me-2' },
+                    buttonsStyling: false,
+                    showCloseButton: true
+                });
+                var row = $inp.closest('.ubicacion-std-row, .ubicacion-personalizada-row');
+                if (row.hasClass('ubicacion-std-row')) {
+                    actualizarEstadoUbicacionStdRow(row);
+                } else {
+                    actualizarEstadoUbicacionPersonalizadaRow(row);
+                }
+                actualizarResumenRecargoModal();
+            }
+        });
+
         $('#agregarUbicacionPersonalizadaBtn').on('click', function () {
-            // Tope de líneas de bordado: no permitir agregar más si ya se alcanzó.
+            // Tope de bordados: no permitir agregar otra ubicación si el total ya llegó.
             if (contarBordadosSeleccionados() >= MAX_BORDADOS) {
                 Swal.fire({
                     icon: 'warning',

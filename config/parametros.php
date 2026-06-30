@@ -57,7 +57,7 @@ return [
     'cotizaciones.max_bordados_producto' => [
         'modulo'      => 'Cotizaciones',
         'nombre'      => 'Máximo de bordados por producto',
-        'descripcion' => 'Cantidad máxima de líneas de bordado (cada ubicación con su logo) que se pueden configurar en un mismo producto de la cotización. La misma política aplica al convertir y registrar pedidos. Cuenta líneas de bordado, no logos distintos.',
+        'descripcion' => 'Cantidad máxima de bordados que se pueden configurar en un mismo producto de la cotización. Cuenta el TOTAL de bordados por prenda (suma de la cantidad de cada ubicación): p. ej. una manga con cantidad 10 son 10 bordados. La misma política aplica al convertir y registrar pedidos.',
         'tipo'        => 'entero',
         'reglas'      => 'required|integer|min:1|max:50',
         'default'     => 6,
