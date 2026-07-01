@@ -29,7 +29,8 @@ class ControlCalidadService
         return DB::transaction(function () use ($orden, $data, $inspectorId) {
             // Lock + re-chequeo de estado dentro de la transacción (evita carrera
             // con producción o doble inspección simultánea).
-            $orden = OrdenProduccion::lockForUpdate()->findOrFail($orden->id);
+            $orden = OrdenProduccion::with('empleadosAsignados.persona')
+                ->lockForUpdate()->findOrFail($orden->id);
 
             if ($orden->estado !== 'Finalizado') {
                 throw ValidationException::withMessages([
@@ -74,6 +75,10 @@ class ControlCalidadService
             $orden->cantidad_defectuosa += $rechazada;
 
             if ($rechazada > 0) {
+                // Atribución del rechazo por empleado (mantiene el invariante
+                // orden == suma por empleado). Con un solo empleado es automático.
+                $this->atribuirRechazo($orden, $rechazada, $data['rechazos'] ?? []);
+
                 // Reproceso: las N defectuosas deben rehacerse. Bajar lo producido
                 // reabre la orden a "En Proceso"; registrarAvance la deja recibir
                 // avance hasta volver a completar y re-finalizar.
@@ -86,5 +91,59 @@ class ControlCalidadService
 
             return $inspeccion;
         });
+    }
+
+    /**
+     * Reparte las N unidades rechazadas entre el equipo de la orden, bajando lo
+     * producido de cada empleado y subiendo su defectuosa (en el pivot). Con un
+     * solo empleado la atribución es automática. Con equipo (2+) exige el detalle
+     * `$rechazos` = [{empleado_id, cantidad}] que cuadre y respete topes.
+     *
+     * @throws ValidationException
+     */
+    private function atribuirRechazo(OrdenProduccion $orden, int $rechazada, array $rechazos): void
+    {
+        $equipo = $orden->empleadosAsignados;
+        if ($equipo->isEmpty()) {
+            return; // orden sin equipo registrado: solo afecta totales de la orden
+        }
+
+        // Normaliza a [empleadoId => cantidad].
+        $mapa = [];
+        if ($equipo->count() === 1) {
+            $mapa[$equipo->first()->id] = $rechazada;
+        } else {
+            foreach ($rechazos as $r) {
+                $id = (int) ($r['empleado_id'] ?? 0);
+                $cant = (int) ($r['cantidad'] ?? 0);
+                if ($cant > 0) {
+                    $mapa[$id] = ($mapa[$id] ?? 0) + $cant;
+                }
+            }
+            if (array_sum($mapa) !== $rechazada) {
+                throw ValidationException::withMessages([
+                    'rechazos' => 'La atribución por empleado debe sumar exactamente las unidades rechazadas.',
+                ]);
+            }
+        }
+
+        foreach ($mapa as $empleadoId => $cant) {
+            $miembro = $equipo->firstWhere('id', $empleadoId);
+            if (!$miembro) {
+                throw ValidationException::withMessages([
+                    'rechazos' => 'Un empleado de la atribución no pertenece al equipo de la orden.',
+                ]);
+            }
+            if ($cant > (int) $miembro->pivot->cantidad_producida) {
+                $nombre = $miembro->persona->nombre ?? ('empleado #' . $miembro->id);
+                throw ValidationException::withMessages([
+                    'rechazos' => "No puedes rechazar más unidades de las que {$nombre} produjo.",
+                ]);
+            }
+            $orden->empleadosAsignados()->updateExistingPivot($empleadoId, [
+                'cantidad_producida'  => (int) $miembro->pivot->cantidad_producida - $cant,
+                'cantidad_defectuosa' => (int) $miembro->pivot->cantidad_defectuosa + $cant,
+            ]);
+        }
     }
 }

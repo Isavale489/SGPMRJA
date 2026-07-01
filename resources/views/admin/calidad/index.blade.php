@@ -172,6 +172,14 @@
                             </div>
                         </div>
 
+                        {{-- Atribución del rechazo por empleado: solo con equipo (2+) y defectuosas --}}
+                        <div class="qc-atrib d-none" id="cc-atrib-wrap">
+                            <label class="form-label required mb-1"><i class="ri-team-line me-1"></i>¿De quién son las defectuosas?</label>
+                            <div id="cc-atrib-rows"></div>
+                            <div class="qc-atrib-total" id="cc-atrib-total"></div>
+                            <div class="invalid-feedback d-block" id="cc-atrib-error"></div>
+                        </div>
+
                         {{-- Motivo: solo cuando hay defectuosas --}}
                         <div class="qc-motivo d-none" id="cc-motivo-wrap">
                             <label for="cc-observaciones" class="form-label required">Motivo del rechazo</label>
@@ -336,6 +344,64 @@
 
             // Estado del lote actual en el modal
             var producidas = 0;
+            var equipo = [];   // [{id, nombre, producida}] de la orden inspeccionada
+            var atrib = {};     // { empleadoId: defectuosas atribuidas }
+
+            function ccEsc(s) {
+                return String(s == null ? '' : s)
+                    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+            }
+            // Reparte equitativo las defectuosas respetando lo producido por cada uno.
+            function distribuirCapado(total, team) {
+                var out = {}; team.forEach(function (e) { out[e.id] = 0; });
+                var rem = total, activos = team.slice();
+                while (rem > 0 && activos.length) {
+                    var base = Math.max(1, Math.floor(rem / activos.length)), avanzo = false;
+                    for (var i = 0; i < activos.length && rem > 0; i++) {
+                        var e = activos[i], puede = e.producida - out[e.id];
+                        if (puede <= 0) continue;
+                        var add = Math.min(base, puede, rem);
+                        out[e.id] += add; rem -= add; if (add > 0) avanzo = true;
+                    }
+                    activos = activos.filter(function (e) { return (e.producida - out[e.id]) > 0; });
+                    if (!avanzo) break;
+                }
+                return out;
+            }
+            function ensureAtrib(rech) {
+                var ids = equipo.map(function (e) { return String(e.id); });
+                var sameKeys = ids.length === Object.keys(atrib).length && ids.every(function (id) { return atrib[id] != null; });
+                var sum = ids.reduce(function (a, id) { return a + (parseInt(atrib[id], 10) || 0); }, 0);
+                if (sameKeys && sum === rech) return; // conserva manual válido
+                atrib = distribuirCapado(rech, equipo);
+            }
+            function actualizarAtribTotal(rech) {
+                var sum = equipo.reduce(function (a, e) { return a + (parseInt(atrib[e.id], 10) || 0); }, 0);
+                var ok = sum === rech;
+                $('#cc-atrib-total').toggleClass('is-ok', ok).toggleClass('is-bad', !ok)
+                    .html('<i class="ri-' + (ok ? 'checkbox-circle' : 'error-warning') + '-line me-1"></i>Atribuido <strong>' + sum + '</strong> / ' + rech);
+            }
+            function renderAtrib() {
+                var rech = leer().rech;
+                var show = equipo.length > 1 && rech > 0;
+                $('#cc-atrib-wrap').toggleClass('d-none', !show);
+                if (!show) return;
+                ensureAtrib(rech);
+                $('#cc-atrib-rows').html(equipo.map(function (e) {
+                    return '<div class="qc-atrib-row">'
+                        + '<span class="qc-atrib-name"><i class="ri-user-line me-1"></i>' + ccEsc(e.nombre)
+                        +   ' <small class="text-muted">(prod. ' + e.producida + ')</small></span>'
+                        + '<input type="number" class="qc-atrib-input" data-emp="' + e.id + '" min="0" max="' + e.producida + '" value="' + (parseInt(atrib[e.id], 10) || 0) + '">'
+                        + '</div>';
+                }).join(''));
+                actualizarAtribTotal(rech);
+            }
+            $(document).on('input', '.qc-atrib-input', function () {
+                var id = String($(this).data('emp'));
+                var v = parseInt(this.value, 10); if (isNaN(v) || v < 0) v = 0;
+                atrib[id] = v;
+                actualizarAtribTotal(leer().rech);
+            });
 
             // ── Abrir modal: cargar detalle de la orden ──
             $('#calidad-table').on('click', '.inspeccionar-btn', function () {
@@ -344,6 +410,8 @@
                     $('#inspeccionForm')[0].reset();
                     $('.is-invalid').removeClass('is-invalid');
                     producidas = parseInt(d.cantidad_producida, 10) || 0;
+                    equipo = (d.equipo || []).map(function (e) { return { id: e.id, nombre: e.nombre, producida: parseInt(e.producida, 10) || 0 }; });
+                    atrib = {};
 
                     $('#cc-orden-id').val(d.id);
                     $('#cc-producto').text(d.producto);
@@ -358,10 +426,17 @@
                     if (d.historial && d.historial.length) {
                         $('#cc-historial').html(d.historial.map(function (h) {
                             var tono = h.resultado === 'rechazado' ? 'danger' : (h.resultado === 'observado' ? 'warning' : 'success');
+                            var motivo = h.observaciones
+                                ? '<div class="cc-hist-motivo cc-hist-motivo--' + tono + '">'
+                                    + '<i class="ri-chat-quote-line"></i><span>' + ccEsc(h.observaciones) + '</span></div>'
+                                : '';
                             return '<div class="cc-historial-item">'
-                                + '<span class="badge bg-' + tono + '-subtle text-' + tono + '">' + (RESULTADO_LABEL[h.resultado] || h.resultado) + '</span> '
-                                + '<small class="text-muted">' + h.fecha + ' · ' + h.inspector + '</small><br>'
-                                + '<small>Insp. ' + h.inspeccionada + ' · Conf. ' + h.aprobada + ' · Def. ' + h.rechazada + (h.observaciones ? ' · ' + h.observaciones : '') + '</small>'
+                                + '<div class="cc-hist-top">'
+                                +   '<span class="badge bg-' + tono + '-subtle text-' + tono + '">' + (RESULTADO_LABEL[h.resultado] || h.resultado) + '</span>'
+                                +   '<small class="text-muted">' + ccEsc(h.fecha) + ' · ' + ccEsc(h.inspector) + '</small>'
+                                + '</div>'
+                                + '<div class="cc-hist-nums">Insp. ' + h.inspeccionada + ' · Conf. ' + h.aprobada + ' · Def. ' + h.rechazada + '</div>'
+                                + motivo
                                 + '</div>';
                         }).join(''));
                         $('#cc-historial-wrap').removeClass('d-none');
@@ -405,6 +480,9 @@
                 // Motivo solo si hay defectuosas
                 $('#cc-motivo-wrap').toggleClass('d-none', conforme);
 
+                // Atribución por empleado (equipo 2+ con defectuosas)
+                renderAtrib();
+
                 // Botón primario
                 $('#cc-submit-label').text(conforme ? 'Aprobar inspección' : 'Registrar reproceso');
                 $('#cc-submit-btn').toggleClass('btn-success', conforme).toggleClass('btn-warning', !conforme);
@@ -426,28 +504,40 @@
 
                 var q = leer();
                 var ok = true;
+                $('#cc-atrib-error').text('');
                 if (q.insp < 1) { $('#cc-inspeccionada').addClass('is-invalid'); $('#cc-qty-error').text('Inspecciona al menos 1 unidad.'); ok = false; }
                 if (q.rech > 0 && !$('#cc-observaciones').val().trim()) {
                     $('#cc-observaciones').addClass('is-invalid');
                     $('#cc-observaciones-error').text('El motivo es obligatorio cuando hay unidades defectuosas.');
                     ok = false;
                 }
+
+                // Atribución por empleado: con equipo (2+) y defectuosas debe cuadrar.
+                var multi = equipo.length > 1;
+                var rechazos = null;
+                if (multi && q.rech > 0) {
+                    var sumA = equipo.reduce(function (a, e) { return a + (parseInt(atrib[e.id], 10) || 0); }, 0);
+                    if (sumA !== q.rech) { $('#cc-atrib-error').text('La atribución por empleado debe sumar las unidades defectuosas.'); ok = false; }
+                    rechazos = equipo.map(function (e) { return { empleado_id: e.id, cantidad: parseInt(atrib[e.id], 10) || 0 }; });
+                }
                 if (!ok) return;
 
                 var insp = q.insp, aprob = q.aprob, rech = q.rech;
                 var id = $('#cc-orden-id').val();
                 var $btn = $('#cc-submit-btn').prop('disabled', true);
+                var payload = {
+                    _token: '{{ csrf_token() }}',
+                    cantidad_inspeccionada: insp,
+                    cantidad_aprobada: aprob,
+                    cantidad_rechazada: rech,
+                    resultado: $('#cc-resultado').val(),
+                    observaciones: $('#cc-observaciones').val().trim() || null
+                };
+                if (rechazos) payload.rechazos = rechazos;
                 $.ajax({
                     url: '{{ url('calidad') }}/' + id + '/inspeccionar',
                     method: 'POST',
-                    data: {
-                        _token: '{{ csrf_token() }}',
-                        cantidad_inspeccionada: insp,
-                        cantidad_aprobada: aprob,
-                        cantidad_rechazada: rech,
-                        resultado: $('#cc-resultado').val(),
-                        observaciones: $('#cc-observaciones').val().trim() || null
-                    },
+                    data: payload,
                     success: function (resp) {
                         $('#inspeccionModal').modal('hide');
                         table.ajax.reload(null, false);

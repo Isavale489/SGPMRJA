@@ -92,7 +92,7 @@ class ControlCalidadController extends Controller
      */
     public function detalle(OrdenProduccion $orden)
     {
-        $orden->load(['producto.tipoProducto', 'detallePedido.tipoProducto', 'detallePedido.genero', 'pedido', 'controlesCalidad.inspector:id,name']);
+        $orden->load(['producto.tipoProducto', 'detallePedido.tipoProducto', 'detallePedido.genero', 'pedido', 'empleadosAsignados.persona', 'controlesCalidad.inspector:id,name']);
 
         return response()->json([
             'id'                 => $orden->id,
@@ -102,6 +102,15 @@ class ControlCalidadController extends Controller
             'cantidad_solicitada' => $orden->cantidad_solicitada,
             'cantidad_producida' => $orden->cantidad_producida,
             'cantidad_defectuosa' => $orden->cantidad_defectuosa,
+            // Equipo con lo producido por cada uno: para atribuir el rechazo cuando
+            // la orden tiene 2+ empleados (el reproceso descuenta a quien corresponde).
+            'equipo'             => $orden->empleadosAsignados->map(function ($e) {
+                return [
+                    'id'        => $e->id,
+                    'nombre'    => $e->persona->nombre ?? ('Empleado #' . $e->id),
+                    'producida' => (int) $e->pivot->cantidad_producida,
+                ];
+            })->values(),
             'historial'          => $orden->controlesCalidad->sortByDesc('fecha_inspeccion')->values()->map(function ($c) {
                 return [
                     'fecha'        => optional($c->fecha_inspeccion)->format('d/m/Y H:i'),

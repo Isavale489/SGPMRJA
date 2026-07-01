@@ -24,6 +24,11 @@ class StoreControlCalidadRequest extends FormRequest
             'resultado'              => 'required|in:aprobado,rechazado,observado',
             // Motivo obligatorio salvo que el resultado sea "aprobado" (todo conforme).
             'observaciones'          => 'required_unless:resultado,aprobado|nullable|string|max:1000',
+            // Atribución del rechazo por empleado (órdenes de equipo). El cierre de
+            // la suma y los topes per-cápita los valida el service con el lock puesto.
+            'rechazos'               => 'nullable|array',
+            'rechazos.*.empleado_id' => 'required_with:rechazos|integer',
+            'rechazos.*.cantidad'    => 'required_with:rechazos|integer|min:0',
         ];
     }
 

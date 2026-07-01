@@ -210,6 +210,7 @@
     <script src="https://cdn.datatables.net/buttons/2.2.2/js/buttons.colVis.min.js"></script>
     <script src="{{ URL::asset('assets/libs/sweetalert2/sweetalert2.min.js') }}"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script src="{{ asset('assets/js/proyeccion-insumos.js') }}"></script>
 
     @include('admin.ordenes.scripts.main')
     @include('admin.ordenes.scripts.subordenes')

@@ -265,7 +265,51 @@
 
             if (n === 2) renderAsignacion();
             if (n === 3) renderInsumosAcc();
-            if (n === 4) renderResumen();
+            if (n === 4) { renderResumen(); ordRefreshProyeccion(); }
+        }
+
+        // ── Aviso de stock proyectado (NO bloqueante) en el paso Resumen ──
+        // Agrega los insumos REALES de todas las órdenes del wizard y los compara
+        // contra el stock; si faltan, ofrece crear la compra prellenada. Reutiliza
+        // el renderer compartido proyeccion-insumos.js (igual que cotización/pedido).
+        function ordRefreshProyeccion() {
+            var bodyEl = document.getElementById('ord-proyeccion-body');
+            var badgeEl = document.getElementById('ord-proyeccion-badge');
+            if (!bodyEl || !window.ProyeccionInsumos) return;
+
+            var insumos = [];
+            (ordWiz.lineas || []).forEach(function (l) {
+                (l.insumos || []).forEach(function (it) {
+                    var cant = parseFloat(it.cantidad) || 0;
+                    if (it.id && cant > 0) insumos.push({ insumo_id: it.id, cantidad: cant });
+                });
+            });
+            if (!insumos.length) {
+                bodyEl.innerHTML = '';
+                if (badgeEl) badgeEl.hidden = true;
+                return;
+            }
+
+            ProyeccionInsumos.cargar({
+                url: '{{ route("ordenes.proyeccionInsumos") }}',
+                method: 'POST',
+                csrf: $('meta[name="csrf-token"]').attr('content'),
+                payload: { insumos: insumos },
+                bodyEl: bodyEl,
+                badgeEl: badgeEl,
+                contexto: 'produccion'
+            });
+        }
+
+        // Recalcular al volver a la pestaña o si el stock cambió en otra (compra
+        // procesada/anulada), estando en el paso Resumen con el wizard abierto.
+        if (window.ProyeccionInsumos) {
+            document.addEventListener('visibilitychange', function () {
+                if (!document.hidden && currentStep === 4 && $('#showModal').hasClass('show')) ordRefreshProyeccion();
+            });
+            ProyeccionInsumos.onStockChange(function () {
+                if (currentStep === 4 && $('#showModal').hasClass('show')) ordRefreshProyeccion();
+            });
         }
 
         function actualizarBanners(n) {
@@ -584,6 +628,88 @@
             return html;
         }
 
+        // ── Reparto de unidades por empleado dentro de una orden de equipo ──
+        // l.reparto = { empleadoId(string): unidades }. Con un solo empleado no se
+        // muestra (se le asignan todas); con 2+ se reparte (equitativo por defecto).
+        function repartoEquitativo(total, ids) {
+            const out = {};
+            const n = ids.length;
+            if (!n) return out;
+            const base = Math.floor(total / n), resto = total % n;
+            ids.forEach(function (id, i) { out[String(id)] = base + (i < resto ? 1 : 0); });
+            return out;
+        }
+        function ensureReparto(l) {
+            const ids = (l.empleado_ids || []).map(String);
+            const total = parseInt(l.cantidad, 10) || 0;
+            const prev = l.reparto || {};
+            const mismasLlaves = ids.length === Object.keys(prev).length
+                && ids.every(function (id) { return prev[id] != null; });
+            const suma = ids.reduce(function (a, id) { return a + (parseInt(prev[id], 10) || 0); }, 0);
+            if (mismasLlaves && suma === total) {
+                // Conserva el reparto manual válido (re-normaliza a enteros).
+                const keep = {};
+                ids.forEach(function (id) { keep[id] = parseInt(prev[id], 10) || 0; });
+                l.reparto = keep;
+            } else {
+                l.reparto = repartoEquitativo(total, ids);
+            }
+            return l.reparto;
+        }
+        function repartoHtml(l, idx) {
+            const ids = (l.empleado_ids || []).map(String);
+            if (ids.length < 2) return ''; // 1 empleado → sin reparto manual
+            ensureReparto(l);
+            const r = l.reparto || {};
+            const total = parseInt(l.cantidad, 10) || 0;
+            const rows = ids.map(function (id) {
+                const nombre = $('#ord-empleados-tpl option[value="' + id + '"]').text();
+                const val = parseInt(r[id], 10) || 0;
+                return '<div class="ord-rep-row">'
+                    + '<span class="ord-rep-cell ord-rep-c-emp" title="' + escHtml(nombre) + '"><i class="ri-user-line"></i><span class="ord-rep-name-txt">' + escHtml(nombre) + '</span></span>'
+                    + '<span class="ord-rep-cell ord-rep-c-qty">'
+                    +   '<input type="number" inputmode="numeric" class="ord-asig-emp-cant' + (val < 1 ? ' is-zero' : '') + '" '
+                    +     'data-idx="' + idx + '" data-emp="' + id + '" min="1" max="' + total + '" value="' + val + '">'
+                    + '</span>'
+                    + '</div>';
+            }).join('');
+            const suma = ids.reduce(function (a, id) { return a + (parseInt(r[id], 10) || 0); }, 0);
+            const ok = suma === total;
+            const ind = '<div class="ord-rep-total ' + (ok ? 'is-ok' : 'is-bad') + '" id="ord-rep-total-' + idx + '">'
+                + '<i class="ri-' + (ok ? 'checkbox-circle' : 'error-warning') + '-line me-1"></i>Repartido <strong>' + suma + '</strong> / ' + total + '</div>';
+            return '<div class="ord-asig-reparto-inner">'
+                + '<div class="ord-rep-label"><i class="ri-scales-3-line me-1"></i>Unidades por empleado</div>'
+                + '<div class="ord-rep-grid">'
+                +   '<div class="ord-rep-row ord-rep-head"><span class="ord-rep-cell ord-rep-c-emp">Empleado</span><span class="ord-rep-cell ord-rep-c-qty">Unid.</span></div>'
+                +   '<div class="ord-rep-rows">' + rows + '</div>'
+                + '</div>'
+                + ind + '</div>';
+        }
+        function renderRepartoCard(idx) {
+            const l = ordWiz.lineas[idx];
+            if (!l) return;
+            $('#ord-asig-reparto-' + idx).html(repartoHtml(l, idx));
+        }
+        function actualizarRepartoTotal(idx) {
+            const l = ordWiz.lineas[idx];
+            if (!l) return;
+            const ids = (l.empleado_ids || []).map(String);
+            const suma = ids.reduce(function (a, id) { return a + (parseInt((l.reparto || {})[id], 10) || 0); }, 0);
+            const total = parseInt(l.cantidad, 10) || 0;
+            const ok = suma === total;
+            $('#ord-rep-total-' + idx).toggleClass('is-ok', ok).toggleClass('is-bad', !ok)
+                .html('<i class="ri-' + (ok ? 'checkbox-circle' : 'error-warning') + '-line me-1"></i>Repartido <strong>' + suma + '</strong> / ' + total);
+        }
+        // Construye el arreglo [{id, cantidad}] que espera el backend.
+        function empleadosPayload(l) {
+            const ids = (l.empleado_ids || []).map(String);
+            if (ids.length <= 1) {
+                return ids.map(function (id) { return { id: parseInt(id, 10), cantidad: parseInt(l.cantidad, 10) || 0 }; });
+            }
+            const r = l.reparto || {};
+            return ids.map(function (id) { return { id: parseInt(id, 10), cantidad: parseInt(r[id], 10) || 0 }; });
+        }
+
         function asignacionCardHtml(l, idx) {
             const meta      = lineaMetaChips(l);
             const edit      = isEditMode();
@@ -636,6 +762,7 @@
                 +       empleadoCheckboxesHtml(idx, l.empleado_ids || [])
                 +     '</div>'
                 +     '<div class="ord-emp-feedback">Selecciona al menos un empleado.</div>'
+                +     '<div class="ord-asig-reparto" id="ord-asig-reparto-' + idx + '">' + repartoHtml(l, idx) + '</div>'
                 +   '</div>'
                 +   cantBlock
                 +   '<div class="' + fechaCol + '"><label class="form-label form-label-sm required mb-1" for="ord-asig-inicio-' + idx + '">Inicio</label>'
@@ -718,6 +845,33 @@
             setCantidadOrden(l, v);
             $(this).closest('.ord-asig-card').find('.ord-asig-qty').first().text('· ' + v + ' u');
             actualizarChipsReparto();
+            renderRepartoCard(idx); // re-reparte por empleado al cambiar el total de la orden
+        });
+
+        // Cambia la selección de empleados → recalcula el reparto por empleado
+        $(document).on('change', '.ord-asig-emp-chk', function () {
+            const idx = parseInt($(this).data('idx'), 10);
+            const l = ordWiz.lineas[idx];
+            if (!l) return;
+            l.empleado_ids = [];
+            $('#ord-asig-emp-chks-' + idx + ' .ord-asig-emp-chk:checked').each(function () {
+                l.empleado_ids.push($(this).val());
+            });
+            renderRepartoCard(idx);
+        });
+
+        // Edición manual de la parte de un empleado → actualiza el indicador
+        $(document).on('input', '.ord-asig-emp-cant', function () {
+            const idx = parseInt($(this).data('idx'), 10);
+            const emp = String($(this).data('emp'));
+            const l = ordWiz.lineas[idx];
+            if (!l) return;
+            l.reparto = l.reparto || {};
+            let v = parseInt(this.value, 10);
+            if (isNaN(v) || v < 0) v = 0;
+            l.reparto[emp] = v;
+            $(this).toggleClass('is-zero', v < 1);
+            actualizarRepartoTotal(idx);
         });
 
         // Si el campo queda vacío al salir, restaurar las unidades del estado
@@ -776,6 +930,14 @@
                 });
                 const v = parseInt($(this).find('.ord-asig-cant').val(), 10);
                 if (!isNaN(v) && v >= 1) setCantidadOrden(l, v);
+                // Reparto por empleado: lee los inputs visibles; si no hay (1 empleado
+                // o bloque oculto) recalcula a partir del estado.
+                const reparto = {};
+                $(this).find('.ord-asig-emp-cant').each(function () {
+                    reparto[String($(this).data('emp'))] = parseInt($(this).val(), 10) || 0;
+                });
+                if (Object.keys(reparto).length) l.reparto = reparto;
+                else ensureReparto(l);
                 l.fecha_inicio = $(this).find('.ord-asig-inicio').val() || '';
                 l.fecha_fin_estimada = $(this).find('.ord-asig-fin').val() || '';
                 const $est = $(this).find('.ord-asig-estado');
@@ -796,6 +958,8 @@
                     $(this).find('.ord-asig-emp-chk').each(function () {
                         $(this).prop('checked', selEmpIds.indexOf($(this).val()) !== -1);
                     });
+                    const l = ordWiz.lineas[idx];
+                    if (l) { l.empleado_ids = selEmpIds.slice(); renderRepartoCard(idx); }
                 }
                 if (ini) $(this).find('.ord-asig-inicio').val(ini);
                 if (fin) $(this).find('.ord-asig-fin').val(fin);
@@ -815,7 +979,7 @@
 
         function validateStep2() {
             syncAsignacion();
-            let ok = true, $first = null;
+            let ok = true, $first = null, repartoDescuadrado = false, repartoConCeros = false;
             ordWiz.lineas.forEach(function (l, idx) {
                 const $chks = $('#ord-asig-emp-chks-' + idx);
                 const $ini  = $('#ord-asig-inicio-' + idx);
@@ -832,7 +996,31 @@
                 if (!l.fecha_fin_estimada) { marcarInvalido($fin, 'Fecha fin requerida.'); ok = false; $first = $first || $fin; }
                 else if (l.fecha_inicio && l.fecha_fin_estimada <= l.fecha_inicio) { marcarInvalido($fin, 'El fin debe ser posterior al inicio.'); ok = false; $first = $first || $fin; }
                 else marcarValido($fin);
+
+                // Reparto por empleado: con equipo (2+) la suma debe cuadrar exacto
+                // y cada empleado debe producir al menos 1 unidad.
+                if (l.empleado_ids && l.empleado_ids.length > 1) {
+                    const partes = l.empleado_ids.map(function (id) { return parseInt((l.reparto || {})[String(id)], 10) || 0; });
+                    const suma = partes.reduce(function (a, n) { return a + n; }, 0);
+                    if (suma !== (parseInt(l.cantidad, 10) || 0)) {
+                        ok = false;
+                        $first = $first || $('#ord-asig-reparto-' + idx);
+                        $('#ord-rep-total-' + idx).addClass('is-bad');
+                        repartoDescuadrado = true;
+                    }
+                    if (partes.some(function (n) { return n < 1; })) {
+                        ok = false;
+                        $first = $first || $('#ord-asig-reparto-' + idx);
+                        repartoConCeros = true;
+                    }
+                }
             });
+
+            if (repartoConCeros) {
+                Swal.fire({ icon: 'warning', title: 'Empleados sin unidades', text: 'Cada empleado del equipo debe producir al menos 1 unidad. Quita a quien quede en 0 o aumenta las unidades de la orden.', toast: true, position: 'top-end', showConfirmButton: false, timer: 4200 });
+            } else if (repartoDescuadrado) {
+                Swal.fire({ icon: 'warning', title: 'Reparto incompleto', text: 'Las unidades por empleado deben sumar exactamente las unidades de cada orden.', toast: true, position: 'top-end', showConfirmButton: false, timer: 3600 });
+            }
 
             // Sobre-asignación por línea (los inputs se capan en vivo; red de seguridad)
             if (ok && !isEditMode()) {
@@ -1130,6 +1318,13 @@
                     lleva_bordado: !!(det.bordados && det.bordados.length),
                     bordados_count: det.bordados ? det.bordados.length : 0,
                     empleado_ids: (data.empleados_asignados || []).map(function (e) { return String(e.id); }),
+                    reparto: (function () {
+                        const r = {};
+                        (data.empleados_asignados || []).forEach(function (e) {
+                            r[String(e.id)] = parseInt(e.pivot ? e.pivot.cantidad : 0, 10) || 0;
+                        });
+                        return r;
+                    })(),
                     fecha_inicio: formatDateForInput(data.fecha_inicio),
                     fecha_fin_estimada: formatDateForInput(data.fecha_fin_estimada),
                     estado: data.estado || 'Pendiente',
@@ -1202,7 +1397,7 @@
                 url = "{{ route('ordenes.update', ':id') }}".replace(':id', ordWiz.editId);
                 payload = {
                     _token: '{{ csrf_token() }}', _method: 'PUT',
-                    empleados: l.empleado_ids, cantidad: l.cantidad,
+                    empleados: empleadosPayload(l), cantidad: l.cantidad,
                     fecha_inicio: l.fecha_inicio, fecha_fin_estimada: l.fecha_fin_estimada,
                     estado: l.estado || 'Pendiente', notas: notas, insumos: mapInsumos(l.insumos)
                 };
@@ -1211,7 +1406,7 @@
                 url = "{{ route('ordenes.store') }}";
                 payload = {
                     _token: '{{ csrf_token() }}',
-                    detalle_pedido_id: l.detalle_id, empleados: l.empleado_ids, cantidad: l.cantidad,
+                    detalle_pedido_id: l.detalle_id, empleados: empleadosPayload(l), cantidad: l.cantidad,
                     fecha_inicio: l.fecha_inicio, fecha_fin_estimada: l.fecha_fin_estimada,
                     notas: notas, insumos: mapInsumos(l.insumos)
                 };
@@ -1221,7 +1416,7 @@
                     _token: '{{ csrf_token() }}',
                     pedido_id: ordWiz.pedido.id,
                     ordenes: ordWiz.lineas.map(l => ({
-                        detalle_pedido_id: l.detalle_id, empleados: l.empleado_ids, cantidad: l.cantidad,
+                        detalle_pedido_id: l.detalle_id, empleados: empleadosPayload(l), cantidad: l.cantidad,
                         fecha_inicio: l.fecha_inicio, fecha_fin_estimada: l.fecha_fin_estimada,
                         notas: notas, insumos: mapInsumos(l.insumos)
                     }))
@@ -1239,12 +1434,32 @@
                 error: function (xhr) {
                     $btn.prop('disabled', false);
                     let msg = 'Ocurrió un error al procesar la solicitud.';
+                    let faltantes = null;
                     if (xhr.responseJSON) {
                         if (xhr.responseJSON.errors) {
                             msg = Object.values(xhr.responseJSON.errors).map(v => Array.isArray(v) ? v[0] : v).join('\n');
                         } else if (xhr.responseJSON.message) { msg = xhr.responseJSON.message; }
+                        if (Array.isArray(xhr.responseJSON.faltantes) && xhr.responseJSON.faltantes.length) {
+                            faltantes = xhr.responseJSON.faltantes;
+                        }
                     }
-                    Swal.fire({ icon: 'error', title: 'Error', text: msg });
+                    // Stock insuficiente: ofrecer el atajo a la compra prellenada
+                    // con los insumos faltantes (se abre en otra pestaña).
+                    if (faltantes && window.ProyeccionInsumos) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Stock insuficiente',
+                            text: msg,
+                            showCancelButton: true,
+                            confirmButtonText: '<i class="ri-shopping-cart-2-line me-1"></i>Crear compra con los faltantes',
+                            cancelButtonText: 'Cerrar',
+                            confirmButtonColor: '#c0392b'
+                        }).then(function (res) {
+                            if (res.isConfirmed) ProyeccionInsumos.abrirCompra(faltantes, 'produccion');
+                        });
+                    } else {
+                        Swal.fire({ icon: 'error', title: 'Error', text: msg });
+                    }
                 }
             });
         });
@@ -1592,12 +1807,24 @@
                     $('#view-ord-cliente-chip').attr('hidden', true).attr('aria-hidden', 'true');
                 }
 
-                // Equipo completo (multi-empleado); fallback al responsable legacy
-                const empNoms = (data.empleados_asignados && data.empleados_asignados.length)
-                    ? data.empleados_asignados.map(e => (e.persona && e.persona.nombre_completo) || ('Empleado #' + e.id))
-                    : (data.empleado && data.empleado.persona ? [data.empleado.persona.nombre_completo] : []);
-                $('#view-empleado').text(empNoms.length ? empNoms.join(', ') : 'Sin asignar');
-                $('#view-empleado-label').text(empNoms.length > 1 ? 'Empleados (' + empNoms.length + ')' : 'Empleado');
+                // Equipo completo (multi-empleado); fallback al responsable legacy.
+                // Con equipo se muestra el desglose por persona: asignadas y producidas.
+                const equipoView = data.empleados_asignados || [];
+                let empTexto;
+                if (equipoView.length > 1) {
+                    empTexto = equipoView.map(function (e) {
+                        const nom = (e.persona && e.persona.nombre_completo) || ('Empleado #' + e.id);
+                        const asig = e.pivot ? (parseInt(e.pivot.cantidad, 10) || 0) : 0;
+                        const prod = e.pivot ? (parseInt(e.pivot.cantidad_producida, 10) || 0) : 0;
+                        return nom + ' ' + asig + ' (' + prod + ' ✓)';
+                    }).join(' · ');
+                } else if (equipoView.length === 1) {
+                    empTexto = (equipoView[0].persona && equipoView[0].persona.nombre_completo) || ('Empleado #' + equipoView[0].id);
+                } else {
+                    empTexto = (data.empleado && data.empleado.persona) ? data.empleado.persona.nombre_completo : 'Sin asignar';
+                }
+                $('#view-empleado').text(empTexto);
+                $('#view-empleado-label').text(equipoView.length > 1 ? 'Equipo (' + equipoView.length + ')' : 'Empleado');
 
                 // Subtítulo del header: pedido + unidades + variante (color/talla)
                 const detSub = data.detalle_pedido || {};
@@ -1770,15 +1997,78 @@
         // ══════════════════════════════════════════════════════
         // Avance de Producción (acumula sobre la orden)
         // ══════════════════════════════════════════════════════
+        // Recalcula el restante según el empleado elegido (o el único del equipo).
+        function amAplicarRestante() {
+            let restante = 0;
+            const equipo = window.amEquipo || {};
+            const ids = Object.keys(equipo);
+            if (!ids.length) {
+                // Orden legacy sin equipo: tope = restante de la orden.
+                restante = window.amRestanteOrden || 0;
+            } else if (!$('#am-empleado-wrap').hasClass('d-none')) {
+                const id = $('#am-empleado').val();
+                restante = equipo[id] ? equipo[id].restante : 0;
+            } else {
+                restante = equipo[ids[0]].restante;
+            }
+            $('#am-restante').val(restante);
+            $('#am-restante-hint').text(`(máx. ${restante})`);
+            $('#am-cantidad-producida').attr('max', restante);
+            $('#am-ctx-restante')
+                .text(restante === 1 ? '1 pieza por producir' : restante + ' piezas por producir')
+                .toggleClass('is-done', restante <= 0);
+        }
+        $(document).on('change', '#am-empleado', amAplicarRestante);
+
         $(document).on('click', '.avance-btn', function () {
             const id = $(this).data('id');
             $.get("{{ route('ordenes.show', ':id') }}".replace(':id', id), function (data) {
-                const restante = data.cantidad_solicitada - data.cantidad_producida;
+                const equipo = data.empleados_asignados || [];
+                window.amProductoNombre = data.producto ? data.producto.nombre : 'Orden';
+                window.amRestanteOrden = (parseInt(data.cantidad_solicitada, 10) || 0) - (parseInt(data.cantidad_producida, 10) || 0);
+                window.amEquipo = {};
+                const $sel = $('#am-empleado').empty();
+                equipo.forEach(function (e) {
+                    const asignada  = parseInt(e.pivot ? e.pivot.cantidad : 0) || 0;
+                    const producida = parseInt(e.pivot ? e.pivot.cantidad_producida : 0) || 0;
+                    const rem = Math.max(0, asignada - producida);
+                    const nombre = e.persona ? e.persona.nombre : ('Empleado #' + e.id);
+                    window.amEquipo[e.id] = { nombre: nombre, restante: rem };
+                    $sel.append($('<option>').val(e.id)
+                        .text(`${nombre} — ${producida}/${asignada}${rem === 0 ? ' (completo)' : ''}`)
+                        .prop('disabled', rem === 0));
+                });
+
                 $('#am-orden-id').val(data.id);
-                $('#am-restante').val(restante);
-                $('#am-orden-info').text(`${data.producto ? data.producto.nombre : 'Orden'} · ${restante} piezas restantes`);
-                $('#am-restante-hint').text(`(máx. ${restante})`);
-                $('#am-cantidad-producida').attr('max', restante);
+                $('#am-ctx-nombre').text(window.amProductoNombre);
+
+                const multi = equipo.length > 1;
+
+                // ¿Queda algo por producir? Con equipo, que alguien tenga saldo; sin
+                // equipo, el restante de la orden. Si no, el modal va de solo lectura.
+                const haySaldo = equipo.length
+                    ? equipo.some(function (e) { return window.amEquipo[e.id].restante > 0; })
+                    : (window.amRestanteOrden > 0);
+
+                $('#am-nada').toggleClass('d-none', haySaldo);
+                $('#am-empleado-wrap').toggleClass('d-none', !multi || !haySaldo);
+                $('#am-empleado-solo').toggleClass('d-none', multi || !haySaldo);
+                $('#am-cantidades').toggleClass('d-none', !haySaldo);
+                $('#am-btn-save').toggleClass('d-none', !haySaldo);
+
+                // Preseleccionar el primer empleado CON saldo (nunca uno completo).
+                if (haySaldo) {
+                    let preId = '';
+                    if (misOrdenesEmpleadoId && window.amEquipo[misOrdenesEmpleadoId] && window.amEquipo[misOrdenesEmpleadoId].restante > 0) {
+                        preId = String(misOrdenesEmpleadoId);
+                    } else {
+                        const conSaldo = equipo.find(function (e) { return window.amEquipo[e.id].restante > 0; });
+                        preId = conSaldo ? String(conSaldo.id) : '';
+                    }
+                    $('#am-empleado').val(preId);
+                }
+
+                amAplicarRestante();
                 $('#avanceModal').modal('show');
             });
         });
@@ -1793,8 +2083,15 @@
                 Swal.fire({ icon: 'warning', title: 'Cantidad requerida', text: 'Ingresa una cantidad producida válida.', toast: true, position: 'top-end', showConfirmButton: false, timer: 3000 });
                 return;
             }
+            const multi = !$('#am-empleado-wrap').hasClass('d-none');
+            const empleadoId = multi ? $('#am-empleado').val() : null;
+            if (multi && !empleadoId) {
+                Swal.fire({ icon: 'warning', title: 'Empleado requerido', text: 'Indica quién produjo este avance.', toast: true, position: 'top-end', showConfirmButton: false, timer: 3000 });
+                return;
+            }
             if (parseInt(producida) > restante) {
-                Swal.fire({ icon: 'warning', title: 'Cantidad excedida', text: `Solo quedan ${restante} piezas por producir en esta orden.`, toast: true, position: 'top-end', showConfirmButton: false, timer: 4000 });
+                const quien = multi ? 'este empleado' : 'esta orden';
+                Swal.fire({ icon: 'warning', title: 'Cantidad excedida', text: `Solo quedan ${restante} piezas por producir para ${quien}.`, toast: true, position: 'top-end', showConfirmButton: false, timer: 4000 });
                 return;
             }
             if (defectuosa && parseInt(defectuosa) > parseInt(producida)) {
@@ -1808,7 +2105,8 @@
                 data: {
                     _token: '{{ csrf_token() }}',
                     cantidad_producida: producida,
-                    cantidad_defectuosa: defectuosa || 0
+                    cantidad_defectuosa: defectuosa || 0,
+                    empleado_id: empleadoId
                 },
                 success: function () {
                     $('#avanceModal').modal('hide');
@@ -1826,9 +2124,19 @@
         $('#avanceModal').on('hidden.bs.modal', function () {
             $('#am-orden-id').val('');
             $('#am-restante').val('');
-            $('#am-orden-info').text('');
+            $('#am-ctx-nombre').text('—');
+            $('#am-ctx-restante').text('').removeClass('is-done');
             $('#am-cantidad-producida').val('');
             $('#am-cantidad-defectuosa').val('0');
+            $('#am-empleado').empty();
+            $('#am-empleado-wrap').addClass('d-none');
+            $('#am-empleado-solo').removeClass('d-none');
+            // Restaurar estado por defecto (por si quedó en solo-lectura)
+            $('#am-nada').addClass('d-none');
+            $('#am-cantidades').removeClass('d-none');
+            $('#am-btn-save').removeClass('d-none');
+            window.amEquipo = {};
+            window.amProductoNombre = '';
         });
 
         $('#viewModal').on('hidden.bs.modal', function () {

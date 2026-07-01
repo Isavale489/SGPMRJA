@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Exceptions\StockInsuficienteException;
 use App\Models\Insumo;
 use App\Models\MovimientoInsumo;
 use App\Models\OrdenProduccion;
@@ -27,7 +28,7 @@ class ProduccionInventarioService
      * si lo hay, descuenta el stock generando un MovimientoInsumo de 'Salida' por
      * cada uno. La cantidad comprometida es la `cantidad_estimada` del pivot.
      *
-     * @throws \InvalidArgumentException si algún insumo inventariable no alcanza.
+     * @throws StockInsuficienteException si algún insumo inventariable no alcanza.
      */
     public function validarYDescontar(OrdenProduccion $orden, int $userId): void
     {
@@ -81,7 +82,7 @@ class ProduccionInventarioService
             }
 
             if (!empty($faltantes)) {
-                throw new \InvalidArgumentException(
+                throw new StockInsuficienteException(
                     'Stock insuficiente para generar la orden de producción: '
                     . implode('; ', $faltantes)
                     . '. Registra una compra para reponer el inventario.'

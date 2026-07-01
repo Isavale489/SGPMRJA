@@ -132,6 +132,7 @@ class OrdenProduccion extends Model
     public function empleadosAsignados()
     {
         return $this->belongsToMany(Empleado::class, 'orden_produccion_empleado')
+            ->withPivot(['cantidad', 'cantidad_producida', 'cantidad_defectuosa'])
             ->withTimestamps();
     }
 

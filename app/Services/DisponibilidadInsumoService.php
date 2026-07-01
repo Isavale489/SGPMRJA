@@ -82,6 +82,19 @@ class DisponibilidadInsumoService
     }
 
     /**
+     * Proyecta a partir de un mapa insumo_id => cantidad ya materializada (p. ej.
+     * los insumos reales de las órdenes de producción, que son editables y no
+     * dependen del BOM). Devuelve el MISMO shape que proyectar().
+     *
+     * @param  array<int,float>  $requeridos
+     * @return array{items:array<int,array<string,mixed>>,hay_faltantes:bool,hay_alertas:bool}
+     */
+    public function proyectarInsumos(array $requeridos): array
+    {
+        return $this->compararContraStock($requeridos);
+    }
+
+    /**
      * Compara un mapa insumo_id => cantidad requerida contra el stock actual.
      * Clasifica cada insumo inventariable en: falta / ajustado / ok.
      *

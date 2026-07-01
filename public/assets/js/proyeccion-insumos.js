@@ -182,11 +182,18 @@
                 cantidad: i.faltante
             };
         });
+        abrirCompra(faltantes, contexto);
+    }
+
+    // Igual que lo anterior pero recibiendo la lista de faltantes YA normalizada
+    // ([{insumo_id, nombre, codigo, unidad, cantidad}]). La usa el 422 de stock de
+    // la Orden de Producción, donde el faltante ya viene calculado por el backend.
+    function abrirCompra(faltantes, contexto) {
         try {
             window.localStorage.setItem(PREFILL_KEY, JSON.stringify({
                 origen: contexto || 'produccion',
                 ts: Date.now(),
-                insumos: faltantes
+                insumos: faltantes || []
             }));
         } catch (e) { /* storage no disponible: continuamos igual */ }
         window.open(COMPRAS_URL + '?prefill=1', '_blank');
@@ -216,6 +223,7 @@
     window.ProyeccionInsumos = {
         cargar: cargar,
         render: render,
+        abrirCompra: abrirCompra,
         notifyStockChange: notifyStockChange,
         onStockChange: onStockChange,
         PREFILL_KEY: PREFILL_KEY

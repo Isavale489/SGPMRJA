@@ -9,10 +9,21 @@
     $variante = collect([$color, $talla, $genero])->filter()->implode(' · ') ?: '—';
     $bordados = $det ? $det->bordados : collect();
 
-    // Empleados asignados (responsable principal primero si existe).
-    $empleados = $orden->empleadosAsignados
-        ->map(fn($e) => optional($e->persona)->nombre_completo ?? ('Empleado #' . $e->id))
-        ->filter()->values();
+    // Empleados asignados. Con equipo (2+) se muestra el desglose por persona:
+    // unidades asignadas y producidas (Brecha B). Con uno solo, solo el nombre.
+    $equipoOrden = $orden->empleadosAsignados;
+    if ($equipoOrden->count() > 1) {
+        $empleados = $equipoOrden->map(function ($e) {
+            $nom = optional($e->persona)->nombre_completo ?? ('Empleado #' . $e->id);
+            $asig = (int) ($e->pivot->cantidad ?? 0);
+            $prod = (int) ($e->pivot->cantidad_producida ?? 0);
+            return $nom . ' — ' . $asig . ' u (' . $prod . ' producidas)';
+        })->values();
+    } else {
+        $empleados = $equipoOrden
+            ->map(fn($e) => optional($e->persona)->nombre_completo ?? ('Empleado #' . $e->id))
+            ->filter()->values();
+    }
     if ($empleados->isEmpty() && $orden->empleado) {
         $empleados = collect([optional($orden->empleado->persona)->nombre_completo ?? ('Empleado #' . $orden->empleado->id)]);
     }

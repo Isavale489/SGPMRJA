@@ -284,6 +284,19 @@
                         <div class="px-3">
                             <div id="ord-resumen"></div>
 
+                            {{-- Aviso de stock proyectado (NO bloqueante): compara los insumos
+                                 reales de las órdenes contra el stock y ofrece crear la compra
+                                 prellenada con los faltantes. Mismo renderer que cotización/pedido. --}}
+                            <div class="cli-view-card cli-view-card--flat mt-2 mb-0">
+                                <div class="cli-view-card-header d-flex align-items-center justify-content-between">
+                                    <span><i class="ri-scales-3-line"></i>Disponibilidad de insumos</span>
+                                    <span class="badge rounded-pill" id="ord-proyeccion-badge" hidden></span>
+                                </div>
+                                <div class="cli-view-card-body">
+                                    <div id="ord-proyeccion-body"></div>
+                                </div>
+                            </div>
+
                             {{-- Notas (compartidas para todas las órdenes del lote) --}}
                             <div class="cli-view-card cli-view-card--flat mt-2 mb-0">
                                 <div class="cli-view-card-header">

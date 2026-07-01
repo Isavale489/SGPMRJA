@@ -1144,11 +1144,12 @@
             function rebuildMenu(sel, $menu) {
                 $menu.empty();
                 $.each(sel.options, function (i, opt) {
-                    $('<li></li>').append(
-                        $('<button type="button" class="dropdown-item afs-option"></button>')
-                            .attr('data-value', opt.value)
-                            .text(opt.text)
-                    ).appendTo($menu);
+                    var $btn = $('<button type="button" class="dropdown-item afs-option"></button>')
+                        .attr('data-value', opt.value)
+                        .text(opt.text);
+                    // Honrar <option disabled>: se muestra atenuado y no clickeable.
+                    if (opt.disabled) $btn.addClass('disabled').attr('aria-disabled', 'true');
+                    $('<li></li>').append($btn).appendTo($menu);
                 });
             }
 
@@ -1191,6 +1192,7 @@
 
                 // Elegir opción → refleja en el select + dispara change
                 $menu.on('click', '.afs-option', function () {
+                    if (this.classList.contains('disabled')) return;   // opción deshabilitada
                     var val = this.getAttribute('data-value');
                     if (sel.value !== val) { $select.val(val).trigger('change'); }
                     syncToggle(sel, $wrap);
