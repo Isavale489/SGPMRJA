@@ -6122,17 +6122,18 @@ select.js-readonly:not(.afs-native) {
 .estado-Finalizado { background-color: #198754; }
 .estado-Cancelado  { background-color: #dc3545; }
 
-/* Anchos de columna #ordenes-table (7 columnas) */
+/* Anchos de columna #ordenes-table (6 columnas visibles — el Nro. de Pedido
+   vive en la fila-cabecera de grupo .dtg-row; la columna existe oculta solo
+   para exportaciones y búsqueda) */
 #ordenes-table th:nth-child(1) { width: 8%;  text-align: center; } /* Nro. Orden */
-#ordenes-table th:nth-child(2) { width: 9%;  text-align: center; } /* Nro. Pedido */
-#ordenes-table th:nth-child(3) { width: 26%; }                     /* Producto / Empleado */
-#ordenes-table th:nth-child(4) { width: 10%; text-align: center; } /* Cant. Solicitada */
-#ordenes-table th:nth-child(5) { width: 18%; text-align: center; } /* Progreso */
-#ordenes-table th:nth-child(6) { width: 13%; text-align: center; } /* Estado */
-#ordenes-table th:nth-child(7) { width: 16%; text-align: center; } /* Acciones */
+#ordenes-table th:nth-child(2) { width: 33%; }                     /* Producto / Empleado */
+#ordenes-table th:nth-child(3) { width: 11%; text-align: center; } /* Cant. Solicitada */
+#ordenes-table th:nth-child(4) { width: 18%; text-align: center; } /* Progreso */
+#ordenes-table th:nth-child(5) { width: 14%; text-align: center; } /* Estado */
+#ordenes-table th:nth-child(6) { width: 16%; text-align: center; } /* Acciones */
 
-/* Estado (6) y Acciones (última) sin recorte para badges y menú ⋮ */
-#ordenes-table td:nth-child(6),
+/* Estado (5) y Acciones (última) sin recorte para badges y menú ⋮ */
+#ordenes-table td:nth-child(5),
 #ordenes-table td:last-child { overflow: visible; text-overflow: clip; text-align: center; }
 
 /* ============================================================
@@ -10232,3 +10233,96 @@ select.js-readonly:not(.afs-native) {
     text-align: center;
 }
 [data-bs-theme="dark"] .proy-note { color: #94a3b8; }
+
+/* ============================================================
+   DtGroupRows — fila cabecera de agrupación por Pedido
+   (assets/js/dt-group-rows.js · usado en Órdenes y Calidad)
+   ============================================================ */
+.dtg-row > td {
+    /* Neutraliza el rayado de .table-striped en la cabecera de grupo */
+    --bs-table-bg-type: transparent;
+    --bs-table-accent-bg: transparent;
+    background: linear-gradient(90deg, rgba(16, 185, 129, 0.12), rgba(16, 185, 129, 0.04) 55%, transparent);
+    border-left: 3px solid #10b981;
+    padding: 0.45rem 0.6rem;
+    overflow: visible;
+    text-overflow: clip;
+    text-align: left;
+    cursor: pointer;
+    user-select: none;
+}
+
+.dtg-row:hover > td { background: rgba(16, 185, 129, 0.16); }
+
+.dtg-row:focus-visible { outline: 2px solid #10b981; outline-offset: -2px; }
+
+.dtg-head {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-width: 0;
+}
+
+.dtg-caret {
+    font-size: 1rem;
+    color: #059669;
+    flex-shrink: 0;
+    transition: transform 0.18s ease;
+}
+
+.dtg-row.dtg-collapsed .dtg-caret { transform: rotate(-90deg); }
+
+/* Despliegue: micro-fade de entrada (repliegue instantáneo, estilo <details>) */
+@keyframes dtgFadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+tr.dtg-show > td { animation: dtgFadeIn 0.12s ease-out; }
+
+@media (prefers-reduced-motion: reduce) {
+    tr.dtg-show > td { animation: none; }
+    .dtg-caret { transition: none; }
+}
+
+.dtg-title {
+    font-weight: 600;
+    color: #065f46;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.dtg-cliente {
+    color: #64748b;
+    font-size: 12px;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.dtg-chip {
+    margin-left: auto;
+    flex-shrink: 0;
+    font-size: 11px;
+    font-weight: 600;
+    color: #047857;
+    background: rgba(16, 185, 129, 0.14);
+    border: 1px solid rgba(16, 185, 129, 0.25);
+    border-radius: 999px;
+    padding: 0.1rem 0.55rem;
+}
+
+[data-bs-theme="dark"] .dtg-row > td {
+    background: linear-gradient(90deg, rgba(16, 185, 129, 0.14), rgba(16, 185, 129, 0.05) 55%, transparent);
+    border-left-color: #34d399;
+}
+[data-bs-theme="dark"] .dtg-row:hover > td { background: rgba(16, 185, 129, 0.20); }
+[data-bs-theme="dark"] .dtg-caret { color: #34d399; }
+[data-bs-theme="dark"] .dtg-title { color: #6ee7b7; }
+[data-bs-theme="dark"] .dtg-cliente { color: #94a3b8; }
+[data-bs-theme="dark"] .dtg-chip {
+    color: #6ee7b7;
+    background: rgba(16, 185, 129, 0.18);
+    border-color: rgba(52, 211, 153, 0.35);
+}

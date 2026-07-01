@@ -1634,9 +1634,11 @@
             dom: 'rtip',
             columns: [
                 { data: 'id', name: 'id', className: 'align-middle text-center', width: '8%' },
-                { data: 'pedido_info', name: 'pedido.id', className: 'align-middle text-center', orderable: false, width: '9%' },
-                { data: 'producto_info', name: 'producto.nombre', className: 'align-middle', orderable: false, searchable: false, width: '26%' },
-                { data: 'cantidad_solicitada', name: 'cantidad_solicitada', className: 'align-middle text-center', width: '10%' },
+                // Oculta: el pedido vive en la fila-cabecera de grupo (DtGroupRows);
+                // se conserva la columna para exportaciones y búsqueda global.
+                { data: 'pedido_info', name: 'pedido.id', visible: false, orderable: false },
+                { data: 'producto_info', name: 'producto.nombre', className: 'align-middle', orderable: false, searchable: false, width: '33%' },
+                { data: 'cantidad_solicitada', name: 'cantidad_solicitada', className: 'align-middle text-center', width: '11%' },
                 {
                     data: null, className: 'align-middle', width: '18%',
                     render: function (data) {
@@ -1649,7 +1651,7 @@
                     }
                 },
                 {
-                    data: 'estado', className: 'align-middle text-center', width: '13%',
+                    data: 'estado', className: 'align-middle text-center', width: '14%',
                     render: function (data) {
                         let clases = {
                             'Pendiente': 'status-pendiente badge-soft-warning',
@@ -1714,6 +1716,30 @@
                 { extend: 'print', exportOptions: { columns: [0, 1, 2, 3, 4, 5] } }
             ],
             language: lenguajeData
+        });
+
+        // Agrupación visual por pedido: fila-cabecera colapsable antes de cada
+        // bloque de órdenes del mismo pedido (el backend ya las ordena contiguas).
+        DtGroupRows.attach(table, {
+            colspan: 6,
+            startCollapsed: true,
+            accordion: true,
+            groupKey: function (row) {
+                return row.pedido_id ? 'p' + row.pedido_id : 'manual';
+            },
+            renderHeader: function (rows, key) {
+                if (key === 'manual') {
+                    return '<span class="dtg-title"><i class="ri-tools-line me-1"></i>Órdenes manuales</span>'
+                        + '<span class="dtg-chip">' + rows.length + (rows.length === 1 ? ' orden' : ' órdenes') + '</span>';
+                }
+                var r = rows[0];
+                var persona = r.pedido && r.pedido.cliente ? r.pedido.cliente.persona : null;
+                var cliente = persona ? (persona.nombre_completo || persona.nombre || '') : '';
+                var total = parseInt(r.grupo_total, 10) || rows.length;
+                return '<span class="dtg-title"><i class="ri-shopping-bag-3-line me-1"></i>Pedido #' + r.pedido_id + '</span>'
+                    + (cliente ? '<span class="dtg-cliente">' + DtGroupRows.esc(cliente) + '</span>' : '')
+                    + '<span class="dtg-chip">' + total + (total === 1 ? ' orden' : ' órdenes') + '</span>';
+            }
         });
 
         $('#filters-collapse-body')

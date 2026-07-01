@@ -89,7 +89,7 @@
                         class="table table-bordered table-striped align-middle dt-transactional table-operativa">
                         <thead>
                             <tr>
-                                <th>Pedido</th>
+                                {{-- El pedido se muestra en la fila-cabecera de grupo (DtGroupRows) --}}
                                 <th>Producto</th>
                                 <th>Producido</th>
                                 <th>Estado calidad</th>
@@ -250,6 +250,7 @@
 @push('scripts')
     <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/1.11.5/js/dataTables.bootstrap5.min.js"></script>
+    <script src="{{ asset('assets/js/dt-group-rows.js') }}?v={{ filemtime(public_path('assets/js/dt-group-rows.js')) }}"></script>
     <script>
         $(function () {
             var RESULTADO_LABEL = { aprobado: 'Aprobado', rechazado: 'Rechazado', observado: 'Aprobado con observaciones' };
@@ -271,7 +272,6 @@
                     }
                 },
                 columns: [
-                    { data: 'pedido_info', name: 'pedido.id', className: 'align-middle text-center', orderable: false, searchable: false },
                     { data: 'producto_info', name: 'producto', className: 'align-middle', orderable: false, searchable: false },
                     {
                         data: null, className: 'align-middle text-center', orderable: false, searchable: false,
@@ -297,6 +297,30 @@
                 order: [],
                 responsive: false,
                 language: lenguajeData
+            });
+
+            // Agrupación visual por pedido: fila-cabecera colapsable antes de cada
+            // bloque de órdenes del mismo pedido (el backend las ordena contiguas).
+            DtGroupRows.attach(table, {
+                colspan: 5,
+                startCollapsed: true,
+                accordion: true,
+                groupKey: function (row) {
+                    return row.pedido_id ? 'p' + row.pedido_id : 'manual';
+                },
+                renderHeader: function (rows, key) {
+                    if (key === 'manual') {
+                        return '<span class="dtg-title"><i class="ri-tools-line me-1"></i>Órdenes manuales</span>'
+                            + '<span class="dtg-chip">' + rows.length + ' por inspeccionar</span>';
+                    }
+                    var r = rows[0];
+                    var persona = r.pedido && r.pedido.cliente ? r.pedido.cliente.persona : null;
+                    var cliente = persona ? (persona.nombre_completo || persona.nombre || '') : '';
+                    var total = parseInt(r.grupo_total, 10) || rows.length;
+                    return '<span class="dtg-title"><i class="ri-shopping-bag-3-line me-1"></i>Pedido #' + r.pedido_id + '</span>'
+                        + (cliente ? '<span class="dtg-cliente">' + DtGroupRows.esc(cliente) + '</span>' : '')
+                        + '<span class="dtg-chip">' + total + ' por inspeccionar</span>';
+                }
             });
 
             // ── Barra unificada: búsqueda + filtros ──

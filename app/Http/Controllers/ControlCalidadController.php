@@ -50,9 +50,28 @@ class ControlCalidadController extends Controller
             $ordenes->whereHas('controlesCalidad');
         }
 
-        // Orden por fecha de finalización
-        $ordenes->orderBy('fecha_fin_real', $request->input('filter_orden') === 'antiguos' ? 'asc' : 'desc')
-            ->select('orden_produccion.*');
+        // Clustering por pedido: las órdenes de un mismo pedido quedan contiguas
+        // para la fila-cabecera de grupo (dt-group-rows.js). Los grupos se ordenan
+        // por su finalización más reciente/antigua y, dentro del grupo, por fecha.
+        // Las órdenes manuales (pedido_id NULL, comparadas con <=>) forman un grupo.
+        $grupo = "op2.pedido_id <=> orden_produccion.pedido_id and op2.deleted_at is null and op2.estado = 'Finalizado'";
+        $dir   = $request->input('filter_orden') === 'antiguos' ? 'asc' : 'desc';
+        $fn    = $dir === 'asc' ? 'min' : 'max';
+
+        $ordenes->orderByRaw("(select {$fn}(op2.fecha_fin_real) from orden_produccion op2 where {$grupo}) {$dir}")
+            ->orderBy('orden_produccion.pedido_id', $dir)
+            ->orderBy('orden_produccion.fecha_fin_real', $dir)
+            ->select('orden_produccion.*')
+            // Órdenes del pedido aún en cola de inspección (chip de la cabecera de grupo)
+            ->selectRaw("(select count(*) from orden_produccion op2
+                where {$grupo}
+                  and orden_produccion.pedido_id is not null
+                  and not exists (
+                      select 1 from control_calidad cc
+                      where cc.orden_produccion_id = op2.id
+                        and cc.deleted_at is null
+                        and cc.resultado in ('aprobado', 'observado')
+                  )) as grupo_total");
 
         return DataTables::of($ordenes)
             // Búsqueda global por producto (tipo/nombre) o pedido — las columnas son
@@ -73,11 +92,6 @@ class ControlCalidadController extends Controller
                     }
                 });
             }, true)
-            ->addColumn('pedido_info', function ($orden) {
-                return $orden->pedido_id && $orden->pedido
-                    ? 'Pedido #' . $orden->pedido->id
-                    : 'Orden manual';
-            })
             ->addColumn('producto_info', fn ($orden) => $orden->nombre_producto)
             ->addColumn('cantidad_producida', fn ($orden) => $orden->cantidad_producida)
             ->addColumn('cantidad_solicitada', fn ($orden) => $orden->cantidad_solicitada)

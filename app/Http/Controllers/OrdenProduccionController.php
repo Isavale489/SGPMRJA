@@ -120,7 +120,12 @@ class OrdenProduccionController extends Controller
     public function getOrdenes(Request $request)
     {
         $ordenes = OrdenProduccion::with(['producto.tipoProducto', 'detallePedido.tipoProducto', 'detallePedido.genero', 'empleado.persona', 'creadoPor:id,name', 'pedido.cliente.persona'])
-            ->select('orden_produccion.*');
+            ->select('orden_produccion.*')
+            // Total de órdenes del pedido (para el chip de la fila-cabecera de grupo)
+            ->selectRaw('(select count(*) from orden_produccion op2
+                where op2.pedido_id <=> orden_produccion.pedido_id
+                  and op2.deleted_at is null
+                  and orden_produccion.pedido_id is not null) as grupo_total');
 
         if ($request->filled('filter_estado')) {
             $ordenes->where('orden_produccion.estado', $request->input('filter_estado'));
@@ -136,25 +141,38 @@ class OrdenProduccionController extends Controller
 
         $orden = $request->input('filter_orden', 'recientes');
 
+        // Clustering por pedido: las órdenes de un mismo pedido quedan contiguas
+        // para que la UI inserte su fila-cabecera de grupo (dt-group-rows.js).
+        // El criterio elegido ordena PRIMERO los grupos (subconsulta a nivel de
+        // pedido) y luego las órdenes dentro de cada grupo. Las órdenes manuales
+        // (pedido_id NULL, comparadas con <=>) forman un único grupo.
+        $grupo    = 'op2.pedido_id <=> orden_produccion.pedido_id and op2.deleted_at is null';
+        $progreso = fn (string $t) => "{$t}.cantidad_producida / NULLIF({$t}.cantidad_solicitada, 0)";
+
         switch ($orden) {
             case 'progreso_desc':
-                $ordenes->orderByRaw('(orden_produccion.cantidad_producida / NULLIF(orden_produccion.cantidad_solicitada, 0)) desc');
+                $ordenes->orderByRaw('(select max(' . $progreso('op2') . ") from orden_produccion op2 where {$grupo}) desc")
+                    ->orderByDesc('orden_produccion.pedido_id')
+                    ->orderByRaw('(' . $progreso('orden_produccion') . ') desc');
                 break;
             case 'progreso_asc':
-                $ordenes->orderByRaw('(orden_produccion.cantidad_producida / NULLIF(orden_produccion.cantidad_solicitada, 0)) asc');
+                $ordenes->orderByRaw('(select min(' . $progreso('op2') . ") from orden_produccion op2 where {$grupo}) asc")
+                    ->orderBy('orden_produccion.pedido_id')
+                    ->orderByRaw('(' . $progreso('orden_produccion') . ') asc');
                 break;
             case 'recientes':
             default:
-                $ordenes->orderBy('orden_produccion.created_at', 'desc');
+                $ordenes->orderByRaw("(select max(op2.created_at) from orden_produccion op2 where {$grupo}) desc")
+                    ->orderByDesc('orden_produccion.pedido_id')
+                    ->orderByDesc('orden_produccion.created_at');
                 break;
         }
 
         return DataTables::of($ordenes)
+            // Texto plano: la columna está oculta en la tabla (el pedido se muestra
+            // en la fila-cabecera de grupo) pero se incluye en exportaciones/búsqueda.
             ->addColumn('pedido_info', function ($orden) {
-                if ($orden->pedido_id && $orden->pedido) {
-                    return '<div class="fw-medium text-center">Pedido #' . $orden->pedido->id . '</div>';
-                }
-                return '<div class="fw-medium text-center text-muted">Orden Manual</div>';
+                return $orden->pedido_id ? 'Pedido #' . $orden->pedido_id : 'Orden manual';
             })
             ->addColumn('producto_info', function ($orden) {
                 $producto = $orden->nombre_producto;
@@ -183,7 +201,7 @@ class OrdenProduccionController extends Controller
                 $actions .= '</div>';
                 return $actions;
             })
-            ->rawColumns(['pedido_info', 'producto_info', 'actions'])
+            ->rawColumns(['producto_info', 'actions'])
             ->make(true);
     }
 
