@@ -115,7 +115,7 @@
                     <table id="pedidos-table" class="table table-bordered table-striped table-sm align-middle dt-transactional table-operativa">
                         <thead>
                             <tr>
-                                <th class="text-center">Pedido</th>
+                                <th>Pedido</th>
                                 <th>Cliente</th>
                                 <th>Fecha Entrega</th>
                                 <th>Total</th>

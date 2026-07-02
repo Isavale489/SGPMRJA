@@ -51,7 +51,15 @@
                 }
             },
             columns: [
-                { data: 'id', name: 'id', title: 'Pedido', className: 'text-center', width: '8%' },
+                {
+                    data: 'id', name: 'id', title: 'Pedido', className: 'align-middle', width: '14%',
+                    render: function (data) {
+                        return `<div class="ped-cell">
+                            <span class="ped-cell-ic"><i class="ri-shopping-bag-3-line"></i></span>
+                            <span class="ped-cell-txt"><span class="ped-cell-eyebrow">Pedido</span><span class="ped-cell-num">#${data}</span></span>
+                        </div>`;
+                    }
+                },
                 { data: 'cliente_nombre_display', name: 'cliente_nombre_display', defaultContent: 'N/A', width: '30%' },
                 { data: 'fecha_entrega_estimada', name: 'fecha_entrega_estimada', width: '14%' },
                 {

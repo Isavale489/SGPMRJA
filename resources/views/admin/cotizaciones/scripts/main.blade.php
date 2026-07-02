@@ -456,19 +456,27 @@
                 }
             },
             columns: [
-                { data: 'id', name: 'id', title: 'Nro.', width: '5%' },
-                { data: 'cliente_nombre', name: 'cliente_nombre', width: '32%' },
-                { data: 'fecha_cotizacion', name: 'fecha_cotizacion', width: '15%' },
+                {
+                    data: 'id', name: 'id', title: 'Nro.', className: 'align-middle', width: '15%',
+                    render: function (data) {
+                        return `<div class="ped-cell">
+                            <span class="ped-cell-ic"><i class="ri-file-list-3-line"></i></span>
+                            <span class="ped-cell-txt"><span class="ped-cell-eyebrow">Cotización</span><span class="ped-cell-num">#${data}</span></span>
+                        </div>`;
+                    }
+                },
+                { data: 'cliente_nombre', name: 'cliente_nombre', width: '25%' },
+                { data: 'fecha_cotizacion', name: 'fecha_cotizacion', width: '12%' },
                 {
                     data: 'total',
                     name: 'total',
-                    width: '15%',
+                    width: '12%',
                     render: $.fn.dataTable.render.number(',', '.', 2, '$')
                 },
                 {
                     data: 'estado',
                     name: 'estado',
-                    width: '16%',
+                    width: '12%',
                     className: 'text-center',
                     render: function (data, type, row) {
                         var estadoClasses = {

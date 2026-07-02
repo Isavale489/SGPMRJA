@@ -427,7 +427,10 @@
                 const card = `
                     <div class="cotizacion-card" data-pedido-id="${p.id}">
                         <div class="cotizacion-header">
-                            <span class="cotizacion-numero"><i class="ri-shopping-bag-line"></i> Pedido #${p.id}</span>
+                            <div class="ped-cell">
+                                <span class="ped-cell-ic"><i class="ri-shopping-bag-3-line"></i></span>
+                                <span class="ped-cell-txt"><span class="ped-cell-eyebrow">Pedido</span><span class="ped-cell-num">#${p.id}</span></span>
+                            </div>
                             <span class="badge ${hayPendientes ? 'bg-success-subtle text-success' : 'bg-secondary'}">
                                 ${p.lineas_pendientes} de ${p.total_lineas} por asignar
                             </span>
@@ -1428,7 +1431,7 @@
                 success: function (resp) {
                     $btn.prop('disabled', false);
                     $('#showModal').modal('hide');
-                    table.ajax.reload(null, false);
+                    reloadOrdenesTables();
                     Swal.fire({ icon: 'success', title: '¡Listo!', text: resp.message, timer: 2200, showConfirmButton: false });
                 },
                 error: function (xhr) {
@@ -1529,7 +1532,10 @@
                 const card = `
                     <div class="cotizacion-card">
                         <div class="cotizacion-header">
-                            <span class="cotizacion-numero"><i class="ri-file-list-3-line"></i> Orden #${o.id}</span>
+                            <div class="ped-cell">
+                                <span class="ped-cell-ic"><i class="ri-calendar-check-line"></i></span>
+                                <span class="ped-cell-txt"><span class="ped-cell-eyebrow">Orden</span><span class="ped-cell-num">#${o.id}</span></span>
+                            </div>
                             <span class="badge badge-status ${badge} rounded-pill"><i class="${iconEstadoOrden(o.estado)} me-1"></i>${escHtml(o.estado)}</span>
                         </div>
                         <div class="cotizacion-info">
@@ -1619,11 +1625,41 @@
             $('#active-filter-count').text(count).toggleClass('d-none', count === 0);
         }
 
+        // Progreso (barra) — se usa igual en la tabla de pedidos (agregado) y
+        // en la tabla de órdenes del modal (por orden).
+        function barraProgreso(producido, solicitado) {
+            let porcentaje = solicitado > 0 ? (producido / solicitado * 100).toFixed(2) : '0.00';
+            return `<div class="progress" style="height: 15px;">
+                <div class="progress-bar bg-success" role="progressbar" style="width: ${porcentaje}%"
+                    aria-valuenow="${porcentaje}" aria-valuemin="0" aria-valuemax="100">${porcentaje}%</div>
+            </div>`;
+        }
+
+        // Desglose de estados con texto (meta del modal): chips solo para conteos > 0.
+        function chipsEstadosPedido(row) {
+            const defs = [
+                ['pendientes',  'Pendiente',  'Pendiente',  'Pendientes',  'badge-soft-warning'],
+                ['en_proceso',  'En Proceso', 'En Proceso', 'En Proceso',  'badge-soft-info'],
+                ['finalizadas', 'Finalizado', 'Finalizada', 'Finalizadas', 'badge-soft-success'],
+                ['canceladas',  'Cancelado',  'Cancelada',  'Canceladas',  'badge-soft-danger']
+            ];
+            return defs
+                .map(function ([campo, estado, singular, plural, badge]) {
+                    const n = parseInt(row[campo], 10) || 0;
+                    if (!n) return '';
+                    return `<span class="badge badge-status ${badge} rounded-pill"><i class="${iconEstadoOrden(estado)} me-1"></i>${n} ${n === 1 ? singular : plural}</span>`;
+                })
+                .filter(Boolean)
+                .join(' ');
+        }
+
+        // Tabla principal: una fila por pedido (agregados de sus órdenes).
+        // El detalle por orden vive en el modal "Ver órdenes".
         var table = $('#ordenes-table').DataTable({
             processing: true,
             serverSide: true,
             ajax: {
-                url: "{{ route('ordenes.data') }}",
+                url: "{{ route('ordenes.pedidos-data') }}",
                 data: function (d) {
                     d.filter_estado = $('#filter-estado').val();
                     d.filter_fecha_desde = $('#filter-fecha-desde').val();
@@ -1633,74 +1669,50 @@
             },
             dom: 'rtip',
             columns: [
-                { data: 'id', name: 'id', className: 'align-middle text-center', width: '8%' },
-                // Oculta: el pedido vive en la fila-cabecera de grupo (DtGroupRows);
-                // se conserva la columna para exportaciones y búsqueda global.
-                { data: 'pedido_info', name: 'pedido.id', visible: false, orderable: false },
-                { data: 'producto_info', name: 'producto.nombre', className: 'align-middle', orderable: false, searchable: false, width: '33%' },
-                { data: 'cantidad_solicitada', name: 'cantidad_solicitada', className: 'align-middle text-center', width: '11%' },
                 {
-                    data: null, className: 'align-middle', width: '18%',
+                    data: 'pedido_id', orderable: false, searchable: false,
+                    className: 'align-middle', width: '18%',
                     render: function (data) {
-                        let porcentaje = data.cantidad_solicitada > 0
-                            ? (data.cantidad_producida / data.cantidad_solicitada * 100).toFixed(2) : '0.00';
-                        return `<div class="progress" style="height: 15px;">
-                            <div class="progress-bar bg-success" role="progressbar" style="width: ${porcentaje}%"
-                                aria-valuenow="${porcentaje}" aria-valuemin="0" aria-valuemax="100">${porcentaje}%</div>
+                        if (data != null) {
+                            return `<div class="ped-cell">
+                                <span class="ped-cell-ic"><i class="ri-shopping-bag-3-line"></i></span>
+                                <span class="ped-cell-txt"><span class="ped-cell-eyebrow">Pedido</span><span class="ped-cell-num">#${data}</span></span>
+                            </div>`;
+                        }
+                        return `<div class="ped-cell">
+                            <span class="ped-cell-ic ped-cell-ic--manual"><i class="ri-tools-line"></i></span>
+                            <span class="ped-cell-txt"><span class="ped-cell-eyebrow">Sin pedido</span><span class="ped-cell-num">Manuales</span></span>
                         </div>`;
                     }
                 },
                 {
-                    data: 'estado', className: 'align-middle text-center', width: '14%',
+                    data: 'cliente_nombre', orderable: false, searchable: false,
+                    className: 'align-middle', width: '28%',
                     render: function (data) {
-                        let clases = {
-                            'Pendiente': 'status-pendiente badge-soft-warning',
-                            'En Proceso': 'status-procesando badge-soft-info',
-                            'Finalizado': 'status-finalizado badge-soft-success',
-                            'Cancelado': 'status-cancelado badge-soft-danger'
-                        };
-                        let badgeClass = clases[data] || 'badge-soft-secondary';
-                        return `<span class="badge badge-status ${badgeClass} rounded-pill"><i class="${iconEstadoOrden(data)} me-1"></i>${data}</span>`;
+                        return data ? escHtml(data) : '<span class="text-muted">—</span>';
                     }
                 },
                 {
-                    data: 'id',
-                    name: 'actions',
-                    orderable: false,
-                    searchable: false,
-                    className: 'align-middle text-center',
-                    width: '16%',
-                    render: function (data, type, row) {
-                        const estado = row.estado;
-                        const estadoActivo = ['Pendiente', 'En Proceso'].includes(estado);
-                        const esCancelado = estado === 'Cancelado';
-
-                        const sVer = `<button class="btn btn-sm btn-soft-info view-btn" data-id="${data}" title="Ver detalle"><i class="ri-eye-fill"></i></button>`;
-
-                        let items = '';
-                        items += `<li><a class="dropdown-item act-item act-pdf" href="/ordenes/${data}/pdf" target="_blank"><span class="act-ic"><i class="ri-file-pdf-fill"></i></span>Ver PDF</a></li>`;
-                        if (estadoActivo) {
-                            items += `<li><button type="button" class="dropdown-item act-item act-primary avance-btn" data-id="${data}"><span class="act-ic"><i class="ri-add-circle-line"></i></span>Registrar avance</button></li>`;
-                        }
-                        if (!esCancelado) {
-                            items += `<li><button type="button" class="dropdown-item act-item act-edit edit-btn" data-id="${data}"><span class="act-ic"><i class="ri-pencil-fill"></i></span>Editar</button></li>`;
-                        }
-                        // Cancelar (Pendiente/En Proceso): reposición de stock condicional + merma.
-                        if (estadoActivo) {
-                            items += `<li><button type="button" class="dropdown-item act-item act-warning cancelar-btn" data-id="${data}" data-estado="${estado}"><span class="act-ic"><i class="ri-close-circle-line"></i></span>Cancelar orden</button></li>`;
-                        }
-                        // Eliminar (hard delete) solo aplica a órdenes Pendientes.
-                        if (estado === 'Pendiente') {
-                            items += `<li><button type="button" class="dropdown-item act-item act-del remove-btn" data-id="${data}"><span class="act-ic"><i class="ri-delete-bin-fill"></i></span>Eliminar</button></li>`;
-                        }
-
-                        const menu = `
-                            <div class="dropdown d-inline-block">
-                              <button class="btn btn-sm btn-soft-secondary" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Más acciones"><i class="ri-more-2-fill"></i></button>
-                              <ul class="dropdown-menu dropdown-menu-end actions-menu">${items}</ul>
-                            </div>`;
-
-                        return `<div class="d-flex gap-1 justify-content-center align-items-center">${sVer}${menu}</div>`;
+                    data: 'total_ordenes', orderable: false, searchable: false,
+                    className: 'align-middle text-center', width: '12%',
+                    render: function (data) {
+                        const n = parseInt(data, 10) || 0;
+                        return `<span class="ord-count-chip">${n} ${n === 1 ? 'orden' : 'órdenes'}</span>`;
+                    }
+                },
+                {
+                    data: null, orderable: false, searchable: false,
+                    className: 'align-middle', width: '26%',
+                    render: function (data) {
+                        return barraProgreso(parseFloat(data.producido) || 0, parseFloat(data.solicitado) || 0);
+                    }
+                },
+                {
+                    data: null, orderable: false, searchable: false,
+                    className: 'align-middle text-center', width: '16%',
+                    render: function () {
+                        return `<button type="button" class="btn btn-sm btn-soft-info ver-ordenes-btn">
+                            <i class="ri-list-check-2 me-1"></i>Ver órdenes</button>`;
                     }
                 }
             ],
@@ -1708,38 +1720,156 @@
             ordering: false,
             autoWidth: false,
             responsive: false,
-            buttons: [
-                { extend: 'copy',  exportOptions: { columns: [0, 1, 2, 3, 4, 5] } },
-                { extend: 'csv',   exportOptions: { columns: [0, 1, 2, 3, 4, 5] } },
-                { extend: 'excel', exportOptions: { columns: [0, 1, 2, 3, 4, 5] } },
-                { extend: 'pdf',   exportOptions: { columns: [0, 1, 2, 3, 4, 5] } },
-                { extend: 'print', exportOptions: { columns: [0, 1, 2, 3, 4, 5] } }
-            ],
             language: lenguajeData
         });
 
-        // Agrupación visual por pedido: fila-cabecera colapsable antes de cada
-        // bloque de órdenes del mismo pedido (el backend ya las ordena contiguas).
-        DtGroupRows.attach(table, {
-            colspan: 6,
-            startCollapsed: true,
-            accordion: true,
-            groupKey: function (row) {
-                return row.pedido_id ? 'p' + row.pedido_id : 'manual';
-            },
-            renderHeader: function (rows, key) {
-                if (key === 'manual') {
-                    return '<span class="dtg-title"><i class="ri-tools-line me-1"></i>Órdenes manuales</span>'
-                        + '<span class="dtg-chip">' + rows.length + (rows.length === 1 ? ' orden' : ' órdenes') + '</span>';
-                }
-                var r = rows[0];
-                var persona = r.pedido && r.pedido.cliente ? r.pedido.cliente.persona : null;
-                var cliente = persona ? (persona.nombre_completo || persona.nombre || '') : '';
-                var total = parseInt(r.grupo_total, 10) || rows.length;
-                return '<span class="dtg-title"><i class="ri-shopping-bag-3-line me-1"></i>Pedido #' + r.pedido_id + '</span>'
-                    + (cliente ? '<span class="dtg-cliente">' + DtGroupRows.esc(cliente) + '</span>' : '')
-                    + '<span class="dtg-chip">' + total + (total === 1 ? ' orden' : ' órdenes') + '</span>';
+        // ══════════════════════════════════════════════════════
+        // Modal "Ver órdenes" — DataTable de las órdenes del pedido
+        // ══════════════════════════════════════════════════════
+        var pedidoOrdenesTable = null;
+        var pedidoOrdenesKey = null; // id del pedido o 'manual' (órdenes sin pedido)
+
+        // Recarga la tabla de pedidos y, si ya existe, la del modal (los
+        // agregados y el detalle deben moverse juntos tras cada acción).
+        function reloadOrdenesTables() {
+            table.ajax.reload(null, false);
+            if (pedidoOrdenesTable) pedidoOrdenesTable.ajax.reload(null, false);
+        }
+
+        function renderPedidoOrdenesMeta(row) {
+            const esManual = row.pedido_id == null;
+            const total = parseInt(row.total_ordenes, 10) || 0;
+            let meta = '';
+            if (!esManual && row.cliente_nombre) {
+                meta += `<span class="badge badge-soft-primary rounded-pill"><i class="ri-user-3-line me-1"></i>${escHtml(row.cliente_nombre)}</span>`;
             }
+            meta += `<span class="badge badge-soft-secondary rounded-pill"><i class="ri-stack-line me-1"></i>${total} ${total === 1 ? 'orden' : 'órdenes'}</span>`;
+            meta += chipsEstadosPedido(row);
+            $('#pedido-ordenes-meta').html(meta);
+        }
+
+        // Los agregados del pedido abierto cambian con las acciones del modal
+        // (avance, cancelar, eliminar): re-render de los chips en cada redraw.
+        table.on('draw', function () {
+            if (pedidoOrdenesKey === null || !$('#pedidoOrdenesModal').hasClass('show')) return;
+            const row = table.rows().data().toArray().find(function (r) {
+                return (r.pedido_id == null ? 'manual' : String(r.pedido_id)) === pedidoOrdenesKey;
+            });
+            if (row) renderPedidoOrdenesMeta(row);
+        });
+
+        function abrirPedidoOrdenes(row) {
+            const esManual = row.pedido_id == null;
+            pedidoOrdenesKey = esManual ? 'manual' : String(row.pedido_id);
+
+            $('#pedido-ordenes-title').text(esManual ? 'Órdenes manuales' : 'Pedido #' + row.pedido_id);
+            renderPedidoOrdenesMeta(row);
+
+            if (!pedidoOrdenesTable) {
+                pedidoOrdenesTable = $('#pedido-ordenes-table').DataTable({
+                    processing: true,
+                    serverSide: true,
+                    ajax: {
+                        url: "{{ route('ordenes.data') }}",
+                        data: function (d) {
+                            d.pedido_id = pedidoOrdenesKey;
+                        }
+                    },
+                    dom: 'rtip',
+                    columns: [
+                        { data: 'id', name: 'id', className: 'align-middle text-center', width: '9%' },
+                        { data: 'producto_info', name: 'producto.nombre', className: 'align-middle', orderable: false, searchable: false, width: '34%' },
+                        { data: 'cantidad_solicitada', name: 'cantidad_solicitada', className: 'align-middle text-center', width: '12%' },
+                        {
+                            data: null, className: 'align-middle', width: '16%',
+                            render: function (data) {
+                                return barraProgreso(data.cantidad_producida, data.cantidad_solicitada);
+                            }
+                        },
+                        {
+                            data: 'estado', className: 'align-middle text-center', width: '14%',
+                            render: function (data) {
+                                let clases = {
+                                    'Pendiente': 'status-pendiente badge-soft-warning',
+                                    'En Proceso': 'status-procesando badge-soft-info',
+                                    'Finalizado': 'status-finalizado badge-soft-success',
+                                    'Cancelado': 'status-cancelado badge-soft-danger'
+                                };
+                                let badgeClass = clases[data] || 'badge-soft-secondary';
+                                return `<span class="badge badge-status ${badgeClass} rounded-pill"><i class="${iconEstadoOrden(data)} me-1"></i>${data}</span>`;
+                            }
+                        },
+                        {
+                            data: 'id',
+                            name: 'actions',
+                            orderable: false,
+                            searchable: false,
+                            className: 'align-middle text-center',
+                            width: '15%',
+                            render: function (data, type, row) {
+                                const estado = row.estado;
+                                const estadoActivo = ['Pendiente', 'En Proceso'].includes(estado);
+                                const esCancelado = estado === 'Cancelado';
+
+                                const sVer = `<button class="btn btn-sm btn-soft-info view-btn" data-id="${data}" title="Ver detalle"><i class="ri-eye-fill"></i></button>`;
+
+                                let items = '';
+                                items += `<li><a class="dropdown-item act-item act-pdf" href="/ordenes/${data}/pdf" target="_blank"><span class="act-ic"><i class="ri-file-pdf-fill"></i></span>Ver PDF</a></li>`;
+                                if (estadoActivo) {
+                                    items += `<li><button type="button" class="dropdown-item act-item act-primary avance-btn" data-id="${data}"><span class="act-ic"><i class="ri-add-circle-line"></i></span>Registrar avance</button></li>`;
+                                }
+                                if (!esCancelado) {
+                                    items += `<li><button type="button" class="dropdown-item act-item act-edit edit-btn" data-id="${data}"><span class="act-ic"><i class="ri-pencil-fill"></i></span>Editar</button></li>`;
+                                }
+                                // Cancelar (Pendiente/En Proceso): reposición de stock condicional + merma.
+                                if (estadoActivo) {
+                                    items += `<li><button type="button" class="dropdown-item act-item act-warning cancelar-btn" data-id="${data}" data-estado="${estado}"><span class="act-ic"><i class="ri-close-circle-line"></i></span>Cancelar orden</button></li>`;
+                                }
+                                // Eliminar (hard delete) solo aplica a órdenes Pendientes.
+                                if (estado === 'Pendiente') {
+                                    items += `<li><button type="button" class="dropdown-item act-item act-del remove-btn" data-id="${data}"><span class="act-ic"><i class="ri-delete-bin-fill"></i></span>Eliminar</button></li>`;
+                                }
+
+                                const menu = `
+                                    <div class="dropdown d-inline-block">
+                                      <button class="btn btn-sm btn-soft-secondary" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Más acciones"><i class="ri-more-2-fill"></i></button>
+                                      <ul class="dropdown-menu dropdown-menu-end actions-menu">${items}</ul>
+                                    </div>`;
+
+                                return `<div class="d-flex gap-1 justify-content-center align-items-center">${sVer}${menu}</div>`;
+                            }
+                        }
+                    ],
+                    order: [],
+                    ordering: false,
+                    autoWidth: false,
+                    responsive: false,
+                    language: lenguajeData
+                });
+            } else {
+                pedidoOrdenesTable.ajax.reload();
+            }
+
+            $('#pedidoOrdenesModal').modal('show');
+        }
+
+        // DataTables calcula mal los anchos en contenedores ocultos:
+        // reajustar al mostrarse el modal.
+        $('#pedidoOrdenesModal').on('shown.bs.modal', function () {
+            if (pedidoOrdenesTable) pedidoOrdenesTable.columns.adjust();
+        });
+
+        $(document).on('click', '.ver-ordenes-btn', function () {
+            const row = table.row($(this).closest('tr')).data();
+            if (row) abrirPedidoOrdenes(row);
+        });
+
+        // Toda la fila abre el modal (paridad con la fila-cabecera colapsable
+        // que había antes), salvo clicks sobre botones/enlaces.
+        $('#ordenes-table tbody').on('click', 'tr', function (e) {
+            if ($(e.target).closest('button, a').length) return;
+            const row = table.row(this).data();
+            if (row) abrirPedidoOrdenes(row);
         });
 
         $('#filters-collapse-body')
@@ -1945,7 +2075,7 @@
                         method: 'DELETE',
                         data: { _token: '{{ csrf_token() }}' },
                         success: function (response) {
-                            table.ajax.reload();
+                            reloadOrdenesTables();
                             Swal.fire('Eliminado', response.message, 'success');
                         },
                         error: function (xhr) {
@@ -1970,7 +2100,7 @@
                     method: 'POST',
                     data: { _token: '{{ csrf_token() }}', _method: 'PATCH', motivo_cancelacion: motivo || null },
                     success: function (resp) {
-                        table.ajax.reload(null, false);
+                        reloadOrdenesTables();
                         if (misOrdenesEmpleadoId) { cargarMisOrdenes(misOrdenesEmpleadoId); }
                         Swal.fire({ icon: 'success', title: 'Orden cancelada', text: resp.message, timer: 2800, showConfirmButton: false });
                     },
@@ -2136,7 +2266,7 @@
                 },
                 success: function () {
                     $('#avanceModal').modal('hide');
-                    table.ajax.reload(null, false);
+                    reloadOrdenesTables();
                     // Si "Mis Órdenes" está abierto, refrescar su lista con el avance recién registrado
                     if (misOrdenesEmpleadoId) { cargarMisOrdenes(misOrdenesEmpleadoId); }
                     Swal.fire({ icon: 'success', title: 'Avance registrado', toast: true, position: 'top-end', showConfirmButton: false, timer: 2500 });

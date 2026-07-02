@@ -1221,11 +1221,11 @@ header#page-topbar,
    ============================================ */
 
 /* ── DataTable — anchos de columna (base en .table-operativa) ── */
-#cotizaciones-table th:nth-child(1) { width: 5%; }
-#cotizaciones-table th:nth-child(2) { width: 30%; }
-#cotizaciones-table th:nth-child(3) { width: 13%; }
-#cotizaciones-table th:nth-child(4) { width: 13%; }
-#cotizaciones-table th:nth-child(5) { width: 15%; text-align: center; }
+#cotizaciones-table th:nth-child(1) { width: 15%; }                    /* Nro. (.ped-cell) */
+#cotizaciones-table th:nth-child(2) { width: 25%; }
+#cotizaciones-table th:nth-child(3) { width: 12%; }
+#cotizaciones-table th:nth-child(4) { width: 12%; }
+#cotizaciones-table th:nth-child(5) { width: 12%; text-align: center; }
 #cotizaciones-table th:nth-child(6) { width: 24%; text-align: center; }
 
 #cotizaciones-table td:nth-child(5) {
@@ -4838,8 +4838,8 @@ header#page-topbar,
    ============================================ */
 
 /* ── DataTable — anchos de columna (base en .table-operativa) ── */
-#pedidos-table th:nth-child(1) { width: 8%;  text-align: center; }
-#pedidos-table th:nth-child(2) { width: 40%; }
+#pedidos-table th:nth-child(1) { width: 14%; }                     /* Pedido (.ped-cell) */
+#pedidos-table th:nth-child(2) { width: 34%; }
 #pedidos-table th:nth-child(3) { width: 14%; }
 #pedidos-table th:nth-child(4) { width: 12%; }
 #pedidos-table th:nth-child(5) { width: 14%; text-align: center; }
@@ -5172,18 +5172,70 @@ header#page-topbar,
     justify-content: space-between;
     align-items: center;
     margin-bottom: 12px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #eef2f7;
 }
 
-.cotizacion-numero {
+/* Bloque de total etiquetado (espejo del .ped-cell, alineado a la derecha) */
+.cot-total-block {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    line-height: 1.15;
+    flex-shrink: 0;
+}
+.cot-total-eyebrow {
+    font-size: 10px;
     font-weight: 600;
-    color: #1e3c72;
-    font-size: 1.1rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #94a3b8;
+}
+.cot-total-bs {
+    font-size: 11px;
+    font-weight: 600;
+    color: #64748b;
+    white-space: nowrap;
 }
 
 .cotizacion-total {
     font-weight: 700;
     color: #059669;
     font-size: 1.2rem;
+}
+
+/* Cuerpo de la card: cliente (chip avatar + doc) a la izquierda, mini-stats
+   etiquetadas (Emitida / Vence / Productos) a la derecha */
+.cot-card-body {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px 16px;
+    flex-wrap: wrap;
+}
+.cot-facts {
+    display: flex;
+    align-items: center;
+    gap: 22px;
+    flex-wrap: wrap;
+}
+.cot-fact {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.2;
+}
+.cot-fact-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #94a3b8;
+}
+.cot-fact-val {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: #1e293b;
+    white-space: nowrap;
 }
 
 .cotizacion-info {
@@ -5229,8 +5281,16 @@ header#page-topbar,
     box-shadow: 0 2px 8px rgba(78, 122, 199, 0.25);
 }
 
-[data-bs-theme="dark"] .cotizacion-numero {
-    color: #93c5fd;   /* blue-300 — contraste WCAG AA sobre fondo oscuro */
+[data-bs-theme="dark"] .cotizacion-header {
+    border-bottom-color: rgba(255, 255, 255, 0.08);
+}
+
+[data-bs-theme="dark"] .cot-total-bs {
+    color: #94a3b8;
+}
+
+[data-bs-theme="dark"] .cot-fact-val {
+    color: #ced4da;
 }
 
 [data-bs-theme="dark"] .cotizacion-total {
@@ -6114,7 +6174,8 @@ select.js-readonly:not(.afs-native) {
 #insumos-container .row { margin-bottom: 10px; }
 
 /* Progress bars en columna de tabla */
-#ordenes-table .progress { height: 20px; }
+#ordenes-table .progress,
+#pedido-ordenes-table .progress { height: 20px; }
 
 /* Colores de estado → progress bar fill */
 .estado-Pendiente  { background-color: #ffc107; }
@@ -6122,19 +6183,75 @@ select.js-readonly:not(.afs-native) {
 .estado-Finalizado { background-color: #198754; }
 .estado-Cancelado  { background-color: #dc3545; }
 
-/* Anchos de columna #ordenes-table (6 columnas visibles — el Nro. de Pedido
-   vive en la fila-cabecera de grupo .dtg-row; la columna existe oculta solo
-   para exportaciones y búsqueda) */
-#ordenes-table th:nth-child(1) { width: 8%;  text-align: center; } /* Nro. Orden */
-#ordenes-table th:nth-child(2) { width: 33%; }                     /* Producto / Empleado */
-#ordenes-table th:nth-child(3) { width: 11%; text-align: center; } /* Cant. Solicitada */
-#ordenes-table th:nth-child(4) { width: 18%; text-align: center; } /* Progreso */
-#ordenes-table th:nth-child(5) { width: 14%; text-align: center; } /* Estado */
-#ordenes-table th:nth-child(6) { width: 16%; text-align: center; } /* Acciones */
+/* Tabla principal: una fila por pedido — toda la fila abre el modal "Ver órdenes" */
+#ordenes-table tbody tr { cursor: pointer; }
+
+/* Celda Pedido: tile de ícono emerald + texto en dos niveles (eyebrow + número) */
+.ped-cell { display: flex; align-items: center; gap: 0.6rem; }
+.ped-cell-ic {
+    flex-shrink: 0;
+    width: 2.1rem;
+    height: 2.1rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.55rem;
+    background: rgba(16, 185, 129, 0.14);
+    color: #047857;
+    font-size: 1.05rem;
+}
+.ped-cell-ic--manual { background: rgba(100, 116, 139, 0.14); color: #475569; }
+.ped-cell-txt { display: flex; flex-direction: column; line-height: 1.15; }
+.ped-cell-eyebrow {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #94a3b8;
+}
+.ped-cell-num { font-weight: 700; font-size: 0.95rem; color: var(--vz-heading-color, #364574); }
+[data-bs-theme="dark"] .ped-cell-ic { background: rgba(16, 185, 129, 0.18); color: #6ee7b7; }
+[data-bs-theme="dark"] .ped-cell-ic--manual { background: rgba(148, 163, 184, 0.16); color: #94a3b8; }
+[data-bs-theme="dark"] .ped-cell-num { color: #ced4da; }
+
+/* Chip contador de órdenes del pedido (misma paleta emerald del .dtg-chip) */
+.ord-count-chip {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 600;
+    color: #047857;
+    background: rgba(16, 185, 129, 0.14);
+    border: 1px solid rgba(16, 185, 129, 0.25);
+    border-radius: 999px;
+    padding: 0.15rem 0.6rem;
+    white-space: nowrap;
+}
+[data-bs-theme="dark"] .ord-count-chip {
+    color: #6ee7b7;
+    background: rgba(16, 185, 129, 0.18);
+    border-color: rgba(52, 211, 153, 0.35);
+}
+
+/* Anchos de columna #ordenes-table (nivel pedido) */
+#ordenes-table th:nth-child(1) { width: 18%; }                     /* Pedido */
+#ordenes-table th:nth-child(2) { width: 28%; }                     /* Cliente */
+#ordenes-table th:nth-child(3) { width: 12%; text-align: center; } /* Órdenes */
+#ordenes-table th:nth-child(4) { width: 26%; text-align: center; } /* Progreso Global */
+#ordenes-table th:nth-child(5) { width: 16%; text-align: center; } /* Acciones */
+
+#ordenes-table td:last-child { overflow: visible; text-overflow: clip; text-align: center; }
+
+/* Anchos de columna #pedido-ordenes-table (modal "Ver órdenes", nivel orden) */
+#pedido-ordenes-table th:nth-child(1) { width: 9%;  text-align: center; } /* Nro. Orden */
+#pedido-ordenes-table th:nth-child(2) { width: 34%; }                     /* Producto / Empleado */
+#pedido-ordenes-table th:nth-child(3) { width: 12%; text-align: center; } /* Cant. Solicitada */
+#pedido-ordenes-table th:nth-child(4) { width: 16%; text-align: center; } /* Progreso */
+#pedido-ordenes-table th:nth-child(5) { width: 14%; text-align: center; } /* Estado */
+#pedido-ordenes-table th:nth-child(6) { width: 15%; text-align: center; } /* Acciones */
 
 /* Estado (5) y Acciones (última) sin recorte para badges y menú ⋮ */
-#ordenes-table td:nth-child(5),
-#ordenes-table td:last-child { overflow: visible; text-overflow: clip; text-align: center; }
+#pedido-ordenes-table td:nth-child(5),
+#pedido-ordenes-table td:last-child { overflow: visible; text-overflow: clip; text-align: center; }
 
 /* ============================================================
    MÓDULO COMPRAS — Anchos de columna

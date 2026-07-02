@@ -117,63 +117,24 @@ class OrdenProduccionController extends Controller
         return view('admin.ordenes.index', compact('insumos', 'empleados'));
     }
 
+    /**
+     * Órdenes de un pedido (o las manuales) para el DataTable del modal
+     * "Ver órdenes". `pedido_id` = id numérico o 'manual' (sin pedido).
+     */
     public function getOrdenes(Request $request)
     {
         $ordenes = OrdenProduccion::with(['producto.tipoProducto', 'detallePedido.tipoProducto', 'detallePedido.genero', 'empleado.persona', 'creadoPor:id,name', 'pedido.cliente.persona'])
-            ->select('orden_produccion.*')
-            // Total de órdenes del pedido (para el chip de la fila-cabecera de grupo)
-            ->selectRaw('(select count(*) from orden_produccion op2
-                where op2.pedido_id <=> orden_produccion.pedido_id
-                  and op2.deleted_at is null
-                  and orden_produccion.pedido_id is not null) as grupo_total');
+            ->select('orden_produccion.*');
 
-        if ($request->filled('filter_estado')) {
-            $ordenes->where('orden_produccion.estado', $request->input('filter_estado'));
+        if ($request->filled('pedido_id')) {
+            $request->input('pedido_id') === 'manual'
+                ? $ordenes->whereNull('orden_produccion.pedido_id')
+                : $ordenes->where('orden_produccion.pedido_id', $request->input('pedido_id'));
         }
 
-        if ($request->filled('filter_fecha_desde')) {
-            $ordenes->whereDate('orden_produccion.fecha_fin_estimada', '>=', $request->input('filter_fecha_desde'));
-        }
-
-        if ($request->filled('filter_fecha_hasta')) {
-            $ordenes->whereDate('orden_produccion.fecha_fin_estimada', '<=', $request->input('filter_fecha_hasta'));
-        }
-
-        $orden = $request->input('filter_orden', 'recientes');
-
-        // Clustering por pedido: las órdenes de un mismo pedido quedan contiguas
-        // para que la UI inserte su fila-cabecera de grupo (dt-group-rows.js).
-        // El criterio elegido ordena PRIMERO los grupos (subconsulta a nivel de
-        // pedido) y luego las órdenes dentro de cada grupo. Las órdenes manuales
-        // (pedido_id NULL, comparadas con <=>) forman un único grupo.
-        $grupo    = 'op2.pedido_id <=> orden_produccion.pedido_id and op2.deleted_at is null';
-        $progreso = fn (string $t) => "{$t}.cantidad_producida / NULLIF({$t}.cantidad_solicitada, 0)";
-
-        switch ($orden) {
-            case 'progreso_desc':
-                $ordenes->orderByRaw('(select max(' . $progreso('op2') . ") from orden_produccion op2 where {$grupo}) desc")
-                    ->orderByDesc('orden_produccion.pedido_id')
-                    ->orderByRaw('(' . $progreso('orden_produccion') . ') desc');
-                break;
-            case 'progreso_asc':
-                $ordenes->orderByRaw('(select min(' . $progreso('op2') . ") from orden_produccion op2 where {$grupo}) asc")
-                    ->orderBy('orden_produccion.pedido_id')
-                    ->orderByRaw('(' . $progreso('orden_produccion') . ') asc');
-                break;
-            case 'recientes':
-            default:
-                $ordenes->orderByRaw("(select max(op2.created_at) from orden_produccion op2 where {$grupo}) desc")
-                    ->orderByDesc('orden_produccion.pedido_id')
-                    ->orderByDesc('orden_produccion.created_at');
-                break;
-        }
+        $ordenes->orderByDesc('orden_produccion.created_at');
 
         return DataTables::of($ordenes)
-            // Texto plano: la columna está oculta en la tabla (el pedido se muestra
-            // en la fila-cabecera de grupo) pero se incluye en exportaciones/búsqueda.
-            ->addColumn('pedido_info', function ($orden) {
-                return $orden->pedido_id ? 'Pedido #' . $orden->pedido_id : 'Orden manual';
-            })
             ->addColumn('producto_info', function ($orden) {
                 $producto = $orden->nombre_producto;
                 $empleado = $orden->empleado && $orden->empleado->persona
@@ -202,6 +163,86 @@ class OrdenProduccionController extends Controller
                 return $actions;
             })
             ->rawColumns(['producto_info', 'actions'])
+            ->make(true);
+    }
+
+    /**
+     * Tabla principal de /ordenes: una fila por pedido (más una para las
+     * órdenes manuales) con agregados de sus órdenes de producción. El detalle
+     * por orden vive en el modal "Ver órdenes" (getOrdenes con pedido_id).
+     *
+     * Los filtros de estado/fecha se aplican ANTES de agrupar: el pedido
+     * aparece solo si tiene órdenes que cumplan, y los agregados (conteos,
+     * progreso) reflejan únicamente esas órdenes.
+     */
+    public function getPedidosOrdenes(Request $request)
+    {
+        $pedidos = OrdenProduccion::query()
+            ->leftJoin('pedido', 'pedido.id', '=', 'orden_produccion.pedido_id')
+            ->leftJoin('cliente', 'cliente.id', '=', 'pedido.cliente_id')
+            ->leftJoin('persona', 'persona.id', '=', 'cliente.persona_id')
+            ->groupBy('orden_produccion.pedido_id')
+            // MAX() sobre persona.nombre: valor único por grupo (1 pedido = 1 cliente),
+            // envuelto en agregado para cumplir ONLY_FULL_GROUP_BY de MySQL 8.
+            ->selectRaw("
+                orden_produccion.pedido_id,
+                MAX(persona.nombre) as cliente_nombre,
+                COUNT(*) as total_ordenes,
+                SUM(orden_produccion.estado = 'Pendiente')  as pendientes,
+                SUM(orden_produccion.estado = 'En Proceso') as en_proceso,
+                SUM(orden_produccion.estado = 'Finalizado') as finalizadas,
+                SUM(orden_produccion.estado = 'Cancelado')  as canceladas,
+                SUM(IF(orden_produccion.estado <> 'Cancelado', orden_produccion.cantidad_solicitada, 0)) as solicitado,
+                SUM(IF(orden_produccion.estado <> 'Cancelado', orden_produccion.cantidad_producida, 0))  as producido,
+                MAX(orden_produccion.created_at) as ultima_orden
+            ");
+
+        if ($request->filled('filter_estado')) {
+            $pedidos->where('orden_produccion.estado', $request->input('filter_estado'));
+        }
+
+        if ($request->filled('filter_fecha_desde')) {
+            $pedidos->whereDate('orden_produccion.fecha_fin_estimada', '>=', $request->input('filter_fecha_desde'));
+        }
+
+        if ($request->filled('filter_fecha_hasta')) {
+            $pedidos->whereDate('orden_produccion.fecha_fin_estimada', '<=', $request->input('filter_fecha_hasta'));
+        }
+
+        // El progreso global excluye canceladas (mismos SUM del select).
+        $progreso = "SUM(IF(orden_produccion.estado <> 'Cancelado', orden_produccion.cantidad_producida, 0))
+            / NULLIF(SUM(IF(orden_produccion.estado <> 'Cancelado', orden_produccion.cantidad_solicitada, 0)), 0)";
+
+        switch ($request->input('filter_orden', 'recientes')) {
+            case 'progreso_desc':
+                $pedidos->orderByRaw("({$progreso}) desc");
+                break;
+            case 'progreso_asc':
+                $pedidos->orderByRaw("({$progreso}) asc");
+                break;
+            case 'recientes':
+            default:
+                $pedidos->orderByRaw('MAX(orden_produccion.created_at) desc');
+                break;
+        }
+
+        return DataTables::of($pedidos)
+            ->filter(function ($query) use ($request) {
+                $kw = trim((string) $request->input('search.value', ''));
+                if ($kw === '') {
+                    return;
+                }
+                $query->where(function ($w) use ($kw) {
+                    $w->where('persona.nombre', 'like', "%{$kw}%");
+                    if (preg_match('/\d+/', $kw, $m)) {
+                        // Acepta "11" o "Pedido #11"
+                        $w->orWhereRaw('CAST(orden_produccion.pedido_id AS CHAR) LIKE ?', ["%{$m[0]}%"]);
+                    }
+                    if (stripos('manual', $kw) !== false || stripos('manuales', $kw) !== false) {
+                        $w->orWhereNull('orden_produccion.pedido_id');
+                    }
+                });
+            })
             ->make(true);
     }
 

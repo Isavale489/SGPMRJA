@@ -55,7 +55,7 @@
                             <div class="navy-header-search">
                                 <i class="ri-search-line"></i>
                                 <input type="text" class="navy-search-input" id="custom-search-input"
-                                    placeholder="Buscar orden..." autocomplete="off">
+                                    placeholder="Buscar por pedido o cliente..." autocomplete="off">
                             </div>
                             <div class="navy-header-divider"></div>
                             <button class="navy-filter-btn collapsed" type="button"
@@ -111,17 +111,15 @@
                             </div>
                         </div>
                     </div>
+                    {{-- Una fila por pedido; el detalle de sus órdenes vive en el
+                         modal "Ver órdenes" (pedido_ordenes.blade.php) --}}
                     <table id="ordenes-table" class="table table-bordered table-striped align-middle dt-transactional table-operativa">
                         <thead>
                             <tr>
-                                <th class="text-center">Nro. Orden</th>
-                                {{-- Columna oculta (visible:false): el pedido se muestra en la
-                                     fila-cabecera de grupo; se conserva para exportar/buscar --}}
-                                <th class="text-center">Nro. Pedido</th>
-                                <th>Producto</th>
-                                <th class="text-center">Cant. Solicitada</th>
-                                <th class="text-center">Progreso</th>
-                                <th class="text-center">Estado</th>
+                                <th>Pedido</th>
+                                <th>Cliente</th>
+                                <th class="text-center">Órdenes</th>
+                                <th class="text-center">Progreso Global</th>
                                 <th class="text-center">Acciones</th>
                             </tr>
                         </thead>
@@ -134,6 +132,7 @@
     </div>
 
     @include('admin.ordenes.modals.mis_ordenes')
+    @include('admin.ordenes.modals.pedido_ordenes')
     @include('admin.ordenes.modals.create')
     @include('admin.ordenes.modals.insumo_add')
     @include('admin.ordenes.modals.view')
@@ -213,7 +212,6 @@
     <script src="{{ URL::asset('assets/libs/sweetalert2/sweetalert2.min.js') }}"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script src="{{ asset('assets/js/proyeccion-insumos.js') }}"></script>
-    <script src="{{ asset('assets/js/dt-group-rows.js') }}?v={{ filemtime(public_path('assets/js/dt-group-rows.js')) }}"></script>
 
     @include('admin.ordenes.scripts.main')
     @include('admin.ordenes.scripts.subordenes')

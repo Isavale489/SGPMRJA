@@ -270,6 +270,7 @@ Route::middleware(['auth', 'throttle:60,1', 'active.user', 'recovery.questions.r
         Route::post('ordenes/proyeccion-insumos', [OrdenProduccionController::class, 'proyeccionInsumos'])->name('ordenes.proyeccionInsumos');
         Route::get('ordenes/por-empleado/{empleado}', [OrdenProduccionController::class, 'ordenesPorEmpleado'])->name('ordenes.por-empleado');
         Route::get('ordenes-data', [OrdenProduccionController::class, 'getOrdenes'])->name('ordenes.data');
+        Route::get('ordenes-pedidos-data', [OrdenProduccionController::class, 'getPedidosOrdenes'])->name('ordenes.pedidos-data');
         Route::post('ordenes/batch', [OrdenProduccionController::class, 'storeBatch'])->name('ordenes.batch');
         Route::post('ordenes/{orden}/avance', [OrdenProduccionController::class, 'registrarAvance'])->name('ordenes.avance');
         Route::patch('ordenes/{orden}/cancelar', [OrdenProduccionController::class, 'cancelar'])->name('ordenes.cancelar');

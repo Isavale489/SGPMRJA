@@ -132,6 +132,9 @@ class PedidoController extends Controller
                         'N/A',
                     'total' => number_format($cotizacion->total, 2),
                     'total_raw' => $cotizacion->total,
+                    // Tasa pactada en la cotización (equivalente Bs de la card);
+                    // si es null el front cae a la tasa BCV vigente global.
+                    'tasa_cambio_valor' => $cotizacion->tasa_cambio_valor,
                     'cantidad_productos' => $cotizacion->productos->count(),
                 ];
             });

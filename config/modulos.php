@@ -296,7 +296,7 @@ return [
             'pdf'       => 'Exportar PDF',
         ],
         'rutas' => [
-            'ordenes.index|ordenes.show|ordenes.data|ordenes.pedidos-disponibles|ordenes.proyeccionInsumos|ordenes.por-empleado|ordenes.subordenes|ordenes.insumos.index|ordenes.insumos.data' => 'ver',
+            'ordenes.index|ordenes.show|ordenes.data|ordenes.pedidos-data|ordenes.pedidos-disponibles|ordenes.proyeccionInsumos|ordenes.por-empleado|ordenes.subordenes|ordenes.insumos.index|ordenes.insumos.data' => 'ver',
             'ordenes.create|ordenes.store|ordenes.edit|ordenes.update|ordenes.destroy|ordenes.batch|ordenes.subordenes.store|ordenes.subordenes.destroy|ordenes.subordenes.estado|ordenes.insumos.store|ordenes.insumos.update|ordenes.insumos.destroy' => 'gestionar',
             'ordenes.avance'      => 'avance',
             'ordenes.cancelar'    => 'cancelar',
