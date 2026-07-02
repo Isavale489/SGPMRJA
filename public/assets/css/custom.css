@@ -6214,7 +6214,7 @@ select.js-readonly:not(.afs-native) {
 [data-bs-theme="dark"] .ped-cell-ic--manual { background: rgba(148, 163, 184, 0.16); color: #94a3b8; }
 [data-bs-theme="dark"] .ped-cell-num { color: #ced4da; }
 
-/* Chip contador de órdenes del pedido (misma paleta emerald del .dtg-chip) */
+/* Chip contador de órdenes del pedido (paleta emerald de la sección Operativa) */
 .ord-count-chip {
     display: inline-block;
     font-size: 11px;
@@ -6262,10 +6262,14 @@ select.js-readonly:not(.afs-native) {
 
 /* Con scrollY, DataTables conserva un thead OCULTO dentro del scrollBody
    (solo para calcular anchos); el gradiente del tema lo pintaba como una
-   franja verde bajo el header real — se aplasta y despinta por completo. */
+   franja verde bajo el header real — se aplasta y despinta por completo.
+   Aplica a los modales "Ver órdenes" de Órdenes y de Control de Calidad. */
 #pedidoOrdenesModal .dataTables_scrollBody thead,
 #pedidoOrdenesModal .dataTables_scrollBody thead tr,
-#pedidoOrdenesModal .dataTables_scrollBody thead th {
+#pedidoOrdenesModal .dataTables_scrollBody thead th,
+#pedidoCalidadModal .dataTables_scrollBody thead,
+#pedidoCalidadModal .dataTables_scrollBody thead tr,
+#pedidoCalidadModal .dataTables_scrollBody thead th {
     background: transparent !important;
     background-image: none !important;
     padding-top: 0 !important;
@@ -10816,96 +10820,3 @@ select.js-readonly:not(.afs-native) {
     text-align: center;
 }
 [data-bs-theme="dark"] .proy-note { color: #94a3b8; }
-
-/* ============================================================
-   DtGroupRows — fila cabecera de agrupación por Pedido
-   (assets/js/dt-group-rows.js · usado en Órdenes y Calidad)
-   ============================================================ */
-.dtg-row > td {
-    /* Neutraliza el rayado de .table-striped en la cabecera de grupo */
-    --bs-table-bg-type: transparent;
-    --bs-table-accent-bg: transparent;
-    background: linear-gradient(90deg, rgba(16, 185, 129, 0.12), rgba(16, 185, 129, 0.04) 55%, transparent);
-    border-left: 3px solid #10b981;
-    padding: 0.45rem 0.6rem;
-    overflow: visible;
-    text-overflow: clip;
-    text-align: left;
-    cursor: pointer;
-    user-select: none;
-}
-
-.dtg-row:hover > td { background: rgba(16, 185, 129, 0.16); }
-
-.dtg-row:focus-visible { outline: 2px solid #10b981; outline-offset: -2px; }
-
-.dtg-head {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    min-width: 0;
-}
-
-.dtg-caret {
-    font-size: 1rem;
-    color: #059669;
-    flex-shrink: 0;
-    transition: transform 0.18s ease;
-}
-
-.dtg-row.dtg-collapsed .dtg-caret { transform: rotate(-90deg); }
-
-/* Despliegue: micro-fade de entrada (repliegue instantáneo, estilo <details>) */
-@keyframes dtgFadeIn {
-    from { opacity: 0; }
-    to   { opacity: 1; }
-}
-
-tr.dtg-show > td { animation: dtgFadeIn 0.12s ease-out; }
-
-@media (prefers-reduced-motion: reduce) {
-    tr.dtg-show > td { animation: none; }
-    .dtg-caret { transition: none; }
-}
-
-.dtg-title {
-    font-weight: 600;
-    color: #065f46;
-    white-space: nowrap;
-    flex-shrink: 0;
-}
-
-.dtg-cliente {
-    color: #64748b;
-    font-size: 12px;
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.dtg-chip {
-    margin-left: auto;
-    flex-shrink: 0;
-    font-size: 11px;
-    font-weight: 600;
-    color: #047857;
-    background: rgba(16, 185, 129, 0.14);
-    border: 1px solid rgba(16, 185, 129, 0.25);
-    border-radius: 999px;
-    padding: 0.1rem 0.55rem;
-}
-
-[data-bs-theme="dark"] .dtg-row > td {
-    background: linear-gradient(90deg, rgba(16, 185, 129, 0.14), rgba(16, 185, 129, 0.05) 55%, transparent);
-    border-left-color: #34d399;
-}
-[data-bs-theme="dark"] .dtg-row:hover > td { background: rgba(16, 185, 129, 0.20); }
-[data-bs-theme="dark"] .dtg-caret { color: #34d399; }
-[data-bs-theme="dark"] .dtg-title { color: #6ee7b7; }
-[data-bs-theme="dark"] .dtg-cliente { color: #94a3b8; }
-[data-bs-theme="dark"] .dtg-chip {
-    color: #6ee7b7;
-    background: rgba(16, 185, 129, 0.18);
-    border-color: rgba(52, 211, 153, 0.35);
-}

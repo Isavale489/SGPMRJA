@@ -43,7 +43,7 @@
                             <div class="navy-header-search">
                                 <i class="ri-search-line"></i>
                                 <input type="text" class="navy-search-input" id="custom-search-input"
-                                    placeholder="Buscar por producto o pedido..." autocomplete="off">
+                                    placeholder="Buscar por producto, pedido o cliente..." autocomplete="off">
                             </div>
                             <div class="navy-header-divider"></div>
                             <button class="navy-filter-btn collapsed" type="button"
@@ -85,16 +85,47 @@
                         </div>
                     </div>
 
+                    {{-- Una fila por pedido; la cola de inspección de cada uno vive en
+                         el modal "Ver órdenes" (mismo patrón que Órdenes de Producción) --}}
                     <table id="calidad-table"
                         class="table table-bordered table-striped align-middle dt-transactional table-operativa">
                         <thead>
                             <tr>
-                                {{-- El pedido se muestra en la fila-cabecera de grupo (DtGroupRows) --}}
+                                <th>Pedido</th>
+                                <th>Cliente</th>
+                                <th class="text-center">Por inspeccionar</th>
+                                <th class="text-center">Última finalización</th>
+                                <th class="text-center">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- ════════ Modal: órdenes por inspeccionar de un pedido ════════ --}}
+    <div class="modal fade atlantico-modal atlantico-modal--op" id="pedidoCalidadModal" tabindex="-1" aria-hidden="true"
+        data-bs-backdrop="static" data-bs-keyboard="false">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title mb-0" id="pedido-calidad-title">Inspecciones del pedido</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body p-4">
+                    {{-- Contexto del pedido: cliente (izq.) + resumen de la cola (der.) --}}
+                    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3" id="pedido-calidad-meta"></div>
+
+                    <table id="pedido-calidad-table" class="table table-bordered table-striped align-middle dt-transactional table-operativa w-100">
+                        <thead>
+                            <tr>
                                 <th>Producto</th>
-                                <th>Producido</th>
-                                <th>Estado calidad</th>
-                                <th>Finalizada</th>
-                                <th>Acciones</th>
+                                <th class="text-center">Producido</th>
+                                <th class="text-center">Estado calidad</th>
+                                <th class="text-center">Finalizada</th>
+                                <th class="text-center">Acciones</th>
                             </tr>
                         </thead>
                         <tbody></tbody>
@@ -250,7 +281,6 @@
 @push('scripts')
     <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/1.11.5/js/dataTables.bootstrap5.min.js"></script>
-    <script src="{{ asset('assets/js/dt-group-rows.js') }}?v={{ filemtime(public_path('assets/js/dt-group-rows.js')) }}"></script>
     <script>
         $(function () {
             var RESULTADO_LABEL = { aprobado: 'Aprobado', rechazado: 'Rechazado', observado: 'Aprobado con observaciones' };
@@ -260,67 +290,205 @@
                 return function () { var ctx = this, a = arguments; clearTimeout(t); t = setTimeout(function () { fn.apply(ctx, a); }, wait || 300); };
             }
 
+            function chipPorInspeccionar(n) {
+                return '<span class="ord-count-chip">' + n + ' por inspeccionar</span>';
+            }
+
+            // Desglose de la cola del pedido (meta del modal): pendientes vs re-inspección
+            function chipsCalidadPedido(row) {
+                var total = parseInt(row.total_ordenes, 10) || 0;
+                var rei = parseInt(row.reinspecciones, 10) || 0;
+                var pend = total - rei;
+                var out = '';
+                if (pend > 0) out += '<span class="badge bg-info-subtle text-info">' + pend + ' Pendiente' + (pend === 1 ? '' : 's') + '</span> ';
+                if (rei > 0) out += '<span class="badge bg-warning-subtle text-warning">' + rei + ' Re-inspección</span>';
+                return out;
+            }
+
+            // Tabla principal: una fila por pedido con su cola de inspección.
+            // El detalle por orden vive en el modal "Ver órdenes".
             var table = $('#calidad-table').DataTable({
                 processing: true,
                 serverSide: true,
                 dom: 'rtip',
                 ajax: {
-                    url: '{{ route('calidad.data') }}',
+                    url: '{{ route('calidad.pedidos-data') }}',
                     data: function (d) {
                         d.filter_estado_calidad = $('#filter-estado-calidad').val();
                         d.filter_orden = $('#filter-orden').val();
                     }
                 },
                 columns: [
-                    { data: 'producto_info', name: 'producto', className: 'align-middle', orderable: false, searchable: false },
                     {
-                        data: null, className: 'align-middle text-center', orderable: false, searchable: false,
-                        render: function (row) { return row.cantidad_producida + ' / ' + row.cantidad_solicitada; }
-                    },
-                    {
-                        data: 'reinspeccion', className: 'align-middle text-center', orderable: false, searchable: false,
-                        render: function (v) {
-                            return v
-                                ? '<span class="badge bg-warning-subtle text-warning">Re-inspección</span>'
-                                : '<span class="badge bg-info-subtle text-info">Pendiente</span>';
+                        data: 'pedido_id', orderable: false, searchable: false,
+                        className: 'align-middle', width: '18%',
+                        render: function (data) {
+                            if (data != null) {
+                                return '<div class="ped-cell">'
+                                    + '<span class="ped-cell-ic"><i class="ri-shopping-bag-3-line"></i></span>'
+                                    + '<span class="ped-cell-txt"><span class="ped-cell-eyebrow">Pedido</span><span class="ped-cell-num">#' + data + '</span></span>'
+                                    + '</div>';
+                            }
+                            return '<div class="ped-cell">'
+                                + '<span class="ped-cell-ic ped-cell-ic--manual"><i class="ri-tools-line"></i></span>'
+                                + '<span class="ped-cell-txt"><span class="ped-cell-eyebrow">Sin pedido</span><span class="ped-cell-num">Manuales</span></span>'
+                                + '</div>';
                         }
                     },
-                    { data: 'fecha_fin', className: 'align-middle text-center', orderable: false, searchable: false },
                     {
-                        data: 'id', className: 'align-middle text-center', orderable: false, searchable: false,
-                        render: function (id) {
-                            return '<button type="button" class="btn btn-sm btn-soft-success inspeccionar-btn" data-id="' + id + '">'
-                                + '<i class="ri-shield-check-line"></i> Inspeccionar</button>';
+                        data: 'cliente_nombre', orderable: false, searchable: false,
+                        className: 'align-middle', width: '30%',
+                        render: function (data) {
+                            return data ? ccEsc(data) : '<span class="text-muted">—</span>';
+                        }
+                    },
+                    {
+                        data: 'total_ordenes', orderable: false, searchable: false,
+                        className: 'align-middle text-center', width: '18%',
+                        render: function (data) {
+                            return chipPorInspeccionar(parseInt(data, 10) || 0);
+                        }
+                    },
+                    { data: 'ultima_fin', orderable: false, searchable: false, className: 'align-middle text-center', width: '16%' },
+                    {
+                        data: null, orderable: false, searchable: false,
+                        className: 'align-middle text-center', width: '18%',
+                        render: function () {
+                            return '<button type="button" class="btn btn-sm btn-soft-success ver-ordenes-btn">'
+                                + '<i class="ri-shield-check-line me-1"></i>Inspeccionar</button>';
                         }
                     }
                 ],
                 order: [],
+                autoWidth: false,
                 responsive: false,
                 language: lenguajeData
             });
 
-            // Agrupación visual por pedido: fila-cabecera colapsable antes de cada
-            // bloque de órdenes del mismo pedido (el backend las ordena contiguas).
-            DtGroupRows.attach(table, {
-                colspan: 5,
-                startCollapsed: true,
-                accordion: true,
-                groupKey: function (row) {
-                    return row.pedido_id ? 'p' + row.pedido_id : 'manual';
-                },
-                renderHeader: function (rows, key) {
-                    if (key === 'manual') {
-                        return '<span class="dtg-title"><i class="ri-tools-line me-1"></i>Órdenes manuales</span>'
-                            + '<span class="dtg-chip">' + rows.length + ' por inspeccionar</span>';
-                    }
-                    var r = rows[0];
-                    var persona = r.pedido && r.pedido.cliente ? r.pedido.cliente.persona : null;
-                    var cliente = persona ? (persona.nombre_completo || persona.nombre || '') : '';
-                    var total = parseInt(r.grupo_total, 10) || rows.length;
-                    return '<span class="dtg-title"><i class="ri-shopping-bag-3-line me-1"></i>Pedido #' + r.pedido_id + '</span>'
-                        + (cliente ? '<span class="dtg-cliente">' + DtGroupRows.esc(cliente) + '</span>' : '')
-                        + '<span class="dtg-chip">' + total + ' por inspeccionar</span>';
+            // ══════════════════════════════════════════════════════
+            // Modal "Ver órdenes" — cola de inspección del pedido
+            // ══════════════════════════════════════════════════════
+            var pedidoCalidadTable = null;
+            var pedidoCalidadKey = null; // id del pedido o 'manual'
+
+            // Los conteos del pedido abierto cambian al inspeccionar: recargar ambas.
+            function reloadCalidadTables() {
+                table.ajax.reload(null, false);
+                if (pedidoCalidadTable) pedidoCalidadTable.ajax.reload(null, false);
+            }
+
+            function renderPedidoCalidadMeta(row) {
+                var esManual = row.pedido_id == null;
+                var total = parseInt(row.total_ordenes, 10) || 0;
+
+                var left;
+                if (!esManual && row.cliente_nombre) {
+                    var inicial = ccEsc((row.cliente_nombre || '?').trim().charAt(0).toUpperCase() || '?');
+                    left = '<span class="wiz-client-banner wiz-client-banner--sm" title="Cliente del pedido">'
+                        + '<span class="wiz-client-banner-avatar">' + inicial + '</span>'
+                        + '<span class="wiz-client-banner-main">'
+                        + '<span class="wiz-client-banner-eyebrow">Cliente</span>'
+                        + '<span class="wiz-client-banner-name">' + ccEsc(row.cliente_nombre) + '</span>'
+                        + '</span></span>';
+                } else {
+                    left = '<span class="text-muted fs-12"><i class="ri-tools-line me-1"></i>Órdenes creadas sin pedido asociado</span>';
                 }
+
+                var right = chipPorInspeccionar(total) + ' ' + chipsCalidadPedido(row);
+
+                $('#pedido-calidad-meta').html(
+                    '<div class="d-flex align-items-center">' + left + '</div>'
+                    + '<div class="d-flex align-items-center gap-2 flex-wrap">' + right + '</div>'
+                );
+            }
+
+            // Re-render de la meta tras cada redraw (los conteos cambian al inspeccionar)
+            table.on('draw', function () {
+                if (pedidoCalidadKey === null || !$('#pedidoCalidadModal').hasClass('show')) return;
+                var row = table.rows().data().toArray().find(function (r) {
+                    return (r.pedido_id == null ? 'manual' : String(r.pedido_id)) === pedidoCalidadKey;
+                });
+                if (row) renderPedidoCalidadMeta(row);
+            });
+
+            function abrirPedidoCalidad(row) {
+                var esManual = row.pedido_id == null;
+                pedidoCalidadKey = esManual ? 'manual' : String(row.pedido_id);
+
+                $('#pedido-calidad-title').text(esManual ? 'Órdenes manuales' : 'Inspecciones del Pedido #' + row.pedido_id);
+                renderPedidoCalidadMeta(row);
+
+                if (!pedidoCalidadTable) {
+                    pedidoCalidadTable = $('#pedido-calidad-table').DataTable({
+                        processing: true,
+                        serverSide: true,
+                        dom: 'rtip',
+                        // Altura FIJA del visor (mismo criterio que el modal de Órdenes):
+                        // el modal no cambia de tamaño según la cantidad de filas.
+                        scrollY: 'min(44vh, 26rem)',
+                        scrollCollapse: false,
+                        ajax: {
+                            url: '{{ route('calidad.data') }}',
+                            data: function (d) {
+                                d.pedido_id = pedidoCalidadKey;
+                            }
+                        },
+                        columns: [
+                            { data: 'producto_info', name: 'producto', className: 'align-middle', orderable: false, searchable: false, width: '34%' },
+                            {
+                                data: null, className: 'align-middle text-center', orderable: false, searchable: false, width: '14%',
+                                render: function (row) { return row.cantidad_producida + ' / ' + row.cantidad_solicitada; }
+                            },
+                            {
+                                data: 'reinspeccion', className: 'align-middle text-center', orderable: false, searchable: false, width: '18%',
+                                render: function (v) {
+                                    return v
+                                        ? '<span class="badge bg-warning-subtle text-warning">Re-inspección</span>'
+                                        : '<span class="badge bg-info-subtle text-info">Pendiente</span>';
+                                }
+                            },
+                            { data: 'fecha_fin', className: 'align-middle text-center', orderable: false, searchable: false, width: '14%' },
+                            {
+                                data: 'id', className: 'align-middle text-center', orderable: false, searchable: false, width: '20%',
+                                render: function (id) {
+                                    return '<button type="button" class="btn btn-sm btn-soft-success inspeccionar-btn" data-id="' + id + '">'
+                                        + '<i class="ri-shield-check-line"></i> Inspeccionar</button>';
+                                }
+                            }
+                        ],
+                        order: [],
+                        autoWidth: false,
+                        responsive: false,
+                        language: lenguajeData
+                    });
+                } else {
+                    pedidoCalidadTable.ajax.reload();
+                }
+
+                $('#pedidoCalidadModal').modal('show');
+            }
+
+            // Ajuste de anchos al inicio del fade (el modal ya es medible) +
+            // respaldo en shown — evita el pop-in del header del scroll.
+            $('#pedidoCalidadModal').on('show.bs.modal', function () {
+                requestAnimationFrame(function () {
+                    if (pedidoCalidadTable) pedidoCalidadTable.columns.adjust();
+                });
+            });
+            $('#pedidoCalidadModal').on('shown.bs.modal', function () {
+                if (pedidoCalidadTable) pedidoCalidadTable.columns.adjust();
+            });
+
+            $(document).on('click', '.ver-ordenes-btn', function () {
+                var row = table.row($(this).closest('tr')).data();
+                if (row) abrirPedidoCalidad(row);
+            });
+
+            // Toda la fila abre el modal, salvo clicks sobre botones/enlaces.
+            $('#calidad-table tbody').on('click', 'tr', function (e) {
+                if ($(e.target).closest('button, a').length) return;
+                var row = table.row(this).data();
+                if (row) abrirPedidoCalidad(row);
             });
 
             // ── Barra unificada: búsqueda + filtros ──
@@ -427,8 +595,9 @@
                 actualizarAtribTotal(leer().rech);
             });
 
-            // ── Abrir modal: cargar detalle de la orden ──
-            $('#calidad-table').on('click', '.inspeccionar-btn', function () {
+            // ── Abrir modal de inspección: cargar detalle de la orden ──
+            // (delegado en document: el botón vive en el modal "Ver órdenes")
+            $(document).on('click', '.inspeccionar-btn', function () {
                 var id = $(this).data('id');
                 $.get('{{ url('calidad') }}/' + id + '/detalle', function (d) {
                     $('#inspeccionForm')[0].reset();
@@ -564,7 +733,7 @@
                     data: payload,
                     success: function (resp) {
                         $('#inspeccionModal').modal('hide');
-                        table.ajax.reload(null, false);
+                        reloadCalidadTables();
                         Swal.fire({ icon: 'success', title: '¡Listo!', text: resp.message, showConfirmButton: false, timer: 1800 });
                         $btn.prop('disabled', false);
                     },

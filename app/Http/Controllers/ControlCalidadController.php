@@ -31,6 +31,10 @@ class ControlCalidadController extends Controller
      * Una orden rechazada vuelve a "En Proceso" (sale de la lista) hasta que se
      * re-finalice; ahí reaparece como pendiente de re-inspección.
      */
+    /**
+     * Órdenes en cola de inspección de un pedido (o las manuales) para el
+     * DataTable del modal "Ver órdenes". `pedido_id` = id o 'manual'.
+     */
     public function getOrdenesCalidad(Request $request)
     {
         $ordenes = OrdenProduccion::query()
@@ -38,66 +42,90 @@ class ControlCalidadController extends Controller
             ->where('estado', 'Finalizado')
             ->whereDoesntHave('controlesCalidad', function ($q) {
                 $q->whereIn('resultado', ['aprobado', 'observado']);
-            });
+            })
+            ->select('orden_produccion.*');
 
-        // Filtro: estado de calidad dentro de la cola pendiente.
-        //   pendiente   = nunca inspeccionada
-        //   reinspeccion = ya tuvo una inspección (rechazo previo) y volvió finalizada
-        $estadoCalidad = $request->input('filter_estado_calidad');
-        if ($estadoCalidad === 'pendiente') {
-            $ordenes->whereDoesntHave('controlesCalidad');
-        } elseif ($estadoCalidad === 'reinspeccion') {
-            $ordenes->whereHas('controlesCalidad');
+        if ($request->filled('pedido_id')) {
+            $request->input('pedido_id') === 'manual'
+                ? $ordenes->whereNull('orden_produccion.pedido_id')
+                : $ordenes->where('orden_produccion.pedido_id', $request->input('pedido_id'));
         }
 
-        // Clustering por pedido: las órdenes de un mismo pedido quedan contiguas
-        // para la fila-cabecera de grupo (dt-group-rows.js). Los grupos se ordenan
-        // por su finalización más reciente/antigua y, dentro del grupo, por fecha.
-        // Las órdenes manuales (pedido_id NULL, comparadas con <=>) forman un grupo.
-        $grupo = "op2.pedido_id <=> orden_produccion.pedido_id and op2.deleted_at is null and op2.estado = 'Finalizado'";
-        $dir   = $request->input('filter_orden') === 'antiguos' ? 'asc' : 'desc';
-        $fn    = $dir === 'asc' ? 'min' : 'max';
-
-        $ordenes->orderByRaw("(select {$fn}(op2.fecha_fin_real) from orden_produccion op2 where {$grupo}) {$dir}")
-            ->orderBy('orden_produccion.pedido_id', $dir)
-            ->orderBy('orden_produccion.fecha_fin_real', $dir)
-            ->select('orden_produccion.*')
-            // Órdenes del pedido aún en cola de inspección (chip de la cabecera de grupo)
-            ->selectRaw("(select count(*) from orden_produccion op2
-                where {$grupo}
-                  and orden_produccion.pedido_id is not null
-                  and not exists (
-                      select 1 from control_calidad cc
-                      where cc.orden_produccion_id = op2.id
-                        and cc.deleted_at is null
-                        and cc.resultado in ('aprobado', 'observado')
-                  )) as grupo_total");
+        $ordenes->orderByDesc('orden_produccion.fecha_fin_real');
 
         return DataTables::of($ordenes)
-            // Búsqueda global por producto (tipo/nombre) o pedido — las columnas son
-            // derivadas, así que se sobrescribe el buscador de DataTables.
-            ->filter(function ($query) use ($request) {
-                $keyword = trim((string) $request->input('search.value'));
-                if ($keyword === '') {
-                    return;
-                }
-                $num = preg_replace('/\D/', '', $keyword); // dígitos (ej. "Pedido #8" → "8")
-                $query->where(function ($q) use ($keyword, $num) {
-                    // El nombre del producto se deriva del tipo de producto (línea dinámica
-                    // o legacy), no de una columna 'nombre' en `producto`.
-                    $q->whereHas('detallePedido.tipoProducto', fn ($t) => $t->where('nombre', 'like', "%{$keyword}%"))
-                      ->orWhereHas('producto.tipoProducto', fn ($t) => $t->where('nombre', 'like', "%{$keyword}%"));
-                    if ($num !== '') {
-                        $q->orWhere('pedido_id', $num);
-                    }
-                });
-            }, true)
             ->addColumn('producto_info', fn ($orden) => $orden->nombre_producto)
             ->addColumn('cantidad_producida', fn ($orden) => $orden->cantidad_producida)
             ->addColumn('cantidad_solicitada', fn ($orden) => $orden->cantidad_solicitada)
             ->addColumn('reinspeccion', fn ($orden) => $orden->controlesCalidad()->exists())
             ->addColumn('fecha_fin', fn ($orden) => $orden->fecha_fin_real ? $orden->fecha_fin_real->format('d/m/Y') : '—')
             ->rawColumns([])
+            ->make(true);
+    }
+
+    /**
+     * Tabla principal de /calidad: una fila por pedido (más una para las
+     * órdenes manuales) con agregados de su cola de inspección. El detalle
+     * por orden vive en el modal "Ver órdenes" (getOrdenesCalidad + pedido_id).
+     *
+     * El filtro de estado de calidad se aplica ANTES de agrupar: el pedido
+     * aparece solo si tiene órdenes que cumplan y los conteos reflejan esas.
+     */
+    public function getPedidosCalidad(Request $request)
+    {
+        $pedidos = OrdenProduccion::query()
+            ->leftJoin('pedido', 'pedido.id', '=', 'orden_produccion.pedido_id')
+            ->leftJoin('cliente', 'cliente.id', '=', 'pedido.cliente_id')
+            ->leftJoin('persona', 'persona.id', '=', 'cliente.persona_id')
+            ->where('orden_produccion.estado', 'Finalizado')
+            ->whereDoesntHave('controlesCalidad', function ($q) {
+                $q->whereIn('resultado', ['aprobado', 'observado']);
+            })
+            ->groupBy('orden_produccion.pedido_id')
+            // MAX() sobre persona.nombre: valor único por grupo (1 pedido = 1 cliente),
+            // envuelto en agregado para cumplir ONLY_FULL_GROUP_BY de MySQL 8.
+            ->selectRaw("
+                orden_produccion.pedido_id,
+                MAX(persona.nombre) as cliente_nombre,
+                COUNT(*) as total_ordenes,
+                SUM(EXISTS(
+                    select 1 from control_calidad cc
+                    where cc.orden_produccion_id = orden_produccion.id
+                      and cc.deleted_at is null
+                )) as reinspecciones,
+                DATE_FORMAT(MAX(orden_produccion.fecha_fin_real), '%d/%m/%Y') as ultima_fin
+            ");
+
+        // pendiente = nunca inspeccionada · reinspeccion = rechazo previo que volvió
+        $estadoCalidad = $request->input('filter_estado_calidad');
+        if ($estadoCalidad === 'pendiente') {
+            $pedidos->whereDoesntHave('controlesCalidad');
+        } elseif ($estadoCalidad === 'reinspeccion') {
+            $pedidos->whereHas('controlesCalidad');
+        }
+
+        $request->input('filter_orden') === 'antiguos'
+            ? $pedidos->orderByRaw('MIN(orden_produccion.fecha_fin_real) asc')
+            : $pedidos->orderByRaw('MAX(orden_produccion.fecha_fin_real) desc');
+
+        return DataTables::of($pedidos)
+            ->filter(function ($query) use ($request) {
+                $kw = trim((string) $request->input('search.value', ''));
+                if ($kw === '') {
+                    return;
+                }
+                $num = preg_replace('/\D/', '', $kw); // dígitos (ej. "Pedido #8" → "8")
+                $query->where(function ($q) use ($kw, $num) {
+                    // El nombre del producto se deriva del tipo de producto (línea
+                    // dinámica o legacy), no de una columna 'nombre' en `producto`.
+                    $q->where('persona.nombre', 'like', "%{$kw}%")
+                      ->orWhereHas('detallePedido.tipoProducto', fn ($t) => $t->where('nombre', 'like', "%{$kw}%"))
+                      ->orWhereHas('producto.tipoProducto', fn ($t) => $t->where('nombre', 'like', "%{$kw}%"));
+                    if ($num !== '') {
+                        $q->orWhereRaw('CAST(orden_produccion.pedido_id AS CHAR) LIKE ?', ["%{$num}%"]);
+                    }
+                });
+            })
             ->make(true);
     }
 
