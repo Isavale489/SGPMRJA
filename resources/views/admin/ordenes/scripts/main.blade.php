@@ -1783,6 +1783,22 @@
             renderPedidoOrdenesMeta(row);
 
             if (!pedidoOrdenesTable) {
+                // Primera apertura: inicializar con el modal MEDIBLE pero invisible
+                // (display:block + visibility:hidden un instante). DataTables
+                // calcula los anchos reales del header del scroll — al arrancar
+                // el fade la tabla ya está construida y pintada: cero pop-in.
+                const $modal = $('#pedidoOrdenesModal');
+                $modal.css({ display: 'block', visibility: 'hidden' });
+                initPedidoOrdenesTable();
+                $modal.css({ display: '', visibility: '' });
+            } else {
+                pedidoOrdenesTable.ajax.reload();
+            }
+
+            $('#pedidoOrdenesModal').modal('show');
+        }
+
+        function initPedidoOrdenesTable() {
                 pedidoOrdenesTable = $('#pedido-ordenes-table').DataTable({
                     processing: true,
                     serverSide: true,
@@ -1868,23 +1884,9 @@
                     responsive: false,
                     language: lenguajeData
                 });
-            } else {
-                pedidoOrdenesTable.ajax.reload();
-            }
-
-            $('#pedidoOrdenesModal').modal('show');
         }
 
-        // DataTables calcula mal los anchos en contenedores ocultos (el header
-        // del scroll queda en 0 y "aparece tarde"). Ajustar al INICIO del fade
-        // (show + un frame: el modal ya tiene display:block y es medible) para
-        // que el header entre pintado con la animación; el de shown queda como
-        // respaldo por si el primer ajuste corrió antes del primer draw.
-        $('#pedidoOrdenesModal').on('show.bs.modal', function () {
-            requestAnimationFrame(function () {
-                if (pedidoOrdenesTable) pedidoOrdenesTable.columns.adjust();
-            });
-        });
+        // Respaldo: re-sincroniza anchos con el modal plenamente visible.
         $('#pedidoOrdenesModal').on('shown.bs.modal', function () {
             if (pedidoOrdenesTable) pedidoOrdenesTable.columns.adjust();
         });

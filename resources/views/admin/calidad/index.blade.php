@@ -32,11 +32,6 @@
                     </div>
                 </div>
                 <div class="card-body">
-                    <p class="text-muted mb-3">
-                        Inspecciona las órdenes de producción finalizadas. Si hay unidades defectuosas,
-                        la orden vuelve a producción (reproceso); si todo está conforme, queda lista para entrega.
-                    </p>
-
                     {{-- Barra unificada de búsqueda + filtros (sección Operativa: tema emerald) --}}
                     <div class="advanced-filters-wrapper emerald-theme" id="advanced-filters">
                         <div class="navy-filter-header is-collapsed">
@@ -60,7 +55,7 @@
                                 <div class="row g-3">
                                     <div class="col-12 col-md-6">
                                         <label class="navy-filter-label" for="filter-estado-calidad">
-                                            <i class="ri-shield-check-line"></i> Estado de calidad
+                                            <i class="ri-search-eye-line"></i> Estado de calidad
                                         </label>
                                         <select class="form-select navy-filter-select" id="filter-estado-calidad">
                                             <option value="">Todas</option>
@@ -141,7 +136,7 @@
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title"><i class="ri-shield-check-line me-1"></i>Registrar inspección de calidad</h5>
+                    <h5 class="modal-title"><i class="ri-search-eye-line me-1"></i>Registrar inspección de calidad</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
                 </div>
                 <form id="inspeccionForm">
@@ -291,7 +286,7 @@
             }
 
             function chipPorInspeccionar(n) {
-                return '<span class="ord-count-chip">' + n + ' por inspeccionar</span>';
+                return '<span class="ord-count-chip ord-count-chip--calidad">' + n + ' por inspeccionar</span>';
             }
 
             // Desglose de la cola del pedido (meta del modal): pendientes vs re-inspección
@@ -300,8 +295,8 @@
                 var rei = parseInt(row.reinspecciones, 10) || 0;
                 var pend = total - rei;
                 var out = '';
-                if (pend > 0) out += '<span class="badge bg-info-subtle text-info">' + pend + ' Pendiente' + (pend === 1 ? '' : 's') + '</span> ';
-                if (rei > 0) out += '<span class="badge bg-warning-subtle text-warning">' + rei + ' Re-inspección</span>';
+                if (pend > 0) out += '<span class="badge badge-status badge-soft-info rounded-pill"><i class="ri-time-line me-1"></i>' + pend + ' Pendiente' + (pend === 1 ? '' : 's') + '</span> ';
+                if (rei > 0) out += '<span class="badge badge-status badge-soft-warning rounded-pill"><i class="ri-restart-line me-1"></i>' + rei + ' Re-inspección</span>';
                 return out;
             }
 
@@ -323,9 +318,11 @@
                         data: 'pedido_id', orderable: false, searchable: false,
                         className: 'align-middle', width: '18%',
                         render: function (data) {
+                            // Tile navy + escudo (ícono del módulo): diferencia Calidad
+                            // de Órdenes, cuyas primeras columnas son casi idénticas.
                             if (data != null) {
                                 return '<div class="ped-cell">'
-                                    + '<span class="ped-cell-ic"><i class="ri-shopping-bag-3-line"></i></span>'
+                                    + '<span class="ped-cell-ic ped-cell-ic--calidad"><i class="ri-search-eye-line"></i></span>'
                                     + '<span class="ped-cell-txt"><span class="ped-cell-eyebrow">Pedido</span><span class="ped-cell-num">#' + data + '</span></span>'
                                     + '</div>';
                             }
@@ -355,7 +352,7 @@
                         className: 'align-middle text-center', width: '18%',
                         render: function () {
                             return '<button type="button" class="btn btn-sm btn-soft-success ver-ordenes-btn">'
-                                + '<i class="ri-shield-check-line me-1"></i>Inspeccionar</button>';
+                                + '<i class="ri-search-eye-line me-1"></i>Inspeccionar</button>';
                         }
                     }
                 ],
@@ -419,6 +416,22 @@
                 renderPedidoCalidadMeta(row);
 
                 if (!pedidoCalidadTable) {
+                    // Primera apertura: inicializar con el modal MEDIBLE pero
+                    // invisible (display:block + visibility:hidden un instante).
+                    // DataTables calcula los anchos reales del header del scroll —
+                    // al arrancar el fade la tabla ya está construida: cero pop-in.
+                    var $modal = $('#pedidoCalidadModal');
+                    $modal.css({ display: 'block', visibility: 'hidden' });
+                    initPedidoCalidadTable();
+                    $modal.css({ display: '', visibility: '' });
+                } else {
+                    pedidoCalidadTable.ajax.reload();
+                }
+
+                $('#pedidoCalidadModal').modal('show');
+            }
+
+            function initPedidoCalidadTable() {
                     pedidoCalidadTable = $('#pedido-calidad-table').DataTable({
                         processing: true,
                         serverSide: true,
@@ -443,8 +456,8 @@
                                 data: 'reinspeccion', className: 'align-middle text-center', orderable: false, searchable: false, width: '18%',
                                 render: function (v) {
                                     return v
-                                        ? '<span class="badge bg-warning-subtle text-warning">Re-inspección</span>'
-                                        : '<span class="badge bg-info-subtle text-info">Pendiente</span>';
+                                        ? '<span class="badge badge-status badge-soft-warning rounded-pill"><i class="ri-restart-line me-1"></i>Re-inspección</span>'
+                                        : '<span class="badge badge-status badge-soft-info rounded-pill"><i class="ri-time-line me-1"></i>Pendiente</span>';
                                 }
                             },
                             { data: 'fecha_fin', className: 'align-middle text-center', orderable: false, searchable: false, width: '14%' },
@@ -452,7 +465,7 @@
                                 data: 'id', className: 'align-middle text-center', orderable: false, searchable: false, width: '20%',
                                 render: function (id) {
                                     return '<button type="button" class="btn btn-sm btn-soft-success inspeccionar-btn" data-id="' + id + '">'
-                                        + '<i class="ri-shield-check-line"></i> Inspeccionar</button>';
+                                        + '<i class="ri-search-eye-line"></i> Inspeccionar</button>';
                                 }
                             }
                         ],
@@ -461,20 +474,9 @@
                         responsive: false,
                         language: lenguajeData
                     });
-                } else {
-                    pedidoCalidadTable.ajax.reload();
-                }
-
-                $('#pedidoCalidadModal').modal('show');
             }
 
-            // Ajuste de anchos al inicio del fade (el modal ya es medible) +
-            // respaldo en shown — evita el pop-in del header del scroll.
-            $('#pedidoCalidadModal').on('show.bs.modal', function () {
-                requestAnimationFrame(function () {
-                    if (pedidoCalidadTable) pedidoCalidadTable.columns.adjust();
-                });
-            });
+            // Respaldo: re-sincroniza anchos con el modal plenamente visible.
             $('#pedidoCalidadModal').on('shown.bs.modal', function () {
                 if (pedidoCalidadTable) pedidoCalidadTable.columns.adjust();
             });

@@ -6201,6 +6201,9 @@ select.js-readonly:not(.afs-native) {
     font-size: 1.05rem;
 }
 .ped-cell-ic--manual { background: rgba(100, 116, 139, 0.14); color: #475569; }
+/* Variante Calidad: acento navy + escudo — distingue el módulo de Órdenes,
+   cuyas primeras columnas (Pedido/Cliente) son casi idénticas */
+.ped-cell-ic--calidad { background: rgba(30, 60, 114, 0.10); color: #1e3c72; }
 .ped-cell-txt { display: flex; flex-direction: column; line-height: 1.15; }
 .ped-cell-eyebrow {
     font-size: 10px;
@@ -6212,6 +6215,7 @@ select.js-readonly:not(.afs-native) {
 .ped-cell-num { font-weight: 700; font-size: 0.95rem; color: var(--vz-heading-color, #364574); }
 [data-bs-theme="dark"] .ped-cell-ic { background: rgba(16, 185, 129, 0.18); color: #6ee7b7; }
 [data-bs-theme="dark"] .ped-cell-ic--manual { background: rgba(148, 163, 184, 0.16); color: #94a3b8; }
+[data-bs-theme="dark"] .ped-cell-ic--calidad { background: rgba(78, 122, 199, 0.18); color: #93c5fd; }
 [data-bs-theme="dark"] .ped-cell-num { color: #ced4da; }
 
 /* Chip contador de órdenes del pedido (paleta emerald de la sección Operativa) */
@@ -6230,6 +6234,17 @@ select.js-readonly:not(.afs-native) {
     color: #6ee7b7;
     background: rgba(16, 185, 129, 0.18);
     border-color: rgba(52, 211, 153, 0.35);
+}
+/* Variante Calidad del chip contador (acento navy del módulo) */
+.ord-count-chip--calidad {
+    color: #1e3c72;
+    background: rgba(30, 60, 114, 0.08);
+    border-color: rgba(30, 60, 114, 0.22);
+}
+[data-bs-theme="dark"] .ord-count-chip--calidad {
+    color: #93c5fd;
+    background: rgba(78, 122, 199, 0.16);
+    border-color: rgba(78, 122, 199, 0.35);
 }
 
 /* Anchos de columna #ordenes-table (nivel pedido) */
@@ -6278,6 +6293,18 @@ select.js-readonly:not(.afs-native) {
     height: 0 !important;
     line-height: 0 !important;
     font-size: 0 !important;
+}
+
+/* Header del scroll a ancho completo SIEMPRE: DataTables le escribe un ancho
+   inline en px al contenedor y a su tabla, y hasta que ese número queda bien
+   (primer columns.adjust) el header mide 0 → la banda verde "aparecía tarde"
+   al abrir el modal. El 100% pisa el inline y la banda existe desde el primer
+   frame; los anchos exactos por columna los sigue afinando adjust(). */
+#pedidoOrdenesModal .dataTables_scrollHeadInner,
+#pedidoOrdenesModal .dataTables_scrollHeadInner > table,
+#pedidoCalidadModal .dataTables_scrollHeadInner,
+#pedidoCalidadModal .dataTables_scrollHeadInner > table {
+    width: 100% !important;
 }
 
 /* ============================================================
