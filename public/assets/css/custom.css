@@ -6253,6 +6253,29 @@ select.js-readonly:not(.afs-native) {
 #pedido-ordenes-table td:nth-child(5),
 #pedido-ordenes-table td:last-child { overflow: visible; text-overflow: clip; text-align: center; }
 
+/* El visor scrolleable (scrollY) recortaría el menú ⋮ abierto: mientras haya
+   un menú desplegado se libera el overflow (mismo patrón del fix global de
+   .table-responsive en app.blade.php) */
+#pedidoOrdenesModal .dataTables_scrollBody:has(.actions-menu.show) {
+    overflow: visible !important;
+}
+
+/* Con scrollY, DataTables conserva un thead OCULTO dentro del scrollBody
+   (solo para calcular anchos); el gradiente del tema lo pintaba como una
+   franja verde bajo el header real — se aplasta y despinta por completo. */
+#pedidoOrdenesModal .dataTables_scrollBody thead,
+#pedidoOrdenesModal .dataTables_scrollBody thead tr,
+#pedidoOrdenesModal .dataTables_scrollBody thead th {
+    background: transparent !important;
+    background-image: none !important;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+    border: 0 !important;
+    height: 0 !important;
+    line-height: 0 !important;
+    font-size: 0 !important;
+}
+
 /* ============================================================
    MÓDULO COMPRAS — Anchos de columna
    Nro. · Proveedor · N° Factura · Fecha · Total · Estado · Acciones

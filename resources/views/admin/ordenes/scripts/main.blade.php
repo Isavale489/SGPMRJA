@@ -1739,13 +1739,30 @@
         function renderPedidoOrdenesMeta(row) {
             const esManual = row.pedido_id == null;
             const total = parseInt(row.total_ordenes, 10) || 0;
-            let meta = '';
+
+            // Izquierda: chip de cliente (mismo componente de las cards) o
+            // nota contextual para las órdenes manuales.
+            let left;
             if (!esManual && row.cliente_nombre) {
-                meta += `<span class="badge badge-soft-primary rounded-pill"><i class="ri-user-3-line me-1"></i>${escHtml(row.cliente_nombre)}</span>`;
+                const inicial = escHtml((row.cliente_nombre || '?').trim().charAt(0).toUpperCase() || '?');
+                left = `<span class="wiz-client-banner wiz-client-banner--sm" title="Cliente del pedido">
+                    <span class="wiz-client-banner-avatar">${inicial}</span>
+                    <span class="wiz-client-banner-main">
+                        <span class="wiz-client-banner-eyebrow">Cliente</span>
+                        <span class="wiz-client-banner-name">${escHtml(row.cliente_nombre)}</span>
+                    </span>
+                </span>`;
+            } else {
+                left = `<span class="text-muted fs-12"><i class="ri-tools-line me-1"></i>Órdenes creadas sin pedido asociado</span>`;
             }
-            meta += `<span class="badge badge-soft-secondary rounded-pill"><i class="ri-stack-line me-1"></i>${total} ${total === 1 ? 'orden' : 'órdenes'}</span>`;
-            meta += chipsEstadosPedido(row);
-            $('#pedido-ordenes-meta').html(meta);
+
+            // Derecha: contador + desglose de estados, agrupados.
+            const right = `<span class="ord-count-chip">${total} ${total === 1 ? 'orden' : 'órdenes'}</span> ${chipsEstadosPedido(row)}`;
+
+            $('#pedido-ordenes-meta').html(`
+                <div class="d-flex align-items-center">${left}</div>
+                <div class="d-flex align-items-center gap-2 flex-wrap">${right}</div>
+            `);
         }
 
         // Los agregados del pedido abierto cambian con las acciones del modal
@@ -1762,7 +1779,7 @@
             const esManual = row.pedido_id == null;
             pedidoOrdenesKey = esManual ? 'manual' : String(row.pedido_id);
 
-            $('#pedido-ordenes-title').text(esManual ? 'Órdenes manuales' : 'Pedido #' + row.pedido_id);
+            $('#pedido-ordenes-title').text(esManual ? 'Órdenes manuales' : 'Órdenes del Pedido #' + row.pedido_id);
             renderPedidoOrdenesMeta(row);
 
             if (!pedidoOrdenesTable) {
@@ -1776,6 +1793,11 @@
                         }
                     },
                     dom: 'rtip',
+                    // Altura FIJA del visor de filas: el modal no crece ni se encoge
+                    // según la cantidad de órdenes (scrollCollapse:false mantiene el
+                    // alto aunque haya pocas); thead, meta y paginación quedan fijos.
+                    scrollY: 'min(44vh, 26rem)',
+                    scrollCollapse: false,
                     columns: [
                         { data: 'id', name: 'id', className: 'align-middle text-center', width: '9%' },
                         { data: 'producto_info', name: 'producto.nombre', className: 'align-middle', orderable: false, searchable: false, width: '34%' },
@@ -1853,8 +1875,16 @@
             $('#pedidoOrdenesModal').modal('show');
         }
 
-        // DataTables calcula mal los anchos en contenedores ocultos:
-        // reajustar al mostrarse el modal.
+        // DataTables calcula mal los anchos en contenedores ocultos (el header
+        // del scroll queda en 0 y "aparece tarde"). Ajustar al INICIO del fade
+        // (show + un frame: el modal ya tiene display:block y es medible) para
+        // que el header entre pintado con la animación; el de shown queda como
+        // respaldo por si el primer ajuste corrió antes del primer draw.
+        $('#pedidoOrdenesModal').on('show.bs.modal', function () {
+            requestAnimationFrame(function () {
+                if (pedidoOrdenesTable) pedidoOrdenesTable.columns.adjust();
+            });
+        });
         $('#pedidoOrdenesModal').on('shown.bs.modal', function () {
             if (pedidoOrdenesTable) pedidoOrdenesTable.columns.adjust();
         });

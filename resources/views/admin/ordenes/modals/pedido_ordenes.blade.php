@@ -8,8 +8,8 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body p-4">
-                {{-- Contexto del pedido: cliente + resumen agregado --}}
-                <div class="d-flex flex-wrap align-items-center gap-2 mb-3" id="pedido-ordenes-meta"></div>
+                {{-- Contexto del pedido: cliente (izq.) + resumen agregado (der.) --}}
+                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3" id="pedido-ordenes-meta"></div>
 
                 <table id="pedido-ordenes-table" class="table table-bordered table-striped align-middle dt-transactional table-operativa w-100">
                     <thead>
