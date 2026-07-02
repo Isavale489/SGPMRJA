@@ -9342,10 +9342,59 @@ select.js-readonly:not(.afs-native) {
     padding-top: 1.25rem;
     border-top: 1px dashed var(--vz-border-color, #e9ebec);
 }
-.config-help {
+
+/* Numéricos: ancho acotado (un número de 1-3 dígitos no necesita toda la fila)
+   + sufijo de unidad desde el registry ('%', 'días', …) */
+.config-input-group { max-width: 260px; }
+.config-sufijo {
     font-size: 0.78rem;
-    line-height: 1.45;
+    font-weight: 600;
+    color: #1e3c72;
+    background: rgba(30, 60, 114, 0.06);
 }
+
+/* Ayuda del parámetro: bloque con sangría colgante y acento, escaneable.
+   Texto en slate (NO text-muted: quedaba demasiado claro) y una línea por
+   idea — cada \n de la descripción del registry renderiza como línea propia. */
+.config-help {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    margin-top: 10px;
+    padding: 9px 12px;
+    font-size: 0.8rem;
+    line-height: 1.55;
+    color: #475569;
+    background: rgba(30, 60, 114, 0.035);
+    border-left: 3px solid rgba(30, 60, 114, 0.25);
+    border-radius: 0 8px 8px 0;
+    max-width: 62rem;
+}
+.config-help > i {
+    font-size: 0.95rem;
+    line-height: 1.3;
+    color: #1e3c72;
+    flex-shrink: 0;
+}
+.config-help-body { min-width: 0; }
+.config-help-line { display: block; }
+.config-help-line + .config-help-line { margin-top: 5px; }
+
+[data-bs-theme="dark"] .config-sufijo {
+    color: #a8b9d9;
+    background: rgba(78, 122, 199, 0.14);
+}
+[data-bs-theme="dark"] .config-help {
+    color: #b8c4d4;
+    background: rgba(78, 122, 199, 0.08);
+    border-left-color: rgba(78, 122, 199, 0.45);
+}
+[data-bs-theme="dark"] .config-help > i { color: #a8b9d9; }
+
+/* Párrafos introductorios de los paneles admin (Impuestos, Roles):
+   mismo tono slate legible en vez del text-muted lavado */
+.cfg-intro { color: #475569 !important; }
+[data-bs-theme="dark"] .cfg-intro { color: #b8c4d4 !important; }
 
 /* ── Badge "Por defecto" ── */
 .config-badge-default {
@@ -9704,24 +9753,25 @@ select.js-readonly:not(.afs-native) {
     transition: background .15s ease, border-color .15s ease, color .15s ease;
 }
 .seg-accion-chip:hover {
-    border-color: #1e3c72;
+    border-color: var(--seg-c, #1e3c72);
 }
 .seg-accion-chip input.form-check-input {
     margin: 0;
     cursor: pointer;
     float: none;
 }
-/* Resaltar el chip cuando su checkbox está marcado */
+/* Resaltar el chip cuando su checkbox está marcado (color de la sección) */
 .seg-accion-chip:has(input:checked) {
-    background: rgba(30, 60, 114, 0.10);
-    border-color: #1e3c72;
-    color: #1e3c72;
+    background: var(--seg-c-soft, rgba(30, 60, 114, 0.10));
+    border-color: var(--seg-c, #1e3c72);
+    color: var(--seg-c, #1e3c72);
     font-weight: 500;
 }
-[data-bs-theme="dark"] .seg-accion-chip:has(input:checked) {
-    background: rgba(157, 180, 230, 0.16);
-    border-color: #9db4e6;
-    color: #cdd9f2;
+/* Checkboxes (chips y "Todo el módulo") marcados/indeterminados en el color de sección */
+.seg-seccion .form-check-input:checked,
+.seg-seccion .form-check-input:indeterminate {
+    background-color: var(--seg-c);
+    border-color: var(--seg-c);
 }
 
 /* Tabla de la matriz */
@@ -9735,11 +9785,6 @@ select.js-readonly:not(.afs-native) {
 }
 .seg-matriz .form-check-sm .form-check-input {
     margin-top: 0.15rem;
-}
-
-/* Tabla de roles */
-.seg-roles-table td {
-    vertical-align: middle;
 }
 
 /* ============================================================
@@ -10078,24 +10123,40 @@ select.js-readonly:not(.afs-native) {
     transition: border-color .15s ease, box-shadow .15s ease;
 }
 .seg-mod-card:hover {
-    border-color: #1e3c72;
+    border-color: var(--seg-c, #1e3c72);
     box-shadow: 0 2px 10px rgba(16, 24, 40, .06);
 }
-.seg-mod-card.has-perms { border-color: rgba(30, 60, 114, .35); }
+.seg-mod-card.has-perms { border-color: var(--seg-c-border, rgba(30, 60, 114, .35)); }
 
 .seg-mod-card-head {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 8px;
+    gap: 9px;
     padding: 10px 14px;
     border-bottom: 1px solid var(--vz-border-color);
     background: rgba(30, 60, 114, .03);
+}
+.seg-mod-ic {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 8px;
+    background: var(--seg-c-soft, rgba(30, 60, 114, .09));
+    color: var(--seg-c, #1e3c72);
+    font-size: 0.95rem;
+    flex-shrink: 0;
 }
 .seg-mod-name {
     font-weight: 600;
     font-size: 0.9rem;
     color: var(--vz-heading-color, #1e293b);
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 .seg-mod-count {
     font-size: 0.72rem;
@@ -10107,8 +10168,8 @@ select.js-readonly:not(.afs-native) {
     white-space: nowrap;
 }
 .seg-mod-card.has-perms .seg-mod-count {
-    background: rgba(30, 60, 114, .12);
-    color: #1e3c72;
+    background: var(--seg-c-soft, rgba(30, 60, 114, .12));
+    color: var(--seg-c, #1e3c72);
 }
 .seg-mod-actions {
     display: flex;
@@ -10149,13 +10210,395 @@ select.js-readonly:not(.afs-native) {
     background: linear-gradient(to top, var(--vz-card-bg, #fff) 70%, transparent);
 }
 
+/* ── Secciones de la matriz (espejo del sidebar) ──
+   Cada sección hereda el color de identidad del sistema vía variables:
+   maestros navy · operativa emerald · reportes sky · admin violeta (propio
+   del panel). Los elementos internos (íconos, chips, contadores, bordes)
+   consumen var(--seg-c) y cambian solos por sección y por tema. */
+.seg-seccion {
+    --seg-c: #1e3c72;                        /* maestros (default) */
+    --seg-c-soft: rgba(30, 60, 114, .09);
+    --seg-c-border: rgba(30, 60, 114, .35);
+}
+.seg-sec-operativa {
+    --seg-c: #059669;
+    --seg-c-soft: rgba(16, 185, 129, .10);
+    --seg-c-border: rgba(16, 185, 129, .40);
+}
+.seg-sec-reportes {
+    --seg-c: #0369a1;
+    --seg-c-soft: rgba(14, 165, 233, .10);
+    --seg-c-border: rgba(14, 165, 233, .40);
+}
+.seg-sec-admin {
+    --seg-c: #3b82f6;
+    --seg-c-soft: rgba(59, 130, 246, .10);
+    --seg-c-border: rgba(59, 130, 246, .40);
+}
+[data-bs-theme="dark"] .seg-seccion {
+    --seg-c: #9db4e6;
+    --seg-c-soft: rgba(157, 180, 230, .14);
+    --seg-c-border: rgba(157, 180, 230, .55);
+}
+[data-bs-theme="dark"] .seg-sec-operativa {
+    --seg-c: #34d399;
+    --seg-c-soft: rgba(16, 185, 129, .18);
+    --seg-c-border: rgba(52, 211, 153, .55);
+}
+[data-bs-theme="dark"] .seg-sec-reportes {
+    --seg-c: #38bdf8;
+    --seg-c-soft: rgba(14, 165, 233, .18);
+    --seg-c-border: rgba(56, 189, 248, .55);
+}
+[data-bs-theme="dark"] .seg-sec-admin {
+    --seg-c: #60a5fa;
+    --seg-c-soft: rgba(96, 165, 250, .16);
+    --seg-c-border: rgba(96, 165, 250, .55);
+}
+
+.seg-secciones {
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+}
+.seg-seccion-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+.seg-seccion-ic {
+    font-size: 1rem;
+    color: var(--seg-c);
+}
+.seg-seccion-title {
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--seg-c);
+    white-space: nowrap;
+}
+.seg-seccion-count {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--seg-c);
+    background: var(--seg-c-soft);
+    border-radius: 999px;
+    padding: 1px 8px;
+    white-space: nowrap;
+}
+.seg-seccion-line {
+    flex: 1 1 auto;
+    height: 1px;
+    background: var(--vz-border-color);
+}
+.seg-seccion-tools { display: flex; gap: 4px; }
+.seg-seccion-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border: 1px solid var(--vz-border-color);
+    border-radius: 7px;
+    background: var(--vz-card-bg, #fff);
+    color: var(--vz-secondary-color);
+    font-size: 0.85rem;
+    padding: 0;
+    transition: color .15s ease, border-color .15s ease;
+}
+.seg-seccion-btn:hover { color: var(--seg-c); border-color: var(--seg-c); }
+
+/* ── Tab Roles: grilla de tarjetas de rol ── */
+.seg-roles-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 14px;
+}
+.seg-rol-card {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 14px 16px;
+    border: 1px solid var(--vz-border-color);
+    border-radius: 12px;
+    background: var(--vz-card-bg, #fff);
+    transition: border-color .15s ease, box-shadow .15s ease;
+}
+.seg-rol-card:hover {
+    border-color: #1e3c72;
+    box-shadow: 0 2px 10px rgba(16, 24, 40, .06);
+}
+.seg-rol-card-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.seg-rol-card-ic {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    background: rgba(30, 60, 114, .09);
+    color: #1e3c72;
+    font-size: 1.2rem;
+    flex-shrink: 0;
+}
+.seg-rol-card--admin { border-left: 3px solid #3b82f6; }
+.seg-rol-card--admin:hover { border-color: #3b82f6; }
+.seg-rol-card--admin .seg-rol-card-ic {
+    background: rgba(59, 130, 246, .12);
+    color: #3b82f6;
+}
+.seg-rol-card-id {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    min-width: 0;
+}
+.seg-rol-card-nombre {
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: var(--vz-heading-color, #1e293b);
+}
+.seg-rol-card-desc {
+    margin: 0;
+    font-size: 0.8rem;
+    line-height: 1.4;
+    color: var(--vz-secondary-color);
+    flex: 1 1 auto;
+}
+.seg-rol-card-desc.is-empty { font-style: italic; opacity: .65; }
+.seg-rol-card-meta {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+.seg-rol-meta-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.74rem;
+    font-weight: 600;
+    color: var(--vz-secondary-color);
+    background: var(--vz-light, #f3f6f9);
+    border-radius: 999px;
+    padding: 3px 10px;
+}
+.seg-rol-meta-chip > i { font-size: 0.85rem; }
+.seg-rol-meta-chip--total {
+    color: #3b82f6;
+    background: rgba(59, 130, 246, .11);
+}
+.seg-rol-card-foot {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding-top: 10px;
+    border-top: 1px dashed var(--vz-border-color);
+}
+.seg-rol-foot-nota {
+    display: inline-flex;
+    align-items: center;
+    font-size: 0.76rem;
+    color: var(--vz-secondary-color);
+    font-style: italic;
+}
+
+[data-bs-theme="dark"] .seg-rol-card:hover { border-color: #9db4e6; }
+[data-bs-theme="dark"] .seg-rol-card-ic {
+    background: rgba(157, 180, 230, .14);
+    color: #9db4e6;
+}
+[data-bs-theme="dark"] .seg-rol-card--admin { border-left-color: #60a5fa; }
+[data-bs-theme="dark"] .seg-rol-card--admin:hover { border-color: #60a5fa; }
+[data-bs-theme="dark"] .seg-rol-card--admin .seg-rol-card-ic {
+    background: rgba(96, 165, 250, .16);
+    color: #60a5fa;
+}
+[data-bs-theme="dark"] .seg-rol-meta-chip--total {
+    color: #60a5fa;
+    background: rgba(96, 165, 250, .14);
+}
+
+/* ── .table-admin — header de tabla del área administrativa ──
+   Mismo patrón que .table-maestro (navy) / .dt-transactional (teal) /
+   .dt-reportes (sky): fondo oscuro + texto blanco + franja de acento.
+   Azul admin (#3b82f6) — la identidad de Administración en el panel. */
+.table-admin thead th {
+    background: #1e3c72 !important;
+    color: #ffffff !important;
+    font-weight: 600 !important;
+    font-size: 12.5px !important;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    border-color: #2a5298 !important;
+    border-bottom: 3px solid #4d7fd9 !important;
+}
+
+[data-bs-theme="dark"] .table-admin thead th {
+    background: #16294d !important;
+    border-color: #1e3c72 !important;
+    border-bottom-color: #5c8ad2 !important;
+}
+
+/* ── Tabla de impuestos (/configuracion): descripción bajo el nombre ──
+   `table-nowrap` fuerza nowrap en las celdas; la línea de descripción debe
+   poder envolver y quedar acotada. */
+#tabla-impuestos .imp-desc-line {
+    white-space: normal;
+    font-size: 0.75rem;
+    line-height: 1.35;
+    max-width: 420px;
+    margin-top: 1px;
+}
+
+/* ── Nota "Administrador = acceso total" (callout legible, no alert lavado) ── */
+.seg-admin-nota {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    padding: 9px 14px;
+    border: 1px solid rgba(3, 105, 161, .22);
+    border-left: 3px solid #0ea5e9;
+    border-radius: 10px;
+    background: rgba(14, 165, 233, .06);
+}
+.seg-admin-nota-ic {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 9px;
+    background: rgba(14, 165, 233, .14);
+    color: #0369a1;
+    font-size: 1.05rem;
+    flex-shrink: 0;
+}
+.seg-admin-nota-text {
+    font-size: 0.8rem;
+    line-height: 1.45;
+    color: #334155;
+}
+.seg-admin-nota-text strong { color: #0f172a; }
+.seg-admin-nota-text em { color: #0369a1; font-weight: 600; font-style: normal; }
+
+[data-bs-theme="dark"] .seg-admin-nota {
+    background: rgba(14, 165, 233, .10);
+    border-color: rgba(56, 189, 248, .28);
+    border-left-color: #38bdf8;
+}
+[data-bs-theme="dark"] .seg-admin-nota-ic {
+    background: rgba(56, 189, 248, .16);
+    color: #38bdf8;
+}
+[data-bs-theme="dark"] .seg-admin-nota-text { color: #cbd5e1; }
+[data-bs-theme="dark"] .seg-admin-nota-text strong { color: #f1f5f9; }
+[data-bs-theme="dark"] .seg-admin-nota-text em { color: #38bdf8; }
+
+/* ── Resumen del rol en edición ── */
+.seg-rol-resumen {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    border: 1px solid var(--vz-border-color);
+    border-left: 3px solid #1e3c72;
+    border-radius: 10px;
+    background: rgba(30, 60, 114, .03);
+    margin-bottom: 1rem;
+}
+.seg-rol-resumen-ic {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: rgba(30, 60, 114, .1);
+    color: #1e3c72;
+    font-size: 1.15rem;
+    flex-shrink: 0;
+}
+.seg-rol-resumen-main { min-width: 0; }
+.seg-rol-resumen-top {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+.seg-rol-resumen-nombre {
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: var(--vz-heading-color, #1e293b);
+}
+.seg-rol-resumen-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--vz-secondary-color);
+    background: var(--vz-light, #f3f6f9);
+    border-radius: 999px;
+    padding: 2px 9px;
+}
+.seg-rol-resumen-desc {
+    font-size: 0.78rem;
+    color: var(--vz-secondary-color);
+    margin-top: 1px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Menú "Copiar de…" con scroll si hay muchos roles */
+#seg-copiar-menu {
+    max-height: 260px;
+    overflow-y: auto;
+    min-width: 220px;
+}
+
+/* ── Chip de cambios sin guardar (barra de guardado) ── */
+.seg-cambios-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-left: auto;
+    font-size: 0.76rem;
+    font-weight: 600;
+    color: #b25e09;
+    background: #fef6e7;
+    border: 1px solid rgba(178, 94, 9, .25);
+    border-radius: 999px;
+    padding: 3px 11px;
+    white-space: nowrap;
+}
+.seg-cambios-chip > i { font-size: 0.45rem; }
+.seg-save-bar .seg-save-hint { margin-right: auto; }
+.seg-save-bar .seg-cambios-chip + #seg-guardar-permisos { margin-left: 0; }
+
+/* Dark mode: los colores de sección los resuelven las variables --seg-c* de
+   arriba; aquí solo los fondos neutros de las tarjetas y el resumen del rol. */
 [data-bs-theme="dark"] .seg-mod-card-head { background: rgba(157, 180, 230, .06); }
 [data-bs-theme="dark"] .seg-mod-card-foot { background: rgba(255, 255, 255, .02); }
-[data-bs-theme="dark"] .seg-mod-card:hover,
-[data-bs-theme="dark"] .seg-mod-card.has-perms { border-color: #9db4e6; }
-[data-bs-theme="dark"] .seg-mod-card.has-perms .seg-mod-count {
-    background: rgba(157, 180, 230, .16);
-    color: #cdd9f2;
+[data-bs-theme="dark"] .seg-rol-resumen {
+    background: rgba(157, 180, 230, .05);
+    border-left-color: #9db4e6;
+}
+[data-bs-theme="dark"] .seg-rol-resumen-ic {
+    background: rgba(157, 180, 230, .14);
+    color: #9db4e6;
+}
+[data-bs-theme="dark"] .seg-cambios-chip {
+    color: #fbbf24;
+    background: rgba(251, 191, 36, .12);
+    border-color: rgba(251, 191, 36, .3);
 }
 
 /* ============================================================================

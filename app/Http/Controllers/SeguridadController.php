@@ -28,7 +28,7 @@ class SeguridadController extends Controller
 {
     public function index()
     {
-        $roles = Rol::withCount('usuarios')
+        $roles = Rol::withCount(['usuarios', 'permisos'])
             ->orderByDesc('es_sistema')
             ->orderBy('nombre')
             ->get();
@@ -55,20 +55,31 @@ class SeguridadController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Rol creado correctamente.',
-            'rol'     => $this->serializarRol($rol->loadCount('usuarios')),
+            'rol'     => $this->serializarRol($rol->loadCount(['usuarios', 'permisos'])),
         ]);
     }
 
     /**
-     * Edita nombre/descripción de un rol. Los roles de sistema no se editan.
+     * Edita nombre/descripción de un rol. Los roles de sistema conservan su
+     * nombre (identidad protegida) pero SÍ admiten descripción — es texto
+     * informativo, no de autorización.
      */
     public function updateRol(Request $request, Rol $rol)
     {
         if ($rol->es_sistema) {
+            $data = $request->validate(
+                ['descripcion' => ['nullable', 'string', 'max:255']],
+                [],
+                ['descripcion' => 'descripción'],
+            );
+
+            $rol->update(['descripcion' => $data['descripcion'] ?? null]);
+
             return response()->json([
-                'success' => false,
-                'message' => 'Los roles de sistema no se pueden editar.',
-            ], 403);
+                'success' => true,
+                'message' => 'Descripción actualizada correctamente.',
+                'rol'     => $this->serializarRol($rol->loadCount(['usuarios', 'permisos'])),
+            ]);
         }
 
         $data = $this->validarRol($request, $rol);
@@ -84,7 +95,7 @@ class SeguridadController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Rol actualizado correctamente.',
-            'rol'     => $this->serializarRol($rol->loadCount('usuarios')),
+            'rol'     => $this->serializarRol($rol->loadCount(['usuarios', 'permisos'])),
         ]);
     }
 
@@ -193,26 +204,86 @@ class SeguridadController extends Controller
     // ===================================================================
 
     /**
-     * Módulos del registry para la matriz (excluye 'comunes' y entradas sin acciones).
-     * Cada entrada: ['slug', 'nombre', 'acciones' => ['accion' => 'descripcion']].
+     * Metadatos de PRESENTACIÓN de la matriz (no de autorización): sección,
+     * ícono y color por módulo, espejo de la organización del sidebar. Un módulo
+     * nuevo del registry sin entrada aquí cae en "Otros módulos" con ícono
+     * genérico. 'tema' = clase de color de la sección (CSS .seg-sec-*): los
+     * mismos de identidad del sidebar/cards (maestros navy, operativa emerald,
+     * reportes sky); 'admin' (azul vivo #3b82f6) es propio de este panel:
+     * Administración no existe como sección del sidebar.
+     */
+    private const SECCIONES_MATRIZ = [
+        'Gestión General'      => ['tema' => 'maestros',  'icono' => 'ri-database-2-line',  'modulos' => ['clientes', 'empleados', 'departamentos', 'cargos', 'proveedores', 'productos', 'tipo-productos', 'atributos', 'colores', 'tallas', 'logos', 'insumos', 'tipo-insumos']],
+        'Gestión Operativa'    => ['tema' => 'operativa', 'icono' => 'ri-compass-3-line',   'modulos' => ['cotizaciones', 'pedidos', 'ordenes', 'calidad', 'compras', 'movimiento-insumo']],
+        'Consultas y Reportes' => ['tema' => 'reportes',  'icono' => 'ri-bar-chart-line',   'modulos' => ['reportes']],
+        'Administración'       => ['tema' => 'admin',     'icono' => 'ri-shield-keyhole-line', 'modulos' => ['configuracion', 'users']],
+    ];
+
+    private const ICONOS_MATRIZ = [
+        'configuracion'     => 'ri-settings-3-line',
+        'users'             => 'ri-shield-user-line',
+        'clientes'          => 'ri-user-star-line',
+        'empleados'         => 'ri-user-settings-line',
+        'departamentos'     => 'ri-building-line',
+        'cargos'            => 'ri-briefcase-4-line',
+        'pedidos'           => 'ri-shopping-cart-line',
+        'cotizaciones'      => 'ri-file-list-3-line',
+        'proveedores'       => 'ri-truck-line',
+        'productos'         => 'ri-t-shirt-line',
+        'tipo-productos'    => 'ri-shapes-line',
+        'atributos'         => 'ri-list-settings-line',
+        'colores'           => 'ri-palette-line',
+        'tallas'            => 'ri-ruler-line',
+        'logos'             => 'ri-image-line',
+        'insumos'           => 'ri-archive-line',
+        'tipo-insumos'      => 'ri-archive-drawer-line',
+        'ordenes'           => 'ri-calendar-check-line',
+        'calidad'           => 'ri-shield-check-line',
+        'compras'           => 'ri-shopping-bag-3-line',
+        'movimiento-insumo' => 'ri-archive-2-line',
+        'reportes'          => 'ri-bar-chart-2-line',
+    ];
+
+    /**
+     * Módulos del registry para la matriz (excluye 'comunes' y entradas sin
+     * acciones), agrupados por sección para render directo en la vista:
+     * [seccion => ['icono' => ..., 'modulos' => [['slug','nombre','icono','acciones'], ...]], ...]
      */
     private function modulosMatriz(): array
     {
-        $modulos = [];
-
+        $disponibles = [];
         foreach (config('modulos', []) as $slug => $config) {
             if ($slug === 'comunes' || empty($config['acciones'])) {
                 continue;
             }
-
-            $modulos[] = [
+            $disponibles[$slug] = [
                 'slug'     => $slug,
                 'nombre'   => $config['nombre'] ?? $slug,
+                'icono'    => self::ICONOS_MATRIZ[$slug] ?? 'ri-apps-2-line',
                 'acciones' => $config['acciones'],
             ];
         }
 
-        return $modulos;
+        $secciones = [];
+        foreach (self::SECCIONES_MATRIZ as $nombre => $def) {
+            $modulos = [];
+            foreach ($def['modulos'] as $slug) {
+                if (isset($disponibles[$slug])) {
+                    $modulos[] = $disponibles[$slug];
+                    unset($disponibles[$slug]);
+                }
+            }
+            if ($modulos) {
+                $secciones[$nombre] = ['tema' => $def['tema'], 'icono' => $def['icono'], 'modulos' => $modulos];
+            }
+        }
+
+        // Módulos del registry sin sección asignada: visibles igual (no se pierden).
+        if ($disponibles) {
+            $secciones['Otros módulos'] = ['tema' => 'maestros', 'icono' => 'ri-apps-2-line', 'modulos' => array_values($disponibles)];
+        }
+
+        return $secciones;
     }
 
     /**
@@ -285,6 +356,7 @@ class SeguridadController extends Controller
             'descripcion'    => $rol->descripcion,
             'es_sistema'     => (bool) $rol->es_sistema,
             'usuarios_count' => $rol->usuarios_count ?? 0,
+            'permisos_count' => $rol->permisos_count ?? 0,
         ];
     }
 }

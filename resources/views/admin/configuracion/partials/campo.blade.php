@@ -46,11 +46,17 @@
     @switch($parametro['tipo'])
         @case('decimal')
         @case('entero')
-            <input type="number" class="form-control config-input" id="{{ $campoId }}"
-                value="{{ $parametro['valor'] }}" step="{{ $parametro['tipo'] === 'entero' ? '1' : '0.01' }}"
-                @if (!is_null($min)) min="{{ $min }}" @endif
-                @if (!is_null($max)) max="{{ $max }}" @endif
-                @if ($requerido) data-requerido="1" @endif>
+            {{-- Numérico: ancho acotado + sufijo de unidad (registry 'sufijo') --}}
+            <div class="input-group config-input-group">
+                <input type="number" class="form-control config-input" id="{{ $campoId }}"
+                    value="{{ $parametro['valor'] }}" step="{{ $parametro['tipo'] === 'entero' ? '1' : '0.01' }}"
+                    @if (!is_null($min)) min="{{ $min }}" @endif
+                    @if (!is_null($max)) max="{{ $max }}" @endif
+                    @if ($requerido) data-requerido="1" @endif>
+                @if (!empty($parametro['sufijo']))
+                    <span class="input-group-text config-sufijo">{{ $parametro['sufijo'] }}</span>
+                @endif
+            </div>
             @break
 
         @case('booleano')
@@ -69,8 +75,14 @@
     <div class="invalid-feedback"></div>
 
     @if (!empty($parametro['descripcion']))
-        <p class="config-help text-muted mb-0 mt-1">
-            <i class="ri-information-line align-bottom"></i> {{ $parametro['descripcion'] }}
-        </p>
+        {{-- Cada \n de la descripción del registry es una línea propia --}}
+        <div class="config-help">
+            <i class="ri-information-line"></i>
+            <div class="config-help-body">
+                @foreach (preg_split('/\r\n|\r|\n/', $parametro['descripcion']) as $linea)
+                    <span class="config-help-line">{{ $linea }}</span>
+                @endforeach
+            </div>
+        </div>
     @endif
 </div>

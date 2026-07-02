@@ -51,6 +51,7 @@ parametro('impuestos.iva')
     'config_key'  => 'pedidos.abono_minimo_porcentaje',
 
     // Opcionales (UI):
+    // 'sufijo'               => '%',   // unidad mostrada junto al input numérico ('%', 'días', …)
     // 'confirmar_guardado'   => true,
     // 'mensaje_confirmacion' => '...texto del SweetAlert previo al guardado...',
 ],

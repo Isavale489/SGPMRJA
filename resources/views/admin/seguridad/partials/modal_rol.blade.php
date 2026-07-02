@@ -18,6 +18,9 @@
                         <input type="text" class="form-control" id="seg-rol-nombre" name="nombre" maxlength="60"
                             placeholder="Ej. Vendedor, Almacén, Producción" autocomplete="off">
                         <div class="invalid-feedback" id="seg-rol-nombre-error"></div>
+                        <div class="form-text d-none" id="seg-rol-nota-sistema">
+                            <i class="ri-lock-line me-1"></i>El nombre de los roles de sistema no se puede cambiar.
+                        </div>
                     </div>
 
                     <div class="mb-1">

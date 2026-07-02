@@ -78,14 +78,14 @@
                                 </button>
                             </div>
                             <div class="card-body">
-                                <p class="text-muted mb-3">
-                                    Catálogo central de impuestos. La tasa del IVA aquí definida es la que
-                                    aplica a las líneas gravables de las compras nuevas; las compras ya
-                                    registradas conservan su porcentaje original (snapshot).
+                                <p class="cfg-intro small mb-3">
+                                    Catálogo central de impuestos. La tasa del IVA aquí definida aplica a las
+                                    líneas gravables de las compras nuevas;<br>
+                                    las compras ya registradas conservan su porcentaje original (snapshot).
                                 </p>
                                 <div class="table-responsive">
-                                    <table class="table table-nowrap align-middle mb-0" id="tabla-impuestos">
-                                        <thead class="table-light">
+                                    <table class="table table-nowrap align-middle mb-0 table-admin" id="tabla-impuestos">
+                                        <thead>
                                             <tr>
                                                 <th>Código</th>
                                                 <th>Nombre</th>
@@ -97,9 +97,20 @@
                                         <tbody>
                                             @forelse ($impuestos as $imp)
                                                 <tr>
-                                                    <td><span class="badge bg-light text-dark">{{ $imp->codigo }}</span></td>
-                                                    <td>{{ $imp->nombre }}</td>
-                                                    <td class="text-end">{{ rtrim(rtrim(number_format($imp->porcentaje, 2), '0'), '.') }}%</td>
+                                                    <td>
+                                                        <span class="badge bg-light text-dark">{{ $imp->codigo }}</span>
+                                                        @if ($imp->codigo === \App\Models\Impuesto::CODIGO_IVA)
+                                                            <i class="ri-lock-2-line text-muted ms-1 align-middle"
+                                                                title="Tasa base de las compras — no se puede eliminar"></i>
+                                                        @endif
+                                                    </td>
+                                                    <td>
+                                                        <span class="fw-medium">{{ $imp->nombre }}</span>
+                                                        @if ($imp->descripcion)
+                                                            <div class="imp-desc-line text-muted">{{ $imp->descripcion }}</div>
+                                                        @endif
+                                                    </td>
+                                                    <td class="text-end fw-semibold fs-15">{{ rtrim(rtrim(number_format($imp->porcentaje, 2), '0'), '.') }}%</td>
                                                     <td>
                                                         @if ($imp->estado === 'activo')
                                                             <span class="badge bg-success-subtle text-success">Activo</span>

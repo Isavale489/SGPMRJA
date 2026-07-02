@@ -38,8 +38,9 @@ return [
     'pedidos.abono_minimo' => [
         'modulo'      => 'Pedidos',
         'nombre'      => 'Abono mínimo (%)',
-        'descripcion' => 'Porcentaje mínimo del total que debe estar abonado (con pagos validados) para registrar un pedido y para formalizarlo (habilitar producción). Los textos de términos, facturas y FAQ lo reflejan automáticamente.',
+        'descripcion' => "Porcentaje mínimo del total que debe estar abonado (con pagos validados) para registrar un pedido y formalizarlo (habilitar producción).\nLos textos de términos, facturas y FAQ reflejan este valor automáticamente.",
         'tipo'        => 'decimal',
+        'sufijo'      => '%',
         'reglas'      => 'required|numeric|min:0|max:100',
         'default'     => null,
         'config_key'  => 'pedidos.abono_minimo_porcentaje',
@@ -48,8 +49,9 @@ return [
     'cotizaciones.dias_vigencia' => [
         'modulo'      => 'Cotizaciones',
         'nombre'      => 'Vigencia de precios por defecto (días)',
-        'descripcion' => 'Valor por defecto de la "Fecha validez" al crear una cotización (emisión + N días); el vendedor puede ajustarla por cliente y esa fecha pactada es la que manda: al pasarla, la cotización se marca Vencida y no puede convertirse en pedido. Este parámetro también define el plazo al reactivar una Vencida y aplica como respaldo a cotizaciones antiguas sin fecha de validez.',
+        'descripcion' => "Valor por defecto de la 'Fecha validez' al crear una cotización (emisión + N días). El vendedor puede ajustarla por cliente, y esa fecha pactada es la que manda: al pasarla, la cotización se marca Vencida y ya no puede convertirse en pedido.\nDefine también el plazo al reactivar una Vencida, y respalda a las cotizaciones antiguas que no tienen fecha de validez.",
         'tipo'        => 'entero',
+        'sufijo'      => 'días',
         'reglas'      => 'required|integer|min:1|max:365',
         'default'     => 15,
     ],
@@ -57,8 +59,9 @@ return [
     'cotizaciones.max_bordados_producto' => [
         'modulo'      => 'Cotizaciones',
         'nombre'      => 'Máximo de bordados por producto',
-        'descripcion' => 'Cantidad máxima de bordados que se pueden configurar en un mismo producto de la cotización. Cuenta el TOTAL de bordados por prenda (suma de la cantidad de cada ubicación): p. ej. una manga con cantidad 10 son 10 bordados. La misma política aplica al convertir y registrar pedidos.',
+        'descripcion' => "Cantidad máxima de bordados configurables en un mismo producto de la cotización.\nCuenta el TOTAL por prenda (suma de la cantidad de cada ubicación): una manga con cantidad 10 son 10 bordados.\nLa misma política aplica al convertir la cotización y al registrar pedidos.",
         'tipo'        => 'entero',
+        'sufijo'      => 'bordados',
         'reglas'      => 'required|integer|min:1|max:50',
         'default'     => 6,
     ],
