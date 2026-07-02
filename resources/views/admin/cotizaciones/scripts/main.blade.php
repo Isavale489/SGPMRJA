@@ -327,6 +327,21 @@
     }
 </style>
 <script>
+    // Vigencia de precios por defecto (config del sistema). La fecha_validez
+    // de cada cotización es la que manda; esto solo pre-siembra el default.
+    window.COT_DIAS_VIGENCIA = {{ (int) \App\Models\Cotizacion::diasVigencia() }};
+
+    // Setea #fecha-validez-field a base + días y sincroniza los chips de
+    // "Validez rápida" (activa el que coincida con los días indicados).
+    window.cotSeedValidez = function (baseIso, dias) {
+        var base = baseIso ? new Date(baseIso + 'T00:00:00') : new Date();
+        if (isNaN(base.getTime())) base = new Date();
+        base.setDate(base.getDate() + dias);
+        $('#fecha-validez-field').val(base.toISOString().split('T')[0]);
+        $('.cot-date-chip').removeClass('is-active')
+            .filter('[data-days="' + dias + '"]').addClass('is-active');
+    };
+
     // Validación onblur: fecha_validez debe ser >= fecha_cotizacion
     $(document).on('blur', '#fecha-validez-field, input[name="fecha_validez"]', function () {
         let validezVal = $(this).val();
@@ -2371,6 +2386,8 @@
             $('#id-field').val('');
             $('#cliente-id-field').val('').prop('disabled', false).removeClass('campo-protegido');
             $('#fecha-cotizacion-field').val(new Date().toISOString().slice(0, 10)).prop('readonly', false).removeClass('campo-protegido');
+            // Default de validez: emisión + vigencia configurada (ajustable con los chips)
+            window.cotSeedValidez($('#fecha-cotizacion-field').val(), window.COT_DIAS_VIGENCIA);
             $('#prioridad-field').val('Normal');
 
             $('#productos-container').empty();
@@ -2435,12 +2452,15 @@
                 }
             }
 
-            // Fecha validez (opcional, pero si se ingresa debe ser ≥ fecha cotización)
+            // Fecha validez (obligatoria y ≥ fecha cotización)
             let $fechaVal = $('#fecha-validez-field');
-            if ($fechaVal.val() && $fechaCot.val() && $fechaVal.val() < $fechaCot.val()) {
+            if (!$fechaVal.val()) {
+                marcarInvalido($fechaVal, 'La fecha de validez es obligatoria.');
+                esValido = false;
+            } else if ($fechaCot.val() && $fechaVal.val() < $fechaCot.val()) {
                 marcarInvalido($fechaVal, 'La fecha de validez no puede ser anterior a la fecha de cotización.');
                 esValido = false;
-            } else if ($fechaVal.val()) {
+            } else {
                 marcarValido($fechaVal);
             }
 
@@ -2606,7 +2626,14 @@
                     var fechaValidez = data.fecha_validez ? data.fecha_validez.split('T')[0] : '';
 
                     $('#fecha-cotizacion-field').val(fechaCotizacion).prop('readonly', true).addClass('campo-protegido');
-                    $('#fecha-validez-field').val(fechaValidez);
+                    if (fechaValidez) {
+                        $('#fecha-validez-field').val(fechaValidez);
+                        $('.cot-date-chip').removeClass('is-active');
+                    } else {
+                        // Legacy sin fecha de validez: pre-sembrar el fallback vigente
+                        // (emisión + vigencia por defecto) para que pueda guardarse.
+                        window.cotSeedValidez(fechaCotizacion, window.COT_DIAS_VIGENCIA);
+                    }
                     $('#estado-field').val(data.estado);
                     $('#prioridad-field').val(data.prioridad || 'Normal');
                     $('#notas-field').val(data.notas || '');
@@ -5994,7 +6021,16 @@
                         $('#fecha-cotizacion-field').trigger('focus');
                         return false;
                     }
-                    if (validez && validez < fecha) {
+                    if (!validez) {
+                        Swal.fire({
+                            icon: 'warning', title: 'Fecha de validez requerida',
+                            text: 'Indica hasta cuándo son válidos los precios (puedes usar los atajos de validez rápida).',
+                            timer: 2600, showConfirmButton: false
+                        });
+                        $('#fecha-validez-field').trigger('focus');
+                        return false;
+                    }
+                    if (validez < fecha) {
                         Swal.fire({
                             icon: 'warning', title: 'Fechas inconsistentes',
                             text: 'La fecha de validez no puede ser anterior a la fecha de emisión.',

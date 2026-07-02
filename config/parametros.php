@@ -47,8 +47,8 @@ return [
 
     'cotizaciones.dias_vigencia' => [
         'modulo'      => 'Cotizaciones',
-        'nombre'      => 'Vigencia de precios (días)',
-        'descripcion' => 'Días continuos desde la emisión durante los que los precios de una cotización son válidos para convertirla en pedido. Pasado el plazo, la cotización se marca Vencida. Aplica también a cotizaciones ya emitidas (es una política, no un snapshot).',
+        'nombre'      => 'Vigencia de precios por defecto (días)',
+        'descripcion' => 'Valor por defecto de la "Fecha validez" al crear una cotización (emisión + N días); el vendedor puede ajustarla por cliente y esa fecha pactada es la que manda: al pasarla, la cotización se marca Vencida y no puede convertirse en pedido. Este parámetro también define el plazo al reactivar una Vencida y aplica como respaldo a cotizaciones antiguas sin fecha de validez.',
         'tipo'        => 'entero',
         'reglas'      => 'required|integer|min:1|max:365',
         'default'     => 15,

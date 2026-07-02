@@ -464,10 +464,10 @@
                                             <div class="col-md-6">
                                                 <label for="fecha-validez-field"
                                                     class="form-label small fw-semibold mb-1">
-                                                    Fecha validez
+                                                    Fecha validez <span class="text-danger">*</span>
                                                 </label>
                                                 <input type="date" id="fecha-validez-field" name="fecha_validez"
-                                                    class="form-control form-control-sm" />
+                                                    class="form-control form-control-sm" required />
                                             </div>
                                             <div class="col-12">
                                                 <div class="cot-date-shortcuts" id="cot-date-shortcuts">

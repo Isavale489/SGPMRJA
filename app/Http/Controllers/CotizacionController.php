@@ -188,7 +188,7 @@ class CotizacionController extends Controller
         $request->validate([
             'cliente_id' => 'required|exists:cliente,id',
             'fecha_cotizacion' => 'required|date',
-            'fecha_validez' => 'nullable|date|after_or_equal:fecha_cotizacion',
+            'fecha_validez' => 'required|date|after_or_equal:fecha_cotizacion',
             'notas' => 'nullable|string|max:2000',
             'condiciones_terminos' => 'nullable|string',
             'productos' => 'required|array|min:1',
@@ -219,6 +219,7 @@ class CotizacionController extends Controller
             'cliente_id.exists' => 'El cliente seleccionado no existe.',
             'fecha_cotizacion.required' => 'La fecha de cotización es obligatoria.',
             'fecha_cotizacion.date' => 'La fecha de cotización debe ser una fecha válida.',
+            'fecha_validez.required' => 'La fecha de validez es obligatoria.',
             'fecha_validez.date' => 'La fecha de validez debe ser una fecha válida.',
             'fecha_validez.after_or_equal' => 'La fecha de validez debe ser igual o posterior a la fecha de cotización.',
             'productos.required' => 'Debe agregar al menos un producto.',
@@ -307,7 +308,7 @@ class CotizacionController extends Controller
         $request->validate([
             'cliente_id' => 'required|exists:cliente,id',
             'fecha_cotizacion' => 'required|date',
-            'fecha_validez' => 'nullable|date|after_or_equal:fecha_cotizacion',
+            'fecha_validez' => 'required|date|after_or_equal:fecha_cotizacion',
             'estado' => 'required|in:Pendiente,Aprobada,Cancelada,Convertida,Vencida',
             'notas' => 'nullable|string|max:2000',
             'condiciones_terminos' => 'nullable|string',
@@ -339,6 +340,7 @@ class CotizacionController extends Controller
             'cliente_id.exists' => 'El cliente seleccionado no existe.',
             'fecha_cotizacion.required' => 'La fecha de cotización es obligatoria.',
             'fecha_cotizacion.date' => 'La fecha de cotización debe ser una fecha válida.',
+            'fecha_validez.required' => 'La fecha de validez es obligatoria.',
             'fecha_validez.date' => 'La fecha de validez debe ser una fecha válida.',
             'fecha_validez.after_or_equal' => 'La fecha de validez debe ser igual o posterior a la fecha de cotización.',
             'estado.required' => 'El estado es obligatorio.',
