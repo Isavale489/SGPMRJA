@@ -358,26 +358,38 @@ class CompraController extends Controller
                 return $html;
             })
             ->addColumn('actions', function ($c) {
-                $btn = '<div class="d-flex gap-2 justify-content-center">';
+                // Botón Ver siempre visible
+                $btn = '<div class="d-flex gap-1 justify-content-center align-items-center">';
                 $btn .= '<button class="btn btn-sm btn-soft-info ver-btn" data-id="' . $c->id . '" title="Ver detalle"><i class="ri-eye-fill"></i></button>';
-                $btn .= '<a href="' . route('compras.pdf', $c->id) . '" target="_blank" class="btn btn-sm btn-soft-danger" title="Ver PDF"><i class="ri-file-pdf-fill"></i></a>';
+
+                $items = '';
+
+                // PDF (Ver PDF)
+                $items .= '<li><a href="' . route('compras.pdf', $c->id) . '" target="_blank" class="dropdown-item act-item act-pdf" title="Ver PDF"><span class="act-ic"><i class="ri-file-pdf-fill"></i></span>Ver PDF</a></li>';
 
                 if ($c->estado === 'borrador') {
-                    $btn .= '<button class="btn btn-sm btn-soft-warning editar-btn" data-id="' . $c->id . '" title="Editar borrador"><i class="ri-pencil-fill"></i></button>';
-                    $btn .= '<button class="btn btn-sm btn-soft-success procesar-btn" data-id="' . $c->id . '" title="Procesar — actualiza stock"><i class="ri-check-double-line"></i></button>';
-                    $btn .= '<button class="btn btn-sm btn-soft-danger eliminar-compra-btn" data-id="' . $c->id . '" title="Eliminar borrador"><i class="ri-delete-bin-line"></i></button>';
+                    $items .= '<li><button type="button" class="dropdown-item act-item act-edit editar-btn" data-id="' . $c->id . '" title="Editar borrador"><span class="act-ic"><i class="ri-pencil-fill"></i></span>Editar</button></li>';
+                    $items .= '<li><button type="button" class="dropdown-item act-item act-primary procesar-btn" data-id="' . $c->id . '" title="Procesar — actualiza stock"><span class="act-ic"><i class="ri-check-double-line"></i></span>Procesar</button></li>';
+                    $items .= '<li><button type="button" class="dropdown-item act-item act-del eliminar-compra-btn" data-id="' . $c->id . '" title="Eliminar borrador"><span class="act-ic"><i class="ri-delete-bin-line"></i></span>Eliminar</button></li>';
                 }
 
                 if ($c->estado === 'recibida') {
-                    $btn .= '<button class="btn btn-sm btn-soft-danger anular-btn" data-id="' . $c->id . '" title="Anular — revierte stock"><i class="ri-close-circle-line"></i></button>';
+                    $items .= '<li><button type="button" class="dropdown-item act-item act-del anular-btn" data-id="' . $c->id . '" title="Anular — revierte stock"><span class="act-ic"><i class="ri-close-circle-line"></i></span>Anular</button></li>';
                 }
 
                 if ($c->estado === 'anulada') {
                     if ($c->clonada) {
-                        $btn .= '<button class="btn btn-sm btn-soft-secondary" disabled title="Esta compra ya fue clonada"><i class="ri-file-copy-line"></i></button>';
+                        $items .= '<li><button type="button" class="dropdown-item act-item act-primary" disabled title="Esta compra ya fue clonada"><span class="act-ic"><i class="ri-file-copy-line"></i></span>Clonada</button></li>';
                     } else {
-                        $btn .= '<button class="btn btn-sm btn-soft-secondary clonar-btn" data-id="' . $c->id . '" title="Clonar como nuevo borrador"><i class="ri-file-copy-line"></i></button>';
+                        $items .= '<li><button type="button" class="dropdown-item act-item act-primary clonar-btn" data-id="' . $c->id . '" title="Clonar como nuevo borrador"><span class="act-ic"><i class="ri-file-copy-line"></i></span>Clonar</button></li>';
                     }
+                }
+
+                if (!empty($items)) {
+                    $btn .= '<div class="dropdown d-inline-block">';
+                    $btn .= '<button class="btn btn-sm btn-soft-secondary" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Más acciones"><i class="ri-more-2-fill"></i></button>';
+                    $btn .= '<ul class="dropdown-menu dropdown-menu-end actions-menu">' . $items . '</ul>';
+                    $btn .= '</div>';
                 }
 
                 $btn .= '</div>';
