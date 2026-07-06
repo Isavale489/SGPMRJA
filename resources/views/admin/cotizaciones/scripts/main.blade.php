@@ -4846,6 +4846,30 @@
                 }
             }
 
+            // Filtra los chips de color por nombre según el buscador. Oculta los
+            // títulos de grupo que queden sin chips visibles y muestra el estado
+            // vacío. Usa la clase .cfg-hidden (display:none !important) porque el
+            // atributo [hidden] no oculta elementos inline-flex como los chips.
+            function filterColorChips() {
+                var term = ($('#cfg-color-search').val() || '').trim().toLowerCase();
+                $('#cfg-color-search-clear').prop('hidden', term === '');
+                var $grid = $('#cfg-color-grid');
+                var anyVisible = false;
+                $grid.find('.cfg-color-group-items').each(function () {
+                    var $items = $(this);
+                    var groupHasVisible = false;
+                    $items.find('.cfg-color-chip').each(function () {
+                        var name = ($(this).data('color-nombre') || '').toString().toLowerCase();
+                        var match = term === '' || name.indexOf(term) !== -1;
+                        $(this).toggleClass('cfg-hidden', !match);
+                        if (match) { groupHasVisible = true; anyVisible = true; }
+                    });
+                    $items.toggleClass('cfg-hidden', !groupHasVisible);
+                    $items.prev('.cfg-color-group-title').toggleClass('cfg-hidden', !groupHasVisible);
+                });
+                $('#cfg-color-noresults').toggleClass('cfg-hidden', anyVisible || term === '');
+            }
+
             function renderColorGrid() {
                 var colors = (typeof coloresArray !== 'undefined' && Array.isArray(coloresArray)) ? coloresArray : [];
                 var $grid = $('#cfg-color-grid');
@@ -4884,6 +4908,10 @@
 
                 // Indicador de color seleccionado en el header
                 $('#cfg-color-selected').text(cfgState.colorNombre || 'Sin seleccionar');
+
+                // Buscador arranca limpio en cada render (nuevo producto o color creado)
+                $('#cfg-color-search').val('');
+                filterColorChips();
             }
 
             // ── Escala de tallas activa (Letras / Numéricas / Única) ──
@@ -5039,6 +5067,12 @@
 
                 $('#cfg-save-btn').prop('disabled', !(cfgState.colorId && qty > 0 && unit > 0));
             }
+
+            // Buscador de color: filtra en vivo y botón para limpiar
+            $(document).on('input', '#cfg-color-search', filterColorChips);
+            $(document).on('click', '#cfg-color-search-clear', function () {
+                $('#cfg-color-search').val('').trigger('input').focus();
+            });
 
             // Click en chip de color
             $(document).on('click', '#cfg-color-grid .cfg-color-chip', function () {

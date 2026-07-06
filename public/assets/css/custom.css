@@ -4266,7 +4266,78 @@ header#page-topbar,
 }
 
 /* ── Selector de colores (chips) ─────────────────────────────── */
-.cfg-color-grid { padding: 0; }
+/* Buscador en vivo sobre los chips */
+.cfg-color-search {
+    position: relative;
+    margin-bottom: 10px;
+}
+.cfg-color-search-icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #94a3b8;
+    font-size: 0.95rem;
+    pointer-events: none;
+}
+.cfg-color-search-input {
+    width: 100%;
+    border: 2px solid #e2e8f0;
+    border-radius: 999px;
+    padding: 7px 34px 7px 34px;
+    font-size: 0.8rem;
+    color: #1e293b;
+    background: #ffffff;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+.cfg-color-search-input::placeholder { color: #94a3b8; }
+.cfg-color-search-input:focus {
+    outline: none;
+    border-color: #1e3c72;
+    box-shadow: 0 0 0 3px rgba(30, 60, 114, 0.12);
+}
+.cfg-color-search-clear {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    border: none;
+    background: #e2e8f0;
+    color: #475569;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+.cfg-color-search-clear:hover { background: #cbd5e1; }
+
+/* Estado vacío del buscador */
+.cfg-color-noresults {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px;
+    color: #94a3b8;
+    font-size: 0.8rem;
+    font-style: italic;
+}
+.cfg-color-noresults i { font-size: 1rem; }
+
+/* Utilidad: ocultar chips/grupos filtrados. Necesario porque el atributo
+   [hidden] no vence al display:inline-flex de los chips. */
+.cfg-hidden { display: none !important; }
+
+.cfg-color-grid {
+    padding: 0;
+    max-height: 220px;
+    overflow-y: auto;
+    padding-right: 4px;
+}
 .cfg-color-group-title {
     font-size: 0.68rem;
     text-transform: uppercase;
@@ -4800,6 +4871,21 @@ header#page-topbar,
     box-shadow: 0 0 0 3px rgba(0, 217, 165, 0.18);
 }
 [data-bs-theme="dark"] .cfg-color-chip.is-selected .cfg-color-chip-label { color: #34d399; }
+
+[data-bs-theme="dark"] .cfg-color-search-input {
+    background: #1f2937;
+    border-color: rgba(255, 255, 255, 0.08);
+    color: #e2e8f0;
+}
+[data-bs-theme="dark"] .cfg-color-search-input:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+}
+[data-bs-theme="dark"] .cfg-color-search-clear {
+    background: #374151;
+    color: #cbd5e1;
+}
+[data-bs-theme="dark"] .cfg-color-search-clear:hover { background: #4b5563; }
 
 [data-bs-theme="dark"] .cfg-talla-cell {
     background: #1f2937;

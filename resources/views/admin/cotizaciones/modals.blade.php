@@ -1030,8 +1030,21 @@
                                 @endif
                                 <span class="cfg-color-selected" id="cfg-color-selected">Sin seleccionar</span>
                             </header>
+                            {{-- Buscador en vivo: filtra los chips por nombre. Útil cuando
+                                 el catálogo de colores es largo. --}}
+                            <div class="cfg-color-search">
+                                <i class="ri-search-line cfg-color-search-icon"></i>
+                                <input type="text" id="cfg-color-search" class="cfg-color-search-input"
+                                    placeholder="Buscar color…" autocomplete="off">
+                                <button type="button" class="cfg-color-search-clear" id="cfg-color-search-clear"
+                                    hidden aria-label="Limpiar búsqueda"><i class="ri-close-line"></i></button>
+                            </div>
                             <div class="cfg-color-grid" id="cfg-color-grid">
                                 {{-- Renderizado por JS --}}
+                            </div>
+                            <div class="cfg-color-noresults cfg-hidden" id="cfg-color-noresults">
+                                <i class="ri-palette-line"></i>
+                                <span>Ningún color coincide con la búsqueda.</span>
                             </div>
                         </section>
 
