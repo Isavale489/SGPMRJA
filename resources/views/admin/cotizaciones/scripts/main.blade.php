@@ -2979,12 +2979,15 @@
                     $('#view-resumen-subtotal').text(formatMoney(subtotalUsd));
                     $('#view-resumen-iva').text(formatMoney(ivaUsd));
                     $('#view-total').text(formatMoney(totalUsd));
-                    var bsLbl = (typeof window.bsEquivalente === 'function') ? window.bsEquivalente(totalUsd) : null;
+                    // Equivalentes en Bs con la tasa GUARDADA de la cotización (snapshot
+                    // a su fecha), no la del día. bsEquivalente/bsTasaFmt caen a la tasa
+                    // vigente solo si la cotización no tiene snapshot.
+                    var bsLbl = (typeof window.bsEquivalente === 'function')
+                        ? window.bsEquivalente(totalUsd, data.tasa_cambio_valor) : null;
                     $('#view-total-bs').text(bsLbl || 'Sin tasa BCV');
-                    if (window.tasaBcv && window.tasaBcv.valor) {
-                        $('#view-resumen-tasa').text('Bs ' + parseFloat(window.tasaBcv.valor)
-                            .toLocaleString('es-VE', { minimumFractionDigits: 4, maximumFractionDigits: 4 }));
-                    }
+                    var tasaCotFmt = (typeof window.bsTasaFmt === 'function')
+                        ? window.bsTasaFmt(data.tasa_cambio_valor) : null;
+                    $('#view-resumen-tasa').text(tasaCotFmt || '—');
 
                     // PDF de ESTA cotización
                     $('#view-pdf-btn').attr('href', '/cotizaciones/' + id + '/pdf');
