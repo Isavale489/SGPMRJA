@@ -16,7 +16,8 @@
 {{-- ── Resumen ejecutivo del mes en curso ── --}}
 <div class="row g-3 mb-1">
     <div class="col-xl-3 col-md-6">
-        <div class="card rep-kpi rep-kpi--sky mb-0">
+        {{-- KPIs operativos en emerald: mismo código de color de su sección de origen --}}
+        <div class="card rep-kpi rep-kpi--emerald mb-0">
             <div class="card-body d-flex align-items-center gap-3">
                 <div class="rep-kpi-icon"><i class="ri-shopping-bag-3-line"></i></div>
                 <div>
@@ -27,7 +28,7 @@
         </div>
     </div>
     <div class="col-xl-3 col-md-6">
-        <div class="card rep-kpi rep-kpi--navy mb-0">
+        <div class="card rep-kpi rep-kpi--emerald mb-0">
             <div class="card-body d-flex align-items-center gap-3">
                 <div class="rep-kpi-icon"><i class="ri-file-list-3-line"></i></div>
                 <div>
@@ -38,7 +39,7 @@
         </div>
     </div>
     <div class="col-xl-3 col-md-6">
-        <div class="card rep-kpi rep-kpi--amber mb-0">
+        <div class="card rep-kpi rep-kpi--emerald mb-0">
             <div class="card-body d-flex align-items-center gap-3">
                 <div class="rep-kpi-icon"><i class="ri-hammer-line"></i></div>
                 <div>
@@ -65,9 +66,9 @@
 @forelse($grupos as $grupo)
     <div class="row mt-3">
         <div class="col-12">
-            <div class="card card-reportes">
+            <div class="card card-reportes rep-hub-group--{{ $grupo['color'] ?? 'sky' }}">
                 <div class="card-header d-flex align-items-center gap-2">
-                    <i class="{{ $grupo['icono'] }} fs-5"></i>
+                    <i class="{{ $grupo['icono'] }} fs-5 rep-hub-grupo-ic"></i>
                     <div>
                         <h4 class="card-title mb-0">{{ $grupo['titulo'] }}</h4>
                         <p class="rep-hub-grupo-desc mb-0">{{ $grupo['descripcion'] }}</p>

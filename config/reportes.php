@@ -15,6 +15,8 @@
 |           'titulo'      => 'Nombre de la seccion',
 |           'descripcion' => 'Que agrupa',
 |           'icono'       => 'ri-...',            // Remix Icon del grupo
+|           'color'       => 'navy|emerald|sky',  // identidad de la seccion de origen
+|                                                 // (navy=Maestros, emerald=Operativa, sky=Reportes)
 |           'reportes'    => [
 |               [
 |                   'titulo'      => 'Nombre humano del reporte',
@@ -42,6 +44,7 @@ return [
             'titulo'      => 'Gestión general',
             'descripcion' => 'Maestros y catálogos: personas, productos e insumos registrados.',
             'icono'       => 'ri-database-2-line',
+            'color'       => 'navy',
             'reportes'    => [
                 [
                     'titulo'      => 'Usuarios del sistema',
@@ -92,6 +95,7 @@ return [
             'titulo'      => 'Gestión operativa',
             'descripcion' => 'Transacciones del negocio: ventas, producción, compras e inventario.',
             'icono'       => 'ri-settings-3-line',
+            'color'       => 'emerald',
             'reportes'    => [
                 [
                     'titulo'      => 'Cotizaciones',
@@ -142,6 +146,7 @@ return [
             'titulo'      => 'Análisis y rendimiento',
             'descripcion' => 'Consultas analíticas con gráficos e indicadores.',
             'icono'       => 'ri-line-chart-line',
+            'color'       => 'sky',
             'reportes'    => [
                 [
                     'titulo'      => 'Producción',

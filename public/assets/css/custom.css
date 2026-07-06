@@ -6989,16 +6989,22 @@ select.js-readonly:not(.afs-native) {
 .rep-kpi .rep-kpi-valor { font-weight: 700; }
 .rep-kpi .rep-kpi-label { color: #74788d; font-size: 0.8rem; }
 
-.rep-kpi--sky   { border-left-color: #0ea5e9; }
-.rep-kpi--sky   .rep-kpi-icon { background: rgba(14, 165, 233, 0.12);  color: #0ea5e9; }
-.rep-kpi--navy  { border-left-color: #2a5298; }
-.rep-kpi--navy  .rep-kpi-icon { background: rgba(42, 82, 152, 0.12);   color: #2a5298; }
-.rep-kpi--amber { border-left-color: #f7b84b; }
-.rep-kpi--amber .rep-kpi-icon { background: rgba(247, 184, 75, 0.15);  color: #d29b36; }
-.rep-kpi--green { border-left-color: #0ab39c; }
-.rep-kpi--green .rep-kpi-icon { background: rgba(10, 179, 156, 0.12);  color: #0ab39c; }
-.rep-kpi--red   { border-left-color: #f06548; }
-.rep-kpi--red   .rep-kpi-icon { background: rgba(240, 101, 72, 0.12);  color: #f06548; }
+.rep-kpi--sky     { border-left-color: #0ea5e9; }
+.rep-kpi--sky     .rep-kpi-icon { background: rgba(14, 165, 233, 0.12);  color: #0ea5e9; }
+.rep-kpi--navy    { border-left-color: #2a5298; }
+.rep-kpi--navy    .rep-kpi-icon { background: rgba(42, 82, 152, 0.12);   color: #2a5298; }
+/* emerald = Gestión Operativa (pedidos, cotizaciones, órdenes) */
+.rep-kpi--emerald { border-left-color: #10b981; }
+.rep-kpi--emerald .rep-kpi-icon { background: rgba(16, 185, 129, 0.10);  color: #0f9d76; }
+.rep-kpi--amber   { border-left-color: #f7b84b; }
+.rep-kpi--amber   .rep-kpi-icon { background: rgba(247, 184, 75, 0.15);  color: #d29b36; }
+.rep-kpi--green   { border-left-color: #0ab39c; }
+.rep-kpi--green   .rep-kpi-icon { background: rgba(10, 179, 156, 0.12);  color: #0ab39c; }
+.rep-kpi--red     { border-left-color: #f06548; }
+.rep-kpi--red     .rep-kpi-icon { background: rgba(240, 101, 72, 0.12);  color: #f06548; }
+
+[data-bs-theme="dark"] .rep-kpi--emerald { border-left-color: #6ee7b7; }
+[data-bs-theme="dark"] .rep-kpi--emerald .rep-kpi-icon { background: rgba(16, 185, 129, 0.15); color: #6ee7b7; }
 
 [data-bs-theme="dark"] .rep-kpi .rep-kpi-label { color: #8a9ab0; }
 
@@ -7056,6 +7062,51 @@ select.js-readonly:not(.afs-native) {
 
 .rep-hub-badge-pdf   { background: rgba(240, 101, 72, 0.12); color: #f06548; }
 .rep-hub-badge-vista { background: rgba(14, 165, 233, 0.12); color: #0ea5e9; }
+
+/* ── Identidad por grupo: cada sección del catálogo hereda el color
+      de su sección de origen (navy=Maestros, emerald=Operativa,
+      sky=Reportes). El marco de la página sigue siendo sky. ── */
+.rep-hub-grupo-ic { color: #0ea5e9; }
+
+/* Gestión general — navy institucional (Maestros) */
+.card-reportes.rep-hub-group--navy > .card-header { border-left-color: #1e3c72; }
+.rep-hub-group--navy .rep-hub-grupo-ic { color: #2a5298; }
+.rep-hub-group--navy .rep-hub-card-icon {
+    background: rgba(30, 60, 114, 0.10);
+    color: #2a5298;
+}
+
+/* Gestión operativa — emerald (Transacciones) */
+.card-reportes.rep-hub-group--emerald > .card-header { border-left-color: #10b981; }
+.rep-hub-group--emerald .rep-hub-grupo-ic { color: #0f9d76; }
+.rep-hub-group--emerald .rep-hub-card-icon {
+    background: rgba(16, 185, 129, 0.10);
+    color: #0f9d76;
+}
+
+/* Análisis y rendimiento — sky (identidad propia de Reportes);
+   explícito por claridad, coincide con el default */
+.card-reportes.rep-hub-group--sky > .card-header { border-left-color: #0ea5e9; }
+.rep-hub-group--sky .rep-hub-grupo-ic { color: #0ea5e9; }
+
+/* Dark mode: acentos claros consistentes con el resto del sistema */
+[data-bs-theme="dark"] .card-reportes.rep-hub-group--navy > .card-header { border-left-color: #93c5fd; }
+[data-bs-theme="dark"] .rep-hub-group--navy .rep-hub-grupo-ic { color: #93c5fd; }
+[data-bs-theme="dark"] .rep-hub-group--navy .rep-hub-card-icon {
+    background: rgba(78, 122, 199, 0.18);
+    color: #93c5fd;
+}
+[data-bs-theme="dark"] .card-reportes.rep-hub-group--emerald > .card-header { border-left-color: #6ee7b7; }
+[data-bs-theme="dark"] .rep-hub-group--emerald .rep-hub-grupo-ic { color: #6ee7b7; }
+[data-bs-theme="dark"] .rep-hub-group--emerald .rep-hub-card-icon {
+    background: rgba(16, 185, 129, 0.15);
+    color: #6ee7b7;
+}
+[data-bs-theme="dark"] .rep-hub-group--sky .rep-hub-grupo-ic { color: #7dd3fc; }
+[data-bs-theme="dark"] .rep-hub-group--sky .rep-hub-card-icon {
+    background: rgba(14, 165, 233, 0.16);
+    color: #7dd3fc;
+}
 
 /* ── Dark mode del hub ── */
 [data-bs-theme="dark"] .rep-hub-card {
