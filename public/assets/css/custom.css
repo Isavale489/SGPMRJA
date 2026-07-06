@@ -6852,6 +6852,10 @@ select.js-readonly:not(.afs-native) {
 }
 .efi-chip--ok   { background: rgba(10, 179, 156, 0.14);  color: #0ab39c; }
 .efi-chip--warn { background: rgba(14, 165, 233, 0.12);   color: #0ea5e9; }
+
+/* Tramo intermedio (70-89%) de las barras de progreso — mismo sky de la
+   escala verde/sky/rojo del módulo (sustituye a bg-warning en reportes) */
+.progress-bar.bg-efi-media { background-color: #0ea5e9 !important; }
 .efi-chip--bad  { background: rgba(240, 101, 72, 0.14);  color: #f06548; }
 .efi-chip--na   { background: rgba(116, 120, 141, 0.12); color: #74788d; font-weight: 600; font-style: italic; }
 

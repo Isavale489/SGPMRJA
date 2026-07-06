@@ -239,13 +239,22 @@
         });
     }
 
+    // Descarga con fondo: el chart vive con fondo transparente (integrado a
+    // la card) pero el PNG lo necesita — se enciende, se exporta y se restaura.
+    function descargarChart(chart, nombre) {
+        if (!chart) return;
+        var dark = document.documentElement.getAttribute('data-bs-theme') === 'dark';
+        Promise.resolve(chart.updateDelta({ background: { visible: true, fill: dark ? '#212734' : '#ffffff' } }))
+            .then(function () { return chart.download({ fileName: nombre }); })
+            .finally(function () { chart.updateDelta({ background: { visible: false } }); });
+    }
+
     // Exportar cada gráfico como PNG desde el botón del header de su card.
     function initDescargas() {
         document.querySelectorAll('.rep-chart-dl').forEach(function (btn) {
             btn.addEventListener('click', function () {
                 var esTipo = btn.dataset.chart === 'tipo';
-                var chart = esTipo ? chartTipo : chartTop;
-                if (chart) chart.download({ fileName: esTipo ? 'consumo-por-tipo-insumo' : 'top-insumos-utilizados' });
+                descargarChart(esTipo ? chartTipo : chartTop, esTipo ? 'consumo-por-tipo-insumo' : 'top-insumos-utilizados');
             });
         });
     }

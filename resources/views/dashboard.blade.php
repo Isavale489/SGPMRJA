@@ -113,14 +113,18 @@
         </div>
     </div>
 
-    {{-- ═══════ GRÁFICOS ═══════ --}}
-    <div class="row">
+    {{-- ═══════ GRÁFICOS — panel interactivo (widgets arrastrables, orden persistente) ═══════ --}}
+    <div class="row" id="dash-panel">
         <!-- Estado de Pedidos -->
-        <div class="col-xl-5">
+        <div class="col-xl-5 rep-widget" data-widget="estados">
             <div class="card">
                 <div class="card-header d-flex align-items-center justify-content-between">
                     <h4 class="card-title mb-0">Estado de Pedidos</h4>
-                    <a href="{{ url('pedidos') }}" class="text-muted fs-13">Ver todos <i class="ri-arrow-right-line"></i></a>
+                    <div class="d-flex align-items-center gap-2">
+                        <a href="{{ url('pedidos') }}" class="text-muted fs-13">Ver todos <i class="ri-arrow-right-line"></i></a>
+                        <button type="button" class="rep-chart-dl" data-chart="estados" title="Guardar como imagen"><i class="ri-download-2-line"></i></button>
+                        <span class="rep-drag-handle" title="Arrastra para reordenar el panel"><i class="ri-drag-move-2-line"></i></span>
+                    </div>
                 </div>
                 <div class="card-body">
                     <div id="estadoPedidosChart" class="ag-chart-box"></div>
@@ -128,11 +132,15 @@
             </div>
         </div>
         <!-- Tendencia: Pedidos por Mes -->
-        <div class="col-xl-7">
+        <div class="col-xl-7 rep-widget" data-widget="tendencia">
             <div class="card">
                 <div class="card-header d-flex align-items-center justify-content-between">
                     <h4 class="card-title mb-0">Pedidos por Mes</h4>
-                    <span class="text-muted fs-13">Últimos 6 meses</span>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="text-muted fs-13">Últimos 6 meses</span>
+                        <button type="button" class="rep-chart-dl" data-chart="tendencia" title="Guardar como imagen"><i class="ri-download-2-line"></i></button>
+                        <span class="rep-drag-handle" title="Arrastra para reordenar el panel"><i class="ri-drag-move-2-line"></i></span>
+                    </div>
                 </div>
                 <div class="card-body">
                     <div id="tendenciaPedidosChart" class="ag-chart-box"></div>
@@ -185,9 +193,12 @@
 
 @push('scripts')
     <script src="{{ asset('assets/libs/ag-charts/ag-charts-community.min.js') }}"></script>
+    <script src="{{ asset('assets/libs/sortablejs/Sortable.min.js') }}"></script>
     <script>
     (function () {
         'use strict';
+
+        var STORAGE_KEY = 'sgpmrja-dashboard-layout';
 
         // ==========================================
         // DATOS DEL BACKEND
@@ -321,8 +332,57 @@
             }
         }
 
+        // ── Panel arrastrable: restaurar orden guardado y activar SortableJS ──
+        function initPanel() {
+            var panel = document.getElementById('dash-panel');
+            if (!panel || typeof Sortable === 'undefined') return;
+
+            try {
+                var guardado = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+                guardado.forEach(function (id) {
+                    var w = panel.querySelector('.rep-widget[data-widget="' + id + '"]');
+                    if (w) panel.appendChild(w);
+                });
+            } catch (e) { /* layout corrupto: se ignora y queda el orden por defecto */ }
+
+            new Sortable(panel, {
+                animation: 180,
+                handle: '.rep-drag-handle',
+                ghostClass: 'rep-widget-ghost',
+                chosenClass: 'rep-widget-chosen',
+                onEnd: function () {
+                    var orden = Array.prototype.map.call(panel.querySelectorAll('.rep-widget'), function (w) {
+                        return w.dataset.widget;
+                    });
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(orden));
+                }
+            });
+        }
+
+        // Descarga con fondo: el chart vive con fondo transparente (integrado a
+        // la card) pero el PNG lo necesita — se enciende, se exporta y se restaura.
+        function descargarChart(chart, nombre) {
+            if (!chart) return;
+            var dark = document.documentElement.getAttribute('data-bs-theme') === 'dark';
+            Promise.resolve(chart.updateDelta({ background: { visible: true, fill: dark ? '#212734' : '#ffffff' } }))
+                .then(function () { return chart.download({ fileName: nombre }); })
+                .finally(function () { chart.updateDelta({ background: { visible: false } }); });
+        }
+
+        // Exportar cada gráfico como PNG desde el botón del header de su card.
+        function initDescargas() {
+            document.querySelectorAll('.rep-chart-dl').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    var esEstados = btn.dataset.chart === 'estados';
+                    descargarChart(esEstados ? chartEstados : chartTendencia, esEstados ? 'estado-de-pedidos' : 'pedidos-por-mes');
+                });
+            });
+        }
+
         document.addEventListener('DOMContentLoaded', function () {
+            initPanel();
             crearCharts();
+            initDescargas();
 
             // Cambio de tema (luna del header): re-crear con el tema AG correspondiente.
             new MutationObserver(crearCharts)

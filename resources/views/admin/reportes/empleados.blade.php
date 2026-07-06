@@ -113,7 +113,7 @@
                                         @else
                                             <td data-order="{{ $empleado['eficiencia'] }}">
                                                 <div class="progress progress-sm">
-                                                    <div class="progress-bar {{ $empleado['eficiencia'] >= 90 ? 'bg-success' : ($empleado['eficiencia'] >= 70 ? 'bg-warning' : 'bg-danger') }}"
+                                                    <div class="progress-bar {{ $empleado['eficiencia'] >= 90 ? 'bg-success' : ($empleado['eficiencia'] >= 70 ? 'bg-efi-media' : 'bg-danger') }}"
                                                         role="progressbar" style="width: {{ $empleado['eficiencia'] }}%;"
                                                         aria-valuenow="{{ $empleado['eficiencia'] }}" aria-valuemin="0"
                                                         aria-valuemax="100">
@@ -170,7 +170,8 @@
         }
 
         function colorEficiencia(v) {
-            return v >= 90 ? '#0ab39c' : (v >= 70 ? '#f7b84b' : '#f06548');
+            // Escala del sistema: verde ≥90 / sky 70-89 / rojo <70
+            return v >= 90 ? '#0ab39c' : (v >= 70 ? '#0ea5e9' : '#f06548');
         }
 
         // Tema AG Charts según el modo activo; fondo transparente para
@@ -340,13 +341,22 @@
             });
         }
 
+        // Descarga con fondo: el chart vive con fondo transparente (integrado a
+        // la card) pero el PNG lo necesita — se enciende, se exporta y se restaura.
+        function descargarChart(chart, nombre) {
+            if (!chart) return;
+            var dark = document.documentElement.getAttribute('data-bs-theme') === 'dark';
+            Promise.resolve(chart.updateDelta({ background: { visible: true, fill: dark ? '#212734' : '#ffffff' } }))
+                .then(function () { return chart.download({ fileName: nombre }); })
+                .finally(function () { chart.updateDelta({ background: { visible: false } }); });
+        }
+
         // Exportar cada gráfico como PNG desde el botón del header de su card.
         function initDescargas() {
             document.querySelectorAll('.rep-chart-dl').forEach(function (btn) {
                 btn.addEventListener('click', function () {
                     var esProd = btn.dataset.chart === 'produccion';
-                    var chart = esProd ? chartProd : chartEfi;
-                    if (chart) chart.download({ fileName: esProd ? 'produccion-por-empleado' : 'eficiencia-por-empleado' });
+                    descargarChart(esProd ? chartProd : chartEfi, esProd ? 'produccion-por-empleado' : 'eficiencia-por-empleado');
                 });
             });
         }

@@ -89,7 +89,7 @@
                                         <span class="text-muted fst-italic">Sin producción</span>
                                     @else
                                         <div class="progress" style="height: 5px;">
-                                            <div class="progress-bar {{ $produccion->eficiencia >= 90 ? 'bg-success' : ($produccion->eficiencia >= 70 ? 'bg-warning' : 'bg-danger') }}" role="progressbar" style="width: {{ $produccion->eficiencia }}%;" aria-valuenow="{{ $produccion->eficiencia }}" aria-valuemin="0" aria-valuemax="100"></div>
+                                            <div class="progress-bar {{ $produccion->eficiencia >= 90 ? 'bg-success' : ($produccion->eficiencia >= 70 ? 'bg-efi-media' : 'bg-danger') }}" role="progressbar" style="width: {{ $produccion->eficiencia }}%;" aria-valuenow="{{ $produccion->eficiencia }}" aria-valuemin="0" aria-valuemax="100"></div>
                                         </div>
                                         <span>{{ number_format($produccion->eficiencia, 2) }}%</span>
                                     @endif
@@ -228,13 +228,22 @@
         });
     }
 
+    // Descarga con fondo: el chart vive con fondo transparente (integrado a
+    // la card) pero el PNG lo necesita — se enciende, se exporta y se restaura.
+    function descargarChart(chart, nombre) {
+        if (!chart) return;
+        var dark = document.documentElement.getAttribute('data-bs-theme') === 'dark';
+        Promise.resolve(chart.updateDelta({ background: { visible: true, fill: dark ? '#212734' : '#ffffff' } }))
+            .then(function () { return chart.download({ fileName: nombre }); })
+            .finally(function () { chart.updateDelta({ background: { visible: false } }); });
+    }
+
     // Exportar cada gráfico como PNG desde el botón del header de su card.
     function initDescargas() {
         document.querySelectorAll('.rep-chart-dl').forEach(function (btn) {
             btn.addEventListener('click', function () {
                 var esEstados = btn.dataset.chart === 'estados';
-                var chart = esEstados ? chartEstados : chartMensual;
-                if (chart) chart.download({ fileName: esEstados ? 'ordenes-por-estado' : 'produccion-mensual' });
+                descargarChart(esEstados ? chartEstados : chartMensual, esEstados ? 'ordenes-por-estado' : 'produccion-mensual');
             });
         });
     }
