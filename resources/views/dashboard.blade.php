@@ -291,12 +291,13 @@
                         interpolation: { type: 'smooth' },
                         marker: { enabled: true, size: 7, fill: '#0ab39c' },
                         tooltip: {
-                            // heading (no title): AG ya pone la categoría como encabezado
-                            // automático; declarar además title duplicaba el mes.
+                            // heading:'' suprime el encabezado automático (duplicaba el
+                            // mes) y title lo pone en la línea del swatch.
                             renderer: function (params) {
                                 var d = params.datum;
                                 return {
-                                    heading: d.mes,
+                                    heading: '',
+                                    title: d.mes,
                                     data: [
                                         { label: 'Pedidos', value: String(d.pedidos) },
                                         { label: 'Monto', value: '$ ' + d.monto.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }

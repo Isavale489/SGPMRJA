@@ -283,12 +283,14 @@
                         formatter: function (params) { return params.value + '%'; }
                     },
                     tooltip: {
-                        // heading (no title): AG ya pone la categoría como encabezado
-                        // automático; declarar además title duplicaba el nombre.
+                        // heading:'' suprime el encabezado automático (duplicaba la
+                        // categoría) y title pone el nombre EN LA LÍNEA del swatch —
+                        // sin title, el cuadrito quedaba solo en una línea propia.
                         renderer: function (params) {
                             var d = params.datum;
                             return {
-                                heading: d.nombre,
+                                heading: '',
+                                title: d.nombre,
                                 data: [
                                     { label: 'Eficiencia', value: d.eficiencia + '%' },
                                     { label: 'Conformes', value: String(d.producido) },

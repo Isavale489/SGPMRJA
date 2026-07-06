@@ -310,10 +310,11 @@
                         { text: tipos.length === 1 ? 'tipo' : 'tipos', fontSize: 12, spacing: 4 }
                     ],
                     tooltip: {
-                        // heading (no title): evita que AG duplique la categoría
+                        // heading:'' suprime el encabezado automático; title va en la línea del swatch
                         renderer: function (params) {
                             return {
-                                heading: params.datum.tipo,
+                                heading: '',
+                                title: params.datum.tipo,
                                 data: [{ label: 'Consumo', value: params.datum.total.toFixed(2) }]
                             };
                         }
@@ -333,10 +334,11 @@
                     xKey: 'nombre', yKey: 'total', yName: 'Cantidad utilizada',
                     fill: '#0ab39c', cornerRadius: 4,
                     tooltip: {
-                        // heading (no title): evita que AG duplique la categoría
+                        // heading:'' suprime el encabezado automático; title va en la línea del swatch
                         renderer: function (params) {
                             return {
-                                heading: params.datum.nombre,
+                                heading: '',
+                                title: params.datum.nombre,
                                 data: [{ label: 'Utilizado', value: params.datum.total.toFixed(2) }]
                             };
                         }
