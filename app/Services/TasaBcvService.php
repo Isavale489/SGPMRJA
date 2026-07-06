@@ -32,11 +32,14 @@ class TasaBcvService
                     $precio = $tasaOficial['promedio'];
                     $fechaStr = $tasaOficial['fechaActualizacion'] ?? now()->toDateTimeString();
 
-                    // Vigencia = fecha de PUBLICACIÓN + 1 día: la tasa que el BCV
-                    // publica una tarde rige a partir de las 00:00 del día siguiente.
-                    // Se deriva de la fecha de publicación (no de cuándo corre el
-                    // scraper), así es consistente aunque éste corra de mañana.
-                    $fecha = Carbon::parse($fechaStr)->addDay()->toDateString();
+                    // `fechaActualizacion` del oficial ya es la FECHA VALOR (vigencia)
+                    // que DolarAPI normaliza a medianoche: la tasa que el BCV publica
+                    // una tarde ya viene fechada al día en que rige. Por eso NO se suma
+                    // un día aquí (sería un doble corrimiento que dejaría la tasa de hoy
+                    // fechada a mañana e invisible bajo el techo `fecha_bcv <= hoy` del
+                    // getter). La regla "rige al día siguiente de publicarse" queda
+                    // satisfecha por la propia API + ese techo en obtenerTasaActual().
+                    $fecha = Carbon::parse($fechaStr)->toDateString();
 
                     // Guardar o actualizar en BD
                     $tasa = $this->guardarTasa('USD', $precio, $fecha, 'BCV (DolarAPI)');
