@@ -413,8 +413,11 @@ class CotizacionController extends Controller
         if ($request->filled('estado')) {
             $query->where('estado', $request->estado);
         }
-        // Cliente: coincidencia parcial por nombre/razón social o documento.
-        if ($request->filled('cliente')) {
+        // Cliente: preferimos el id exacto (Select2 del modal); si no viene, se
+        // conserva la búsqueda parcial por nombre/razón social o documento.
+        if ($request->filled('cliente_id')) {
+            $query->where('cliente_id', $request->cliente_id);
+        } elseif ($request->filled('cliente')) {
             $term = trim($request->cliente);
             $query->whereHas('cliente', function ($c) use ($term) {
                 $c->withTrashed()->whereHas('persona', function ($p) use ($term) {
@@ -452,7 +455,10 @@ class CotizacionController extends Controller
         if ($request->filled('estado')) {
             $filtros['Estado'] = $request->estado;
         }
-        if ($request->filled('cliente')) {
+        if ($request->filled('cliente_id')) {
+            $cli = Cliente::withTrashed()->with('persona')->find($request->cliente_id);
+            $filtros['Cliente'] = $cli ? ($cli->nombre ?: '#' . $request->cliente_id) : '#' . $request->cliente_id;
+        } elseif ($request->filled('cliente')) {
             $filtros['Cliente'] = trim($request->cliente);
         }
         if ($rango = \App\Support\ReporteFiltros::rango($request->fecha_desde, $request->fecha_hasta)) {

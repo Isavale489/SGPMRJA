@@ -150,8 +150,8 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label fw-semibold" for="pdf-filter-cliente">Cliente</label>
-                        <input type="text" class="form-control" id="pdf-filter-cliente"
-                            placeholder="Nombre, razón social o documento" autocomplete="off">
+                        <select class="form-select" id="pdf-filter-cliente" style="width:100%"
+                            data-placeholder="Buscar cliente por nombre o documento…"></select>
                     </div>
                     <div class="row g-2 mb-3">
                         <div class="col-6">
@@ -189,22 +189,54 @@
     <!-- DataTables desde CDN, después de jQuery -->
     <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/1.11.5/js/dataTables.bootstrap5.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script src="{{ URL::asset('/assets/js/municipios-venezuela.js') }}"></script>
     <script src="{{ URL::asset('/assets/js/telefonos-repeater.js') }}"></script>
     <script src="{{ URL::asset('/assets/js/proyeccion-insumos.js') }}"></script>
     @include('admin.cotizaciones.scripts.main')
     <script>
         // PDF Export Modal — Cotizaciones
+        // Cliente: Select2 con búsqueda AJAX contra clientes.search (nombre/documento).
+        // dropdownParent = el modal para que el desplegable y el foco funcionen dentro.
+        $('#pdf-filter-cliente').select2({
+            theme: 'bootstrap-5',
+            width: '100%',
+            placeholder: '🔍 Buscar cliente por nombre o documento…',
+            allowClear: true,
+            dropdownParent: $('#pdfExportModal'),
+            minimumInputLength: 0,
+            language: {
+                inputTooShort: function () { return 'Escribe para buscar…'; },
+                searching: function () { return 'Buscando…'; },
+                noResults: function () { return 'Sin resultados'; }
+            },
+            ajax: {
+                url: '{{ route('clientes.search') }}',
+                dataType: 'json',
+                delay: 250,
+                data: function (params) { return { q: params.term || '' }; },
+                processResults: function (data) {
+                    return {
+                        results: (data || []).map(function (c) {
+                            var doc = c.documento ? ' — ' + c.documento : '';
+                            return { id: c.id, text: (c.nombre || 'N/A') + doc };
+                        })
+                    };
+                },
+                cache: true
+            }
+        });
+
         $('#btn-generar-pdf').on('click', function () {
-            var baseUrl = '{{ route('cotizaciones.reporte.pdf') }}';
-            var params  = [];
-            var estado  = $('#pdf-filter-estado').val();
-            var cliente = $('#pdf-filter-cliente').val().trim();
-            var desde   = $('#pdf-fecha-desde').val();
-            var hasta   = $('#pdf-fecha-hasta').val();
-            var orden   = $('#pdf-filter-orden').val();
-            if (estado) params.push('estado='       + encodeURIComponent(estado));
-            if (cliente) params.push('cliente='     + encodeURIComponent(cliente));
+            var baseUrl   = '{{ route('cotizaciones.reporte.pdf') }}';
+            var params    = [];
+            var estado    = $('#pdf-filter-estado').val();
+            var clienteId = $('#pdf-filter-cliente').val();
+            var desde     = $('#pdf-fecha-desde').val();
+            var hasta     = $('#pdf-fecha-hasta').val();
+            var orden     = $('#pdf-filter-orden').val();
+            if (estado)    params.push('estado='     + encodeURIComponent(estado));
+            if (clienteId) params.push('cliente_id=' + encodeURIComponent(clienteId));
             if (desde)  params.push('fecha_desde='  + encodeURIComponent(desde));
             if (hasta)  params.push('fecha_hasta='  + encodeURIComponent(hasta));
             if (orden && orden !== 'recientes') params.push('orden=' + encodeURIComponent(orden));
@@ -213,7 +245,7 @@
         });
         $('#pdfExportModal').on('show.bs.modal', function () {
             $('#pdf-filter-estado').val('');
-            $('#pdf-filter-cliente').val('');
+            $('#pdf-filter-cliente').val(null).trigger('change');
             $('#pdf-fecha-desde').val('');
             $('#pdf-fecha-hasta').val('');
             $('#pdf-filter-orden').val('recientes');
