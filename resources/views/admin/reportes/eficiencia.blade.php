@@ -191,7 +191,9 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
             </div>
             <div class="modal-body p-4">
-                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3" id="efi-modal-meta"></div>
+                {{-- Resumen del pedido: cliente + eficiencia ponderada + totales --}}
+                <div id="efi-modal-resumen"></div>
+                <p class="efi-lista-titulo" id="efi-modal-lista-titulo"></p>
                 <div class="efi-modal-lista" id="efi-modal-lista"></div>
                 <p class="efi-formula mb-0 mt-3">
                     <i class="ri-information-line me-1"></i>La eficiencia del pedido pondera todas sus órdenes por unidades; cada orden muestra su propio rendimiento.
@@ -308,27 +310,51 @@
 
             document.getElementById('efi-modal-title').textContent = 'Eficiencia del Pedido #' + p.pedido_id;
 
-            document.getElementById('efi-modal-meta').innerHTML =
-                '<div class="efi-modal-cliente"><i class="ri-user-3-line me-1"></i>' + escHtml(p.cliente) + '</div>'
-                + '<div class="d-flex align-items-center gap-2">'
-                + '<span class="text-muted small">' + p.ordenes.length + (p.ordenes.length === 1 ? ' orden' : ' órdenes')
-                + ' · ' + p.producido + ' conformes · ' + p.defectuoso + ' defectuosas</span>'
-                + chipHtml(p.eficiencia)
+            // ── Resumen del pedido: cliente (izq) + % ponderado con su barra (der)
+            //    + tiles de totales — la misma metáfora del hero, a escala de pedido.
+            var intentos = p.producido + p.defectuoso;
+            var nivelPedido = nivel(p.eficiencia);
+            var valorHtml = (p.eficiencia === null || p.eficiencia === undefined)
+                ? '<div class="efi-resumen-valor efi-resumen-valor--na">—</div>'
+                  + '<span class="efi-resumen-leyenda">Aún sin unidades fabricadas</span>'
+                : '<div class="efi-resumen-valor efi-resumen-valor--' + nivelPedido + '">' + p.eficiencia + '<small>%</small></div>'
+                  + barraHtml(p.producido, p.defectuoso)
+                  + '<span class="efi-resumen-leyenda">' + p.producido + ' conformes · ' + p.defectuoso + ' defectuosas de ' + intentos + ' fabricadas</span>';
+
+            document.getElementById('efi-modal-resumen').innerHTML =
+                '<div class="efi-resumen">'
+                + '<div class="efi-resumen-cliente">'
+                + '<span class="efi-eyebrow">Cliente</span>'
+                + '<span class="efi-resumen-nombre"><i class="ri-user-3-line me-1"></i>' + escHtml(p.cliente) + '</span>'
+                + '<div class="efi-stats">'
+                + '<div class="efi-stat"><span>Solicitado</span><b>' + p.solicitado + '</b></div>'
+                + '<div class="efi-stat"><span>Producido</span><b>' + p.producido + '</b></div>'
+                + '<div class="efi-stat efi-stat--def"><span>Defectuoso</span><b>' + p.defectuoso + '</b></div>'
+                + '</div>'
+                + '</div>'
+                + '<div class="efi-resumen-yield">' + valorHtml + '</div>'
                 + '</div>';
+
+            document.getElementById('efi-modal-lista-titulo').textContent =
+                p.ordenes.length === 1 ? 'Orden de producción del pedido' : 'Órdenes de producción del pedido (' + p.ordenes.length + ')';
 
             document.getElementById('efi-modal-lista').innerHTML = p.ordenes.map(function (o) {
                 return '<div class="efi-orden">'
                     + '<div class="efi-orden-cab">'
-                    + '<span class="efi-orden-id">Orden #' + o.orden_id + '</span>'
+                    + '<div class="efi-orden-titulo">'
+                    + '<span class="efi-eyebrow">Orden #' + o.orden_id + '</span>'
                     + '<span class="efi-orden-producto">' + escHtml(o.producto) + '</span>'
-                    + '<span class="badge badge-status ' + (estadoBadge[o.estado] || 'badge-soft-secondary') + ' rounded-pill ms-auto">' + escHtml(o.estado) + '</span>'
+                    + '</div>'
+                    + '<span class="badge badge-status ' + (estadoBadge[o.estado] || 'badge-soft-secondary') + ' rounded-pill">' + escHtml(o.estado) + '</span>'
                     + '</div>'
                     + '<div class="efi-orden-datos">'
                     + '<span class="efi-orden-cifra">Solicitado <b>' + o.solicitado + '</b></span>'
+                    + '<span class="efi-orden-sep"></span>'
                     + '<span class="efi-orden-cifra">Producido <b>' + o.producido + '</b></span>'
+                    + '<span class="efi-orden-sep"></span>'
                     + '<span class="efi-orden-cifra">Defectuoso <b>' + o.defectuoso + '</b></span>'
-                    + '<div class="efi-celda flex-grow-1">' + barraHtml(o.producido, o.defectuoso) + chipHtml(o.eficiencia) + '</div>'
                     + '</div>'
+                    + '<div class="efi-celda">' + barraHtml(o.producido, o.defectuoso) + chipHtml(o.eficiencia) + '</div>'
                     + '</div>';
             }).join('');
 
