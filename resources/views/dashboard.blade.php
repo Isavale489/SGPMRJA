@@ -123,7 +123,7 @@
                     <a href="{{ url('pedidos') }}" class="text-muted fs-13">Ver todos <i class="ri-arrow-right-line"></i></a>
                 </div>
                 <div class="card-body">
-                    <div id="estadoPedidosChart"></div>
+                    <div id="estadoPedidosChart" class="ag-chart-box"></div>
                 </div>
             </div>
         </div>
@@ -135,7 +135,7 @@
                     <span class="text-muted fs-13">Últimos 6 meses</span>
                 </div>
                 <div class="card-body">
-                    <div id="tendenciaPedidosChart"></div>
+                    <div id="tendenciaPedidosChart" class="ag-chart-box"></div>
                 </div>
             </div>
         </div>
@@ -184,131 +184,147 @@
 @endsection
 
 @push('scripts')
+    <script src="{{ asset('assets/libs/ag-charts/ag-charts-community.min.js') }}"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // ==========================================
-            // DATOS DEL BACKEND
-            // ==========================================
-            const pedidosLabels = @json($pedidosLabels);
-            const pedidosValues = @json($pedidosValues);
-            const totalPedidos = {{ $totalPedidos }};
+    (function () {
+        'use strict';
 
-            const tendenciaLabels = @json($tendenciaLabels);
-            const tendenciaPedidos = @json($tendenciaPedidos);
-            const tendenciaMontos = @json($tendenciaMontos);
+        // ==========================================
+        // DATOS DEL BACKEND
+        // ==========================================
+        var pedidosLabels = @json($pedidosLabels);
+        var pedidosValues = @json($pedidosValues);
+        var totalPedidos = {{ $totalPedidos }};
+
+        var tendenciaLabels = @json($tendenciaLabels);
+        var tendenciaPedidos = @json($tendenciaPedidos);
+        var tendenciaMontos = @json($tendenciaMontos);
+
+        // Color fijo por estado del pedido (no posicional)
+        var coloresEstado = {
+            'Pendiente':  '#f7b84b',
+            'Procesando': '#3577f1',
+            'Completado': '#0ab39c',
+            'Cancelado':  '#f06548'
+        };
+
+        var chartEstados = null, chartTendencia = null;
+
+        // Tema AG Charts según el modo activo; fondo transparente para
+        // que el gráfico se integre a la card.
+        function temaAg() {
+            var dark = document.documentElement.getAttribute('data-bs-theme') === 'dark';
+            return {
+                baseTheme: dark ? 'ag-default-dark' : 'ag-default',
+                overrides: { common: { background: { visible: false } } }
+            };
+        }
+
+        function vacio(contenedor, icono, titulo, texto) {
+            contenedor.innerHTML = '<div class="text-center py-5">'
+                + '<div class="avatar-md mx-auto mb-3">'
+                + '<div class="avatar-title bg-soft-light rounded-circle text-muted fs-1"><i class="' + icono + '"></i></div>'
+                + '</div>'
+                + '<h5 class="text-muted">' + titulo + '</h5>'
+                + '<p class="text-muted mb-0">' + texto + '</p>'
+                + '</div>';
+        }
+
+        function crearCharts() {
+            var pedidosContainer = document.getElementById('estadoPedidosChart');
+            var tendenciaContainer = document.getElementById('tendenciaPedidosChart');
+
+            if (chartEstados) { chartEstados.destroy(); chartEstados = null; }
+            if (chartTendencia) { chartTendencia.destroy(); chartTendencia = null; }
 
             // ==========================================
             // GRÁFICO 1: ESTADO DE PEDIDOS (DONUT)
             // ==========================================
-            const pedidosContainer = document.querySelector("#estadoPedidosChart");
+            if (pedidosContainer && totalPedidos > 0) {
+                var datosEstados = pedidosLabels
+                    .map(function (estado, i) { return { estado: estado, total: pedidosValues[i] }; })
+                    .filter(function (d) { return d.total > 0; });
 
-            if (totalPedidos > 0 && pedidosContainer) {
-                var pedidosOptions = {
-                    series: pedidosValues,
-                    chart: { type: 'donut', height: 350 },
-                    labels: pedidosLabels,
-                    colors: ['#3577f1', '#f7b84b', '#0ab39c', '#f06548'],
-                    legend: { position: 'bottom' },
-                    plotOptions: {
-                        pie: {
-                            donut: {
-                                size: '65%',
-                                labels: {
-                                    show: true,
-                                    total: {
-                                        show: true,
-                                        label: 'Total Pedidos',
-                                        fontSize: '14px',
-                                        fontWeight: 600,
-                                        color: '#878a99'
-                                    }
-                                }
+                chartEstados = agCharts.AgCharts.create({
+                    container: pedidosContainer,
+                    theme: temaAg(),
+                    data: datosEstados,
+                    series: [{
+                        type: 'donut',
+                        angleKey: 'total',
+                        calloutLabelKey: 'estado',
+                        sectorLabelKey: 'total',
+                        innerRadiusRatio: 0.62,
+                        cornerRadius: 4,
+                        fills: datosEstados.map(function (d) { return coloresEstado[d.estado] || '#74788d'; }),
+                        innerLabels: [
+                            { text: String(totalPedidos), fontSize: 26, fontWeight: 'bold' },
+                            { text: totalPedidos === 1 ? 'pedido' : 'pedidos', fontSize: 12, spacing: 4 }
+                        ]
+                    }],
+                    legend: { position: 'bottom' }
+                });
+            } else if (pedidosContainer) {
+                pedidosContainer.classList.remove('ag-chart-box');
+                vacio(pedidosContainer, 'ri-folder-info-line', 'No hay datos suficientes', 'Registra nuevos pedidos para ver estadísticas.');
+            }
+
+            // ==========================================
+            // GRÁFICO 2: TENDENCIA — PEDIDOS POR MES (ÁREA)
+            // ==========================================
+            var totalTendencia = tendenciaPedidos.reduce(function (a, b) { return a + b; }, 0);
+
+            if (tendenciaContainer && totalTendencia > 0) {
+                var datosTendencia = tendenciaLabels.map(function (mes, i) {
+                    return { mes: mes, pedidos: tendenciaPedidos[i], monto: tendenciaMontos[i] || 0 };
+                });
+
+                chartTendencia = agCharts.AgCharts.create({
+                    container: tendenciaContainer,
+                    theme: temaAg(),
+                    data: datosTendencia,
+                    series: [{
+                        type: 'area',
+                        xKey: 'mes', yKey: 'pedidos', yName: 'Pedidos',
+                        stroke: '#0ab39c', strokeWidth: 3,
+                        fill: '#0ab39c', fillOpacity: 0.18,
+                        interpolation: { type: 'smooth' },
+                        marker: { enabled: true, size: 7, fill: '#0ab39c' },
+                        tooltip: {
+                            renderer: function (params) {
+                                var d = params.datum;
+                                return {
+                                    title: d.mes,
+                                    data: [
+                                        { label: 'Pedidos', value: String(d.pedidos) },
+                                        { label: 'Monto', value: '$ ' + d.monto.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }
+                                    ]
+                                };
                             }
                         }
-                    },
-                    dataLabels: {
-                        enabled: true,
-                        formatter: function(val, opts) {
-                            return opts.w.config.series[opts.seriesIndex];
+                    }],
+                    axes: {
+                        x: { type: 'category', position: 'bottom' },
+                        y: {
+                            type: 'number', position: 'left',
+                            label: { formatter: function (p) { return Math.round(p.value); } }
                         }
                     },
-                    responsive: [{
-                        breakpoint: 480,
-                        options: { chart: { height: 280 }, legend: { position: 'bottom' } }
-                    }]
-                };
-                new ApexCharts(pedidosContainer, pedidosOptions).render();
-            } else if (pedidosContainer) {
-                pedidosContainer.innerHTML = `
-                    <div class="text-center py-5">
-                        <div class="avatar-md mx-auto mb-3">
-                            <div class="avatar-title bg-soft-light rounded-circle text-muted fs-1">
-                                <i class="ri-folder-info-line"></i>
-                            </div>
-                        </div>
-                        <h5 class="text-muted">No hay datos suficientes</h5>
-                        <p class="text-muted mb-0">Registre nuevos pedidos para ver estadísticas.</p>
-                    </div>
-                `;
-            }
-
-            // ==========================================
-            // GRÁFICO 2: TENDENCIA — PEDIDOS POR MES (AREA)
-            // ==========================================
-            const tendenciaContainer = document.querySelector("#tendenciaPedidosChart");
-            const totalTendencia = tendenciaPedidos.reduce((a, b) => a + b, 0);
-
-            if (totalTendencia > 0 && tendenciaContainer) {
-                var tendenciaOptions = {
-                    series: [{ name: 'Pedidos', data: tendenciaPedidos }],
-                    chart: {
-                        type: 'area',
-                        height: 350,
-                        toolbar: { show: false }
-                    },
-                    colors: ['#0ab39c'],
-                    dataLabels: { enabled: false },
-                    stroke: { curve: 'smooth', width: 3 },
-                    fill: {
-                        type: 'gradient',
-                        gradient: { shadeIntensity: 1, opacityFrom: 0.35, opacityTo: 0.05, stops: [0, 90, 100] }
-                    },
-                    markers: { size: 4, hover: { size: 6 } },
-                    xaxis: {
-                        categories: tendenciaLabels,
-                        labels: { style: { fontSize: '12px' } }
-                    },
-                    yaxis: {
-                        labels: { formatter: function(val) { return Math.round(val); } }
-                    },
-                    grid: { borderColor: '#e9ebec', strokeDashArray: 4 },
-                    tooltip: {
-                        custom: function({ series, seriesIndex, dataPointIndex, w }) {
-                            const pedidos = series[seriesIndex][dataPointIndex];
-                            const monto = tendenciaMontos[dataPointIndex] ?? 0;
-                            const mes = w.globals.labels[dataPointIndex];
-                            return '<div class="px-2 py-1">' +
-                                   '<div class="fw-semibold mb-1">' + mes + '</div>' +
-                                   '<div>Pedidos: <b>' + pedidos + '</b></div>' +
-                                   '<div>Monto: <b>$ ' + monto.toLocaleString('es-VE', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + '</b></div>' +
-                                   '</div>';
-                        }
-                    }
-                };
-                new ApexCharts(tendenciaContainer, tendenciaOptions).render();
+                    legend: { enabled: false }
+                });
             } else if (tendenciaContainer) {
-                tendenciaContainer.innerHTML = `
-                    <div class="text-center py-5">
-                        <div class="avatar-md mx-auto mb-3">
-                            <div class="avatar-title bg-soft-light rounded-circle text-muted fs-1">
-                                <i class="ri-line-chart-line"></i>
-                            </div>
-                        </div>
-                        <h5 class="text-muted">Sin pedidos recientes</h5>
-                        <p class="text-muted mb-0">La tendencia aparecerá cuando se registren pedidos.</p>
-                    </div>
-                `;
+                tendenciaContainer.classList.remove('ag-chart-box');
+                vacio(tendenciaContainer, 'ri-line-chart-line', 'Sin pedidos recientes', 'La tendencia aparecerá cuando se registren pedidos.');
             }
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            crearCharts();
+
+            // Cambio de tema (luna del header): re-crear con el tema AG correspondiente.
+            new MutationObserver(crearCharts)
+                .observe(document.documentElement, { attributes: true, attributeFilter: ['data-bs-theme'] });
         });
+    })();
     </script>
 @endpush
