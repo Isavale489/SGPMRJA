@@ -663,9 +663,8 @@
                                         </a>
                                     </li>
                                     <li class="nav-item">
-                                        {{-- TODO: Crear vista de Reportes Generales unificada --}}
-                                        <a href="#"
-                                            class="nav-link">
+                                        <a href="{{ route('reportes.general') }}"
+                                            class="nav-link {{ request()->routeIs('reportes.general') ? 'active' : '' }}">
                                             <i class="ri-file-chart-line me-1"></i> Reportes Generales
                                         </a>
                                     </li>

@@ -351,10 +351,10 @@ return [
     'reportes' => [
         'nombre'   => 'Reportes',
         'acciones' => [
-            'ver' => 'Ver reportes (produccion, eficiencia, insumos, empleados)',
+            'ver' => 'Ver reportes (generales, produccion, eficiencia, insumos, empleados)',
         ],
         'rutas' => [
-            'reportes.produccion|reportes.eficiencia|reportes.insumos|reportes.empleados' => 'ver',
+            'reportes.general|reportes.produccion|reportes.eficiencia|reportes.insumos|reportes.empleados' => 'ver',
         ],
     ],
 

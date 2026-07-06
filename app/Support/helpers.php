@@ -122,6 +122,36 @@ if (!function_exists('tienePermiso')) {
     }
 }
 
+if (!function_exists('permisoDeRuta')) {
+    /**
+     * Resuelve el permiso 'modulo.accion' que exige una ruta nombrada, segun
+     * el registry config/modulos.php (misma resolucion que el middleware
+     * CheckPermiso). Devuelve null si la ruta no esta mapeada (que para el
+     * middleware equivale a denegar por defecto).
+     *
+     * Uso tipico: decidir si se muestra un enlace/acceso a una ruta sin
+     * duplicar el permiso a mano (ej. catalogo de Reportes Generales):
+     *   $permiso = permisoDeRuta('compras.reporte.pdf');
+     *   $visible = $permiso !== null && tienePermiso($permiso);
+     */
+    function permisoDeRuta(string $nombreRuta): ?string
+    {
+        foreach (config('modulos', []) as $modulo => $config) {
+            if ($modulo === 'comunes' || !isset($config['rutas'])) {
+                continue;
+            }
+
+            foreach ($config['rutas'] as $patron => $accion) {
+                if (in_array($nombreRuta, explode('|', $patron), true)) {
+                    return "{$modulo}.{$accion}";
+                }
+            }
+        }
+
+        return null;
+    }
+}
+
 if (!function_exists('esUsuarioAdministrador')) {
     /**
      * Determina si el usuario es Administrador de forma robusta (FEAT-005).

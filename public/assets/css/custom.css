@@ -5431,6 +5431,22 @@ header#page-topbar,
     background: linear-gradient(135deg, #10b981 0%, #0891b2 50%, #0d6efd 100%) !important;
 }
 
+/* ── .atlantico-modal--reportes ──────────────────────────────────
+   Modificador Consultas y Reportes — header en la paleta Sky
+   Analítico de la sección (misma familia que el thead de
+   .dt-reportes: sky-900 → sky-800 → sky-500), para que el modal
+   se lea como parte del reporte y no de Maestros/Transacciones.
+   Uso: agregar junto a .atlantico-modal en modals de la sección
+   (drill-downs de Eficiencia y futuros reportes).                  */
+.atlantico-modal--reportes .modal-header {
+    background: linear-gradient(135deg, #0c4a6e 0%, #075985 45%, #0ea5e9 100%) !important;
+    border-bottom: none !important;
+}
+
+[data-bs-theme="dark"] .atlantico-modal--reportes .modal-header {
+    background: linear-gradient(135deg, #0c4a6e 0%, #075985 45%, #0ea5e9 100%) !important;
+}
+
 /* Header del modal "Ver orden": el gradiente --op es claro, así que los
    textos navy/muted del título y subtítulo se pierden → siempre blancos.
    Scoped a #viewModal para no tocar los chips del wizard de creación. */
@@ -6719,20 +6735,208 @@ select.js-readonly:not(.afs-native) {
    MÓDULO REPORTES — Anchos de columna por tabla
    ============================================================ */
 
-/* Gráfico de eficiencia — altura del contenedor ApexCharts */
-#eficienciaPorOrdenChart { height: 350px; }
+/* ============================================================
+   MÓDULO REPORTES — AG Charts (piloto en Producción)
+   El chart llena su contenedor y auto-redimensiona (observa el
+   tamaño solo); aquí solo se fija la altura. Tema light/dark se
+   resuelve en JS (baseTheme ag-default / ag-default-dark).
+   ============================================================ */
 
-/* Anchos #eficienciaTable */
-#eficienciaTable th:nth-child(1) { width: 35%; }
-#eficienciaTable th:nth-child(2),
-#eficienciaTable th:nth-child(3),
-#eficienciaTable th:nth-child(4) { width: 16%; text-align: center; }
-#eficienciaTable th:nth-child(5) { width: 17%; text-align: center; }
+.ag-chart-box { width: 100%; height: 340px; }
 
-#eficienciaTable td:nth-child(2),
-#eficienciaTable td:nth-child(3),
-#eficienciaTable td:nth-child(4),
-#eficienciaTable td:nth-child(5) { overflow: visible; text-overflow: clip; text-align: center; }
+/* ============================================================
+   MÓDULO REPORTES — Panel interactivo (widgets arrastrables)
+   Gráficos ECharts + SortableJS: agarre en el header de la card,
+   orden persistido en localStorage por página.
+   ============================================================ */
+
+.rep-chart { width: 100%; min-height: 300px; }
+
+.rep-chart-hint {
+    font-size: 0.72rem;
+    color: #9199ad;
+    margin-top: 0.35rem;
+}
+
+/* Botón exportar-imagen del header de la card (junto al agarre) */
+.rep-chart-dl {
+    border: none;
+    background: transparent;
+    color: #74788d;
+    font-size: 1rem;
+    line-height: 1;
+    padding: 0.15rem 0.3rem;
+    border-radius: 0.4rem;
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+.rep-chart-dl:hover {
+    background: rgba(14, 165, 233, 0.12);
+    color: #0ea5e9;
+}
+[data-bs-theme="dark"] .rep-chart-dl { color: #8a9ab0; }
+[data-bs-theme="dark"] .rep-chart-dl:hover {
+    background: rgba(14, 165, 233, 0.16);
+    color: #7dd3fc;
+}
+
+.rep-drag-handle {
+    cursor: grab;
+    color: #74788d;
+    font-size: 1.05rem;
+    line-height: 1;
+    padding: 0.15rem 0.3rem;
+    border-radius: 0.4rem;
+    transition: background-color 0.15s ease, color 0.15s ease;
+    flex-shrink: 0;
+    user-select: none;
+    touch-action: none;   /* permite arrastrar también en táctil */
+}
+.rep-drag-handle:hover {
+    background: rgba(14, 165, 233, 0.12);
+    color: #0ea5e9;
+}
+.rep-drag-handle:active { cursor: grabbing; }
+
+/* Widget fantasma (hueco de destino) y widget en mano */
+.rep-widget-ghost { opacity: 0.35; }
+.rep-widget-chosen > .card {
+    box-shadow: 0 10px 28px rgba(14, 165, 233, 0.25);
+    outline: 2px solid rgba(14, 165, 233, 0.45);
+    outline-offset: -2px;
+}
+
+[data-bs-theme="dark"] .rep-chart-hint { color: #6c7a93; }
+[data-bs-theme="dark"] .rep-drag-handle { color: #8a9ab0; }
+[data-bs-theme="dark"] .rep-drag-handle:hover {
+    background: rgba(14, 165, 233, 0.16);
+    color: #7dd3fc;
+}
+
+/* ============================================================
+   MÓDULO REPORTES — Eficiencia (pulso de producción)
+   Patrón dedicado: UNA metáfora (barra segmentada conforme/defecto,
+   proporcional a unidades reales) en 3 alturas: hero global → fila
+   por pedido → orden dentro del modal drill-down.
+   ============================================================ */
+
+/* ── Barra de rendimiento (elemento firma) ── */
+.efi-bar {
+    display: flex;
+    width: 100%;
+    height: 0.65rem;
+    border-radius: 999px;
+    overflow: hidden;
+    background: rgba(116, 120, 141, 0.12);
+}
+.efi-bar-ok  { background: #0ab39c; }
+.efi-bar-def { background: #f06548; }
+.efi-bar--vacia {
+    background: transparent;
+    border: 1px dashed rgba(116, 120, 141, 0.45);
+}
+.efi-bar--hero { height: 1.6rem; border-radius: 0.5rem; }
+
+/* Celda barra + chip (tabla y modal) */
+.efi-celda { display: flex; align-items: center; gap: 0.6rem; min-width: 10rem; }
+.efi-celda .efi-bar { flex: 1; }
+
+/* ── Chip de porcentaje por umbral ── */
+.efi-chip {
+    flex-shrink: 0;
+    min-width: 3.6rem;
+    text-align: center;
+    padding: 0.14rem 0.5rem;
+    border-radius: 999px;
+    font-size: 0.74rem;
+    font-weight: 700;
+}
+.efi-chip--ok   { background: rgba(10, 179, 156, 0.14);  color: #0ab39c; }
+.efi-chip--warn { background: rgba(247, 184, 75, 0.18);  color: #c98f2b; }
+.efi-chip--bad  { background: rgba(240, 101, 72, 0.14);  color: #f06548; }
+.efi-chip--na   { background: rgba(116, 120, 141, 0.12); color: #74788d; font-weight: 600; font-style: italic; }
+
+/* ── Hero "Pulso de producción" ── */
+.efi-pulso { border: none; border-left: 4px solid #0ea5e9; }
+.efi-pulso-eyebrow {
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: #0ea5e9;
+}
+.efi-pulso-valor { font-size: 3.2rem; font-weight: 800; line-height: 1; }
+.efi-pulso-valor small { font-size: 1.6rem; font-weight: 700; }
+.efi-pulso-valor--ok   { color: #0ab39c; }
+.efi-pulso-valor--warn { color: #c98f2b; }
+.efi-pulso-valor--bad  { color: #f06548; }
+.efi-pulso-valor--na   { color: #74788d; }
+.efi-pulso-sub { color: #74788d; font-size: 0.82rem; }
+
+.efi-leyenda { font-size: 0.78rem; color: #74788d; display: inline-flex; align-items: center; gap: 0.35rem; }
+.efi-leyenda-dot { width: 0.7rem; height: 0.7rem; border-radius: 3px; display: inline-block; }
+.efi-leyenda-dot--ok  { background: #0ab39c; }
+.efi-leyenda-dot--def { background: #f06548; }
+.efi-formula { font-size: 0.74rem; color: #9199ad; }
+
+/* ── Celda Pedido en la tabla ── */
+.efi-ped { display: flex; flex-direction: column; line-height: 1.25; }
+.efi-ped-num { font-weight: 700; color: #364574; }
+.efi-ped-cliente { font-size: 0.76rem; color: #74788d; }
+
+/* Anchos #efiPedidosTable (7 col: Pedido · Órdenes · Solicitado · Producido · Defectuoso · Eficiencia · Detalle) */
+#efiPedidosTable th:nth-child(1) { width: 24%; }
+#efiPedidosTable th:nth-child(2),
+#efiPedidosTable th:nth-child(3),
+#efiPedidosTable th:nth-child(4),
+#efiPedidosTable th:nth-child(5) { width: 9%; text-align: center; }
+#efiPedidosTable th:nth-child(6) { width: 26%; text-align: center; }
+#efiPedidosTable th:nth-child(7) { width: 14%; text-align: center; }
+
+#efiPedidosTable td:nth-child(2),
+#efiPedidosTable td:nth-child(3),
+#efiPedidosTable td:nth-child(4),
+#efiPedidosTable td:nth-child(5),
+#efiPedidosTable td:nth-child(7) { overflow: visible; text-overflow: clip; text-align: center; }
+#efiPedidosTable td:nth-child(6) { overflow: visible; text-overflow: clip; }
+
+/* ── Modal drill-down: lista de órdenes con scroll interno acotado ── */
+.efi-modal-lista {
+    max-height: min(46vh, 30rem);
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    padding-right: 0.25rem;
+}
+.efi-modal-cliente { font-weight: 600; color: #364574; }
+.efi-orden {
+    border: 1px solid #e3e6ef;
+    border-radius: 0.6rem;
+    padding: 0.7rem 0.9rem;
+    background: #fff;
+}
+.efi-orden-cab { display: flex; align-items: center; gap: 0.55rem; flex-wrap: wrap; margin-bottom: 0.5rem; }
+.efi-orden-id { font-size: 0.72rem; font-weight: 700; color: #0ea5e9; text-transform: uppercase; letter-spacing: 0.05em; }
+.efi-orden-producto { font-weight: 600; font-size: 0.85rem; color: #364574; }
+.efi-orden-datos { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
+.efi-orden-cifra { font-size: 0.75rem; color: #74788d; white-space: nowrap; }
+.efi-orden-cifra b { color: #364574; }
+
+/* ── Dark mode ── */
+[data-bs-theme="dark"] .efi-bar { background: rgba(255, 255, 255, 0.08); }
+[data-bs-theme="dark"] .efi-bar--vacia { background: transparent; border-color: rgba(255, 255, 255, 0.25); }
+[data-bs-theme="dark"] .efi-chip--warn { color: #f7b84b; }
+[data-bs-theme="dark"] .efi-pulso-valor--warn { color: #f7b84b; }
+[data-bs-theme="dark"] .efi-pulso-sub,
+[data-bs-theme="dark"] .efi-leyenda,
+[data-bs-theme="dark"] .efi-ped-cliente,
+[data-bs-theme="dark"] .efi-orden-cifra { color: #8a9ab0; }
+[data-bs-theme="dark"] .efi-formula { color: #6c7a93; }
+[data-bs-theme="dark"] .efi-ped-num,
+[data-bs-theme="dark"] .efi-modal-cliente,
+[data-bs-theme="dark"] .efi-orden-producto,
+[data-bs-theme="dark"] .efi-orden-cifra b { color: #d5dbe6; }
+[data-bs-theme="dark"] .efi-orden { background: #212734; border-color: #2f3a4e; }
 
 /* Anchos #insumosTable */
 #insumosTable th:nth-child(1) { width: 28%; }
@@ -6748,19 +6952,123 @@ select.js-readonly:not(.afs-native) {
 #insumosTable td:nth-child(5),
 #insumosTable td:nth-child(6) { overflow: visible; text-overflow: clip; text-align: center; }
 
-/* Anchos #empleadosTable (reporte) */
-#empleadosTable th:nth-child(1) { width: 28%; }
-#empleadosTable th:nth-child(2) { width: 12%; text-align: center; }
+/* Anchos #empleadosTable (7 col: Nombre · Órdenes · Asignado · Producido · Defectuoso · Eficiencia · Promedio) */
+#empleadosTable th:nth-child(1) { width: 26%; }
+#empleadosTable th:nth-child(2) { width: 10%; text-align: center; }
 #empleadosTable th:nth-child(3),
-#empleadosTable th:nth-child(4) { width: 14%; text-align: center; }
-#empleadosTable th:nth-child(5) { width: 18%; text-align: center; }
-#empleadosTable th:nth-child(6) { width: 14%; text-align: center; }
+#empleadosTable th:nth-child(4),
+#empleadosTable th:nth-child(5) { width: 12%; text-align: center; }
+#empleadosTable th:nth-child(6) { width: 16%; text-align: center; }
+#empleadosTable th:nth-child(7) { width: 12%; text-align: center; }
 
 #empleadosTable td:nth-child(2),
 #empleadosTable td:nth-child(3),
 #empleadosTable td:nth-child(4),
 #empleadosTable td:nth-child(5),
-#empleadosTable td:nth-child(6) { overflow: visible; text-overflow: clip; text-align: center; }
+#empleadosTable td:nth-child(6),
+#empleadosTable td:nth-child(7) { overflow: visible; text-overflow: clip; text-align: center; }
+
+/* ============================================================
+   MÓDULO REPORTES — Reportes Generales (hub /reportes/general)
+   KPIs del mes + catálogo de reportes (registry config/reportes.php).
+   Acento de la sección: sky #0ea5e9 (mismo del sidebar).
+   ============================================================ */
+
+/* ── KPIs del resumen ejecutivo ── */
+.rep-kpi { border: none; border-left: 4px solid transparent; }
+.rep-kpi .rep-kpi-icon {
+    width: 3rem;
+    height: 3rem;
+    border-radius: 0.65rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.45rem;
+    flex-shrink: 0;
+}
+.rep-kpi .rep-kpi-valor { font-weight: 700; }
+.rep-kpi .rep-kpi-label { color: #74788d; font-size: 0.8rem; }
+
+.rep-kpi--sky   { border-left-color: #0ea5e9; }
+.rep-kpi--sky   .rep-kpi-icon { background: rgba(14, 165, 233, 0.12);  color: #0ea5e9; }
+.rep-kpi--navy  { border-left-color: #2a5298; }
+.rep-kpi--navy  .rep-kpi-icon { background: rgba(42, 82, 152, 0.12);   color: #2a5298; }
+.rep-kpi--amber { border-left-color: #f7b84b; }
+.rep-kpi--amber .rep-kpi-icon { background: rgba(247, 184, 75, 0.15);  color: #d29b36; }
+.rep-kpi--green { border-left-color: #0ab39c; }
+.rep-kpi--green .rep-kpi-icon { background: rgba(10, 179, 156, 0.12);  color: #0ab39c; }
+.rep-kpi--red   { border-left-color: #f06548; }
+.rep-kpi--red   .rep-kpi-icon { background: rgba(240, 101, 72, 0.12);  color: #f06548; }
+
+[data-bs-theme="dark"] .rep-kpi .rep-kpi-label { color: #8a9ab0; }
+
+/* ── Descripción del grupo en el header de la card ── */
+.card-reportes .rep-hub-grupo-desc {
+    color: #74788d;
+    font-size: 0.78rem;
+}
+[data-bs-theme="dark"] .card-reportes .rep-hub-grupo-desc { color: #8a9ab0; }
+
+/* ── Card de cada reporte del catálogo ── */
+.rep-hub-card {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    height: 100%;
+    padding: 0.9rem 1rem;
+    border: 1px solid #e3e6ef;
+    border-radius: 0.65rem;
+    background: #fff;
+    color: inherit;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+}
+.rep-hub-card:hover {
+    border-color: #0ea5e9;
+    box-shadow: 0 6px 16px rgba(14, 165, 233, 0.14);
+    transform: translateY(-2px);
+    color: inherit;
+}
+.rep-hub-card-icon {
+    width: 2.6rem;
+    height: 2.6rem;
+    border-radius: 0.55rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
+    background: rgba(14, 165, 233, 0.1);
+    color: #0ea5e9;
+    flex-shrink: 0;
+}
+.rep-hub-card-body { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.rep-hub-card-titulo { font-weight: 600; font-size: 0.9rem; color: #364574; }
+.rep-hub-card-desc {
+    font-size: 0.76rem;
+    color: #74788d;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+}
+.rep-hub-card-meta { display: flex; align-items: center; gap: 0.35rem; flex-shrink: 0; }
+.rep-hub-card-flecha { font-size: 1.2rem; color: #b9bfcc; transition: color 0.15s ease, transform 0.15s ease; }
+.rep-hub-card:hover .rep-hub-card-flecha { color: #0ea5e9; transform: translateX(3px); }
+
+.rep-hub-badge-pdf   { background: rgba(240, 101, 72, 0.12); color: #f06548; }
+.rep-hub-badge-vista { background: rgba(14, 165, 233, 0.12); color: #0ea5e9; }
+
+/* ── Dark mode del hub ── */
+[data-bs-theme="dark"] .rep-hub-card {
+    background: #212734;
+    border-color: #2f3a4e;
+}
+[data-bs-theme="dark"] .rep-hub-card:hover {
+    border-color: #0ea5e9;
+    box-shadow: 0 6px 16px rgba(14, 165, 233, 0.18);
+}
+[data-bs-theme="dark"] .rep-hub-card-titulo { color: #d5dbe6; }
+[data-bs-theme="dark"] .rep-hub-card-desc   { color: #8a9ab0; }
+[data-bs-theme="dark"] .rep-hub-card-flecha { color: #55617a; }
 
 /* ============================================================
    TOAST RESTAURAR FULLSCREEN (V-10)
@@ -8190,6 +8498,200 @@ select.js-readonly:not(.afs-native) {
     background: var(--op-accent) !important;
     color: #052e1c !important;
     border-color: var(--op-accent) !important;
+}
+
+/* ================================================================
+   FILTROS AVANZADOS — Variante ANALÍTICA (.sky-theme)
+   Paleta: Sky Analítico #0c4a6e / #0ea5e9 (vars --rp-*)
+   Aplica a: Consultas y Reportes (Eficiencia, Consumo de Insumos,
+             Rendimiento de Empleados y futuros reportes con tabla).
+   Estrategia: overrides scoped sobre las clases estructurales
+   .navy-filter-* cuando el wrapper tiene .sky-theme (espejo del
+   .emerald-theme de la sección Operativa).
+   ================================================================ */
+
+/* ── Wrapper ─────────────────────────────────────────────────── */
+.advanced-filters-wrapper.sky-theme {
+    background: linear-gradient(135deg, rgba(14, 165, 233, 0.04) 0%, rgba(14, 165, 233, 0.08) 100%);
+    border: 1px solid rgba(12, 74, 110, 0.18);
+    border-left: 4px solid var(--rp-accent);
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    transition: box-shadow 0.2s ease;
+}
+
+.advanced-filters-wrapper.sky-theme:hover {
+    box-shadow: 0 2px 12px rgba(14, 165, 233, 0.12);
+}
+
+.advanced-filters-wrapper.sky-theme .navy-filter-toggle,
+.advanced-filters-wrapper.sky-theme .navy-filter-header {
+    background: rgba(14, 165, 233, 0.05);
+}
+
+.advanced-filters-wrapper.sky-theme .navy-filter-toggle:hover {
+    background: rgba(14, 165, 233, 0.1);
+}
+
+.advanced-filters-wrapper.sky-theme .navy-filter-toggle:not(.collapsed),
+.advanced-filters-wrapper.sky-theme .navy-filter-header {
+    border-bottom: 1px solid rgba(14, 165, 233, 0.15);
+}
+
+.advanced-filters-wrapper.sky-theme .navy-filter-header.is-collapsed {
+    border-bottom: none;
+}
+
+/* ── Chevron / Título / Labels ───────────────────────────────── */
+.advanced-filters-wrapper.sky-theme .navy-filter-chevron,
+.advanced-filters-wrapper.sky-theme .navy-filter-title,
+.advanced-filters-wrapper.sky-theme .navy-filter-title i,
+.advanced-filters-wrapper.sky-theme .navy-filter-label,
+.advanced-filters-wrapper.sky-theme .navy-filter-btn,
+.advanced-filters-wrapper.sky-theme .navy-filter-btn .navy-filter-chevron {
+    color: var(--rp-dark);
+}
+
+/* ── Select / Input ──────────────────────────────────────────── */
+.advanced-filters-wrapper.sky-theme .navy-filter-select,
+.advanced-filters-wrapper.sky-theme .navy-filter-input {
+    border-color: rgba(12, 74, 110, 0.25) !important;
+}
+
+.advanced-filters-wrapper.sky-theme .navy-filter-select:hover,
+.advanced-filters-wrapper.sky-theme .navy-filter-input:hover {
+    border-color: rgba(12, 74, 110, 0.45) !important;
+}
+
+.advanced-filters-wrapper.sky-theme .navy-filter-select:focus,
+.advanced-filters-wrapper.sky-theme .navy-filter-input:focus {
+    border-color: var(--rp-accent) !important;
+    box-shadow: 0 0 0 0.2rem rgba(14, 165, 233, 0.18) !important;
+}
+
+.advanced-filters-wrapper.sky-theme .navy-filter-input-icon {
+    color: rgba(12, 74, 110, 0.45);
+}
+
+.advanced-filters-wrapper.sky-theme .navy-filter-input:focus ~ .navy-filter-input-icon {
+    color: var(--rp-dark);
+}
+
+/* ── Header unificado: divisor + search ──────────────────────── */
+.advanced-filters-wrapper.sky-theme .navy-header-divider {
+    background: rgba(12, 74, 110, 0.2);
+}
+
+.advanced-filters-wrapper.sky-theme .navy-header-search > i {
+    color: rgba(12, 74, 110, 0.5);
+}
+
+.advanced-filters-wrapper.sky-theme .navy-header-search:focus-within > i {
+    color: var(--rp-dark);
+}
+
+.advanced-filters-wrapper.sky-theme .navy-filter-btn:hover {
+    background: rgba(14, 165, 233, 0.1);
+}
+
+/* ── Badge contador ──────────────────────────────────────────── */
+.advanced-filters-wrapper.sky-theme .navy-filter-badge {
+    background: var(--rp-dark);
+}
+
+/* ── Botón limpiar (btn-navy-outline en wrapper sky) ─────────── */
+.advanced-filters-wrapper.sky-theme .btn-navy-outline {
+    color: var(--rp-dark) !important;
+    border-color: rgba(12, 74, 110, 0.35) !important;
+}
+
+.advanced-filters-wrapper.sky-theme .btn-navy-outline:hover {
+    background: var(--rp-dark) !important;
+    color: #ffffff !important;
+    border-color: var(--rp-dark) !important;
+    box-shadow: 0 2px 8px rgba(12, 74, 110, 0.28) !important;
+}
+
+/* ── DARK MODE — Variante Sky ────────────────────────────────── */
+[data-bs-theme="dark"] .advanced-filters-wrapper.sky-theme {
+    background: linear-gradient(135deg, rgba(14, 165, 233, 0.06) 0%, rgba(14, 165, 233, 0.1) 100%);
+    border-color: rgba(14, 165, 233, 0.22);
+    border-left-color: var(--rp-accent);
+}
+
+[data-bs-theme="dark"] .advanced-filters-wrapper.sky-theme .navy-filter-toggle,
+[data-bs-theme="dark"] .advanced-filters-wrapper.sky-theme .navy-filter-header {
+    background: rgba(14, 165, 233, 0.06);
+}
+
+[data-bs-theme="dark"] .advanced-filters-wrapper.sky-theme .navy-filter-toggle:hover,
+[data-bs-theme="dark"] .advanced-filters-wrapper.sky-theme .navy-filter-btn:hover {
+    background: rgba(14, 165, 233, 0.12);
+}
+
+[data-bs-theme="dark"] .advanced-filters-wrapper.sky-theme .navy-filter-toggle:not(.collapsed),
+[data-bs-theme="dark"] .advanced-filters-wrapper.sky-theme .navy-filter-header {
+    border-bottom-color: rgba(14, 165, 233, 0.18);
+}
+
+[data-bs-theme="dark"] .advanced-filters-wrapper.sky-theme .navy-filter-header.is-collapsed {
+    border-bottom: none;
+}
+
+[data-bs-theme="dark"] .advanced-filters-wrapper.sky-theme .navy-filter-chevron,
+[data-bs-theme="dark"] .advanced-filters-wrapper.sky-theme .navy-filter-title,
+[data-bs-theme="dark"] .advanced-filters-wrapper.sky-theme .navy-filter-title i,
+[data-bs-theme="dark"] .advanced-filters-wrapper.sky-theme .navy-filter-label,
+[data-bs-theme="dark"] .advanced-filters-wrapper.sky-theme .navy-filter-btn,
+[data-bs-theme="dark"] .advanced-filters-wrapper.sky-theme .navy-filter-btn .navy-filter-chevron {
+    color: #7dd3fc;   /* sky-300 — mismo acento dark del thead .dt-reportes */
+}
+
+[data-bs-theme="dark"] .advanced-filters-wrapper.sky-theme .navy-filter-select,
+[data-bs-theme="dark"] .advanced-filters-wrapper.sky-theme .navy-filter-input {
+    border-color: rgba(14, 165, 233, 0.3) !important;
+}
+
+[data-bs-theme="dark"] .advanced-filters-wrapper.sky-theme .navy-filter-select:focus,
+[data-bs-theme="dark"] .advanced-filters-wrapper.sky-theme .navy-filter-input:focus {
+    border-color: var(--rp-accent) !important;
+    box-shadow: 0 0 0 0.2rem rgba(14, 165, 233, 0.22) !important;
+}
+
+[data-bs-theme="dark"] .advanced-filters-wrapper.sky-theme .navy-filter-input-icon {
+    color: rgba(125, 211, 252, 0.45);
+}
+
+[data-bs-theme="dark"] .advanced-filters-wrapper.sky-theme .navy-filter-input:focus ~ .navy-filter-input-icon {
+    color: #7dd3fc;
+}
+
+[data-bs-theme="dark"] .advanced-filters-wrapper.sky-theme .navy-header-divider {
+    background: rgba(14, 165, 233, 0.28);
+}
+
+[data-bs-theme="dark"] .advanced-filters-wrapper.sky-theme .navy-header-search > i {
+    color: rgba(125, 211, 252, 0.5);
+}
+
+[data-bs-theme="dark"] .advanced-filters-wrapper.sky-theme .navy-header-search:focus-within > i {
+    color: #7dd3fc;
+}
+
+[data-bs-theme="dark"] .advanced-filters-wrapper.sky-theme .navy-filter-badge {
+    background: var(--rp-accent);
+    color: #082f49;
+}
+
+[data-bs-theme="dark"] .advanced-filters-wrapper.sky-theme .btn-navy-outline {
+    color: #7dd3fc !important;
+    border-color: rgba(14, 165, 233, 0.42) !important;
+}
+
+[data-bs-theme="dark"] .advanced-filters-wrapper.sky-theme .btn-navy-outline:hover {
+    background: var(--rp-accent) !important;
+    color: #082f49 !important;
+    border-color: var(--rp-accent) !important;
 }
 
 /* ── Botón toggle Historial — Patrón Maestro ─────────────────── */

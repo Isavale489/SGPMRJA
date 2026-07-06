@@ -329,6 +329,7 @@ Route::middleware(['auth', 'throttle:60,1', 'active.user', 'recovery.questions.r
 
         // Reportes
         Route::prefix('reportes')->group(function () {
+            Route::get('/general', [ReportesController::class, 'general'])->name('reportes.general');
             Route::get('/produccion', [ReportesController::class, 'produccion'])->name('reportes.produccion');
             Route::get('/eficiencia', [ReportesController::class, 'eficiencia'])->name('reportes.eficiencia');
             Route::get('/insumos', [ReportesController::class, 'insumos'])->name('reportes.insumos');
