@@ -310,9 +310,10 @@
                         { text: tipos.length === 1 ? 'tipo' : 'tipos', fontSize: 12, spacing: 4 }
                     ],
                     tooltip: {
+                        // heading (no title): evita que AG duplique la categoría
                         renderer: function (params) {
                             return {
-                                title: params.datum.tipo,
+                                heading: params.datum.tipo,
                                 data: [{ label: 'Consumo', value: params.datum.total.toFixed(2) }]
                             };
                         }
@@ -332,9 +333,10 @@
                     xKey: 'nombre', yKey: 'total', yName: 'Cantidad utilizada',
                     fill: '#0ab39c', cornerRadius: 4,
                     tooltip: {
+                        // heading (no title): evita que AG duplique la categoría
                         renderer: function (params) {
                             return {
-                                title: params.datum.nombre,
+                                heading: params.datum.nombre,
                                 data: [{ label: 'Utilizado', value: params.datum.total.toFixed(2) }]
                             };
                         }

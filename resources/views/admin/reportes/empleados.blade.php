@@ -283,10 +283,12 @@
                         formatter: function (params) { return params.value + '%'; }
                     },
                     tooltip: {
+                        // heading (no title): AG ya pone la categoría como encabezado
+                        // automático; declarar además title duplicaba el nombre.
                         renderer: function (params) {
                             var d = params.datum;
                             return {
-                                title: d.nombre,
+                                heading: d.nombre,
                                 data: [
                                     { label: 'Eficiencia', value: d.eficiencia + '%' },
                                     { label: 'Conformes', value: String(d.producido) },
