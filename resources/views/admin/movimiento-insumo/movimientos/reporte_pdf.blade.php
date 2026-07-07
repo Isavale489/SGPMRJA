@@ -7,15 +7,14 @@
     /* Anchos + alineación por columna (mismo patrón que compras/insumos).
        Texto a la izquierda, fechas centradas, columnas numéricas a la derecha. */
     .col-fecha  { width: 10%; text-align: center; }
-    .col-insumo { width: 17%; font-weight: 600; }
-    .col-ant    { width: 8%;  text-align: right; }
+    .col-insumo { width: 20%; font-weight: 600; }
+    .col-ant    { width: 9%;  text-align: right; }
     .col-ent    { width: 9%;  text-align: right; }
     .col-sal    { width: 9%;  text-align: right; }
-    .col-saldo  { width: 9%;  text-align: right; }
-    .col-actual { width: 9%;  text-align: right; }
+    .col-saldo  { width: 10%; text-align: right; }
     .col-estado { width: 9%;  text-align: center; }
-    .col-motivo { width: 10%; }
-    .col-user   { width: 7%; }
+    .col-motivo { width: 13%; }
+    .col-user   { width: 8%; }
 
     /* Encabezados alineados a SU dato: el th del layout base fuerza left con más
        especificidad, así que se fija explícitamente (evita header izq / dato der). */
@@ -24,8 +23,7 @@
     .data-table thead th.col-ant,
     .data-table thead th.col-ent,
     .data-table thead th.col-sal,
-    .data-table thead th.col-saldo,
-    .data-table thead th.col-actual { text-align: right; }
+    .data-table thead th.col-saldo { text-align: right; }
 
     /* Datos +/- con color sutil pero MISMO peso que el resto (tipografía uniforme). */
     .kx-entrada { color: #1a7f5a; }
@@ -65,7 +63,6 @@
                 <th class="col-ent">Entrada (+)</th>
                 <th class="col-sal">Salida (−)</th>
                 <th class="col-saldo">Saldo Result.</th>
-                <th class="col-actual">Stock Actual</th>
                 <th class="col-estado">Estado</th>
                 <th class="col-motivo">Motivo</th>
                 <th class="col-user">Usuario</th>
@@ -76,7 +73,9 @@
                 @php
                     $esEntrada = $mov->tipo_movimiento === 'Entrada';
                     $ins = $mov->insumo;
-                    $estado = $ins ? $ins->estadoStock() : 'optimo';
+                    // Estado del SALDO RESULTANTE de esta fila (no del stock vivo):
+                    // así el badge califica el saldo que muestra la propia fila.
+                    $estado = $ins ? $ins->estadoStockPara($mov->stock_nuevo) : 'optimo';
                     $estadoMap = [
                         'critico' => ['est-critico', 'Crítico'],
                         'optimo'  => ['est-optimo', 'Óptimo'],
@@ -91,7 +90,6 @@
                     <td class="col-ent kx-entrada">{!! $esEntrada ? '+' . number_format($mov->cantidad, 2) : '<span class="kx-muted">–</span>' !!}</td>
                     <td class="col-sal kx-salida">{!! !$esEntrada ? '−' . number_format($mov->cantidad, 2) : '<span class="kx-muted">–</span>' !!}</td>
                     <td class="col-saldo">{{ number_format($mov->stock_nuevo, 2) }}</td>
-                    <td class="col-actual">{{ $ins ? number_format($ins->stock_actual, 2) : '—' }}</td>
                     <td class="col-estado"><span class="est-badge {{ $estadoMap[0] }}">{{ $estadoMap[1] }}</span></td>
                     <td class="col-motivo">{{ $mov->motivo ?: '—' }}</td>
                     <td class="col-user">{{ $mov->creadoPor->name ?? '—' }}</td>

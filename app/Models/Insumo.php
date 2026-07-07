@@ -72,10 +72,20 @@ class Insumo extends Model
      */
     public function estadoStock(): string
     {
-        if ($this->stock_actual <= $this->stock_minimo) {
+        return $this->estadoStockPara($this->stock_actual);
+    }
+
+    /**
+     * Igual que estadoStock() pero evaluando un nivel de stock arbitrario contra
+     * los topes del insumo. Permite calificar el saldo histórico de un movimiento
+     * (stock_nuevo) en el Kardex, no solo el stock vivo.
+     */
+    public function estadoStockPara($stock): string
+    {
+        if ($stock <= $this->stock_minimo) {
             return 'critico';
         }
-        if ($this->stock_maximo > 0 && $this->stock_actual > $this->stock_maximo) {
+        if ($this->stock_maximo > 0 && $stock > $this->stock_maximo) {
             return 'exceso';
         }
         return 'optimo';
