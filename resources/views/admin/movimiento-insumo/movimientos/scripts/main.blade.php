@@ -35,6 +35,7 @@
                 data: function (d) {
                     d.filter_tipo_movimiento = $('#filter-tipo').val();
                     d.filter_insumo_id = $('#filter-insumo').val();
+                    d.filter_stock = $('#filter-stock').val();
                     d.filter_fecha_desde = $('#filter-fecha-desde').val();
                     d.filter_fecha_hasta = $('#filter-fecha-hasta').val();
                 }

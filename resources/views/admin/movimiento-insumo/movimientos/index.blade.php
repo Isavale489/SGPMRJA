@@ -109,6 +109,17 @@
                                             </select>
                                         </div>
                                         <div class="col-12 col-md-3">
+                                            <label class="navy-filter-label" for="filter-stock">
+                                                <i class="ri-stack-line"></i> Estado de stock
+                                            </label>
+                                            <select class="form-select navy-filter-select" id="filter-stock">
+                                                <option value="">Todos</option>
+                                                <option value="critico">Crítico (por debajo del mínimo)</option>
+                                                <option value="exceso">Exceso (por encima del máximo)</option>
+                                                <option value="optimo">Óptimo (dentro del rango)</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-12 col-md-3">
                                             <label class="navy-filter-label" for="filter-fecha-desde">
                                                 <i class="ri-calendar-line"></i> Desde
                                             </label>
@@ -256,6 +267,15 @@
                             <option value="Salida">Salida</option>
                         </select>
                     </div>
+                    <div class="mb-0 mt-3">
+                        <label class="form-label fw-semibold" for="pdf-filter-stock">Estado de stock</label>
+                        <select class="form-select" id="pdf-filter-stock">
+                            <option value="">Todos</option>
+                            <option value="critico">Crítico (por debajo del mínimo)</option>
+                            <option value="exceso">Exceso (por encima del máximo)</option>
+                            <option value="optimo">Óptimo (dentro del rango)</option>
+                        </select>
+                    </div>
                     <div class="row g-2 mt-3">
                         <div class="col-6">
                             <label class="form-label fw-semibold" for="pdf-fecha-desde">Fecha desde</label>
@@ -298,16 +318,18 @@
             var baseUrl = '{{ route('movimiento-insumo.reporte.pdf') }}';
             var params = [];
             var tipo   = $('#pdf-filter-tipo').val();
+            var estadoStock = $('#pdf-filter-stock').val();
             var fdesde = $('#pdf-fecha-desde').val();
             var fhasta = $('#pdf-fecha-hasta').val();
             if (tipo)   params.push('tipo_movimiento=' + encodeURIComponent(tipo));
+            if (estadoStock) params.push('estado_stock=' + encodeURIComponent(estadoStock));
             if (fdesde) params.push('fecha_desde=' + encodeURIComponent(fdesde));
             if (fhasta) params.push('fecha_hasta=' + encodeURIComponent(fhasta));
             window.open(baseUrl + (params.length ? '?' + params.join('&') : ''), '_blank');
             bootstrap.Modal.getInstance(document.getElementById('pdfExportModal'))?.hide();
         });
         $('#pdfExportModal').on('show.bs.modal', function () {
-            $('#pdf-filter-tipo, #pdf-fecha-desde, #pdf-fecha-hasta').val('');
+            $('#pdf-filter-tipo, #pdf-filter-stock, #pdf-fecha-desde, #pdf-fecha-hasta').val('');
         });
     </script>
 @endpush

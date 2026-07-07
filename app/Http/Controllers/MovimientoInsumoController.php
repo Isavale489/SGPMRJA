@@ -39,6 +39,9 @@ class MovimientoInsumoController extends Controller
         if ($request->filled('insumo_id')) {
             $query->where('insumo_id', $request->insumo_id);
         }
+        $query->when($request->filled('estado_stock'), function ($q) use ($request) {
+            $q->filtroStock($request->input('estado_stock'));
+        });
         if ($request->filled('fecha_desde')) {
             $query->where('created_at', '>=', $request->fecha_desde . ' 00:00:00');
         }
@@ -55,6 +58,9 @@ class MovimientoInsumoController extends Controller
         if ($request->filled('insumo_id')) {
             $filtros['Insumo'] = optional(\App\Models\Insumo::find($request->insumo_id))->nombre
                 ?? ('#' . $request->insumo_id);
+        }
+        if ($request->filled('estado_stock') && isset(MovimientoInsumo::ETIQUETAS_STOCK[$request->estado_stock])) {
+            $filtros['Estado de stock'] = MovimientoInsumo::ETIQUETAS_STOCK[$request->estado_stock];
         }
         if ($rango = \App\Support\ReporteFiltros::rango($request->fecha_desde, $request->fecha_hasta)) {
             $filtros['Fecha'] = $rango;
@@ -78,6 +84,10 @@ class MovimientoInsumoController extends Controller
         if ($request->filled('filter_insumo_id')) {
             $movimientos->where('movimiento_insumo.insumo_id', $request->input('filter_insumo_id'));
         }
+
+        $movimientos->when($request->filled('filter_stock'), function ($q) use ($request) {
+            $q->filtroStock($request->input('filter_stock'));
+        });
 
         $fechaDesde = $request->input('filter_fecha_desde');
         $fechaHasta = $request->input('filter_fecha_hasta');
