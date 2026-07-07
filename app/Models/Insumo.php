@@ -61,4 +61,23 @@ class Insumo extends Model
     {
         return $query->where('tipo', 'Tela')->where('estado', true);
     }
+
+    /**
+     * Estado de stock del insumo comparando `stock_actual` contra sus topes.
+     * Misma semántica que MovimientoInsumo::scopeFiltroStock (fuente única):
+     *  - critico: stock_actual <= stock_minimo
+     *  - exceso : stock_maximo > 0 && stock_actual > stock_maximo
+     *  - optimo : resto
+     * `stock_maximo = 0` = "sin máximo definido" (no cuenta como exceso).
+     */
+    public function estadoStock(): string
+    {
+        if ($this->stock_actual <= $this->stock_minimo) {
+            return 'critico';
+        }
+        if ($this->stock_maximo > 0 && $this->stock_actual > $this->stock_maximo) {
+            return 'exceso';
+        }
+        return 'optimo';
+    }
 }

@@ -154,39 +154,49 @@
                     </div>
                     <div class="card-body">
                         <div class="table-responsive">
+                            {{-- Formato Kardex: flujo contable (Anterior → ± → Saldo) + estado vivo del insumo --}}
+                            @php
+                                $estadoInsumo = $insumo->estadoStock();
+                                $estadoBadge = [
+                                    'critico' => ['bg-danger', 'Crítico'],
+                                    'optimo'  => ['bg-success', 'Óptimo'],
+                                    'exceso'  => ['bg-info', 'Exceso'],
+                                ][$estadoInsumo];
+                            @endphp
                             <table id="historial-table" class="table table-hover align-middle" style="width:100%">
                                 <thead class="table-light">
                                     <tr>
                                         <th>Nro.</th>
-                                        <th>Tipo</th>
-                                        <th>Cantidad</th>
-                                        <th>Stock Anterior</th>
-                                        <th>Stock Nuevo</th>
+                                        <th>Fecha y Hora</th>
+                                        <th class="text-end">Stock Anterior</th>
+                                        <th class="text-end">Entrada (+)</th>
+                                        <th class="text-end">Salida (−)</th>
+                                        <th class="text-end">Saldo Resultante</th>
+                                        <th class="text-end">Stock Actual (En Vivo)</th>
+                                        <th class="text-center">Estado</th>
                                         <th>Motivo</th>
                                         <th>Usuario</th>
-                                        <th>Fecha y Hora</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     @foreach($movimientos as $movimiento)
+                                        @php $esEntrada = $movimiento->tipo_movimiento === 'Entrada'; @endphp
                                         <tr>
                                             <td><span class="badge bg-secondary">{{ $movimiento->id }}</span></td>
-                                            <td>
-                                                @if($movimiento->tipo_movimiento == 'Entrada')
-                                                    <span class="badge badge-status status-aprobada"><i
-                                                            class="ri-arrow-down-line me-1"></i>Entrada</span>
-                                                @else
-                                                    <span class="badge badge-status status-rechazada"><i
-                                                            class="ri-arrow-up-line me-1"></i>Salida</span>
-                                                @endif
+                                            <td>{{ $movimiento->created_at->format('d/m/Y H:i') }}</td>
+                                            <td class="text-end text-muted">{{ number_format($movimiento->stock_anterior, 2) }}</td>
+                                            <td class="text-end fw-semibold text-success">
+                                                {{ $esEntrada ? '+' . number_format($movimiento->cantidad, 2) : '–' }}
                                             </td>
-                                            <td class="fw-semibold">{{ number_format($movimiento->cantidad, 2) }}</td>
-                                            <td class="text-muted">{{ number_format($movimiento->stock_anterior, 2) }}</td>
-                                            <td class="fw-semibold">{{ number_format($movimiento->stock_nuevo, 2) }}</td>
+                                            <td class="text-end fw-semibold text-danger">
+                                                {{ !$esEntrada ? '−' . number_format($movimiento->cantidad, 2) : '–' }}
+                                            </td>
+                                            <td class="text-end fw-bold">{{ number_format($movimiento->stock_nuevo, 2) }}</td>
+                                            <td class="text-end fw-semibold">{{ number_format($insumo->stock_actual, 2) }}</td>
+                                            <td class="text-center"><span class="badge {{ $estadoBadge[0] }}">{{ $estadoBadge[1] }}</span></td>
                                             <td><span class="text-truncate d-inline-block historial-motivo"
                                                     title="{{ $movimiento->motivo }}">{{ $movimiento->motivo }}</span></td>
                                             <td>{{ $movimiento->creadoPor->name }}</td>
-                                            <td>{{ $movimiento->created_at->format('d/m/Y H:i') }}</td>
                                         </tr>
                                     @endforeach
                                 </tbody>
