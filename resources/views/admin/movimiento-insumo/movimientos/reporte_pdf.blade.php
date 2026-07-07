@@ -4,23 +4,39 @@
 @section('report-title', 'Historial de Movimientos de Insumos')
 
 @section('extra-styles')
-    .col-fecha { width: 11%; }
-    .col-insumo { width: 15%; font-weight: 600; }
-    .col-ant { width: 9%; text-align: right; }
-    .col-ent { width: 9%; text-align: right; }
-    .col-sal { width: 9%; text-align: right; }
-    .col-saldo { width: 9%; text-align: right; font-weight: 700; }
-    .col-actual { width: 9%; text-align: right; }
-    .col-estado { width: 8%; text-align: center; }
+    /* Anchos + alineación por columna (mismo patrón que compras/insumos).
+       Texto a la izquierda, fechas centradas, columnas numéricas a la derecha. */
+    .col-fecha  { width: 10%; text-align: center; }
+    .col-insumo { width: 17%; font-weight: 600; }
+    .col-ant    { width: 8%;  text-align: right; }
+    .col-ent    { width: 9%;  text-align: right; }
+    .col-sal    { width: 9%;  text-align: right; }
+    .col-saldo  { width: 9%;  text-align: right; }
+    .col-actual { width: 9%;  text-align: right; }
+    .col-estado { width: 9%;  text-align: center; }
     .col-motivo { width: 10%; }
-    .col-user { width: 8%; }
-    .kx-entrada { color: #1a7f5a; font-weight: 600; }
-    .kx-salida { color: #b42318; font-weight: 600; }
-    .kx-muted { color: #9ca3af; }
-    .est-badge { display: inline-block; padding: 1px 6px; border-radius: 8px; font-size: 8px; font-weight: 700; }
-    .est-critico { background: #fde2e1; color: #b42318; }
-    .est-optimo { background: #d7f5e6; color: #1a7f5a; }
-    .est-exceso { background: #dbeafe; color: #1e40af; }
+    .col-user   { width: 7%; }
+
+    /* Encabezados alineados a SU dato: el th del layout base fuerza left con más
+       especificidad, así que se fija explícitamente (evita header izq / dato der). */
+    .data-table thead th.col-fecha,
+    .data-table thead th.col-estado { text-align: center; }
+    .data-table thead th.col-ant,
+    .data-table thead th.col-ent,
+    .data-table thead th.col-sal,
+    .data-table thead th.col-saldo,
+    .data-table thead th.col-actual { text-align: right; }
+
+    /* Datos +/- con color sutil pero MISMO peso que el resto (tipografía uniforme). */
+    .kx-entrada { color: #1a7f5a; }
+    .kx-salida  { color: #b42318; }
+    .kx-muted   { color: #b0b7c0; }
+
+    /* Badge de estado con el mismo lenguaje visual que los badges del layout base. */
+    .est-badge { display: inline-block; padding: 2px 6px; font-size: 8px; font-weight: 600; }
+    .est-critico { background-color: #f8d7da; color: #721c24; }
+    .est-optimo  { background-color: #d4edda; color: #155724; }
+    .est-exceso  { background-color: #cce5ff; color: #004085; }
 @endsection
 
 @section('summary-bar')
