@@ -169,8 +169,8 @@
                                         <th>Nro.</th>
                                         <th>Fecha y Hora</th>
                                         <th class="text-end">Stock Anterior</th>
-                                        <th class="text-end">Entrada (+)</th>
-                                        <th class="text-end">Salida (−)</th>
+                                        <th class="text-end">Entrada</th>
+                                        <th class="text-end">Salida</th>
                                         <th class="text-end">Saldo Resultante</th>
                                         <th class="text-end">Stock Actual (En Vivo)</th>
                                         <th class="text-center">Estado</th>
@@ -186,10 +186,10 @@
                                             <td>{{ $movimiento->created_at->format('d/m/Y H:i') }}</td>
                                             <td class="text-end text-muted">{{ number_format($movimiento->stock_anterior, 2) }}</td>
                                             <td class="text-end fw-semibold text-success">
-                                                {{ $esEntrada ? '+' . number_format($movimiento->cantidad, 2) : '–' }}
+                                                {{ $esEntrada ? number_format($movimiento->cantidad, 2) : '–' }}
                                             </td>
                                             <td class="text-end fw-semibold text-danger">
-                                                {{ !$esEntrada ? '−' . number_format($movimiento->cantidad, 2) : '–' }}
+                                                {{ !$esEntrada ? number_format($movimiento->cantidad, 2) : '–' }}
                                             </td>
                                             <td class="text-end fw-bold">{{ number_format($movimiento->stock_nuevo, 2) }}</td>
                                             <td class="text-end fw-semibold">{{ number_format($insumo->stock_actual, 2) }}</td>

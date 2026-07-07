@@ -60,8 +60,8 @@
                 <th class="col-fecha">Fecha</th>
                 <th class="col-insumo">Insumo</th>
                 <th class="col-ant">Stock Ant.</th>
-                <th class="col-ent">Entrada (+)</th>
-                <th class="col-sal">Salida (−)</th>
+                <th class="col-ent">Entrada</th>
+                <th class="col-sal">Salida</th>
                 <th class="col-saldo">Saldo Result.</th>
                 <th class="col-estado">Estado</th>
                 <th class="col-motivo">Motivo</th>
@@ -87,8 +87,8 @@
                     <td class="col-fecha">{{ optional($mov->created_at)->format('d/m/Y H:i') }}</td>
                     <td class="col-insumo">{{ $ins->nombre ?? '—' }}</td>
                     <td class="col-ant">{{ number_format($mov->stock_anterior, 2) }}</td>
-                    <td class="col-ent kx-entrada">{!! $esEntrada ? '+' . number_format($mov->cantidad, 2) : '<span class="kx-muted">–</span>' !!}</td>
-                    <td class="col-sal kx-salida">{!! !$esEntrada ? '−' . number_format($mov->cantidad, 2) : '<span class="kx-muted">–</span>' !!}</td>
+                    <td class="col-ent kx-entrada">{!! $esEntrada ? number_format($mov->cantidad, 2) : '<span class="kx-muted">–</span>' !!}</td>
+                    <td class="col-sal kx-salida">{!! !$esEntrada ? number_format($mov->cantidad, 2) : '<span class="kx-muted">–</span>' !!}</td>
                     <td class="col-saldo">{{ number_format($mov->stock_nuevo, 2) }}</td>
                     <td class="col-estado"><span class="est-badge {{ $estadoMap[0] }}">{{ $estadoMap[1] }}</span></td>
                     <td class="col-motivo">{{ $mov->motivo ?: '—' }}</td>
