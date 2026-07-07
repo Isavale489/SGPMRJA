@@ -60,6 +60,11 @@
                                                     <span class="act-ic"><i class="ri-file-list-3-line"></i></span>Reporte de Insumos
                                                 </a>
                                             </li>
+                                            <li>
+                                                <a class="dropdown-item act-item act-restore" href="{{ route('movimiento-insumo.rotacion') }}">
+                                                    <span class="act-ic"><i class="ri-loop-right-line"></i></span>Análisis de Rotación
+                                                </a>
+                                            </li>
                                         </ul>
                                     </div>
                                 </div>

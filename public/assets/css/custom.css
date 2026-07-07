@@ -5991,6 +5991,18 @@ select.js-readonly:not(.afs-native) {
 .stock-medio  { color: #ffc107; }
 .stock-normal { color: #198754; }
 
+/* Pill de código de insumo en el Análisis de Rotación */
+.rot-code-pill {
+    font-family: monospace;
+    padding: .1rem .45rem;
+    background: rgba(12, 74, 110, .10);
+    color: #0c4a6e;
+    border-radius: 4px;
+    font-size: .72rem;
+    font-weight: 600;
+    margin-right: .4rem;
+}
+
 [data-bs-theme="dark"] .stock-normal { color: #6ee7b7; }
 
 /* ============================================

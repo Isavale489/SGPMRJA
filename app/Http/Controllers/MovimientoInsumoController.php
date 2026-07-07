@@ -272,6 +272,25 @@ class MovimientoInsumoController extends Controller
         return view('admin.movimiento-insumo.movimientos.historial', compact('insumo', 'movimientos'));
     }
 
+    /**
+     * Análisis de Rotación: insumos ordenados por sus salidas acumuladas
+     * (histórico), para priorizar reposición. Inyecta la suma de la cantidad
+     * de los movimientos de tipo 'Salida' vía withSum; los de mayor rotación
+     * quedan primero (los sin salidas, con total NULL, caen al final en DESC).
+     */
+    public function analisisRotacion()
+    {
+        $insumos = Insumo::where('estado', true)
+            ->where('is_inventoriable', true)
+            ->withSum(['movimientos as total_salidas' => function ($q) {
+                $q->where('tipo_movimiento', 'Salida');
+            }], 'cantidad')
+            ->orderByDesc('total_salidas')
+            ->get();
+
+        return view('admin.movimiento-insumo.rotacion.index', compact('insumos'));
+    }
+
     public function alertasStock()
     {
         // El módulo de insumos eliminó la relación con proveedor (Santiago, e607f64).
