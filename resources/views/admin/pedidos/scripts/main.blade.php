@@ -1411,6 +1411,15 @@ $(document).ready(function () {
                             return cfg;
                         }
                     });
+                    // Con strategy 'fixed' los anchos porcentuales del menú (w-100 y
+                    // min-width:100% de .afs-menu) se resuelven contra el VIEWPORT,
+                    // no contra el wrap → se estiraba a toda la pantalla y quedaba
+                    // desfasado. Se quita w-100 y se fija el ancho real del toggle
+                    // en px en cada apertura (cubre resize/zoom).
+                    var $menu = $wrap.children('.afs-menu').removeClass('w-100');
+                    $wrap.on('show.bs.dropdown', function () {
+                        $menu.css({ width: toggleEl.offsetWidth + 'px', minWidth: 0 });
+                    });
                 }
             }
             pedRecalcularPago();
