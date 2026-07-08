@@ -1,0 +1,654 @@
+<meta charset="utf-8">
+<title>Diccionario de Datos — SGPMRJA</title>
+<style>
+  body { font-family: Arial, Helvetica, sans-serif; color: #111; max-width: 900px;
+         margin: 2rem auto; padding: 0 1rem; background: #fff; line-height: 1.45; }
+  h1 { font-size: 1.6rem; }
+  h2 { font-size: 1.2rem; margin-top: 2.2rem; border-bottom: 2px solid #111; padding-bottom: .2rem; }
+  h3 { font-size: 1.02rem; margin: 1.6rem 0 .1rem; }
+  p.tdesc { font-style: italic; margin: .15rem 0 .5rem; }
+  p.sdesc { margin: .3rem 0 .8rem; }
+  table { border-collapse: collapse; width: 100%; margin-bottom: .6rem; font-size: .85rem; }
+  th, td { border: 1px solid #333; padding: .35rem .5rem; text-align: left; vertical-align: top; }
+  th { background: #eef1f5; }
+  td:first-child { font-weight: bold; white-space: nowrap; }
+  code { font-family: inherit; }
+  .meta td:first-child { width: 12rem; }
+</style>
+<h1>Diccionario de Datos</h1>
+<table class="meta">
+  <tr><td>Sistema</td><td>SGPMRJA — Sistema de Gestión de Procesos de Manufacturas R.J. Atlántico C.A.</td></tr>
+  <tr><td>Base de datos</td><td>sistema_atlantico</td></tr>
+  <tr><td>Motor</td><td>MySQL 8.0 · charset utf8mb4</td></tr>
+  <tr><td>Total de tablas</td><td>56</td></tr>
+  <tr><td>Fecha de actualización</td><td>08/07/2026</td></tr>
+</table>
+<p><strong>Convenciones generales:</strong> todas las claves primarias son <code>id BIGINT UNSIGNED</code>
+autoincrementales salvo indicación contraria. Los campos <code>created_at</code> / <code>updated_at</code>
+son las marcas de tiempo estándar de Laravel, y <code>deleted_at</code> implementa la eliminación lógica
+(<em>soft delete</em>): un valor NULL indica que el registro está activo. Los montos monetarios se expresan
+en dólares (USD) salvo que el campo indique bolívares (Bs).</p>
+<h2>1. PERSONAS Y ENTIDADES</h2>
+<p class='sdesc'>Núcleo de identidad del sistema: la tabla <code>persona</code> centraliza los datos comunes y de ella derivan clientes, empleados, proveedores y usuarios.</p>
+<h3>Tabla: persona</h3>
+<p class='tdesc'>Registro central de identidad. Consolida los datos personales compartidos por clientes, empleados, proveedores y usuarios del sistema.</p>
+<table><thead><tr><th>CAMPO</th><th>TIPO DE DATO</th><th>LONGITUD</th><th>RESTRICCIONES</th><th>DESCRIPCIÓN</th></tr></thead><tbody><tr><td>id</td><td>BIGINT</td><td>-</td><td>PK, AI, Unsigned, Not Null</td><td>Identificador único del registro.</td></tr>
+<tr><td>nombre</td><td>VARCHAR</td><td>100</td><td>Not Null</td><td>Nombre completo de la persona.</td></tr>
+<tr><td>documento_identidad</td><td>VARCHAR</td><td>50</td><td>Not Null, Unique (con tipo_documento)</td><td>Número del documento de identidad (sin prefijo).</td></tr>
+<tr><td>tipo_documento</td><td>ENUM</td><td>-</td><td>Not Null, Unique (con documento_identidad), Default &#x27;V-&#x27;</td><td>Prefijo del documento; determina el tipo de persona (V/E: natural, J: jurídica, G: gubernamental). Valores: V-, E-, J-, G-.</td></tr>
+<tr><td>email</td><td>VARCHAR</td><td>255</td><td>Nullable, Unique</td><td>Correo electrónico de contacto.</td></tr>
+<tr><td>created_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha y hora de creación del registro.</td></tr>
+<tr><td>updated_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha y hora de última actualización del registro.</td></tr>
+<tr><td>deleted_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha de eliminación lógica (soft delete); NULL indica que el registro está activo.</td></tr></tbody></table>
+<h3>Tabla: direccion</h3>
+<p class='tdesc'>Dirección de una persona (relación uno a uno), vinculada al catálogo geográfico de estados y municipios.</p>
+<table><thead><tr><th>CAMPO</th><th>TIPO DE DATO</th><th>LONGITUD</th><th>RESTRICCIONES</th><th>DESCRIPCIÓN</th></tr></thead><tbody><tr><td>id</td><td>BIGINT</td><td>-</td><td>PK, AI, Unsigned, Not Null</td><td>Identificador único del registro.</td></tr>
+<tr><td>persona_id</td><td>BIGINT</td><td>-</td><td>Unsigned, Not Null, FK → persona</td><td>Persona a la que pertenece la dirección.</td></tr>
+<tr><td>direccion</td><td>VARCHAR</td><td>255</td><td>Not Null</td><td>Dirección detallada (calle, avenida, sector, referencia).</td></tr>
+<tr><td>estado_id</td><td>BIGINT</td><td>-</td><td>Unsigned, Nullable, FK → estado</td><td>Estado (entidad federal) de la dirección.</td></tr>
+<tr><td>municipio_id</td><td>BIGINT</td><td>-</td><td>Unsigned, Nullable, FK → municipio</td><td>Municipio de la dirección.</td></tr>
+<tr><td>created_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha y hora de creación del registro.</td></tr>
+<tr><td>updated_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha y hora de última actualización del registro.</td></tr>
+<tr><td>deleted_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha de eliminación lógica (soft delete); NULL indica que el registro está activo.</td></tr></tbody></table>
+<h3>Tabla: telefono</h3>
+<p class='tdesc'>Teléfonos de una persona (hasta tres), con tipo y marca de número principal.</p>
+<table><thead><tr><th>CAMPO</th><th>TIPO DE DATO</th><th>LONGITUD</th><th>RESTRICCIONES</th><th>DESCRIPCIÓN</th></tr></thead><tbody><tr><td>id</td><td>BIGINT</td><td>-</td><td>PK, AI, Unsigned, Not Null</td><td>Identificador único del registro.</td></tr>
+<tr><td>persona_id</td><td>BIGINT</td><td>-</td><td>Unsigned, Not Null, FK → persona</td><td>Persona a la que pertenece el teléfono.</td></tr>
+<tr><td>numero</td><td>VARCHAR</td><td>20</td><td>Not Null</td><td>Número telefónico.</td></tr>
+<tr><td>tipo</td><td>ENUM</td><td>-</td><td>Not Null, Default &#x27;movil&#x27;</td><td>Tipo de teléfono. Valores: movil, casa, trabajo.</td></tr>
+<tr><td>es_principal</td><td>TINYINT</td><td>1</td><td>Not Null, Default &#x27;0&#x27;</td><td>Indica si es el número principal de contacto (1 = sí).</td></tr>
+<tr><td>created_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha y hora de creación del registro.</td></tr>
+<tr><td>updated_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha y hora de última actualización del registro.</td></tr>
+<tr><td>deleted_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha de eliminación lógica (soft delete); NULL indica que el registro está activo.</td></tr></tbody></table>
+<h3>Tabla: cliente</h3>
+<p class='tdesc'>Clientes de la empresa. El tipo (natural/jurídico) se deriva del prefijo del documento de la persona asociada.</p>
+<table><thead><tr><th>CAMPO</th><th>TIPO DE DATO</th><th>LONGITUD</th><th>RESTRICCIONES</th><th>DESCRIPCIÓN</th></tr></thead><tbody><tr><td>id</td><td>BIGINT</td><td>-</td><td>PK, AI, Unsigned, Not Null</td><td>Identificador único del registro.</td></tr>
+<tr><td>persona_id</td><td>BIGINT</td><td>-</td><td>Unsigned, Not Null, FK → persona</td><td>Persona asociada al cliente (datos de identidad).</td></tr>
+<tr><td>created_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha y hora de creación del registro.</td></tr>
+<tr><td>updated_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha y hora de última actualización del registro.</td></tr>
+<tr><td>deleted_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha de eliminación lógica (soft delete); NULL indica que el registro está activo.</td></tr>
+<tr><td>tipo_cliente</td><td>ENUM</td><td>-</td><td>Not Null, Default &#x27;natural&#x27;</td><td>Tipo de cliente, derivado del prefijo del documento. Valores: natural, juridico.</td></tr>
+<tr><td>estatus</td><td>TINYINT</td><td>1</td><td>Not Null, Default &#x27;1&#x27;</td><td>Estatus del cliente (1 = activo, 0 = inactivo).</td></tr></tbody></table>
+<h3>Tabla: empleado</h3>
+<p class='tdesc'>Personal de la empresa, con su cargo, departamento y datos laborales.</p>
+<table><thead><tr><th>CAMPO</th><th>TIPO DE DATO</th><th>LONGITUD</th><th>RESTRICCIONES</th><th>DESCRIPCIÓN</th></tr></thead><tbody><tr><td>id</td><td>BIGINT</td><td>-</td><td>PK, AI, Unsigned, Not Null</td><td>Identificador único del registro.</td></tr>
+<tr><td>persona_id</td><td>BIGINT</td><td>-</td><td>Unsigned, Not Null, Unique, FK → persona</td><td>Persona asociada al empleado (datos de identidad).</td></tr>
+<tr><td>codigo_empleado</td><td>VARCHAR</td><td>50</td><td>Not Null, Unique</td><td>Código interno único del empleado.</td></tr>
+<tr><td>fecha_ingreso</td><td>DATE</td><td>-</td><td>Not Null</td><td>Fecha de ingreso a la empresa.</td></tr>
+<tr><td>fecha_nacimiento</td><td>DATE</td><td>-</td><td>Nullable</td><td>Fecha de nacimiento del empleado.</td></tr>
+<tr><td>genero</td><td>ENUM</td><td>-</td><td>Nullable</td><td>Género del empleado. Valores: M, F, Otro.</td></tr>
+<tr><td>cargo_id</td><td>BIGINT</td><td>-</td><td>Unsigned, Nullable, FK → cargo</td><td>Cargo que ocupa el empleado.</td></tr>
+<tr><td>departamento_id</td><td>BIGINT</td><td>-</td><td>Unsigned, Nullable, FK → departamento</td><td>Departamento al que pertenece.</td></tr>
+<tr><td>salario</td><td>DECIMAL</td><td>10,2</td><td>Nullable</td><td>Salario del empleado (USD).</td></tr>
+<tr><td>estado</td><td>TINYINT</td><td>1</td><td>Not Null, Default &#x27;1&#x27;</td><td>Estatus laboral (1 = activo, 0 = inactivo).</td></tr>
+<tr><td>created_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha y hora de creación del registro.</td></tr>
+<tr><td>updated_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha y hora de última actualización del registro.</td></tr>
+<tr><td>deleted_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha de eliminación lógica (soft delete); NULL indica que el registro está activo.</td></tr></tbody></table>
+<h3>Tabla: proveedor</h3>
+<p class='tdesc'>Proveedores de insumos, naturales o jurídicos, vinculados a una persona.</p>
+<table><thead><tr><th>CAMPO</th><th>TIPO DE DATO</th><th>LONGITUD</th><th>RESTRICCIONES</th><th>DESCRIPCIÓN</th></tr></thead><tbody><tr><td>id</td><td>BIGINT</td><td>-</td><td>PK, AI, Unsigned, Not Null</td><td>Identificador único del registro.</td></tr>
+<tr><td>tipo_proveedor</td><td>ENUM</td><td>-</td><td>Not Null, Default &#x27;juridico&#x27;</td><td>Naturaleza jurídica del proveedor. Valores: natural, juridico.</td></tr>
+<tr><td>persona_id</td><td>BIGINT</td><td>-</td><td>Unsigned, Nullable, FK → persona</td><td>Persona asociada al proveedor (razón social o persona natural).</td></tr>
+<tr><td>contacto</td><td>VARCHAR</td><td>100</td><td>Nullable</td><td>Nombre de la persona de contacto (proveedores jurídicos).</td></tr>
+<tr><td>telefono_contacto</td><td>VARCHAR</td><td>20</td><td>Nullable</td><td>Teléfono de la persona de contacto.</td></tr>
+<tr><td>estado</td><td>TINYINT</td><td>1</td><td>Not Null, Default &#x27;1&#x27;</td><td>Estatus del proveedor (1 = activo, 0 = inactivo).</td></tr>
+<tr><td>created_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha y hora de creación del registro.</td></tr>
+<tr><td>updated_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha y hora de última actualización del registro.</td></tr>
+<tr><td>deleted_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha de eliminación lógica (soft delete); NULL indica que el registro está activo.</td></tr></tbody></table>
+<h3>Tabla: departamento</h3>
+<p class='tdesc'>Catálogo de departamentos organizacionales de la empresa.</p>
+<table><thead><tr><th>CAMPO</th><th>TIPO DE DATO</th><th>LONGITUD</th><th>RESTRICCIONES</th><th>DESCRIPCIÓN</th></tr></thead><tbody><tr><td>id</td><td>BIGINT</td><td>-</td><td>PK, AI, Unsigned, Not Null</td><td>Identificador único del registro.</td></tr>
+<tr><td>nombre</td><td>VARCHAR</td><td>100</td><td>Not Null, Unique</td><td>Nombre del departamento.</td></tr>
+<tr><td>activo</td><td>TINYINT</td><td>1</td><td>Not Null, Default &#x27;1&#x27;</td><td>Estatus del registro (1 = activo).</td></tr>
+<tr><td>created_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha y hora de creación del registro.</td></tr>
+<tr><td>updated_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha y hora de última actualización del registro.</td></tr>
+<tr><td>deleted_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha de eliminación lógica (soft delete); NULL indica que el registro está activo.</td></tr></tbody></table>
+<h3>Tabla: cargo</h3>
+<p class='tdesc'>Catálogo de cargos, cada uno perteneciente a un departamento.</p>
+<table><thead><tr><th>CAMPO</th><th>TIPO DE DATO</th><th>LONGITUD</th><th>RESTRICCIONES</th><th>DESCRIPCIÓN</th></tr></thead><tbody><tr><td>id</td><td>BIGINT</td><td>-</td><td>PK, AI, Unsigned, Not Null</td><td>Identificador único del registro.</td></tr>
+<tr><td>nombre</td><td>VARCHAR</td><td>100</td><td>Not Null, Unique (con departamento_id)</td><td>Nombre del cargo.</td></tr>
+<tr><td>departamento_id</td><td>BIGINT</td><td>-</td><td>Unsigned, Not Null, Unique (con nombre), FK → departamento</td><td>Departamento al que pertenece el cargo.</td></tr>
+<tr><td>activo</td><td>TINYINT</td><td>1</td><td>Not Null, Default &#x27;1&#x27;</td><td>Estatus del registro (1 = activo).</td></tr>
+<tr><td>created_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha y hora de creación del registro.</td></tr>
+<tr><td>updated_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha y hora de última actualización del registro.</td></tr>
+<tr><td>deleted_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha de eliminación lógica (soft delete); NULL indica que el registro está activo.</td></tr></tbody></table>
+<h3>Tabla: estado</h3>
+<p class='tdesc'>Catálogo geográfico de estados de Venezuela.</p>
+<table><thead><tr><th>CAMPO</th><th>TIPO DE DATO</th><th>LONGITUD</th><th>RESTRICCIONES</th><th>DESCRIPCIÓN</th></tr></thead><tbody><tr><td>id</td><td>BIGINT</td><td>-</td><td>PK, AI, Unsigned, Not Null</td><td>Identificador único del registro.</td></tr>
+<tr><td>nombre</td><td>VARCHAR</td><td>100</td><td>Not Null, Unique</td><td>Nombre del estado (entidad federal).</td></tr></tbody></table>
+<h3>Tabla: municipio</h3>
+<p class='tdesc'>Catálogo geográfico de municipios, dependiente de estado.</p>
+<table><thead><tr><th>CAMPO</th><th>TIPO DE DATO</th><th>LONGITUD</th><th>RESTRICCIONES</th><th>DESCRIPCIÓN</th></tr></thead><tbody><tr><td>id</td><td>BIGINT</td><td>-</td><td>PK, AI, Unsigned, Not Null</td><td>Identificador único del registro.</td></tr>
+<tr><td>estado_id</td><td>BIGINT</td><td>-</td><td>Unsigned, Not Null, Unique (con nombre), FK → estado</td><td>Estado al que pertenece el municipio.</td></tr>
+<tr><td>nombre</td><td>VARCHAR</td><td>120</td><td>Not Null, Unique (con estado_id)</td><td>Nombre del municipio.</td></tr></tbody></table>
+<h2>2. CATÁLOGO DE PRODUCTOS Y VARIANTES</h2>
+<p class='sdesc'>Catálogo dinámico: <code>tipo_producto</code> define la prenda base y sus atributos; <code>producto</code> materializa cada variante concreta con SKU determinístico.</p>
+<h3>Tabla: tipo_producto</h3>
+<p class='tdesc'>Prenda base del catálogo (ej. Chemise, Camisa). Define prefijo de SKU, precio de confección, atributos y consumo de tela.</p>
+<table><thead><tr><th>CAMPO</th><th>TIPO DE DATO</th><th>LONGITUD</th><th>RESTRICCIONES</th><th>DESCRIPCIÓN</th></tr></thead><tbody><tr><td>id</td><td>BIGINT</td><td>-</td><td>PK, AI, Unsigned, Not Null</td><td>Identificador único del registro.</td></tr>
+<tr><td>nombre</td><td>VARCHAR</td><td>100</td><td>Not Null</td><td>Nombre de la prenda base (ej. Chemise, Camisa).</td></tr>
+<tr><td>prefijo</td><td>VARCHAR</td><td>5</td><td>Not Null, Unique</td><td>Prefijo del SKU de las variantes; inmutable una vez asignado.</td></tr>
+<tr><td>descripcion</td><td>TEXT</td><td>-</td><td>Nullable</td><td>Descripción general de la prenda.</td></tr>
+<tr><td>imagen</td><td>VARCHAR</td><td>191</td><td>Nullable</td><td>Ruta de la imagen representativa del tipo.</td></tr>
+<tr><td>precio_confeccion</td><td>DECIMAL</td><td>10,2</td><td>Not Null, Default &#x27;0.00&#x27;</td><td>Precio base de confección por unidad (USD).</td></tr>
+<tr><td>requiere_tela</td><td>TINYINT</td><td>1</td><td>Not Null, Default &#x27;1&#x27;</td><td>Indica si la prenda requiere seleccionar tela (1 = sí).</td></tr>
+<tr><td>requiere_produccion</td><td>TINYINT</td><td>1</td><td>Not Null, Default &#x27;1&#x27;</td><td>Indica si el producto se fabrica (1) o es de reventa (0); los de reventa no generan órdenes de producción.</td></tr>
+<tr><td>consumo_tela_por_unidad</td><td>DECIMAL</td><td>8,2</td><td>Not Null, Default &#x27;0.00&#x27;</td><td>Metros de tela consumidos por unidad producida.</td></tr>
+<tr><td>created_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha y hora de creación del registro.</td></tr>
+<tr><td>updated_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha y hora de última actualización del registro.</td></tr>
+<tr><td>deleted_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha de eliminación lógica (soft delete); NULL indica que el registro está activo.</td></tr></tbody></table>
+<h3>Tabla: producto</h3>
+<p class='tdesc'>Variante concreta de un tipo de producto (combinación tela + atributos), con SKU determinístico y precio propio.</p>
+<table><thead><tr><th>CAMPO</th><th>TIPO DE DATO</th><th>LONGITUD</th><th>RESTRICCIONES</th><th>DESCRIPCIÓN</th></tr></thead><tbody><tr><td>id</td><td>BIGINT</td><td>-</td><td>PK, AI, Unsigned, Not Null</td><td>Identificador único del registro.</td></tr>
+<tr><td>tipo_producto_id</td><td>BIGINT</td><td>-</td><td>Unsigned, Nullable, FK → tipo_producto</td><td>Tipo de producto (prenda base) de la variante.</td></tr>
+<tr><td>insumo_tela_id</td><td>BIGINT</td><td>-</td><td>Unsigned, Nullable, FK → insumo</td><td>Tela de la variante (insumo de tipo Tela).</td></tr>
+<tr><td>codigo</td><td>VARCHAR</td><td>20</td><td>Nullable, Unique</td><td>SKU determinístico de la variante (PREFIJO-TELA-ATRIBUTOS-NNN).</td></tr>
+<tr><td>descripcion</td><td>TEXT</td><td>-</td><td>Nullable</td><td>Descripción de la variante.</td></tr>
+<tr><td>precio_base</td><td>DECIMAL</td><td>10,2</td><td>Not Null</td><td>Precio de venta base de la variante (USD).</td></tr>
+<tr><td>atributos_snapshot</td><td>LONGTEXT</td><td>-</td><td>Nullable</td><td>Copia JSON de los valores de atributo que componen la variante.</td></tr>
+<tr><td>imagen</td><td>VARCHAR</td><td>191</td><td>Nullable</td><td>Ruta de la imagen de la variante.</td></tr>
+<tr><td>estado</td><td>TINYINT</td><td>1</td><td>Not Null, Default &#x27;1&#x27;</td><td>Estatus del registro (1 = activo).</td></tr>
+<tr><td>created_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha y hora de creación del registro.</td></tr>
+<tr><td>updated_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha y hora de última actualización del registro.</td></tr>
+<tr><td>deleted_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha de eliminación lógica (soft delete); NULL indica que el registro está activo.</td></tr></tbody></table>
+<h3>Tabla: atributo</h3>
+<p class='tdesc'>Catálogo de atributos configurables de las prendas (ej. Manga, Cuello).</p>
+<table><thead><tr><th>CAMPO</th><th>TIPO DE DATO</th><th>LONGITUD</th><th>RESTRICCIONES</th><th>DESCRIPCIÓN</th></tr></thead><tbody><tr><td>id</td><td>BIGINT</td><td>-</td><td>PK, AI, Unsigned, Not Null</td><td>Identificador único del registro.</td></tr>
+<tr><td>nombre</td><td>VARCHAR</td><td>80</td><td>Not Null, Unique</td><td>Nombre del atributo (ej. Manga, Cuello).</td></tr>
+<tr><td>codigo</td><td>VARCHAR</td><td>8</td><td>Not Null, Unique</td><td>Código corto del atributo; participa en el SKU y es inmutable.</td></tr>
+<tr><td>descripcion</td><td>VARCHAR</td><td>191</td><td>Nullable</td><td>Descripción del atributo.</td></tr>
+<tr><td>created_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha y hora de creación del registro.</td></tr>
+<tr><td>updated_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha y hora de última actualización del registro.</td></tr></tbody></table>
+<h3>Tabla: atributo_valor</h3>
+<p class='tdesc'>Valores posibles de cada atributo (ej. Manga: Corta, Larga), con código que participa en el SKU.</p>
+<table><thead><tr><th>CAMPO</th><th>TIPO DE DATO</th><th>LONGITUD</th><th>RESTRICCIONES</th><th>DESCRIPCIÓN</th></tr></thead><tbody><tr><td>id</td><td>BIGINT</td><td>-</td><td>PK, AI, Unsigned, Not Null</td><td>Identificador único del registro.</td></tr>
+<tr><td>atributo_id</td><td>BIGINT</td><td>-</td><td>Unsigned, Not Null, Unique (con codigo), FK → atributo</td><td>Atributo al que pertenece el valor.</td></tr>
+<tr><td>nombre</td><td>VARCHAR</td><td>80</td><td>Not Null, Unique (con atributo_id)</td><td>Nombre del valor (ej. Corta, Larga).</td></tr>
+<tr><td>codigo</td><td>VARCHAR</td><td>8</td><td>Not Null, Unique (con atributo_id)</td><td>Código corto del valor; participa en el SKU y es inmutable.</td></tr>
+<tr><td>orden</td><td>SMALLINT</td><td>-</td><td>Unsigned, Not Null, Default &#x27;0&#x27;</td><td>Posición de ordenamiento en listados.</td></tr>
+<tr><td>created_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha y hora de creación del registro.</td></tr>
+<tr><td>updated_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha y hora de última actualización del registro.</td></tr></tbody></table>
+<h3>Tabla: color</h3>
+<p class='tdesc'>Catálogo de colores disponibles para las prendas, con referencia hexadecimal.</p>
+<table><thead><tr><th>CAMPO</th><th>TIPO DE DATO</th><th>LONGITUD</th><th>RESTRICCIONES</th><th>DESCRIPCIÓN</th></tr></thead><tbody><tr><td>id</td><td>BIGINT</td><td>-</td><td>PK, AI, Unsigned, Not Null</td><td>Identificador único del registro.</td></tr>
+<tr><td>nombre</td><td>VARCHAR</td><td>191</td><td>Not Null, Unique</td><td>Nombre del color.</td></tr>
+<tr><td>hex_referencial</td><td>VARCHAR</td><td>7</td><td>Not Null</td><td>Código hexadecimal referencial del color (#RRGGBB).</td></tr>
+<tr><td>grupo</td><td>VARCHAR</td><td>191</td><td>Nullable</td><td>Grupo o familia del color (ej. Azules).</td></tr>
+<tr><td>activo</td><td>TINYINT</td><td>1</td><td>Not Null, Default &#x27;1&#x27;</td><td>Estatus del registro (1 = activo).</td></tr>
+<tr><td>created_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha y hora de creación del registro.</td></tr>
+<tr><td>updated_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha y hora de última actualización del registro.</td></tr>
+<tr><td>deleted_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha de eliminación lógica (soft delete); NULL indica que el registro está activo.</td></tr></tbody></table>
+<h3>Tabla: talla</h3>
+<p class='tdesc'>Catálogo de tallas (XS–XXL y numéricas), agrupables y ordenables.</p>
+<table><thead><tr><th>CAMPO</th><th>TIPO DE DATO</th><th>LONGITUD</th><th>RESTRICCIONES</th><th>DESCRIPCIÓN</th></tr></thead><tbody><tr><td>id</td><td>BIGINT</td><td>-</td><td>PK, AI, Unsigned, Not Null</td><td>Identificador único del registro.</td></tr>
+<tr><td>nombre</td><td>VARCHAR</td><td>191</td><td>Not Null, Unique</td><td>Nombre de la talla (ej. S, M, L, 38).</td></tr>
+<tr><td>etiqueta</td><td>VARCHAR</td><td>191</td><td>Nullable</td><td>Etiqueta descriptiva para mostrar en pantalla.</td></tr>
+<tr><td>grupo</td><td>VARCHAR</td><td>191</td><td>Nullable</td><td>Grupo de la talla (ej. letras, numéricas).</td></tr>
+<tr><td>orden</td><td>INT</td><td>-</td><td>Unsigned, Not Null, Default &#x27;0&#x27;</td><td>Posición de ordenamiento en listados.</td></tr>
+<tr><td>activo</td><td>TINYINT</td><td>1</td><td>Not Null, Default &#x27;1&#x27;</td><td>Estatus del registro (1 = activo).</td></tr>
+<tr><td>created_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha y hora de creación del registro.</td></tr>
+<tr><td>updated_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha y hora de última actualización del registro.</td></tr>
+<tr><td>deleted_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha de eliminación lógica (soft delete); NULL indica que el registro está activo.</td></tr></tbody></table>
+<h3>Tabla: genero</h3>
+<p class='tdesc'>Catálogo de géneros de prenda (Dama, Caballero, Unisex, Niño…) usado en las líneas de cotización y pedido.</p>
+<table><thead><tr><th>CAMPO</th><th>TIPO DE DATO</th><th>LONGITUD</th><th>RESTRICCIONES</th><th>DESCRIPCIÓN</th></tr></thead><tbody><tr><td>id</td><td>BIGINT</td><td>-</td><td>PK, AI, Unsigned, Not Null</td><td>Identificador único del registro.</td></tr>
+<tr><td>nombre</td><td>VARCHAR</td><td>50</td><td>Not Null, Unique</td><td>Nombre del género de prenda (Dama, Caballero, Unisex…).</td></tr>
+<tr><td>etiqueta</td><td>VARCHAR</td><td>50</td><td>Nullable</td><td>Etiqueta descriptiva para mostrar en pantalla.</td></tr>
+<tr><td>icono</td><td>VARCHAR</td><td>40</td><td>Nullable</td><td>Clase del ícono asociado en la interfaz.</td></tr>
+<tr><td>orden</td><td>INT</td><td>-</td><td>Unsigned, Not Null, Default &#x27;0&#x27;</td><td>Posición de ordenamiento en listados.</td></tr>
+<tr><td>activo</td><td>TINYINT</td><td>1</td><td>Not Null, Default &#x27;1&#x27;</td><td>Estatus del registro (1 = activo).</td></tr>
+<tr><td>created_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha y hora de creación del registro.</td></tr>
+<tr><td>updated_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha y hora de última actualización del registro.</td></tr>
+<tr><td>deleted_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha de eliminación lógica (soft delete); NULL indica que el registro está activo.</td></tr></tbody></table>
+<h3>Tabla: logo</h3>
+<p class='tdesc'>Archivos de logos de clientes usados en los bordados.</p>
+<table><thead><tr><th>CAMPO</th><th>TIPO DE DATO</th><th>LONGITUD</th><th>RESTRICCIONES</th><th>DESCRIPCIÓN</th></tr></thead><tbody><tr><td>id</td><td>BIGINT</td><td>-</td><td>PK, AI, Unsigned, Not Null</td><td>Identificador único del registro.</td></tr>
+<tr><td>name</td><td>VARCHAR</td><td>191</td><td>Not Null, Unique</td><td>Nombre descriptivo del logo.</td></tr>
+<tr><td>original_filename</td><td>VARCHAR</td><td>191</td><td>Not Null, Unique</td><td>Nombre del archivo original cargado.</td></tr>
+<tr><td>created_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha y hora de creación del registro.</td></tr>
+<tr><td>updated_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha y hora de última actualización del registro.</td></tr>
+<tr><td>deleted_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha de eliminación lógica (soft delete); NULL indica que el registro está activo.</td></tr></tbody></table>
+<h3>Tabla: bordado_ubicacion</h3>
+<p class='tdesc'>Catálogo de ubicaciones de bordado sobre la prenda (pecho, espalda, manga…), con precio base por ubicación.</p>
+<table><thead><tr><th>CAMPO</th><th>TIPO DE DATO</th><th>LONGITUD</th><th>RESTRICCIONES</th><th>DESCRIPCIÓN</th></tr></thead><tbody><tr><td>id</td><td>BIGINT</td><td>-</td><td>PK, AI, Unsigned, Not Null</td><td>Identificador único del registro.</td></tr>
+<tr><td>nombre</td><td>VARCHAR</td><td>191</td><td>Not Null, Unique</td><td>Nombre de la ubicación del bordado (ej. Pecho izquierdo).</td></tr>
+<tr><td>grupo</td><td>VARCHAR</td><td>191</td><td>Nullable</td><td>Grupo o zona de la prenda a la que pertenece la ubicación.</td></tr>
+<tr><td>precio_base</td><td>DECIMAL</td><td>10,2</td><td>Not Null, Default &#x27;0.00&#x27;</td><td>Precio base del bordado en esta ubicación (USD).</td></tr>
+<tr><td>orden</td><td>INT</td><td>-</td><td>Unsigned, Not Null, Default &#x27;0&#x27;</td><td>Posición de ordenamiento en listados.</td></tr>
+<tr><td>activo</td><td>TINYINT</td><td>1</td><td>Not Null, Default &#x27;1&#x27;</td><td>Estatus del registro (1 = activo).</td></tr>
+<tr><td>created_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha y hora de creación del registro.</td></tr>
+<tr><td>updated_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha y hora de última actualización del registro.</td></tr>
+<tr><td>deleted_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha de eliminación lógica (soft delete); NULL indica que el registro está activo.</td></tr></tbody></table>
+<h2>3. INVENTARIO DE INSUMOS</h2>
+<p class='sdesc'>Existencias de materia prima. El stock solo se mueve por compras, producción o salidas manuales, con trazabilidad completa en <code>movimiento_insumo</code>.</p>
+<h3>Tabla: insumo</h3>
+<p class='tdesc'>Materia prima e insumos de producción (telas, hilos, botones…), con control de stock mínimo/actual/máximo.</p>
+<table><thead><tr><th>CAMPO</th><th>TIPO DE DATO</th><th>LONGITUD</th><th>RESTRICCIONES</th><th>DESCRIPCIÓN</th></tr></thead><tbody><tr><td>id</td><td>BIGINT</td><td>-</td><td>PK, AI, Unsigned, Not Null</td><td>Identificador único del registro.</td></tr>
+<tr><td>nombre</td><td>VARCHAR</td><td>100</td><td>Not Null</td><td>Nombre del insumo.</td></tr>
+<tr><td>codigo</td><td>VARCHAR</td><td>8</td><td>Nullable, Unique</td><td>Código único del insumo (mayúsculas); participa en el SKU de las telas y es inmutable.</td></tr>
+<tr><td>tipo</td><td>VARCHAR</td><td>50</td><td>Not Null</td><td>Tipo de insumo (texto tomado del catálogo tipo_insumo; el valor Tela identifica las telas).</td></tr>
+<tr><td>unidad_medida</td><td>VARCHAR</td><td>20</td><td>Not Null</td><td>Unidad de medida del insumo (metros, unidades, kg…).</td></tr>
+<tr><td>is_inventoriable</td><td>TINYINT</td><td>1</td><td>Not Null, Default &#x27;1&#x27;</td><td>Indica si el insumo controla existencias; si es 0 no admite movimientos ni consumo de stock.</td></tr>
+<tr><td>costo_unitario</td><td>DECIMAL</td><td>10,2</td><td>Not Null</td><td>Costo unitario de referencia (USD).</td></tr>
+<tr><td>aplica_iva</td><td>TINYINT</td><td>1</td><td>Not Null, Default &#x27;1&#x27;</td><td>Indica si las compras del insumo aplican IVA (1 = sí).</td></tr>
+<tr><td>stock_actual</td><td>DECIMAL</td><td>10,2</td><td>Not Null</td><td>Existencia actual del insumo.</td></tr>
+<tr><td>stock_minimo</td><td>DECIMAL</td><td>10,2</td><td>Not Null</td><td>Nivel mínimo de existencias antes de alertar reposición.</td></tr>
+<tr><td>stock_maximo</td><td>DECIMAL</td><td>10,2</td><td>Not Null, Default &#x27;0.00&#x27;</td><td>Nivel máximo de existencias de referencia.</td></tr>
+<tr><td>estado</td><td>TINYINT</td><td>1</td><td>Not Null, Default &#x27;1&#x27;</td><td>Estatus del registro (1 = activo).</td></tr>
+<tr><td>created_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha y hora de creación del registro.</td></tr>
+<tr><td>updated_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha y hora de última actualización del registro.</td></tr>
+<tr><td>deleted_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha de eliminación lógica (soft delete); NULL indica que el registro está activo.</td></tr></tbody></table>
+<h3>Tabla: tipo_insumo</h3>
+<p class='tdesc'>Catálogo gestionable de tipos de insumo (Tela, Hilo, Botón…).</p>
+<table><thead><tr><th>CAMPO</th><th>TIPO DE DATO</th><th>LONGITUD</th><th>RESTRICCIONES</th><th>DESCRIPCIÓN</th></tr></thead><tbody><tr><td>id</td><td>BIGINT</td><td>-</td><td>PK, AI, Unsigned, Not Null</td><td>Identificador único del registro.</td></tr>
+<tr><td>nombre</td><td>VARCHAR</td><td>100</td><td>Not Null, Unique</td><td>Nombre del tipo de insumo.</td></tr>
+<tr><td>activo</td><td>TINYINT</td><td>1</td><td>Not Null, Default &#x27;1&#x27;</td><td>Estatus del registro (1 = activo).</td></tr>
+<tr><td>created_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha y hora de creación del registro.</td></tr>
+<tr><td>updated_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha y hora de última actualización del registro.</td></tr>
+<tr><td>deleted_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha de eliminación lógica (soft delete); NULL indica que el registro está activo.</td></tr></tbody></table>
+<h3>Tabla: movimiento_insumo</h3>
+<p class='tdesc'>Historial de entradas y salidas de inventario de cada insumo (kárdex), con stock anterior y nuevo por movimiento.</p>
+<table><thead><tr><th>CAMPO</th><th>TIPO DE DATO</th><th>LONGITUD</th><th>RESTRICCIONES</th><th>DESCRIPCIÓN</th></tr></thead><tbody><tr><td>id</td><td>BIGINT</td><td>-</td><td>PK, AI, Unsigned, Not Null</td><td>Identificador único del registro.</td></tr>
+<tr><td>insumo_id</td><td>BIGINT</td><td>-</td><td>Unsigned, Not Null, FK → insumo</td><td>Insumo afectado por el movimiento.</td></tr>
+<tr><td>tipo_movimiento</td><td>ENUM</td><td>-</td><td>Not Null</td><td>Naturaleza del movimiento; las entradas se generan solo desde Compras y las reversiones de producción. Valores: Entrada, Salida.</td></tr>
+<tr><td>cantidad</td><td>DECIMAL</td><td>10,2</td><td>Not Null</td><td>Cantidad movilizada.</td></tr>
+<tr><td>stock_anterior</td><td>DECIMAL</td><td>10,2</td><td>Not Null</td><td>Existencia del insumo antes del movimiento.</td></tr>
+<tr><td>stock_nuevo</td><td>DECIMAL</td><td>10,2</td><td>Not Null</td><td>Existencia del insumo después del movimiento.</td></tr>
+<tr><td>motivo</td><td>TEXT</td><td>-</td><td>Nullable</td><td>Motivo o referencia del movimiento.</td></tr>
+<tr><td>created_by</td><td>BIGINT</td><td>-</td><td>Unsigned, Not Null, FK → user</td><td>Usuario que registró el movimiento.</td></tr>
+<tr><td>created_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha y hora de creación del registro.</td></tr>
+<tr><td>updated_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha y hora de última actualización del registro.</td></tr></tbody></table>
+<h2>4. COMPRAS</h2>
+<p class='sdesc'>Adquisición de insumos a proveedores, con flujo borrador → recibida → anulada y montos en dólares y bolívares.</p>
+<h3>Tabla: compra</h3>
+<p class='tdesc'>Cabecera de compras de insumos a proveedores. Flujo de estados: borrador → recibida → anulada; solo al procesar (recibida) genera movimientos de inventario.</p>
+<table><thead><tr><th>CAMPO</th><th>TIPO DE DATO</th><th>LONGITUD</th><th>RESTRICCIONES</th><th>DESCRIPCIÓN</th></tr></thead><tbody><tr><td>id</td><td>BIGINT</td><td>-</td><td>PK, AI, Unsigned, Not Null</td><td>Identificador único del registro.</td></tr>
+<tr><td>proveedor_id</td><td>BIGINT</td><td>-</td><td>Unsigned, Not Null, FK → proveedor</td><td>Proveedor al que se realizó la compra.</td></tr>
+<tr><td>user_id</td><td>BIGINT</td><td>-</td><td>Unsigned, Not Null, FK → user</td><td>Usuario que registró la compra.</td></tr>
+<tr><td>numero_factura</td><td>VARCHAR</td><td>30</td><td>Nullable</td><td>Número de factura del proveedor.</td></tr>
+<tr><td>fecha_compra</td><td>DATE</td><td>-</td><td>Not Null</td><td>Fecha de la compra.</td></tr>
+<tr><td>subtotal</td><td>DECIMAL</td><td>10,2</td><td>Not Null, Default &#x27;0.00&#x27;</td><td>Subtotal de la compra (USD, sin IVA).</td></tr>
+<tr><td>iva</td><td>DECIMAL</td><td>10,2</td><td>Not Null, Default &#x27;0.00&#x27;</td><td>Monto de IVA de la compra (USD).</td></tr>
+<tr><td>iva_porcentaje</td><td>DECIMAL</td><td>5,2</td><td>Not Null, Default &#x27;0.00&#x27;</td><td>Tasa de IVA aplicada, guardada como snapshot al momento de la compra.</td></tr>
+<tr><td>tasa_cambio</td><td>DECIMAL</td><td>12,4</td><td>Nullable</td><td>Tasa de cambio BCV vigente en la fecha de la compra (Bs/USD).</td></tr>
+<tr><td>total</td><td>DECIMAL</td><td>10,2</td><td>Not Null, Default &#x27;0.00&#x27;</td><td>Total de la compra (USD).</td></tr>
+<tr><td>observaciones</td><td>TEXT</td><td>-</td><td>Nullable</td><td>Observaciones adicionales de la compra.</td></tr>
+<tr><td>estado</td><td>ENUM</td><td>-</td><td>Not Null, Default &#x27;recibida&#x27;</td><td>Estado del flujo de la compra; solo al pasar a recibida se generan los movimientos de inventario. Valores: borrador, recibida, anulada.</td></tr>
+<tr><td>clonada</td><td>TINYINT</td><td>1</td><td>Not Null, Default &#x27;0&#x27;</td><td>Indica si la compra ya fue clonada tras su anulación (1 = sí).</td></tr>
+<tr><td>anulado_por_id</td><td>BIGINT</td><td>-</td><td>Unsigned, Nullable, FK → user</td><td>Usuario que anuló la compra.</td></tr>
+<tr><td>fecha_anulacion</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha y hora de anulación de la compra.</td></tr>
+<tr><td>created_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha y hora de creación del registro.</td></tr>
+<tr><td>updated_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha y hora de última actualización del registro.</td></tr>
+<tr><td>deleted_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha de eliminación lógica (soft delete); NULL indica que el registro está activo.</td></tr></tbody></table>
+<h3>Tabla: compra_detalle</h3>
+<p class='tdesc'>Líneas de una compra: insumo, cantidad y costos unitarios en dólares y bolívares.</p>
+<table><thead><tr><th>CAMPO</th><th>TIPO DE DATO</th><th>LONGITUD</th><th>RESTRICCIONES</th><th>DESCRIPCIÓN</th></tr></thead><tbody><tr><td>id</td><td>BIGINT</td><td>-</td><td>PK, AI, Unsigned, Not Null</td><td>Identificador único del registro.</td></tr>
+<tr><td>compra_id</td><td>BIGINT</td><td>-</td><td>Unsigned, Not Null, FK → compra</td><td>Compra a la que pertenece la línea.</td></tr>
+<tr><td>insumo_id</td><td>BIGINT</td><td>-</td><td>Unsigned, Not Null, FK → insumo</td><td>Insumo comprado.</td></tr>
+<tr><td>cantidad</td><td>DECIMAL</td><td>10,2</td><td>Not Null</td><td>Cantidad comprada del insumo.</td></tr>
+<tr><td>costo_unitario</td><td>DECIMAL</td><td>10,2</td><td>Not Null</td><td>Costo unitario del insumo (USD).</td></tr>
+<tr><td>costo_unitario_bs</td><td>DECIMAL</td><td>14,2</td><td>Nullable</td><td>Costo unitario del insumo en bolívares.</td></tr>
+<tr><td>aplica_iva</td><td>TINYINT</td><td>1</td><td>Not Null, Default &#x27;1&#x27;</td><td>Indica si la línea aplica IVA (1 = sí).</td></tr>
+<tr><td>subtotal</td><td>DECIMAL</td><td>10,2</td><td>Not Null</td><td>Subtotal de la línea (USD).</td></tr>
+<tr><td>created_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha y hora de creación del registro.</td></tr>
+<tr><td>updated_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha y hora de última actualización del registro.</td></tr></tbody></table>
+<h2>5. COTIZACIONES</h2>
+<p class='sdesc'>Presupuestos al cliente. Cada línea guarda snapshots inmutables del producto cotizado para preservar el histórico ante cambios del catálogo.</p>
+<h3>Tabla: cotizacion</h3>
+<p class='tdesc'>Cabecera de cotizaciones (presupuestos) a clientes, con vigencia, tasa de cambio y flujo de estados hasta su conversión en pedido.</p>
+<table><thead><tr><th>CAMPO</th><th>TIPO DE DATO</th><th>LONGITUD</th><th>RESTRICCIONES</th><th>DESCRIPCIÓN</th></tr></thead><tbody><tr><td>id</td><td>BIGINT</td><td>-</td><td>PK, AI, Unsigned, Not Null</td><td>Identificador único del registro.</td></tr>
+<tr><td>cliente_id</td><td>BIGINT</td><td>-</td><td>Unsigned, Not Null, FK → cliente</td><td>Cliente al que se dirige la cotización.</td></tr>
+<tr><td>fecha_cotizacion</td><td>DATE</td><td>-</td><td>Not Null</td><td>Fecha de emisión de la cotización.</td></tr>
+<tr><td>fecha_validez</td><td>DATE</td><td>-</td><td>Nullable</td><td>Fecha límite de vigencia; vencida esta fecha la cotización pasa a Vencida.</td></tr>
+<tr><td>estado</td><td>ENUM</td><td>-</td><td>Not Null, Default &#x27;Pendiente&#x27;</td><td>Estado del flujo de la cotización. Valores: Pendiente, Aprobada, Cancelada, Convertida, Vencida.</td></tr>
+<tr><td>total</td><td>DECIMAL</td><td>10,2</td><td>Not Null, Default &#x27;0.00&#x27;</td><td>Monto total cotizado (USD).</td></tr>
+<tr><td>tasa_cambio_valor</td><td>DECIMAL</td><td>10,4</td><td>Nullable</td><td>Tasa de cambio BCV aplicada a la cotización (Bs/USD).</td></tr>
+<tr><td>notas</td><td>TEXT</td><td>-</td><td>Nullable</td><td>Notas internas de la cotización.</td></tr>
+<tr><td>condiciones_terminos</td><td>TEXT</td><td>-</td><td>Nullable</td><td>Condiciones y términos comerciales impresos en el documento.</td></tr>
+<tr><td>user_id</td><td>BIGINT</td><td>-</td><td>Unsigned, Not Null, FK → user</td><td>Usuario que creó la cotización.</td></tr>
+<tr><td>prioridad</td><td>ENUM</td><td>-</td><td>Not Null, Default &#x27;Normal&#x27;</td><td>Prioridad comercial de la cotización. Valores: Normal, Alta, Urgente.</td></tr>
+<tr><td>created_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha y hora de creación del registro.</td></tr>
+<tr><td>updated_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha y hora de última actualización del registro.</td></tr>
+<tr><td>deleted_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha de eliminación lógica (soft delete); NULL indica que el registro está activo.</td></tr></tbody></table>
+<h3>Tabla: detalle_cotizacion</h3>
+<p class='tdesc'>Líneas de una cotización. Guarda snapshots (tela, atributos, SKU) que preservan la información aunque el catálogo cambie después.</p>
+<table><thead><tr><th>CAMPO</th><th>TIPO DE DATO</th><th>LONGITUD</th><th>RESTRICCIONES</th><th>DESCRIPCIÓN</th></tr></thead><tbody><tr><td>id</td><td>BIGINT</td><td>-</td><td>PK, AI, Unsigned, Not Null</td><td>Identificador único del registro.</td></tr>
+<tr><td>cotizacion_id</td><td>BIGINT</td><td>-</td><td>Unsigned, Not Null, FK → cotizacion</td><td>Cotización a la que pertenece la línea.</td></tr>
+<tr><td>producto_id</td><td>BIGINT</td><td>-</td><td>Unsigned, Nullable, FK → producto</td><td>Variante concreta cotizada; NULL en líneas dinámicas armadas desde el tipo de producto.</td></tr>
+<tr><td>tipo_producto_id</td><td>BIGINT</td><td>-</td><td>Unsigned, Nullable, FK → tipo_producto</td><td>Tipo de producto (prenda base) de la línea.</td></tr>
+<tr><td>tela_snapshot</td><td>LONGTEXT</td><td>-</td><td>Nullable</td><td>Copia JSON de la tela al momento de crear la línea (inmutable).</td></tr>
+<tr><td>atributos_snapshot</td><td>LONGTEXT</td><td>-</td><td>Nullable</td><td>Copia JSON de los atributos al momento de crear la línea (inmutable).</td></tr>
+<tr><td>sku_snapshot</td><td>VARCHAR</td><td>100</td><td>Nullable</td><td>SKU de la variante al momento de crear la línea (inmutable).</td></tr>
+<tr><td>cantidad</td><td>INT</td><td>-</td><td>Not Null</td><td>Cantidad de prendas de la línea.</td></tr>
+<tr><td>descripcion</td><td>TEXT</td><td>-</td><td>Nullable</td><td>Descripción libre de la línea.</td></tr>
+<tr><td>lleva_bordado</td><td>TINYINT</td><td>1</td><td>Not Null, Default &#x27;0&#x27;</td><td>Indica si la línea incluye bordados (1 = sí).</td></tr>
+<tr><td>color_id</td><td>BIGINT</td><td>-</td><td>Unsigned, Nullable, FK → color</td><td>Color de la prenda.</td></tr>
+<tr><td>talla_id</td><td>BIGINT</td><td>-</td><td>Unsigned, Nullable, FK → talla</td><td>Talla de la prenda.</td></tr>
+<tr><td>genero_id</td><td>BIGINT</td><td>-</td><td>Unsigned, Not Null, FK → genero</td><td>Género de la prenda (Dama, Caballero…).</td></tr>
+<tr><td>precio_unitario</td><td>DECIMAL</td><td>10,2</td><td>Not Null, Default &#x27;0.00&#x27;</td><td>Precio unitario aplicado a la línea (USD).</td></tr>
+<tr><td>created_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha y hora de creación del registro.</td></tr>
+<tr><td>updated_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha y hora de última actualización del registro.</td></tr></tbody></table>
+<h3>Tabla: detalle_cotizacion_bordado</h3>
+<p class='tdesc'>Bordados aplicados a una línea de cotización: ubicación, logo y precio aplicado.</p>
+<table><thead><tr><th>CAMPO</th><th>TIPO DE DATO</th><th>LONGITUD</th><th>RESTRICCIONES</th><th>DESCRIPCIÓN</th></tr></thead><tbody><tr><td>id</td><td>BIGINT</td><td>-</td><td>PK, AI, Unsigned, Not Null</td><td>Identificador único del registro.</td></tr>
+<tr><td>detalle_cotizacion_id</td><td>BIGINT</td><td>-</td><td>Unsigned, Not Null, FK → detalle_cotizacion</td><td>Línea de cotización a la que pertenece el bordado.</td></tr>
+<tr><td>ubicacion_bordado_id</td><td>BIGINT</td><td>-</td><td>Unsigned, Nullable, FK → bordado_ubicacion</td><td>Ubicación del bordado sobre la prenda; NULL si es personalizada.</td></tr>
+<tr><td>logo_id</td><td>BIGINT</td><td>-</td><td>Unsigned, Nullable, FK → logo</td><td>Logo aplicado en el bordado.</td></tr>
+<tr><td>nombre_aplicado</td><td>VARCHAR</td><td>191</td><td>Not Null</td><td>Nombre de la ubicación al momento de aplicarla (snapshot).</td></tr>
+<tr><td>nombre_logo_aplicado</td><td>VARCHAR</td><td>120</td><td>Nullable</td><td>Nombre del logo al momento de aplicarlo (snapshot).</td></tr>
+<tr><td>es_personalizada</td><td>TINYINT</td><td>1</td><td>Not Null, Default &#x27;0&#x27;</td><td>Indica si la ubicación fue escrita manualmente en lugar de tomarse del catálogo (1 = sí).</td></tr>
+<tr><td>cantidad</td><td>INT</td><td>-</td><td>Unsigned, Not Null, Default &#x27;1&#x27;</td><td>Cantidad de bordados de este tipo en la línea.</td></tr>
+<tr><td>precio_aplicado</td><td>DECIMAL</td><td>10,2</td><td>Not Null, Default &#x27;0.00&#x27;</td><td>Precio unitario aplicado al bordado (USD).</td></tr>
+<tr><td>orden</td><td>INT</td><td>-</td><td>Unsigned, Not Null, Default &#x27;0&#x27;</td><td>Posición de ordenamiento del bordado dentro de la línea.</td></tr>
+<tr><td>created_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha y hora de creación del registro.</td></tr>
+<tr><td>updated_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha y hora de última actualización del registro.</td></tr></tbody></table>
+<h2>6. PEDIDOS Y PAGOS</h2>
+<p class='sdesc'>Un pedido nace exclusivamente de una cotización aprobada. Registra pagos multi-método y el abono mínimo de formalización.</p>
+<h3>Tabla: pedido</h3>
+<p class='tdesc'>Cabecera de pedidos. Nace únicamente de una cotización aprobada; registra abono, fechas de entrega y formalización.</p>
+<table><thead><tr><th>CAMPO</th><th>TIPO DE DATO</th><th>LONGITUD</th><th>RESTRICCIONES</th><th>DESCRIPCIÓN</th></tr></thead><tbody><tr><td>id</td><td>BIGINT</td><td>-</td><td>PK, AI, Unsigned, Not Null</td><td>Identificador único del registro.</td></tr>
+<tr><td>cotizacion_id</td><td>BIGINT</td><td>-</td><td>Unsigned, Nullable, Unique, FK → cotizacion</td><td>Cotización aprobada de la que nace el pedido; se desvincula (NULL) si el pedido se elimina, liberando la cotización.</td></tr>
+<tr><td>cliente_id</td><td>BIGINT</td><td>-</td><td>Unsigned, Nullable, FK → cliente</td><td>Cliente del pedido.</td></tr>
+<tr><td>fecha_pedido</td><td>DATE</td><td>-</td><td>Not Null</td><td>Fecha de creación del pedido.</td></tr>
+<tr><td>fecha_entrega_estimada</td><td>DATE</td><td>-</td><td>Nullable</td><td>Fecha comprometida de entrega al cliente.</td></tr>
+<tr><td>fecha_formalizacion</td><td>DATE</td><td>-</td><td>Nullable</td><td>Fecha en que el pedido alcanzó el abono mínimo y quedó formalizado.</td></tr>
+<tr><td>estado</td><td>ENUM</td><td>-</td><td>Not Null, Default &#x27;Pendiente&#x27;</td><td>Estado del flujo del pedido. Valores: Pendiente, Procesando, Completado, Cancelado.</td></tr>
+<tr><td>prioridad</td><td>ENUM</td><td>-</td><td>Not Null, Default &#x27;Normal&#x27;</td><td>Prioridad del pedido. Valores: Normal, Alta, Urgente.</td></tr>
+<tr><td>total</td><td>DECIMAL</td><td>10,2</td><td>Not Null, Default &#x27;0.00&#x27;</td><td>Monto total del pedido (USD).</td></tr>
+<tr><td>abono</td><td>DECIMAL</td><td>10,2</td><td>Not Null, Default &#x27;0.00&#x27;</td><td>Monto abonado por el cliente (USD); el mínimo exigido es configurable (50%).</td></tr>
+<tr><td>user_id</td><td>BIGINT</td><td>-</td><td>Unsigned, Not Null, FK → user</td><td>Usuario que creó el pedido.</td></tr>
+<tr><td>created_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha y hora de creación del registro.</td></tr>
+<tr><td>updated_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha y hora de última actualización del registro.</td></tr>
+<tr><td>deleted_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha de eliminación lógica (soft delete); NULL indica que el registro está activo.</td></tr></tbody></table>
+<h3>Tabla: detalle_pedido</h3>
+<p class='tdesc'>Líneas de un pedido, heredadas de la cotización de origen con los mismos snapshots inmutables.</p>
+<table><thead><tr><th>CAMPO</th><th>TIPO DE DATO</th><th>LONGITUD</th><th>RESTRICCIONES</th><th>DESCRIPCIÓN</th></tr></thead><tbody><tr><td>id</td><td>BIGINT</td><td>-</td><td>PK, AI, Unsigned, Not Null</td><td>Identificador único del registro.</td></tr>
+<tr><td>pedido_id</td><td>BIGINT</td><td>-</td><td>Unsigned, Not Null, FK → pedido</td><td>Pedido al que pertenece la línea.</td></tr>
+<tr><td>producto_id</td><td>BIGINT</td><td>-</td><td>Unsigned, Nullable, FK → producto</td><td>Variante concreta cotizada; NULL en líneas dinámicas armadas desde el tipo de producto.</td></tr>
+<tr><td>tipo_producto_id</td><td>BIGINT</td><td>-</td><td>Unsigned, Nullable, FK → tipo_producto</td><td>Tipo de producto (prenda base) de la línea.</td></tr>
+<tr><td>tela_snapshot</td><td>LONGTEXT</td><td>-</td><td>Nullable</td><td>Copia JSON de la tela al momento de crear la línea (inmutable).</td></tr>
+<tr><td>atributos_snapshot</td><td>LONGTEXT</td><td>-</td><td>Nullable</td><td>Copia JSON de los atributos al momento de crear la línea (inmutable).</td></tr>
+<tr><td>sku_snapshot</td><td>VARCHAR</td><td>100</td><td>Nullable</td><td>SKU de la variante al momento de crear la línea (inmutable).</td></tr>
+<tr><td>cantidad</td><td>INT</td><td>-</td><td>Not Null</td><td>Cantidad de prendas de la línea.</td></tr>
+<tr><td>descripcion</td><td>TEXT</td><td>-</td><td>Nullable</td><td>Descripción libre de la línea.</td></tr>
+<tr><td>lleva_bordado</td><td>TINYINT</td><td>1</td><td>Not Null, Default &#x27;0&#x27;</td><td>Indica si la línea incluye bordados (1 = sí).</td></tr>
+<tr><td>color_id</td><td>BIGINT</td><td>-</td><td>Unsigned, Nullable, FK → color</td><td>Color de la prenda.</td></tr>
+<tr><td>talla_id</td><td>BIGINT</td><td>-</td><td>Unsigned, Nullable, FK → talla</td><td>Talla de la prenda.</td></tr>
+<tr><td>genero_id</td><td>BIGINT</td><td>-</td><td>Unsigned, Not Null, FK → genero</td><td>Género de la prenda (Dama, Caballero…).</td></tr>
+<tr><td>precio_unitario</td><td>DECIMAL</td><td>10,2</td><td>Not Null</td><td>Precio unitario aplicado a la línea (USD).</td></tr>
+<tr><td>created_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha y hora de creación del registro.</td></tr>
+<tr><td>updated_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha y hora de última actualización del registro.</td></tr></tbody></table>
+<h3>Tabla: detalle_pedido_bordado</h3>
+<p class='tdesc'>Bordados aplicados a una línea de pedido: ubicación, logo y precio aplicado.</p>
+<table><thead><tr><th>CAMPO</th><th>TIPO DE DATO</th><th>LONGITUD</th><th>RESTRICCIONES</th><th>DESCRIPCIÓN</th></tr></thead><tbody><tr><td>id</td><td>BIGINT</td><td>-</td><td>PK, AI, Unsigned, Not Null</td><td>Identificador único del registro.</td></tr>
+<tr><td>detalle_pedido_id</td><td>BIGINT</td><td>-</td><td>Unsigned, Not Null, FK → detalle_pedido</td><td>Línea de pedido a la que pertenece el bordado.</td></tr>
+<tr><td>ubicacion_bordado_id</td><td>BIGINT</td><td>-</td><td>Unsigned, Nullable, FK → bordado_ubicacion</td><td>Ubicación del bordado sobre la prenda; NULL si es personalizada.</td></tr>
+<tr><td>logo_id</td><td>BIGINT</td><td>-</td><td>Unsigned, Nullable, FK → logo</td><td>Logo aplicado en el bordado.</td></tr>
+<tr><td>nombre_aplicado</td><td>VARCHAR</td><td>191</td><td>Not Null</td><td>Nombre de la ubicación al momento de aplicarla (snapshot).</td></tr>
+<tr><td>nombre_logo_aplicado</td><td>VARCHAR</td><td>120</td><td>Nullable</td><td>Nombre del logo al momento de aplicarlo (snapshot).</td></tr>
+<tr><td>es_personalizada</td><td>TINYINT</td><td>1</td><td>Not Null, Default &#x27;0&#x27;</td><td>Indica si la ubicación fue escrita manualmente en lugar de tomarse del catálogo (1 = sí).</td></tr>
+<tr><td>cantidad</td><td>INT</td><td>-</td><td>Unsigned, Not Null, Default &#x27;1&#x27;</td><td>Cantidad de bordados de este tipo en la línea.</td></tr>
+<tr><td>precio_aplicado</td><td>DECIMAL</td><td>10,2</td><td>Not Null, Default &#x27;0.00&#x27;</td><td>Precio unitario aplicado al bordado (USD).</td></tr>
+<tr><td>orden</td><td>INT</td><td>-</td><td>Unsigned, Not Null, Default &#x27;0&#x27;</td><td>Posición de ordenamiento del bordado dentro de la línea.</td></tr>
+<tr><td>created_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha y hora de creación del registro.</td></tr>
+<tr><td>updated_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha y hora de última actualización del registro.</td></tr></tbody></table>
+<h3>Tabla: detalle_pedido_insumo</h3>
+<p class='tdesc'>Consumo estimado de insumos por línea de pedido, base para la proyección de disponibilidad de stock.</p>
+<table><thead><tr><th>CAMPO</th><th>TIPO DE DATO</th><th>LONGITUD</th><th>RESTRICCIONES</th><th>DESCRIPCIÓN</th></tr></thead><tbody><tr><td>id</td><td>BIGINT</td><td>-</td><td>PK, AI, Unsigned, Not Null</td><td>Identificador único del registro.</td></tr>
+<tr><td>detalle_pedido_id</td><td>BIGINT</td><td>-</td><td>Unsigned, Not Null, Unique (con insumo_id), FK → detalle_pedido</td><td>Línea de pedido a la que corresponde el consumo.</td></tr>
+<tr><td>insumo_id</td><td>BIGINT</td><td>-</td><td>Unsigned, Not Null, Unique (con detalle_pedido_id), FK → insumo</td><td>Insumo requerido.</td></tr>
+<tr><td>cantidad_estimada</td><td>DECIMAL</td><td>8,2</td><td>Not Null</td><td>Cantidad estimada de insumo para producir la línea.</td></tr>
+<tr><td>created_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha y hora de creación del registro.</td></tr>
+<tr><td>updated_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha y hora de última actualización del registro.</td></tr></tbody></table>
+<h3>Tabla: pago_pedido</h3>
+<p class='tdesc'>Pagos registrados a un pedido (multi-método): efectivo, transferencia o pago móvil.</p>
+<table><thead><tr><th>CAMPO</th><th>TIPO DE DATO</th><th>LONGITUD</th><th>RESTRICCIONES</th><th>DESCRIPCIÓN</th></tr></thead><tbody><tr><td>id</td><td>BIGINT</td><td>-</td><td>PK, AI, Unsigned, Not Null</td><td>Identificador único del registro.</td></tr>
+<tr><td>pedido_id</td><td>BIGINT</td><td>-</td><td>Unsigned, Not Null, FK → pedido</td><td>Pedido al que corresponde el pago.</td></tr>
+<tr><td>metodo</td><td>ENUM</td><td>-</td><td>Not Null</td><td>Método de pago utilizado. Valores: efectivo, transferencia, pago_movil.</td></tr>
+<tr><td>monto</td><td>DECIMAL</td><td>10,2</td><td>Not Null, Default &#x27;0.00&#x27;</td><td>Monto del pago (USD).</td></tr>
+<tr><td>banco_id</td><td>BIGINT</td><td>-</td><td>Unsigned, Nullable, FK → banco</td><td>Banco asociado al pago electrónico.</td></tr>
+<tr><td>referencia</td><td>VARCHAR</td><td>255</td><td>Nullable</td><td>Número de referencia de la operación bancaria.</td></tr>
+<tr><td>created_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha y hora de creación del registro.</td></tr>
+<tr><td>updated_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha y hora de última actualización del registro.</td></tr></tbody></table>
+<h3>Tabla: banco</h3>
+<p class='tdesc'>Catálogo de bancos para métodos de pago electrónicos.</p>
+<table><thead><tr><th>CAMPO</th><th>TIPO DE DATO</th><th>LONGITUD</th><th>RESTRICCIONES</th><th>DESCRIPCIÓN</th></tr></thead><tbody><tr><td>id</td><td>BIGINT</td><td>-</td><td>PK, AI, Unsigned, Not Null</td><td>Identificador único del registro.</td></tr>
+<tr><td>nombre</td><td>VARCHAR</td><td>100</td><td>Not Null, Unique</td><td>Nombre del banco.</td></tr>
+<tr><td>created_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha y hora de creación del registro.</td></tr>
+<tr><td>updated_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha y hora de última actualización del registro.</td></tr>
+<tr><td>deleted_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha de eliminación lógica (soft delete); NULL indica que el registro está activo.</td></tr></tbody></table>
+<h2>7. PRODUCCIÓN Y CONTROL DE CALIDAD</h2>
+<p class='sdesc'>Órdenes de producción (una orden = una línea de pedido, o una fracción de ella), reparto de trabajo por empleado, consumo de insumos e inspección final de calidad.</p>
+<h3>Tabla: orden_produccion</h3>
+<p class='tdesc'>Órdenes de producción. Cada orden corresponde a una línea de pedido (o a una fracción de ella cuando la cantidad se divide entre varias órdenes).</p>
+<table><thead><tr><th>CAMPO</th><th>TIPO DE DATO</th><th>LONGITUD</th><th>RESTRICCIONES</th><th>DESCRIPCIÓN</th></tr></thead><tbody><tr><td>id</td><td>BIGINT</td><td>-</td><td>PK, AI, Unsigned, Not Null</td><td>Identificador único del registro.</td></tr>
+<tr><td>pedido_id</td><td>BIGINT</td><td>-</td><td>Unsigned, Nullable, FK → pedido</td><td>Pedido que origina la orden.</td></tr>
+<tr><td>detalle_pedido_id</td><td>BIGINT</td><td>-</td><td>Unsigned, Nullable, FK → detalle_pedido</td><td>Línea de pedido que se produce en la orden.</td></tr>
+<tr><td>producto_id</td><td>BIGINT</td><td>-</td><td>Unsigned, Nullable, FK → producto</td><td>Variante de producto a fabricar.</td></tr>
+<tr><td>empleado_id</td><td>BIGINT</td><td>-</td><td>Unsigned, Nullable, FK → empleado</td><td>Empleado responsable (campo legado; el equipo real se registra en orden_produccion_empleado).</td></tr>
+<tr><td>cantidad_solicitada</td><td>INT</td><td>-</td><td>Not Null</td><td>Unidades a producir en la orden.</td></tr>
+<tr><td>cantidad_producida</td><td>INT</td><td>-</td><td>Not Null, Default &#x27;0&#x27;</td><td>Unidades producidas acumuladas.</td></tr>
+<tr><td>cantidad_defectuosa</td><td>INT</td><td>-</td><td>Not Null, Default &#x27;0&#x27;</td><td>Unidades defectuosas acumuladas.</td></tr>
+<tr><td>fecha_inicio</td><td>DATE</td><td>-</td><td>Not Null</td><td>Fecha de inicio de la producción.</td></tr>
+<tr><td>fecha_fin_estimada</td><td>DATE</td><td>-</td><td>Not Null</td><td>Fecha estimada de finalización.</td></tr>
+<tr><td>fecha_fin_real</td><td>DATE</td><td>-</td><td>Nullable</td><td>Fecha real de finalización.</td></tr>
+<tr><td>estado</td><td>ENUM</td><td>-</td><td>Not Null, Default &#x27;Pendiente&#x27;</td><td>Estado del flujo de la orden. Valores: Pendiente, En Proceso, Finalizado, Cancelado.</td></tr>
+<tr><td>notas</td><td>TEXT</td><td>-</td><td>Nullable</td><td>Notas de la orden.</td></tr>
+<tr><td>motivo_cancelacion</td><td>TEXT</td><td>-</td><td>Nullable</td><td>Motivo registrado al cancelar la orden.</td></tr>
+<tr><td>created_by</td><td>BIGINT</td><td>-</td><td>Unsigned, Not Null, FK → user</td><td>Usuario que creó la orden.</td></tr>
+<tr><td>created_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha y hora de creación del registro.</td></tr>
+<tr><td>updated_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha y hora de última actualización del registro.</td></tr>
+<tr><td>deleted_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha de eliminación lógica (soft delete); NULL indica que el registro está activo.</td></tr></tbody></table>
+<h3>Tabla: orden_produccion_empleado</h3>
+<p class='tdesc'>Reparto de la orden entre los empleados del equipo: cantidad asignada, producida y defectuosa por persona.</p>
+<table><thead><tr><th>CAMPO</th><th>TIPO DE DATO</th><th>LONGITUD</th><th>RESTRICCIONES</th><th>DESCRIPCIÓN</th></tr></thead><tbody><tr><td>id</td><td>BIGINT</td><td>-</td><td>PK, AI, Unsigned, Not Null</td><td>Identificador único del registro.</td></tr>
+<tr><td>orden_produccion_id</td><td>BIGINT</td><td>-</td><td>Unsigned, Not Null, Unique (con empleado_id), FK → orden_produccion</td><td>Orden de producción repartida.</td></tr>
+<tr><td>empleado_id</td><td>BIGINT</td><td>-</td><td>Unsigned, Not Null, Unique (con orden_produccion_id), FK → empleado</td><td>Empleado asignado a la orden.</td></tr>
+<tr><td>cantidad</td><td>SMALLINT</td><td>-</td><td>Unsigned, Nullable</td><td>Unidades asignadas al empleado; la suma de las asignaciones debe igualar la cantidad de la orden.</td></tr>
+<tr><td>cantidad_producida</td><td>SMALLINT</td><td>-</td><td>Unsigned, Not Null, Default &#x27;0&#x27;</td><td>Unidades producidas por el empleado.</td></tr>
+<tr><td>cantidad_defectuosa</td><td>SMALLINT</td><td>-</td><td>Unsigned, Not Null, Default &#x27;0&#x27;</td><td>Unidades defectuosas atribuidas al empleado.</td></tr>
+<tr><td>created_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha y hora de creación del registro.</td></tr>
+<tr><td>updated_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha y hora de última actualización del registro.</td></tr></tbody></table>
+<h3>Tabla: detalle_orden_insumo</h3>
+<p class='tdesc'>Insumos estimados y realmente utilizados por una orden de producción.</p>
+<table><thead><tr><th>CAMPO</th><th>TIPO DE DATO</th><th>LONGITUD</th><th>RESTRICCIONES</th><th>DESCRIPCIÓN</th></tr></thead><tbody><tr><td>id</td><td>BIGINT</td><td>-</td><td>PK, AI, Unsigned, Not Null</td><td>Identificador único del registro.</td></tr>
+<tr><td>orden_produccion_id</td><td>BIGINT</td><td>-</td><td>Unsigned, Not Null, FK → orden_produccion</td><td>Orden de producción a la que corresponde el consumo.</td></tr>
+<tr><td>insumo_id</td><td>BIGINT</td><td>-</td><td>Unsigned, Not Null, FK → insumo</td><td>Insumo consumido.</td></tr>
+<tr><td>cantidad_estimada</td><td>DECIMAL</td><td>10,2</td><td>Not Null</td><td>Cantidad estimada de insumo para la orden.</td></tr>
+<tr><td>cantidad_utilizada</td><td>DECIMAL</td><td>10,2</td><td>Not Null, Default &#x27;0.00&#x27;</td><td>Cantidad realmente utilizada.</td></tr>
+<tr><td>created_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha y hora de creación del registro.</td></tr>
+<tr><td>updated_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha y hora de última actualización del registro.</td></tr></tbody></table>
+<h3>Tabla: sub_orden_produccion</h3>
+<p class='tdesc'>Etapas o sub-órdenes en que se divide una orden de producción (tablero kanban).</p>
+<table><thead><tr><th>CAMPO</th><th>TIPO DE DATO</th><th>LONGITUD</th><th>RESTRICCIONES</th><th>DESCRIPCIÓN</th></tr></thead><tbody><tr><td>id</td><td>BIGINT</td><td>-</td><td>PK, AI, Unsigned, Not Null</td><td>Identificador único del registro.</td></tr>
+<tr><td>orden_produccion_id</td><td>BIGINT</td><td>-</td><td>Unsigned, Not Null, FK → orden_produccion</td><td>Orden de producción a la que pertenece la etapa.</td></tr>
+<tr><td>nombre</td><td>VARCHAR</td><td>120</td><td>Not Null</td><td>Nombre de la etapa o sub-orden (ej. Corte, Costura).</td></tr>
+<tr><td>cantidad_asignada</td><td>INT</td><td>-</td><td>Unsigned, Nullable</td><td>Unidades asignadas a la etapa.</td></tr>
+<tr><td>estado</td><td>ENUM</td><td>-</td><td>Not Null, Default &#x27;Pendiente&#x27;</td><td>Estado de la etapa. Valores: Pendiente, En Proceso, Finalizado, Cancelado.</td></tr>
+<tr><td>notas</td><td>TEXT</td><td>-</td><td>Nullable</td><td>Notas de la etapa.</td></tr>
+<tr><td>created_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha y hora de creación del registro.</td></tr>
+<tr><td>updated_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha y hora de última actualización del registro.</td></tr>
+<tr><td>deleted_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha de eliminación lógica (soft delete); NULL indica que el registro está activo.</td></tr></tbody></table>
+<h3>Tabla: sub_orden_empleado</h3>
+<p class='tdesc'>Asignación de empleados a una sub-orden, con el rol que desempeñan en la etapa.</p>
+<table><thead><tr><th>CAMPO</th><th>TIPO DE DATO</th><th>LONGITUD</th><th>RESTRICCIONES</th><th>DESCRIPCIÓN</th></tr></thead><tbody><tr><td>id</td><td>BIGINT</td><td>-</td><td>PK, AI, Unsigned, Not Null</td><td>Identificador único del registro.</td></tr>
+<tr><td>sub_orden_produccion_id</td><td>BIGINT</td><td>-</td><td>Unsigned, Not Null, Unique (con empleado_id), FK → sub_orden_produccion</td><td>Sub-orden (etapa) a la que se asigna el empleado.</td></tr>
+<tr><td>empleado_id</td><td>BIGINT</td><td>-</td><td>Unsigned, Not Null, Unique (con sub_orden_produccion_id), FK → empleado</td><td>Empleado asignado a la etapa.</td></tr>
+<tr><td>rol</td><td>VARCHAR</td><td>80</td><td>Nullable</td><td>Rol que desempeña el empleado en la etapa.</td></tr>
+<tr><td>created_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha y hora de creación del registro.</td></tr>
+<tr><td>updated_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha y hora de última actualización del registro.</td></tr></tbody></table>
+<h3>Tabla: control_calidad</h3>
+<p class='tdesc'>Inspecciones de calidad sobre órdenes finalizadas: cantidades aprobadas/rechazadas y resultado; el rechazo devuelve la orden a reproceso.</p>
+<table><thead><tr><th>CAMPO</th><th>TIPO DE DATO</th><th>LONGITUD</th><th>RESTRICCIONES</th><th>DESCRIPCIÓN</th></tr></thead><tbody><tr><td>id</td><td>BIGINT</td><td>-</td><td>PK, AI, Unsigned, Not Null</td><td>Identificador único del registro.</td></tr>
+<tr><td>orden_produccion_id</td><td>BIGINT</td><td>-</td><td>Unsigned, Not Null, FK → orden_produccion</td><td>Orden de producción inspeccionada.</td></tr>
+<tr><td>inspector_id</td><td>BIGINT</td><td>-</td><td>Unsigned, Not Null, FK → user</td><td>Usuario que realizó la inspección.</td></tr>
+<tr><td>cantidad_inspeccionada</td><td>INT</td><td>-</td><td>Unsigned, Not Null</td><td>Unidades inspeccionadas.</td></tr>
+<tr><td>cantidad_aprobada</td><td>INT</td><td>-</td><td>Unsigned, Not Null</td><td>Unidades aprobadas (conformes).</td></tr>
+<tr><td>cantidad_rechazada</td><td>INT</td><td>-</td><td>Unsigned, Not Null</td><td>Unidades rechazadas; el rechazo devuelve la orden a reproceso.</td></tr>
+<tr><td>resultado</td><td>ENUM</td><td>-</td><td>Not Null</td><td>Resultado global de la inspección. Valores: aprobado, rechazado, observado.</td></tr>
+<tr><td>observaciones</td><td>TEXT</td><td>-</td><td>Nullable</td><td>Observaciones de la inspección.</td></tr>
+<tr><td>fecha_inspeccion</td><td>TIMESTAMP</td><td>-</td><td>Not Null</td><td>Fecha y hora de la inspección.</td></tr>
+<tr><td>deleted_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha de eliminación lógica (soft delete); NULL indica que el registro está activo.</td></tr>
+<tr><td>created_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha y hora de creación del registro.</td></tr>
+<tr><td>updated_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha y hora de última actualización del registro.</td></tr></tbody></table>
+<h3>Tabla: produccion_diaria</h3>
+<p class='tdesc'>Tabla legado (sin uso). El avance de producción se registra ahora directamente en la orden y su reparto por empleado; se conserva vacía por compatibilidad histórica.</p>
+<table><thead><tr><th>CAMPO</th><th>TIPO DE DATO</th><th>LONGITUD</th><th>RESTRICCIONES</th><th>DESCRIPCIÓN</th></tr></thead><tbody><tr><td>id</td><td>BIGINT</td><td>-</td><td>PK, AI, Unsigned, Not Null</td><td>Identificador único del registro.</td></tr>
+<tr><td>orden_id</td><td>BIGINT</td><td>-</td><td>Unsigned, Not Null, FK → orden_produccion</td><td>Orden de producción del registro (legado).</td></tr>
+<tr><td>fecha_produccion</td><td>DATE</td><td>-</td><td>Nullable</td><td>Fecha del avance registrado (legado).</td></tr>
+<tr><td>empleado_id</td><td>BIGINT</td><td>-</td><td>Unsigned, Not Null, FK → empleado</td><td>Empleado que reportó el avance (legado).</td></tr>
+<tr><td>cantidad_producida</td><td>INT</td><td>-</td><td>Not Null</td><td>Unidades producidas en el día (legado).</td></tr>
+<tr><td>cantidad_defectuosa</td><td>INT</td><td>-</td><td>Not Null, Default &#x27;0&#x27;</td><td>Unidades defectuosas en el día (legado).</td></tr>
+<tr><td>observaciones</td><td>TEXT</td><td>-</td><td>Nullable</td><td>Observaciones del avance (legado).</td></tr>
+<tr><td>created_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha y hora de creación del registro.</td></tr>
+<tr><td>updated_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha y hora de última actualización del registro.</td></tr>
+<tr><td>deleted_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha de eliminación lógica (soft delete); NULL indica que el registro está activo.</td></tr></tbody></table>
+<h2>8. TABLAS PIVOTE / DE RELACIÓN</h2>
+<p class='sdesc'>Resuelven relaciones muchos-a-muchos entre catálogos.</p>
+<h3>Tabla: producto_atributo_valor</h3>
+<p class='tdesc'>Relación producto ↔ valores de atributo que componen la variante.</p>
+<table><thead><tr><th>CAMPO</th><th>TIPO DE DATO</th><th>LONGITUD</th><th>RESTRICCIONES</th><th>DESCRIPCIÓN</th></tr></thead><tbody><tr><td>id</td><td>BIGINT</td><td>-</td><td>PK, AI, Unsigned, Not Null</td><td>Identificador único del registro.</td></tr>
+<tr><td>producto_id</td><td>BIGINT</td><td>-</td><td>Unsigned, Not Null, Unique (con atributo_valor_id), FK → producto</td><td>Variante de producto.</td></tr>
+<tr><td>atributo_valor_id</td><td>BIGINT</td><td>-</td><td>Unsigned, Not Null, Unique (con producto_id), FK → atributo_valor</td><td>Valor de atributo que compone la variante.</td></tr>
+<tr><td>created_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha y hora de creación del registro.</td></tr>
+<tr><td>updated_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha y hora de última actualización del registro.</td></tr></tbody></table>
+<h3>Tabla: tipo_producto_atributo</h3>
+<p class='tdesc'>Atributos que aplican a cada tipo de producto, con obligatoriedad y orden.</p>
+<table><thead><tr><th>CAMPO</th><th>TIPO DE DATO</th><th>LONGITUD</th><th>RESTRICCIONES</th><th>DESCRIPCIÓN</th></tr></thead><tbody><tr><td>id</td><td>BIGINT</td><td>-</td><td>PK, AI, Unsigned, Not Null</td><td>Identificador único del registro.</td></tr>
+<tr><td>tipo_producto_id</td><td>BIGINT</td><td>-</td><td>Unsigned, Not Null, Unique (con atributo_id), FK → tipo_producto</td><td>Tipo de producto.</td></tr>
+<tr><td>atributo_id</td><td>BIGINT</td><td>-</td><td>Unsigned, Not Null, Unique (con tipo_producto_id), FK → atributo</td><td>Atributo aplicable al tipo.</td></tr>
+<tr><td>es_obligatorio</td><td>TINYINT</td><td>1</td><td>Not Null, Default &#x27;1&#x27;</td><td>Indica si el atributo es obligatorio al configurar la variante (1 = sí).</td></tr>
+<tr><td>orden</td><td>SMALLINT</td><td>-</td><td>Unsigned, Not Null, Default &#x27;0&#x27;</td><td>Posición del atributo en el configurador.</td></tr>
+<tr><td>created_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha y hora de creación del registro.</td></tr>
+<tr><td>updated_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha y hora de última actualización del registro.</td></tr></tbody></table>
+<h3>Tabla: tipo_producto_insumo</h3>
+<p class='tdesc'>Receta de insumos por defecto de cada tipo de producto (cantidad estimada por unidad).</p>
+<table><thead><tr><th>CAMPO</th><th>TIPO DE DATO</th><th>LONGITUD</th><th>RESTRICCIONES</th><th>DESCRIPCIÓN</th></tr></thead><tbody><tr><td>id</td><td>BIGINT</td><td>-</td><td>PK, AI, Unsigned, Not Null</td><td>Identificador único del registro.</td></tr>
+<tr><td>tipo_producto_id</td><td>BIGINT</td><td>-</td><td>Unsigned, Not Null, Unique (con insumo_id), FK → tipo_producto</td><td>Tipo de producto.</td></tr>
+<tr><td>insumo_id</td><td>BIGINT</td><td>-</td><td>Unsigned, Not Null, Unique (con tipo_producto_id), FK → insumo</td><td>Insumo de la receta por defecto.</td></tr>
+<tr><td>cantidad_estimada</td><td>DECIMAL</td><td>10,2</td><td>Not Null</td><td>Cantidad estimada de insumo por unidad producida.</td></tr>
+<tr><td>created_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha y hora de creación del registro.</td></tr>
+<tr><td>updated_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha y hora de última actualización del registro.</td></tr></tbody></table>
+<h3>Tabla: tipo_producto_tela</h3>
+<p class='tdesc'>Telas permitidas para cada tipo de producto.</p>
+<table><thead><tr><th>CAMPO</th><th>TIPO DE DATO</th><th>LONGITUD</th><th>RESTRICCIONES</th><th>DESCRIPCIÓN</th></tr></thead><tbody><tr><td>id</td><td>BIGINT</td><td>-</td><td>PK, AI, Unsigned, Not Null</td><td>Identificador único del registro.</td></tr>
+<tr><td>tipo_producto_id</td><td>BIGINT</td><td>-</td><td>Unsigned, Not Null, Unique (con insumo_id), FK → tipo_producto</td><td>Tipo de producto.</td></tr>
+<tr><td>insumo_id</td><td>BIGINT</td><td>-</td><td>Unsigned, Not Null, Unique (con tipo_producto_id), FK → insumo</td><td>Tela permitida (insumo de tipo Tela).</td></tr>
+<tr><td>created_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha y hora de creación del registro.</td></tr>
+<tr><td>updated_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha y hora de última actualización del registro.</td></tr></tbody></table>
+<h2>9. SEGURIDAD, CONFIGURACIÓN Y PARÁMETROS</h2>
+<p class='sdesc'>Roles con permisos dinámicos, parámetros del sistema, impuestos y tasa de cambio BCV, además del subsistema de recuperación de contraseña.</p>
+<h3>Tabla: user</h3>
+<p class='tdesc'>Cuentas de acceso al sistema. Una cuenta nunca se elimina: se inhabilita (estado = 0). Incluye los campos del subsistema de recuperación de contraseña.</p>
+<table><thead><tr><th>CAMPO</th><th>TIPO DE DATO</th><th>LONGITUD</th><th>RESTRICCIONES</th><th>DESCRIPCIÓN</th></tr></thead><tbody><tr><td>id</td><td>BIGINT</td><td>-</td><td>PK, AI, Unsigned, Not Null</td><td>Identificador único del registro.</td></tr>
+<tr><td>persona_id</td><td>BIGINT</td><td>-</td><td>Unsigned, Nullable, Unique, FK → persona</td><td>Persona asociada a la cuenta (datos de identidad).</td></tr>
+<tr><td>name</td><td>VARCHAR</td><td>191</td><td>Not Null</td><td>Nombre para mostrar del usuario.</td></tr>
+<tr><td>email</td><td>VARCHAR</td><td>191</td><td>Not Null, Unique</td><td>Correo de inicio de sesión.</td></tr>
+<tr><td>role_id</td><td>BIGINT</td><td>-</td><td>Unsigned, Not Null, FK → rol</td><td>Rol del usuario, que determina sus permisos.</td></tr>
+<tr><td>email_verified_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha de verificación del correo.</td></tr>
+<tr><td>password</td><td>VARCHAR</td><td>191</td><td>Not Null</td><td>Contraseña cifrada (hash bcrypt).</td></tr>
+<tr><td>avatar</td><td>VARCHAR</td><td>255</td><td>Nullable</td><td>Ruta de la foto de perfil.</td></tr>
+<tr><td>estado</td><td>TINYINT</td><td>1</td><td>Not Null, Default &#x27;1&#x27;</td><td>Estatus de la cuenta (1 = activa, 0 = inhabilitada); las cuentas nunca se eliminan.</td></tr>
+<tr><td>recovery_locked_until</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha hasta la cual la recuperación de contraseña está bloqueada por intentos fallidos.</td></tr>
+<tr><td>recovery_failed_attempts</td><td>TINYINT</td><td>-</td><td>Unsigned, Not Null, Default &#x27;0&#x27;</td><td>Intentos fallidos consecutivos de recuperación.</td></tr>
+<tr><td>recovery_must_reset_questions</td><td>TINYINT</td><td>1</td><td>Not Null, Default &#x27;0&#x27;</td><td>Obliga a reconfigurar las preguntas de seguridad en el próximo inicio de sesión (1 = sí).</td></tr>
+<tr><td>password_reset_by_admin</td><td>TINYINT</td><td>1</td><td>Not Null, Default &#x27;0&#x27;</td><td>Indica que un administrador restableció la contraseña y el usuario debe cambiarla (1 = sí).</td></tr>
+<tr><td>remember_token</td><td>VARCHAR</td><td>100</td><td>Nullable</td><td>Token de sesión persistente de Laravel.</td></tr>
+<tr><td>created_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha y hora de creación del registro.</td></tr>
+<tr><td>updated_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha y hora de última actualización del registro.</td></tr>
+<tr><td>deleted_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha de eliminación lógica (soft delete); NULL indica que el registro está activo.</td></tr></tbody></table>
+<h3>Tabla: rol</h3>
+<p class='tdesc'>Roles de usuario con permisos dinámicos. Los roles de sistema no pueden eliminarse.</p>
+<table><thead><tr><th>CAMPO</th><th>TIPO DE DATO</th><th>LONGITUD</th><th>RESTRICCIONES</th><th>DESCRIPCIÓN</th></tr></thead><tbody><tr><td>id</td><td>BIGINT</td><td>-</td><td>PK, AI, Unsigned, Not Null</td><td>Identificador único del registro.</td></tr>
+<tr><td>nombre</td><td>VARCHAR</td><td>191</td><td>Not Null, Unique</td><td>Nombre del rol.</td></tr>
+<tr><td>descripcion</td><td>VARCHAR</td><td>191</td><td>Nullable</td><td>Descripción del rol.</td></tr>
+<tr><td>es_sistema</td><td>TINYINT</td><td>1</td><td>Not Null, Default &#x27;0&#x27;</td><td>Indica si es un rol base del sistema, no eliminable (1 = sí).</td></tr>
+<tr><td>deleted_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha de eliminación lógica (soft delete); NULL indica que el registro está activo.</td></tr>
+<tr><td>created_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha y hora de creación del registro.</td></tr>
+<tr><td>updated_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha y hora de última actualización del registro.</td></tr></tbody></table>
+<h3>Tabla: permiso_rol</h3>
+<p class='tdesc'>Permisos (claves de ruta/acción) otorgados a cada rol.</p>
+<table><thead><tr><th>CAMPO</th><th>TIPO DE DATO</th><th>LONGITUD</th><th>RESTRICCIONES</th><th>DESCRIPCIÓN</th></tr></thead><tbody><tr><td>id</td><td>BIGINT</td><td>-</td><td>PK, AI, Unsigned, Not Null</td><td>Identificador único del registro.</td></tr>
+<tr><td>rol_id</td><td>BIGINT</td><td>-</td><td>Unsigned, Not Null, Unique (con permiso), FK → rol</td><td>Rol al que se otorga el permiso.</td></tr>
+<tr><td>permiso</td><td>VARCHAR</td><td>191</td><td>Not Null, Unique (con rol_id)</td><td>Clave del permiso (ruta o acción autorizada).</td></tr>
+<tr><td>created_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha y hora de creación del registro.</td></tr>
+<tr><td>updated_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha y hora de última actualización del registro.</td></tr></tbody></table>
+<h3>Tabla: configuracion</h3>
+<p class='tdesc'>Parámetros configurables del sistema en formato clave/valor (abono mínimo, vigencia de cotizaciones, días de entrega…).</p>
+<table><thead><tr><th>CAMPO</th><th>TIPO DE DATO</th><th>LONGITUD</th><th>RESTRICCIONES</th><th>DESCRIPCIÓN</th></tr></thead><tbody><tr><td>id</td><td>BIGINT</td><td>-</td><td>PK, AI, Unsigned, Not Null</td><td>Identificador único del registro.</td></tr>
+<tr><td>clave</td><td>VARCHAR</td><td>191</td><td>Not Null, Unique</td><td>Clave única del parámetro de configuración.</td></tr>
+<tr><td>valor</td><td>VARCHAR</td><td>191</td><td>Not Null</td><td>Valor actual del parámetro.</td></tr>
+<tr><td>updated_by_id</td><td>BIGINT</td><td>-</td><td>Unsigned, Nullable, FK → user</td><td>Último usuario que modificó el parámetro.</td></tr>
+<tr><td>created_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha y hora de creación del registro.</td></tr>
+<tr><td>updated_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha y hora de última actualización del registro.</td></tr></tbody></table>
+<h3>Tabla: impuesto</h3>
+<p class='tdesc'>Catálogo de impuestos. La fila de código IVA es la fuente de verdad de la tasa aplicada en el sistema.</p>
+<table><thead><tr><th>CAMPO</th><th>TIPO DE DATO</th><th>LONGITUD</th><th>RESTRICCIONES</th><th>DESCRIPCIÓN</th></tr></thead><tbody><tr><td>id</td><td>BIGINT</td><td>-</td><td>PK, AI, Unsigned, Not Null</td><td>Identificador único del registro.</td></tr>
+<tr><td>codigo</td><td>VARCHAR</td><td>20</td><td>Not Null, Unique</td><td>Código único del impuesto (ej. IVA).</td></tr>
+<tr><td>nombre</td><td>VARCHAR</td><td>100</td><td>Not Null</td><td>Nombre del impuesto.</td></tr>
+<tr><td>porcentaje</td><td>DECIMAL</td><td>5,2</td><td>Not Null, Default &#x27;0.00&#x27;</td><td>Tasa vigente del impuesto (%); fuente de verdad para los cálculos del sistema.</td></tr>
+<tr><td>descripcion</td><td>VARCHAR</td><td>255</td><td>Nullable</td><td>Descripción del impuesto.</td></tr>
+<tr><td>estado</td><td>ENUM</td><td>-</td><td>Not Null, Default &#x27;activo&#x27;</td><td>Estatus del impuesto. Valores: activo, inactivo.</td></tr>
+<tr><td>created_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha y hora de creación del registro.</td></tr>
+<tr><td>updated_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha y hora de última actualización del registro.</td></tr>
+<tr><td>deleted_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha de eliminación lógica (soft delete); NULL indica que el registro está activo.</td></tr></tbody></table>
+<h3>Tabla: tasa_cambio</h3>
+<p class='tdesc'>Tasas de cambio BCV (USD → VES) por fecha, usadas para expresar los montos en bolívares.</p>
+<table><thead><tr><th>CAMPO</th><th>TIPO DE DATO</th><th>LONGITUD</th><th>RESTRICCIONES</th><th>DESCRIPCIÓN</th></tr></thead><tbody><tr><td>id</td><td>BIGINT</td><td>-</td><td>PK, AI, Unsigned, Not Null</td><td>Identificador único del registro.</td></tr>
+<tr><td>moneda</td><td>VARCHAR</td><td>10</td><td>Not Null, Unique (con fecha_bcv)</td><td>Moneda de la tasa (ej. USD).</td></tr>
+<tr><td>valor</td><td>DECIMAL</td><td>12,4</td><td>Not Null</td><td>Valor de la tasa en bolívares por unidad de la moneda.</td></tr>
+<tr><td>fecha_bcv</td><td>DATE</td><td>-</td><td>Not Null, Unique (con moneda)</td><td>Fecha de publicación de la tasa por el BCV.</td></tr>
+<tr><td>fuente</td><td>VARCHAR</td><td>191</td><td>Not Null, Default &#x27;BCV&#x27;</td><td>Fuente de la tasa.</td></tr>
+<tr><td>created_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha y hora de creación del registro.</td></tr>
+<tr><td>updated_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha y hora de última actualización del registro.</td></tr></tbody></table>
+<h3>Tabla: user_recovery_question</h3>
+<p class='tdesc'>Preguntas de seguridad configuradas por cada usuario para la recuperación de contraseña.</p>
+<table><thead><tr><th>CAMPO</th><th>TIPO DE DATO</th><th>LONGITUD</th><th>RESTRICCIONES</th><th>DESCRIPCIÓN</th></tr></thead><tbody><tr><td>id</td><td>BIGINT</td><td>-</td><td>PK, AI, Unsigned, Not Null</td><td>Identificador único del registro.</td></tr>
+<tr><td>user_id</td><td>BIGINT</td><td>-</td><td>Unsigned, Not Null, Unique (con orden), FK → user</td><td>Usuario dueño de la pregunta.</td></tr>
+<tr><td>pregunta_id</td><td>TINYINT</td><td>-</td><td>Unsigned, Not Null, Unique (con user_id)</td><td>Identificador de la pregunta predefinida seleccionada.</td></tr>
+<tr><td>respuesta</td><td>VARCHAR</td><td>255</td><td>Not Null</td><td>Respuesta cifrada (hash) a la pregunta.</td></tr>
+<tr><td>orden</td><td>TINYINT</td><td>-</td><td>Unsigned, Not Null, Unique (con user_id)</td><td>Posición de la pregunta en el cuestionario del usuario.</td></tr>
+<tr><td>created_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha y hora de creación del registro.</td></tr>
+<tr><td>updated_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha y hora de última actualización del registro.</td></tr></tbody></table>
+<h3>Tabla: recovery_attempt</h3>
+<p class='tdesc'>Auditoría de intentos de recuperación de contraseña (IP, método y resultado), base del bloqueo escalado.</p>
+<table><thead><tr><th>CAMPO</th><th>TIPO DE DATO</th><th>LONGITUD</th><th>RESTRICCIONES</th><th>DESCRIPCIÓN</th></tr></thead><tbody><tr><td>id</td><td>BIGINT</td><td>-</td><td>PK, AI, Unsigned, Not Null</td><td>Identificador único del registro.</td></tr>
+<tr><td>user_id</td><td>BIGINT</td><td>-</td><td>Unsigned, Nullable, FK → user</td><td>Usuario objetivo del intento (si el correo coincide con una cuenta).</td></tr>
+<tr><td>email</td><td>VARCHAR</td><td>191</td><td>Not Null</td><td>Correo utilizado en el intento.</td></tr>
+<tr><td>ip</td><td>VARCHAR</td><td>45</td><td>Nullable</td><td>Dirección IP de origen.</td></tr>
+<tr><td>user_agent</td><td>VARCHAR</td><td>500</td><td>Nullable</td><td>Navegador/dispositivo de origen.</td></tr>
+<tr><td>tipo</td><td>ENUM</td><td>-</td><td>Not Null</td><td>Método de recuperación intentado. Valores: email, preguntas.</td></tr>
+<tr><td>resultado</td><td>ENUM</td><td>-</td><td>Not Null</td><td>Resultado del intento. Valores: exito, fallo, bloqueado.</td></tr>
+<tr><td>created_at</td><td>TIMESTAMP</td><td>-</td><td>Not Null, Default CURRENT_TIMESTAMP</td><td>Fecha y hora de creación del registro.</td></tr></tbody></table>
+<h2>10. TABLAS DEL FRAMEWORK (LARAVEL)</h2>
+<p class='sdesc'>Tablas internas creadas por el framework Laravel para su funcionamiento; no forman parte del dominio del negocio.</p>
+<h3>Tabla: migrations</h3>
+<p class='tdesc'>Control interno de Laravel: migraciones de esquema ya ejecutadas.</p>
+<table><thead><tr><th>CAMPO</th><th>TIPO DE DATO</th><th>LONGITUD</th><th>RESTRICCIONES</th><th>DESCRIPCIÓN</th></tr></thead><tbody><tr><td>id</td><td>INT</td><td>-</td><td>PK, AI, Unsigned, Not Null</td><td>Identificador único del registro.</td></tr>
+<tr><td>migration</td><td>VARCHAR</td><td>191</td><td>Not Null</td><td>Nombre del archivo de migración ejecutado.</td></tr>
+<tr><td>batch</td><td>INT</td><td>-</td><td>Not Null</td><td>Lote de ejecución de la migración.</td></tr></tbody></table>
+<h3>Tabla: failed_jobs</h3>
+<p class='tdesc'>Registro de trabajos en cola que fallaron durante su ejecución.</p>
+<table><thead><tr><th>CAMPO</th><th>TIPO DE DATO</th><th>LONGITUD</th><th>RESTRICCIONES</th><th>DESCRIPCIÓN</th></tr></thead><tbody><tr><td>id</td><td>BIGINT</td><td>-</td><td>PK, AI, Unsigned, Not Null</td><td>Identificador único del registro.</td></tr>
+<tr><td>uuid</td><td>VARCHAR</td><td>191</td><td>Not Null, Unique</td><td>Identificador único universal del trabajo fallido.</td></tr>
+<tr><td>connection</td><td>TEXT</td><td>-</td><td>Not Null</td><td>Conexión de cola utilizada.</td></tr>
+<tr><td>queue</td><td>TEXT</td><td>-</td><td>Not Null</td><td>Nombre de la cola.</td></tr>
+<tr><td>payload</td><td>LONGTEXT</td><td>-</td><td>Not Null</td><td>Contenido serializado del trabajo.</td></tr>
+<tr><td>exception</td><td>LONGTEXT</td><td>-</td><td>Not Null</td><td>Traza de la excepción que causó el fallo.</td></tr>
+<tr><td>failed_at</td><td>TIMESTAMP</td><td>-</td><td>Not Null, Default CURRENT_TIMESTAMP</td><td>Fecha y hora del fallo.</td></tr></tbody></table>
+<h3>Tabla: password_resets</h3>
+<p class='tdesc'>Tokens temporales para el restablecimiento de contraseña por correo.</p>
+<table><thead><tr><th>CAMPO</th><th>TIPO DE DATO</th><th>LONGITUD</th><th>RESTRICCIONES</th><th>DESCRIPCIÓN</th></tr></thead><tbody><tr><td>email</td><td>VARCHAR</td><td>191</td><td>PK, Not Null</td><td>Correo del usuario que solicitó el restablecimiento.</td></tr>
+<tr><td>token</td><td>VARCHAR</td><td>191</td><td>Not Null</td><td>Token temporal de restablecimiento.</td></tr>
+<tr><td>created_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha y hora de emisión del token.</td></tr></tbody></table>
+<h3>Tabla: personal_access_tokens</h3>
+<p class='tdesc'>Tokens de acceso personal (Laravel Sanctum) para autenticación de API.</p>
+<table><thead><tr><th>CAMPO</th><th>TIPO DE DATO</th><th>LONGITUD</th><th>RESTRICCIONES</th><th>DESCRIPCIÓN</th></tr></thead><tbody><tr><td>id</td><td>BIGINT</td><td>-</td><td>PK, AI, Unsigned, Not Null</td><td>Identificador único del registro.</td></tr>
+<tr><td>tokenable_type</td><td>VARCHAR</td><td>191</td><td>Not Null</td><td>Clase del modelo dueño del token.</td></tr>
+<tr><td>tokenable_id</td><td>BIGINT</td><td>-</td><td>Unsigned, Not Null</td><td>Identificador del modelo dueño del token.</td></tr>
+<tr><td>name</td><td>VARCHAR</td><td>191</td><td>Not Null</td><td>Nombre del token.</td></tr>
+<tr><td>token</td><td>VARCHAR</td><td>64</td><td>Not Null, Unique</td><td>Hash del token de acceso.</td></tr>
+<tr><td>abilities</td><td>TEXT</td><td>-</td><td>Nullable</td><td>Permisos (scopes) del token.</td></tr>
+<tr><td>last_used_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha del último uso del token.</td></tr>
+<tr><td>created_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha y hora de creación del registro.</td></tr>
+<tr><td>updated_at</td><td>TIMESTAMP</td><td>-</td><td>Nullable</td><td>Fecha y hora de última actualización del registro.</td></tr></tbody></table>
