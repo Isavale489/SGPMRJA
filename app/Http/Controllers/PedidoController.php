@@ -253,7 +253,10 @@ class PedidoController extends Controller
             return response()->json(['error' => 'No se puede eliminar un pedido con producción iniciada. Cancela primero sus órdenes de producción.'], 403);
         }
 
-        $pedido->delete();
+        // El servicio hace el soft delete y revierte la cotización de origen
+        // ('Convertida' → 'Aprobada') liberando su cotizacion_id para poder
+        // re-convertirla más adelante.
+        $this->pedidoService->eliminar($pedido);
 
         Log::warning('Pedido eliminado', [
             'pedido_id' => $id,

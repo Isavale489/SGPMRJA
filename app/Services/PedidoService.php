@@ -66,6 +66,34 @@ class PedidoService
     }
 
     /**
+     * Elimina (soft delete) un pedido y revierte el estado de su cotización de
+     * origen. Si la cotización estaba 'Convertida' vuelve a 'Aprobada' para poder
+     * re-convertirla; además se desliga el cotizacion_id del pedido borrado para
+     * liberar el índice único pedido_cotizacion_id_unique (las filas soft-deleted
+     * lo siguen ocupando; MySQL sí admite múltiples NULL).
+     */
+    public function eliminar(Pedido $pedido): void
+    {
+        DB::transaction(function () use ($pedido) {
+            if ($pedido->cotizacion_id) {
+                $cotizacion = Cotizacion::lockForUpdate()->find($pedido->cotizacion_id);
+                if ($cotizacion && $cotizacion->estado === 'Convertida') {
+                    $cotizacion->update(['estado' => 'Aprobada']);
+                }
+                // Liberar el slot del índice único antes del soft delete.
+                $pedido->update(['cotizacion_id' => null]);
+            }
+
+            $pedido->delete();
+        });
+
+        Log::info('Pedido eliminado con reversión de cotización', [
+            'pedido_id' => $pedido->id,
+            'user_id' => Auth::id(),
+        ]);
+    }
+
+    /**
      * Actualizar un pedido existente y sincronizar sus detalles.
      */
     public function actualizar(Pedido $pedido, array $data): void
