@@ -1,7 +1,7 @@
 # CLAUDE.md — Contexto de proyecto para Claude Code
 
 > Leído automáticamente por Claude Code al iniciar sesión.
-> Última actualización: 2026-07-07 (reversión cotización al eliminar pedido · commit `f3922f9`) · Rama activa: `enmanuel`
+> Última actualización: 2026-07-08 (QoL cotizaciones/dashboard + reversión cotización + dropdown banco · commit `6a4a5cc`) · Rama activa: `enmanuel`
 
 ---
 
@@ -28,9 +28,38 @@
 
 ---
 
-## Trabajo realizado en sesión 2026-07-07
+## Trabajo realizado en sesión 2026-07-07/08
 
-### Reversión de estado de Cotización al eliminar su Pedido
+### 1. Paquete QoL — Cotizaciones y Dashboard
+
+| Commit | Cambio |
+|---|---|
+| `8177e91` | **Logo/bordado opcional**: `logo_id` de bordados pasa de `required` a `nullable` en store/update de `CotizacionController`; el configurador ya no bloquea al aplicar sin logo (estado "Sin logo asignado" en vez de "Falta logo"). El servicio ya persistía nullable |
+| `5e56df3` | **Días de validez dinámicos**: el cálculo ya usaba `Cotizacion::diasVigencia()` (parámetro `cotizaciones.dias_vigencia`); el único hardcode restante era el mensaje "Nueva validez: 15 días" de `reactivar`, ahora interpolado |
+| `0c5d049` | **Widget Productos del dashboard**: contaba la tabla `producto` (solo variantes materializadas, 0 filas) → ahora cuenta `tipo_producto` (deleted_at IS NULL), que es lo que lista el módulo `/productos` ("Catálogo de Productos (Tipos)") |
+| `948f5c1` | **Fecha emisión/validez en hora local**: `new Date().toISOString()` devuelve UTC; en Venezuela (UTC−4) crear en la tarde/noche corría la emisión al día siguiente. Nuevo helper `cotFechaLocalISO()` en `cotizaciones/scripts/main.blade.php`, usado en default de emisión, `cotSeedValidez` y chips de validez rápida |
+
+### 2. Dropdown de Banco (wizard Pedido, paso Pago) — clipping por footer
+
+**Problema**: el menú de banco (realzado por AtlanticoSelect) abría hacia abajo
+y el footer opaco del modal + el `overflow-y:auto` del `wiz-wizard-body` tapaban
+las opciones (peor con una sola fila de pago).
+
+**Solución final** (commits `9f28dbd` → `6a4a5cc`, en `pedAgregarFila` de
+`pedidos/scripts/main.blade.php`): `.afs-wrap` con clase `dropup` + Dropdown de
+Bootstrap instanciado con `popperConfig` → `strategy:'fixed'` (el menú flota
+libre, escapa el clipping de ancestros) y modificador `flip` deshabilitado
+(siempre abre hacia arriba). **Gotchas aprendidos**:
+- `data-bs-display="static"` NO sirve: desactiva Popper y el menú vuelve al
+  flujo → lo recorta el overflow del contenedor.
+- Con `strategy:'fixed'` los anchos porcentuales (`w-100`, `min-width:100%` de
+  `.afs-menu`) se resuelven contra el **viewport** → menú a pantalla completa y
+  desfasado. Hay que **quitar la clase `w-100`** (es `!important`) y fijar el
+  ancho del toggle en px en cada `show.bs.dropdown` (+ `min-width:0`).
+
+Patrón reutilizable si otro módulo sufre el mismo clipping con AtlanticoSelect.
+
+### 3. Reversión de estado de Cotización al eliminar su Pedido
 
 **Problema**: al eliminar un pedido creado desde una cotización, esta quedaba
 atascada en estado `Convertida` y ya no se podía volver a convertir
