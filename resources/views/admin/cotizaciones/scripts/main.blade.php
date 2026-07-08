@@ -1643,7 +1643,7 @@
             }
 
             if (!logo) {
-                aplicarEstadoVisualUbicacion($row, 'pending', 'Falta logo', 'Selecciona un logo para completar esta ubicación.');
+                aplicarEstadoVisualUbicacion($row, 'complete', 'Sin logo', 'Ubicación lista (sin logo asignado).');
                 return;
             }
 
@@ -1667,7 +1667,7 @@
             }
 
             if (!logo) {
-                aplicarEstadoVisualUbicacion($row, 'pending', 'Falta logo', 'Selecciona el logo de esta ubicación personalizada.');
+                aplicarEstadoVisualUbicacion($row, 'complete', 'Sin logo', 'Ubicación personalizada lista (sin logo asignado).');
                 return;
             }
 
@@ -1752,7 +1752,6 @@
             }
 
             var bordados = [];
-            var erroresLogo = [];
 
             $('#ubicacionesCatalogoGrid .ubicacion-std-check:checked').each(function () {
                 var row = $(this).closest('.ubicacion-std-row');
@@ -1761,13 +1760,9 @@
                 var precio = parseFloat(row.find('.ubicacion-std-precio').val()) || 0;
                 var cantidad = Math.max(1, parseInt(row.find('.ubicacion-std-cantidad').val() || 1, 10));
                 var $logoInput = row.find('.ubicacion-std-logo');
+                // Logo opcional: si no se asignó, se envía sin logo.
                 var logoId = $logoInput.data('logo-id') || null;
                 var logoNombre = String($logoInput.val() || '').trim();
-
-                if (!logoId || !logoNombre) {
-                    erroresLogo.push('Asigna un logo para: ' + nombre);
-                    return;
-                }
 
                 bordados.push({
                     ubicacion_bordado_id: ubicacionId,
@@ -1786,13 +1781,9 @@
                 var precio = parseFloat($(this).find('.ubicacion-personalizada-precio').val()) || 0;
                 var cantidad = Math.max(1, parseInt($(this).find('.ubicacion-personalizada-cantidad').val() || 1, 10));
                 var $logoInput = $(this).find('.ubicacion-personalizada-logo');
+                // Logo opcional: la ubicación personalizada solo requiere nombre.
                 var logoId = $logoInput.data('logo-id') || null;
                 var logoNombre = String($logoInput.val() || '').trim();
-
-                if (!logoId || !logoNombre) {
-                    erroresLogo.push('Asigna un logo para ubicación personalizada: ' + nombre);
-                    return;
-                }
 
                 bordados.push({
                     ubicacion_bordado_id: null,
@@ -1804,20 +1795,6 @@
                     cantidad: cantidad
                 });
             });
-
-            if (erroresLogo.length) {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Logo requerido',
-                    text: erroresLogo[0],
-                    customClass: {
-                        confirmButton: 'btn btn-primary w-xs me-2',
-                    },
-                    buttonsStyling: false,
-                    showCloseButton: true
-                });
-                return;
-            }
 
             if (currentBordadoGroupKey) {
                 setGroupBordados(currentBordadoGroupKey, bordados);
