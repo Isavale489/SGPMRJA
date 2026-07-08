@@ -1,7 +1,7 @@
 # CLAUDE.md — Contexto de proyecto para Claude Code
 
 > Leído automáticamente por Claude Code al iniciar sesión.
-> Última actualización: 2026-06-03 (dump SQL limpio · commit `caa618b`) · Rama activa: `enmanuel`
+> Última actualización: 2026-07-07 (reversión cotización al eliminar pedido · commit `f3922f9`) · Rama activa: `enmanuel`
 
 ---
 
@@ -25,6 +25,34 @@
 | IDs de form | Campo oculto `#id-field` para el ID del registro (convención universal) |
 | DataTables | Siempre server-side; método `getX()` en el controller |
 | Modelos | Soft deletes en la mayoría; `estado` como ENUM en lugar de booleano |
+
+---
+
+## Trabajo realizado en sesión 2026-07-07
+
+### Reversión de estado de Cotización al eliminar su Pedido
+
+**Problema**: al eliminar un pedido creado desde una cotización, esta quedaba
+atascada en estado `Convertida` y ya no se podía volver a convertir
+(`Cotizacion::puedeConvertirse()` exige `Aprobada`). Segundo bloqueo: el índice
+único **plano** `pedido_cotizacion_id_unique` (migración `2026_02_19_200000…`)
+no ignora filas soft-deleted, así que la fila borrada seguía ocupando el
+`cotizacion_id` y re-convertir fallaba por *duplicate key*.
+
+**Solución** (commit `f3922f9`):
+
+| Archivo | Cambio |
+|---|---|
+| `app/Services/PedidoService.php` | Nuevo `eliminar(Pedido $pedido)`: en transacción revierte cotización `Convertida → Aprobada` (con `lockForUpdate()`), **desliga** `cotizacion_id` del pedido (`NULL` libera el índice único; MySQL admite múltiples NULL) y hace el soft delete |
+| `app/Http/Controllers/PedidoController.php` | `destroy()` conserva sus guards (Completado/Cancelado, `tieneProduccionActiva`) y delega en `pedidoService->eliminar()` en vez del `$pedido->delete()` directo |
+
+**Reglas / decisiones**:
+- Solo aplica a **eliminación**. `cancelar()` NO revierte: el pedido sigue
+  existiendo (estado `Cancelado`), la cotización permanece `Convertida` a propósito.
+- Sin migración (el desligue por `NULL` resuelve el índice único) ni cambios de
+  frontend (el botón "Convertir a pedido" reaparece solo, es data-driven).
+- La conversión sigue por `CotizacionService::convertirAPedido` (re-chequea
+  vigencia); `yaFueConvertida()` = `pedido()->exists()` ya excluye trashed.
 
 ---
 
