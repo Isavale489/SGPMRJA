@@ -331,13 +331,25 @@
     // de cada cotización es la que manda; esto solo pre-siembra el default.
     window.COT_DIAS_VIGENCIA = {{ (int) \App\Models\Cotizacion::diasVigencia() }};
 
+    // Fecha en formato YYYY-MM-DD según la hora LOCAL del navegador. No usar
+    // toISOString() (devuelve UTC): en zonas con offset negativo (ej. Venezuela
+    // UTC-4) al crear en la tarde/noche la fecha UTC ya es el día siguiente y la
+    // emisión/validez quedaba corrida un día.
+    window.cotFechaLocalISO = function (d) {
+        d = (d instanceof Date && !isNaN(d.getTime())) ? d : new Date();
+        var y = d.getFullYear();
+        var m = String(d.getMonth() + 1).padStart(2, '0');
+        var day = String(d.getDate()).padStart(2, '0');
+        return y + '-' + m + '-' + day;
+    };
+
     // Setea #fecha-validez-field a base + días y sincroniza los chips de
     // "Validez rápida" (activa el que coincida con los días indicados).
     window.cotSeedValidez = function (baseIso, dias) {
         var base = baseIso ? new Date(baseIso + 'T00:00:00') : new Date();
         if (isNaN(base.getTime())) base = new Date();
         base.setDate(base.getDate() + dias);
-        $('#fecha-validez-field').val(base.toISOString().split('T')[0]);
+        $('#fecha-validez-field').val(window.cotFechaLocalISO(base));
         $('.cot-date-chip').removeClass('is-active')
             .filter('[data-days="' + dias + '"]').addClass('is-active');
     };
@@ -2370,7 +2382,7 @@
             $('#cotizacionForm')[0].reset();
             $('#id-field').val('');
             $('#cliente-id-field').val('').prop('disabled', false).removeClass('campo-protegido');
-            $('#fecha-cotizacion-field').val(new Date().toISOString().slice(0, 10)).prop('readonly', false).removeClass('campo-protegido');
+            $('#fecha-cotizacion-field').val(window.cotFechaLocalISO()).prop('readonly', false).removeClass('campo-protegido');
             // Default de validez: emisión + vigencia configurada (ajustable con los chips)
             window.cotSeedValidez($('#fecha-cotizacion-field').val(), window.COT_DIAS_VIGENCIA);
             $('#prioridad-field').val('Normal');
@@ -3918,7 +3930,7 @@
                 var base = emisionVal ? new Date(emisionVal + 'T00:00:00') : new Date();
                 if (isNaN(base.getTime())) base = new Date();
                 base.setDate(base.getDate() + days);
-                var iso = base.toISOString().split('T')[0];
+                var iso = window.cotFechaLocalISO(base);
                 $('#fecha-validez-field').val(iso).trigger('change').trigger('blur');
                 $('.cot-date-chip').removeClass('is-active');
                 $(this).addClass('is-active');
