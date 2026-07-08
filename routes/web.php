@@ -63,6 +63,7 @@ Route::middleware(['auth', 'throttle:60,1', 'active.user', 'recovery.questions.r
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::patch('/profile/recovery-questions', [ProfileController::class, 'updateRecoveryQuestions'])
         ->name('profile.recovery-questions.update');
+    Route::post('/profile/avatar', [ProfileController::class, 'updateAvatar'])->name('profile.avatar.update');
 
     // ============================================
     // CRUD DE ESCRITURA (antes role:Administrador) — ahora gateado por 'permiso'

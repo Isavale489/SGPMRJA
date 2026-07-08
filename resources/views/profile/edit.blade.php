@@ -19,6 +19,36 @@
             object-fit: cover;
             background: #fff;
         }
+        .avatar-edit-wrap { position: relative; display: inline-block; }
+        .avatar-edit-btn {
+            position: absolute;
+            right: -4px; bottom: -4px;
+            width: 30px; height: 30px;
+            border-radius: 50%;
+            background: #fff;
+            color: #1e3c72;
+            border: 2px solid #1e3c72;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: .95rem;
+            padding: 0;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+            transition: transform .15s ease, background .2s ease, color .2s ease;
+        }
+        .avatar-edit-btn:hover,
+        .avatar-edit-btn:focus {
+            background: #1e3c72;
+            color: #fff;
+            border-color: #fff;
+            transform: scale(1.08);
+        }
+        .avatar-edit-btn:disabled { opacity: .75; cursor: wait; transform: none; }
+        .avatar-btn-spin { animation: avatar-spin .8s linear infinite; display: inline-block; }
+        @keyframes avatar-spin { to { transform: rotate(360deg); } }
+        /* La zona de previsualización (.avatar-preview-*) vive en custom.css:
+           se comparte con el modal de Usuarios. */
         .profile-hero .role-badge {
             background: rgba(255,255,255,0.18);
             color: #fff;
@@ -557,7 +587,14 @@
                 <div class="card profile-hero">
                     <div class="card-body">
                         <div class="d-flex flex-wrap align-items-center gap-3">
-                            <img src="{{ $avatarUrl }}" alt="Avatar" class="avatar-xl flex-shrink-0">
+                            <div class="avatar-edit-wrap flex-shrink-0">
+                                <img src="{{ $avatarUrl }}" alt="Avatar" class="avatar-xl" id="profile-avatar-img">
+                                <button type="button" class="avatar-edit-btn" id="avatar-edit-btn"
+                                    title="Cambiar foto de perfil" aria-label="Cambiar foto de perfil"
+                                    data-bs-toggle="modal" data-bs-target="#changeAvatarModal">
+                                    <i class="ri-camera-line"></i>
+                                </button>
+                            </div>
                             <div class="flex-grow-1" style="min-width: 200px;">
                                 <h4 class="mb-1 text-white d-flex align-items-center gap-2">
                                     {{ $user->name }}
@@ -625,6 +662,43 @@
                                 <i class="ri-key-2-line me-1"></i>Cambiar contraseña
                             </button>
                         </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {{-- Modal: Cambiar foto de perfil --}}
+        <div class="modal fade atlantico-modal" id="changeAvatarModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">
+                            <i class="ri-camera-line me-2"></i>Cambiar foto de perfil
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="avatar-preview-zone" id="avatar-preview-zone" role="button" tabindex="0"
+                             aria-label="Seleccionar imagen de perfil">
+                            <img src="{{ $avatarUrl }}" alt="Previsualización" class="avatar-preview-img" id="avatar-preview-img">
+                            <span class="avatar-preview-filename" id="avatar-preview-filename">
+                                <i class="ri-image-line flex-shrink-0"></i><span></span>
+                            </span>
+                            <p class="avatar-preview-hint">
+                                <strong>Haz clic para elegir una imagen</strong> o arrástrala aquí<br>
+                                JPG, PNG o GIF · máximo 2 MB
+                            </p>
+                        </div>
+                        <input type="file" id="avatar-file-input" class="d-none"
+                            accept="image/png,image/jpeg,image/jpg,image/gif">
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">
+                            <i class="ri-close-line me-1"></i>Cancelar
+                        </button>
+                        <button type="button" class="btn btn-profile-save is-info" id="avatar-save-btn" disabled>
+                            <i class="ri-save-line me-1"></i>Guardar foto
+                        </button>
                     </div>
                 </div>
             </div>
@@ -768,6 +842,129 @@
 
 @push('scripts')
 <script src="{{ URL::asset('assets/libs/sweetalert2/sweetalert2.min.js') }}"></script>
+
+<script>
+    // Cambio de foto de perfil: modal con previsualización antes de guardar
+    document.addEventListener('DOMContentLoaded', function () {
+        var modalEl   = document.getElementById('changeAvatarModal');
+        var zone      = document.getElementById('avatar-preview-zone');
+        var input     = document.getElementById('avatar-file-input');
+        var preview   = document.getElementById('avatar-preview-img');
+        var fileChip  = document.getElementById('avatar-preview-filename');
+        var saveBtn   = document.getElementById('avatar-save-btn');
+        if (!modalEl || !zone || !input || !preview || !saveBtn) return;
+
+        var currentUrl   = preview.src; // avatar vigente, para restaurar al cancelar
+        var selectedFile = null;
+
+        function validarArchivo(file) {
+            var tiposOk = ['image/jpeg', 'image/png', 'image/gif'];
+            if (tiposOk.indexOf(file.type) === -1) {
+                Swal.fire({ icon: 'error', title: 'Formato no permitido', text: 'La imagen debe ser JPG, PNG o GIF.' });
+                return false;
+            }
+            if (file.size > 2 * 1024 * 1024) {
+                Swal.fire({ icon: 'error', title: 'Imagen muy pesada', text: 'La imagen no debe superar los 2 MB.' });
+                return false;
+            }
+            return true;
+        }
+
+        function aplicarSeleccion(file) {
+            if (!validarArchivo(file)) return;
+            selectedFile = file;
+            var reader = new FileReader();
+            reader.onload = function (e) { preview.src = e.target.result; };
+            reader.readAsDataURL(file);
+            fileChip.querySelector('span').textContent = file.name;
+            fileChip.classList.add('has-file');
+            saveBtn.disabled = false;
+        }
+
+        function resetModal() {
+            selectedFile = null;
+            input.value = '';
+            preview.src = currentUrl;
+            fileChip.classList.remove('has-file');
+            saveBtn.disabled = true;
+        }
+
+        // Abrir selector: clic o Enter/Espacio en la zona de previsualización
+        zone.addEventListener('click', function () { input.click(); });
+        zone.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); input.click(); }
+        });
+
+        input.addEventListener('change', function () {
+            if (input.files && input.files[0]) aplicarSeleccion(input.files[0]);
+        });
+
+        // Arrastrar y soltar sobre la zona
+        ['dragover', 'dragenter'].forEach(function (ev) {
+            zone.addEventListener(ev, function (e) { e.preventDefault(); zone.classList.add('is-dragover'); });
+        });
+        ['dragleave', 'drop'].forEach(function (ev) {
+            zone.addEventListener(ev, function (e) { e.preventDefault(); zone.classList.remove('is-dragover'); });
+        });
+        zone.addEventListener('drop', function (e) {
+            if (e.dataTransfer.files && e.dataTransfer.files[0]) aplicarSeleccion(e.dataTransfer.files[0]);
+        });
+
+        // Al cerrar el modal sin guardar, restaurar estado
+        modalEl.addEventListener('hidden.bs.modal', resetModal);
+
+        // Guardar: subir por AJAX y reflejar en hero + topbar
+        saveBtn.addEventListener('click', function () {
+            if (!selectedFile) return;
+
+            var icon = saveBtn.querySelector('i');
+            saveBtn.disabled = true;
+            icon.className = 'ri-loader-4-line avatar-btn-spin me-1';
+
+            var fd = new FormData();
+            fd.append('avatar', selectedFile);
+            fd.append('_token', '{{ csrf_token() }}');
+
+            fetch('{{ route('profile.avatar.update') }}', {
+                method: 'POST',
+                body: fd,
+                headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
+            })
+            .then(function (res) {
+                return res.json().then(function (data) { return { ok: res.ok, data: data }; });
+            })
+            .then(function (r) {
+                if (!r.ok) {
+                    var msg = (r.data.errors && r.data.errors.avatar && r.data.errors.avatar[0])
+                        || r.data.message || 'No se pudo actualizar la foto de perfil.';
+                    throw new Error(msg);
+                }
+                currentUrl = r.data.avatar_url;
+                document.getElementById('profile-avatar-img').src = r.data.avatar_url;
+                document.querySelectorAll('.header-profile-user').forEach(function (img) {
+                    img.src = r.data.avatar_url;
+                });
+                bootstrap.Modal.getInstance(modalEl).hide();
+                Swal.fire({
+                    toast: true,
+                    position: 'top-end',
+                    icon: 'success',
+                    title: 'Foto de perfil actualizada',
+                    showConfirmButton: false,
+                    timer: 2500,
+                    timerProgressBar: true
+                });
+            })
+            .catch(function (err) {
+                Swal.fire({ icon: 'error', title: 'No se pudo actualizar', text: err.message });
+                saveBtn.disabled = false;
+            })
+            .finally(function () {
+                icon.className = 'ri-save-line me-1';
+            });
+        });
+    });
+</script>
 
 @if (session('status') === 'profile-updated')
 <script>

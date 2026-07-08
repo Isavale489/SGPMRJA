@@ -241,14 +241,24 @@
                             </div>
 
                             <div class="row mb-0">
-                                <div class="col-md-6">
-                                    <label for="field-avatar" class="form-label">Avatar</label>
-                                    <input type="file" id="field-avatar" name="avatar" class="form-control"
-                                        accept="image/*" />
-                                    <div id="avatar-preview" class="mt-2 text-center" style="display: none;">
-                                        <img src="" alt="Vista previa del avatar" class="img-fluid rounded-circle"
-                                            style="max-width: 100px;">
+                                <div class="col-12">
+                                    <label class="form-label">Avatar</label>
+                                    <div class="avatar-preview-zone avatar-preview-zone--sm" id="avatar-preview-zone"
+                                         role="button" tabindex="0" aria-label="Seleccionar avatar">
+                                        <img src="/assets/images/users/user-dummy-img.jpg" alt="Previsualización"
+                                            class="avatar-preview-img" id="avatar-preview-img">
+                                        <div class="avatar-preview-text">
+                                            <p class="avatar-preview-hint">
+                                                <strong>Haz clic para elegir una imagen</strong> o arrástrala aquí<br>
+                                                JPG, PNG o GIF · máximo 2 MB
+                                            </p>
+                                            <span class="avatar-preview-filename" id="avatar-preview-filename">
+                                                <i class="ri-image-line flex-shrink-0"></i><span></span>
+                                            </span>
+                                        </div>
                                     </div>
+                                    <input type="file" id="field-avatar" name="avatar" class="d-none"
+                                        accept="image/png,image/jpeg,image/jpg,image/gif" />
                                 </div>
                             </div>
                         </div>
@@ -639,7 +649,7 @@
                 $('#modalTitle').text('Agregar Usuario');
                 $('#userForm')[0].reset();
                 $('#userForm input[type="hidden"]').val('');
-                $('#avatar-preview').hide().find('img').attr('src', '');
+                resetAvatarZone();
                 $('#add-btn').show();
                 $('#edit-btn').hide();
                 $('#password-group').show();
@@ -660,27 +670,68 @@
                 $('#field-password_confirmation').prop('required', false);
             }
 
-            // Función para mostrar vista previa de imágenes
-            function readURL(input, previewId) {
-                if (input.files && input.files[0]) {
-                    var reader = new FileReader();
-                    reader.onload = function (e) {
-                        $(previewId).find('img').attr('src', e.target.result);
-                        $(previewId).show();
-                    }
-                    reader.readAsDataURL(input.files[0]);
+            // === Zona de avatar con previsualización (mismo patrón que /profile) ===
+            var AVATAR_DUMMY = '/assets/images/users/user-dummy-img.jpg';
+            var $avatarZone  = $('#avatar-preview-zone');
+            var $avatarInput = $('#field-avatar');
+            var $avatarImg   = $('#avatar-preview-img');
+            var $avatarChip  = $('#avatar-preview-filename');
+
+            function validarAvatar(file) {
+                var tiposOk = ['image/jpeg', 'image/png', 'image/gif'];
+                if (tiposOk.indexOf(file.type) === -1) {
+                    Swal.fire({ icon: 'error', title: 'Formato no permitido', text: 'La imagen debe ser JPG, PNG o GIF.' });
+                    return false;
                 }
+                if (file.size > 2 * 1024 * 1024) {
+                    Swal.fire({ icon: 'error', title: 'Imagen muy pesada', text: 'La imagen no debe superar los 2 MB.' });
+                    return false;
+                }
+                return true;
             }
 
-            // Vista previa de imágenes al seleccionarlas
-            $('#field-avatar').change(function () {
-                readURL(this, '#avatar-preview');
+            function aplicarAvatar(file) {
+                if (!validarAvatar(file)) {
+                    $avatarInput.val('');
+                    return;
+                }
+                // Asignar al input para que viaje con el FormData del submit
+                var dt = new DataTransfer();
+                dt.items.add(file);
+                $avatarInput[0].files = dt.files;
+
+                var reader = new FileReader();
+                reader.onload = function (e) { $avatarImg.attr('src', e.target.result); };
+                reader.readAsDataURL(file);
+                $avatarChip.addClass('has-file').find('span').text(file.name);
+            }
+
+            function resetAvatarZone(src) {
+                $avatarInput.val('');
+                $avatarImg.attr('src', src || AVATAR_DUMMY);
+                $avatarChip.removeClass('has-file');
+            }
+
+            $avatarZone.on('click', function () { $avatarInput.trigger('click'); });
+            $avatarZone.on('keydown', function (e) {
+                if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); $avatarInput.trigger('click'); }
+            });
+            $avatarInput.on('change', function () {
+                if (this.files && this.files[0]) aplicarAvatar(this.files[0]);
+            });
+            $avatarZone.on('dragover dragenter', function (e) {
+                e.preventDefault(); $avatarZone.addClass('is-dragover');
+            });
+            $avatarZone.on('dragleave drop', function (e) {
+                e.preventDefault(); $avatarZone.removeClass('is-dragover');
+            });
+            $avatarZone.on('drop', function (e) {
+                var files = e.originalEvent.dataTransfer && e.originalEvent.dataTransfer.files;
+                if (files && files[0]) aplicarAvatar(files[0]);
             });
 
             $("#create-btn").click(function () {
                 resetForm();
-                // Ocultar vista previa
-                $('#avatar-preview').hide();
             });
 
             $("#showModal").on('hidden.bs.modal', function () {
@@ -784,11 +835,8 @@
                     $("#field-email").val(data.email);
                     $("#field-role_id").val(data.role_id);
 
-                    // Mostrar las imágenes existentes si las hay
-                    if (data.avatar) {
-                        $("#avatar-preview img").attr('src', data.avatar);
-                        $("#avatar-preview").show();
-                    }
+                    // Mostrar el avatar existente en la zona de previsualización
+                    resetAvatarZone(data.avatar || null);
 
 
                     $("#showModal").modal("show");
