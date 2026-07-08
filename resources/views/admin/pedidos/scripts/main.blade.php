@@ -1395,12 +1395,23 @@ $(document).ready(function () {
             // enhanceOne para que funcione aun si el paso 3 está oculto (hidratar edit).
             if (window.AtlanticoSelect && meta.banco) {
                 window.AtlanticoSelect.enhanceOne($row.find('.ped-pay-banco')[0]);
-                // La card de pagos vive al pie del wizard: el menú del banco debe
-                // abrir SIEMPRE hacia arriba para no quedar tapado por el footer.
-                // dropup fija la dirección y data-bs-display="static" desactiva
-                // Popper (sin flip) → nunca se voltea hacia abajo.
-                $row.find('.ped-pay-row-fields > .afs-wrap').addClass('dropup')
-                    .find('.afs-toggle').attr('data-bs-display', 'static');
+                // La card de pagos vive al pie del wizard. El menú del banco debe
+                // (1) FLOTAR libre por encima del UI, sin recortarse por el overflow
+                // del card/lista/modal, y (2) abrir SIEMPRE hacia arriba.
+                //  · dropup            → placement 'top-start'
+                //  · Popper strategy fixed → escapa el clipping de los ancestros
+                //  · flip deshabilitado → nunca se voltea hacia abajo (footer)
+                var $wrap = $row.find('.ped-pay-row-fields > .afs-wrap').addClass('dropup');
+                var toggleEl = $wrap.find('.afs-toggle')[0];
+                if (toggleEl && window.bootstrap && window.bootstrap.Dropdown) {
+                    new window.bootstrap.Dropdown(toggleEl, {
+                        popperConfig: function (cfg) {
+                            cfg.strategy = 'fixed';
+                            cfg.modifiers = (cfg.modifiers || []).concat([{ name: 'flip', enabled: false }]);
+                            return cfg;
+                        }
+                    });
+                }
             }
             pedRecalcularPago();
             if (!data) $row.find('.ped-pay-monto').trigger('focus');
