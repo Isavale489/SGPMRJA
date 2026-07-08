@@ -1395,6 +1395,10 @@ $(document).ready(function () {
             // enhanceOne para que funcione aun si el paso 3 está oculto (hidratar edit).
             if (window.AtlanticoSelect && meta.banco) {
                 window.AtlanticoSelect.enhanceOne($row.find('.ped-pay-banco')[0]);
+                // La card de pagos vive al pie del wizard: abrir el menú del banco
+                // hacia arriba evita que el footer del modal lo tape. Popper hace
+                // flip a abajo solo si no hubiera espacio arriba.
+                $row.find('.ped-pay-row-fields > .afs-wrap').addClass('dropup');
             }
             pedRecalcularPago();
             if (!data) $row.find('.ped-pay-monto').trigger('focus');
