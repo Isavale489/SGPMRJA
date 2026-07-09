@@ -705,7 +705,10 @@ class OrdenProduccionController extends Controller
 
     /**
      * Registrar un avance de producción directamente sobre la orden.
-     * Acumula cantidad_producida / cantidad_defectuosa y actualiza el estado.
+     * Acumula cantidad_producida y actualiza el estado. Las unidades
+     * defectuosas NO se registran aquí: son competencia exclusiva de
+     * Control de Calidad (inspección post-producción con atribución
+     * por empleado y reproceso — ControlCalidadService).
      * El empleado responsable es el asignado a la orden (empleado_id).
      */
     public function registrarAvance(Request $request, $id)
@@ -731,17 +734,15 @@ class OrdenProduccionController extends Controller
         // Con equipo de 2+ el avance debe atribuirse a un empleado concreto; con
         // uno solo se atribuye automáticamente a él (sin fricción en la UI).
         $rules = [
-            'cantidad_producida'  => 'required|integer|min:1',
-            'cantidad_defectuosa' => 'nullable|integer|min:0|lte:cantidad_producida',
-            'empleado_id'         => 'nullable|integer',
+            'cantidad_producida' => 'required|integer|min:1',
+            'empleado_id'        => 'nullable|integer',
         ];
         if ($equipo->count() > 1) {
             $rules['empleado_id'] = 'required|integer';
         }
         $validated = $request->validate($rules);
 
-        $producida   = (int) $validated['cantidad_producida'];
-        $defectuosa  = (int) ($validated['cantidad_defectuosa'] ?? 0);
+        $producida = (int) $validated['cantidad_producida'];
 
         // Órdenes legacy sin filas de pivot: se trabaja solo con los totales de la
         // orden (sin desglose per-cápita), preservando el comportamiento previo.
@@ -771,18 +772,16 @@ class OrdenProduccionController extends Controller
             }
         }
 
-        DB::transaction(function () use ($orden, $miembro, $producida, $defectuosa) {
+        DB::transaction(function () use ($orden, $miembro, $producida) {
             // Acumula en el pivot del empleado (si lo hay) y en los totales de la
             // orden (mantiene el invariante orden == suma por empleado).
             if ($miembro) {
                 $orden->empleadosAsignados()->updateExistingPivot($miembro->id, [
-                    'cantidad_producida'  => (int) $miembro->pivot->cantidad_producida + $producida,
-                    'cantidad_defectuosa' => (int) $miembro->pivot->cantidad_defectuosa + $defectuosa,
+                    'cantidad_producida' => (int) $miembro->pivot->cantidad_producida + $producida,
                 ]);
             }
 
             $orden->cantidad_producida += $producida;
-            $orden->cantidad_defectuosa += $defectuosa;
 
             if ($orden->cantidad_producida >= $orden->cantidad_solicitada) {
                 $orden->estado = 'Finalizado';

@@ -32,22 +32,6 @@
         } else {
             marcarValido($(this));
         }
-        if ($('#am-cantidad-defectuosa').val() !== '') {
-            $('#am-cantidad-defectuosa').trigger('blur');
-        }
-    });
-
-    // Validación onblur: avanceModal — cantidad_defectuosa ≤ cantidad_producida
-    $(document).on('blur', '#am-cantidad-defectuosa', function () {
-        let defectuosa = parseFloat($(this).val());
-        let producida  = parseFloat($('#am-cantidad-producida').val());
-        if (isNaN(defectuosa) || defectuosa < 0) {
-            marcarInvalido($(this), 'La cantidad defectuosa no puede ser negativa.');
-        } else if (!isNaN(producida) && defectuosa > producida) {
-            marcarInvalido($(this), 'La cantidad defectuosa no puede superar la cantidad producida (' + producida + ').');
-        } else {
-            marcarValido($(this));
-        }
     });
 
     $(document).ready(function () {
@@ -2264,7 +2248,6 @@
         $('#am-btn-save').on('click', function () {
             const ordenId    = $('#am-orden-id').val();
             const producida  = $('#am-cantidad-producida').val();
-            const defectuosa = $('#am-cantidad-defectuosa').val();
             const restante   = parseInt($('#am-restante').val()) || 0;
 
             if (!producida || parseInt(producida) < 1) {
@@ -2282,18 +2265,12 @@
                 Swal.fire({ icon: 'warning', title: 'Cantidad excedida', text: `Solo quedan ${restante} piezas por producir para ${quien}.`, toast: true, position: 'top-end', showConfirmButton: false, timer: 4000 });
                 return;
             }
-            if (defectuosa && parseInt(defectuosa) > parseInt(producida)) {
-                Swal.fire({ icon: 'warning', title: 'Defectuosos inválidos', text: 'No pueden superar la cantidad producida.', toast: true, position: 'top-end', showConfirmButton: false, timer: 3500 });
-                return;
-            }
-
             $.ajax({
                 url: "{{ route('ordenes.avance', ':id') }}".replace(':id', ordenId),
                 method: 'POST',
                 data: {
                     _token: '{{ csrf_token() }}',
                     cantidad_producida: producida,
-                    cantidad_defectuosa: defectuosa || 0,
                     empleado_id: empleadoId
                 },
                 success: function () {
@@ -2315,7 +2292,6 @@
             $('#am-ctx-nombre').text('—');
             $('#am-ctx-restante').text('').removeClass('is-done');
             $('#am-cantidad-producida').val('');
-            $('#am-cantidad-defectuosa').val('0');
             $('#am-empleado').empty();
             $('#am-empleado-wrap').addClass('d-none');
             $('#am-empleado-solo').removeClass('d-none');

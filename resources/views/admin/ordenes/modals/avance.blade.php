@@ -36,17 +36,15 @@
                     <i class="ri-user-star-line me-1"></i>Registrado para el empleado asignado a esta orden.
                 </p>
 
+                {{-- Las unidades defectuosas se registran en Control de Calidad
+                     (inspección post-producción), no en el avance. --}}
                 <div class="row g-3 mb-0" id="am-cantidades">
-                    <div class="col-6">
+                    <div class="col-12">
                         <label class="form-label fw-medium">
                             Cantidad Producida <span class="text-danger">*</span>
                             <span id="am-restante-hint" class="text-muted fw-normal" style="font-size:11px;"></span>
                         </label>
                         <input type="number" id="am-cantidad-producida" class="form-control" min="1" placeholder="0">
-                    </div>
-                    <div class="col-6">
-                        <label class="form-label fw-medium">Cantidad Defectuosa</label>
-                        <input type="number" id="am-cantidad-defectuosa" class="form-control" min="0" value="0">
                     </div>
                 </div>
             </div>
