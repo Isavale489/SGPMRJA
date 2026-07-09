@@ -11,6 +11,7 @@ use App\Models\Insumo;
 use App\Models\Banco;
 use App\Models\Cliente;
 use App\Models\BordadoUbicacion;
+use App\Models\TasaCambio;
 use App\Services\CotizacionService;
 use App\Services\BordadoPricingService;
 use Illuminate\Validation\ValidationException;
@@ -290,6 +291,12 @@ class CotizacionController extends Controller
 
         $response = $cotizacion->toArray();
         $response['cliente'] = $clienteData;
+        // Fecha de la tasa BCV del snapshot (null si el valor no coincide con
+        // la tasa vigente a la fecha de la cotización, p. ej. tabla corregida).
+        $response['tasa_fecha_fmt'] = optional(TasaCambio::fechaParaValor(
+            $cotizacion->tasa_cambio_valor,
+            optional($cotizacion->fecha_cotizacion)->toDateString() ?? optional($cotizacion->created_at)->toDateString()
+        ))->format('d/m/Y');
         // Creador real (no se sobrescribe al editar) para el chip "Creada por"
         $response['creador'] = $cotizacion->user ? [
             'name' => $cotizacion->user->name,

@@ -119,6 +119,8 @@ $(document).ready(function () {
         $('#c-resumen-total').text(formatBs(total));
         $('#c-resumen-iva-pct').text(IVA_TASA);
         $('#c-resumen-tasa').text(tasa ? formatBs(tasa, 4) : '0,0000');
+        // Fecha de la tasa BCV aplicada (se limpia si la tasa es manual)
+        $('#c-resumen-tasa-fecha').text(window.__cTasaFechaFmt ? ' (' + window.__cTasaFechaFmt + ')' : '');
         $('#c-resumen-total-usd').text(formatBs(totalUsd));
         // Base exenta: solo se muestra si hay líneas exentas. Se alterna con
         // d-none (no con [hidden], que .d-flex !important anularía).
@@ -334,6 +336,7 @@ $(document).ready(function () {
             var $tasa = $('#c-tasa');
             if (r.encontrada) {
                 // Tasa traída por el sistema: campo de solo lectura.
+                window.__cTasaFechaFmt = r.fecha_bcv_fmt;
                 $tasa.val(parseFloat(r.valor).toFixed(4)).prop('readonly', true).addClass('bg-light');
                 if (r.exacta) {
                     $hint.html('<i class="ri-checkbox-circle-line text-success me-1"></i>Tasa BCV oficial del ' + r.fecha_bcv_fmt + '.');
@@ -342,6 +345,8 @@ $(document).ready(function () {
                 }
             } else {
                 // El sistema no tiene tasa para esa fecha: se habilita la carga manual.
+                // Una tasa manual no tiene fecha BCV que mostrar.
+                window.__cTasaFechaFmt = null;
                 $tasa.val('').prop('readonly', false).removeClass('bg-light');
                 $hint.html('<i class="ri-error-warning-line text-danger me-1"></i>' + (r.message || 'Sin tasa BCV para esa fecha. Ingresala manualmente.'));
             }
@@ -350,7 +355,11 @@ $(document).ready(function () {
     }
 
     $('#c-fecha').on('change', function () { aplicarTasaPorFecha($(this).val()); });
-    $('#c-tasa').on('input', recalcular);
+    $('#c-tasa').on('input', function () {
+        // Si el usuario teclea la tasa, deja de ser la oficial de una fecha.
+        if (!$(this).prop('readonly')) window.__cTasaFechaFmt = null;
+        recalcular();
+    });
 
     // N° de factura: solo dígitos y guiones (formato 0001-000456).
     $('#c-factura').on('input', function () {
@@ -827,6 +836,16 @@ $(document).ready(function () {
             if (data.tasa_cambio) {
                 $('#c-tasa').val(parseFloat(data.tasa_cambio).toFixed(4)).prop('readonly', true).addClass('bg-light');
                 $('#c-tasa-hint').html('<i class="ri-history-line me-1"></i>Tasa con la que se registró esta compra.');
+                // Recuperar la fecha BCV del snapshot: solo si el valor guardado
+                // coincide con la tasa oficial vigente a la fecha de la compra.
+                window.__cTasaFechaFmt = null;
+                $.get('/compras/tasa', { fecha: data.fecha_compra }, function (r) {
+                    if (r.encontrada && Math.abs(parseFloat(r.valor) - parseFloat(data.tasa_cambio)) < 0.0001) {
+                        window.__cTasaFechaFmt = r.fecha_bcv_fmt;
+                        $('#c-tasa-hint').html('<i class="ri-history-line me-1"></i>Tasa BCV oficial del ' + r.fecha_bcv_fmt + ' con la que se registró esta compra.');
+                        recalcular();
+                    }
+                });
             } else {
                 $('#c-tasa').val('').prop('readonly', false).removeClass('bg-light');
                 $('#c-tasa-hint').html('<i class="ri-error-warning-line text-danger me-1"></i>Esta compra no tiene tasa registrada. Ingresala.');

@@ -2977,6 +2977,7 @@
                     var tasaCotFmt = (typeof window.bsTasaFmt === 'function')
                         ? window.bsTasaFmt(data.tasa_cambio_valor) : null;
                     $('#view-resumen-tasa').text(tasaCotFmt || '—');
+                    $('#view-resumen-tasa-fecha').text(data.tasa_fecha_fmt ? ' (' + data.tasa_fecha_fmt + ')' : '');
 
                     // PDF de ESTA cotización
                     $('#view-pdf-btn').attr('href', '/cotizaciones/' + id + '/pdf');
@@ -6252,7 +6253,9 @@
                 $('#cot-resumen-subtotal').text(formatMoney(subtotal));
                 $('#cot-resumen-iva').text(formatMoney(iva));
                 $('#cot-resumen-total').text(formatMoney(total));
-                // Tasa BCV del día y equivalente en Bs
+                // Tasa BCV del día (con su fecha en el label) y equivalente en Bs
+                var cotResFecha = (typeof window.bcvFechaFmt === 'function') ? window.bcvFechaFmt() : '';
+                $('#cot-resumen-tasa-fecha').text(cotResFecha ? ' (' + cotResFecha + ')' : '');
                 if (window.tasaBcv && window.tasaBcv.valor) {
                     $('#cot-resumen-tasa').text('Bs ' + parseFloat(window.tasaBcv.valor).toLocaleString('es-VE', { minimumFractionDigits: 4, maximumFractionDigits: 4 }));
                 } else {

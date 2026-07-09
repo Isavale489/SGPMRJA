@@ -561,8 +561,11 @@
                     var tasaHeredada = parseFloat(data.tasa_cambio_valor) || 0;
                     if (tasaHeredada > 0 && typeof window.bsTasaFmt === 'function') {
                         $('#view-ped-tasa').text(window.bsTasaFmt(tasaHeredada));
+                        $('#view-ped-tasa-fecha').text(data.tasa_fecha_fmt ? ' (' + data.tasa_fecha_fmt + ')' : '');
                     } else if (window.tasaBcv && window.tasaBcv.valor) {
                         $('#view-ped-tasa').text(window.bsTasaFmt ? window.bsTasaFmt() : 'Bs ' + parseFloat(window.tasaBcv.valor).toLocaleString('es-VE', { minimumFractionDigits: 4, maximumFractionDigits: 4 }));
+                        var pedTasaFecha = (typeof window.bcvFechaFmt === 'function') ? window.bcvFechaFmt() : '';
+                        $('#view-ped-tasa-fecha').text(pedTasaFecha ? ' (' + pedTasaFecha + ')' : '');
                     }
 
                     // Grilla de productos — paso 2

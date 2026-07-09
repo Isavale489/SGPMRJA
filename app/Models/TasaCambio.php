@@ -45,6 +45,28 @@ class TasaCambio extends Model
     }
 
     /**
+     * Fecha BCV de la tasa vigente para una fecha de referencia, SOLO si su
+     * valor coincide con el snapshot guardado en el documento. Los snapshots
+     * (compra.tasa_cambio, cotizacion.tasa_cambio_valor) no persisten la fecha
+     * de la tasa, así que se re-deriva; la comparación evita mostrar una fecha
+     * que no corresponde al valor (p. ej. tasas ingresadas manualmente o
+     * corregidas después en la tabla). Devuelve null si no hay coincidencia.
+     */
+    public static function fechaParaValor($valorSnapshot, ?string $fechaRef = null, string $moneda = 'USD'): ?Carbon
+    {
+        $valorSnapshot = (float) $valorSnapshot;
+        if ($valorSnapshot <= 0) {
+            return null;
+        }
+
+        $tasa = self::tasaVigente($fechaRef ?? Carbon::today()->toDateString(), $moneda);
+
+        return ($tasa && abs((float) $tasa->valor - $valorSnapshot) < 0.0001)
+            ? $tasa->fecha_bcv
+            : null;
+    }
+
+    /**
      * Tasa vigente para una fecha dada: la del día exacto si existe; si no,
      * la última publicada ANTES de esa fecha. El BCV publica en días hábiles
      * y esa tasa rige hasta la siguiente publicación, así que una compra en

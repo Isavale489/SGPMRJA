@@ -247,6 +247,9 @@ class CompraController extends Controller
             'total'            => number_format($compra->total, 2, ',', '.'),
             // Bolívares (formato venezolano: miles con '.', decimales con ',')
             'tasa_cambio'      => $compra->tasa_cambio ? number_format($compra->tasa_cambio, 4, ',', '.') : null,
+            // Fecha de la tasa BCV aplicada (null si el valor no coincide con
+            // la tasa vigente a la fecha de la compra, p. ej. tasa manual).
+            'tasa_fecha_fmt'   => TasaCambio::fechaParaValor($compra->tasa_cambio, $compra->fecha_compra?->toDateString())?->format('d/m/Y'),
             'subtotal_bs'      => number_format($subtotalBs, 2, ',', '.'),
             'iva_bs'           => number_format($ivaBs, 2, ',', '.'),
             'total_bs'         => number_format($subtotalBs + $ivaBs, 2, ',', '.'),
@@ -456,7 +459,11 @@ class CompraController extends Controller
     {
         $compra->load(['proveedor.persona', 'detalles.insumo', 'registradoPor:id,name']);
 
-        $pdf = PDF::loadView('admin.compras.comprobante', compact('compra'))
+        // Fecha de la tasa BCV aplicada; null si el snapshot no coincide con la
+        // tasa vigente a la fecha de la compra (tasa manual) — no se muestra.
+        $tasaFecha = TasaCambio::fechaParaValor($compra->tasa_cambio, $compra->fecha_compra?->toDateString());
+
+        $pdf = PDF::loadView('admin.compras.comprobante', compact('compra', 'tasaFecha'))
             ->setPaper('a4', 'portrait');
 
         return $pdf->stream('compra_' . str_pad($compra->id, 5, '0', STR_PAD_LEFT) . '.pdf');

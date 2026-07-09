@@ -119,7 +119,7 @@
             <td>
                 <span class="label">N° de Factura:</span> {{ $compra->numero_factura ?: 'S/N' }}<br>
                 <span class="label">Fecha de Compra:</span> {{ $compra->fecha_compra?->format('d/m/Y') }}<br>
-                <span class="label">Tasa de cambio:</span> {{ $compra->tasa_cambio ? 'Bs ' . number_format($compra->tasa_cambio, 4, ',', '.') . ' / USD' : '—' }}<br>
+                <span class="label">Tasa de cambio BCV{{ $tasaFecha ? ' (' . $tasaFecha->format('d/m/Y') . ')' : '' }}:</span> {{ $compra->tasa_cambio ? 'Bs ' . number_format($compra->tasa_cambio, 4, ',', '.') . ' / USD' : '—' }}<br>
                 <span class="label">Estado:</span>
                 <span class="estado-{{ $compra->estado }}">{{ ucfirst($compra->estado) }}</span><br>
                 <span class="label">Registrado por:</span> {{ $compra->registradoPor?->name ?? 'Sistema' }}
@@ -201,7 +201,7 @@
                         <td class="t-value t-grand">Bs {{ number_format($totalBs, 2, ',', '.') }}</td>
                     </tr>
                     <tr>
-                        <td class="t-label" style="padding-top:5px;">Tasa aplicada:</td>
+                        <td class="t-label" style="padding-top:5px;">Tasa aplicada{{ $tasaFecha ? ' (' . $tasaFecha->format('d/m/Y') . ')' : '' }}:</td>
                         <td class="t-value" style="padding-top:5px; font-weight:normal;">{{ $compra->tasa_cambio ? 'Bs ' . number_format($compra->tasa_cambio, 4, ',', '.') : '—' }}</td>
                     </tr>
                     <tr>

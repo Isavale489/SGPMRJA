@@ -175,6 +175,14 @@
             return 'Bs ' + rate.toLocaleString('es-VE', { minimumFractionDigits: 4, maximumFractionDigits: 4 });
         };
 
+        // Helper: fecha de la tasa BCV vigente (window.tasaBcv) como "dd/mm/aaaa".
+        // Para acompañar TODO display de tasa con su fecha (estándar del sistema).
+        window.bcvFechaFmt = function () {
+            var f = (window.tasaBcv && window.tasaBcv.fecha) ? String(window.tasaBcv.fecha) : '';
+            var m = f.match(/^(\d{4})-(\d{2})-(\d{2})/);
+            return m ? (m[3] + '/' + m[2] + '/' + m[1]) : '';
+        };
+
         // Rellena toda píldora BCV declarativa: cualquier elemento con [data-bcv-pill]
         // que contenga spans [data-bcv-fecha] y [data-bcv-val]. Permite mostrar la tasa
         // del día en headers de modales sin repetir el script por módulo.

@@ -165,7 +165,7 @@ class PedidoController extends Controller
             'pagos.banco:id,nombre',
             'cliente.persona.telefonos',
             'cliente.persona.direcciones',
-            'cotizacion:id,tasa_cambio_valor'
+            'cotizacion:id,tasa_cambio_valor,fecha_cotizacion'
         ])->findOrFail($id);
 
         // Agregar datos normalizados del cliente al response
@@ -194,6 +194,12 @@ class PedidoController extends Controller
         })->all();
         // Tasa BCV heredada de la cotización de origen (para reflejar el bordado en Bs)
         $data['tasa_cambio_valor'] = optional($pedido->cotizacion)->tasa_cambio_valor;
+        // Fecha de esa tasa (null si el valor no coincide con la vigente a la
+        // fecha de la cotización de origen — no se muestra una fecha incorrecta)
+        $data['tasa_fecha_fmt'] = optional(\App\Models\TasaCambio::fechaParaValor(
+            optional($pedido->cotizacion)->tasa_cambio_valor,
+            optional(optional($pedido->cotizacion)->fecha_cotizacion)->toDateString()
+        ))->format('d/m/Y');
         $data['cliente_nombre_completo'] = $pedido->cliente_nombre_completo;
         $data['cliente_email_normalizado'] = $pedido->cliente_email_normalizado;
         $data['cliente_telefono_normalizado'] = $pedido->cliente_telefono_normalizado;

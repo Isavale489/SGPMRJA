@@ -397,7 +397,7 @@
 
                                             <div class="c-ticket-conv">
                                                 <div class="c-ticket-conv-row">
-                                                    <span><i class="ri-exchange-dollar-line me-1"></i>Tasa aplicada</span>
+                                                    <span><i class="ri-exchange-dollar-line me-1"></i>Tasa aplicada<span id="c-resumen-tasa-fecha"></span></span>
                                                     <span>Bs <span id="c-resumen-tasa">0,0000</span> / USD</span>
                                                 </div>
                                                 <div class="c-ticket-conv-row">

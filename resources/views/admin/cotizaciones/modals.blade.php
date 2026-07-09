@@ -175,7 +175,7 @@
                                 </div>
                                 <div class="cot-resumen-card-body">
                                     <div class="cot-resumen-row">
-                                        <span class="cot-resumen-row-label"><i class="ri-bank-line me-1" style="font-size:.9rem;opacity:.7"></i>Tasa BCV (USD/VES)</span>
+                                        <span class="cot-resumen-row-label"><i class="ri-bank-line me-1" style="font-size:.9rem;opacity:.7"></i>Tasa BCV<span id="view-resumen-tasa-fecha"></span></span>
                                         <span class="cot-resumen-row-value fs-13" id="view-resumen-tasa">—</span>
                                     </div>
                                     <div class="cot-resumen-divider"></div>
@@ -649,7 +649,7 @@
                                     <div class="cot-resumen-card-body">
                                         <div class="cot-resumen-row" style="opacity: 0.8; font-size: 0.75rem; margin-bottom: 6px;">
                                             <span class="cot-resumen-row-label">
-                                                <i class="ri-bank-line me-1"></i>Tasa BCV (USD/VES)
+                                                <i class="ri-bank-line me-1"></i>Tasa BCV<span id="cot-resumen-tasa-fecha"></span>
                                             </span>
                                             <span class="cot-resumen-row-value" id="cot-resumen-tasa">Bs 0,0000</span>
                                         </div>

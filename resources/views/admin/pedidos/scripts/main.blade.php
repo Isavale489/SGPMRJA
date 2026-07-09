@@ -1640,7 +1640,9 @@ $(document).ready(function () {
             $('#ped-res-abono-hero').text(pedFmtRes(abono));
             $('#ped-res-restante-hero').text(pedFmtRes(restante));
 
-            // Tasa BCV y equivalente en Bs
+            // Tasa BCV (con su fecha en el label) y equivalente en Bs
+            var pedResFecha = (typeof window.bcvFechaFmt === 'function') ? window.bcvFechaFmt() : '';
+            $('#ped-res-tasa-fecha').text(pedResFecha ? ' (' + pedResFecha + ')' : '');
             if (window.tasaBcv && window.tasaBcv.valor) {
                 $('#ped-res-tasa-hero').text('Bs ' + parseFloat(window.tasaBcv.valor)
                     .toLocaleString('es-VE', { minimumFractionDigits: 4, maximumFractionDigits: 4 }));
