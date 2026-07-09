@@ -297,10 +297,14 @@
 
             var tasa = parseFloat(tasaPedido) || 0;
 
-            // Agrupar por producto_id + color_id
+            // Agrupar por variante + color_id (las líneas dinámicas no tienen
+            // producto materializado: se identifican por tipo + sku/nombre)
             var groups = {}, groupOrder = [];
             productos.forEach(function (item) {
-                var key = (item.producto ? item.producto.id : 'x') + '_' + (item.color_id || 'nc');
+                var variante = item.producto
+                    ? 'p' + item.producto.id
+                    : 'd' + (item.tipo_producto_id || '') + '|' + (item.sku || item.producto_nombre || '');
+                var key = variante + '_' + (item.color_id || 'nc');
                 if (!groups[key]) {
                     groups[key] = { ref: item, items: [], precio_unitario: item.precio_unitario };
                     groupOrder.push(key);
@@ -372,9 +376,9 @@
                     bordadoBsExtra = ' · $' + recargo.toFixed(2) + (bsB ? ' · ' + bsB : '');
                 }
 
-                var prodNombre = prod.nombre_completo || prod.nombre ||
+                var prodNombre = g.ref.producto_nombre || prod.nombre_completo || prod.nombre ||
                     (prod.tipo_producto ? prod.tipo_producto.nombre : '') || 'Producto';
-                var prodCodigo = prod.codigo || '';
+                var prodCodigo = prod.codigo || g.ref.sku || '';
 
                 return '<tr class="cot-grouped-row">' +
                     '<td class="cot-col-num">' + (idx + 1) + '</td>' +
