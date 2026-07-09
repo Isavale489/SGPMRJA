@@ -420,5 +420,112 @@ $(document).ready(function () {
             });
         });
     });
+
+    // ══════════════════════════════════════════════════
+    // PANEL DE EXISTENCIAS — espejo del de /movimiento-insumo,
+    // con precio de entrada (costo de la última compra procesada).
+    // ══════════════════════════════════════════════════
+    function cexistBadgeEstado(status) {
+        if (status === 'bajo')  return '<span class="badge bg-danger">Bajo</span>';
+        if (status === 'medio') return '<span class="badge bg-warning text-dark">Medio</span>';
+        return '<span class="badge bg-success">Normal</span>';
+    }
+
+    var cexistTable = $('#cexistencias-table').DataTable({
+        processing: true,
+        serverSide: true,
+        autoWidth: false,
+        ajax: {
+            url: "{{ route('compras.existencias.data') }}",
+            data: function (d) {
+                d.filter_tipo   = $('#cexist-filter-tipo').val();
+                d.filter_estado = $('#cexist-filter-alerta').val();
+            }
+        },
+        columns: [
+            {
+                data: 'nombre', name: 'nombre', width: '28%',
+                render: function (data, type, row) {
+                    var pill = row.codigo
+                        ? '<span style="font-family:monospace;padding:.1rem .45rem;background:rgba(12,74,110,.10);color:#0c4a6e;border-radius:4px;font-size:.72rem;font-weight:600;margin-right:.4rem;">' + row.codigo + '</span>'
+                        : '';
+                    return pill + (data || '');
+                }
+            },
+            { data: 'tipo', name: 'tipo', width: '10%' },
+            {
+                data: 'stock_minimo', name: 'stock_minimo', width: '13%',
+                render: function (data) { return parseFloat(data).toFixed(2); }
+            },
+            {
+                data: 'stock_actual', name: 'stock_actual', width: '13%',
+                render: function (data, type, row) {
+                    return '<span class="stock-' + row.stock_status + '">' + parseFloat(data).toFixed(2) + '</span>';
+                }
+            },
+            {
+                data: 'stock_maximo', name: 'stock_maximo', width: '12%',
+                render: function (data) { return parseFloat(data).toFixed(2); }
+            },
+            {
+                data: 'costo_unitario', name: 'costo_unitario', width: '12%',
+                render: function (data) { return '$' + parseFloat(data).toFixed(2); }
+            },
+            {
+                data: 'stock_status', name: 'stock_status', width: '12%',
+                orderable: false, searchable: false,
+                render: function (data) { return cexistBadgeEstado(data); }
+            }
+        ],
+        order: [],
+        pageLength: 5,
+        dom: 'rtip',
+        language: lenguajeData,
+        responsive: true
+    });
+    window.cexistTable = cexistTable;
+
+    // Refrescar existencias cuando una compra afecta stock (procesar/anular)
+    // sin tocar los handlers existentes: se cuelga del mismo aviso que ya
+    // emite ProyeccionInsumos hacia otras pestañas.
+    if (window.ProyeccionInsumos && typeof ProyeccionInsumos.notifyStockChange === 'function') {
+        var cexistNotifyOriginal = ProyeccionInsumos.notifyStockChange.bind(ProyeccionInsumos);
+        ProyeccionInsumos.notifyStockChange = function (motivo) {
+            cexistTable.ajax.reload(null, false);
+            return cexistNotifyOriginal(motivo);
+        };
+    }
+
+    // ── Búsqueda + filtros unificados (estándar navy-filter) ──
+    function cexistUpdateBadge() {
+        let count = 0;
+        $('#cexist-advanced-filters .navy-filter-select').each(function () {
+            if ($(this).val() && $(this).val() !== '') count++;
+        });
+        $('#cexist-active-filter-count').text(count).toggleClass('d-none', count === 0);
+    }
+
+    $('#cexist-filters-collapse')
+        .on('show.bs.collapse', function () {
+            $('#cexist-advanced-filters .navy-filter-header').removeClass('is-collapsed');
+        })
+        .on('hidden.bs.collapse', function () {
+            $('#cexist-advanced-filters .navy-filter-header').addClass('is-collapsed');
+        });
+
+    $('#cexist-search-input').on('input', debounce(function () {
+        cexistTable.search(this.value).draw();
+    }, 300));
+
+    $('#cexist-advanced-filters .navy-filter-select').on('change', function () {
+        cexistTable.ajax.reload();
+        cexistUpdateBadge();
+    });
+
+    $('#cexist-btn-clear-filters').on('click', function () {
+        $('#cexist-advanced-filters .navy-filter-select').val('');
+        cexistTable.ajax.reload();
+        cexistUpdateBadge();
+    });
 });
 </script>

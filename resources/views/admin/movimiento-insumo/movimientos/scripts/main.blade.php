@@ -110,7 +110,7 @@
             },
             columns: [
                 {
-                    data: 'nombre', name: 'nombre', width: '32%',
+                    data: 'nombre', name: 'nombre', width: '28%',
                     render: function (data, type, row) {
                         var pill = row.codigo
                             ? '<span style="font-family:monospace;padding:.1rem .45rem;background:rgba(12,74,110,.10);color:#0c4a6e;border-radius:4px;font-size:.72rem;font-weight:600;margin-right:.4rem;">' + row.codigo + '</span>'
@@ -118,23 +118,28 @@
                         return pill + (data || '');
                     }
                 },
-                { data: 'tipo', name: 'tipo', width: '12%' },
+                { data: 'tipo', name: 'tipo', width: '10%' },
                 {
-                    data: 'stock_minimo', name: 'stock_minimo', width: '14%',
+                    data: 'stock_minimo', name: 'stock_minimo', width: '13%',
                     render: function (data) { return parseFloat(data).toFixed(2); }
                 },
                 {
-                    data: 'stock_actual', name: 'stock_actual', width: '14%',
+                    data: 'stock_actual', name: 'stock_actual', width: '13%',
                     render: function (data, type, row) {
                         return '<span class="stock-' + row.stock_status + '">' + parseFloat(data).toFixed(2) + '</span>';
                     }
                 },
                 {
-                    data: 'stock_maximo', name: 'stock_maximo', width: '14%',
+                    data: 'stock_maximo', name: 'stock_maximo', width: '12%',
                     render: function (data) { return parseFloat(data).toFixed(2); }
                 },
                 {
-                    data: 'stock_status', name: 'stock_status', width: '14%',
+                    // Precio de entrada: costo unitario de la última compra procesada
+                    data: 'costo_unitario', name: 'costo_unitario', width: '12%',
+                    render: function (data) { return '$' + parseFloat(data).toFixed(2); }
+                },
+                {
+                    data: 'stock_status', name: 'stock_status', width: '12%',
                     orderable: false, searchable: false,
                     render: function (data) { return badgeEstadoStock(data); }
                 }

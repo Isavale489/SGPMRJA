@@ -238,6 +238,7 @@
                                         <th>Existencia Mín.</th>
                                         <th>Existencia Actual</th>
                                         <th>Existencia Máx.</th>
+                                        <th>Precio Entrada ($)</th>
                                         <th>Estado</th>
                                     </tr>
                                 </thead>

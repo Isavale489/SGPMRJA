@@ -136,6 +136,92 @@
                 </div>
             </div>
         </div>
+
+        {{-- ============================================================
+             EXISTENCIAS DE INSUMOS — consulta de stock sin salir de Compras
+             (espejo del panel de /movimiento-insumo, mismo data-source)
+             Incluye el precio de entrada (costo de la última compra procesada).
+             ============================================================ --}}
+        <div class="row">
+            <div class="col-lg-12">
+                <div class="card card-transactional">
+                    <div class="card-header">
+                        <h5 class="card-title mb-1">
+                            <i class="ri-stack-line align-bottom me-1"></i>Existencias de Insumos
+                        </h5>
+                        <small class="text-muted">Stock mínimo, actual y máximo de cada insumo, con su precio de entrada. Se actualiza al procesar una compra.</small>
+                    </div>
+                    <div class="card-body">
+                        {{-- Búsqueda + filtros unificados — Patrón Maestro S-07 --}}
+                        <div class="advanced-filters-wrapper navy-theme" id="cexist-advanced-filters">
+                            <div class="navy-filter-header is-collapsed">
+                                <div class="navy-header-search">
+                                    <i class="ri-search-line"></i>
+                                    <input type="text" class="navy-search-input" id="cexist-search-input"
+                                        placeholder="Buscar insumo..." autocomplete="off">
+                                </div>
+                                <div class="navy-header-divider"></div>
+                                <button class="navy-filter-btn collapsed" type="button"
+                                    data-bs-toggle="collapse" data-bs-target="#cexist-filters-collapse"
+                                    aria-expanded="false" aria-controls="cexist-filters-collapse">
+                                    <i class="ri-filter-3-line"></i>
+                                    <span>Filtros</span>
+                                    <span class="navy-filter-badge d-none" id="cexist-active-filter-count"></span>
+                                    <i class="ri-arrow-down-s-line navy-filter-chevron"></i>
+                                </button>
+                            </div>
+                            <div class="collapse" id="cexist-filters-collapse">
+                                <div class="navy-filter-body">
+                                    <div class="row g-3">
+                                        <div class="col-12 col-md-4">
+                                            <label class="navy-filter-label" for="cexist-filter-tipo">
+                                                <i class="ri-price-tag-3-line"></i> Tipo de Insumo
+                                            </label>
+                                            <select class="form-select navy-filter-select" id="cexist-filter-tipo">
+                                                <option value="">Todos</option>
+                                                @foreach ($tiposInsumo as $tipoIns)
+                                                    <option value="{{ $tipoIns->nombre }}">{{ $tipoIns->nombre }}</option>
+                                                @endforeach
+                                            </select>
+                                        </div>
+                                        <div class="col-12 col-md-4">
+                                            <label class="navy-filter-label" for="cexist-filter-alerta">
+                                                <i class="ri-alarm-warning-line"></i> Disponibilidad
+                                            </label>
+                                            <select class="form-select navy-filter-select" id="cexist-filter-alerta">
+                                                <option value="">Todas</option>
+                                                <option value="alerta">Solo en alerta (stock bajo)</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="d-flex justify-content-end mt-2">
+                                        <button type="button" class="btn btn-link" id="cexist-btn-clear-filters">Limpiar filtros</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {{-- FIN FILTROS --}}
+
+                        <div class="table-responsive">
+                            <table id="cexistencias-table" class="table table-bordered table-striped table-sm align-middle dt-transactional table-operativa">
+                                <thead>
+                                    <tr>
+                                        <th>Insumo</th>
+                                        <th>Tipo</th>
+                                        <th>Existencia Mín.</th>
+                                        <th>Existencia Actual</th>
+                                        <th>Existencia Máx.</th>
+                                        <th>Precio Entrada ($)</th>
+                                        <th>Estado</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     @include('admin.compras.modals.create')

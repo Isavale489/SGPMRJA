@@ -327,7 +327,7 @@ return [
             'pdf'       => 'Exportar PDF',
         ],
         'rutas' => [
-            'compras.index|compras.data|compras.show|compras.detalle|compras.tasa' => 'ver',
+            'compras.index|compras.data|compras.show|compras.detalle|compras.tasa|compras.existencias.data' => 'ver',
             'compras.store|compras.update|compras.editar-datos|compras.destroy'    => 'gestionar',
             'compras.procesar' => 'procesar',
             'compras.anular'   => 'anular',
