@@ -196,6 +196,7 @@ Route::middleware(['auth', 'throttle:60,1', 'active.user', 'recovery.questions.r
 
         // Logos
         Route::get('logos-data', [LogoController::class, 'getLogos'])->name('logos.data');
+        Route::post('logos', [LogoController::class, 'store'])->name('logos.store');
 
         // Colores
         Route::get('colores-data', [ColorController::class, 'getColores'])->name('colores.data');

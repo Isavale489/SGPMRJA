@@ -951,6 +951,66 @@
         }
 
         // ============================================================
+        // --- Alta rápida de logo (atajo del catálogo) -----------------------
+        // Crea el logo por AJAX, lo suma al catálogo en memoria y lo deja
+        // seleccionado en la ubicación que se estaba configurando.
+        function logoQuickReset() {
+            $('#logoQuickName, #logoQuickFile').val('').removeClass('is-invalid');
+            $('#logoQuickCreateForm').collapse('hide');
+        }
+
+        $(document).on('click', '#logoQuickCreateToggle', function () {
+            $('#logoQuickCreateForm').collapse('toggle');
+            setTimeout(function () { $('#logoQuickName').trigger('focus'); }, 350);
+        });
+
+        $(document).on('click', '#logoQuickCancel', logoQuickReset);
+
+        $('#logoSearchModal').on('hidden.bs.modal', logoQuickReset);
+
+        $(document).on('click', '#logoQuickSave', function () {
+            var nombre  = $('#logoQuickName').val().trim();
+            var archivo = $('#logoQuickFile').val().trim();
+
+            if (!nombre) {
+                $('#logoQuickName').addClass('is-invalid').trigger('focus');
+                return;
+            }
+            $('#logoQuickName').removeClass('is-invalid');
+
+            var $btn = $(this).prop('disabled', true);
+
+            $.ajax({
+                url: '/logos',
+                method: 'POST',
+                data: { name: nombre, original_filename: archivo || null, _token: '{{ csrf_token() }}' },
+                success: function (r) {
+                    // Sumar al catálogo en memoria (ordenado por nombre) y re-renderizar
+                    logos.push(r.logo);
+                    logos.sort(function (a, b) { return a.name.localeCompare(b.name, 'es'); });
+                    $('#buscarLogoModal').val('');
+                    renderizarLogosModal('');
+                    logoQuickReset();
+
+                    Swal.fire({
+                        toast: true, position: 'top-end', icon: 'success',
+                        title: 'Logo "' + r.logo.name + '" registrado',
+                        showConfirmButton: false, timer: 2000, timerProgressBar: true
+                    });
+
+                    // Atajo completo: queda seleccionado en la ubicación activa
+                    seleccionarLogo(r.logo.id, r.logo.name);
+                },
+                error: function (xhr) {
+                    var msg = xhr.responseJSON?.message || 'No se pudo registrar el logo.';
+                    if (xhr.responseJSON?.errors?.name) $('#logoQuickName').addClass('is-invalid');
+                    if (xhr.responseJSON?.errors?.original_filename) $('#logoQuickFile').addClass('is-invalid');
+                    Swal.fire({ icon: 'error', title: 'No se pudo registrar', text: msg });
+                },
+                complete: function () { $btn.prop('disabled', false); }
+            });
+        });
+
         // === FIN LÓGICA MODAL DE LOGOS ===
         // ============================================================
 

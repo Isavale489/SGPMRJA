@@ -254,10 +254,12 @@ return [
     'logos' => [
         'nombre'   => 'Logos',
         'acciones' => [
-            'ver' => 'Ver listado de logos',
+            'ver'   => 'Ver listado de logos',
+            'crear' => 'Crear logos (atajo del selector de bordados)',
         ],
         'rutas' => [
-            'logos.data' => 'ver',
+            'logos.data'  => 'ver',
+            'logos.store' => 'crear',
         ],
     ],
 

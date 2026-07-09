@@ -55,10 +55,13 @@
                 </style>
 
                 <div class="card border-0 shadow-sm mb-3">
-                    <div class="card-header border-0 bg-soft-success">
-                        <h6 class="mb-0 text-atlantico-cyan">
+                    <div class="card-header border-0 bg-soft-primary d-flex align-items-center">
+                        <h6 class="mb-0 text-atlantico-dark">
                             <i class="ri-filter-3-line me-2"></i>Búsqueda de logo
                         </h6>
+                        <button type="button" class="btn btn-sm btn-atlantico-brand ms-auto" id="logoQuickCreateToggle">
+                            <i class="ri-add-line me-1"></i>Nuevo logo
+                        </button>
                     </div>
                     <div class="card-body">
                         <div class="input-group">
@@ -72,6 +75,34 @@
                             <i class="ri-information-line me-1"></i>Puede hacer doble clic en una fila para seleccionar
                             el logo
                         </small>
+
+                        {{-- Alta rápida: registra el logo y lo deja seleccionado en la ubicación --}}
+                        <div class="collapse mt-3" id="logoQuickCreateForm">
+                            <div class="border rounded-3 p-3 bg-light-subtle">
+                                <div class="row g-2">
+                                    <div class="col-md-6">
+                                        <label class="form-label small fw-semibold mb-1" for="logoQuickName">
+                                            Nombre del logo <span class="text-danger">*</span>
+                                        </label>
+                                        <input type="text" class="form-control form-control-sm" id="logoQuickName"
+                                            maxlength="120" placeholder="Ej. Ferretería La Torre">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label small fw-semibold mb-1" for="logoQuickFile">
+                                            Archivo del ponchado <span class="text-muted fw-normal">(opcional)</span>
+                                        </label>
+                                        <input type="text" class="form-control form-control-sm" id="logoQuickFile"
+                                            maxlength="150" placeholder="Se asume «Nombre.emb» si se deja vacío">
+                                    </div>
+                                </div>
+                                <div class="d-flex justify-content-end gap-2 mt-2">
+                                    <button type="button" class="btn btn-sm btn-light" id="logoQuickCancel">Cancelar</button>
+                                    <button type="button" class="btn btn-sm btn-atlantico-brand" id="logoQuickSave">
+                                        <i class="ri-save-line me-1"></i>Guardar y seleccionar
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
