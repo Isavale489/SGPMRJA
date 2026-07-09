@@ -560,25 +560,18 @@
                     <div class="modal-form-section">
                         <div class="modal-form-section-title"><i class="ri-fingerprint-line"></i>Identificación</div>
                         <div class="row mb-0">
-                            <div class="col-md-6 cpr-tipo-juridico">
-                                <x-forms.input name="rif_number" label="RIF" id="cpr-rif-number-field"
-                                    placeholder="Ej: 123456789" maxlength="9" required prependRaw="true">
-                                    <x-slot:prepend>
-                                        <select class="form-select" id="cpr-rif-prefix-field" style="max-width: 80px;">
-                                            <option value="J-">J-</option>
-                                            <option value="G-">G-</option>
-                                        </select>
-                                    </x-slot:prepend>
-                                </x-forms.input>
-                            </div>
-                            <div class="col-md-6 cpr-tipo-natural" style="display: none;">
-                                <x-forms.input name="documento_identidad_number" label="Documento de Identidad"
-                                    id="cpr-documento-identidad-field" maxlength="8" placeholder="Ej: 12345678" required
+                            {{-- Documento unificado (igual al maestro de Proveedores): el prefijo
+                                 V/E/J/G determina el tipo. V/E → Natural, J/G → Jurídico. --}}
+                            <div class="col-md-6">
+                                <x-forms.input name="documento_number" label="Documento (Cédula o RIF)"
+                                    id="cpr-doc-number-field" maxlength="9" placeholder="Nro. de documento" required
                                     prependRaw="true">
                                     <x-slot:prepend>
-                                        <select class="form-select" id="cpr-tipo-documento-field" style="max-width: 80px;">
+                                        <select class="form-select" id="cpr-doc-prefix-field" style="max-width: 80px;">
                                             <option value="V-">V-</option>
                                             <option value="E-">E-</option>
+                                            <option value="J-">J-</option>
+                                            <option value="G-">G-</option>
                                         </select>
                                     </x-slot:prepend>
                                 </x-forms.input>
@@ -587,7 +580,9 @@
                                 <x-forms.select name="tipo_proveedor" label="Tipo de Proveedor" required
                                     id="cpr-tipo-proveedor-field"
                                     :options="['juridico' => 'Jurídico (Empresa)', 'natural' => 'Natural (Persona)']"
-                                    placeholder="" />
+                                    placeholder="" class="js-readonly" disabled
+                                    title="Se determina por el prefijo del documento"
+                                    hint="Se define por el prefijo del documento (V/E → Natural, J/G → Jurídico)." />
                             </div>
                         </div>
                     </div>

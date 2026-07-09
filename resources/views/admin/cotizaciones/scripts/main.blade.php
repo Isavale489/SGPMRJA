@@ -3592,52 +3592,134 @@
         });
 
         // === Lógica dinámica: Natural vs Jurídico/Gubernamental (modal cliente cotización) ===
+        // El TIPO se deriva del prefijo del documento (regla del maestro de Clientes):
+        // V/E → natural, J → jurídico, G → gubernamental. El select queda read-only.
+        function cotCliTipoDesdePrefijo(prefix) {
+            if (prefix === 'J-') return 'juridico';
+            if (prefix === 'G-') return 'gubernamental';
+            return 'natural'; // V- y E-
+        }
+
+        function cotCliDocMaxLength() {
+            var prefix = $('#documento-prefix-field-cliente').val();
+            return (prefix === 'J-' || prefix === 'G-') ? 9 : 8;
+        }
+
         function toggleClienteFieldsCotizacion() {
-            var tipo = $('#tipo_cliente-field-cliente').val();
-            var $prefixSelect = $('#documento-prefix-field-cliente');
+            var prefix = $('#documento-prefix-field-cliente').val() || 'V-';
+            var tipo = cotCliTipoDesdePrefijo(prefix);
             var $docInput = $('#documento-number-field-cliente');
 
-            if (tipo === 'natural' || tipo === '') {
+            // Reflejar el tipo en el select read-only (trigger para AtlanticoSelect)
+            $('#tipo_cliente-field-cliente').val(tipo).trigger('change');
+
+            if (tipo === 'natural') {
                 $('#campos-persona-natural-cliente').removeClass('d-none');
                 $('#nombre-field-cliente').prop('required', true).prop('disabled', false);
                 $('#apellido-field-cliente').prop('required', true).prop('disabled', false);
 
                 $('#campos-razon-social-cliente').addClass('d-none');
                 $('#razon-social-field-cliente').prop('required', false).prop('disabled', true).val('');
-
-                $prefixSelect.html('<option value="V-">V-</option><option value="E-">E-</option>');
-                $prefixSelect.prop('disabled', false);
-                $docInput.attr('maxlength', '8');
-                if ($docInput.val().length > 8) $docInput.val($docInput.val().slice(0, 8));
-
-            } else if (tipo === 'juridico') {
+            } else {
                 $('#campos-persona-natural-cliente').addClass('d-none');
                 $('#nombre-field-cliente').prop('required', false).prop('disabled', true).val('');
                 $('#apellido-field-cliente').prop('required', false).prop('disabled', true).val('');
 
                 $('#campos-razon-social-cliente').removeClass('d-none');
                 $('#razon-social-field-cliente').prop('required', true).prop('disabled', false);
-
-                $prefixSelect.html('<option value="J-">J-</option>');
-                $prefixSelect.prop('disabled', true);
-                $docInput.attr('maxlength', '9');
-                if ($docInput.val().length > 9) $docInput.val($docInput.val().slice(0, 9));
-
-            } else if (tipo === 'gubernamental') {
-                $('#campos-persona-natural-cliente').addClass('d-none');
-                $('#nombre-field-cliente').prop('required', false).prop('disabled', true).val('');
-                $('#apellido-field-cliente').prop('required', false).prop('disabled', true).val('');
-
-                $('#campos-razon-social-cliente').removeClass('d-none');
-                $('#razon-social-field-cliente').prop('required', true).prop('disabled', false);
-
-                $prefixSelect.html('<option value="G-">G-</option>');
-                $prefixSelect.prop('disabled', true);
-                $docInput.attr('maxlength', '9');
-                if ($docInput.val().length > 9) $docInput.val($docInput.val().slice(0, 9));
             }
+
+            var maxLen = cotCliDocMaxLength();
+            $docInput.attr('maxlength', String(maxLen));
+            if ($docInput.val().length > maxLen) $docInput.val($docInput.val().slice(0, maxLen));
         }
-        $(document).on('change', '#tipo_cliente-field-cliente', toggleClienteFieldsCotizacion);
+        $(document).on('change', '#documento-prefix-field-cliente', toggleClienteFieldsCotizacion);
+
+        // Sanitización en tiempo real (igual al maestro)
+        $(document).on('input', '#nombre-field-cliente, #apellido-field-cliente', function () {
+            this.value = this.value.replace(/[^a-zA-Z\u00e1\u00e9\u00ed\u00f3\u00fa\u00c1\u00c9\u00cd\u00d3\u00da\u00f1\u00d1\s]/g, '');
+        });
+        $(document).on('input', '#documento-number-field-cliente', function () {
+            this.value = this.value.replace(/[^0-9]/g, '').slice(0, cotCliDocMaxLength());
+        });
+
+        // Chequeo de duplicado + persona registrada en otro rol (al salir del documento)
+        $(document).on('blur', '#documento-number-field-cliente', function () {
+            var $input = $(this);
+            var value = $input.val().trim();
+            var $error = $('#documento-error-cliente');
+
+            if (value.length > 0 && value.length < 6) {
+                $input.addClass('is-invalid');
+                $error.text('El documento debe tener entre 6 y ' + cotCliDocMaxLength() + ' dígitos.').show();
+                return;
+            }
+            if (!value) return;
+
+            $.get("{{ route('clientes.check-documento') }}", { numero: value }, function (response) {
+                if (response.exists) {
+                    $input.addClass('is-invalid');
+                    $error.text('Este cliente ya se encuentra registrado.').show();
+                    $('#add-btn-cliente').prop('disabled', true);
+                    $('#documento-persona-card-cliente').addClass('d-none');
+                    $('#documento-vinculado-notice-cliente').addClass('d-none');
+                    return;
+                }
+                $input.removeClass('is-invalid').addClass('is-valid');
+                $error.hide();
+                $('#add-btn-cliente').prop('disabled', false);
+                if (response.other_role && response.persona) {
+                    var p = response.persona;
+                    var detalles = '<strong>' + p.nombre + (p.apellido ? ' ' + p.apellido : '') + '</strong>';
+                    if (p.email) detalles += '<br>' + p.email;
+                    if (p.telefono) detalles += '<br>' + p.telefono;
+                    $('#persona-card-role-cliente').text(response.other_role);
+                    $('#persona-card-data-cliente').html(detalles);
+                    $('#persona-vincular-btn-cliente').data('persona', p).data('role', response.other_role);
+                    $('#documento-persona-card-cliente').removeClass('d-none');
+                } else {
+                    $('#documento-persona-card-cliente').addClass('d-none');
+                }
+            });
+        });
+
+        // Vincular persona existente (precarga sus datos en solo lectura)
+        $(document).on('click', '#persona-vincular-btn-cliente', function () {
+            var p = $(this).data('persona');
+            var role = $(this).data('role');
+
+            if (p.tipo_documento) {
+                $('#documento-prefix-field-cliente').val(p.tipo_documento).trigger('change');
+            }
+
+            $('#nombre-field-cliente, #apellido-field-cliente, #razon-social-field-cliente, #email-field-cliente')
+                .prop('readonly', true).addClass('bg-light').css('cursor', 'not-allowed');
+            $('#nombre-field-cliente').val(p.nombre || '');
+            $('#apellido-field-cliente').val(p.apellido || '');
+            $('#razon-social-field-cliente').val(p.nombre || '');
+            $('#email-field-cliente').val(p.email || '');
+
+            var _telRoot = document.getElementById('cot-cli-tel-repeater');
+            if (window.TelefonosRepeater && _telRoot) {
+                TelefonosRepeater.load(_telRoot, p.telefonos
+                    || (p.telefono ? [{ numero: p.telefono, tipo: 'movil', es_principal: true }] : []));
+            }
+
+            if (p.direccion) {
+                $('#direccion-field-cliente').val(p.direccion)
+                    .prop('readonly', true).addClass('bg-light').css('cursor', 'not-allowed');
+            }
+            if (p.estado_geografico) {
+                $('#estado_territorial-field-cliente').val(p.estado_geografico).trigger('change');
+                if (p.ciudad) $('#ciudad-field-cliente').val(p.ciudad);
+                $('#estado_territorial-field-cliente, #ciudad-field-cliente').prop('disabled', true);
+            }
+
+            $('#documento-persona-card-cliente').addClass('d-none');
+            $('#documento-vinculado-text-cliente').text('Datos vinculados de persona registrada como ' + role + '.');
+            $('#documento-vinculado-notice-cliente').removeClass('d-none');
+            $('#add-btn-cliente').prop('disabled', false);
+        });
 
         // Abrir modal de agregar cliente
         $('#open-add-cliente-modal').on('click', function () {
@@ -3654,7 +3736,13 @@
                 if (window.TelefonosRepeater && r) { TelefonosRepeater.init(r); TelefonosRepeater.load(r, []); }
             })();
             $('#ciudad-field-cliente').html('<option value="">Primero seleccione un estado</option>');
-            $('#tipo_cliente-field-cliente').val('');
+            // Limpiar estado de vinculación/duplicado de aperturas anteriores
+            $('#documento-persona-card-cliente, #documento-vinculado-notice-cliente').addClass('d-none');
+            $('#documento-error-cliente').hide();
+            $('#add-btn-cliente').prop('disabled', false);
+            $('#clienteFormCotizacion input, #clienteFormCotizacion textarea')
+                .prop('readonly', false).removeClass('bg-light is-invalid is-valid').css('cursor', '');
+            $('#estado_territorial-field-cliente, #ciudad-field-cliente').prop('disabled', false);
             toggleClienteFieldsCotizacion();
             $('#modalAddCliente').modal('show');
         });
@@ -3679,18 +3767,24 @@
             var telTels = (window.TelefonosRepeater && telRootCot) ? TelefonosRepeater.collect(telRootCot) : [];
             var telefonoCompleto = ((telTels.find(function (t) { return t.es_principal; }) || telTels[0] || {}).numero) || '';
 
-            // Validar campo apellido explícitamente
-            var apellido = $('#apellido-field-cliente').val().trim();
-            if (apellido.length < 2) {
-                $('#apellido-field-cliente').addClass('is-invalid');
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Campo requerido',
-                    text: 'El campo Apellido es obligatorio (mínimo 2 caracteres)'
-                });
-                return;
+            // Apellido solo aplica a clientes naturales (jurídico/gubernamental usan razón
+            // social) y NO cuando los datos vienen vinculados de una persona existente:
+            // su nombre ya viene consolidado y el campo queda readonly (los readonly se
+            // excluyen de la validación, igual que en el maestro y en el backend, donde
+            // apellido es nullable).
+            if ($('#tipo_cliente-field-cliente').val() === 'natural' && !$('#apellido-field-cliente').prop('readonly')) {
+                var apellido = $('#apellido-field-cliente').val().trim();
+                if (apellido.length < 2) {
+                    $('#apellido-field-cliente').addClass('is-invalid');
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Campo requerido',
+                        text: 'El campo Apellido es obligatorio (mínimo 2 caracteres)'
+                    });
+                    return;
+                }
+                $('#apellido-field-cliente').removeClass('is-invalid');
             }
-            $('#apellido-field-cliente').removeClass('is-invalid');
 
             // Validar campo dirección explícitamente
             var direccion = $('#direccion-field-cliente').val().trim();
@@ -3720,6 +3814,8 @@
                 TelefonosRepeater.syncHiddenInputs(document.getElementById('clienteFormCotizacion'), telRootCot);
             }
             var formData = $('#clienteFormCotizacion').serialize() + '&_token=' + $('meta[name="csrf-token"]').attr('content');
+            // El select de tipo es disabled (read-only) → serialize lo omite; lo añadimos.
+            formData += '&tipo_cliente=' + encodeURIComponent($('#tipo_cliente-field-cliente').val());
 
             $.ajax({
                 url: '/clientes',

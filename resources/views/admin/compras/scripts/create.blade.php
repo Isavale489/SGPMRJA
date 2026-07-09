@@ -1046,13 +1046,28 @@ $(document).ready(function () {
         });
 
         // Toggle Jurídico / Natural según el select de tipo
+        // El TIPO se deriva del prefijo del documento unificado (igual al maestro):
+        // V/E → natural, J/G → jurídico. El select de tipo queda read-only.
         function cprToggleCampos() {
-            var tipo = $('#cpr-tipo-proveedor-field').val();
+            var prefix = $('#cpr-doc-prefix-field').val() || 'V-';
+            var tipo = (prefix === 'J-' || prefix === 'G-') ? 'juridico' : 'natural';
             var esJur = tipo === 'juridico';
-            $('#cpr-campos-juridico, .cpr-tipo-juridico').toggle(esJur);
-            $('#cpr-campos-natural, .cpr-tipo-natural').toggle(!esJur);
+
+            $('#cpr-tipo-proveedor-field').val(tipo).trigger('change');
+            $('#cpr-campos-juridico').toggle(esJur);
+            $('#cpr-campos-natural').toggle(!esJur);
+
+            // Maxlength dinámico: RIF (J/G) 9 dígitos, cédula (V/E) 8.
+            var maxLen = esJur ? 9 : 8;
+            var $doc = $('#cpr-doc-number-field');
+            $doc.attr('maxlength', String(maxLen));
+            if (($doc.val() || '').length > maxLen) $doc.val($doc.val().slice(0, maxLen));
         }
-        $('#cpr-tipo-proveedor-field').on('change', cprToggleCampos);
+        $('#cpr-doc-prefix-field').on('change', cprToggleCampos);
+        $('#cpr-doc-number-field').on('input', function () {
+            var maxLen = ($('#cpr-doc-prefix-field').val() === 'V-' || $('#cpr-doc-prefix-field').val() === 'E-') ? 8 : 9;
+            this.value = this.value.replace(/[^0-9]/g, '').slice(0, maxLen);
+        });
 
         function validarCprForm() {
             var valido = true;
@@ -1121,17 +1136,9 @@ $(document).ready(function () {
             $('#cpr-ciudad-jur-field, #cpr-ciudad-field').empty()
                 .append('<option value="">Primero seleccione un estado</option>');
 
-            var prefix = $('#c-prov-doc-prefix').val();
-            var number = $('#c-prov-doc-number').val().trim();
-            if (prefix === 'V-' || prefix === 'E-') {
-                $('#cpr-tipo-proveedor-field').val('natural');
-                $('#cpr-tipo-documento-field').val(prefix);
-                $('#cpr-documento-identidad-field').val(number);
-            } else {
-                $('#cpr-tipo-proveedor-field').val('juridico');
-                $('#cpr-rif-prefix-field').val(prefix === 'G-' ? 'G-' : 'J-');
-                $('#cpr-rif-number-field').val(number);
-            }
+            // Documento unificado: prellenar prefijo + número; el tipo se deriva solo.
+            $('#cpr-doc-prefix-field').val($('#c-prov-doc-prefix').val() || 'V-');
+            $('#cpr-doc-number-field').val($('#c-prov-doc-number').val().trim());
             cprToggleCampos();
             $('#c-prov-autocomplete').empty().hide();
             $('#crearProveedorRapidoModal').modal('show');
@@ -1144,7 +1151,7 @@ $(document).ready(function () {
             var payload = { _token: CSRF, tipo_proveedor: tipo };
 
             if (tipo === 'juridico') {
-                payload.rif               = $('#cpr-rif-prefix-field').val() + $('#cpr-rif-number-field').val().trim();
+                payload.rif               = $('#cpr-doc-prefix-field').val() + $('#cpr-doc-number-field').val().trim();
                 payload.razon_social      = $('#cpr-razon-social-field').val().trim();
                 payload.direccion         = $('#cpr-direccion-jur-field').val().trim();
                 payload.telefonos         = window.TelefonosRepeater ? TelefonosRepeater.collect(document.getElementById('cpr-jur-tel-repeater')) : [];
@@ -1156,8 +1163,8 @@ $(document).ready(function () {
                 payload.estado_territorial = $('#cpr-estado-territorial-jur-field').val();
                 payload.ciudad             = $('#cpr-ciudad-jur-field').val();
             } else {
-                payload.tipo_documento      = $('#cpr-tipo-documento-field').val();
-                payload.documento_identidad = $('#cpr-documento-identidad-field').val().trim();
+                payload.tipo_documento      = $('#cpr-doc-prefix-field').val();
+                payload.documento_identidad = $('#cpr-doc-number-field').val().trim();
                 payload.nombre              = $('#cpr-nombre-field').val().trim();
                 payload.apellido            = $('#cpr-apellido-field').val().trim();
                 payload.direccion           = $('#cpr-direccion-nat-field').val().trim();

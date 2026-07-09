@@ -1166,20 +1166,38 @@
                                     <option value="G-">G-</option>
                                 </select>
                                 <input type="text" id="documento-number-field-cliente" class="form-control"
-                                    placeholder="Nro. documento" maxlength="10" required />
+                                    placeholder="Nro. documento" maxlength="9" required />
                             </div>
                             <input type="hidden" id="documento-field-cliente" name="documento" />
-                            <small class="text-muted d-block mt-1 mb-1">Máximo 10 dígitos</small>
+                            <small class="text-muted d-block mt-1 mb-1">Entre 6 y 9 dígitos</small>
                             <div id="documento-error-cliente" class="invalid-feedback" style="display: none;"></div>
+                            {{-- Persona ya registrada en otro rol: ofrecer vincular sus datos --}}
+                            <div id="documento-persona-card-cliente" class="d-none mt-2 rounded"
+                                style="border:1px solid rgba(8,145,178,0.35); background:rgba(8,145,178,0.06); padding:10px 12px;">
+                                <div style="font-size:0.78rem; font-weight:600; color:#0891b2; margin-bottom:4px;">
+                                    <i class="ri-user-shared-line me-1"></i>
+                                    Persona ya registrada como <span id="persona-card-role-cliente" style="text-transform:capitalize;"></span>
+                                </div>
+                                <div id="persona-card-data-cliente" style="font-size:0.8rem; line-height:1.8; margin-bottom:8px;"></div>
+                                <button type="button" id="persona-vincular-btn-cliente" class="btn btn-sm"
+                                    style="background:#0891b2; color:white; font-size:0.75rem; padding:3px 12px; border-radius:20px;">
+                                    <i class="ri-link me-1"></i>Usar estos datos
+                                </button>
+                            </div>
+                            <div id="documento-vinculado-notice-cliente" class="d-none mt-1" style="font-size:0.78rem; color:#0891b2;">
+                                <i class="ri-link me-1"></i><span id="documento-vinculado-text-cliente"></span>
+                            </div>
                         </div>
                         <div class="col-md-6">
                             <label for="tipo_cliente-field-cliente" class="form-label required">Tipo de Cliente</label>
-                            <select id="tipo_cliente-field-cliente" name="tipo_cliente" class="form-select" required>
-                                <option value="">Seleccione</option>
+                            <select id="tipo_cliente-field-cliente" name="tipo_cliente" class="form-select js-readonly"
+                                disabled title="Se determina por el prefijo del documento" required>
                                 <option value="natural">Natural</option>
                                 <option value="juridico">Jurídico</option>
                                 <option value="gubernamental">Gubernamental</option>
                             </select>
+                            <small class="text-muted d-block mt-1">Se define solo por el prefijo del documento
+                                (V/E → Natural, J → Jurídico, G → Gubernamental).</small>
                         </div>
                     </div>
                 </div>
