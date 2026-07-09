@@ -757,7 +757,7 @@ $(document).ready(function () {
             // Caso 2: existe pero no es proveedor → confirmar conversión
             Swal.fire({
                 title: '¿Crear proveedor con datos existentes?',
-                html: '<strong>' + nombre.trim() + '</strong> ya está registrado en el sistema pero aún no es proveedor.<br><br>¿Deseás crear el proveedor reutilizando estos datos?',
+                html: '<strong>' + nombre.trim() + '</strong> ya está registrado en el sistema pero aún no es proveedor.<br><br>¿Deseas crear el proveedor reutilizando estos datos?',
                 icon: 'question',
                 showCancelButton: true,
                 confirmButtonText: '<i class="ri-check-line me-1"></i>Sí, crear proveedor',
