@@ -106,18 +106,14 @@ $(document).ready(function () {
             url: '/compras/' + compraId + '/detalle',
             method: 'GET',
             success: function (d) {
-                // Header y hero
+                // Header y estado
                 $('#cv-titulo').html('<i class="ri-shopping-bag-3-line me-1"></i>Compra #' + d.id);
-                $('#cv-hero-titulo').text('Compra #' + d.id);
                 var badgeColor = badgeMap[d.estado] || 'info';
                 var iconMap = { recibida: 'ri-checkbox-circle-line', borrador: 'ri-draft-line', anulada: 'ri-close-circle-line' };
                 var estadoIcon = iconMap[d.estado] || 'ri-question-line';
                 $('#cv-estado-badge').attr('class', 'badge badge-soft-' + badgeColor).html(
                     '<i class="' + estadoIcon + ' me-1"></i>' + d.estado.charAt(0).toUpperCase() + d.estado.slice(1)
                 );
-                $('#cv-hero-proveedor').text(d.proveedor.nombre);
-                $('#cv-hero-fecha').text(d.fecha_compra);
-                $('#cv-total').text(d.total);
 
                 // Proveedor card
                 $('#cv-prov-ini').text(d.proveedor.ini);
@@ -140,7 +136,11 @@ $(document).ready(function () {
                 // Comprobante
                 $('#cv-factura').text(d.numero_factura);
                 $('#cv-fecha').text(d.fecha_compra);
-                $('#cv-tasa').text(d.tasa_cambio ? 'Bs ' + d.tasa_cambio + ' / USD' : '—');
+                // La fecha de la tasa va en el label — "Tasa BCV (08/07/2026)" — y
+                // solo se muestra cuando el snapshot coincide con la tasa oficial
+                // de la fecha de compra (tasa_fecha_fmt viene null si fue manual).
+                $('#cv-tasa-label').text('Tasa BCV' + (d.tasa_fecha_fmt ? ' (' + d.tasa_fecha_fmt + ')' : ''));
+                $('#cv-tasa').text(d.tasa_cambio ? 'Bs ' + d.tasa_cambio : '—');
 
                 if (d.observaciones) {
                     $('#cv-observaciones').text(d.observaciones);
@@ -162,23 +162,22 @@ $(document).ready(function () {
                         + '<td class="text-center cot-col-num">' + (i + 1) + '</td>'
                         + '<td class="fw-semibold">' + item.nombre + codigo + '</td>'
                         + '<td class="text-center"><span class="cot-tipo-pill">' + item.tipo + '</span></td>'
-                        + '<td class="text-center text-muted">' + item.unidad + '</td>'
-                        + '<td class="text-end">' + item.cantidad + '</td>'
-                        + '<td class="text-end">' + item.costo_unitario_bs + '</td>'
-                        + '<td class="text-end text-muted">' + item.costo_unitario + '</td>'
+                        + '<td class="text-center">' + item.unidad + '</td>'
+                        + '<td class="text-end fw-semibold">' + item.cantidad + '</td>'
+                        + '<td class="text-end fw-semibold">' + item.costo_unitario_bs + '</td>'
+                        + '<td class="text-end cv-usd-eq">' + item.costo_unitario + '</td>'
                         + '<td class="text-center">' + ivaBadge + '</td>'
-                        + '<td class="text-end fw-semibold">' + item.subtotal_bs + '</td>'
-                        + '<td class="text-end text-muted">' + item.subtotal + '</td>'
+                        + '<td class="text-end fw-bold">' + item.subtotal_bs + '</td>'
+                        + '<td class="text-end cv-usd-eq">' + item.subtotal + '</td>'
                         + '</tr>';
                 });
                 $('#cv-items-tbody').html(itemsHtml);
                 $('#cv-items-count').text('(' + (d.items || []).length + ')');
                 // Pie de la grilla: subtotal de las líneas (Bs + equivalente USD)
-                $('#cv-items-foot-bs').text(d.subtotal_bs);
-                $('#cv-items-foot-usd').text(d.subtotal);
+                // (El subtotal de líneas vive solo en el ticket de totales;
+                //  la tabla ya no lleva tfoot para no duplicarlo.)
 
-                // Registro
-                $('#cv-reg-avatar').attr('src', (d.registrado_por && d.registrado_por.avatar_url) ? d.registrado_por.avatar_url : window.AMS_AVATAR_FALLBACK).css('display', '');
+                // Registro (fila de metadatos: nombre + fecha/hora en pequeño)
                 $('#cv-reg-nombre').text(d.registrado_por ? d.registrado_por.name : '—');
                 $('#cv-reg-fecha').text(d.created_at);
 
@@ -188,6 +187,7 @@ $(document).ready(function () {
                 $('#cv-iva-pct').text(d.iva_porcentaje);
                 $('#cv-total-ticket').text(d.total_bs);
                 $('#cv-tasa-ticket').text(d.tasa_cambio || '0.0000');
+                $('#cv-tasa-ticket-fecha').text(d.tasa_fecha_fmt ? ' (' + d.tasa_fecha_fmt + ')' : '');
                 $('#cv-total-usd').text(d.total);
                 // Base exenta = suma de subtotales en Bs de líneas no gravadas.
                 // subtotal_bs viene en formato venezolano ("1.234,56").
@@ -217,28 +217,8 @@ $(document).ready(function () {
         verDetalleCompra($(this).data('id'));
     });
 
-    // ── Detalle de compra: navegación del wizard de solo lectura ─────────────
-    (function () {
-        var TOTAL = 3, step = 1;
-        window.viewCompraShowStep = function (n) {
-            step = n;
-            $('#viewCompraModal .wiz-step-content').removeClass('is-active').attr('hidden', true);
-            $('#viewCompraModal .wiz-step-content[data-step="' + n + '"]').removeAttr('hidden').addClass('is-active');
-            $('#viewCompraModal .wiz-step-marker').each(function () {
-                var s = parseInt($(this).data('step'), 10);
-                $(this).toggleClass('is-active', s === n).toggleClass('is-complete', s < n);
-            });
-            $('#viewCompraModal .wiz-step-line-fill').each(function () {
-                $(this).css('width', parseInt($(this).data('line'), 10) < n ? '100%' : '0%');
-            });
-            $('#cv-prev').toggle(n > 1);
-            $('#cv-next').toggle(n < TOTAL);
-        };
-        $(document).on('click', '#cv-next', function () { if (step < TOTAL) window.viewCompraShowStep(step + 1); });
-        $(document).on('click', '#cv-prev', function () { if (step > 1) window.viewCompraShowStep(step - 1); });
-        $('#viewCompraModal').on('click', '.wiz-step-marker', function () { window.viewCompraShowStep(parseInt($(this).data('step'), 10)); });
-        $('#viewCompraModal').on('show.bs.modal', function () { window.viewCompraShowStep(1); });
-    }());
+    // (El detalle de compra dejó de ser wizard: ahora es una vista única,
+    //  así que ya no hay navegación de pasos que manejar.)
 
     // ── Procesar borrador ────────────────────────────────────────────────────
     $(document).on('click', '.procesar-btn', function () {

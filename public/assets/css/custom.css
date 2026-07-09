@@ -11700,3 +11700,170 @@ select.js-readonly:not(.afs-native) {
     background: rgba(16,185,129,0.18);
     color: #6ee7b7;
 }
+
+/* ==========================================================================
+   Detalle de Compra — documento comercial (membrete · líneas · cierre)
+   Firma visual: puntos conductores tipo recibo en los metadatos.
+   ========================================================================== */
+.cv-doc {
+    background: #fff;
+    border: 1px solid rgba(30, 60, 114, 0.14);
+    border-radius: 12px;
+    overflow: hidden;
+}
+.cv-doc-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1.25rem 2rem;
+    padding: 1.25rem 1.5rem;
+}
+.cv-letterhead { display: flex; gap: 1rem; align-items: center; flex: 1 1 300px; min-width: 0; }
+.cv-letterhead-name-row { display: flex; align-items: center; gap: .6rem; flex-wrap: wrap; }
+.cv-letterhead-name-row h5 { margin: 0; font-weight: 700; color: #1e3c72; }
+.cv-letterhead-eyebrow {
+    display: inline-flex; align-items: center;
+    margin-bottom: .2rem;
+    font-size: .64rem; letter-spacing: .12em; text-transform: uppercase;
+    font-weight: 700; color: #64748b;
+}
+.cv-letterhead-doc {
+    margin: .2rem 0 .35rem;
+    font-family: var(--vz-font-monospace, monospace);
+    font-size: .84rem;
+    font-weight: 600;
+    color: #334155;
+    display: flex; align-items: center; gap: .4rem;
+}
+.cv-letterhead-contact { display: flex; flex-wrap: wrap; gap: .35rem 1.1rem; font-size: .8rem; color: #475569; }
+.cv-letterhead-contact > span { display: inline-flex; align-items: center; gap: .35rem; }
+.cv-letterhead-contact i { color: #94a3b8; }
+
+/* Metadatos del comprobante con puntos conductores (vernáculo de recibo) */
+.cv-meta { flex: 0 1 340px; min-width: 250px; align-self: center; }
+.cv-meta-row { display: flex; align-items: baseline; gap: .45rem; padding: .32rem 0; }
+.cv-meta-label {
+    font-size: .66rem; letter-spacing: .1em; text-transform: uppercase;
+    font-weight: 700; color: #64748b; white-space: nowrap;
+}
+.cv-meta-fill { flex: 1; border-bottom: 2px dotted rgba(30,60,114,.22); transform: translateY(-3px); min-width: 1.25rem; }
+.cv-meta-value {
+    font-weight: 700; color: #16305e; font-size: .92rem;
+    font-variant-numeric: tabular-nums; white-space: nowrap;
+    min-width: 0; overflow: hidden; text-overflow: ellipsis;
+}
+.cv-meta-sub { font-weight: 500; font-size: .72rem; color: #64748b; margin-left: .3rem; }
+
+/* Cinta divisoria de sección (línea de corte, como un recibo) */
+.cv-doc-strip {
+    display: flex; align-items: center; gap: .45rem;
+    padding: .55rem 1.5rem;
+    background: #f8fafc;
+    border-top: 1px dashed rgba(30,60,114,.25);
+    border-bottom: 1px dashed rgba(30,60,114,.25);
+    font-size: .68rem; letter-spacing: .12em; text-transform: uppercase;
+    font-weight: 700; color: #64748b;
+}
+.cv-doc-strip i { font-size: .95rem; color: #1e3c72; }
+
+/* Cierre del documento: banda de totales horizontal a todo lo ancho.
+   La aritmética fluye de izquierda a derecha hacia el total (emerald). */
+.cv-totals-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: stretch;
+    border-top: 1px dashed rgba(30,60,114,.25);
+    background: #fbfcfe;
+}
+.cv-total-cell {
+    flex: 1 1 160px;
+    min-width: 150px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: .25rem;
+    padding: .95rem 1.5rem;
+}
+.cv-total-cell + .cv-total-cell { border-left: 1px solid rgba(30,60,114,.10); }
+.cv-total-label {
+    font-size: .64rem; letter-spacing: .1em; text-transform: uppercase;
+    font-weight: 700; color: #64748b; white-space: nowrap;
+}
+.cv-total-value {
+    font-weight: 700; color: #16305e; font-size: 1.05rem;
+    font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+.cv-total-cell--pay {
+    flex: 1.6 1 220px;
+    background: rgba(16, 185, 129, 0.06);
+    box-shadow: inset 3px 0 0 #10b981;
+}
+.cv-total-cell--pay .cv-total-label { color: #047857; }
+.cv-total-cell--pay .cv-total-value { color: #047857; font-size: 1.45rem; font-weight: 800; line-height: 1.1; }
+.cv-total-conv {
+    display: flex; align-items: baseline; gap: .75rem; flex-wrap: wrap;
+    font-size: .85rem; font-weight: 700; color: #334155;
+    font-variant-numeric: tabular-nums;
+}
+.cv-total-tasa {
+    display: inline-flex; align-items: center; gap: .3rem;
+    font-size: .7rem; font-weight: 500; color: #64748b;
+}
+.cv-obs-note--doc { margin: .9rem 1.5rem 1.1rem; }
+
+.cv-obs-note {
+    display: flex; gap: .6rem; align-items: flex-start;
+    padding: .75rem .9rem;
+    background: rgba(245, 158, 11, 0.06);
+    border-left: 3px solid #f59e0b;
+    border-radius: 6px;
+    font-size: .85rem;
+}
+.cv-obs-note > i { color: #b45309; flex-shrink: 0; margin-top: 2px; }
+.cv-obs-eyebrow {
+    display: block; margin-bottom: .15rem;
+    font-size: .66rem; letter-spacing: .1em; text-transform: uppercase;
+    font-weight: 700; color: #b45309;
+}
+
+/* La tabla de ítems va a sangre completa dentro del documento.
+   Tope de altura con scroll interno (regla de modales con listas dinámicas)
+   y encabezado sticky para no perder las columnas al desplazarse. */
+.cv-doc .cot-grouped-tablewrap {
+    border: 0; border-radius: 0;
+    max-height: min(46vh, 30rem);
+    overflow-y: auto;
+}
+.cv-doc .cot-grouped-table thead th { position: sticky; top: 0; z-index: 2; }
+/* Equivalentes en USD: secundarios pero legibles (nada de text-muted pálido) */
+.cv-usd-eq { color: #526175; font-variant-numeric: tabular-nums; }
+
+/* Dark mode */
+[data-bs-theme="dark"] .cv-doc { background: var(--vz-card-bg, #1f2937); border-color: rgba(255,255,255,.10); }
+[data-bs-theme="dark"] .cv-letterhead-name-row h5 { color: #f1f5f9; }
+[data-bs-theme="dark"] .cv-letterhead-eyebrow { color: #94a3b8; }
+[data-bs-theme="dark"] .cv-letterhead-doc { color: #cbd5e1; }
+[data-bs-theme="dark"] .cv-letterhead-contact { color: #a8b6c8; }
+[data-bs-theme="dark"] .cv-meta-label { color: #94a3b8; }
+[data-bs-theme="dark"] .cv-meta-value { color: #eef2f8; }
+[data-bs-theme="dark"] .cv-meta-sub { color: #94a3b8; }
+[data-bs-theme="dark"] .cv-usd-eq { color: #a6b4c6; }
+[data-bs-theme="dark"] .cv-meta-fill { border-bottom-color: rgba(255,255,255,.22); }
+[data-bs-theme="dark"] .cv-doc-strip { background: rgba(255,255,255,.03); border-color: rgba(255,255,255,.16); color: #94a3b8; }
+[data-bs-theme="dark"] .cv-doc-strip i { color: #7dd3fc; }
+[data-bs-theme="dark"] .cv-totals-bar {
+    border-top-color: rgba(255,255,255,.16);
+    background: rgba(255,255,255,.02);
+}
+[data-bs-theme="dark"] .cv-total-cell + .cv-total-cell { border-left-color: rgba(255,255,255,.10); }
+[data-bs-theme="dark"] .cv-total-cell--pay { background: rgba(16,185,129,.10); }
+[data-bs-theme="dark"] .cv-total-cell--pay .cv-total-label,
+[data-bs-theme="dark"] .cv-total-cell--pay .cv-total-value { color: #6ee7b7; }
+[data-bs-theme="dark"] .cv-total-conv { color: #cbd5e1; }
+[data-bs-theme="dark"] .cv-total-tasa { color: #94a3b8; }
+[data-bs-theme="dark"] .cv-total-label { color: #94a3b8; }
+[data-bs-theme="dark"] .cv-total-value { color: #eef2f8; }
+[data-bs-theme="dark"] .cv-obs-note { background: rgba(245,158,11,.12); }
+[data-bs-theme="dark"] .cv-obs-note > i,
+[data-bs-theme="dark"] .cv-obs-eyebrow { color: #fbbf24; }
