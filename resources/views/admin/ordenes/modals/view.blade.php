@@ -243,7 +243,7 @@
             <div class="modal-footer wiz-wizard-footer">
                 <div class="wiz-wizard-footer-info">
                     <a href="#" target="_blank" class="btn btn-soft-danger" id="btn-view-ord-print">
-                        <i class="ri-file-pdf-fill me-1"></i>Ver PDF
+                        <i class="ri-file-pdf-fill me-1"></i>Exportar PDF
                     </a>
                 </div>
                 <div class="wiz-wizard-footer-actions">
