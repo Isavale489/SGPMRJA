@@ -1,6 +1,6 @@
 ---
 type: feature        # feature | fix
-base_branch: enmanuel
+base_branch: dev
 ---
 
 # Brainstorm: <Título>

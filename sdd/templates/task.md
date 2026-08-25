@@ -128,7 +128,7 @@ class ControlCalidadController extends Controller
 - [ ] QA manual (sección siguiente) pasa
 - [ ] Sin estilos inline en Blade (todo en `custom.css`)
 - [ ] Dark mode probado
-- [ ] PR contra `enmanuel` con descripción enlazando esta task
+- [ ] PR contra `dev` con descripción enlazando esta task
 
 ---
 
@@ -157,12 +157,12 @@ Cuando tomes esta task:
    - Si algo cambió, actualiza el contrato PRIMERO y luego implementa
    - **NUNCA** uses un import, atributo o método que no esté en el contrato sin verificarlo
 4. **Actualiza el header**: `Status: in-progress`, `Assigned-to: <tu-nombre>`.
-5. **Crea rama**: `git checkout -b feat/TASK-<NNN>-<slug>` desde `enmanuel`.
+5. **Crea rama**: `git checkout -b feat/TASK-<NNN>-<slug>` desde `dev`.
 6. **Implementa** dentro del scope. Si descubres trabajo extra, créalo como task nueva.
 7. **Verifica** los criterios de aceptación y el QA manual.
 8. **Mueve este archivo** a `sdd/tasks/completed/TASK-<NNN>-<slug>.md`.
 9. **Rellena la Nota de Completitud** abajo.
-10. **PR** contra `enmanuel`.
+10. **PR** contra `dev`.
 
 ---
 
