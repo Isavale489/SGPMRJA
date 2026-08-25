@@ -1,0 +1,901 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Propuesta técnica para migrar la capa de vista de SGPMRJA a Inertia + React + TypeScript sin tocar el backend.">
+<title>La frontera de la migración</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..700&family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:opsz,wght@6..72,300..600&display=swap">
+
+<style>
+/* ─────────────────────────────────────────────────────────────
+   TOKENS — papel de trazado (claro) · índigo denim (oscuro)
+   ───────────────────────────────────────────────────────────── */
+:root{
+  --paper:#E6E9EC;  --paper-2:#F1F3F5;  --paper-3:#DCE0E4;
+  --rule:#C3C9D0;   --rule-strong:#A8B0B9;
+  --ink:#10141B;    --ink-2:#39414E;    --ink-3:#646D7A;   --ink-4:#8E96A1;
+  --thread:#C4442A; --thread-soft:#C4442A22;
+  --keep:#2F6B5C;   --keep-soft:#2F6B5C1F;
+  --glow:#ffffff;   --grain-op:.030;
+  --shadow:0 1px 2px rgba(16,20,27,.05), 0 8px 24px -12px rgba(16,20,27,.18);
+
+  /* lenguaje de movimiento — 3 duraciones, 3 curvas, definidas una vez */
+  --e-out:cubic-bezier(.16,.84,.32,1);
+  --e-in-out:cubic-bezier(.62,.02,.24,1);
+  --e-snap:cubic-bezier(.34,1.42,.52,1);
+  --t-fast:120ms; --t-mid:280ms; --t-slow:620ms;
+
+  --col:min(66ch,100%);
+  --bleed:min(1080px,100%);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --paper:#12151C;  --paper-2:#191D26;  --paper-3:#0D1015;
+    --rule:#262C38;   --rule-strong:#39414F;
+    --ink:#E8EBF0;    --ink-2:#AEB6C2;    --ink-3:#7B8494;   --ink-4:#565F6E;
+    --thread:#E8674A; --thread-soft:#E8674A26;
+    --keep:#4E9B87;   --keep-soft:#4E9B8722;
+    --glow:#6E8CC8;   --grain-op:.055;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 14px 40px -18px rgba(0,0,0,.7);
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#12151C;  --paper-2:#191D26;  --paper-3:#0D1015;
+  --rule:#262C38;   --rule-strong:#39414F;
+  --ink:#E8EBF0;    --ink-2:#AEB6C2;    --ink-3:#7B8494;   --ink-4:#565F6E;
+  --thread:#E8674A; --thread-soft:#E8674A26;
+  --keep:#4E9B87;   --keep-soft:#4E9B8722;
+  --glow:#6E8CC8;   --grain-op:.055;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 14px 40px -18px rgba(0,0,0,.7);
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0;
+  background:var(--paper);
+  color:var(--ink);
+  font-family:"Newsreader",Georgia,"Times New Roman",serif;
+  font-optical-sizing:auto;
+  font-size:1.0625rem;
+  line-height:1.68;
+  -webkit-font-smoothing:antialiased;
+  position:relative;
+}
+/* grano — la capa que Linear llama _grain */
+body::before{
+  content:"";position:fixed;inset:0;z-index:9999;pointer-events:none;
+  opacity:var(--grain-op);
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* ── tipografía ── */
+h1,h2,h3,h4,.disp,.eyebrow,.lbl,.chip,th,.mono{font-family:"Archivo",-apple-system,"Segoe UI",sans-serif}
+h1,h2,h3{text-wrap:balance;margin:0;line-height:1.06;letter-spacing:-.022em}
+h1{font-size:clamp(2.6rem,6.4vw,4.5rem);font-weight:700;font-stretch:112%}
+h2{font-size:clamp(1.75rem,3.4vw,2.5rem);font-weight:600;font-stretch:108%}
+h3{font-size:1.115rem;font-weight:600;letter-spacing:-.006em;line-height:1.3}
+p{margin:0}
+strong{font-weight:600;color:var(--ink)}
+a{color:var(--ink);text-decoration-color:var(--thread);text-underline-offset:3px}
+.mono{font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace;font-variant-numeric:tabular-nums}
+.eyebrow{
+  font-size:.6875rem;font-weight:600;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--ink-4);display:flex;align-items:center;gap:.6rem;
+}
+.eyebrow::after{content:"";flex:1;height:1px;background:var(--rule)}
+.lead{font-size:1.24rem;line-height:1.55;color:var(--ink-2);font-weight:300}
+.small{font-size:.9375rem;line-height:1.6;color:var(--ink-3)}
+.dim{color:var(--ink-3)}
+.thread{color:var(--thread)}
+.keepc{color:var(--keep)}
+
+/* ── estructura de página ── */
+.wrap{max-width:var(--bleed);margin-inline:auto;padding-inline:clamp(1.15rem,4vw,2.5rem)}
+section{padding-block:clamp(3.5rem,7vw,6rem);border-top:1px solid var(--rule);position:relative}
+section:first-of-type{border-top:0}
+.stack{display:flex;flex-direction:column;gap:1.15rem}
+.stack-lg{display:flex;flex-direction:column;gap:2.25rem}
+.col{width:var(--col)}
+.head{display:flex;flex-direction:column;gap:1.1rem;margin-bottom:2.5rem}
+
+/* marcas de registro — retícula de patrón de corte */
+.reg{position:absolute;width:9px;height:9px;pointer-events:none}
+.reg::before,.reg::after{content:"";position:absolute;background:var(--rule-strong)}
+.reg::before{left:0;top:4px;width:9px;height:1px}
+.reg::after{top:0;left:4px;width:1px;height:9px}
+
+/* ── hero ── */
+.hero{padding-top:clamp(3rem,8vw,6.5rem);padding-bottom:clamp(3rem,6vw,5rem)}
+.hero-meta{
+  display:flex;flex-wrap:wrap;gap:.55rem 1.4rem;align-items:center;
+  font-family:"IBM Plex Mono",monospace;font-size:.75rem;letter-spacing:.04em;
+  color:var(--ink-4);text-transform:uppercase;margin-bottom:2.4rem;
+}
+.hero-meta span{display:inline-flex;align-items:center;gap:.5rem}
+.hero-meta span::before{content:"";width:5px;height:5px;background:var(--thread);border-radius:50%}
+.hero h1 em{font-family:"Newsreader",serif;font-style:italic;font-weight:400;font-stretch:normal;letter-spacing:-.01em}
+
+/* ── métricas del diagnóstico ── */
+.metrics{
+  display:grid;gap:1px;background:var(--rule);
+  grid-template-columns:repeat(auto-fit,minmax(158px,1fr));
+  border:1px solid var(--rule);margin-top:2.75rem;
+}
+.metric{background:var(--paper);padding:1.35rem 1.25rem;display:flex;flex-direction:column;gap:.3rem}
+.metric .n{font-family:"Archivo",sans-serif;font-stretch:88%;font-weight:600;font-size:1.9rem;letter-spacing:-.03em;line-height:1;font-variant-numeric:tabular-nums}
+.metric .k{font-family:"IBM Plex Mono",monospace;font-size:.6875rem;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-4)}
+.metric .s{font-size:.8125rem;color:var(--ink-3);line-height:1.45;font-family:"Newsreader",serif}
+
+/* ── figuras ── */
+figure{margin:0;display:flex;flex-direction:column;gap:.9rem}
+.fig-frame{
+  position:relative;background:var(--paper-2);border:1px solid var(--rule);
+  padding:clamp(1rem,2.6vw,2rem);overflow-x:auto;box-shadow:var(--shadow);
+}
+.fig-frame::before{
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(120% 80% at 50% -20%,var(--glow),transparent 62%);
+  opacity:.10;
+}
+.fig-frame > svg{display:block;width:100%;height:auto;min-width:620px;color:var(--ink-2)}
+figcaption{font-size:.875rem;line-height:1.55;color:var(--ink-3)}
+figcaption b{color:var(--ink-2);font-weight:600}
+
+/* ── tablas ── */
+.tbl-wrap{overflow-x:auto;border:1px solid var(--rule);background:var(--paper-2)}
+table{border-collapse:collapse;width:100%;min-width:520px;font-size:.9375rem}
+th{
+  font-size:.6875rem;font-weight:600;letter-spacing:.11em;text-transform:uppercase;
+  color:var(--ink-4);text-align:left;padding:.85rem 1rem;border-bottom:1px solid var(--rule-strong);
+  white-space:nowrap;
+}
+td{padding:.8rem 1rem;border-bottom:1px solid var(--rule);vertical-align:top;color:var(--ink-2);line-height:1.5}
+tbody tr:last-child td{border-bottom:0}
+td.mono,th.mono{font-size:.8125rem}
+td b{color:var(--ink)}
+
+/* ── piezas ── */
+.chip{
+  display:inline-flex;align-items:center;gap:.4rem;padding:.2rem .55rem;
+  font-size:.6875rem;font-weight:600;letter-spacing:.05em;text-transform:uppercase;
+  border:1px solid var(--rule-strong);color:var(--ink-3);white-space:nowrap;
+}
+.chip.on{border-color:var(--keep);color:var(--keep);background:var(--keep-soft)}
+.chip.off{border-color:var(--thread);color:var(--thread);background:var(--thread-soft)}
+
+.callout{
+  border-left:2px solid var(--thread);background:var(--thread-soft);
+  padding:1.15rem 1.35rem;display:flex;flex-direction:column;gap:.6rem;
+}
+.callout .eyebrow{color:var(--thread)}
+.callout .eyebrow::after{background:var(--thread);opacity:.3}
+
+.grid2{display:grid;gap:1px;background:var(--rule);border:1px solid var(--rule);grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
+.grid2 > div{background:var(--paper-2);padding:1.4rem;display:flex;flex-direction:column;gap:.7rem}
+
+/* ── fases numeradas (secuencia real) ── */
+.phases{display:flex;flex-direction:column;gap:1px;background:var(--rule);border:1px solid var(--rule)}
+.phase{
+  background:var(--paper-2);padding:1.35rem clamp(1rem,2.4vw,1.6rem);
+  display:grid;gap:.35rem 1.4rem;
+  grid-template-columns:auto 1fr auto;align-items:baseline;
+}
+.phase .num{
+  font-family:"IBM Plex Mono",monospace;font-size:.8125rem;color:var(--thread);
+  font-weight:600;letter-spacing:.04em;
+}
+.phase .body{grid-column:2}
+.phase .risk{grid-column:3;justify-self:end}
+.phase p{grid-column:2;font-size:.9375rem;color:var(--ink-3);line-height:1.55;margin-top:.2rem}
+@media (max-width:620px){
+  .phase{grid-template-columns:auto 1fr}
+  .phase .risk{grid-column:2;justify-self:start;margin-top:.5rem}
+}
+
+/* ── demo vivo: por defecto vs tokens ── */
+.demo{border:1px solid var(--rule);background:var(--paper-3)}
+.demo-bar{
+  display:flex;align-items:center;gap:.5rem;padding:.7rem .9rem;
+  border-bottom:1px solid var(--rule);background:var(--paper-2);flex-wrap:wrap;
+}
+.demo-bar .t{
+  font-family:"IBM Plex Mono",monospace;font-size:.6875rem;letter-spacing:.08em;
+  text-transform:uppercase;color:var(--ink-4);margin-right:auto;
+}
+.tog{
+  font-family:"Archivo",sans-serif;font-size:.75rem;font-weight:600;letter-spacing:.05em;
+  text-transform:uppercase;padding:.4rem .75rem;border:1px solid var(--rule-strong);
+  background:transparent;color:var(--ink-3);cursor:pointer;
+  transition:color var(--t-fast) var(--e-out),border-color var(--t-fast) var(--e-out),background var(--t-fast) var(--e-out);
+}
+.tog:hover{color:var(--ink)}
+.tog[aria-pressed="true"]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.tog:focus-visible{outline:2px solid var(--thread);outline-offset:2px}
+.demo-stage{padding:clamp(1.4rem,3vw,2.4rem);display:flex;justify-content:center}
+
+/* tarjeta demo — estado "genérico" */
+.dcard{
+  width:min(340px,100%);background:#fff;color:#212529;
+  border:1px solid #dee2e6;border-radius:.5rem;padding:1.25rem;
+  box-shadow:0 .125rem .25rem rgba(0,0,0,.075);
+  font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  display:flex;flex-direction:column;gap:.75rem;
+  transition:all var(--t-mid) var(--e-in-out);
+}
+.dcard .dt{font-size:1rem;font-weight:600;letter-spacing:0}
+.dcard .dv{font-size:1.75rem;font-weight:700;letter-spacing:0}
+.dcard .dm{font-size:.875rem;color:#6c757d}
+.dcard .db{
+  align-self:flex-start;background:#0d6efd;color:#fff;border:0;border-radius:.375rem;
+  padding:.375rem .75rem;font-size:.875rem;font-weight:400;cursor:pointer;font-family:inherit;
+}
+.dcard .dp{
+  align-self:flex-start;background:#198754;color:#fff;border-radius:50rem;
+  padding:.2rem .6rem;font-size:.75rem;font-weight:400;
+}
+/* tarjeta demo — estado "tokens propios" */
+.demo.tok .dcard{
+  background:var(--paper-2);color:var(--ink);
+  border:1px solid var(--rule);border-radius:0;
+  box-shadow:var(--shadow);
+  font-family:"Archivo",sans-serif;
+  padding:1.4rem;gap:.55rem;
+  position:relative;
+}
+.demo.tok .dcard::after{
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(180deg,var(--rule-strong),transparent 42%);
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+  -webkit-mask-composite:xor;mask-composite:exclude;padding:1px;
+}
+.demo.tok .dcard .dt{
+  font-size:.6875rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-4);
+}
+.demo.tok .dcard .dv{
+  font-size:2.4rem;font-weight:600;font-stretch:88%;letter-spacing:-.035em;
+  font-variant-numeric:tabular-nums;color:var(--ink);line-height:1;
+}
+.demo.tok .dcard .dm{font-size:.8125rem;color:var(--ink-3);font-family:"Newsreader",serif}
+.demo.tok .dcard .db{
+  background:transparent;color:var(--ink);border:1px solid var(--rule-strong);border-radius:0;
+  font-size:.75rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;padding:.45rem .8rem;
+  font-family:"Archivo",sans-serif;
+  transition:background var(--t-fast) var(--e-out),color var(--t-fast) var(--e-out);
+}
+.demo.tok .dcard .db:hover{background:var(--ink);color:var(--paper)}
+.demo.tok .dcard .dp{
+  background:var(--keep-soft);color:var(--keep);border:1px solid var(--keep);border-radius:0;
+  font-size:.625rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;padding:.18rem .5rem;
+}
+
+/* ── listas ── */
+ul.clean{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:.85rem}
+ul.clean li{display:grid;grid-template-columns:auto 1fr;gap:.75rem;align-items:start;font-size:.9688rem;color:var(--ink-2);line-height:1.55}
+ul.clean li::before{content:"";width:6px;height:6px;margin-top:.62rem;background:var(--thread);flex:none}
+ul.clean.no li::before{background:var(--ink-4);transform:rotate(45deg)}
+
+/* ── cierre ── */
+.close{background:var(--paper-3);border:1px solid var(--rule-strong);padding:clamp(1.6rem,4vw,2.75rem);position:relative}
+.close::before{
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(90% 120% at 100% 0%,var(--glow),transparent 60%);opacity:.10;
+}
+
+footer{border-top:1px solid var(--rule);padding-block:2.25rem 3.25rem}
+.foot{display:flex;flex-wrap:wrap;gap:.75rem 2rem;justify-content:space-between;font-family:"IBM Plex Mono",monospace;font-size:.6875rem;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-4)}
+
+/* ── motion ── */
+.rise{opacity:0;transform:translateY(14px)}
+.rise.in{opacity:1;transform:none;transition:opacity var(--t-slow) var(--e-out),transform var(--t-slow) var(--e-out)}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.001ms!important;transition-duration:.001ms!important}
+  .rise{opacity:1;transform:none}
+}
+</style>
+</head>
+<body>
+<!-- ═══════════════ HERO ═══════════════ -->
+<section class="hero">
+  <div class="wrap">
+    <span class="reg" style="top:2.2rem;left:.4rem"></span>
+    <div class="hero-meta">
+      <span>SGPMRJA</span>
+      <span>Propuesta técnica</span>
+      <span>Rama enmanuel</span>
+      <span>Agosto 2026</span>
+    </div>
+    <h1 class="rise">Veintiún módulos.<br>Una sola <em>frontera</em>.</h1>
+    <div class="col stack rise" style="margin-top:2rem">
+      <p class="lead">El sistema funciona. La lógica de negocio es lo mejor que tenemos y no se toca. Lo que está agotado es la capa de vista: 152 vistas Blade, 15.674 líneas de jQuery suelto y un tema comprado de 140&nbsp;MB que ya nos cobra más horas de las que nos ahorra.</p>
+      <p class="small">Esta propuesta define <b style="color:var(--ink-2)">a qué migramos</b>, <b style="color:var(--ink-2)">en qué orden</b> y —sobre todo— <b style="color:var(--ink-2)">dónde está la frontera que la migración no cruza</b>. Se puede detener en cualquier fase con el sistema andando.</p>
+    </div>
+
+    <div class="metrics rise">
+      <div class="metric"><span class="n">47.545</span><span class="k">líneas Blade</span><span class="s">repartidas en 152 vistas</span></div>
+      <div class="metric"><span class="n">15.674</span><span class="k">líneas JS</span><span class="s">IIFEs dentro de <span class="mono">@push('scripts')</span></span></div>
+      <div class="metric"><span class="n">11.869</span><span class="k">líneas CSS</span><span class="s">un solo <span class="mono">custom.css</span></span></div>
+      <div class="metric"><span class="n">140 MB</span><span class="k">assets Velzon</span><span class="s">tema que no controlamos</span></div>
+      <div class="metric"><span class="n">21</span><span class="k">módulos</span><span class="s">35 controllers · 208 rutas</span></div>
+    </div>
+    <p class="small mono" style="margin-top:.85rem;font-size:.75rem;letter-spacing:.04em">Medido sobre el árbol de trabajo actual, no estimado.</p>
+  </div>
+</section>
+
+<!-- ═══════════════ DIAGNÓSTICO ═══════════════ -->
+<section>
+  <div class="wrap stack-lg">
+    <div class="head col">
+      <span class="eyebrow">El diagnóstico</span>
+      <h2>No es que se vea viejo.<br>Es que cuesta caro.</h2>
+      <p class="lead">Lo caro no es la estética. Es que cada pieza de interfaz que necesitamos hay que construirla dos veces: una peleando con Bootstrap y otra arreglando lo que Bootstrap rompió.</p>
+    </div>
+
+    <div class="col stack">
+      <p>Revisa el historial de los últimos meses. Una fracción nada trivial del trabajo se fue en pelear con el apilamiento de capas de Bootstrap, no en resolver problemas del negocio:</p>
+      <ul class="clean">
+        <li>El dropdown de banco del wizard de pedidos, recortado por el footer del modal → hubo que instanciar Popper con <span class="mono">strategy:'fixed'</span>, desactivar <span class="mono">flip</span> y calcular el ancho en píxeles en cada <span class="mono">show.bs.dropdown</span>.</li>
+        <li><span class="mono">modal-hidden-temp</span>, un parche global en el layout para que los modales anidados no se pisen.</li>
+        <li><span class="mono">:has(.actions-menu.show){overflow:visible}</span> para que el menú ⋮ de las tablas no se corte.</li>
+        <li><b>AtlanticoSelect entero</b>, escrito a mano desde cero, porque Select2 no funciona dentro de modales.</li>
+      </ul>
+      <div class="callout">
+        <span class="eyebrow">El punto</span>
+        <p style="font-size:.9688rem;line-height:1.6">Todo eso es <strong>un solo problema</strong>: elementos flotantes recortados por el <span class="mono">overflow</span> de un ancestro. Las primitivas modernas lo resuelven renderizando cada capa flotante en un portal fuera del árbol. No es «otra librería de UI» — es borrar una categoría entera de trabajo que hoy se repite en cada módulo nuevo.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ LA FRONTERA ═══════════════ -->
+<section>
+  <div class="wrap stack-lg">
+    <div class="head col">
+      <span class="eyebrow">La decisión que importa</span>
+      <h2>Inertia, no un SPA desacoplado</h2>
+      <p class="lead">Esta es la única decisión difícil de revertir. Todo lo demás —React, Tailwind, qué tabla usamos— se cambia módulo por módulo. Esto no.</p>
+    </div>
+
+    <figure class="rise">
+      <div class="fig-frame">
+        <svg viewBox="0 0 900 470" role="img" aria-label="Diagrama: hoy Blade y jQuery abren tres caminos hacia los controllers; con Inertia hay uno solo. Por debajo de la frontera de migración, rutas, controllers, servicios y base de datos quedan idénticos.">
+          <defs>
+            <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0 0 L10 5 L0 10 z" fill="currentColor"/>
+            </marker>
+            <marker id="ah-t" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0 0 L10 5 L0 10 z" fill="var(--thread)"/>
+            </marker>
+            <marker id="ah-k" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0 0 L10 5 L0 10 z" fill="var(--keep)"/>
+            </marker>
+          </defs>
+
+          <!-- encabezados de columna -->
+          <text x="28" y="26" font-family="Archivo,sans-serif" font-size="11" font-weight="600" letter-spacing="1.6" fill="var(--ink-4)">HOY</text>
+          <text x="488" y="26" font-family="Archivo,sans-serif" font-size="11" font-weight="600" letter-spacing="1.6" fill="var(--thread)">CON INERTIA</text>
+
+          <!-- grupo izquierdo -->
+          <rect x="28" y="40" width="384" height="188" fill="none" stroke="currentColor" stroke-opacity=".28" stroke-dasharray="3 3"/>
+          <text x="40" y="58" font-family="IBM Plex Mono,monospace" font-size="9.5" letter-spacing="1" fill="var(--ink-4)">NAVEGADOR</text>
+          <g font-family="Archivo,sans-serif" font-size="12.5" fill="currentColor">
+            <rect x="46" y="68" width="348" height="40" fill="var(--paper-3)" stroke="currentColor" stroke-opacity=".4"/>
+            <text x="60" y="93">Blade renderiza el HTML completo</text>
+            <rect x="46" y="118" width="348" height="40" fill="var(--paper-3)" stroke="currentColor" stroke-opacity=".4"/>
+            <text x="60" y="143">jQuery — 15.674 líneas de IIFE</text>
+            <rect x="46" y="168" width="348" height="40" fill="var(--paper-3)" stroke="currentColor" stroke-opacity=".4"/>
+            <text x="60" y="193">DataTables — su propio ajax</text>
+          </g>
+
+          <!-- grupo derecho -->
+          <rect x="488" y="40" width="384" height="188" fill="none" stroke="var(--thread)" stroke-opacity=".45" stroke-dasharray="3 3"/>
+          <text x="500" y="58" font-family="IBM Plex Mono,monospace" font-size="9.5" letter-spacing="1" fill="var(--ink-4)">NAVEGADOR</text>
+          <rect x="506" y="68" width="348" height="140" fill="var(--paper-3)" stroke="var(--thread)" stroke-opacity=".55"/>
+          <text x="520" y="98" font-family="Archivo,sans-serif" font-size="14" font-weight="600" fill="currentColor">React 19 + TypeScript</text>
+          <text x="520" y="122" font-family="Archivo,sans-serif" font-size="12.5" fill="var(--ink-3)">un componente por página</text>
+          <line x1="520" y1="140" x2="840" y2="140" stroke="currentColor" stroke-opacity=".22"/>
+          <text x="520" y="164" font-family="IBM Plex Mono,monospace" font-size="11" fill="var(--ink-3)">cliente Inertia</text>
+          <text x="520" y="188" font-family="Archivo,sans-serif" font-size="12.5" fill="var(--ink-3)">intercepta clicks y envíos</text>
+
+          <!-- flechas hacia la frontera -->
+          <g stroke="currentColor" stroke-opacity=".55" stroke-width="1.4" marker-end="url(#ah)" fill="none">
+            <line x1="120" y1="230" x2="120" y2="266"/>
+            <line x1="220" y1="230" x2="220" y2="266"/>
+            <line x1="320" y1="230" x2="320" y2="266"/>
+          </g>
+          <text x="220" y="256" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="9.5" fill="var(--ink-4)" letter-spacing=".5">3 CAMINOS DISTINTOS</text>
+
+          <line x1="680" y1="230" x2="680" y2="266" stroke="var(--thread)" stroke-width="1.6" marker-end="url(#ah-t)"/>
+          <text x="694" y="253" font-family="IBM Plex Mono,monospace" font-size="9.5" fill="var(--thread)" letter-spacing=".5">1 CAMINO · PROPS JSON</text>
+
+          <!-- FRONTERA -->
+          <line x1="28" y1="284" x2="872" y2="284" stroke="var(--keep)" stroke-width="1.6" stroke-dasharray="7 5"/>
+          <text x="28" y="300" font-family="Archivo,sans-serif" font-size="10.5" font-weight="600" letter-spacing="1.5" fill="var(--keep)">FRONTERA DE LA MIGRACIÓN — LA REESCRITURA NO BAJA DE AQUÍ</text>
+
+          <!-- espina compartida -->
+          <rect x="28" y="316" width="844" height="130" fill="var(--keep-soft)" stroke="var(--keep)" stroke-opacity=".5"/>
+          <text x="44" y="338" font-family="IBM Plex Mono,monospace" font-size="9.5" letter-spacing="1" fill="var(--keep)">LARAVEL — SIN CAMBIOS</text>
+          <g font-family="Archivo,sans-serif" font-size="12" fill="currentColor" text-anchor="middle">
+            <rect x="52" y="356" width="168" height="62" fill="var(--paper-2)" stroke="var(--keep)" stroke-opacity=".55"/>
+            <text x="136" y="382">routes/web.php</text>
+            <text x="136" y="401" font-size="11" fill="var(--ink-3)">208 rutas</text>
+
+            <rect x="256" y="356" width="168" height="62" fill="var(--paper-2)" stroke="var(--keep)" stroke-opacity=".55"/>
+            <text x="340" y="382">Controllers</text>
+            <text x="340" y="401" font-size="11" fill="var(--ink-3)">35 archivos</text>
+
+            <rect x="460" y="356" width="168" height="62" fill="var(--paper-2)" stroke="var(--keep)" stroke-opacity=".55"/>
+            <text x="544" y="382">Services</text>
+            <text x="544" y="401" font-size="11" fill="var(--ink-3)">Pedido · Compra · Cotización</text>
+
+            <rect x="664" y="356" width="168" height="62" fill="var(--paper-2)" stroke="var(--keep)" stroke-opacity=".55"/>
+            <text x="748" y="382">MySQL 8</text>
+            <text x="748" y="401" font-size="11" fill="var(--ink-3)">56 tablas</text>
+          </g>
+          <g stroke="var(--keep)" stroke-width="1.3" marker-end="url(#ah-k)" fill="none">
+            <line x1="222" y1="387" x2="252" y2="387"/>
+            <line x1="426" y1="387" x2="456" y2="387"/>
+            <line x1="630" y1="387" x2="660" y2="387"/>
+          </g>
+        </svg>
+      </div>
+      <figcaption><b>Figura 1.</b> La migración cambia únicamente lo que está por encima de la línea verde. Validaciones, transacciones con <span class="mono">lockForUpdate()</span>, políticas de permisos y los servicios de negocio siguen exactamente donde están, sin una sola línea reescrita.</figcaption>
+    </figure>
+
+    <div class="col stack">
+      <p>Un SPA desacoplado —React corriendo aparte, hablando con Laravel por una API REST— nos obligaría a reescribir <strong>las dos capas</strong>: construir y mantener una API completa para 208 rutas, duplicar la validación en TypeScript, montar autenticación por tokens, y desplegar en dos sitios. Todo eso para llegar al mismo resultado visual.</p>
+      <p>Inertia reemplaza la capa de vista y nada más. El controller sigue siendo un controller; en vez de <span class="mono">return view(...)</span> hace <span class="mono">return Inertia::render(...)</span> y pasa los mismos datos. La sesión sigue siendo la de Laravel, el CSRF sigue funcionando, no hay CORS.</p>
+      <p><strong>Y lo más importante para nosotros: Blade e Inertia conviven en la misma aplicación.</strong> Migramos un módulo, lo probamos, lo dejamos en producción, y seguimos con el siguiente. En ningún momento existe un «gran salto» donde el sistema esté a medias.</p>
+    </div>
+
+    <div class="grid2">
+      <div>
+        <span class="chip on">Recomendado</span>
+        <h3>Inertia 2 + React + Vite</h3>
+        <p class="small">Un despliegue. Backend intacto. Migración incremental módulo a módulo. Se puede pausar sin dejar nada roto.</p>
+      </div>
+      <div>
+        <span class="chip off">Descartado</span>
+        <h3>SPA desacoplado / Next.js</h3>
+        <p class="small">Dos despliegues, una API REST nueva para 208 rutas, validación duplicada, CORS y tokens. Riesgo alto para el calendario que tenemos.</p>
+      </div>
+      <div>
+        <span class="chip">Alternativa conservadora</span>
+        <h3>Livewire 3 + Alpine</h3>
+        <p class="small">Todo en PHP, curva mínima. Es estable, pero no sube el nivel: seguiríamos sin tipado, sin componentes reutilizables reales y sin experiencia transferible de frontend.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ EL STACK ═══════════════ -->
+<section>
+  <div class="wrap stack-lg">
+    <div class="head col">
+      <span class="eyebrow">El stack</span>
+      <h2>Qué instalamos, y qué reemplaza cada pieza</h2>
+      <p class="lead">Ninguna pieza entra porque esté de moda. Cada una sustituye algo que hoy mantenemos a mano.</p>
+    </div>
+
+    <figure class="rise">
+      <div class="fig-frame">
+        <svg viewBox="0 0 960 480" role="img" aria-label="Diagrama del stack: en el navegador, React con TypeScript y el cliente Inertia, apoyados en shadcn, Tailwind, TanStack Table, Motion, cmdk, Sonner y Vaul, compilados con Vite. En el servidor, Laravel con sus rutas, controllers, servicios y MySQL sin cambios. Ambos lados se comunican por una sola sesión HTTP con props JSON, y laravel-data genera los tipos de TypeScript.">
+          <defs>
+            <marker id="s-ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0 0 L10 5 L0 10 z" fill="var(--thread)"/>
+            </marker>
+            <marker id="s-ahk" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0 0 L10 5 L0 10 z" fill="var(--keep)"/>
+            </marker>
+            <marker id="s-ahn" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0 0 L10 5 L0 10 z" fill="currentColor"/>
+            </marker>
+          </defs>
+
+          <!-- encabezados -->
+          <text x="40" y="34" font-family="Archivo,sans-serif" font-size="11" font-weight="600" letter-spacing="1.7" fill="var(--thread)">NAVEGADOR — SE REESCRIBE</text>
+          <text x="540" y="34" font-family="Archivo,sans-serif" font-size="11" font-weight="600" letter-spacing="1.7" fill="var(--keep)">SERVIDOR — SE QUEDA COMO ESTÁ</text>
+
+          <!-- frontera vertical -->
+          <line x1="480" y1="52" x2="480" y2="456" stroke="var(--keep)" stroke-width="1.4" stroke-dasharray="6 5"/>
+          <text transform="rotate(-90 480 250)" x="480" y="250" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="9" letter-spacing="1.3" fill="var(--keep)" dy="-6">UNA SOLA SESIÓN HTTP · SIN API REST · SIN CORS</text>
+
+          <!-- ══ columna cliente ══ -->
+          <rect x="40" y="60" width="380" height="52" fill="var(--paper-3)" stroke="var(--thread)" stroke-opacity=".6"/>
+          <text x="56" y="82" font-family="Archivo,sans-serif" font-size="14.5" font-weight="600" fill="currentColor">React 19 + TypeScript</text>
+          <text x="56" y="100" font-family="Newsreader,serif" font-size="11.5" fill="var(--ink-3)">reemplaza 15.674 líneas de jQuery</text>
+
+          <rect x="40" y="122" width="380" height="46" fill="var(--paper-3)" stroke="var(--thread)" stroke-opacity=".6"/>
+          <text x="56" y="142" font-family="Archivo,sans-serif" font-size="13" font-weight="600" fill="currentColor">Inertia 2 — cliente</text>
+          <text x="56" y="159" font-family="Newsreader,serif" font-size="11.5" fill="var(--ink-3)">es el router; reemplaza la navegación Blade</text>
+
+          <!-- panel de librerías -->
+          <rect x="40" y="186" width="380" height="200" fill="none" stroke="currentColor" stroke-opacity=".3" stroke-dasharray="3 3"/>
+          <text x="52" y="204" font-family="IBM Plex Mono,monospace" font-size="9" letter-spacing="1.1" fill="var(--ink-4)">LIBRERÍAS — EL CÓDIGO QUEDA EN NUESTRO REPO</text>
+          <g font-family="Archivo,sans-serif" font-size="12" font-weight="600" fill="currentColor">
+            <rect x="54" y="214" width="176" height="46" fill="var(--paper-2)" stroke="currentColor" stroke-opacity=".35"/>
+            <text x="66" y="234">shadcn/ui → Radix</text>
+            <text x="66" y="250" font-size="10" font-weight="400" fill="var(--ink-3)">adiós Bootstrap + Velzon</text>
+
+            <rect x="242" y="214" width="176" height="46" fill="var(--paper-2)" stroke="currentColor" stroke-opacity=".35"/>
+            <text x="254" y="234">Tailwind v4</text>
+            <text x="254" y="250" font-size="10" font-weight="400" fill="var(--ink-3)">tokens propios, no defaults</text>
+
+            <rect x="54" y="270" width="176" height="46" fill="var(--paper-2)" stroke="currentColor" stroke-opacity=".35"/>
+            <text x="66" y="290">TanStack Table</text>
+            <text x="66" y="306" font-size="10" font-weight="400" fill="var(--ink-3)">adiós DataTables + yajra</text>
+
+            <rect x="242" y="270" width="176" height="46" fill="var(--paper-2)" stroke="currentColor" stroke-opacity=".35"/>
+            <text x="254" y="290">Motion</text>
+            <text x="254" y="306" font-size="10" font-weight="400" fill="var(--ink-3)">pasos del wizard</text>
+
+            <rect x="54" y="326" width="176" height="46" fill="var(--paper-2)" stroke="currentColor" stroke-opacity=".35"/>
+            <text x="66" y="346">cmdk</text>
+            <text x="66" y="362" font-size="10" font-weight="400" fill="var(--ink-3)">paleta de comandos ⌘K</text>
+
+            <rect x="242" y="326" width="176" height="46" fill="var(--paper-2)" stroke="currentColor" stroke-opacity=".35"/>
+            <text x="254" y="346">Sonner + Vaul</text>
+            <text x="254" y="362" font-size="10" font-weight="400" fill="var(--ink-3)">avisos y paneles</text>
+          </g>
+
+          <rect x="40" y="400" width="380" height="46" fill="var(--paper-3)" stroke="currentColor" stroke-opacity=".45"/>
+          <text x="56" y="420" font-family="Archivo,sans-serif" font-size="13" font-weight="600" fill="currentColor">Vite</text>
+          <text x="56" y="437" font-family="Newsreader,serif" font-size="11.5" fill="var(--ink-3)">ya está en el repo, hoy sin usar</text>
+
+          <!-- ══ columna servidor ══ -->
+          <g font-family="Archivo,sans-serif" fill="currentColor">
+            <rect x="540" y="60" width="380" height="46" fill="var(--keep-soft)" stroke="var(--keep)" stroke-opacity=".55"/>
+            <text x="556" y="80" font-size="13" font-weight="600">routes/web.php</text>
+            <text x="556" y="97" font-family="Newsreader,serif" font-size="11.5" fill="var(--ink-3)">las mismas 208 rutas</text>
+
+            <rect x="540" y="118" width="380" height="56" fill="var(--keep-soft)" stroke="var(--keep)" stroke-opacity=".55"/>
+            <text x="556" y="140" font-size="13" font-weight="600">Controllers · 35</text>
+            <text x="556" y="158" font-family="IBM Plex Mono,monospace" font-size="11" fill="var(--ink-3)">return Inertia::render($props)</text>
+
+            <rect x="540" y="186" width="380" height="46" fill="var(--keep-soft)" stroke="var(--keep)" stroke-opacity=".55"/>
+            <text x="556" y="206" font-size="13" font-weight="600">Services</text>
+            <text x="556" y="223" font-family="Newsreader,serif" font-size="11.5" fill="var(--ink-3)">Pedido · Compra · Cotización — sin tocar</text>
+
+            <rect x="540" y="244" width="380" height="46" fill="var(--keep-soft)" stroke="var(--keep)" stroke-opacity=".55"/>
+            <text x="556" y="264" font-size="13" font-weight="600">Models + MySQL 8</text>
+            <text x="556" y="281" font-family="Newsreader,serif" font-size="11.5" fill="var(--ink-3)">56 tablas, sin migración de datos</text>
+
+            <rect x="540" y="336" width="380" height="52" fill="var(--paper-3)" stroke="var(--thread)" stroke-opacity=".6"/>
+            <text x="556" y="357" font-size="12.5" font-weight="600">spatie/laravel-data</text>
+            <text x="556" y="375" font-family="IBM Plex Mono,monospace" font-size="10.5" fill="var(--ink-3)">+ typescript-transformer</text>
+          </g>
+
+          <!-- flechas cruzando la frontera -->
+          <line x1="424" y1="76" x2="536" y2="76" stroke="var(--thread)" stroke-width="1.5" marker-end="url(#s-ah)"/>
+          <text x="480" y="68" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="9" fill="var(--thread)" letter-spacing=".4">X-INERTIA: TRUE</text>
+
+          <line x1="536" y1="152" x2="424" y2="152" stroke="var(--keep)" stroke-width="1.5" marker-end="url(#s-ahk)"/>
+          <text x="480" y="170" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="9" fill="var(--keep)" letter-spacing=".4">PROPS JSON</text>
+
+          <line x1="536" y1="362" x2="424" y2="362" stroke="currentColor" stroke-opacity=".65" stroke-width="1.4" stroke-dasharray="4 3" marker-end="url(#s-ahn)"/>
+          <text x="480" y="380" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="9" fill="var(--ink-3)" letter-spacing=".4">GENERA .D.TS</text>
+        </svg>
+      </div>
+      <figcaption><b>Figura 2.</b> El stack completo. Lo único que cruza la frontera son datos: la petición marcada con <span class="mono">X-Inertia</span>, las props en JSON de vuelta, y los tipos de TypeScript que <span class="mono">laravel-data</span> genera desde las clases PHP. No hay API REST, no hay segundo servidor, no hay autenticación duplicada.</figcaption>
+    </figure>
+
+    <div class="col stack">
+      <h3>La pieza que hace que esto sea de verdad moderno</h3>
+      <p>De todo el diagrama, la que más cambia el día a día es la de abajo a la derecha. <span class="mono">spatie/laravel-data</span> define el DTO una sola vez en PHP y <span class="mono">typescript-transformer</span> genera los tipos de TypeScript automáticamente.</p>
+      <p>Traducido: si alguien le cambia un campo a <span class="mono">Cotizacion</span> en el backend, <strong>el frontend deja de compilar hasta que se ajuste</strong>. Hoy ese mismo cambio se descubre en producción, cuando algo aparece vacío en pantalla. Sin esta pieza, Inertia + React es solo otro renderizador; con ella, tenemos tipado de punta a punta sobre un backend PHP.</p>
+    </div>
+
+    <div class="tbl-wrap rise">
+      <table>
+        <thead>
+          <tr><th>Hoy</th><th>Pasa a ser</th><th class="mono">Qué se elimina</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Blade + <span class="mono">@push('scripts')</span></td><td><b>Inertia 2 + React 19 + TypeScript</b></td><td class="mono">15.674 líneas de IIFE</td></tr>
+          <tr><td>jQuery</td><td>—</td><td class="mono">dependencia completa</td></tr>
+          <tr><td>Bootstrap 5 + tema Velzon</td><td><b>Tailwind v4 + shadcn/ui (Radix)</b></td><td class="mono">140 MB de assets</td></tr>
+          <tr><td><span class="mono">custom.css</span></td><td>tokens propios en <span class="mono">tailwind.config</span></td><td class="mono">11.869 líneas</td></tr>
+          <tr><td>DataTables server-side + yajra</td><td><b>TanStack Table</b></td><td class="mono">2 librerías</td></tr>
+          <tr><td>AtlanticoSelect, <span class="mono">modal-hidden-temp</span>, parches de Popper</td><td>primitivas Radix con portal</td><td class="mono">los parches de apilamiento</td></tr>
+          <tr><td>Validación JS repetida por módulo</td><td><b>react-hook-form + Zod</b></td><td class="mono">9 implementaciones</td></tr>
+          <tr><td>AG Charts (vanilla)</td><td><span class="mono">ag-charts-react</span></td><td>nada — mismo motor</td></tr>
+          <tr><td>dompdf</td><td><b>se queda igual</b></td><td>nada</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- por qué no Next -->
+    <figure class="rise">
+      <div class="fig-frame">
+        <svg viewBox="0 0 900 210" role="img" aria-label="Comparación: con Inertia el navegador habla directo con Laravel. Con Next.js se insertan dos nodos nuevos, un servidor Node y una capa de API REST, y aparece una segunda frontera de despliegue.">
+          <defs>
+            <marker id="n-ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="currentColor"/></marker>
+            <marker id="n-aht" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="var(--thread)"/></marker>
+          </defs>
+          <text x="28" y="24" font-family="Archivo,sans-serif" font-size="10.5" font-weight="600" letter-spacing="1.6" fill="var(--keep)">CON INERTIA — 1 SALTO, 1 DESPLIEGUE</text>
+          <g font-family="Archivo,sans-serif" font-size="12" fill="currentColor" text-anchor="middle">
+            <rect x="28" y="38" width="180" height="44" fill="var(--paper-3)" stroke="currentColor" stroke-opacity=".45"/><text x="118" y="65">Navegador (React)</text>
+            <rect x="268" y="38" width="180" height="44" fill="var(--keep-soft)" stroke="var(--keep)" stroke-opacity=".6"/><text x="358" y="65">Laravel</text>
+          </g>
+          <line x1="212" y1="60" x2="264" y2="60" stroke="currentColor" stroke-width="1.4" marker-end="url(#n-ah)"/>
+
+          <text x="28" y="124" font-family="Archivo,sans-serif" font-size="10.5" font-weight="600" letter-spacing="1.6" fill="var(--thread)">CON NEXT.JS — 3 SALTOS, 2 DESPLIEGUES</text>
+          <g font-family="Archivo,sans-serif" font-size="12" fill="currentColor" text-anchor="middle">
+            <rect x="28" y="138" width="170" height="44" fill="var(--paper-3)" stroke="currentColor" stroke-opacity=".45"/><text x="113" y="165">Navegador (React)</text>
+            <rect x="250" y="138" width="170" height="44" fill="var(--thread-soft)" stroke="var(--thread)" stroke-opacity=".75"/><text x="335" y="160">servidor Node</text><text x="335" y="175" font-size="10" fill="var(--thread)">nuevo</text>
+            <rect x="472" y="138" width="170" height="44" fill="var(--thread-soft)" stroke="var(--thread)" stroke-opacity=".75"/><text x="557" y="160">API REST</text><text x="557" y="175" font-size="10" fill="var(--thread)">nueva · 208 rutas</text>
+            <rect x="694" y="138" width="170" height="44" fill="var(--keep-soft)" stroke="var(--keep)" stroke-opacity=".6"/><text x="779" y="165">Laravel</text>
+          </g>
+          <g stroke="var(--thread)" stroke-width="1.4" marker-end="url(#n-aht)">
+            <line x1="202" y1="160" x2="246" y2="160"/>
+            <line x1="424" y1="160" x2="468" y2="160"/>
+            <line x1="646" y1="160" x2="690" y2="160"/>
+          </g>
+          <line x1="224" y1="130" x2="224" y2="196" stroke="var(--thread)" stroke-dasharray="4 4" stroke-opacity=".8"/>
+          <text x="232" y="204" font-family="IBM Plex Mono,monospace" font-size="8.5" fill="var(--thread)" letter-spacing=".5">SEGUNDA FRONTERA DE DESPLIEGUE · CORS · TOKENS</text>
+        </svg>
+      </div>
+      <figcaption><b>Figura 3.</b> Palantir usa Next.js porque su sitio no tiene backend propio; el nuestro sí. En nuestro caso Next.js solo agrega dos nodos y una frontera de despliegue que hoy no existen. <b>Y aclaración práctica:</b> shadcn no depende de Next — tiene guía oficial para Vite y funciona igual.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<!-- ═══════════════ EVIDENCIA ═══════════════ -->
+<section>
+  <div class="wrap stack-lg">
+    <div class="head col">
+      <span class="eyebrow">Evidencia medida</span>
+      <h2>Qué usan de verdad los sitios que admiramos</h2>
+      <p class="lead">Antes de decidir por intuición, descargamos y analizamos los bundles de tres referencias. Los resultados desarman una suposición que teníamos.</p>
+    </div>
+
+    <div class="tbl-wrap rise">
+      <table>
+        <thead><tr><th>Sitio</th><th>Framework</th><th>Lo que encontramos en el bundle</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><b>anduril.com</b><br><span class="small">marketing</span></td>
+            <td><span class="chip off">Ninguno</span></td>
+            <td class="small">Cero React, cero Next. Un <span class="mono">app.js</span> de 1,47 MB escrito a mano + <span class="mono">lenis.min.js</span>. Dentro: 130 referencias a Lenis, Three.js, <b>27 marcas de shaders GLSL propios</b>, <b>25 curvas <span class="mono">cubic-bezier</span> distintas</b>, y rutas de GPU separadas para iOS y macOS. Tipografías licenciadas: Helvetica Now Display + Elios.</td>
+          </tr>
+          <tr>
+            <td><b>palantir.com</b><br><span class="small">marketing</span></td>
+            <td><span class="chip">Next.js</span></td>
+            <td class="small">1.023 referencias a <span class="mono">/_next/</span>, React, Pages Router, ~30 chunks. Un sitio de marketing en Next bastante convencional.</td>
+          </tr>
+          <tr>
+            <td><b>linear.app</b><br><span class="small">aplicación</span></td>
+            <td><span class="chip on">React</span></td>
+            <td class="small">Next.js + React, y en el DOM: <span class="mono">cmdk-root</span>, ids <span class="mono">radix-…</span> y <span class="mono">base-ui-…</span>. Clases que delatan sus detalles: <span class="mono">_grain</span>, <span class="mono">_glow</span>, <span class="mono">bottomGradientBorder</span>, <span class="mono">--color-text-quaternary</span>.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="col stack">
+      <div class="callout">
+        <span class="eyebrow">Conclusión incómoda</span>
+        <p style="font-size:.9688rem;line-height:1.6">Dos sitios que percibimos como igual de premium: <strong>uno usa React y el otro no usa framework alguno</strong>. La sensación de calidad es <em>ortogonal</em> al framework. React no la produce, y su ausencia no la impide.</p>
+      </div>
+      <p>Lo que sí encontramos, y se repite: <strong>tipografía licenciada</strong>, <strong>curvas de easing propias</strong> —25 en un solo sitio, ninguna por defecto—, <strong>capas de grano y glow</strong> y <strong>bordes con gradiente</strong> en lugar de bordes planos. Nada de eso es una decisión de framework, y casi todo es CSS puro.</p>
+      <p>Entonces, ¿por qué React? Por ecosistema, mercado laboral y soporte de las herramientas de IA con las que trabajamos a diario. <strong>No porque produzca la calidad visual — esa la ponemos nosotros.</strong></p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ LO QUE SE VE CARO ═══════════════ -->
+<section>
+  <div class="wrap stack-lg">
+    <div class="head col">
+      <span class="eyebrow">La trampa</span>
+      <h2>Instalar shadcn y no tocar nada<br>nos deja donde no queremos estar</h2>
+      <p class="lead">Hay que decirlo claro porque va contra la intuición: <strong>shadcn con los tokens por defecto es exactamente la estética de «app generada»</strong>. El radio de 0,5rem, los grises neutros, esa sombra de tarjeta, Inter sin ajustar. Es la firma visual más reconocible del momento.</p>
+      <p class="small">El valor de shadcn no es cómo se ve — es que el CLI <b style="color:var(--ink-2)">copia el código fuente a nuestro repo</b>. Es un punto de partida estructural (portal, foco, teclado, accesibilidad ya resueltos), no un punto de llegada visual. La misma tarjeta, con los mismos datos, cambia por completo según quién definió los tokens:</p>
+    </div>
+
+    <div class="demo rise" id="demo">
+      <div class="demo-bar">
+        <span class="t">La misma tarjeta · dos sistemas de tokens</span>
+        <button class="tog" type="button" data-mode="def" aria-pressed="true">Por defecto</button>
+        <button class="tog" type="button" data-mode="tok" aria-pressed="false">Tokens propios</button>
+      </div>
+      <div class="demo-stage">
+        <div class="dcard">
+          <span class="dp">Aprobada</span>
+          <span class="dt">Cotización COT-2026-0184</span>
+          <span class="dv">$ 4.820,00</span>
+          <span class="dm">Bs 1.756.484,00 · Tasa BCV (25/08/2026)</span>
+          <button class="db" type="button">Convertir a pedido</button>
+        </div>
+      </div>
+    </div>
+    <p class="small mono" style="font-size:.75rem;letter-spacing:.04em;color:var(--ink-4)">Los dos estados son HTML idéntico. Solo cambian tipografía, radio, escala de peso, color y jerarquía.</p>
+
+    <div class="col stack">
+      <h3>Las tres inversiones que de verdad mueven la aguja</h3>
+      <p>Ninguna es una librería, y por eso son las que se saltan:</p>
+      <ul class="clean">
+        <li><b style="color:var(--ink)">Una tipografía distintiva y una escala de tokens propia.</b> Un día de trabajo. Cambia cerca del 60% de la percepción. Si elegimos Inter —que es lo que usa Linear— que sea con tracking, jerarquía y densidad ajustados, no porque vino en la plantilla.</li>
+        <li><b style="color:var(--ink)">Un lenguaje de movimiento definido una vez.</b> Tres duraciones y tres curvas escritas en <span class="mono">tailwind.config</span>, aplicadas sin excepción. La consistencia es lo que se lee como «producto»; la inconsistencia es lo que se lee como «generado».</li>
+        <li><b style="color:var(--ink)">Dos o tres momentos firma, pulidos hasta el absurdo.</b> La transición entre pasos del wizard de cotizaciones, la tabla que filtra sin recargar, la paleta ⌘K. Vale más que 21 módulos con animaciones mediocres repartidas.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ DOS CAPAS ═══════════════ -->
+<section>
+  <div class="wrap stack-lg">
+    <div class="head col">
+      <span class="eyebrow">Dos capas, dos lenguajes</span>
+      <h2>Anduril no es nuestra referencia<br>para el ERP</h2>
+      <p class="lead">anduril.com es un folleto: diez páginas, sin autenticación, sin CRUD, sin grillas. Se visita una vez, haciendo scroll. Puede permitirse 1,47 MB de WebGL. Nuestro sistema es una herramienta de captura de datos que alguien abre cuarenta veces al día.</p>
+    </div>
+
+    <div class="col stack">
+      <p>Si le ponemos smooth scroll y transiciones WebGL a un ERP, <strong>lo empeoramos</strong>. Quien carga treinta cotizaciones diarias odia esperar 600&nbsp;ms a que aparezca una modal y odia la animación que ya vio cuatrocientas veces. En una aplicación, la fluidez se mide justo al revés: por la <em>ausencia</em> de espera.</p>
+      <p>Por eso separamos el presupuesto en dos entregables con lenguajes distintos:</p>
+    </div>
+
+    <div class="grid2 rise">
+      <div>
+        <span class="chip off">Capa 1 · una sola página</span>
+        <h3>Landing de presentación</h3>
+        <p class="small">Aquí sí vamos en modo Anduril, y es donde impresionamos en la defensa. Cuesta poco porque es una página.</p>
+        <ul class="clean" style="margin-top:.3rem">
+          <li>Lenis + GSAP/ScrollTrigger — narrativa por scroll</li>
+          <li>Three.js — <b style="color:var(--ink-2)">un</b> momento WebGL, bien hecho</li>
+          <li>Tipografía display distintiva y easings propios</li>
+        </ul>
+        <p class="small" style="border-top:1px solid var(--rule);padding-top:.8rem">No necesita ser React ni Inertia: es un HTML independiente. Es el lugar sin riesgo para que quien quiera pruebe Svelte o Astro — está aislado y no toca el ERP.</p>
+      </div>
+      <div>
+        <span class="chip on">Capa 2 · 21 módulos</span>
+        <h3>El ERP</h3>
+        <p class="small">Referencia: <b style="color:var(--ink-2)">Linear</b>, no Anduril. Lo que se siente caro aquí es la velocidad, no el espectáculo.</p>
+        <ul class="clean" style="margin-top:.3rem">
+          <li>Respuesta inmediata — UI optimista, sin spinners</li>
+          <li>Navegación por teclado y paleta ⌘K</li>
+          <li>Densidad alta de información, paleta contenida</li>
+          <li>Movimiento de 100–150&nbsp;ms, nunca de 800</li>
+          <li>Grano, glow y bordes con gradiente — CSS puro, cero WebGL</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ ORDEN DE MIGRACIÓN ═══════════════ -->
+<section>
+  <div class="wrap stack-lg">
+    <div class="head col">
+      <span class="eyebrow">Orden de migración</span>
+      <h2>De menor a mayor riesgo</h2>
+      <p class="lead">El orden no es por importancia: es por riesgo. Los módulos simples van primero para que el equipo aprenda el patrón donde equivocarse es barato. Los wizards van al final, cuando ya sabemos lo que hacemos.</p>
+    </div>
+
+    <div class="phases rise">
+      <div class="phase">
+        <span class="num">FASE 0</span>
+        <h3 class="body">Subir a Laravel 12 + PHP 8.3</h3>
+        <span class="risk chip">Prerrequisito</span>
+        <p>No negociable y en su propio PR, antes de tocar una sola vista. Hoy corremos Laravel <span class="mono">^10.10</span> sobre PHP <span class="mono">^8.1</span>, y Laravel 10 ya está fuera de soporte. Migrar el frontend sobre un framework sin mantenimiento es acumular dos riesgos a la vez.</p>
+      </div>
+      <div class="phase">
+        <span class="num">FASE 1</span>
+        <h3 class="body">Layout, sidebar, autenticación y tokens</h3>
+        <span class="risk chip">Riesgo bajo</span>
+        <p>Se hace una sola vez y establece el patrón que copian todos los demás módulos. Aquí se definen la tipografía, la escala de tokens y el lenguaje de movimiento. Es la fase que más condiciona el resultado final.</p>
+      </div>
+      <div class="phase">
+        <span class="num">FASE 2</span>
+        <h3 class="body">CRUDs simples</h3>
+        <span class="risk chip">Riesgo bajo</span>
+        <p><span class="mono">colores</span> · <span class="mono">cargos</span> · <span class="mono">departamentos</span> · <span class="mono">atributos</span>. Poca lógica, mucho aprendizaje. Cada persona del equipo debería hacer al menos uno antes de pasar a lo siguiente.</p>
+      </div>
+      <div class="phase">
+        <span class="num">FASE 3</span>
+        <h3 class="body">Módulos con tablas pesadas</h3>
+        <span class="risk chip">Riesgo medio</span>
+        <p><span class="mono">clientes</span> · <span class="mono">insumos</span> · <span class="mono">proveedores</span> · <span class="mono">empleados</span> · <span class="mono">users</span>. Aquí se resuelve TanStack Table de una vez y se reutiliza en todo lo demás. Los endpoints <span class="mono">getX()</span> actuales se adaptan, no se botan.</p>
+      </div>
+      <div class="phase">
+        <span class="num">FASE 4</span>
+        <h3 class="body">Flujos con estado</h3>
+        <span class="risk chip">Riesgo medio</span>
+        <p><span class="mono">compras</span> · <span class="mono">ordenes</span> · <span class="mono">calidad</span> · <span class="mono">movimiento-insumo</span>. Borrador → procesar → anular → clonar. La lógica ya vive en los services y no se toca; lo que cambia es cómo se dibuja el estado.</p>
+      </div>
+      <div class="phase">
+        <span class="num">FASE 5</span>
+        <h3 class="body">Los wizards</h3>
+        <span class="risk chip">Riesgo alto</span>
+        <p><span class="mono">cotizaciones</span> (6.591 líneas en un solo archivo) · <span class="mono">pedidos</span> · <span class="mono">reportes</span>. Es el premio de toda la migración —convertir esa maraña en una máquina de estados con tipos— pero exige que el patrón ya esté dominado. Nunca primero.</p>
+      </div>
+    </div>
+
+    <div class="col">
+      <div class="callout">
+        <span class="eyebrow">Sobre el calendario</span>
+        <p style="font-size:.9688rem;line-height:1.6">Con 21 módulos y el equipo aprendiendo React y TypeScript en paralelo, esto es <strong>trabajo de meses, no de semanas</strong>. Y es viable precisamente por eso: al terminar cualquier fase el sistema queda entero y en producción. Si hay que parar, se para.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ LO QUE NO ═══════════════ -->
+<section>
+  <div class="wrap stack-lg">
+    <div class="head col">
+      <span class="eyebrow">Fuera de alcance</span>
+      <h2>Lo que explícitamente no vamos a hacer</h2>
+    </div>
+    <div class="col">
+      <ul class="clean no">
+        <li><b style="color:var(--ink)">No Next.js.</b> Nuestro router es Inertia y nuestro servidor es Laravel. Next agregaría un runtime Node, una API REST nueva y un segundo despliegue (Figura 3).</li>
+        <li><b style="color:var(--ink)">No Bits UI.</b> Es la contraparte de Radix para Svelte; en React no existe. Con shadcn/ui ya viene Radix incluido — no se suman, son la misma capa en ecosistemas distintos.</li>
+        <li><b style="color:var(--ink)">No API REST desacoplada.</b> Duplicar validación y montar autenticación por tokens no nos compra nada que necesitemos hoy.</li>
+        <li><b style="color:var(--ink)">No reescritura de golpe.</b> Nunca existe una rama larga con el sistema a medias. Un módulo por PR.</li>
+        <li><b style="color:var(--ink)">No tocar los services ni el esquema.</b> Cero migraciones de datos por causa del frontend.</li>
+        <li><b style="color:var(--ink)">No efectos de sitio de marketing dentro del ERP.</b> El WebGL y el smooth scroll se quedan en la landing.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ CIERRE ═══════════════ -->
+<section>
+  <div class="wrap">
+    <div class="close rise">
+      <div class="col stack">
+        <span class="eyebrow">Lo que pedimos aprobar</span>
+        <h2>Empezar por la Fase 0 y un módulo piloto</h2>
+        <p class="lead">No pedimos aprobar la migración completa hoy. Pedimos aprobar <strong>dos PRs</strong>: la subida a Laravel 12 + PHP 8.3, y un solo módulo simple migrado de punta a punta con el stack de la Figura 2.</p>
+        <p>Con ese piloto en la mano tendremos algo que ahora no tenemos: una medida real de cuánto cuesta un módulo, hecha por nosotros y sobre nuestro código. Con ese número se decide el resto — y si el número no cierra, paramos habiendo perdido un módulo, no un semestre.</p>
+        <p class="small mono" style="border-top:1px solid var(--rule-strong);padding-top:1.1rem;letter-spacing:.03em;color:var(--ink-4)">SGPMRJA · MANUFACTURAS R.J. ATLÁNTICO · ACARIGUA<br>DIAGNÓSTICO MEDIDO SOBRE LA RAMA ENMANUEL</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap foot">
+    <span>Propuesta técnica — capa de presentación</span>
+    <span>Agosto 2026</span>
+  </div>
+</footer>
+
+<script>
+(function(){
+  var demo=document.getElementById('demo');
+  if(demo){
+    demo.querySelectorAll('.tog').forEach(function(btn){
+      btn.addEventListener('click',function(){
+        var tok=btn.dataset.mode==='tok';
+        demo.classList.toggle('tok',tok);
+        demo.querySelectorAll('.tog').forEach(function(b){
+          b.setAttribute('aria-pressed',String(b===btn));
+        });
+      });
+    });
+  }
+  var reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var items=document.querySelectorAll('.rise');
+  if(reduce||!('IntersectionObserver' in window)){
+    items.forEach(function(el){el.classList.add('in')});
+    return;
+  }
+  var io=new IntersectionObserver(function(entries){
+    entries.forEach(function(e){
+      if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}
+    });
+  },{rootMargin:'0px 0px -8% 0px',threshold:.06});
+  items.forEach(function(el,i){
+    el.style.transitionDelay=(Math.min(i,3)*70)+'ms';
+    io.observe(el);
+  });
+})();
+</script>
+</body>
+</html>
