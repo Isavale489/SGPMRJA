@@ -12,7 +12,7 @@ Descomponer una Especificación de Feature aprobada en tasks atómicas, independ
 - Cada task debe ser **independientemente implementable y verificable**.
 - Revisar tasks existentes en `sdd/tasks/active/` y `sdd/tasks/completed/` para evitar duplicados.
 - **NO escribir código** de implementación — las tasks son planes, no código.
-- Debe correr en rama `enmanuel` (o la rama del feature antes de crear sub-ramas por task).
+- Debe correr en rama `dev` (o la rama del feature antes de crear sub-ramas por task).
 - **Commitear tasks y spec** a la rama antes de que los devs comiencen.
 
 ## Pasos
@@ -22,11 +22,11 @@ Confirmar rama actual:
 ```bash
 git branch --show-current
 ```
-Si no es `enmanuel` o `feat/<slug-spec>`, avisar:
+Si no es `dev` o `feat/<slug-spec>`, avisar:
 ```
-⚠️  /sdd-task debería correr en enmanuel o en la rama del feature.
+⚠️  /sdd-task debería correr en dev o en la rama del feature.
    Rama actual: <rama>
-   Cambia primero: git checkout enmanuel && git pull origin enmanuel
+   Cambia primero: git checkout dev && git pull origin dev
 ```
 
 ### 2. Leer el spec

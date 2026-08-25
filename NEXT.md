@@ -5,7 +5,7 @@
 
 ## Estado actual
 
-**Fase 1 MERGEADA a `enmanuel`** (merge `a5f613e`):
+**Fase 1 MERGEADA a `dev`** (merge `a5f613e`):
 
 | Task | Estado | Qué hizo |
 |---|---|---|
@@ -24,15 +24,15 @@ La fase 1 es **no-breaking**: el middleware `permiso` está registrado pero no a
 ```
 Continuar con FEAT-005 (configuración de seguridad: roles dinámicos + permisos por módulo).
 
-Contexto: ya está MERGEADO a enmanuel la fase 1 (TASK-035/036/037/040): tablas rol/permiso_rol,
+Contexto: ya está MERGEADO a dev la fase 1 (TASK-035/036/037/040): tablas rol/permiso_rol,
 user.role ENUM → role_id con backfill, capa de compatibilidad en User (accessor role,
 isAdmin/hasRole vía relación), registry config/modulos.php + helper tienePermiso() + middleware
 'permiso' (registrado pero DORMIDO) + Gate::before bypass admin, y limpieza de roles fantasma.
 Spec: sdd/specs/seguridad-roles-permisos.spec.md. Memoria: project_feat005_seguridad.md.
 
 Antes de empezar:
-1. git checkout enmanuel && git pull, luego composer dump-autoload && php artisan migrate && php artisan config:clear
-2. Crea rama de trabajo desde enmanuel (p. ej. feat/seguridad-roles-permisos-fase2).
+1. git checkout dev && git pull, luego composer dump-autoload && php artisan migrate && php artisan config:clear
+2. Crea rama de trabajo desde dev (p. ej. feat/seguridad-roles-permisos-fase2).
 
 Falta implementar, en este orden:
 - TASK-038 (sdd/tasks/active/): fundir los grupos role: de routes/web.php en el grupo auth con el
@@ -61,4 +61,4 @@ Empieza por TASK-038.
 - **Paridad del Supervisor**: tras aplicar `permiso` (TASK-038), el Supervisor debe conservar exactamente su acceso actual. Las 34 claves de `PERMISOS_SUPERVISOR` (en la migración `2026_06_15_000003`) son el contrato: `config/modulos.php` debe reflejarlas (verificado al cierre de fase 1: 34/34, 0 brechas).
 - **Conflicto de archivos**: TASK-038 y TASK-039 editan ambos `routes/web.php` y `header.blade.php` → secuenciales.
 - **Dump SQL**: coordinar con Santi antes de regenerar/commitear (preferencia registrada del proyecto).
-- **Post-merge**: cualquier `git pull` de enmanuel requiere `composer dump-autoload && php artisan migrate && php artisan config:clear`.
+- **Post-merge**: cualquier `git pull` de dev requiere `composer dump-autoload && php artisan migrate && php artisan config:clear`.

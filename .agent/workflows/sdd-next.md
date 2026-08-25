@@ -57,7 +57,7 @@ Ordenar candidatos por:
    Archivo: sdd/tasks/active/TASK-010-reporte-mensual-grafico.md
 
 Para tomar una task:
-  1. git checkout enmanuel && git pull
+  1. git checkout dev && git pull
   2. git checkout -b feat/TASK-007-garantias-migracion
   3. Editar el header del archivo task:
      Status: in-progress

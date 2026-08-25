@@ -1,7 +1,7 @@
 # CLAUDE.md — Contexto de proyecto para Claude Code
 
 > Leído automáticamente por Claude Code al iniciar sesión.
-> Última actualización: 2026-07-08 (QoL cotizaciones/dashboard + reversión cotización + dropdown banco · commit `6a4a5cc`) · Rama activa: `enmanuel`
+> Última actualización: 2026-07-08 (QoL cotizaciones/dashboard + reversión cotización + dropdown banco · commit `6a4a5cc`) · Rama activa: `dev`
 
 ---
 
@@ -130,7 +130,7 @@ El modal de edición de cotizaciones tenía chips interactivos para cambiar el e
 
 ### 3. Módulo Compras — Flujo Borrador/Procesar/Anular/Clonar
 
-**Rama**: `feat/compras-ajustes` (mergeada a `enmanuel`)
+**Rama**: `feat/compras-ajustes` (mergeada a `dev`)
 
 #### Flujo de estados
 ```
@@ -243,8 +243,8 @@ Crea la BD (nombre tomado del `.env`, default `sistema_atlantico`) e importa el 
 | Rama | Propósito |
 |---|---|
 | `main` | Producción / base estable |
-| `enmanuel` | Rama de trabajo principal de Emmanuel (contiene todo lo reciente) |
-| `feat/compras-ajustes` | Feature de compras (mergeada a `enmanuel`) |
+| `dev` | Rama de integración del equipo (contiene todo lo reciente). Renombrada desde `enmanuel` el 2026-08-25 |
+| `feat/compras-ajustes` | Feature de compras (mergeada a `dev`) |
 
 <!-- parrot:wiki:begin -->
 ## Codebase Knowledge Graph (LLM Wiki)
