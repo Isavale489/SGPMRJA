@@ -9,6 +9,7 @@ use App\Http\Requests\UpdatePedidoRequest;
 use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 class FormRequestTest extends TestCase
@@ -17,7 +18,7 @@ class FormRequestTest extends TestCase
     // cliente de la ruta): sin esto el test depende del orden de ejecución.
     use RefreshDatabase;
 
-    /** @test */
+    #[Test]
     public function store_cliente_request_tiene_reglas_requeridas()
     {
         $request = new StoreClienteRequest();
@@ -33,7 +34,7 @@ class FormRequestTest extends TestCase
         $this->assertArrayHasKey('telefonos.*.numero', $rules);
     }
 
-    /** @test */
+    #[Test]
     public function store_cliente_request_tiene_mensajes_personalizados()
     {
         $request = new StoreClienteRequest();
@@ -44,7 +45,7 @@ class FormRequestTest extends TestCase
         $this->assertArrayHasKey('telefonos.*.numero.regex', $messages);
     }
 
-    /** @test */
+    #[Test]
     public function update_cliente_request_no_valida_documento()
     {
         $request = new UpdateClienteRequest();
@@ -53,7 +54,7 @@ class FormRequestTest extends TestCase
         $this->assertArrayNotHasKey('documento', $rules);
     }
 
-    /** @test */
+    #[Test]
     public function store_pedido_request_valida_productos_como_array()
     {
         $request = new StorePedidoRequest();
@@ -67,7 +68,7 @@ class FormRequestTest extends TestCase
         $this->assertArrayHasKey('productos.*.cantidad', $rules);
     }
 
-    /** @test */
+    #[Test]
     public function update_pedido_request_incluye_campo_estado()
     {
         $request = new UpdatePedidoRequest();
@@ -78,7 +79,7 @@ class FormRequestTest extends TestCase
         $this->assertStringContainsString('Cancelado', $rules['estado']);
     }
 
-    /** @test */
+    #[Test]
     public function store_user_request_requiere_password_confirmado()
     {
         $request = new StoreUserRequest();
@@ -90,7 +91,7 @@ class FormRequestTest extends TestCase
         $this->assertStringContainsString('exists:rol,id', $rules['role_id']);
     }
 
-    /** @test */
+    #[Test]
     public function update_user_request_no_requiere_password()
     {
         $request = new UpdateUserRequest();
@@ -99,7 +100,7 @@ class FormRequestTest extends TestCase
         $this->assertArrayNotHasKey('password', $rules);
     }
 
-    /** @test */
+    #[Test]
     public function store_pedido_request_valida_talla_y_genero_contra_catalogo()
     {
         $rules = (new StorePedidoRequest())->rules();
@@ -110,7 +111,7 @@ class FormRequestTest extends TestCase
         $this->assertContains('required', $rules['productos.*.genero_id']);
     }
 
-    /** @test */
+    #[Test]
     public function all_form_requests_authorize_returns_true()
     {
         $requests = [

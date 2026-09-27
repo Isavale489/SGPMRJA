@@ -4,9 +4,6 @@ namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Schema;
-use Doctrine\DBAL\Types\Type;
-use Doctrine\DBAL\Exception as DoctrineException;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\Facades\Cache;
 use App\Models\TasaCambio;
@@ -34,13 +31,6 @@ class AppServiceProvider extends ServiceProvider
 
         // Herencia de estatus Pedido → OP y bloqueo de OP bajo pedido cancelado.
         OrdenProduccion::observe(OrdenProduccionObserver::class);
-
-        try {
-            Type::addType('enum', 'Doctrine\DBAL\Types\StringType');
-            DB::getDoctrineSchemaManager()->getDatabasePlatform()->registerDoctrineTypeMapping('enum', 'string');
-        } catch (\Exception $e) {
-            // Silenciar si Doctrine no está disponible o el tipo ya existe
-        }
 
         // Compartir tasa BCV con todas las vistas del admin
         View::composer('admin.*', function ($view) {

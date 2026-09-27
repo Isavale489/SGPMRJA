@@ -7,7 +7,7 @@
 
 ## Stack y arranque
 
-- **Framework**: Laravel 11 + Blade + jQuery + Bootstrap 5
+- **Framework**: Laravel 13 (PHP 8.3+) + Blade + jQuery + Bootstrap 5
 - **BD**: MariaDB 10.4 (puerto 3308, usuario `root`, sin contraseña, DB `sistema_atlantico`)
 - **Servidor local**: `php artisan serve` (o Laragon/XAMPP)
 - **Assets**: archivos estáticos en `public/assets/` (sin Vite en el admin)

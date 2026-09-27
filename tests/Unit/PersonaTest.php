@@ -5,11 +5,12 @@ namespace Tests\Unit;
 use App\Models\Persona;
 use App\Models\Telefono;
 use App\Models\Direccion;
+use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 class PersonaTest extends TestCase
 {
-    /** @test */
+    #[Test]
     public function nombre_completo_devuelve_el_nombre_consolidado()
     {
         // `nombre` ya trae nombre + apellido (o razón social); el accessor solo recorta.
@@ -18,7 +19,7 @@ class PersonaTest extends TestCase
         $this->assertEquals('Juan Pérez', $persona->nombre_completo);
     }
 
-    /** @test */
+    #[Test]
     public function documento_completo_concatena_tipo_y_numero()
     {
         $persona = new Persona([
@@ -29,7 +30,7 @@ class PersonaTest extends TestCase
         $this->assertEquals('V-12345678', $persona->documento_completo);
     }
 
-    /** @test */
+    #[Test]
     public function telefono_principal_retorna_null_sin_telefonos()
     {
         $persona = new Persona(['nombre' => 'Test']);
@@ -39,7 +40,7 @@ class PersonaTest extends TestCase
         $this->assertNull($persona->telefono_principal);
     }
 
-    /** @test */
+    #[Test]
     public function telefono_principal_retorna_numero_principal()
     {
         $persona = new Persona(['nombre' => 'Test']);
@@ -52,7 +53,7 @@ class PersonaTest extends TestCase
         $this->assertEquals('0414-2222222', $persona->telefono_principal);
     }
 
-    /** @test */
+    #[Test]
     public function direccion_principal_retorna_null_sin_direccion()
     {
         $persona = new Persona(['nombre' => 'Test']);
@@ -61,7 +62,7 @@ class PersonaTest extends TestCase
         $this->assertNull($persona->direccion_principal);
     }
 
-    /** @test */
+    #[Test]
     public function direccion_principal_es_la_direccion_uno_a_uno()
     {
         $persona = new Persona(['nombre' => 'Test']);
