@@ -80,7 +80,7 @@ Route::middleware(['auth', 'throttle:60,1', 'active.user', 'recovery.questions.r
         Route::delete('configuracion-impuestos/{impuesto}', [ImpuestoController::class, 'destroy'])->name('impuestos.destroy');
 
         // Usuarios
-        Route::resource('users', UserController::class);
+        Route::resource('users', UserController::class)->except(['create']);
         Route::post('users/{id}/restore', [UserController::class, 'restore'])->name('users.restore');
         Route::get('users-data', [UserController::class, 'getUsers'])->name('users.data');
         Route::get('users/reporte/pdf', [UserController::class, 'reportePdf'])->name('users.reporte.pdf');
@@ -89,7 +89,7 @@ Route::middleware(['auth', 'throttle:60,1', 'active.user', 'recovery.questions.r
         Route::post('users/{id}/reset-password', [UserController::class, 'resetPassword'])->name('users.reset-password');
 
         // Clientes
-        Route::resource('clientes', ClienteController::class);
+        Route::resource('clientes', ClienteController::class)->except(['create']);
         Route::get('clientes-data', [ClienteController::class, 'getClientes'])->name('clientes.data');
         Route::get('clientes-check-documento', [ClienteController::class, 'checkDocumento'])->name('clientes.check-documento');
         Route::get('clientes-check-email', [ClienteController::class, 'checkEmail'])->name('clientes.check-email');
@@ -132,27 +132,21 @@ Route::middleware(['auth', 'throttle:60,1', 'active.user', 'recovery.questions.r
 
         // Pedidos (escritura)
         Route::post('pedidos', [PedidoController::class, 'store'])->name('pedidos.store');
-        Route::get('pedidos/create', [PedidoController::class, 'create'])->name('pedidos.create');
         Route::put('pedidos/{pedido}', [PedidoController::class, 'update'])->name('pedidos.update');
         Route::patch('pedidos/{pedido}/cancelar', [PedidoController::class, 'cancelar'])->name('pedidos.cancelar');
         Route::patch('pedidos/{pedido}/reactivar', [PedidoController::class, 'reactivar'])->name('pedidos.reactivar');
         Route::delete('pedidos/{pedido}', [PedidoController::class, 'destroy'])->name('pedidos.destroy');
-        Route::get('pedidos/{pedido}/edit', [PedidoController::class, 'edit'])->name('pedidos.edit');
 
         // Cotizaciones (escritura)
         Route::post('cotizaciones', [CotizacionController::class, 'store'])->name('cotizaciones.store');
-        Route::get('cotizaciones/create', [CotizacionController::class, 'create'])->name('cotizaciones.create');
         Route::put('cotizaciones/{cotizacion}', [CotizacionController::class, 'update'])->name('cotizaciones.update');
         Route::delete('cotizaciones/{cotizacion}', [CotizacionController::class, 'destroy'])->name('cotizaciones.destroy');
-        Route::get('cotizaciones/{cotizacion}/edit', [CotizacionController::class, 'edit'])->name('cotizaciones.edit');
 
         // Proveedores (escritura)
         Route::post('proveedores', [ProveedorController::class, 'store'])->name('proveedores.store');
         Route::post('proveedores/from-persona/{persona}', [ProveedorController::class, 'createFromPersona'])->name('proveedores.from-persona');
-        Route::get('proveedores/create', [ProveedorController::class, 'create'])->name('proveedores.create');
         Route::put('proveedores/{proveedor}', [ProveedorController::class, 'update'])->name('proveedores.update');
         Route::delete('proveedores/{proveedor}', [ProveedorController::class, 'destroy'])->name('proveedores.destroy');
-        Route::get('proveedores/{proveedor}/edit', [ProveedorController::class, 'edit'])->name('proveedores.edit');
         Route::post('proveedores/{id}/restore', [ProveedorController::class, 'restore'])->name('proveedores.restore');
 
     // ============================================
@@ -215,7 +209,7 @@ Route::middleware(['auth', 'throttle:60,1', 'active.user', 'recovery.questions.r
         Route::get('cotizaciones-ubicaciones-bordado-data', [CotizacionController::class, 'getUbicacionesBordado'])->name('cotizaciones.ubicacionesBordado.data');
 
         // Productos
-        Route::resource('productos', ProductoController::class);
+        Route::resource('productos', ProductoController::class)->except(['create', 'edit']);
         Route::get('productos-data', [ProductoController::class, 'getProductos'])->name('productos.data');
         Route::get('productos/reporte/pdf', [ProductoController::class, 'reportePdf'])->name('productos.reporte.pdf');
         Route::post('productos/{id}/restore', [ProductoController::class, 'restore'])->name('productos.restore');
@@ -252,7 +246,7 @@ Route::middleware(['auth', 'throttle:60,1', 'active.user', 'recovery.questions.r
 
         // Insumos
         Route::post('insumos/{id}/restore', [InsumoController::class, 'restore'])->name('insumos.restore');
-        Route::resource('insumos', InsumoController::class);
+        Route::resource('insumos', InsumoController::class)->except(['create', 'edit']);
         Route::get('insumos-data', [InsumoController::class, 'getInsumos'])->name('insumos.data');
         Route::get('insumos/reporte/pdf', [InsumoController::class, 'reportePdf'])->name('insumos.reporte.pdf');
         Route::get('insumos/check-nombre', [InsumoController::class, 'checkNombre'])->name('insumos.check-nombre');
@@ -283,7 +277,7 @@ Route::middleware(['auth', 'throttle:60,1', 'active.user', 'recovery.questions.r
         Route::patch('ordenes/{orden}/subordenes/{subId}/estado', [OrdenProduccionController::class, 'updateSubOrdenEstado'])->name('ordenes.subordenes.estado');
         Route::get('ordenes/reporte/pdf', [OrdenProduccionController::class, 'reportePdf'])->name('ordenes.reporte.pdf');
         Route::get('ordenes/{orden}/pdf', [OrdenProduccionController::class, 'ordenPdf'])->name('ordenes.pdf');
-        Route::resource('ordenes', OrdenProduccionController::class);
+        Route::resource('ordenes', OrdenProduccionController::class)->except(['create']);
 
         // Control de Calidad (FEAT-006) — inspección de órdenes finalizadas
         Route::get('calidad', [ControlCalidadController::class, 'index'])->name('calidad.index');

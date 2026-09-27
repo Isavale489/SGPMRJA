@@ -1,6 +1,6 @@
 # 🧵 Sistema de Gestión para Pedidos en Manufacturas R.J. Atlántico C.A.
 
-> **Sistema web integral para la gestión textil, desarrollado con Laravel 10.**
+> **Sistema web integral para la gestión textil, desarrollado con Laravel 13.**
 
 Este proyecto es una solución tecnológica desarrollada por el **Grupo Textil de la Sección 636 del PNF en Informática de la UPTP "JJ Montilla"**, como parte del Proyecto Socio-Tecnológico III. Su objetivo es automatizar y optimizar los procesos operativos, administrativos y de producción de la empresa **Manufacturas R.J. Atlántico C.A.**
 
@@ -43,8 +43,8 @@ El sistema permite la administración eficiente de todo el ciclo de vida de la p
 El sistema está construido sobre un stack moderno y robusto:
 
 ### Backend
-*   **Laravel 10**: Framework PHP principal.
-*   **PHP 8.1+**: Lenguaje de servidor.
+*   **Laravel 13**: Framework PHP principal.
+*   **PHP 8.3+**: Lenguaje de servidor.
 *   **MySQL**: Base de datos relacional.
 *   **Composer**: Gestión de dependencias PHP.
 

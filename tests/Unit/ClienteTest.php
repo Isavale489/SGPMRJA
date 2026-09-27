@@ -8,6 +8,7 @@ use App\Models\Telefono;
 use App\Models\Direccion;
 use App\Models\Estado;
 use App\Models\Municipio;
+use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 class ClienteTest extends TestCase
@@ -38,7 +39,7 @@ class ClienteTest extends TestCase
         return $cliente;
     }
 
-    /** @test */
+    #[Test]
     public function accessors_delegan_a_persona_correctamente()
     {
         $cliente = $this->crearClienteConPersona();
@@ -48,7 +49,7 @@ class ClienteTest extends TestCase
         $this->assertEquals('V-98765432', $cliente->documento);
     }
 
-    /** @test */
+    #[Test]
     public function telefono_delega_a_persona_telefono_principal()
     {
         $cliente = $this->crearClienteConPersona([], [
@@ -58,7 +59,7 @@ class ClienteTest extends TestCase
         $this->assertEquals('0424-7777777', $cliente->telefono);
     }
 
-    /** @test */
+    #[Test]
     public function direccion_delega_a_la_direccion_de_persona()
     {
         $cliente = $this->crearClienteConPersona([], [], [
@@ -70,7 +71,7 @@ class ClienteTest extends TestCase
         $this->assertEquals('Portuguesa', $cliente->estado_territorial);
     }
 
-    /** @test */
+    #[Test]
     public function accessors_retornan_null_sin_persona()
     {
         $cliente = new Cliente(['tipo_cliente' => 'natural', 'estatus' => 1]);

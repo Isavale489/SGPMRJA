@@ -1131,7 +1131,7 @@
             // Ver detalles del empleado
             $(document).on("click", ".view-item-btn", function () {
                 var id = $(this).data("id");
-                $.get("{{ route('empleados.show', '') }}/" + id, function (data) {
+                $.get("{{ route('empleados.show', ':id') }}".replace(':id', id), function (data) {
                     $("#viewModal").modal("show");
                     var nombreCompleto = (data.persona.nombre || '') + ' ' + (data.persona.apellido || '');
                     var documento = data.persona.tipo_documento + data.persona.documento_identidad;

@@ -402,8 +402,8 @@ footer{border-top:1px solid var(--rule);padding-block:2.25rem 3.25rem}
     <div class="phases">
       <div class="phase"><span class="num">PASO 0</span><div class="body"><h3>Red de seguridad</h3></div><span class="risk chip on">Nuevo</span>
         <p>Feature tests de los flujos críticos (cotización → pedido → orden → calidad, compras procesar/anular), un smoke E2E con Playwright y una CI en GitHub Actions.</p></div>
-      <div class="phase"><span class="num">PASO 1</span><div class="body"><h3>Laravel 11 → 12 + PHP 8.3</h3></div><span class="risk chip">Fase 0 original</span>
-        <p>En su propio PR, validado por la red del paso 0.</p></div>
+      <div class="phase"><span class="num">PASO 1</span><div class="body"><h3>Laravel 10 → 13 + PHP 8.3</h3></div><span class="risk chip on">Actualizado</span>
+        <p>En su propio PR, validado por la red del paso 0. <strong>Destino cambiado a 13</strong> (27/09/2026): Composer bloquea toda la rama 11 por avisos de seguridad sin parche, y el soporte de seguridad de 12 termina ~feb 2027; 13 lo tiene hasta ~mar 2028. El salto directo a 13 hizo innecesario pasar por 11.</p></div>
       <div class="phase"><span class="num">PASO 2</span><div class="body"><h3>Plataforma</h3></div><span class="risk chip on">Ampliado</span>
         <p>Plantilla raíz de Inertia separada, datos compartidos entre páginas (usuario, permisos, tasa, flash) y tokens claro/oscuro. Componentes base: DataTable, Dialog, Select, FormField con errores del servidor, MontoBs/BCV, ConfirmDanger y UnsavedGuard. Además, tipos generados y guía de convenciones.</p></div>
       <div class="phase"><span class="num">PASO 3</span><div class="body"><h3>Piloto: proveedores</h3></div><span class="risk chip on">Nuevo criterio</span>

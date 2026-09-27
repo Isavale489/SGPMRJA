@@ -801,7 +801,7 @@
 
             $(document).on("click", ".view-item-btn", function () {
                 var id = $(this).data("id");
-                $.get("{{ route('users.show', '') }}/" + id, function (data) {
+                $.get("{{ route('users.show', ':id') }}".replace(':id', id), function (data) {
                     $("#viewModal").modal("show");
                     $("#view-name").text(data.name);
                     $("#view-email").text(data.email);
@@ -978,7 +978,7 @@
                 }).then(function (result) {
                     if (result.isConfirmed) {
                         $.ajax({
-                            url: "{{ route('users.destroy', '') }}/" + id,
+                            url: "{{ route('users.destroy', ':id') }}".replace(':id', id),
                             type: "DELETE",
                             success: function (response) {
                                 table.ajax.reload();
