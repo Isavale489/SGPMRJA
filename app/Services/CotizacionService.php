@@ -125,7 +125,12 @@ class CotizacionService
      */
     public function convertirAPedido(Cotizacion $cotizacion): Pedido
     {
-        return DB::transaction(function () use ($cotizacion) {
+        // Si la cotización está vencida, la transacción se CONFIRMA con el estado
+        // 'Vencida' y la excepción se lanza después: lanzarla dentro del closure
+        // haría rollback y el marcado se perdería.
+        $venceEl = null;
+
+        $pedido = DB::transaction(function () use ($cotizacion, &$venceEl) {
             // 1. Re-obtener la cotización con bloqueo pesimista (SELECT ... FOR UPDATE)
             $cotizacion = Cotizacion::lockForUpdate()->findOrFail($cotizacion->id);
 
@@ -138,11 +143,8 @@ class CotizacionService
             //     cotización ya pasó. La marca como 'Vencida' para reflejarlo en el listado.
             if ($cotizacion->estaVencidaPorVigencia()) {
                 $cotizacion->update(['estado' => 'Vencida']);
-                throw new \InvalidArgumentException(
-                    'La cotización venció: su validez expiró el ' .
-                    $cotizacion->fechaLimiteVigencia()->format('d/m/Y') .
-                    '. Reactívala para actualizar los precios antes de convertirla a pedido.'
-                );
+                $venceEl = $cotizacion->fechaLimiteVigencia();
+                return null;
             }
 
             // 3. Verificar que no exista ya un pedido asociado (doble protección + índice único en BD)
@@ -214,6 +216,16 @@ class CotizacionService
 
             return $pedido;
         });
+
+        if ($venceEl !== null) {
+            throw new \InvalidArgumentException(
+                'La cotización venció: su validez expiró el ' .
+                $venceEl->format('d/m/Y') .
+                '. Reactívala para actualizar los precios antes de convertirla a pedido.'
+            );
+        }
+
+        return $pedido;
     }
 
     /**
