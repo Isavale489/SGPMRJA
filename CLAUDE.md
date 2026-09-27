@@ -25,6 +25,7 @@
 | IDs de form | Campo oculto `#id-field` para el ID del registro (convención universal) |
 | DataTables | Siempre server-side; método `getX()` en el controller |
 | Modelos | Soft deletes en la mayoría; `estado` como ENUM en lugar de booleano |
+| Páginas Inertia/React | Ver `docs/conventions/frontend.md` — nunca mezclar Bootstrap y Tailwind; `public/build` se commitea |
 
 ---
 

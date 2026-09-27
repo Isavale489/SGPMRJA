@@ -25,7 +25,8 @@
 
 | Doc | Cuándo leerlo |
 |---|---|
-| [`js-validations.md`](js-validations.md) | Cualquier formulario con validación cliente |
+| [`frontend.md`](frontend.md) | **Toda página Inertia + React** (plataforma nueva): estructura, reglas, migrar un módulo |
+| [`js-validations.md`](js-validations.md) | Cualquier formulario con validación cliente | (páginas Blade legado)
 
 ### Backend / BD
 
