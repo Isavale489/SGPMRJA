@@ -71,6 +71,8 @@ Route::middleware(['auth', 'throttle:60,1', 'active.user', 'recovery.questions.r
     // ============================================
         // Configuración del sistema (FEAT-004)
         Route::get('configuracion', [ConfiguracionController::class, 'index'])->name('configuracion.index');
+        // Plataforma Inertia: catálogo vivo de componentes (tokens, UI base, patrones).
+        Route::inertia('plataforma/componentes', 'Plataforma/Componentes')->name('plataforma.componentes');
         Route::put('configuracion/{modulo}', [ConfiguracionController::class, 'update'])->name('configuracion.update');
         Route::delete('configuracion/{modulo}/{clave}', [ConfiguracionController::class, 'reset'])->name('configuracion.reset');
 

@@ -1,0 +1,199 @@
+/*
+ * Plataforma Inertia + React — tokens de diseño.
+ *
+ * Única hoja con Tailwind v4. Las páginas Blade siguen con Bootstrap/Velzon
+ * (public/assets/css) y NUNCA cargan esta hoja: el preflight de Tailwind
+ * rompería Bootstrap. Ver docs/conventions/frontend.md.
+ *
+ * Los nombres (--background, --primary, --sidebar-*…) siguen la convención de
+ * shadcn/ui para que sus componentes funcionen sin adaptar. Los VALORES son
+ * propios: azul Atlántico (#1e3c72) como marca, grises fríos, radio contenido.
+ */
+@import 'tailwindcss';
+
+/*
+ * Fuentes empaquetadas en el build (sin CDN: la planta puede quedarse sin internet).
+ * Solo los subconjuntos latin y latin-ext; cirílico, griego y vietnamita no se usan.
+ */
+/* inter-latin-ext-wght-normal */
+@font-face {
+  font-family: 'Inter Variable';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  src: url(@fontsource-variable/inter/files/inter-latin-ext-wght-normal.woff2) format('woff2-variations');
+  unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
+}
+/* inter-latin-wght-normal */
+@font-face {
+  font-family: 'Inter Variable';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  src: url(@fontsource-variable/inter/files/inter-latin-wght-normal.woff2) format('woff2-variations');
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+/* jetbrains-mono-latin-ext-wght-normal */
+@font-face {
+  font-family: 'JetBrains Mono Variable';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 800;
+  src: url(@fontsource-variable/jetbrains-mono/files/jetbrains-mono-latin-ext-wght-normal.woff2) format('woff2-variations');
+  unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
+}
+/* jetbrains-mono-latin-wght-normal */
+@font-face {
+  font-family: 'JetBrains Mono Variable';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 800;
+  src: url(@fontsource-variable/jetbrains-mono/files/jetbrains-mono-latin-wght-normal.woff2) format('woff2-variations');
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+    --background: #f5f6f8;
+    --foreground: #0f172a;
+    --card: #ffffff;
+    --card-foreground: #0f172a;
+    --popover: #ffffff;
+    --popover-foreground: #0f172a;
+    --primary: #1e3c72;
+    --primary-foreground: #ffffff;
+    --secondary: #eef2f8;
+    --secondary-foreground: #1e3c72;
+    --muted: #f1f4f8;
+    --muted-foreground: #5b6678;
+    --accent: #e8eef8;
+    --accent-foreground: #1e3c72;
+    --destructive: #c62f3b;
+    --destructive-foreground: #ffffff;
+    --success: #1f7a4d;
+    --warning: #b25e09;
+    --border: #e1e6ee;
+    --input: #d3dae5;
+    --ring: #2a5298;
+
+    --sidebar: #ffffff;
+    --sidebar-foreground: #334155;
+    --sidebar-primary: #1e3c72;
+    --sidebar-primary-foreground: #ffffff;
+    --sidebar-accent: #eef2f8;
+    --sidebar-accent-foreground: #1e3c72;
+    --sidebar-border: #e6ebf2;
+
+    --radius: 0.5rem;
+}
+
+.dark {
+    --background: #0b1120;
+    --foreground: #e5e9f0;
+    --card: #111a2c;
+    --card-foreground: #e5e9f0;
+    --popover: #111a2c;
+    --popover-foreground: #e5e9f0;
+    --primary: #7d9be0;
+    --primary-foreground: #0b1120;
+    --secondary: #1a2540;
+    --secondary-foreground: #c9d6f2;
+    --muted: #152036;
+    --muted-foreground: #93a0b5;
+    --accent: #1a2540;
+    --accent-foreground: #dbe4f7;
+    --destructive: #ef6b73;
+    --destructive-foreground: #0b1120;
+    --success: #4cc38a;
+    --warning: #f0a44b;
+    --border: #22304b;
+    --input: #2b3a58;
+    --ring: #7d9be0;
+
+    --sidebar: #0e1627;
+    --sidebar-foreground: #b8c3d6;
+    --sidebar-primary: #7d9be0;
+    --sidebar-primary-foreground: #0b1120;
+    --sidebar-accent: #1a2540;
+    --sidebar-accent-foreground: #e5e9f0;
+    --sidebar-border: #1c2842;
+}
+
+@theme inline {
+    --font-sans: 'Inter Variable', ui-sans-serif, system-ui, sans-serif;
+    --font-mono: 'JetBrains Mono Variable', ui-monospace, monospace;
+
+    --color-background: var(--background);
+    --color-foreground: var(--foreground);
+    --color-card: var(--card);
+    --color-card-foreground: var(--card-foreground);
+    --color-popover: var(--popover);
+    --color-popover-foreground: var(--popover-foreground);
+    --color-primary: var(--primary);
+    --color-primary-foreground: var(--primary-foreground);
+    --color-secondary: var(--secondary);
+    --color-secondary-foreground: var(--secondary-foreground);
+    --color-muted: var(--muted);
+    --color-muted-foreground: var(--muted-foreground);
+    --color-accent: var(--accent);
+    --color-accent-foreground: var(--accent-foreground);
+    --color-destructive: var(--destructive);
+    --color-destructive-foreground: var(--destructive-foreground);
+    --color-success: var(--success);
+    --color-warning: var(--warning);
+    --color-border: var(--border);
+    --color-input: var(--input);
+    --color-ring: var(--ring);
+    --color-sidebar: var(--sidebar);
+    --color-sidebar-foreground: var(--sidebar-foreground);
+    --color-sidebar-primary: var(--sidebar-primary);
+    --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+    --color-sidebar-accent: var(--sidebar-accent);
+    --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+    --color-sidebar-border: var(--sidebar-border);
+
+    --radius-sm: calc(var(--radius) - 2px);
+    --radius-md: var(--radius);
+    --radius-lg: calc(var(--radius) + 2px);
+    --radius-xl: calc(var(--radius) + 6px);
+
+    /*
+     * Lenguaje de movimiento: tres duraciones y tres curvas, definidas UNA vez.
+     * ERP de uso diario → rápido y discreto; nunca animaciones de más de 320 ms.
+     *   duration-rapido (120)  hover, foco, toggles
+     *   duration-medio  (200)  menús, popovers, tooltips
+     *   duration-lento  (320)  diálogos, paneles, cambio de paso en wizards
+     */
+    --duration-rapido: 120ms;
+    --duration-medio: 200ms;
+    --duration-lento: 320ms;
+    --ease-salida: cubic-bezier(0.16, 1, 0.3, 1);
+    --ease-entrada: cubic-bezier(0.7, 0, 0.84, 0);
+    --ease-suave: cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+@layer base {
+    * {
+        @apply border-border outline-ring/50;
+    }
+    html {
+        font-feature-settings: 'cv11', 'ss01';
+    }
+    body {
+        @apply bg-background text-foreground font-sans antialiased;
+    }
+    /* Montos y cantidades alineados en tablas. */
+    .tabular {
+        font-variant-numeric: tabular-nums;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.001ms !important;
+        transition-duration: 0.001ms !important;
+    }
+}

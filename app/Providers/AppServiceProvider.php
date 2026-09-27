@@ -9,8 +9,7 @@ use Illuminate\Support\Facades\Cache;
 use App\Models\TasaCambio;
 use App\Models\OrdenProduccion;
 use App\Observers\OrdenProduccionObserver;
-use App\Services\TasaBcvService;
-use Carbon\Carbon;
+use App\Support\TasaBcvVigente;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -34,38 +33,7 @@ class AppServiceProvider extends ServiceProvider
 
         // Compartir tasa BCV con todas las vistas del admin
         View::composer('admin.*', function ($view) {
-            try {
-                // Tasa VIGENTE hoy (techo fecha_bcv <= hoy; ignora tasas futuras).
-                $tasaBcv = TasaCambio::obtenerTasaActual('USD');
-
-                // Está desactualizada si no hay tasa vigente para hoy (la vigente
-                // quedó en un día anterior), lo que indica que falta capturar la
-                // publicación reciente del BCV.
-                $hoy = Carbon::today()->toDateString();
-                $necesitaActualizar = !$tasaBcv || Carbon::parse($tasaBcv->fecha_bcv)->toDateString() !== $hoy;
-
-                // Usar cache para evitar múltiples llamadas a la API en la misma sesión
-                if ($necesitaActualizar && !Cache::has('bcv_actualizado_hoy')) {
-                    try {
-                        $service = app(TasaBcvService::class);
-                        $service->actualizarTasas();
-
-                        // Re-leer la VIGENTE: la tasa recién guardada puede estar
-                        // fechada a mañana (vigencia = publicación + 1), así que no
-                        // se usa directo para no mostrar una tasa futura antes de tiempo.
-                        $tasaBcv = TasaCambio::obtenerTasaActual('USD');
-
-                        // Marcar como actualizado por 1 hora para evitar múltiples intentos
-                        Cache::put('bcv_actualizado_hoy', true, now()->addHour());
-                    } catch (\Exception $e) {
-                        // Si falla la actualización, usar la tasa anterior
-                    }
-                }
-
-                $view->with('tasaBcv', $tasaBcv);
-            } catch (\Exception $e) {
-                $view->with('tasaBcv', null);
-            }
+            $view->with('tasaBcv', TasaBcvVigente::obtener());
         });
 
         // Compartir el catálogo geográfico (estados + municipios) con el admin.

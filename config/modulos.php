@@ -64,7 +64,8 @@ return [
             'gestionar' => 'Editar y restablecer parametros',
         ],
         'rutas' => [
-            'configuracion.index'                       => 'ver',
+            // plataforma.componentes: catálogo de componentes de la plataforma Inertia (solo-admin).
+            'configuracion.index|plataforma.componentes' => 'ver',
             // Incluye el CRUD de impuestos (tabla `impuesto`), gestionado desde el
             // mismo panel: solo-admin vía 'gestionar' (si no se mapean, el middleware
             // 'permiso' los deniega por defecto — 403 incluso al admin).
