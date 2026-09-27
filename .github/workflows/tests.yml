@@ -55,4 +55,5 @@ jobs:
         run: composer install --no-interaction --prefer-dist --no-progress
 
       - name: Tests
-        run: php artisan test
+        # phpunit directo: mensajes completos (el printer de artisan los trunca).
+        run: vendor/bin/phpunit --display-warnings --display-deprecations

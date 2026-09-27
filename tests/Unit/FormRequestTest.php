@@ -8,10 +8,15 @@ use App\Http\Requests\StorePedidoRequest;
 use App\Http\Requests\UpdatePedidoRequest;
 use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class FormRequestTest extends TestCase
 {
+    // Algunas rules() consultan la BD (p. ej. UpdateClienteRequest busca el
+    // cliente de la ruta): sin esto el test depende del orden de ejecución.
+    use RefreshDatabase;
+
     /** @test */
     public function store_cliente_request_tiene_reglas_requeridas()
     {
