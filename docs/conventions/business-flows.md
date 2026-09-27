@@ -88,6 +88,8 @@ ORDEN → Finalizado
   - **No conforme** (hay rechazadas) → **reproceso**: `cantidad_producida -= rechazadas`, la orden vuelve a `En Proceso` y `registrarAvance` la deja re-producir hasta re-finalizar y re-inspeccionar.
 - **Invariante**: la inspección **NO toca stock** (no crea `MovimientoInsumo`); el consumo extra por reproceso ocurre por la vía normal de producción.
 - **Compuerta**: un pedido no se da por listo para entrega mientras tenga órdenes sin aprobar calidad (la pantalla de "entrega y cobro de saldo" es un FEAT aparte).
+  - Un rechazo devuelve el pedido a `Procesando` (`ControlCalidadService` llama a `Pedido::recalcularEstado()`).
+  - **Pendiente (para el FEAT de entrega)**: `Pedido::recalcularEstado()` no consulta Calidad. Cuando una orden en reproceso vuelve a `Finalizado`, el pedido pasa a `Completado` aunque esa orden aún no tenga una re-inspección aprobada. La compuerta debe aplicarse al habilitar la entrega (exigir que cada orden activa tenga su última inspección `aprobado`/`observado`), o bien incorporarse al cálculo del estado. Detectado al escribir `tests/Feature/Flujos/ControlCalidadFlujoTest.php` (2026-09-27).
 
 ## Módulos placeholder (sin implementar)
 

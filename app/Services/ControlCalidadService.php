@@ -89,6 +89,12 @@ class ControlCalidadService
 
             $orden->save();
 
+            // Un reproceso reabre la orden: el pedido deja de estar Completado
+            // (no se da por listo mientras tenga órdenes sin aprobar calidad).
+            if ($rechazada > 0) {
+                $orden->pedido?->recalcularEstado();
+            }
+
             return $inspeccion;
         });
     }
