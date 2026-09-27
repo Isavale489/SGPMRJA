@@ -20,11 +20,12 @@ class FormRequestTest extends TestCase
 
         $this->assertArrayHasKey('nombre', $rules);
         $this->assertArrayHasKey('tipo_cliente', $rules);
-        $this->assertArrayHasKey('telefono', $rules);
         $this->assertArrayHasKey('documento', $rules);
-        $this->assertArrayHasKey('estatus', $rules);
         $this->assertStringContainsString('required', $rules['nombre']);
-        $this->assertStringContainsString('required', $rules['telefono']);
+        // Multi-teléfono: arreglo de 1 a 3 entradas.
+        $this->assertStringContainsString('required', $rules['telefonos']);
+        $this->assertStringContainsString('max:3', $rules['telefonos']);
+        $this->assertArrayHasKey('telefonos.*.numero', $rules);
     }
 
     /** @test */
@@ -35,7 +36,7 @@ class FormRequestTest extends TestCase
 
         $this->assertNotEmpty($messages);
         $this->assertArrayHasKey('nombre.required', $messages);
-        $this->assertArrayHasKey('telefono.regex', $messages);
+        $this->assertArrayHasKey('telefonos.*.numero.regex', $messages);
     }
 
     /** @test */
@@ -79,8 +80,9 @@ class FormRequestTest extends TestCase
         $rules = $request->rules();
 
         $this->assertArrayHasKey('password', $rules);
-        $this->assertStringContainsString('confirmed', $rules['password']);
-        $this->assertStringContainsString('min:8', $rules['password']);
+        $this->assertContains('confirmed', $rules['password']);
+        $this->assertContains('min:8', $rules['password']);
+        $this->assertStringContainsString('exists:rol,id', $rules['role_id']);
     }
 
     /** @test */
@@ -93,15 +95,14 @@ class FormRequestTest extends TestCase
     }
 
     /** @test */
-    public function store_pedido_request_valida_tallas_correctas()
+    public function store_pedido_request_valida_talla_y_genero_contra_catalogo()
     {
-        $request = new StorePedidoRequest();
-        $rules = $request->rules();
+        $rules = (new StorePedidoRequest())->rules();
 
-        $tallaRule = $rules['productos.*.talla'];
-        $this->assertStringContainsString('Talla Unica', $tallaRule);
-        $this->assertStringContainsString('XS', $tallaRule);
-        $this->assertStringContainsString('XXL', $tallaRule);
+        // Talla es catálogo (tabla talla), no una lista fija de strings.
+        $this->assertArrayHasKey('productos.*.talla_id', $rules);
+        $this->assertArrayHasKey('productos.*.genero_id', $rules);
+        $this->assertContains('required', $rules['productos.*.genero_id']);
     }
 
     /** @test */
