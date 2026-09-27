@@ -1,0 +1,424 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Auditoría de la propuesta de migración del frontend de SGPMRJA a Inertia + React + TypeScript, contrastada con el código real.">
+<title>Auditoría de la migración</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..700&family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:opsz,wght@6..72,300..600&display=swap">
+
+<style>
+/* ─────────────────────────────────────────────────────────────
+   TOKENS — papel de trazado (claro) · índigo denim (oscuro)
+   ───────────────────────────────────────────────────────────── */
+:root{
+  --paper:#E6E9EC;  --paper-2:#F1F3F5;  --paper-3:#DCE0E4;
+  --rule:#C3C9D0;   --rule-strong:#A8B0B9;
+  --ink:#10141B;    --ink-2:#39414E;    --ink-3:#646D7A;   --ink-4:#8E96A1;
+  --thread:#C4442A; --thread-soft:#C4442A22;
+  --keep:#2F6B5C;   --keep-soft:#2F6B5C1F;
+  --glow:#ffffff;   --grain-op:.030;
+  --shadow:0 1px 2px rgba(16,20,27,.05), 0 8px 24px -12px rgba(16,20,27,.18);
+
+  /* lenguaje de movimiento — 3 duraciones, 3 curvas, definidas una vez */
+  --e-out:cubic-bezier(.16,.84,.32,1);
+  --e-in-out:cubic-bezier(.62,.02,.24,1);
+  --e-snap:cubic-bezier(.34,1.42,.52,1);
+  --t-fast:120ms; --t-mid:280ms; --t-slow:620ms;
+
+  --col:min(66ch,100%);
+  --bleed:min(1080px,100%);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --paper:#12151C;  --paper-2:#191D26;  --paper-3:#0D1015;
+    --rule:#262C38;   --rule-strong:#39414F;
+    --ink:#E8EBF0;    --ink-2:#AEB6C2;    --ink-3:#7B8494;   --ink-4:#565F6E;
+    --thread:#E8674A; --thread-soft:#E8674A26;
+    --keep:#4E9B87;   --keep-soft:#4E9B8722;
+    --glow:#6E8CC8;   --grain-op:.055;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 14px 40px -18px rgba(0,0,0,.7);
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#12151C;  --paper-2:#191D26;  --paper-3:#0D1015;
+  --rule:#262C38;   --rule-strong:#39414F;
+  --ink:#E8EBF0;    --ink-2:#AEB6C2;    --ink-3:#7B8494;   --ink-4:#565F6E;
+  --thread:#E8674A; --thread-soft:#E8674A26;
+  --keep:#4E9B87;   --keep-soft:#4E9B8722;
+  --glow:#6E8CC8;   --grain-op:.055;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 14px 40px -18px rgba(0,0,0,.7);
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0;
+  background:var(--paper);
+  color:var(--ink);
+  font-family:"Newsreader",Georgia,"Times New Roman",serif;
+  font-optical-sizing:auto;
+  font-size:1.0625rem;
+  line-height:1.68;
+  -webkit-font-smoothing:antialiased;
+  position:relative;
+}
+/* grano — la capa que Linear llama _grain */
+body::before{
+  content:"";position:fixed;inset:0;z-index:9999;pointer-events:none;
+  opacity:var(--grain-op);
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* ── tipografía ── */
+h1,h2,h3,h4,.disp,.eyebrow,.lbl,.chip,th,.mono{font-family:"Archivo",-apple-system,"Segoe UI",sans-serif}
+h1,h2,h3{text-wrap:balance;margin:0;line-height:1.06;letter-spacing:-.022em}
+h1{font-size:clamp(2.6rem,6.4vw,4.5rem);font-weight:700;font-stretch:112%}
+h2{font-size:clamp(1.75rem,3.4vw,2.5rem);font-weight:600;font-stretch:108%}
+h3{font-size:1.115rem;font-weight:600;letter-spacing:-.006em;line-height:1.3}
+p{margin:0}
+strong{font-weight:600;color:var(--ink)}
+a{color:var(--ink);text-decoration-color:var(--thread);text-underline-offset:3px}
+.mono{font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace;font-variant-numeric:tabular-nums}
+.eyebrow{
+  font-size:.6875rem;font-weight:600;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--ink-4);display:flex;align-items:center;gap:.6rem;
+}
+.eyebrow::after{content:"";flex:1;height:1px;background:var(--rule)}
+.lead{font-size:1.24rem;line-height:1.55;color:var(--ink-2);font-weight:300}
+.small{font-size:.9375rem;line-height:1.6;color:var(--ink-3)}
+.dim{color:var(--ink-3)}
+.thread{color:var(--thread)}
+.keepc{color:var(--keep)}
+
+/* ── estructura de página ── */
+.wrap{max-width:var(--bleed);margin-inline:auto;padding-inline:clamp(1.15rem,4vw,2.5rem)}
+section{padding-block:clamp(3.5rem,7vw,6rem);border-top:1px solid var(--rule);position:relative}
+section:first-of-type{border-top:0}
+.stack{display:flex;flex-direction:column;gap:1.15rem}
+.stack-lg{display:flex;flex-direction:column;gap:2.25rem}
+.col{width:var(--col)}
+.head{display:flex;flex-direction:column;gap:1.1rem;margin-bottom:2.5rem}
+
+/* marcas de registro — retícula de patrón de corte */
+.reg{position:absolute;width:9px;height:9px;pointer-events:none}
+.reg::before,.reg::after{content:"";position:absolute;background:var(--rule-strong)}
+.reg::before{left:0;top:4px;width:9px;height:1px}
+.reg::after{top:0;left:4px;width:1px;height:9px}
+
+/* ── hero ── */
+.hero{padding-top:clamp(3rem,8vw,6.5rem);padding-bottom:clamp(3rem,6vw,5rem)}
+.hero-meta{
+  display:flex;flex-wrap:wrap;gap:.55rem 1.4rem;align-items:center;
+  font-family:"IBM Plex Mono",monospace;font-size:.75rem;letter-spacing:.04em;
+  color:var(--ink-4);text-transform:uppercase;margin-bottom:2.4rem;
+}
+.hero-meta span{display:inline-flex;align-items:center;gap:.5rem}
+.hero-meta span::before{content:"";width:5px;height:5px;background:var(--thread);border-radius:50%}
+.hero h1 em{font-family:"Newsreader",serif;font-style:italic;font-weight:400;font-stretch:normal;letter-spacing:-.01em}
+
+/* ── métricas del diagnóstico ── */
+.metrics{
+  display:grid;gap:1px;background:var(--rule);
+  grid-template-columns:repeat(auto-fit,minmax(158px,1fr));
+  border:1px solid var(--rule);margin-top:2.75rem;
+}
+.metric{background:var(--paper);padding:1.35rem 1.25rem;display:flex;flex-direction:column;gap:.3rem}
+.metric .n{font-family:"Archivo",sans-serif;font-stretch:88%;font-weight:600;font-size:1.9rem;letter-spacing:-.03em;line-height:1;font-variant-numeric:tabular-nums}
+.metric .k{font-family:"IBM Plex Mono",monospace;font-size:.6875rem;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-4)}
+.metric .s{font-size:.8125rem;color:var(--ink-3);line-height:1.45;font-family:"Newsreader",serif}
+
+/* ── figuras ── */
+figure{margin:0;display:flex;flex-direction:column;gap:.9rem}
+.fig-frame{
+  position:relative;background:var(--paper-2);border:1px solid var(--rule);
+  padding:clamp(1rem,2.6vw,2rem);overflow-x:auto;box-shadow:var(--shadow);
+}
+.fig-frame::before{
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(120% 80% at 50% -20%,var(--glow),transparent 62%);
+  opacity:.10;
+}
+.fig-frame > svg{display:block;width:100%;height:auto;min-width:620px;color:var(--ink-2)}
+figcaption{font-size:.875rem;line-height:1.55;color:var(--ink-3)}
+figcaption b{color:var(--ink-2);font-weight:600}
+
+/* ── tablas ── */
+.tbl-wrap{overflow-x:auto;border:1px solid var(--rule);background:var(--paper-2)}
+table{border-collapse:collapse;width:100%;min-width:520px;font-size:.9375rem}
+th{
+  font-size:.6875rem;font-weight:600;letter-spacing:.11em;text-transform:uppercase;
+  color:var(--ink-4);text-align:left;padding:.85rem 1rem;border-bottom:1px solid var(--rule-strong);
+  white-space:nowrap;
+}
+td{padding:.8rem 1rem;border-bottom:1px solid var(--rule);vertical-align:top;color:var(--ink-2);line-height:1.5}
+tbody tr:last-child td{border-bottom:0}
+td.mono,th.mono{font-size:.8125rem}
+td b{color:var(--ink)}
+
+/* ── piezas ── */
+.chip{
+  display:inline-flex;align-items:center;gap:.4rem;padding:.2rem .55rem;
+  font-size:.6875rem;font-weight:600;letter-spacing:.05em;text-transform:uppercase;
+  border:1px solid var(--rule-strong);color:var(--ink-3);white-space:nowrap;
+}
+.chip.on{border-color:var(--keep);color:var(--keep);background:var(--keep-soft)}
+.chip.off{border-color:var(--thread);color:var(--thread);background:var(--thread-soft)}
+
+.callout{
+  border-left:2px solid var(--thread);background:var(--thread-soft);
+  padding:1.15rem 1.35rem;display:flex;flex-direction:column;gap:.6rem;
+}
+.callout .eyebrow{color:var(--thread)}
+.callout .eyebrow::after{background:var(--thread);opacity:.3}
+
+.grid2{display:grid;gap:1px;background:var(--rule);border:1px solid var(--rule);grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
+.grid2 > div{background:var(--paper-2);padding:1.4rem;display:flex;flex-direction:column;gap:.7rem}
+
+/* ── fases numeradas (secuencia real) ── */
+.phases{display:flex;flex-direction:column;gap:1px;background:var(--rule);border:1px solid var(--rule)}
+.phase{
+  background:var(--paper-2);padding:1.35rem clamp(1rem,2.4vw,1.6rem);
+  display:grid;gap:.35rem 1.4rem;
+  grid-template-columns:auto 1fr auto;align-items:baseline;
+}
+.phase .num{
+  font-family:"IBM Plex Mono",monospace;font-size:.8125rem;color:var(--thread);
+  font-weight:600;letter-spacing:.04em;
+}
+.phase .body{grid-column:2}
+.phase .risk{grid-column:3;justify-self:end}
+.phase p{grid-column:2;font-size:.9375rem;color:var(--ink-3);line-height:1.55;margin-top:.2rem}
+@media (max-width:620px){
+  .phase{grid-template-columns:auto 1fr}
+  .phase .risk{grid-column:2;justify-self:start;margin-top:.5rem}
+}
+
+/* ── demo vivo: por defecto vs tokens ── */
+.demo{border:1px solid var(--rule);background:var(--paper-3)}
+.demo-bar{
+  display:flex;align-items:center;gap:.5rem;padding:.7rem .9rem;
+  border-bottom:1px solid var(--rule);background:var(--paper-2);flex-wrap:wrap;
+}
+.demo-bar .t{
+  font-family:"IBM Plex Mono",monospace;font-size:.6875rem;letter-spacing:.08em;
+  text-transform:uppercase;color:var(--ink-4);margin-right:auto;
+}
+.tog{
+  font-family:"Archivo",sans-serif;font-size:.75rem;font-weight:600;letter-spacing:.05em;
+  text-transform:uppercase;padding:.4rem .75rem;border:1px solid var(--rule-strong);
+  background:transparent;color:var(--ink-3);cursor:pointer;
+  transition:color var(--t-fast) var(--e-out),border-color var(--t-fast) var(--e-out),background var(--t-fast) var(--e-out);
+}
+.tog:hover{color:var(--ink)}
+.tog[aria-pressed="true"]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.tog:focus-visible{outline:2px solid var(--thread);outline-offset:2px}
+.demo-stage{padding:clamp(1.4rem,3vw,2.4rem);display:flex;justify-content:center}
+
+/* tarjeta demo — estado "genérico" */
+.dcard{
+  width:min(340px,100%);background:#fff;color:#212529;
+  border:1px solid #dee2e6;border-radius:.5rem;padding:1.25rem;
+  box-shadow:0 .125rem .25rem rgba(0,0,0,.075);
+  font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  display:flex;flex-direction:column;gap:.75rem;
+  transition:all var(--t-mid) var(--e-in-out);
+}
+.dcard .dt{font-size:1rem;font-weight:600;letter-spacing:0}
+.dcard .dv{font-size:1.75rem;font-weight:700;letter-spacing:0}
+.dcard .dm{font-size:.875rem;color:#6c757d}
+.dcard .db{
+  align-self:flex-start;background:#0d6efd;color:#fff;border:0;border-radius:.375rem;
+  padding:.375rem .75rem;font-size:.875rem;font-weight:400;cursor:pointer;font-family:inherit;
+}
+.dcard .dp{
+  align-self:flex-start;background:#198754;color:#fff;border-radius:50rem;
+  padding:.2rem .6rem;font-size:.75rem;font-weight:400;
+}
+/* tarjeta demo — estado "tokens propios" */
+.demo.tok .dcard{
+  background:var(--paper-2);color:var(--ink);
+  border:1px solid var(--rule);border-radius:0;
+  box-shadow:var(--shadow);
+  font-family:"Archivo",sans-serif;
+  padding:1.4rem;gap:.55rem;
+  position:relative;
+}
+.demo.tok .dcard::after{
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(180deg,var(--rule-strong),transparent 42%);
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+  -webkit-mask-composite:xor;mask-composite:exclude;padding:1px;
+}
+.demo.tok .dcard .dt{
+  font-size:.6875rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-4);
+}
+.demo.tok .dcard .dv{
+  font-size:2.4rem;font-weight:600;font-stretch:88%;letter-spacing:-.035em;
+  font-variant-numeric:tabular-nums;color:var(--ink);line-height:1;
+}
+.demo.tok .dcard .dm{font-size:.8125rem;color:var(--ink-3);font-family:"Newsreader",serif}
+.demo.tok .dcard .db{
+  background:transparent;color:var(--ink);border:1px solid var(--rule-strong);border-radius:0;
+  font-size:.75rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;padding:.45rem .8rem;
+  font-family:"Archivo",sans-serif;
+  transition:background var(--t-fast) var(--e-out),color var(--t-fast) var(--e-out);
+}
+.demo.tok .dcard .db:hover{background:var(--ink);color:var(--paper)}
+.demo.tok .dcard .dp{
+  background:var(--keep-soft);color:var(--keep);border:1px solid var(--keep);border-radius:0;
+  font-size:.625rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;padding:.18rem .5rem;
+}
+
+/* ── listas ── */
+ul.clean{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:.85rem}
+ul.clean li{display:grid;grid-template-columns:auto 1fr;gap:.75rem;align-items:start;font-size:.9688rem;color:var(--ink-2);line-height:1.55}
+ul.clean li::before{content:"";width:6px;height:6px;margin-top:.62rem;background:var(--thread);flex:none}
+ul.clean.no li::before{background:var(--ink-4);transform:rotate(45deg)}
+
+/* ── cierre ── */
+.close{background:var(--paper-3);border:1px solid var(--rule-strong);padding:clamp(1.6rem,4vw,2.75rem);position:relative}
+.close::before{
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(90% 120% at 100% 0%,var(--glow),transparent 60%);opacity:.10;
+}
+
+footer{border-top:1px solid var(--rule);padding-block:2.25rem 3.25rem}
+.foot{display:flex;flex-wrap:wrap;gap:.75rem 2rem;justify-content:space-between;font-family:"IBM Plex Mono",monospace;font-size:.6875rem;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-4)}
+
+/* ── motion ── */
+.rise{opacity:0;transform:translateY(14px)}
+.rise.in{opacity:1;transform:none;transition:opacity var(--t-slow) var(--e-out),transform var(--t-slow) var(--e-out)}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.001ms!important;transition-duration:.001ms!important}
+  .rise{opacity:1;transform:none}
+}
+</style>
+</head>
+<body>
+<section class="hero">
+  <span class="reg" style="top:1.5rem;left:1.5rem"></span>
+  <div class="wrap">
+    <div class="hero-meta">
+      <span>SGPMRJA</span>
+      <span>Auditoría técnica</span>
+      <span>Rama dev</span>
+      <span>Septiembre 2026</span>
+    </div>
+    <div class="stack-lg">
+      <h1>La dirección es correcta.<br><em>El plan, todavía no.</em></h1>
+      <p class="lead col">Revisión de <a href="migracion_frontend.html">La frontera de la migración</a> contra el código real de <span class="mono">dev</span>. Inertia + React + TypeScript es la elección adecuada, pero la propuesta subestima el alcance, afirma algo falso sobre el backend y no incluye red de seguridad. Se recomienda aprobarla <strong>con las correcciones de este documento</strong>.</p>
+    </div>
+    <div class="metrics">
+      <div class="metric"><span class="n">292</span><span class="k">response()->json</span><span class="s">contra 48 <span class="mono">return view()</span> en controllers</span></div>
+      <div class="metric"><span class="n">277</span><span class="k">rutas reales</span><span class="s">la propuesta dice 208</span></div>
+      <div class="metric"><span class="n">≈25.400</span><span class="k">líneas JS inline</span><span class="s">en bloques &lt;script&gt;; la propuesta dice 15.674</span></div>
+      <div class="metric"><span class="n">0</span><span class="k">tests de negocio</span><span class="s">12 tests: 8 de Breeze por defecto y 4 unitarios/de ejemplo</span></div>
+      <div class="metric"><span class="n">0</span><span class="k">pipelines de CI</span><span class="s">no existe <span class="mono">.github/workflows</span></span></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="head">
+      <div class="eyebrow">Lo que se mantiene</div>
+      <h2>Lo que la propuesta acierta</h2>
+    </div>
+    <ul class="clean col">
+      <li><span><strong>Descartar el SPA desacoplado y Next.js.</strong> Una API REST para toda la app duplicaría validación, autenticación y despliegue sin ningún beneficio para este sistema.</span></li>
+      <li><span><strong>Migración incremental, un módulo por PR</strong>, con Blade e Inertia conviviendo. Se puede pausar sin dejar el sistema a medias.</span></li>
+      <li><span><strong>El diagnóstico de fondo.</strong> Los parches de apilamiento (Popper con <span class="mono">strategy:'fixed'</span>, <span class="mono">modal-hidden-temp</span>, <span class="mono">:has(.actions-menu.show)</span>, AtlanticoSelect) son un mismo problema que las primitivas con portal eliminan.</span></li>
+      <li><span><strong>Orden por riesgo</strong>, con los wizards al final.</span></li>
+      <li><span><strong>Pedir solo Fase 0 + piloto medido</strong> en vez de aprobar la migración completa de una vez.</span></li>
+    </ul>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="head">
+      <div class="eyebrow">Verificación</div>
+      <h2>Las cifras, medidas otra vez</h2>
+      <p class="small col">Medido sobre <span class="mono">dev</span> el 27/09/2026. Las líneas JS cuentan el contenido de bloques <span class="mono">&lt;script&gt;</span> sin <span class="mono">src</span> en todas las vistas Blade.</p>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Métrica</th><th class="mono">Propuesta</th><th class="mono">Real</th><th>Estado</th></tr></thead>
+        <tbody>
+          <tr><td>Vistas Blade / líneas</td><td class="mono">152 / 47.545</td><td class="mono">152 / 47.545</td><td><span class="chip on">Correcto</span></td></tr>
+          <tr><td>custom.css</td><td class="mono">11.869</td><td class="mono">11.869</td><td><span class="chip on">Correcto</span></td></tr>
+          <tr><td>Assets Velzon</td><td class="mono">140 MB</td><td class="mono">140 MB</td><td><span class="chip on">Correcto</span></td></tr>
+          <tr><td><span class="mono">cotizaciones/scripts/main</span></td><td class="mono">6.591</td><td class="mono">6.591</td><td><span class="chip on">Correcto</span></td></tr>
+          <tr><td>Controllers</td><td class="mono">35</td><td class="mono">34</td><td><span class="chip on">Correcto</span></td></tr>
+          <tr><td>Rutas</td><td class="mono">208</td><td class="mono">277</td><td><span class="chip off">+33 %</span></td></tr>
+          <tr><td>JS inline</td><td class="mono">15.674</td><td class="mono">≈25.400</td><td><span class="chip off">+62 %</span></td></tr>
+          <tr><td>Versión actual</td><td class="mono">Laravel ^10.10</td><td class="mono">Laravel ^10.10</td><td><span class="chip on">Correcto</span> <span class="small">(CLAUDE.md dice 11: desactualizado)</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="head">
+      <div class="eyebrow">Hallazgos</div>
+      <h2>Diez hallazgos, de más a menos grave</h2>
+    </div>
+    <div class="phases">
+      <div class="phase"><span class="num">01</span><div class="body"><h3>«Backend sin cambios» es falso</h3></div><span class="risk chip off">Crítico</span>
+        <p>Hay 292 <span class="mono">response()-&gt;json</span>, 72 respuestas 422 manuales y solo 48 <span class="mono">return view()</span>. La app funciona con modales que envían y reciben JSON, pero Inertia espera redirecciones con errores en sesión. Los <strong>services</strong> no cambian; los <strong>controllers sí</strong>, en cada módulo migrado. El plan debe fijar el patrón: páginas y listados reciben props de Inertia, las mutaciones usan <span class="mono">router.post</span> + redirect, y el JSON queda solo para búsquedas y autocompletado (<span class="mono">personas-search</span>, disponibilidad de insumos). Además, las 59 validaciones inline deben pasar a FormRequests.</p></div>
+      <div class="phase"><span class="num">02</span><div class="body"><h3>No hay red de seguridad</h3></div><span class="risk chip off">Crítico</span>
+        <p>De los 12 tests, 8 son los de Breeze por defecto y 4 son unitarios o de ejemplo. Ninguno cubre Cotización, Pedido, Compra ni Órdenes. Hoy la Fase 0 (dos saltos de versión mayor) y cada módulo migrado solo se pueden verificar a mano. Antes de la Fase 0 hacen falta feature tests de los flujos críticos, que comprueben los efectos en la BD, y un smoke E2E Cotización → Entrega con Playwright, que ya está en <span class="mono">package.json</span>.</p></div>
+      <div class="phase"><span class="num">03</span><div class="body"><h3>La convivencia está subdimensionada</h3></div><span class="risk chip off">Alto</span>
+        <p>Durante meses habrá dos layouts y dos sidebars que mantener sincronizados, además de recargas completas al pasar de un módulo Blade a uno Inertia. También habrá dos sistemas de CSS: el <em>preflight</em> de Tailwind rompe Bootstrap, así que las páginas Inertia necesitan su propia plantilla raíz y nunca deben cargar ambos. Hay que portar los comportamientos globales (<span class="mono">AtlanticoGuard</span>, <span class="mono">bsEquivalente</span>/píldora BCV, <span class="mono">TelefonosRepeater</span>, <span class="mono">ProyeccionInsumos</span>, búsqueda unificada de personas, menú ⋮) y definir los datos que reciben todas las páginas: usuario, permisos (<span class="mono">CheckPermiso</span>, <span class="mono">config/modulos.php</span>), tasa BCV y mensajes flash.</p></div>
+      <div class="phase"><span class="num">04</span><div class="body"><h3>El alcance es 30–60 % mayor</h3></div><span class="risk chip off">Alto</span>
+        <p>Hay 277 rutas en vez de 208 y ≈25.400 líneas de JS inline en vez de 15.674. El plan lo reconoce como «trabajo de meses», pero las estimaciones deben partir de las cifras reales.</p></div>
+      <div class="phase"><span class="num">05</span><div class="body"><h3>La Fase 0 tiene riesgos concretos sin nombrar</h3></div><span class="risk chip">Medio</span>
+        <p>Son dos saltos de versión mayor (10 → 11 → 12). Laravel 11 elimina Doctrine DBAL, así que hay que quitar el mapeo <span class="mono">enum</span> de <span class="mono">AppServiceProvider.php:39-40</span>. Hay 2 migraciones con <span class="mono">-&gt;change()</span>, que en Laravel 11 exige repetir todos los modificadores de la columna. Además hay que subir yajra ^10 → ^12, sanctum 3 → 4, phpunit 11 y breeze 1 → 2 (13 vistas usan sus componentes). A favor: no hay usos de <span class="mono">diffIn*</span>, así que Carbon 3 no afecta los cálculos de vigencia.</p></div>
+      <div class="phase"><span class="num">06</span><div class="body"><h3>Faltan despliegue y CI</h3></div><span class="risk chip">Medio</span>
+        <p>Hoy los assets son estáticos, sin paso de build. Con Vite, producción necesita un build de Node, y el despliegue por zip que se usó en la defensa deja de funcionar tal cual. Sin una CI que ejecute <span class="mono">tsc</span>, ESLint, PHPUnit, Pint y el build, y que falle si los tipos generados están desactualizados, el «tipado de punta a punta» depende de que alguien se acuerde de regenerarlos.</p></div>
+      <div class="phase"><span class="num">07</span><div class="body"><h3>Sostenibilidad del equipo</h3></div><span class="risk chip">Medio</span>
+        <p>El trabajo de los últimos seis meses está muy concentrado en una sola persona. El plan pide que todo el equipo aprenda React + TS, pero no incluye una guía de convenciones (<span class="mono">docs/conventions/frontend.md</span>), plantillas de módulo ni reglas de lint estrictas. Queda una pregunta abierta: quién mantiene el sistema después del PST. Un stack con build de Node y TypeScript exige más a quien lo herede, y eso obliga a documentar más.</p></div>
+      <div class="phase"><span class="num">08</span><div class="body"><h3>Contenido que resta credibilidad</h3></div><span class="risk chip">Bajo</span>
+        <p>El análisis de bundles de Anduril y Palantir, la «Capa 1» de landing con Three.js/GSAP y el «60 % de la percepción» sin fuente no aportan a la robustez. Conviene sacarlos del documento de decisión. Motion, cmdk y Vaul pueden esperar; se empieza con Radix/shadcn, TanStack Table, react-hook-form + Zod y Sonner.</p></div>
+      <div class="phase"><span class="num">09</span><div class="body"><h3>El piloto no tiene criterio de decisión</h3></div><span class="risk chip">Bajo</span>
+        <p>Un CRUD trivial como <span class="mono">colores</span> da un costo engañosamente bajo. Se recomienda <strong>proveedores</strong> (tabla server-side, modal, teléfonos, búsqueda de personas), que ejercita casi toda la plataforma. Las métricas y el umbral de continuar o parar se fijan <strong>antes</strong> de empezar.</p></div>
+      <div class="phase"><span class="num">10</span><div class="body"><h3>Decisiones técnicas sin cerrar</h3></div><span class="risk chip">Bajo</span>
+        <p>Tres decisiones deben quedar tomadas en la Fase 1: el patrón de tabla server-side que reemplaza a yajra (query params + <span class="mono">only:['rows']</span> + <span class="mono">paginate()</span>, quizá con <span class="mono">spatie/laravel-query-builder</span>); las rutas tipadas desde TS (Wayfinder o Ziggy); y las utilidades centralizadas de formato es-VE (Bs, fechas en hora local para no repetir el bug de UTC, modo oscuro).</p></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="head">
+      <div class="eyebrow">Recomendación</div>
+      <h2>Secuencia corregida</h2>
+      <p class="small col">Se conserva todo el plan original y se agregan dos pasos previos, más una fase de plataforma explícita.</p>
+    </div>
+    <div class="phases">
+      <div class="phase"><span class="num">PASO 0</span><div class="body"><h3>Red de seguridad</h3></div><span class="risk chip on">Nuevo</span>
+        <p>Feature tests de los flujos críticos (cotización → pedido → orden → calidad, compras procesar/anular), un smoke E2E con Playwright y una CI en GitHub Actions.</p></div>
+      <div class="phase"><span class="num">PASO 1</span><div class="body"><h3>Laravel 11 → 12 + PHP 8.3</h3></div><span class="risk chip">Fase 0 original</span>
+        <p>En su propio PR, validado por la red del paso 0.</p></div>
+      <div class="phase"><span class="num">PASO 2</span><div class="body"><h3>Plataforma</h3></div><span class="risk chip on">Ampliado</span>
+        <p>Plantilla raíz de Inertia separada, datos compartidos entre páginas (usuario, permisos, tasa, flash) y tokens claro/oscuro. Componentes base: DataTable, Dialog, Select, FormField con errores del servidor, MontoBs/BCV, ConfirmDanger y UnsavedGuard. Además, tipos generados y guía de convenciones.</p></div>
+      <div class="phase"><span class="num">PASO 3</span><div class="body"><h3>Piloto: proveedores</h3></div><span class="risk chip on">Nuevo criterio</span>
+        <p>Con métricas fijadas de antemano (horas, líneas antes/después, bugs, peso del bundle) y una decisión explícita de continuar o parar.</p></div>
+      <div class="phase"><span class="num">PASO 4+</span><div class="body"><h3>Fases 2–5 del plan original</h3></div><span class="risk chip">Sin cambios</span>
+        <p>CRUDs → tablas pesadas → flujos con estado → wizards.</p></div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap foot">
+    <span>Auditoría técnica — propuesta de migración frontend</span>
+    <span>Septiembre 2026</span>
+  </div>
+</footer>
+</body>
+</html>
