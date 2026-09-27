@@ -42,7 +42,9 @@
         <link href="{{ asset('css/app.css') }}" rel="stylesheet">
         
         <!-- Scripts -->
-        @vite(['resources/css/app.css', 'resources/js/app.js'])
+        {{-- Bootstrap estático (el mismo que usa el panel), no un duplicado empaquetado por Vite. --}}
+        <link href="{{ asset('assets/css/bootstrap.min.css') }}" rel="stylesheet">
+        @vite(['resources/js/app.js'])
     </head>
     <body class="d-flex flex-column h-100 font-sans antialiased">
         <main class="flex-shrink-0">

@@ -105,7 +105,21 @@ if (!function_exists('tienePermiso')) {
             return false;
         }
 
-        $permisos = Cache::rememberForever("permisos.rol_{$rolId}", function () use ($rolId) {
+        return in_array($permiso, permisosDeRol((int) $rolId), true);
+    }
+}
+
+if (!function_exists('permisosDeRol')) {
+    /**
+     * Permisos ('modulo.accion') otorgados a un rol en permiso_rol, cacheados
+     * (la cache se invalida al guardar la matriz de seguridad). Fuente común de
+     * tienePermiso() y de la prop `auth.permisos` de Inertia.
+     *
+     * @return list<string>
+     */
+    function permisosDeRol(int $rolId): array
+    {
+        return Cache::rememberForever("permisos.rol_{$rolId}", function () use ($rolId) {
             try {
                 if (!Schema::hasTable('permiso_rol')) {
                     return [];
@@ -117,8 +131,6 @@ if (!function_exists('tienePermiso')) {
                 return [];
             }
         });
-
-        return in_array($permiso, $permisos, true);
     }
 }
 

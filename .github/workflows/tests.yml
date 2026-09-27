@@ -103,6 +103,17 @@ jobs:
           npm ci
           npx playwright install --with-deps chromium
 
+      - name: Tipos de TypeScript
+        run: npm run typecheck
+
+      # public/build se versiona (el despliegue no compila): el build del repo
+      # debe coincidir con el código fuente, o producción serviría una versión vieja.
+      - name: public/build al día con el código
+        run: |
+          npm run build
+          git diff --exit-code --stat public/build || { echo "::error::public/build no coincide con el código: corre 'npm run build' y commitea public/build."; exit 1; }
+          test -z "$(git status --porcelain public/build)" || { echo "::error::public/build tiene archivos sin commitear: corre 'npm run build' y commitea public/build."; git status --porcelain public/build; exit 1; }
+
       # El servidor (tests/e2e/servidor.sh) lo levanta Playwright: migrate:fresh
       # + E2eSeeder sobre sistema_atlantico_e2e y php artisan serve.
       - name: Smoke E2E

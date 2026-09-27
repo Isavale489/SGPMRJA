@@ -13,7 +13,9 @@
     <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
 
     <!-- Scripts -->
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    {{-- Bootstrap estático (el mismo que usa el panel), no un duplicado empaquetado por Vite. --}}
+    <link href="{{ asset('assets/css/bootstrap.min.css') }}" rel="stylesheet">
+    @vite(['resources/js/app.js'])
 </head>
 
 <body class="font-sans antialiased">
