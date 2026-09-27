@@ -1166,7 +1166,7 @@
             });
             $(document).on("click", ".view-item-btn", function () {
                 var id = $(this).data("id");
-                $.get("{{ route('clientes.show', '') }}/" + id, function (data) {
+                $.get("{{ route('clientes.show', ':id') }}".replace(':id', id), function (data) {
                     $("#viewModal").modal("show");
                     var tipoTexto = data.tipo_cliente === 'natural' ? 'Natural' : (data.tipo_cliente === 'juridico' ? 'Jurídico' : 'Gubernamental');
                     // `nombre` ya consolida nombre+apellido (natural) o razón social (jurídico)
