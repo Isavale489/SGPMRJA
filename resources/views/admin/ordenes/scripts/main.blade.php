@@ -1,5 +1,3 @@
-<!-- SortableJS — solo para el módulo Órdenes (Kanban de sub-órdenes) -->
-<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.3/Sortable.min.js"></script>
 <script>
     // ─────────────────────────────────────────────────────────────
     // Validaciones onblur de modales auxiliares (insumo nested + avance)
@@ -34,30 +32,12 @@
         } else {
             marcarValido($(this));
         }
-        if ($('#am-cantidad-defectuosa').val() !== '') {
-            $('#am-cantidad-defectuosa').trigger('blur');
-        }
-    });
-
-    // Validación onblur: avanceModal — cantidad_defectuosa ≤ cantidad_producida
-    $(document).on('blur', '#am-cantidad-defectuosa', function () {
-        let defectuosa = parseFloat($(this).val());
-        let producida  = parseFloat($('#am-cantidad-producida').val());
-        if (isNaN(defectuosa) || defectuosa < 0) {
-            marcarInvalido($(this), 'La cantidad defectuosa no puede ser negativa.');
-        } else if (!isNaN(producida) && defectuosa > producida) {
-            marcarInvalido($(this), 'La cantidad defectuosa no puede superar la cantidad producida (' + producida + ').');
-        } else {
-            marcarValido($(this));
-        }
     });
 
     $(document).ready(function () {
         // ══════════════════════════════════════════════════════
         // Helpers
         // ══════════════════════════════════════════════════════
-        var viewKanbanOrdenId = null; // ID de la OP actualmente en viewModal
-
         function escHtml(s) {
             return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
         }
@@ -150,6 +130,9 @@
             const chips = [];
             chips.push('<span class="' + cls + '"><i class="ri-palette-line me-1"></i>' + escHtml(l.color || 'Sin color') + '</span>');
             chips.push('<span class="' + cls + '"><i class="ri-ruler-line me-1"></i>' + escHtml(l.talla || 'Talla única') + '</span>');
+            if (l.genero) {
+                chips.push('<span class="' + cls + '"><i class="ri-user-line me-1"></i>' + escHtml(l.genero) + '</span>');
+            }
             if (l.lleva_bordado) {
                 chips.push('<span class="' + cls + '"><i class="ri-scissors-cut-line me-1"></i>' + (l.bordados_count || 0) + ' bordado(s)</span>');
             }
@@ -203,6 +186,7 @@
                 cantidad: pendiente,
                 color: l.color,
                 talla: l.talla,
+                genero: l.genero,
                 lleva_bordado: l.lleva_bordado,
                 bordados_count: l.bordados_count,
                 empleado_ids: [],
@@ -225,6 +209,7 @@
                 cantidad: unidades,
                 color: l.color,
                 talla: l.talla,
+                genero: l.genero,
                 lleva_bordado: l.lleva_bordado,
                 bordados_count: l.bordados_count,
                 empleado_ids: [],
@@ -264,7 +249,51 @@
 
             if (n === 2) renderAsignacion();
             if (n === 3) renderInsumosAcc();
-            if (n === 4) renderResumen();
+            if (n === 4) { renderResumen(); ordRefreshProyeccion(); }
+        }
+
+        // ── Aviso de stock proyectado (NO bloqueante) en el paso Resumen ──
+        // Agrega los insumos REALES de todas las órdenes del wizard y los compara
+        // contra el stock; si faltan, ofrece crear la compra prellenada. Reutiliza
+        // el renderer compartido proyeccion-insumos.js (igual que cotización/pedido).
+        function ordRefreshProyeccion() {
+            var bodyEl = document.getElementById('ord-proyeccion-body');
+            var badgeEl = document.getElementById('ord-proyeccion-badge');
+            if (!bodyEl || !window.ProyeccionInsumos) return;
+
+            var insumos = [];
+            (ordWiz.lineas || []).forEach(function (l) {
+                (l.insumos || []).forEach(function (it) {
+                    var cant = parseFloat(it.cantidad) || 0;
+                    if (it.id && cant > 0) insumos.push({ insumo_id: it.id, cantidad: cant });
+                });
+            });
+            if (!insumos.length) {
+                bodyEl.innerHTML = '';
+                if (badgeEl) badgeEl.hidden = true;
+                return;
+            }
+
+            ProyeccionInsumos.cargar({
+                url: '{{ route("ordenes.proyeccionInsumos") }}',
+                method: 'POST',
+                csrf: $('meta[name="csrf-token"]').attr('content'),
+                payload: { insumos: insumos },
+                bodyEl: bodyEl,
+                badgeEl: badgeEl,
+                contexto: 'produccion'
+            });
+        }
+
+        // Recalcular al volver a la pestaña o si el stock cambió en otra (compra
+        // procesada/anulada), estando en el paso Resumen con el wizard abierto.
+        if (window.ProyeccionInsumos) {
+            document.addEventListener('visibilitychange', function () {
+                if (!document.hidden && currentStep === 4 && $('#showModal').hasClass('show')) ordRefreshProyeccion();
+            });
+            ProyeccionInsumos.onStockChange(function () {
+                if (currentStep === 4 && $('#showModal').hasClass('show')) ordRefreshProyeccion();
+            });
         }
 
         function actualizarBanners(n) {
@@ -326,7 +355,7 @@
                 // Regla de negocio: sin abono mínimo no se pueden generar órdenes.
                 const abonoOk = p.cumple_abono !== false;
                 const lineasHtml = p.lineas.map(function (l) {
-                    const meta = [l.cantidad + ' u', l.color || 'Sin color', l.talla || 'Talla única'].join(' · ');
+                    const meta = [l.cantidad + ' u', l.color || 'Sin color', l.talla || 'Talla única'].concat(l.genero ? [l.genero] : []).join(' · ');
                     const bordadoBadge = l.lleva_bordado
                         ? `<span class="badge bg-info-subtle text-info ms-1"><i class="ri-scissors-cut-line"></i> ${l.bordados_count} bordado(s)</span>`
                         : '';
@@ -382,7 +411,10 @@
                 const card = `
                     <div class="cotizacion-card" data-pedido-id="${p.id}">
                         <div class="cotizacion-header">
-                            <span class="cotizacion-numero"><i class="ri-shopping-bag-line"></i> Pedido #${p.id}</span>
+                            <div class="ped-cell">
+                                <span class="ped-cell-ic"><i class="ri-shopping-bag-3-line"></i></span>
+                                <span class="ped-cell-txt"><span class="ped-cell-eyebrow">Pedido</span><span class="ped-cell-num">#${p.id}</span></span>
+                            </div>
                             <span class="badge ${hayPendientes ? 'bg-success-subtle text-success' : 'bg-secondary'}">
                                 ${p.lineas_pendientes} de ${p.total_lineas} por asignar
                             </span>
@@ -583,6 +615,88 @@
             return html;
         }
 
+        // ── Reparto de unidades por empleado dentro de una orden de equipo ──
+        // l.reparto = { empleadoId(string): unidades }. Con un solo empleado no se
+        // muestra (se le asignan todas); con 2+ se reparte (equitativo por defecto).
+        function repartoEquitativo(total, ids) {
+            const out = {};
+            const n = ids.length;
+            if (!n) return out;
+            const base = Math.floor(total / n), resto = total % n;
+            ids.forEach(function (id, i) { out[String(id)] = base + (i < resto ? 1 : 0); });
+            return out;
+        }
+        function ensureReparto(l) {
+            const ids = (l.empleado_ids || []).map(String);
+            const total = parseInt(l.cantidad, 10) || 0;
+            const prev = l.reparto || {};
+            const mismasLlaves = ids.length === Object.keys(prev).length
+                && ids.every(function (id) { return prev[id] != null; });
+            const suma = ids.reduce(function (a, id) { return a + (parseInt(prev[id], 10) || 0); }, 0);
+            if (mismasLlaves && suma === total) {
+                // Conserva el reparto manual válido (re-normaliza a enteros).
+                const keep = {};
+                ids.forEach(function (id) { keep[id] = parseInt(prev[id], 10) || 0; });
+                l.reparto = keep;
+            } else {
+                l.reparto = repartoEquitativo(total, ids);
+            }
+            return l.reparto;
+        }
+        function repartoHtml(l, idx) {
+            const ids = (l.empleado_ids || []).map(String);
+            if (ids.length < 2) return ''; // 1 empleado → sin reparto manual
+            ensureReparto(l);
+            const r = l.reparto || {};
+            const total = parseInt(l.cantidad, 10) || 0;
+            const rows = ids.map(function (id) {
+                const nombre = $('#ord-empleados-tpl option[value="' + id + '"]').text();
+                const val = parseInt(r[id], 10) || 0;
+                return '<div class="ord-rep-row">'
+                    + '<span class="ord-rep-cell ord-rep-c-emp" title="' + escHtml(nombre) + '"><i class="ri-user-line"></i><span class="ord-rep-name-txt">' + escHtml(nombre) + '</span></span>'
+                    + '<span class="ord-rep-cell ord-rep-c-qty">'
+                    +   '<input type="number" inputmode="numeric" class="ord-asig-emp-cant' + (val < 1 ? ' is-zero' : '') + '" '
+                    +     'data-idx="' + idx + '" data-emp="' + id + '" min="1" max="' + total + '" value="' + val + '">'
+                    + '</span>'
+                    + '</div>';
+            }).join('');
+            const suma = ids.reduce(function (a, id) { return a + (parseInt(r[id], 10) || 0); }, 0);
+            const ok = suma === total;
+            const ind = '<div class="ord-rep-total ' + (ok ? 'is-ok' : 'is-bad') + '" id="ord-rep-total-' + idx + '">'
+                + '<i class="ri-' + (ok ? 'checkbox-circle' : 'error-warning') + '-line me-1"></i>Repartido <strong>' + suma + '</strong> / ' + total + '</div>';
+            return '<div class="ord-asig-reparto-inner">'
+                + '<div class="ord-rep-label"><i class="ri-scales-3-line me-1"></i>Unidades por empleado</div>'
+                + '<div class="ord-rep-grid">'
+                +   '<div class="ord-rep-row ord-rep-head"><span class="ord-rep-cell ord-rep-c-emp">Empleado</span><span class="ord-rep-cell ord-rep-c-qty">Unid.</span></div>'
+                +   '<div class="ord-rep-rows">' + rows + '</div>'
+                + '</div>'
+                + ind + '</div>';
+        }
+        function renderRepartoCard(idx) {
+            const l = ordWiz.lineas[idx];
+            if (!l) return;
+            $('#ord-asig-reparto-' + idx).html(repartoHtml(l, idx));
+        }
+        function actualizarRepartoTotal(idx) {
+            const l = ordWiz.lineas[idx];
+            if (!l) return;
+            const ids = (l.empleado_ids || []).map(String);
+            const suma = ids.reduce(function (a, id) { return a + (parseInt((l.reparto || {})[id], 10) || 0); }, 0);
+            const total = parseInt(l.cantidad, 10) || 0;
+            const ok = suma === total;
+            $('#ord-rep-total-' + idx).toggleClass('is-ok', ok).toggleClass('is-bad', !ok)
+                .html('<i class="ri-' + (ok ? 'checkbox-circle' : 'error-warning') + '-line me-1"></i>Repartido <strong>' + suma + '</strong> / ' + total);
+        }
+        // Construye el arreglo [{id, cantidad}] que espera el backend.
+        function empleadosPayload(l) {
+            const ids = (l.empleado_ids || []).map(String);
+            if (ids.length <= 1) {
+                return ids.map(function (id) { return { id: parseInt(id, 10), cantidad: parseInt(l.cantidad, 10) || 0 }; });
+            }
+            const r = l.reparto || {};
+            return ids.map(function (id) { return { id: parseInt(id, 10), cantidad: parseInt(r[id], 10) || 0 }; });
+        }
+
         function asignacionCardHtml(l, idx) {
             const meta      = lineaMetaChips(l);
             const edit      = isEditMode();
@@ -635,6 +749,7 @@
                 +       empleadoCheckboxesHtml(idx, l.empleado_ids || [])
                 +     '</div>'
                 +     '<div class="ord-emp-feedback">Selecciona al menos un empleado.</div>'
+                +     '<div class="ord-asig-reparto" id="ord-asig-reparto-' + idx + '">' + repartoHtml(l, idx) + '</div>'
                 +   '</div>'
                 +   cantBlock
                 +   '<div class="' + fechaCol + '"><label class="form-label form-label-sm required mb-1" for="ord-asig-inicio-' + idx + '">Inicio</label>'
@@ -717,6 +832,33 @@
             setCantidadOrden(l, v);
             $(this).closest('.ord-asig-card').find('.ord-asig-qty').first().text('· ' + v + ' u');
             actualizarChipsReparto();
+            renderRepartoCard(idx); // re-reparte por empleado al cambiar el total de la orden
+        });
+
+        // Cambia la selección de empleados → recalcula el reparto por empleado
+        $(document).on('change', '.ord-asig-emp-chk', function () {
+            const idx = parseInt($(this).data('idx'), 10);
+            const l = ordWiz.lineas[idx];
+            if (!l) return;
+            l.empleado_ids = [];
+            $('#ord-asig-emp-chks-' + idx + ' .ord-asig-emp-chk:checked').each(function () {
+                l.empleado_ids.push($(this).val());
+            });
+            renderRepartoCard(idx);
+        });
+
+        // Edición manual de la parte de un empleado → actualiza el indicador
+        $(document).on('input', '.ord-asig-emp-cant', function () {
+            const idx = parseInt($(this).data('idx'), 10);
+            const emp = String($(this).data('emp'));
+            const l = ordWiz.lineas[idx];
+            if (!l) return;
+            l.reparto = l.reparto || {};
+            let v = parseInt(this.value, 10);
+            if (isNaN(v) || v < 0) v = 0;
+            l.reparto[emp] = v;
+            $(this).toggleClass('is-zero', v < 1);
+            actualizarRepartoTotal(idx);
         });
 
         // Si el campo queda vacío al salir, restaurar las unidades del estado
@@ -775,6 +917,14 @@
                 });
                 const v = parseInt($(this).find('.ord-asig-cant').val(), 10);
                 if (!isNaN(v) && v >= 1) setCantidadOrden(l, v);
+                // Reparto por empleado: lee los inputs visibles; si no hay (1 empleado
+                // o bloque oculto) recalcula a partir del estado.
+                const reparto = {};
+                $(this).find('.ord-asig-emp-cant').each(function () {
+                    reparto[String($(this).data('emp'))] = parseInt($(this).val(), 10) || 0;
+                });
+                if (Object.keys(reparto).length) l.reparto = reparto;
+                else ensureReparto(l);
                 l.fecha_inicio = $(this).find('.ord-asig-inicio').val() || '';
                 l.fecha_fin_estimada = $(this).find('.ord-asig-fin').val() || '';
                 const $est = $(this).find('.ord-asig-estado');
@@ -795,6 +945,8 @@
                     $(this).find('.ord-asig-emp-chk').each(function () {
                         $(this).prop('checked', selEmpIds.indexOf($(this).val()) !== -1);
                     });
+                    const l = ordWiz.lineas[idx];
+                    if (l) { l.empleado_ids = selEmpIds.slice(); renderRepartoCard(idx); }
                 }
                 if (ini) $(this).find('.ord-asig-inicio').val(ini);
                 if (fin) $(this).find('.ord-asig-fin').val(fin);
@@ -814,7 +966,7 @@
 
         function validateStep2() {
             syncAsignacion();
-            let ok = true, $first = null;
+            let ok = true, $first = null, repartoDescuadrado = false, repartoConCeros = false;
             ordWiz.lineas.forEach(function (l, idx) {
                 const $chks = $('#ord-asig-emp-chks-' + idx);
                 const $ini  = $('#ord-asig-inicio-' + idx);
@@ -831,7 +983,31 @@
                 if (!l.fecha_fin_estimada) { marcarInvalido($fin, 'Fecha fin requerida.'); ok = false; $first = $first || $fin; }
                 else if (l.fecha_inicio && l.fecha_fin_estimada <= l.fecha_inicio) { marcarInvalido($fin, 'El fin debe ser posterior al inicio.'); ok = false; $first = $first || $fin; }
                 else marcarValido($fin);
+
+                // Reparto por empleado: con equipo (2+) la suma debe cuadrar exacto
+                // y cada empleado debe producir al menos 1 unidad.
+                if (l.empleado_ids && l.empleado_ids.length > 1) {
+                    const partes = l.empleado_ids.map(function (id) { return parseInt((l.reparto || {})[String(id)], 10) || 0; });
+                    const suma = partes.reduce(function (a, n) { return a + n; }, 0);
+                    if (suma !== (parseInt(l.cantidad, 10) || 0)) {
+                        ok = false;
+                        $first = $first || $('#ord-asig-reparto-' + idx);
+                        $('#ord-rep-total-' + idx).addClass('is-bad');
+                        repartoDescuadrado = true;
+                    }
+                    if (partes.some(function (n) { return n < 1; })) {
+                        ok = false;
+                        $first = $first || $('#ord-asig-reparto-' + idx);
+                        repartoConCeros = true;
+                    }
+                }
             });
+
+            if (repartoConCeros) {
+                Swal.fire({ icon: 'warning', title: 'Empleados sin unidades', text: 'Cada empleado del equipo debe producir al menos 1 unidad. Quita a quien quede en 0 o aumenta las unidades de la orden.', toast: true, position: 'top-end', showConfirmButton: false, timer: 4200 });
+            } else if (repartoDescuadrado) {
+                Swal.fire({ icon: 'warning', title: 'Reparto incompleto', text: 'Las unidades por empleado deben sumar exactamente las unidades de cada orden.', toast: true, position: 'top-end', showConfirmButton: false, timer: 3600 });
+            }
 
             // Sobre-asignación por línea (los inputs se capan en vivo; red de seguridad)
             if (ok && !isEditMode()) {
@@ -1125,9 +1301,17 @@
                     cantidad_maxima: data.cantidad_maxima || data.cantidad_solicitada,
                     color: det.color ? det.color.nombre : null,
                     talla: det.talla ? (det.talla.etiqueta || det.talla.nombre) : null,
+                    genero: det.genero ? det.genero.nombre : null,
                     lleva_bordado: !!(det.bordados && det.bordados.length),
                     bordados_count: det.bordados ? det.bordados.length : 0,
                     empleado_ids: (data.empleados_asignados || []).map(function (e) { return String(e.id); }),
+                    reparto: (function () {
+                        const r = {};
+                        (data.empleados_asignados || []).forEach(function (e) {
+                            r[String(e.id)] = parseInt(e.pivot ? e.pivot.cantidad : 0, 10) || 0;
+                        });
+                        return r;
+                    })(),
                     fecha_inicio: formatDateForInput(data.fecha_inicio),
                     fecha_fin_estimada: formatDateForInput(data.fecha_fin_estimada),
                     estado: data.estado || 'Pendiente',
@@ -1200,7 +1384,7 @@
                 url = "{{ route('ordenes.update', ':id') }}".replace(':id', ordWiz.editId);
                 payload = {
                     _token: '{{ csrf_token() }}', _method: 'PUT',
-                    empleados: l.empleado_ids, cantidad: l.cantidad,
+                    empleados: empleadosPayload(l), cantidad: l.cantidad,
                     fecha_inicio: l.fecha_inicio, fecha_fin_estimada: l.fecha_fin_estimada,
                     estado: l.estado || 'Pendiente', notas: notas, insumos: mapInsumos(l.insumos)
                 };
@@ -1209,7 +1393,7 @@
                 url = "{{ route('ordenes.store') }}";
                 payload = {
                     _token: '{{ csrf_token() }}',
-                    detalle_pedido_id: l.detalle_id, empleados: l.empleado_ids, cantidad: l.cantidad,
+                    detalle_pedido_id: l.detalle_id, empleados: empleadosPayload(l), cantidad: l.cantidad,
                     fecha_inicio: l.fecha_inicio, fecha_fin_estimada: l.fecha_fin_estimada,
                     notas: notas, insumos: mapInsumos(l.insumos)
                 };
@@ -1219,7 +1403,7 @@
                     _token: '{{ csrf_token() }}',
                     pedido_id: ordWiz.pedido.id,
                     ordenes: ordWiz.lineas.map(l => ({
-                        detalle_pedido_id: l.detalle_id, empleados: l.empleado_ids, cantidad: l.cantidad,
+                        detalle_pedido_id: l.detalle_id, empleados: empleadosPayload(l), cantidad: l.cantidad,
                         fecha_inicio: l.fecha_inicio, fecha_fin_estimada: l.fecha_fin_estimada,
                         notas: notas, insumos: mapInsumos(l.insumos)
                     }))
@@ -1231,18 +1415,38 @@
                 success: function (resp) {
                     $btn.prop('disabled', false);
                     $('#showModal').modal('hide');
-                    table.ajax.reload(null, false);
+                    reloadOrdenesTables();
                     Swal.fire({ icon: 'success', title: '¡Listo!', text: resp.message, timer: 2200, showConfirmButton: false });
                 },
                 error: function (xhr) {
                     $btn.prop('disabled', false);
                     let msg = 'Ocurrió un error al procesar la solicitud.';
+                    let faltantes = null;
                     if (xhr.responseJSON) {
                         if (xhr.responseJSON.errors) {
                             msg = Object.values(xhr.responseJSON.errors).map(v => Array.isArray(v) ? v[0] : v).join('\n');
                         } else if (xhr.responseJSON.message) { msg = xhr.responseJSON.message; }
+                        if (Array.isArray(xhr.responseJSON.faltantes) && xhr.responseJSON.faltantes.length) {
+                            faltantes = xhr.responseJSON.faltantes;
+                        }
                     }
-                    Swal.fire({ icon: 'error', title: 'Error', text: msg });
+                    // Stock insuficiente: ofrecer el atajo a la compra prellenada
+                    // con los insumos faltantes (se abre en otra pestaña).
+                    if (faltantes && window.ProyeccionInsumos) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Stock insuficiente',
+                            text: msg,
+                            showCancelButton: true,
+                            confirmButtonText: '<i class="ri-shopping-cart-2-line me-1"></i>Crear compra con los faltantes',
+                            cancelButtonText: 'Cerrar',
+                            confirmButtonColor: '#c0392b'
+                        }).then(function (res) {
+                            if (res.isConfirmed) ProyeccionInsumos.abrirCompra(faltantes, 'produccion');
+                        });
+                    } else {
+                        Swal.fire({ icon: 'error', title: 'Error', text: msg });
+                    }
                 }
             });
         });
@@ -1312,7 +1516,10 @@
                 const card = `
                     <div class="cotizacion-card">
                         <div class="cotizacion-header">
-                            <span class="cotizacion-numero"><i class="ri-file-list-3-line"></i> Orden #${o.id}</span>
+                            <div class="ped-cell">
+                                <span class="ped-cell-ic"><i class="ri-calendar-check-line"></i></span>
+                                <span class="ped-cell-txt"><span class="ped-cell-eyebrow">Orden</span><span class="ped-cell-num">#${o.id}</span></span>
+                            </div>
                             <span class="badge badge-status ${badge} rounded-pill"><i class="${iconEstadoOrden(o.estado)} me-1"></i>${escHtml(o.estado)}</span>
                         </div>
                         <div class="cotizacion-info">
@@ -1402,11 +1609,41 @@
             $('#active-filter-count').text(count).toggleClass('d-none', count === 0);
         }
 
+        // Progreso (barra) — se usa igual en la tabla de pedidos (agregado) y
+        // en la tabla de órdenes del modal (por orden).
+        function barraProgreso(producido, solicitado) {
+            let porcentaje = solicitado > 0 ? (producido / solicitado * 100).toFixed(2) : '0.00';
+            return `<div class="progress" style="height: 15px;">
+                <div class="progress-bar bg-success" role="progressbar" style="width: ${porcentaje}%"
+                    aria-valuenow="${porcentaje}" aria-valuemin="0" aria-valuemax="100">${porcentaje}%</div>
+            </div>`;
+        }
+
+        // Desglose de estados con texto (meta del modal): chips solo para conteos > 0.
+        function chipsEstadosPedido(row) {
+            const defs = [
+                ['pendientes',  'Pendiente',  'Pendiente',  'Pendientes',  'badge-soft-warning'],
+                ['en_proceso',  'En Proceso', 'En Proceso', 'En Proceso',  'badge-soft-info'],
+                ['finalizadas', 'Finalizado', 'Finalizada', 'Finalizadas', 'badge-soft-success'],
+                ['canceladas',  'Cancelado',  'Cancelada',  'Canceladas',  'badge-soft-danger']
+            ];
+            return defs
+                .map(function ([campo, estado, singular, plural, badge]) {
+                    const n = parseInt(row[campo], 10) || 0;
+                    if (!n) return '';
+                    return `<span class="badge badge-status ${badge} rounded-pill"><i class="${iconEstadoOrden(estado)} me-1"></i>${n} ${n === 1 ? singular : plural}</span>`;
+                })
+                .filter(Boolean)
+                .join(' ');
+        }
+
+        // Tabla principal: una fila por pedido (agregados de sus órdenes).
+        // El detalle por orden vive en el modal "Ver órdenes".
         var table = $('#ordenes-table').DataTable({
             processing: true,
             serverSide: true,
             ajax: {
-                url: "{{ route('ordenes.data') }}",
+                url: "{{ route('ordenes.pedidos-data') }}",
                 data: function (d) {
                     d.filter_estado = $('#filter-estado').val();
                     d.filter_fecha_desde = $('#filter-fecha-desde').val();
@@ -1416,71 +1653,50 @@
             },
             dom: 'rtip',
             columns: [
-                { data: 'id', name: 'id', className: 'align-middle text-center', width: '8%' },
-                { data: 'pedido_info', name: 'pedido.id', className: 'align-middle text-center', orderable: false, width: '9%' },
-                { data: 'producto_info', name: 'producto.nombre', className: 'align-middle', orderable: false, searchable: false, width: '26%' },
-                { data: 'cantidad_solicitada', name: 'cantidad_solicitada', className: 'align-middle text-center', width: '10%' },
                 {
-                    data: null, className: 'align-middle', width: '18%',
+                    data: 'pedido_id', orderable: false, searchable: false,
+                    className: 'align-middle', width: '18%',
                     render: function (data) {
-                        let porcentaje = data.cantidad_solicitada > 0
-                            ? (data.cantidad_producida / data.cantidad_solicitada * 100).toFixed(2) : '0.00';
-                        return `<div class="progress" style="height: 15px;">
-                            <div class="progress-bar bg-success" role="progressbar" style="width: ${porcentaje}%"
-                                aria-valuenow="${porcentaje}" aria-valuemin="0" aria-valuemax="100">${porcentaje}%</div>
+                        if (data != null) {
+                            return `<div class="ped-cell">
+                                <span class="ped-cell-ic"><i class="ri-shopping-bag-3-line"></i></span>
+                                <span class="ped-cell-txt"><span class="ped-cell-eyebrow">Pedido</span><span class="ped-cell-num">#${data}</span></span>
+                            </div>`;
+                        }
+                        return `<div class="ped-cell">
+                            <span class="ped-cell-ic ped-cell-ic--manual"><i class="ri-tools-line"></i></span>
+                            <span class="ped-cell-txt"><span class="ped-cell-eyebrow">Sin pedido</span><span class="ped-cell-num">Manuales</span></span>
                         </div>`;
                     }
                 },
                 {
-                    data: 'estado', className: 'align-middle text-center', width: '13%',
+                    data: 'cliente_nombre', orderable: false, searchable: false,
+                    className: 'align-middle', width: '28%',
                     render: function (data) {
-                        let clases = {
-                            'Pendiente': 'status-pendiente badge-soft-warning',
-                            'En Proceso': 'status-procesando badge-soft-info',
-                            'Finalizado': 'status-finalizado badge-soft-success',
-                            'Cancelado': 'status-cancelado badge-soft-danger'
-                        };
-                        let badgeClass = clases[data] || 'badge-soft-secondary';
-                        return `<span class="badge badge-status ${badgeClass} rounded-pill"><i class="${iconEstadoOrden(data)} me-1"></i>${data}</span>`;
+                        return data ? escHtml(data) : '<span class="text-muted">—</span>';
                     }
                 },
                 {
-                    data: 'id',
-                    name: 'actions',
-                    orderable: false,
-                    searchable: false,
-                    className: 'align-middle text-center',
-                    width: '16%',
-                    render: function (data, type, row) {
-                        const estado = row.estado;
-                        const estadoActivo = ['Pendiente', 'En Proceso'].includes(estado);
-                        const esCancelado = estado === 'Cancelado';
-
-                        const sVer = `<button class="btn btn-sm btn-soft-info view-btn" data-id="${data}" title="Ver detalle"><i class="ri-eye-fill"></i></button>`;
-
-                        let items = '';
-                        if (estadoActivo) {
-                            items += `<li><button type="button" class="dropdown-item act-item act-primary avance-btn" data-id="${data}"><span class="act-ic"><i class="ri-add-circle-line"></i></span>Registrar avance</button></li>`;
-                        }
-                        if (!esCancelado) {
-                            items += `<li><button type="button" class="dropdown-item act-item act-edit edit-btn" data-id="${data}"><span class="act-ic"><i class="ri-pencil-fill"></i></span>Editar</button></li>`;
-                        }
-                        // Cancelar (Pendiente/En Proceso): reposición de stock condicional + merma.
-                        if (estadoActivo) {
-                            items += `<li><button type="button" class="dropdown-item act-item act-warning cancelar-btn" data-id="${data}" data-estado="${estado}"><span class="act-ic"><i class="ri-close-circle-line"></i></span>Cancelar orden</button></li>`;
-                        }
-                        // Eliminar (hard delete) solo aplica a órdenes Pendientes.
-                        if (estado === 'Pendiente') {
-                            items += `<li><button type="button" class="dropdown-item act-item act-del remove-btn" data-id="${data}"><span class="act-ic"><i class="ri-delete-bin-fill"></i></span>Eliminar</button></li>`;
-                        }
-
-                        const menu = `
-                            <div class="dropdown d-inline-block">
-                              <button class="btn btn-sm btn-soft-secondary" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Más acciones"><i class="ri-more-2-fill"></i></button>
-                              <ul class="dropdown-menu dropdown-menu-end actions-menu">${items}</ul>
-                            </div>`;
-
-                        return `<div class="d-flex gap-1 justify-content-center align-items-center">${sVer}${menu}</div>`;
+                    data: 'total_ordenes', orderable: false, searchable: false,
+                    className: 'align-middle text-center', width: '12%',
+                    render: function (data) {
+                        const n = parseInt(data, 10) || 0;
+                        return `<span class="ord-count-chip">${n} ${n === 1 ? 'orden' : 'órdenes'}</span>`;
+                    }
+                },
+                {
+                    data: null, orderable: false, searchable: false,
+                    className: 'align-middle', width: '26%',
+                    render: function (data) {
+                        return barraProgreso(parseFloat(data.producido) || 0, parseFloat(data.solicitado) || 0);
+                    }
+                },
+                {
+                    data: null, orderable: false, searchable: false,
+                    className: 'align-middle text-center', width: '16%',
+                    render: function () {
+                        return `<button type="button" class="btn btn-sm btn-soft-info ver-ordenes-btn">
+                            <i class="ri-list-check-2 me-1"></i>Ver órdenes</button>`;
                     }
                 }
             ],
@@ -1488,14 +1704,188 @@
             ordering: false,
             autoWidth: false,
             responsive: false,
-            buttons: [
-                { extend: 'copy',  exportOptions: { columns: [0, 1, 2, 3, 4, 5] } },
-                { extend: 'csv',   exportOptions: { columns: [0, 1, 2, 3, 4, 5] } },
-                { extend: 'excel', exportOptions: { columns: [0, 1, 2, 3, 4, 5] } },
-                { extend: 'pdf',   exportOptions: { columns: [0, 1, 2, 3, 4, 5] } },
-                { extend: 'print', exportOptions: { columns: [0, 1, 2, 3, 4, 5] } }
-            ],
             language: lenguajeData
+        });
+
+        // ══════════════════════════════════════════════════════
+        // Modal "Ver órdenes" — DataTable de las órdenes del pedido
+        // ══════════════════════════════════════════════════════
+        var pedidoOrdenesTable = null;
+        var pedidoOrdenesKey = null; // id del pedido o 'manual' (órdenes sin pedido)
+
+        // Recarga la tabla de pedidos y, si ya existe, la del modal (los
+        // agregados y el detalle deben moverse juntos tras cada acción).
+        function reloadOrdenesTables() {
+            table.ajax.reload(null, false);
+            if (pedidoOrdenesTable) pedidoOrdenesTable.ajax.reload(null, false);
+        }
+
+        function renderPedidoOrdenesMeta(row) {
+            const esManual = row.pedido_id == null;
+            const total = parseInt(row.total_ordenes, 10) || 0;
+
+            // Izquierda: chip de cliente (mismo componente de las cards) o
+            // nota contextual para las órdenes manuales.
+            let left;
+            if (!esManual && row.cliente_nombre) {
+                const inicial = escHtml((row.cliente_nombre || '?').trim().charAt(0).toUpperCase() || '?');
+                left = `<span class="wiz-client-banner wiz-client-banner--sm" title="Cliente del pedido">
+                    <span class="wiz-client-banner-avatar">${inicial}</span>
+                    <span class="wiz-client-banner-main">
+                        <span class="wiz-client-banner-eyebrow">Cliente</span>
+                        <span class="wiz-client-banner-name">${escHtml(row.cliente_nombre)}</span>
+                    </span>
+                </span>`;
+            } else {
+                left = `<span class="text-muted fs-12"><i class="ri-tools-line me-1"></i>Órdenes creadas sin pedido asociado</span>`;
+            }
+
+            // Derecha: contador + desglose de estados, agrupados.
+            const right = `<span class="ord-count-chip">${total} ${total === 1 ? 'orden' : 'órdenes'}</span> ${chipsEstadosPedido(row)}`;
+
+            $('#pedido-ordenes-meta').html(`
+                <div class="d-flex align-items-center">${left}</div>
+                <div class="d-flex align-items-center gap-2 flex-wrap">${right}</div>
+            `);
+        }
+
+        // Los agregados del pedido abierto cambian con las acciones del modal
+        // (avance, cancelar, eliminar): re-render de los chips en cada redraw.
+        table.on('draw', function () {
+            if (pedidoOrdenesKey === null || !$('#pedidoOrdenesModal').hasClass('show')) return;
+            const row = table.rows().data().toArray().find(function (r) {
+                return (r.pedido_id == null ? 'manual' : String(r.pedido_id)) === pedidoOrdenesKey;
+            });
+            if (row) renderPedidoOrdenesMeta(row);
+        });
+
+        function abrirPedidoOrdenes(row) {
+            const esManual = row.pedido_id == null;
+            pedidoOrdenesKey = esManual ? 'manual' : String(row.pedido_id);
+
+            $('#pedido-ordenes-title').text(esManual ? 'Órdenes manuales' : 'Órdenes del Pedido #' + row.pedido_id);
+            renderPedidoOrdenesMeta(row);
+
+            if (!pedidoOrdenesTable) {
+                // Primera apertura: inicializar con el modal MEDIBLE pero invisible
+                // (display:block + visibility:hidden un instante). DataTables
+                // calcula los anchos reales del header del scroll — al arrancar
+                // el fade la tabla ya está construida y pintada: cero pop-in.
+                const $modal = $('#pedidoOrdenesModal');
+                $modal.css({ display: 'block', visibility: 'hidden' });
+                initPedidoOrdenesTable();
+                $modal.css({ display: '', visibility: '' });
+            } else {
+                pedidoOrdenesTable.ajax.reload();
+            }
+
+            $('#pedidoOrdenesModal').modal('show');
+        }
+
+        function initPedidoOrdenesTable() {
+                pedidoOrdenesTable = $('#pedido-ordenes-table').DataTable({
+                    processing: true,
+                    serverSide: true,
+                    ajax: {
+                        url: "{{ route('ordenes.data') }}",
+                        data: function (d) {
+                            d.pedido_id = pedidoOrdenesKey;
+                        }
+                    },
+                    dom: 'rtip',
+                    // Altura FIJA del visor de filas: el modal no crece ni se encoge
+                    // según la cantidad de órdenes (scrollCollapse:false mantiene el
+                    // alto aunque haya pocas); thead, meta y paginación quedan fijos.
+                    scrollY: 'min(44vh, 26rem)',
+                    scrollCollapse: false,
+                    columns: [
+                        { data: 'id', name: 'id', className: 'align-middle text-center', width: '9%' },
+                        { data: 'producto_info', name: 'producto.nombre', className: 'align-middle', orderable: false, searchable: false, width: '34%' },
+                        { data: 'cantidad_solicitada', name: 'cantidad_solicitada', className: 'align-middle text-center', width: '12%' },
+                        {
+                            data: null, className: 'align-middle', width: '16%',
+                            render: function (data) {
+                                return barraProgreso(data.cantidad_producida, data.cantidad_solicitada);
+                            }
+                        },
+                        {
+                            data: 'estado', className: 'align-middle text-center', width: '14%',
+                            render: function (data) {
+                                let clases = {
+                                    'Pendiente': 'status-pendiente badge-soft-warning',
+                                    'En Proceso': 'status-procesando badge-soft-info',
+                                    'Finalizado': 'status-finalizado badge-soft-success',
+                                    'Cancelado': 'status-cancelado badge-soft-danger'
+                                };
+                                let badgeClass = clases[data] || 'badge-soft-secondary';
+                                return `<span class="badge badge-status ${badgeClass} rounded-pill"><i class="${iconEstadoOrden(data)} me-1"></i>${data}</span>`;
+                            }
+                        },
+                        {
+                            data: 'id',
+                            name: 'actions',
+                            orderable: false,
+                            searchable: false,
+                            className: 'align-middle text-center',
+                            width: '15%',
+                            render: function (data, type, row) {
+                                const estado = row.estado;
+                                const estadoActivo = ['Pendiente', 'En Proceso'].includes(estado);
+                                const esCancelado = estado === 'Cancelado';
+
+                                const sVer = `<button class="btn btn-sm btn-soft-info view-btn" data-id="${data}" title="Ver detalle"><i class="ri-eye-fill"></i></button>`;
+
+                                let items = '';
+                                items += `<li><a class="dropdown-item act-item act-pdf" href="/ordenes/${data}/pdf" target="_blank"><span class="act-ic"><i class="ri-file-pdf-fill"></i></span>Ver PDF</a></li>`;
+                                if (estadoActivo) {
+                                    items += `<li><button type="button" class="dropdown-item act-item act-primary avance-btn" data-id="${data}"><span class="act-ic"><i class="ri-add-circle-line"></i></span>Registrar avance</button></li>`;
+                                }
+                                if (!esCancelado) {
+                                    items += `<li><button type="button" class="dropdown-item act-item act-edit edit-btn" data-id="${data}"><span class="act-ic"><i class="ri-pencil-fill"></i></span>Editar</button></li>`;
+                                }
+                                // Cancelar (Pendiente/En Proceso): reposición de stock condicional + merma.
+                                if (estadoActivo) {
+                                    items += `<li><button type="button" class="dropdown-item act-item act-warning cancelar-btn" data-id="${data}" data-estado="${estado}"><span class="act-ic"><i class="ri-close-circle-line"></i></span>Cancelar orden</button></li>`;
+                                }
+                                // Eliminar (hard delete) solo aplica a órdenes Pendientes.
+                                if (estado === 'Pendiente') {
+                                    items += `<li><button type="button" class="dropdown-item act-item act-del remove-btn" data-id="${data}"><span class="act-ic"><i class="ri-delete-bin-fill"></i></span>Eliminar</button></li>`;
+                                }
+
+                                const menu = `
+                                    <div class="dropdown d-inline-block">
+                                      <button class="btn btn-sm btn-soft-secondary" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Más acciones"><i class="ri-more-2-fill"></i></button>
+                                      <ul class="dropdown-menu dropdown-menu-end actions-menu">${items}</ul>
+                                    </div>`;
+
+                                return `<div class="d-flex gap-1 justify-content-center align-items-center">${sVer}${menu}</div>`;
+                            }
+                        }
+                    ],
+                    order: [],
+                    ordering: false,
+                    autoWidth: false,
+                    responsive: false,
+                    language: lenguajeData
+                });
+        }
+
+        // Respaldo: re-sincroniza anchos con el modal plenamente visible.
+        $('#pedidoOrdenesModal').on('shown.bs.modal', function () {
+            if (pedidoOrdenesTable) pedidoOrdenesTable.columns.adjust();
+        });
+
+        $(document).on('click', '.ver-ordenes-btn', function () {
+            const row = table.row($(this).closest('tr')).data();
+            if (row) abrirPedidoOrdenes(row);
+        });
+
+        // Toda la fila abre el modal (paridad con la fila-cabecera colapsable
+        // que había antes), salvo clicks sobre botones/enlaces.
+        $('#ordenes-table tbody').on('click', 'tr', function (e) {
+            if ($(e.target).closest('button, a').length) return;
+            const row = table.row(this).data();
+            if (row) abrirPedidoOrdenes(row);
         });
 
         $('#filters-collapse-body')
@@ -1529,7 +1919,7 @@
         // ══════════════════════════════════════════════════════
         $(document).on('click', '.view-btn', function () {
             let id = $(this).data('id');
-            viewKanbanOrdenId = id;
+            $('#btn-view-ord-print').attr('href', "{{ url('ordenes') }}/" + id + '/pdf');
             $.get("{{ route('ordenes.show', ':id') }}".replace(':id', id), function (data) {
                 const estadoClases = {
                     'Pendiente':  'status-pendiente badge-soft-warning',
@@ -1540,6 +1930,19 @@
 
                 // Nombre legible: cubre líneas dinámicas (producto_id null) vía accessor
                 $('#view-producto').text(data.nombre_producto || (data.producto ? data.producto.nombre : 'Producto'));
+
+                // Foto del producto en el hero (cae al ícono genérico si el tipo no tiene imagen)
+                var prodImg = (data.detalle_pedido && data.detalle_pedido.tipo_producto && data.detalle_pedido.tipo_producto.imagen_url)
+                    || (data.producto && data.producto.tipo_producto && data.producto.tipo_producto.imagen_url) || '';
+                if (prodImg) {
+                    $('#view-prod-thumb').attr('src', prodImg).removeClass('d-none');
+                    $('#view-prod-thumb-ph').addClass('d-none');
+                    $('#view-prod-thumb').closest('.ord-show-hero-icon').addClass('is-photo');
+                } else {
+                    $('#view-prod-thumb').addClass('d-none').attr('src', '');
+                    $('#view-prod-thumb-ph').removeClass('d-none');
+                    $('#view-prod-thumb').closest('.ord-show-hero-icon').removeClass('is-photo');
+                }
                 $('#view-cantidad-solicitada').text(data.cantidad_solicitada);
                 $('#view-cantidad-producida').text(data.cantidad_producida);
 
@@ -1562,14 +1965,38 @@
                     $('#view-fecha-fin-real').text('Aún en curso').addClass('fst-italic text-muted');
                 }
                 $('#view-estado').html(`<span class="badge badge-status ${estadoClases[data.estado] || 'badge-soft-secondary'} rounded-pill"><i class="${iconEstadoOrden(data.estado)} me-1"></i>${data.estado}</span>`);
-                $('#view-creado-por').text(data.creado_por ? data.creado_por.name : 'Sin especificar');
+                $('#view-creado-por').text(data.creador ? data.creador.name : 'Sin especificar');
+                $('#view-ord-creador-avatar').attr('src', (data.creador && data.creador.avatar_url) ? data.creador.avatar_url : window.AMS_AVATAR_FALLBACK).css('display', '');
 
-                // Equipo completo (multi-empleado); fallback al responsable legacy
-                const empNoms = (data.empleados_asignados && data.empleados_asignados.length)
-                    ? data.empleados_asignados.map(e => (e.persona && e.persona.nombre_completo) || ('Empleado #' + e.id))
-                    : (data.empleado && data.empleado.persona ? [data.empleado.persona.nombre_completo] : []);
-                $('#view-empleado').text(empNoms.length ? empNoms.join(', ') : 'Sin asignar');
-                $('#view-empleado-label').text(empNoms.length > 1 ? 'Empleados (' + empNoms.length + ')' : 'Empleado');
+                // Chip espejo "Cliente" — cliente del pedido ligado (oculto en órdenes manuales sin cliente)
+                var clienteNom = (data.cliente_nombre || '').trim();
+                if (clienteNom) {
+                    $('#view-ord-cliente-nombre').text(clienteNom);
+                    $('#view-ord-cliente-ini').text(clienteNom.charAt(0).toUpperCase());
+                    $('#view-ord-cliente-doc').text(data.cliente_documento || '');
+                    $('#view-ord-cliente-chip').removeAttr('hidden').attr('aria-hidden', 'false');
+                } else {
+                    $('#view-ord-cliente-chip').attr('hidden', true).attr('aria-hidden', 'true');
+                }
+
+                // Equipo completo (multi-empleado); fallback al responsable legacy.
+                // Con equipo se muestra el desglose por persona: asignadas y producidas.
+                const equipoView = data.empleados_asignados || [];
+                let empTexto;
+                if (equipoView.length > 1) {
+                    empTexto = equipoView.map(function (e) {
+                        const nom = (e.persona && e.persona.nombre_completo) || ('Empleado #' + e.id);
+                        const asig = e.pivot ? (parseInt(e.pivot.cantidad, 10) || 0) : 0;
+                        const prod = e.pivot ? (parseInt(e.pivot.cantidad_producida, 10) || 0) : 0;
+                        return nom + ' ' + asig + ' (' + prod + ' ✓)';
+                    }).join(' · ');
+                } else if (equipoView.length === 1) {
+                    empTexto = (equipoView[0].persona && equipoView[0].persona.nombre_completo) || ('Empleado #' + equipoView[0].id);
+                } else {
+                    empTexto = (data.empleado && data.empleado.persona) ? data.empleado.persona.nombre_completo : 'Sin asignar';
+                }
+                $('#view-empleado').text(empTexto);
+                $('#view-empleado-label').text(equipoView.length > 1 ? 'Equipo (' + equipoView.length + ')' : 'Empleado');
 
                 // Subtítulo del header: pedido + unidades + variante (color/talla)
                 const detSub = data.detalle_pedido || {};
@@ -1605,13 +2032,14 @@
                 } else {
                     $('#view-insumos-tablewrap').show();
                     $('#view-insumos-empty').hide();
-                    insumos.forEach(insumo => {
+                    insumos.forEach((insumo, idx) => {
                         let pct = (insumo.pivot.cantidad_utilizada / insumo.pivot.cantidad_estimada * 100).toFixed(2);
                         $('#view-insumos').append(`
-                            <tr>
-                                <td><h6 class="fs-13 mb-0">${escHtml(insumo.nombre)}</h6></td>
-                                <td class="text-center">${insumo.pivot.cantidad_estimada} ${insumo.unidad_medida}</td>
-                                <td class="text-center">${insumo.pivot.cantidad_utilizada} ${insumo.unidad_medida}</td>
+                            <tr class="cot-grouped-row">
+                                <td class="cot-col-num text-center">${idx + 1}</td>
+                                <td><div class="cot-prod-modelo">${escHtml(insumo.nombre)}</div></td>
+                                <td class="cot-cell-num">${insumo.pivot.cantidad_estimada} ${insumo.unidad_medida}</td>
+                                <td class="cot-cell-num">${insumo.pivot.cantidad_utilizada} ${insumo.unidad_medida}</td>
                                 <td>
                                     <div class="progress animated-progress custom-progress progress-sm">
                                         <div class="progress-bar bg-success" role="progressbar" style="width: ${pct}%"
@@ -1663,7 +2091,7 @@
                         method: 'DELETE',
                         data: { _token: '{{ csrf_token() }}' },
                         success: function (response) {
-                            table.ajax.reload();
+                            reloadOrdenesTables();
                             Swal.fire('Eliminado', response.message, 'success');
                         },
                         error: function (xhr) {
@@ -1688,7 +2116,7 @@
                     method: 'POST',
                     data: { _token: '{{ csrf_token() }}', _method: 'PATCH', motivo_cancelacion: motivo || null },
                     success: function (resp) {
-                        table.ajax.reload(null, false);
+                        reloadOrdenesTables();
                         if (misOrdenesEmpleadoId) { cargarMisOrdenes(misOrdenesEmpleadoId); }
                         Swal.fire({ icon: 'success', title: 'Orden cancelada', text: resp.message, timer: 2800, showConfirmButton: false });
                     },
@@ -1741,15 +2169,78 @@
         // ══════════════════════════════════════════════════════
         // Avance de Producción (acumula sobre la orden)
         // ══════════════════════════════════════════════════════
+        // Recalcula el restante según el empleado elegido (o el único del equipo).
+        function amAplicarRestante() {
+            let restante = 0;
+            const equipo = window.amEquipo || {};
+            const ids = Object.keys(equipo);
+            if (!ids.length) {
+                // Orden legacy sin equipo: tope = restante de la orden.
+                restante = window.amRestanteOrden || 0;
+            } else if (!$('#am-empleado-wrap').hasClass('d-none')) {
+                const id = $('#am-empleado').val();
+                restante = equipo[id] ? equipo[id].restante : 0;
+            } else {
+                restante = equipo[ids[0]].restante;
+            }
+            $('#am-restante').val(restante);
+            $('#am-restante-hint').text(`(máx. ${restante})`);
+            $('#am-cantidad-producida').attr('max', restante);
+            $('#am-ctx-restante')
+                .text(restante === 1 ? '1 pieza por producir' : restante + ' piezas por producir')
+                .toggleClass('is-done', restante <= 0);
+        }
+        $(document).on('change', '#am-empleado', amAplicarRestante);
+
         $(document).on('click', '.avance-btn', function () {
             const id = $(this).data('id');
             $.get("{{ route('ordenes.show', ':id') }}".replace(':id', id), function (data) {
-                const restante = data.cantidad_solicitada - data.cantidad_producida;
+                const equipo = data.empleados_asignados || [];
+                window.amProductoNombre = data.producto ? data.producto.nombre : 'Orden';
+                window.amRestanteOrden = (parseInt(data.cantidad_solicitada, 10) || 0) - (parseInt(data.cantidad_producida, 10) || 0);
+                window.amEquipo = {};
+                const $sel = $('#am-empleado').empty();
+                equipo.forEach(function (e) {
+                    const asignada  = parseInt(e.pivot ? e.pivot.cantidad : 0) || 0;
+                    const producida = parseInt(e.pivot ? e.pivot.cantidad_producida : 0) || 0;
+                    const rem = Math.max(0, asignada - producida);
+                    const nombre = e.persona ? e.persona.nombre : ('Empleado #' + e.id);
+                    window.amEquipo[e.id] = { nombre: nombre, restante: rem };
+                    $sel.append($('<option>').val(e.id)
+                        .text(`${nombre} — ${producida}/${asignada}${rem === 0 ? ' (completo)' : ''}`)
+                        .prop('disabled', rem === 0));
+                });
+
                 $('#am-orden-id').val(data.id);
-                $('#am-restante').val(restante);
-                $('#am-orden-info').text(`${data.producto ? data.producto.nombre : 'Orden'} · ${restante} piezas restantes`);
-                $('#am-restante-hint').text(`(máx. ${restante})`);
-                $('#am-cantidad-producida').attr('max', restante);
+                $('#am-ctx-nombre').text(window.amProductoNombre);
+
+                const multi = equipo.length > 1;
+
+                // ¿Queda algo por producir? Con equipo, que alguien tenga saldo; sin
+                // equipo, el restante de la orden. Si no, el modal va de solo lectura.
+                const haySaldo = equipo.length
+                    ? equipo.some(function (e) { return window.amEquipo[e.id].restante > 0; })
+                    : (window.amRestanteOrden > 0);
+
+                $('#am-nada').toggleClass('d-none', haySaldo);
+                $('#am-empleado-wrap').toggleClass('d-none', !multi || !haySaldo);
+                $('#am-empleado-solo').toggleClass('d-none', multi || !haySaldo);
+                $('#am-cantidades').toggleClass('d-none', !haySaldo);
+                $('#am-btn-save').toggleClass('d-none', !haySaldo);
+
+                // Preseleccionar el primer empleado CON saldo (nunca uno completo).
+                if (haySaldo) {
+                    let preId = '';
+                    if (misOrdenesEmpleadoId && window.amEquipo[misOrdenesEmpleadoId] && window.amEquipo[misOrdenesEmpleadoId].restante > 0) {
+                        preId = String(misOrdenesEmpleadoId);
+                    } else {
+                        const conSaldo = equipo.find(function (e) { return window.amEquipo[e.id].restante > 0; });
+                        preId = conSaldo ? String(conSaldo.id) : '';
+                    }
+                    $('#am-empleado').val(preId);
+                }
+
+                amAplicarRestante();
                 $('#avanceModal').modal('show');
             });
         });
@@ -1757,33 +2248,34 @@
         $('#am-btn-save').on('click', function () {
             const ordenId    = $('#am-orden-id').val();
             const producida  = $('#am-cantidad-producida').val();
-            const defectuosa = $('#am-cantidad-defectuosa').val();
             const restante   = parseInt($('#am-restante').val()) || 0;
 
             if (!producida || parseInt(producida) < 1) {
                 Swal.fire({ icon: 'warning', title: 'Cantidad requerida', text: 'Ingresa una cantidad producida válida.', toast: true, position: 'top-end', showConfirmButton: false, timer: 3000 });
                 return;
             }
+            const multi = !$('#am-empleado-wrap').hasClass('d-none');
+            const empleadoId = multi ? $('#am-empleado').val() : null;
+            if (multi && !empleadoId) {
+                Swal.fire({ icon: 'warning', title: 'Empleado requerido', text: 'Indica quién produjo este avance.', toast: true, position: 'top-end', showConfirmButton: false, timer: 3000 });
+                return;
+            }
             if (parseInt(producida) > restante) {
-                Swal.fire({ icon: 'warning', title: 'Cantidad excedida', text: `Solo quedan ${restante} piezas por producir en esta orden.`, toast: true, position: 'top-end', showConfirmButton: false, timer: 4000 });
+                const quien = multi ? 'este empleado' : 'esta orden';
+                Swal.fire({ icon: 'warning', title: 'Cantidad excedida', text: `Solo quedan ${restante} piezas por producir para ${quien}.`, toast: true, position: 'top-end', showConfirmButton: false, timer: 4000 });
                 return;
             }
-            if (defectuosa && parseInt(defectuosa) > parseInt(producida)) {
-                Swal.fire({ icon: 'warning', title: 'Defectuosos inválidos', text: 'No pueden superar la cantidad producida.', toast: true, position: 'top-end', showConfirmButton: false, timer: 3500 });
-                return;
-            }
-
             $.ajax({
                 url: "{{ route('ordenes.avance', ':id') }}".replace(':id', ordenId),
                 method: 'POST',
                 data: {
                     _token: '{{ csrf_token() }}',
                     cantidad_producida: producida,
-                    cantidad_defectuosa: defectuosa || 0
+                    empleado_id: empleadoId
                 },
                 success: function () {
                     $('#avanceModal').modal('hide');
-                    table.ajax.reload(null, false);
+                    reloadOrdenesTables();
                     // Si "Mis Órdenes" está abierto, refrescar su lista con el avance recién registrado
                     if (misOrdenesEmpleadoId) { cargarMisOrdenes(misOrdenesEmpleadoId); }
                     Swal.fire({ icon: 'success', title: 'Avance registrado', toast: true, position: 'top-end', showConfirmButton: false, timer: 2500 });
@@ -1797,22 +2289,29 @@
         $('#avanceModal').on('hidden.bs.modal', function () {
             $('#am-orden-id').val('');
             $('#am-restante').val('');
-            $('#am-orden-info').text('');
+            $('#am-ctx-nombre').text('—');
+            $('#am-ctx-restante').text('').removeClass('is-done');
             $('#am-cantidad-producida').val('');
-            $('#am-cantidad-defectuosa').val('0');
+            $('#am-empleado').empty();
+            $('#am-empleado-wrap').addClass('d-none');
+            $('#am-empleado-solo').removeClass('d-none');
+            // Restaurar estado por defecto (por si quedó en solo-lectura)
+            $('#am-nada').addClass('d-none');
+            $('#am-cantidades').removeClass('d-none');
+            $('#am-btn-save').removeClass('d-none');
+            window.amEquipo = {};
+            window.amProductoNombre = '';
         });
 
         $('#viewModal').on('hidden.bs.modal', function () {
             viewOrdShowStep(1);
-            kanbanReset();
-            viewKanbanOrdenId = null;
         });
 
         // ══════════════════════════════════════════════════════
-        // Wizard navegación — viewModal (read-only, 4 pasos)
+        // Wizard navegación — viewModal (read-only, 3 pasos)
         // ══════════════════════════════════════════════════════
         (function () {
-            var TOTAL = 4;
+            var TOTAL = 3;
             var currentStep = 1;
 
             window.viewOrdShowStep = function (step) {
@@ -1831,12 +2330,6 @@
                 }
                 $('#btn-view-ord-prev').toggle(step > 1);
                 $('#btn-view-ord-next').toggle(step < TOTAL);
-                $('#btn-view-ord-close').toggle(step === TOTAL);
-
-                // Carga lazy del Kanban al llegar al paso 4
-                if (step === 4 && viewKanbanOrdenId) {
-                    kanbanLoad(viewKanbanOrdenId);
-                }
             };
 
             $(document).on('click', '#btn-view-ord-next', function () {
@@ -1848,188 +2341,6 @@
             $('#viewModal').on('click', '.wiz-step-marker', function () {
                 viewOrdShowStep(parseInt($(this).data('step')));
             });
-        }());
-
-        // ══════════════════════════════════════════════════════
-        // KANBAN — Tablero por sub-órdenes
-        // ══════════════════════════════════════════════════════
-        (function () {
-            var ESTADOS = ['Pendiente', 'En Proceso', 'Finalizado', 'Cancelado'];
-            var COL_CSS  = { 'Pendiente': 'pendiente', 'En Proceso': 'en-proceso', 'Finalizado': 'finalizado', 'Cancelado': 'cancelado' };
-            var sortables = [];
-            var kanbanLoaded = false; // evita recargas si ya está montado
-
-            // Convierte estado a slug CSS
-            function colSlug(estado) { return COL_CSS[estado] || 'pendiente'; }
-
-            // Crea el HTML de un ticket
-            function ticketHtml(sub) {
-                var empBadges = (sub.empleados || []).map(function (e) {
-                    var nombre = (e.persona && e.persona.nombre_completo)
-                        ? e.persona.nombre_completo.split(' ')[0]
-                        : ('Emp. ' + e.id);
-                    return '<span class="kanban-ticket-emp">' + escHtml(nombre) + '</span>';
-                }).join('');
-                var cantHtml = sub.cantidad_asignada
-                    ? '<span class="kanban-ticket-cant"><i class="ri-stack-line me-1"></i>' + sub.cantidad_asignada + ' uds.</span>'
-                    : '';
-                return '<div class="kanban-ticket kanban-ticket--' + colSlug(sub.estado) + '" data-suborden-id="' + sub.id + '">'
-                    + '<div class="kanban-ticket-nombre">' + escHtml(sub.nombre) + '</div>'
-                    + '<div class="kanban-ticket-meta">' + cantHtml + empBadges + '</div>'
-                    + '</div>';
-            }
-
-            // Renderiza todas las columnas con sus tickets
-            function renderBoard(subordenes) {
-                var $board = $('#kanban-board').empty();
-
-                ESTADOS.forEach(function (estado) {
-                    var slug = colSlug(estado);
-                    var tickets = subordenes.filter(function (s) { return s.estado === estado; });
-                    var countBadge = tickets.length > 0 ? tickets.length : '&mdash;';
-
-                    var $col = $('<div class="kanban-col kanban-col--' + slug + '" data-estado="' + escHtml(estado) + '">'
-                        + '<div class="kanban-col-header">'
-                        + '<span class="kanban-col-title">' + escHtml(estado) + '</span>'
-                        + '<span class="kanban-col-count" id="kanban-count-' + slug + '">' + countBadge + '</span>'
-                        + '</div>'
-                        + '<div class="kanban-col-body" id="kanban-col-' + slug + '" data-estado="' + escHtml(estado) + '"></div>'
-                        + '</div>');
-
-                    tickets.forEach(function (sub) {
-                        $col.find('.kanban-col-body').append(ticketHtml(sub));
-                    });
-
-                    $board.append($col);
-                });
-
-                // Inicializa SortableJS en cada columna
-                destroySortables();
-                ESTADOS.forEach(function (estado) {
-                    var el = document.getElementById('kanban-col-' + colSlug(estado));
-                    if (!el) return;
-                    sortables.push(Sortable.create(el, {
-                        group: 'kanban-op',
-                        animation: 150,
-                        ghostClass: 'kanban-ghost',
-                        dragClass: 'kanban-drag',
-                        onStart: function () {
-                            document.querySelectorAll('.kanban-col-body').forEach(function (c) {
-                                c.classList.add('sortable-over');
-                            });
-                        },
-                        onEnd: function (evt) {
-                            document.querySelectorAll('.kanban-col-body').forEach(function (c) {
-                                c.classList.remove('sortable-over');
-                            });
-                            var nuevoEstado = evt.to.dataset.estado;
-                            var viejoEstado = evt.from.dataset.estado;
-                            if (nuevoEstado === viejoEstado) return;
-
-                            var subId = evt.item.dataset.subordenId;
-                            var $ticket = $(evt.item);
-
-                            $.ajax({
-                                url: '{{ url("ordenes") }}/' + viewKanbanOrdenId + '/subordenes/' + subId + '/estado',
-                                method: 'PATCH',
-                                data: { estado: nuevoEstado, _token: '{{ csrf_token() }}' },
-                                success: function (res) {
-                                    // Actualiza clase del ticket
-                                    $ticket.removeClass(function (i, cls) {
-                                        return (cls.match(/kanban-ticket--\S+/g) || []).join(' ');
-                                    }).addClass('kanban-ticket--' + colSlug(nuevoEstado));
-
-                                    // Actualiza contadores de columnas
-                                    updateColCounts();
-
-                                    // Actualiza badge estado de la OP en el header del modal
-                                    if (res.op_estado) {
-                                        updateViewEstadoBadge(res.op_estado);
-                                        // Refresca la DataTable para reflejar el nuevo estado
-                                        if (table) table.ajax.reload(null, false);
-                                    }
-                                },
-                                error: function (xhr) {
-                                    // Revierte moviendo el ticket de vuelta a la columna original
-                                    var $fromCol = $('#kanban-col-' + colSlug(viejoEstado));
-                                    if (evt.oldIndex === 0) {
-                                        $fromCol.prepend($ticket);
-                                    } else {
-                                        $fromCol.append($ticket);
-                                    }
-                                    // 422 con motivo (p. ej. faltan avances por registrar) → mostrarlo
-                                    var msg = (xhr.responseJSON && xhr.responseJSON.message) || 'No se pudo actualizar el estado.';
-                                    var esBloqueo = xhr.status === 422 && xhr.responseJSON && xhr.responseJSON.message;
-                                    Swal.fire(esBloqueo
-                                        ? { icon: 'warning', title: 'Etapa bloqueada', text: msg }
-                                        : { icon: 'error', title: 'Error', text: msg, timer: 2500, showConfirmButton: false });
-                                }
-                            });
-                        }
-                    }));
-                });
-            }
-
-            // Actualiza los contadores de cada columna
-            function updateColCounts() {
-                ESTADOS.forEach(function (estado) {
-                    var slug = colSlug(estado);
-                    var count = $('#kanban-col-' + slug + ' .kanban-ticket').length;
-                    $('#kanban-count-' + slug).text(count > 0 ? count : '—');
-                });
-            }
-
-            // Destruye instancias previas de SortableJS
-            function destroySortables() {
-                sortables.forEach(function (s) { try { s.destroy(); } catch (e) {} });
-                sortables = [];
-            }
-
-            // Actualiza el badge de estado de la OP en el header del viewModal
-            function updateViewEstadoBadge(estado) {
-                var estadoClases = {
-                    'Pendiente':  'status-pendiente badge-soft-warning',
-                    'En Proceso': 'status-procesando badge-soft-info',
-                    'Finalizado': 'status-finalizado badge-soft-success',
-                    'Cancelado':  'status-cancelado badge-soft-danger'
-                };
-                $('#view-estado').html(
-                    '<span class="badge badge-status ' + (estadoClases[estado] || 'badge-soft-secondary') + ' rounded-pill">'
-                    + '<i class="' + iconEstadoOrden(estado) + ' me-1"></i>' + escHtml(estado) + '</span>'
-                );
-            }
-
-            // Carga el Kanban desde el backend (llamado al activar paso 4)
-            window.kanbanLoad = function (ordenId) {
-                if (kanbanLoaded) return; // ya montado para esta OP
-                $('#kanban-loading').show();
-                $('#kanban-empty').hide();
-                $('#kanban-board').hide();
-
-                $.get('{{ url("ordenes") }}/' + ordenId + '/subordenes', function (res) {
-                    var subs = res.subordenes || [];
-                    $('#kanban-loading').hide();
-                    if (!subs.length) {
-                        $('#kanban-empty').show();
-                    } else {
-                        renderBoard(subs);
-                        $('#kanban-board').show();
-                    }
-                    kanbanLoaded = true;
-                }).fail(function () {
-                    $('#kanban-loading').hide();
-                    $('#kanban-empty').show();
-                });
-            };
-
-            // Limpia el Kanban al cerrar el modal
-            window.kanbanReset = function () {
-                destroySortables();
-                $('#kanban-board').empty().hide();
-                $('#kanban-loading').hide();
-                $('#kanban-empty').hide();
-                kanbanLoaded = false;
-            };
         }());
 
     });

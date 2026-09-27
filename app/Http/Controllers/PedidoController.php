@@ -83,9 +83,7 @@ class PedidoController extends Controller
             })
             ->filterColumn('cliente_nombre_display', function ($query, $keyword) {
                 $query->where(function ($q) use ($keyword) {
-                    $q->where('persona.nombre', 'like', "{$keyword}%")
-                        ->orWhere('persona.apellido', 'like', "{$keyword}%")
-                        ->orWhereRaw("CONCAT(persona.nombre, ' ', persona.apellido) like ?", ["{$keyword}%"]);
+                    $q->where('persona.nombre', 'like', "%{$keyword}%");
                 });
             })
 
@@ -123,7 +121,7 @@ class PedidoController extends Controller
                 return [
                     'id' => $cotizacion->id,
                     'cliente_nombre' => $cotizacion->cliente ?
-                        trim(($cotizacion->cliente->nombre ?? '') . ' ' . ($cotizacion->cliente->apellido ?? '')) :
+                        (trim((string) ($cotizacion->cliente->nombre ?? '')) ?: 'N/A') :
                         'N/A',
                     'cliente_documento' => $cotizacion->cliente->documento ?? 'N/A',
                     'fecha_cotizacion' => $cotizacion->fecha_cotizacion ?
@@ -134,6 +132,9 @@ class PedidoController extends Controller
                         'N/A',
                     'total' => number_format($cotizacion->total, 2),
                     'total_raw' => $cotizacion->total,
+                    // Tasa pactada en la cotización (equivalente Bs de la card);
+                    // si es null el front cae a la tasa BCV vigente global.
+                    'tasa_cambio_valor' => $cotizacion->tasa_cambio_valor,
                     'cantidad_productos' => $cotizacion->productos->count(),
                 ];
             });
@@ -159,11 +160,12 @@ class PedidoController extends Controller
             'user:id,name,avatar',
             'productos.producto.tipoProducto',
             'productos.tipoProducto.atributos.valores',
+            'productos.genero',
             'productos.bordados.logo:id,name',
             'pagos.banco:id,nombre',
             'cliente.persona.telefonos',
             'cliente.persona.direcciones',
-            'cotizacion:id,tasa_cambio_valor'
+            'cotizacion:id,tasa_cambio_valor,fecha_cotizacion'
         ])->findOrFail($id);
 
         // Agregar datos normalizados del cliente al response
@@ -192,6 +194,12 @@ class PedidoController extends Controller
         })->all();
         // Tasa BCV heredada de la cotización de origen (para reflejar el bordado en Bs)
         $data['tasa_cambio_valor'] = optional($pedido->cotizacion)->tasa_cambio_valor;
+        // Fecha de esa tasa (null si el valor no coincide con la vigente a la
+        // fecha de la cotización de origen — no se muestra una fecha incorrecta)
+        $data['tasa_fecha_fmt'] = optional(\App\Models\TasaCambio::fechaParaValor(
+            optional($pedido->cotizacion)->tasa_cambio_valor,
+            optional(optional($pedido->cotizacion)->fecha_cotizacion)->toDateString()
+        ))->format('d/m/Y');
         $data['cliente_nombre_completo'] = $pedido->cliente_nombre_completo;
         $data['cliente_email_normalizado'] = $pedido->cliente_email_normalizado;
         $data['cliente_telefono_normalizado'] = $pedido->cliente_telefono_normalizado;
@@ -200,6 +208,7 @@ class PedidoController extends Controller
         $data['creador'] = $pedido->user ? [
             'name' => $pedido->user->name,
             'avatar_url' => $pedido->user->avatar_url,
+            'fecha' => optional($pedido->created_at)->format('d/m/Y H:i'),
         ] : null;
 
         // Formalización: el front congela las líneas y deja editar solo pagos.
@@ -250,7 +259,10 @@ class PedidoController extends Controller
             return response()->json(['error' => 'No se puede eliminar un pedido con producción iniciada. Cancela primero sus órdenes de producción.'], 403);
         }
 
-        $pedido->delete();
+        // El servicio hace el soft delete y revierte la cotización de origen
+        // ('Convertida' → 'Aprobada') liberando su cotizacion_id para poder
+        // re-convertirla más adelante.
+        $this->pedidoService->eliminar($pedido);
 
         Log::warning('Pedido eliminado', [
             'pedido_id' => $id,
@@ -316,16 +328,55 @@ class PedidoController extends Controller
         if ($request->filled('estado')) {
             $query->where('estado', $request->estado);
         }
+        // Cliente: coincidencia parcial por nombre/razón social o documento.
+        if ($request->filled('cliente')) {
+            $term = trim($request->cliente);
+            $query->whereHas('cliente', function ($c) use ($term) {
+                $c->withTrashed()->whereHas('persona', function ($p) use ($term) {
+                    $p->where('nombre', 'like', "%{$term}%")
+                      ->orWhere('documento_identidad', 'like', "%{$term}%");
+                });
+            });
+        }
         if ($request->filled('fecha_desde')) {
-            $query->whereDate('fecha_entrega', '>=', $request->fecha_desde);
+            $query->whereDate('fecha_entrega_estimada', '>=', $request->fecha_desde);
         }
         if ($request->filled('fecha_hasta')) {
-            $query->whereDate('fecha_entrega', '<=', $request->fecha_hasta);
+            $query->whereDate('fecha_entrega_estimada', '<=', $request->fecha_hasta);
         }
+
+        // Orden (paridad con el "Ordenar por" del listado en pantalla).
+        $orden = $request->input('orden', 'recientes');
+        switch ($orden) {
+            case 'monto_desc':
+                $query->orderBy('total', 'desc');
+                break;
+            case 'entrega_asc':
+                $query->orderBy('fecha_entrega_estimada', 'asc');
+                break;
+            default:
+                $orden = 'recientes';
+                $query->orderBy('created_at', 'desc');
+                break;
+        }
+
         $pedidos = $query->get();
-        $pdf = PDF::loadView('admin.pedidos.reporte_pdf', compact('pedidos'))
+
+        $filtros = [];
+        if ($request->filled('estado')) {
+            $filtros['Estado'] = $request->estado;
+        }
+        if ($request->filled('cliente')) {
+            $filtros['Cliente'] = trim($request->cliente);
+        }
+        if ($rango = \App\Support\ReporteFiltros::rango($request->fecha_desde, $request->fecha_hasta)) {
+            $filtros['Fecha de entrega'] = $rango;
+        }
+        $filtros['Orden'] = ['recientes' => 'Más recientes', 'monto_desc' => 'Mayor monto', 'entrega_asc' => 'Entrega más próxima'][$orden];
+
+        $pdf = PDF::loadView('admin.pedidos.reporte_pdf', compact('pedidos', 'filtros'))
             ->setPaper('a4', 'portrait');
-        return $pdf->download('reporte_pedidos_' . now()->format('Ymd_His') . '.pdf');
+        return $pdf->stream('reporte_pedidos_' . now()->format('Ymd_His') . '.pdf');
     }
 
     public function reporteGeneral()
@@ -337,7 +388,7 @@ class PedidoController extends Controller
     public function pedidoPdf(Pedido $pedido)
     {
         // Cargar relaciones necesarias
-        $pedido->load(['user:id,name', 'productos.producto', 'productos.bordados.logo:id,name', 'cliente', 'cliente.persona', 'cotizacion:id,tasa_cambio_valor']);
+        $pedido->load(['user:id,name', 'productos.producto', 'productos.tipoProducto', 'productos.genero', 'productos.color', 'productos.talla', 'productos.bordados.logo:id,name', 'cliente', 'cliente.persona', 'cotizacion:id,tasa_cambio_valor,created_at']);
 
         // Cálculos financieros
         $ivaTasa = 0.16; // 16 %
@@ -346,14 +397,28 @@ class PedidoController extends Controller
         $iva = round(($subtotal - $descuento) * $ivaTasa, 2);
         $totalPagar = round($subtotal - $descuento + $iva, 2);
 
+        // Tasa de cambio para el equivalente en Bs + su fecha exacta (trazabilidad).
+        // Prefiere el snapshot de la cotización de origen; si no hay, la BCV vigente.
+        $tasaValor = optional($pedido->cotizacion)->tasa_cambio_valor;
+        if ($tasaValor) {
+            $refFecha = optional(optional($pedido->cotizacion)->created_at ?? $pedido->fecha_pedido)->toDateString();
+            $tasaFecha = optional(\App\Models\TasaCambio::tasaVigente($refFecha ?? now()->toDateString(), 'USD'))->fecha_bcv;
+        } else {
+            $row = \App\Models\TasaCambio::obtenerTasaActual('USD');
+            $tasaValor = optional($row)->valor;
+            $tasaFecha = optional($row)->fecha_bcv;
+        }
+
         $pdf = PDF::loadView('admin.pedidos.factura', [
             'pedido' => $pedido,
             'subtotal' => $subtotal,
             'descuento' => $descuento,
             'iva' => $iva,
             'totalPagar' => $totalPagar,
+            'tasaValor' => $tasaValor,
+            'tasaFecha' => $tasaFecha,
         ])->setPaper('a4', 'portrait');
 
-        return $pdf->download('pedido_' . $pedido->id . '.pdf');
+        return $pdf->stream('pedido_' . $pedido->id . '.pdf');
     }
 }

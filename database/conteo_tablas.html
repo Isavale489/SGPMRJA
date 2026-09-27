@@ -220,15 +220,15 @@
 
     <header>
       <h1>Conteo de Tablas — Base de Datos <code>sistema_atlantico</code></h1>
-      <div class="sub">Fuente: <code>database/sistema_atlantico.sql</code> · Generado el 05/06/2026</div>
+      <div class="sub">Fuente: esquema vivo de la BD (MySQL 8, <code>SHOW TABLES</code>) · dump <code>database/sistema_atlantico.sql</code> alineado (56 tablas) · Actualizado el 05/07/2026</div>
     </header>
 
     <!-- Resumen -->
     <div class="cards">
       <div class="card total">
         <div class="label">Total de tablas</div>
-        <div class="num">44</div>
-        <div class="hint">Todas las tablas del dump</div>
+        <div class="num">56</div>
+        <div class="hint">Esquema vivo de la BD</div>
       </div>
       <div class="card detalle">
         <div class="label">Tablas de detalle</div>
@@ -237,22 +237,22 @@
       </div>
       <div class="card sin">
         <div class="label">Sin tablas de detalle</div>
-        <div class="num">37</div>
-        <div class="hint">44 − 7 = 37</div>
+        <div class="num">49</div>
+        <div class="hint">56 − 7 = 49</div>
       </div>
       <div class="card pivote">
         <div class="label">Sin detalle ni pivote</div>
-        <div class="num">33</div>
-        <div class="hint">37 − 4 = 33</div>
+        <div class="num">42</div>
+        <div class="hint">49 − 7 = 42</div>
       </div>
       <div class="card dominio">
         <div class="label">Entidades de dominio</div>
-        <div class="num">29</div>
-        <div class="hint">33 − 4 de sistema</div>
+        <div class="num">38</div>
+        <div class="hint">42 − 4 de sistema</div>
       </div>
       <div class="card nucleo">
         <div class="label">Núcleo del negocio</div>
-        <div class="num">7</div>
+        <div class="num">8</div>
         <div class="hint">Clases centrales</div>
       </div>
     </div>
@@ -278,7 +278,7 @@
 
     <!-- Tablas sin detalle -->
     <section>
-      <h2>Tablas sin las de detalle (37)</h2>
+      <h2>Tablas sin las de detalle (49)</h2>
       <table>
         <thead>
           <tr><th class="idx">#</th><th>Tabla</th></tr>
@@ -292,42 +292,54 @@
           <tr><td class="idx">6</td><td><code>cliente</code></td></tr>
           <tr><td class="idx">7</td><td><code>color</code></td></tr>
           <tr><td class="idx">8</td><td><code>compra</code></td></tr>
-          <tr><td class="idx">9</td><td><code>cotizacion</code></td></tr>
-          <tr><td class="idx">10</td><td><code>departamento</code></td></tr>
-          <tr><td class="idx">11</td><td><code>direccion</code></td></tr>
-          <tr><td class="idx">12</td><td><code>empleado</code></td></tr>
-          <tr><td class="idx">13</td><td><code>failed_jobs</code></td></tr>
-          <tr><td class="idx">14</td><td><code>insumo</code></td></tr>
-          <tr><td class="idx">15</td><td><code>logo</code></td></tr>
-          <tr><td class="idx">16</td><td><code>migrations</code></td></tr>
-          <tr><td class="idx">17</td><td><code>movimiento_insumo</code></td></tr>
-          <tr><td class="idx">18</td><td><code>orden_produccion</code></td></tr>
-          <tr><td class="idx">19</td><td><code>pago_pedido</code></td></tr>
-          <tr><td class="idx">20</td><td><code>password_resets</code></td></tr>
-          <tr><td class="idx">21</td><td><code>pedido</code></td></tr>
-          <tr><td class="idx">22</td><td><code>persona</code></td></tr>
-          <tr><td class="idx">23</td><td><code>personal_access_tokens</code></td></tr>
-          <tr><td class="idx">24</td><td><code>produccion_diaria</code></td></tr>
-          <tr><td class="idx">25</td><td><code>producto</code></td></tr>
-          <tr><td class="idx">26</td><td><code>producto_atributo_valor</code></td></tr>
-          <tr><td class="idx">27</td><td><code>proveedor</code></td></tr>
-          <tr><td class="idx">28</td><td><code>recovery_attempt</code></td></tr>
-          <tr><td class="idx">29</td><td><code>talla</code></td></tr>
-          <tr><td class="idx">30</td><td><code>tasa_cambio</code></td></tr>
-          <tr><td class="idx">31</td><td><code>telefono</code></td></tr>
-          <tr><td class="idx">32</td><td><code>tipo_producto</code></td></tr>
-          <tr><td class="idx">33</td><td><code>tipo_producto_atributo</code></td></tr>
-          <tr><td class="idx">34</td><td><code>tipo_producto_insumo</code></td></tr>
-          <tr><td class="idx">35</td><td><code>tipo_producto_tela</code></td></tr>
-          <tr><td class="idx">36</td><td><code>user</code></td></tr>
-          <tr><td class="idx">37</td><td><code>user_recovery_question</code></td></tr>
+          <tr><td class="idx">9</td><td><code>configuracion</code></td></tr>
+          <tr><td class="idx">10</td><td><code>control_calidad</code></td></tr>
+          <tr><td class="idx">11</td><td><code>cotizacion</code></td></tr>
+          <tr><td class="idx">12</td><td><code>departamento</code></td></tr>
+          <tr><td class="idx">13</td><td><code>direccion</code></td></tr>
+          <tr><td class="idx">14</td><td><code>empleado</code></td></tr>
+          <tr><td class="idx">15</td><td><code>estado</code></td></tr>
+          <tr><td class="idx">16</td><td><code>failed_jobs</code></td></tr>
+          <tr><td class="idx">17</td><td><code>genero</code></td></tr>
+          <tr><td class="idx">18</td><td><code>impuesto</code></td></tr>
+          <tr><td class="idx">19</td><td><code>insumo</code></td></tr>
+          <tr><td class="idx">20</td><td><code>logo</code></td></tr>
+          <tr><td class="idx">21</td><td><code>migrations</code></td></tr>
+          <tr><td class="idx">22</td><td><code>movimiento_insumo</code></td></tr>
+          <tr><td class="idx">23</td><td><code>municipio</code></td></tr>
+          <tr><td class="idx">24</td><td><code>orden_produccion</code></td></tr>
+          <tr><td class="idx">25</td><td><code>orden_produccion_empleado</code></td></tr>
+          <tr><td class="idx">26</td><td><code>pago_pedido</code></td></tr>
+          <tr><td class="idx">27</td><td><code>password_resets</code></td></tr>
+          <tr><td class="idx">28</td><td><code>pedido</code></td></tr>
+          <tr><td class="idx">29</td><td><code>permiso_rol</code></td></tr>
+          <tr><td class="idx">30</td><td><code>persona</code></td></tr>
+          <tr><td class="idx">31</td><td><code>personal_access_tokens</code></td></tr>
+          <tr><td class="idx">32</td><td><code>produccion_diaria</code></td></tr>
+          <tr><td class="idx">33</td><td><code>producto</code></td></tr>
+          <tr><td class="idx">34</td><td><code>producto_atributo_valor</code></td></tr>
+          <tr><td class="idx">35</td><td><code>proveedor</code></td></tr>
+          <tr><td class="idx">36</td><td><code>recovery_attempt</code></td></tr>
+          <tr><td class="idx">37</td><td><code>rol</code></td></tr>
+          <tr><td class="idx">38</td><td><code>sub_orden_empleado</code></td></tr>
+          <tr><td class="idx">39</td><td><code>sub_orden_produccion</code></td></tr>
+          <tr><td class="idx">40</td><td><code>talla</code></td></tr>
+          <tr><td class="idx">41</td><td><code>tasa_cambio</code></td></tr>
+          <tr><td class="idx">42</td><td><code>telefono</code></td></tr>
+          <tr><td class="idx">43</td><td><code>tipo_insumo</code></td></tr>
+          <tr><td class="idx">44</td><td><code>tipo_producto</code></td></tr>
+          <tr><td class="idx">45</td><td><code>tipo_producto_atributo</code></td></tr>
+          <tr><td class="idx">46</td><td><code>tipo_producto_insumo</code></td></tr>
+          <tr><td class="idx">47</td><td><code>tipo_producto_tela</code></td></tr>
+          <tr><td class="idx">48</td><td><code>user</code></td></tr>
+          <tr><td class="idx">49</td><td><code>user_recovery_question</code></td></tr>
         </tbody>
       </table>
     </section>
 
     <!-- Tablas pivote -->
     <section>
-      <h2 class="pivote-title">Tablas pivote / de relación (4) — excluidas</h2>
+      <h2 class="pivote-title">Tablas pivote / de relación (7) — excluidas</h2>
       <p style="font-size:13px;color:var(--gray);margin-top:-6px;">
         Resuelven relaciones muchos-a-muchos. En un diagrama de clases <strong>no se modelan como clases</strong>,
         sino como asociaciones (líneas) entre las entidades que conectan.
@@ -339,17 +351,20 @@
         <tbody>
           <tr><td class="idx">1</td><td><code>producto_atributo_valor</code></td><td><code>producto</code> ↔ <code>atributo_valor</code></td></tr>
           <tr><td class="idx">2</td><td><code>tipo_producto_atributo</code></td><td><code>tipo_producto</code> ↔ <code>atributo</code></td></tr>
-          <tr><td class="idx">3</td><td><code>tipo_producto_insumo</code></td><td><code>tipo_producto</code> ↔ <code>insumo</code></td></tr>
+          <tr><td class="idx">3</td><td><code>tipo_producto_insumo</code></td><td><code>tipo_producto</code> ↔ <code>insumo</code> (BOM / consumo)</td></tr>
           <tr><td class="idx">4</td><td><code>tipo_producto_tela</code></td><td><code>tipo_producto</code> ↔ <code>insumo</code> (telas)</td></tr>
+          <tr><td class="idx">5</td><td><code>orden_produccion_empleado</code></td><td><code>orden_produccion</code> ↔ <code>empleado</code> (reparto de cantidades)</td></tr>
+          <tr><td class="idx">6</td><td><code>sub_orden_empleado</code></td><td><code>sub_orden_produccion</code> ↔ <code>empleado</code></td></tr>
+          <tr><td class="idx">7</td><td><code>permiso_rol</code></td><td><code>rol</code> ↔ permiso (módulo.acción)</td></tr>
         </tbody>
       </table>
     </section>
 
     <!-- Entidades principales para el diagrama -->
     <section>
-      <h2 class="dominio-title">Entidades principales para el diagrama de clases (29)</h2>
+      <h2 class="dominio-title">Entidades principales para el diagrama de clases (38)</h2>
       <p style="font-size:13px;color:var(--gray);margin-top:-6px;">
-        Resultado de excluir las <strong>7 de detalle</strong>, las <strong>4 pivote</strong> y las
+        Resultado de excluir las <strong>7 de detalle</strong>, las <strong>7 pivote</strong> y las
         <strong>4 de sistema</strong> (<code>migrations</code>, <code>failed_jobs</code>,
         <code>password_resets</code>, <code>personal_access_tokens</code>). Estas son las clases candidatas,
         agrupadas por dominio.
@@ -359,52 +374,61 @@
           <tr><th class="idx">#</th><th>Entidad</th><th>Rol</th></tr>
         </thead>
         <tbody>
-          <tr class="group-row g-personas"><td colspan="3">Personas y acceso (9)</td></tr>
+          <tr class="group-row g-personas"><td colspan="3">Personas y acceso (10)</td></tr>
           <tr><td class="idx">1</td><td><code>persona</code></td><td>Entidad base de toda persona</td></tr>
           <tr><td class="idx">2</td><td><code>cliente</code></td><td>Especialización de persona</td></tr>
           <tr><td class="idx">3</td><td><code>empleado</code></td><td>Especialización de persona</td></tr>
           <tr><td class="idx">4</td><td><code>proveedor</code></td><td>Especialización de persona</td></tr>
-          <tr><td class="idx">5</td><td><code>direccion</code></td><td>Dato de contacto</td></tr>
-          <tr><td class="idx">6</td><td><code>telefono</code></td><td>Dato de contacto</td></tr>
+          <tr><td class="idx">5</td><td><code>direccion</code></td><td>Dato de contacto (1:1 con persona)</td></tr>
+          <tr><td class="idx">6</td><td><code>telefono</code></td><td>Dato de contacto (hasta 3 por persona)</td></tr>
           <tr><td class="idx">7</td><td><code>user</code></td><td>Usuario del sistema</td></tr>
-          <tr><td class="idx">8</td><td><code>user_recovery_question</code></td><td>Preguntas de recuperación</td></tr>
-          <tr><td class="idx">9</td><td><code>recovery_attempt</code></td><td>Intentos de recuperación</td></tr>
+          <tr><td class="idx">8</td><td><code>rol</code></td><td>Rol dinámico del usuario</td></tr>
+          <tr><td class="idx">9</td><td><code>user_recovery_question</code></td><td>Preguntas de recuperación</td></tr>
+          <tr><td class="idx">10</td><td><code>recovery_attempt</code></td><td>Intentos de recuperación</td></tr>
 
-          <tr class="group-row g-catalogos"><td colspan="3">Catálogos maestros (13)</td></tr>
-          <tr><td class="idx">10</td><td><code>producto</code></td><td>Producto terminado</td></tr>
-          <tr><td class="idx">11</td><td><code>tipo_producto</code></td><td>Categoría de producto</td></tr>
-          <tr><td class="idx">12</td><td><code>atributo</code></td><td>Atributo configurable</td></tr>
-          <tr><td class="idx">13</td><td><code>atributo_valor</code></td><td>Valor de un atributo</td></tr>
-          <tr><td class="idx">14</td><td><code>insumo</code></td><td>Material / insumo</td></tr>
-          <tr><td class="idx">15</td><td><code>color</code></td><td>Catálogo de colores</td></tr>
-          <tr><td class="idx">16</td><td><code>talla</code></td><td>Catálogo de tallas</td></tr>
-          <tr><td class="idx">17</td><td><code>bordado_ubicacion</code></td><td>Ubicaciones de bordado</td></tr>
-          <tr><td class="idx">18</td><td><code>logo</code></td><td>Logos / arte</td></tr>
-          <tr><td class="idx">19</td><td><code>banco</code></td><td>Catálogo de bancos</td></tr>
-          <tr><td class="idx">20</td><td><code>cargo</code></td><td>Cargo del empleado</td></tr>
-          <tr><td class="idx">21</td><td><code>departamento</code></td><td>Departamento del empleado</td></tr>
-          <tr><td class="idx">22</td><td><code>tasa_cambio</code></td><td>Tasa de cambio</td></tr>
+          <tr class="group-row g-catalogos"><td colspan="3">Catálogos maestros y configuración (19)</td></tr>
+          <tr><td class="idx">11</td><td><code>producto</code></td><td>Producto terminado (variante)</td></tr>
+          <tr><td class="idx">12</td><td><code>tipo_producto</code></td><td>Categoría de producto (catálogo base)</td></tr>
+          <tr><td class="idx">13</td><td><code>atributo</code></td><td>Atributo configurable</td></tr>
+          <tr><td class="idx">14</td><td><code>atributo_valor</code></td><td>Valor de un atributo</td></tr>
+          <tr><td class="idx">15</td><td><code>insumo</code></td><td>Material / insumo</td></tr>
+          <tr><td class="idx">16</td><td><code>tipo_insumo</code></td><td>Tipo de insumo (catálogo gestionable)</td></tr>
+          <tr><td class="idx">17</td><td><code>color</code></td><td>Catálogo de colores</td></tr>
+          <tr><td class="idx">18</td><td><code>talla</code></td><td>Catálogo de tallas</td></tr>
+          <tr><td class="idx">19</td><td><code>bordado_ubicacion</code></td><td>Ubicaciones de bordado</td></tr>
+          <tr><td class="idx">20</td><td><code>logo</code></td><td>Logos / arte</td></tr>
+          <tr><td class="idx">21</td><td><code>banco</code></td><td>Catálogo de bancos</td></tr>
+          <tr><td class="idx">22</td><td><code>cargo</code></td><td>Cargo del empleado</td></tr>
+          <tr><td class="idx">23</td><td><code>departamento</code></td><td>Departamento del empleado</td></tr>
+          <tr><td class="idx">24</td><td><code>genero</code></td><td>Catálogo de géneros (empleado)</td></tr>
+          <tr><td class="idx">25</td><td><code>estado</code></td><td>Estados de Venezuela (ubicación)</td></tr>
+          <tr><td class="idx">26</td><td><code>municipio</code></td><td>Municipios por estado (ubicación)</td></tr>
+          <tr><td class="idx">27</td><td><code>tasa_cambio</code></td><td>Tasa BCV USD→VES por fecha</td></tr>
+          <tr><td class="idx">28</td><td><code>impuesto</code></td><td>Impuestos (fuente de verdad del IVA)</td></tr>
+          <tr><td class="idx">29</td><td><code>configuracion</code></td><td>Parámetros del sistema (clave/valor)</td></tr>
 
-          <tr class="group-row g-transac"><td colspan="3">Transacciones (7)</td></tr>
-          <tr><td class="idx">23</td><td><code>cotizacion</code></td><td>Cotización</td></tr>
-          <tr><td class="idx">24</td><td><code>pedido</code></td><td>Pedido</td></tr>
-          <tr><td class="idx">25</td><td><code>compra</code></td><td>Compra a proveedor</td></tr>
-          <tr><td class="idx">26</td><td><code>orden_produccion</code></td><td>Orden de producción</td></tr>
-          <tr><td class="idx">27</td><td><code>produccion_diaria</code></td><td>Avance diario de producción</td></tr>
-          <tr><td class="idx">28</td><td><code>movimiento_insumo</code></td><td>Movimiento de inventario</td></tr>
-          <tr><td class="idx">29</td><td><code>pago_pedido</code></td><td>Pago de pedido</td></tr>
+          <tr class="group-row g-transac"><td colspan="3">Transacciones (9)</td></tr>
+          <tr><td class="idx">30</td><td><code>cotizacion</code></td><td>Cotización</td></tr>
+          <tr><td class="idx">31</td><td><code>pedido</code></td><td>Pedido</td></tr>
+          <tr><td class="idx">32</td><td><code>compra</code></td><td>Compra a proveedor</td></tr>
+          <tr><td class="idx">33</td><td><code>orden_produccion</code></td><td>Orden de producción</td></tr>
+          <tr><td class="idx">34</td><td><code>sub_orden_produccion</code></td><td>Sub-orden / asignación parcial de una OP</td></tr>
+          <tr><td class="idx">35</td><td><code>produccion_diaria</code></td><td>Avance diario de producción</td></tr>
+          <tr><td class="idx">36</td><td><code>control_calidad</code></td><td>Inspección de calidad de la OP</td></tr>
+          <tr><td class="idx">37</td><td><code>movimiento_insumo</code></td><td>Movimiento de inventario</td></tr>
+          <tr><td class="idx">38</td><td><code>pago_pedido</code></td><td>Pago de pedido</td></tr>
         </tbody>
       </table>
     </section>
 
     <!-- Núcleo del negocio -->
     <section>
-      <h2 class="nucleo-title">Núcleo del negocio (7) — clases imprescindibles</h2>
+      <h2 class="nucleo-title">Núcleo del negocio (8) — clases imprescindibles</h2>
       <p style="font-size:13px;color:var(--gray);margin-top:-6px;">
         El subconjunto mínimo que sostiene el flujo central del sistema:
-        <strong>Cotización → Pedido → Orden de Producción → Producción Diaria</strong>, alimentado por el
-        <code>cliente</code> y el <code>producto</code>, y cerrado con el <code>pago_pedido</code>.
-        Si el diagrama debe ser compacto, modela solo estas 7.
+        <strong>Cotización → Pedido → Orden de Producción → Producción Diaria → Control de Calidad</strong>,
+        alimentado por el <code>cliente</code> y el <code>producto</code>, y cerrado con el
+        <code>pago_pedido</code>. Si el diagrama debe ser compacto, modela solo estas 8.
       </p>
       <table>
         <thead>
@@ -417,7 +441,8 @@
           <tr><td class="idx">4</td><td><code>pedido</code></td><td>Venta confirmada; eje del proceso</td></tr>
           <tr><td class="idx">5</td><td><code>orden_produccion</code></td><td>Manda a fabricar lo pedido</td></tr>
           <tr><td class="idx">6</td><td><code>produccion_diaria</code></td><td>Avance real de fabricación</td></tr>
-          <tr><td class="idx">7</td><td><code>pago_pedido</code></td><td>Cobro asociado al pedido</td></tr>
+          <tr><td class="idx">7</td><td><code>control_calidad</code></td><td>Inspección final; cierra el ciclo productivo</td></tr>
+          <tr><td class="idx">8</td><td><code>pago_pedido</code></td><td>Cobro asociado al pedido</td></tr>
         </tbody>
       </table>
     </section>
@@ -425,12 +450,12 @@
     <div class="note">
       <strong>Criterios de exclusión (de mayor a menor alcance):</strong>
       <ul style="margin:8px 0 0;padding-left:20px;">
-        <li><strong>44 → 37:</strong> se quitan las <strong>7 tablas de detalle</strong> (<code>detalle_*</code> / <code>*_detalle</code>, líneas de transacción).</li>
-        <li><strong>37 → 33:</strong> se quitan las <strong>4 tablas pivote</strong> (relaciones N:M; en el diagrama son asociaciones, no clases).</li>
-        <li><strong>33 → 29:</strong> se quitan las <strong>4 tablas de sistema</strong> de Laravel (<code>migrations</code>, <code>failed_jobs</code>, <code>password_resets</code>, <code>personal_access_tokens</code>), que no son entidades de negocio.</li>
+        <li><strong>56 → 49:</strong> se quitan las <strong>7 tablas de detalle</strong> (<code>detalle_*</code> / <code>*_detalle</code>, líneas de transacción).</li>
+        <li><strong>49 → 42:</strong> se quitan las <strong>7 tablas pivote</strong> (relaciones N:M; en el diagrama son asociaciones, no clases).</li>
+        <li><strong>42 → 38:</strong> se quitan las <strong>4 tablas de sistema</strong> de Laravel (<code>migrations</code>, <code>failed_jobs</code>, <code>password_resets</code>, <code>personal_access_tokens</code>), que no son entidades de negocio.</li>
       </ul>
       <p style="margin:8px 0 0;">
-        Para el <strong>diagrama de clases</strong> usa las <strong>29 entidades de dominio</strong>. Para el
+        Para el <strong>diagrama de clases</strong> usa las <strong>38 entidades de dominio</strong>. Para el
         <strong>diagrama de objetos</strong>, instancia esas mismas clases con datos reales (p. ej. un
         <code>cliente</code> concreto con su <code>pedido</code>, sus <code>detalle_pedido</code> y su
         <code>pago_pedido</code>) — ahí sí conviene mostrar las de detalle como objetos enlazados.
@@ -442,10 +467,10 @@
       <h2 class="dominio-title">Diagrama de Clases — Núcleo del negocio</h2>
       <p style="font-size:13px;color:var(--gray);margin-top:-6px;">
         Vista UML de las clases centrales y sus relaciones. Se incluye <code>DetallePedido</code> para mostrar
-        la composición del pedido.
+        la composición del pedido, y <code>ControlCalidad</code> como cierre del ciclo productivo.
       </p>
       <div class="diagram-wrap">
-        <svg viewBox="0 0 900 640" xmlns="http://www.w3.org/2000/svg">
+        <svg viewBox="0 0 940 640" xmlns="http://www.w3.org/2000/svg">
           <style>
             .cls-name{fill:#fff;font-weight:700;font-size:13px;font-family:'Segoe UI',Arial,sans-serif;}
             .cls-attr{fill:#1e293b;font-size:11px;font-family:'Consolas','Courier New',monospace;}
@@ -491,6 +516,12 @@
           <text class="mult" x="498" y="196">1</text>
           <text class="mult" x="356" y="302">*</text>
           <text class="relname" x="415" y="250">abona</text>
+
+          <!-- OrdenProduccion — ControlCalidad (por el margen derecho) -->
+          <path class="rel" d="M880,150 L908,150 L908,520 L880,520"/>
+          <text class="mult" x="886" y="145">1</text>
+          <text class="mult" x="886" y="514">*</text>
+          <text class="relname" transform="rotate(-90 920 335)" x="920" y="335" text-anchor="middle">inspecciona</text>
 
           <!-- ===== Cliente ===== -->
           <g>
@@ -571,6 +602,17 @@
             <text class="cls-attr" x="490" y="592">+ tipo</text>
           </g>
 
+          <!-- ===== ControlCalidad ===== -->
+          <g>
+            <rect x="700" y="480" width="180" height="102" fill="#fff" stroke="#1e3c72" stroke-width="1.5"/>
+            <rect x="700" y="480" width="180" height="26" fill="#1e3c72"/>
+            <text class="cls-name" x="790" y="497" text-anchor="middle">ControlCalidad</text>
+            <text class="cls-attr" x="710" y="524">+ id</text>
+            <text class="cls-attr" x="710" y="540">+ cantidad_inspeccionada</text>
+            <text class="cls-attr" x="710" y="556">+ resultado</text>
+            <text class="cls-attr" x="710" y="572">+ fecha_inspeccion</text>
+          </g>
+
           <!-- ===== PagoPedido ===== -->
           <g>
             <rect x="250" y="310" width="160" height="102" fill="#fff" stroke="#1e3c72" stroke-width="1.5"/>
@@ -595,7 +637,7 @@
       <h2 class="nucleo-title">Diagrama de Objetos — Un caso real</h2>
       <p style="font-size:13px;color:var(--gray);margin-top:-6px;">
         Instancias concretas de las clases del núcleo: el cliente <em>Confecciones López</em> cotiza, confirma
-        el pedido, manda a producción y abona el 50%.
+        el pedido, manda a producción, abona el 50% y la orden pasa control de calidad.
       </p>
       <div class="diagram-wrap">
         <svg viewBox="0 0 900 580" xmlns="http://www.w3.org/2000/svg">
@@ -619,6 +661,8 @@
           <text class="lnkname" x="562" y="430">usa</text>
           <path class="lnk" d="M490,150 L340,300"/>
           <text class="lnkname" x="400" y="240">abona</text>
+          <path class="lnk" d="M782,150 L782,300"/>
+          <text class="lnkname" x="788" y="230">inspecciona</text>
 
           <!-- ===== c1 : Cliente ===== -->
           <g>
@@ -678,6 +722,16 @@
             <line x1="490" y1="320" x2="625" y2="320" stroke="#fff" stroke-width="1"/>
             <text class="obj-slot" x="480" y="344">cantidad = 100</text>
             <text class="obj-slot" x="480" y="360">precio = 15.00</text>
+          </g>
+
+          <!-- ===== cc1 : ControlCalidad ===== -->
+          <g>
+            <rect x="690" y="300" width="185" height="70" fill="#fff" stroke="#0c4a6e" stroke-width="1.5"/>
+            <rect x="690" y="300" width="185" height="26" fill="#0c4a6e"/>
+            <text class="obj-name" x="782" y="317" text-anchor="middle">cc1 : ControlCalidad</text>
+            <line x1="712" y1="320" x2="853" y2="320" stroke="#fff" stroke-width="1"/>
+            <text class="obj-slot" x="700" y="344">resultado = "aprobado"</text>
+            <text class="obj-slot" x="700" y="360">cantidad_aprobada = 100</text>
           </g>
 
           <!-- ===== prod1 : Producto ===== -->

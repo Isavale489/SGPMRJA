@@ -11,7 +11,10 @@ use App\Models\Insumo;
 use App\Models\Banco;
 use App\Models\Cliente;
 use App\Models\BordadoUbicacion;
+use App\Models\TasaCambio;
 use App\Services\CotizacionService;
+use App\Services\BordadoPricingService;
+use Illuminate\Validation\ValidationException;
 use Illuminate\Http\Request;
 use Yajra\DataTables\DataTables;
 use Illuminate\Support\Facades\Auth;
@@ -45,7 +48,8 @@ class CotizacionController extends Controller
         $logos = Logo::orderBy('name')->get(['id', 'name', 'original_filename']);
         $insumos = Insumo::all();
         $bancos = Banco::all();
-        return view('admin.cotizaciones.index', compact('productos', 'tiposProducto', 'logos', 'insumos', 'bancos'));
+        $maxBordadosProducto = parametro('cotizaciones.max_bordados_producto');
+        return view('admin.cotizaciones.index', compact('productos', 'tiposProducto', 'logos', 'insumos', 'bancos', 'maxBordadosProducto'));
     }
 
     public function getCotizaciones(Request $request)
@@ -88,9 +92,7 @@ class CotizacionController extends Controller
             ->filterColumn('cliente_nombre', function ($query, $keyword) {
                 $query->whereHas('cliente', function ($clienteQuery) use ($keyword) {
                     $clienteQuery->withTrashed()->whereHas('persona', function ($personaQuery) use ($keyword) {
-                        $personaQuery->where('nombre', 'like', "{$keyword}%")
-                            ->orWhere('apellido', 'like', "{$keyword}%")
-                            ->orWhereRaw("CONCAT(nombre, ' ', apellido) like ?", ["{$keyword}%"]);
+                        $personaQuery->where('nombre', 'like', "%{$keyword}%");
                     });
                 });
             })
@@ -99,9 +101,7 @@ class CotizacionController extends Controller
             })
             ->addColumn('cliente_nombre', function ($cotizacion) {
                 if ($cotizacion->cliente) {
-                    $nombre = $cotizacion->cliente->nombre ?? '';
-                    $apellido = $cotizacion->cliente->apellido ?? '';
-                    $nombreCompleto = trim($nombre . ' ' . $apellido) ?: 'Sin nombre';
+                    $nombreCompleto = trim((string) ($cotizacion->cliente->nombre ?? '')) ?: 'Sin nombre';
                     // Indicar si el cliente fue eliminado
                     if ($cotizacion->cliente->deleted_at) {
                         return $nombreCompleto . ' <span class="badge bg-danger ms-1" title="Cliente eliminado">Eliminado</span>';
@@ -161,12 +161,35 @@ class CotizacionController extends Controller
         return response()->json($catalogo);
     }
 
+    /**
+     * Lanza ValidationException si algún producto excede el máximo de bordados
+     * por prenda. La unidad es la SUMA de cantidades de cada línea de bordado
+     * (una ubicación con cantidad 10 son 10 bordados), no el número de líneas.
+     */
+    private function assertMaxBordados(Request $request, int $max): void
+    {
+        $indices = BordadoPricingService::indicesQueExcedenMaximo($request->input('productos', []), $max);
+
+        if (empty($indices)) {
+            return;
+        }
+
+        $errores = [];
+        foreach ($indices as $i) {
+            $errores["productos.$i.bordados"] = "No se pueden agregar más de {$max} bordados por producto.";
+        }
+
+        throw ValidationException::withMessages($errores);
+    }
+
     public function store(Request $request)
     {
+        $maxBordados = parametro('cotizaciones.max_bordados_producto');
+
         $request->validate([
             'cliente_id' => 'required|exists:cliente,id',
             'fecha_cotizacion' => 'required|date',
-            'fecha_validez' => 'nullable|date|after_or_equal:fecha_cotizacion',
+            'fecha_validez' => 'required|date|after_or_equal:fecha_cotizacion',
             'notas' => 'nullable|string|max:2000',
             'condiciones_terminos' => 'nullable|string',
             'productos' => 'required|array|min:1',
@@ -180,13 +203,14 @@ class CotizacionController extends Controller
             'productos.*.lleva_bordado' => 'nullable|boolean',
             'productos.*.talla_id' => ['required', 'integer', Rule::exists('talla', 'id')],
             'productos.*.color_id' => ['nullable', 'integer', Rule::exists('color', 'id')],
+            'productos.*.genero_id' => ['required', 'integer', Rule::exists('genero', 'id')],
             'productos.*.insumos' => 'nullable|array',
             'productos.*.insumos.*.id' => 'required|exists:insumo,id',
             'productos.*.insumos.*.cantidad_estimada' => 'required|numeric|min:0.01',
             'productos.*.bordados' => 'nullable|array|required_if:productos.*.lleva_bordado,true|min:1',
             'productos.*.bordados.*.ubicacion_bordado_id' => 'nullable|exists:bordado_ubicacion,id',
             'productos.*.bordados.*.nombre_aplicado' => 'required|string|max:120',
-            'productos.*.bordados.*.logo_id' => 'required|exists:logo,id',
+            'productos.*.bordados.*.logo_id' => 'nullable|exists:logo,id',
             'productos.*.bordados.*.es_personalizada' => 'nullable|boolean',
             'productos.*.bordados.*.precio_aplicado' => 'required|numeric|min:0',
             'productos.*.bordados.*.cantidad' => 'nullable|integer|min:1',
@@ -196,6 +220,7 @@ class CotizacionController extends Controller
             'cliente_id.exists' => 'El cliente seleccionado no existe.',
             'fecha_cotizacion.required' => 'La fecha de cotización es obligatoria.',
             'fecha_cotizacion.date' => 'La fecha de cotización debe ser una fecha válida.',
+            'fecha_validez.required' => 'La fecha de validez es obligatoria.',
             'fecha_validez.date' => 'La fecha de validez debe ser una fecha válida.',
             'fecha_validez.after_or_equal' => 'La fecha de validez debe ser igual o posterior a la fecha de cotización.',
             'productos.required' => 'Debe agregar al menos un producto.',
@@ -208,7 +233,6 @@ class CotizacionController extends Controller
             'productos.*.cantidad.integer' => 'La cantidad debe ser un número entero.',
             'productos.*.cantidad.min' => 'La cantidad debe ser al menos 1.',
             'productos.*.descripcion.max' => 'La descripción no puede exceder 500 caracteres.',
-            'productos.*.bordados.*.logo_id.required' => 'Cada bordado debe tener un logo asignado.',
             'productos.*.bordados.*.logo_id.exists' => 'El logo seleccionado no existe en el catálogo.',
             'productos.*.bordados.required_if' => 'Debe seleccionar al menos una ubicación de bordado.',
             'productos.*.bordados.min' => 'Debe seleccionar al menos una ubicación de bordado.',
@@ -220,12 +244,16 @@ class CotizacionController extends Controller
             'productos.*.talla_id.required' => 'La talla es obligatoria.',
             'productos.*.talla_id.exists' => 'La talla seleccionada no es válida.',
             'productos.*.color_id.exists' => 'El color seleccionado no es válido.',
+            'productos.*.genero_id.required' => 'El género es obligatorio.',
+            'productos.*.genero_id.exists' => 'El género seleccionado no es válido.',
             'productos.*.insumos.*.id.required' => 'Debe seleccionar un insumo.',
             'productos.*.insumos.*.id.exists' => 'El insumo seleccionado no existe.',
             'productos.*.insumos.*.cantidad_estimada.required' => 'La cantidad estimada del insumo es obligatoria.',
             'productos.*.insumos.*.cantidad_estimada.numeric' => 'La cantidad estimada debe ser un número.',
             'productos.*.insumos.*.cantidad_estimada.min' => 'La cantidad estimada debe ser mayor a 0.',
         ]);
+
+        $this->assertMaxBordados($request, $maxBordados);
 
         $this->cotizacionService->crear($request->all());
 
@@ -249,7 +277,7 @@ class CotizacionController extends Controller
             $clienteData = [
                 'id' => $cotizacion->cliente->id,
                 'nombre' => $cotizacion->cliente->nombre,
-                'apellido' => $cotizacion->cliente->apellido,
+                'apellido' => '',
                 'email' => $cotizacion->cliente->email,
                 'telefono' => $cotizacion->cliente->telefono,
                 'documento' => $cotizacion->cliente->documento,
@@ -263,10 +291,17 @@ class CotizacionController extends Controller
 
         $response = $cotizacion->toArray();
         $response['cliente'] = $clienteData;
+        // Fecha de la tasa BCV del snapshot (null si el valor no coincide con
+        // la tasa vigente a la fecha de la cotización, p. ej. tabla corregida).
+        $response['tasa_fecha_fmt'] = optional(TasaCambio::fechaParaValor(
+            $cotizacion->tasa_cambio_valor,
+            optional($cotizacion->fecha_cotizacion)->toDateString() ?? optional($cotizacion->created_at)->toDateString()
+        ))->format('d/m/Y');
         // Creador real (no se sobrescribe al editar) para el chip "Creada por"
         $response['creador'] = $cotizacion->user ? [
             'name' => $cotizacion->user->name,
             'avatar_url' => $cotizacion->user->avatar_url,
+            'fecha' => optional($cotizacion->created_at)->format('d/m/Y H:i'),
         ] : null;
 
         return response()->json($response);
@@ -274,10 +309,12 @@ class CotizacionController extends Controller
 
     public function update(Request $request, $id)
     {
+        $maxBordados = parametro('cotizaciones.max_bordados_producto');
+
         $request->validate([
             'cliente_id' => 'required|exists:cliente,id',
             'fecha_cotizacion' => 'required|date',
-            'fecha_validez' => 'nullable|date|after_or_equal:fecha_cotizacion',
+            'fecha_validez' => 'required|date|after_or_equal:fecha_cotizacion',
             'estado' => 'required|in:Pendiente,Aprobada,Cancelada,Convertida,Vencida',
             'notas' => 'nullable|string|max:2000',
             'condiciones_terminos' => 'nullable|string',
@@ -292,13 +329,14 @@ class CotizacionController extends Controller
             'productos.*.lleva_bordado' => 'nullable|boolean',
             'productos.*.talla_id' => ['required', 'integer', Rule::exists('talla', 'id')],
             'productos.*.color_id' => ['nullable', 'integer', Rule::exists('color', 'id')],
+            'productos.*.genero_id' => ['required', 'integer', Rule::exists('genero', 'id')],
             'productos.*.insumos' => 'nullable|array',
             'productos.*.insumos.*.id' => 'required|exists:insumo,id',
             'productos.*.insumos.*.cantidad_estimada' => 'required|numeric|min:0.01',
             'productos.*.bordados' => 'nullable|array|required_if:productos.*.lleva_bordado,true|min:1',
             'productos.*.bordados.*.ubicacion_bordado_id' => 'nullable|exists:bordado_ubicacion,id',
             'productos.*.bordados.*.nombre_aplicado' => 'required|string|max:120',
-            'productos.*.bordados.*.logo_id' => 'required|exists:logo,id',
+            'productos.*.bordados.*.logo_id' => 'nullable|exists:logo,id',
             'productos.*.bordados.*.es_personalizada' => 'nullable|boolean',
             'productos.*.bordados.*.precio_aplicado' => 'required|numeric|min:0',
             'productos.*.bordados.*.cantidad' => 'nullable|integer|min:1',
@@ -308,6 +346,7 @@ class CotizacionController extends Controller
             'cliente_id.exists' => 'El cliente seleccionado no existe.',
             'fecha_cotizacion.required' => 'La fecha de cotización es obligatoria.',
             'fecha_cotizacion.date' => 'La fecha de cotización debe ser una fecha válida.',
+            'fecha_validez.required' => 'La fecha de validez es obligatoria.',
             'fecha_validez.date' => 'La fecha de validez debe ser una fecha válida.',
             'fecha_validez.after_or_equal' => 'La fecha de validez debe ser igual o posterior a la fecha de cotización.',
             'estado.required' => 'El estado es obligatorio.',
@@ -322,7 +361,6 @@ class CotizacionController extends Controller
             'productos.*.cantidad.integer' => 'La cantidad debe ser un número entero.',
             'productos.*.cantidad.min' => 'La cantidad debe ser al menos 1.',
             'productos.*.descripcion.max' => 'La descripción no puede exceder 500 caracteres.',
-            'productos.*.bordados.*.logo_id.required' => 'Cada bordado debe tener un logo asignado.',
             'productos.*.bordados.*.logo_id.exists' => 'El logo seleccionado no existe en el catálogo.',
             'productos.*.bordados.required_if' => 'Debe seleccionar al menos una ubicación de bordado.',
             'productos.*.bordados.min' => 'Debe seleccionar al menos una ubicación de bordado.',
@@ -334,12 +372,16 @@ class CotizacionController extends Controller
             'productos.*.talla_id.required' => 'La talla es obligatoria.',
             'productos.*.talla_id.exists' => 'La talla seleccionada no es válida.',
             'productos.*.color_id.exists' => 'El color seleccionado no es válido.',
+            'productos.*.genero_id.required' => 'El género es obligatorio.',
+            'productos.*.genero_id.exists' => 'El género seleccionado no es válido.',
             'productos.*.insumos.*.id.required' => 'Debe seleccionar un insumo.',
             'productos.*.insumos.*.id.exists' => 'El insumo seleccionado no existe.',
             'productos.*.insumos.*.cantidad_estimada.required' => 'La cantidad estimada del insumo es obligatoria.',
             'productos.*.insumos.*.cantidad_estimada.numeric' => 'La cantidad estimada debe ser un número.',
             'productos.*.insumos.*.cantidad_estimada.min' => 'La cantidad estimada debe ser mayor a 0.',
         ]);
+
+        $this->assertMaxBordados($request, $maxBordados);
 
         $cotizacion = Cotizacion::findOrFail($id);
 
@@ -352,7 +394,8 @@ class CotizacionController extends Controller
     {
         $cotizacion = Cotizacion::findOrFail($id);
         $this->cotizacionService->reactivar($cotizacion);
-        return response()->json(['success' => 'Cotización reactivada correctamente. Nueva validez: 15 días.']);
+        $dias = Cotizacion::diasVigencia();
+        return response()->json(['success' => "Cotización reactivada correctamente. Nueva validez: {$dias} días."]);
     }
 
     public function destroy($id)
@@ -376,16 +419,62 @@ class CotizacionController extends Controller
         if ($request->filled('estado')) {
             $query->where('estado', $request->estado);
         }
+        // Cliente: preferimos el id exacto (Select2 del modal); si no viene, se
+        // conserva la búsqueda parcial por nombre/razón social o documento.
+        if ($request->filled('cliente_id')) {
+            $query->where('cliente_id', $request->cliente_id);
+        } elseif ($request->filled('cliente')) {
+            $term = trim($request->cliente);
+            $query->whereHas('cliente', function ($c) use ($term) {
+                $c->withTrashed()->whereHas('persona', function ($p) use ($term) {
+                    $p->where('nombre', 'like', "%{$term}%")
+                      ->orWhere('documento_identidad', 'like', "%{$term}%");
+                });
+            });
+        }
+        // Fecha de negocio de la cotización (paridad con el listado y la factura).
         if ($request->filled('fecha_desde')) {
-            $query->whereDate('created_at', '>=', $request->fecha_desde);
+            $query->whereDate('fecha_cotizacion', '>=', $request->fecha_desde);
         }
         if ($request->filled('fecha_hasta')) {
-            $query->whereDate('created_at', '<=', $request->fecha_hasta);
+            $query->whereDate('fecha_cotizacion', '<=', $request->fecha_hasta);
         }
+
+        // Orden (paridad con el "Ordenar por" del listado en pantalla).
+        $orden = $request->input('orden', 'recientes');
+        switch ($orden) {
+            case 'total_desc':
+                $query->orderBy('total', 'desc');
+                break;
+            case 'total_asc':
+                $query->orderBy('total', 'asc');
+                break;
+            default:
+                $orden = 'recientes';
+                $query->orderBy('created_at', 'desc');
+                break;
+        }
+
         $cotizaciones = $query->get();
-        $pdf = PDF::loadView('admin.cotizaciones.reporte_pdf', compact('cotizaciones'))
+
+        $filtros = [];
+        if ($request->filled('estado')) {
+            $filtros['Estado'] = $request->estado;
+        }
+        if ($request->filled('cliente_id')) {
+            $cli = Cliente::withTrashed()->with('persona')->find($request->cliente_id);
+            $filtros['Cliente'] = $cli ? ($cli->nombre ?: '#' . $request->cliente_id) : '#' . $request->cliente_id;
+        } elseif ($request->filled('cliente')) {
+            $filtros['Cliente'] = trim($request->cliente);
+        }
+        if ($rango = \App\Support\ReporteFiltros::rango($request->fecha_desde, $request->fecha_hasta)) {
+            $filtros['Fecha de emisión'] = $rango;
+        }
+        $filtros['Orden'] = ['recientes' => 'Más recientes', 'total_desc' => 'Mayor total', 'total_asc' => 'Menor total'][$orden];
+
+        $pdf = PDF::loadView('admin.cotizaciones.reporte_pdf', compact('cotizaciones', 'filtros'))
             ->setPaper('a4', 'portrait');
-        return $pdf->download('reporte_cotizaciones_' . now()->format('Ymd_His') . '.pdf');
+        return $pdf->stream('reporte_cotizaciones_' . now()->format('Ymd_His') . '.pdf');
     }
 
     public function reporteGeneral()
@@ -406,6 +495,10 @@ class CotizacionController extends Controller
             'productos.producto' => function ($query) {
                 $query->withTrashed()->with('tipoProducto');
             },
+            'productos.tipoProducto',
+            'productos.genero',
+            'productos.color',
+            'productos.talla',
             'productos.bordados.logo:id,name',
         ]);
 
@@ -416,15 +509,25 @@ class CotizacionController extends Controller
         $iva = round(($subtotal - $descuento) * $ivaTasa, 2);
         $totalPagar = round($subtotal - $descuento + $iva, 2);
 
+        // Tasa de cambio aplicada (snapshot de la cotización) + su fecha BCV exacta.
+        $tasaValor = $cotizacion->tasa_cambio_valor;
+        $tasaFecha = $tasaValor
+            ? optional(\App\Models\TasaCambio::tasaVigente(
+                \Illuminate\Support\Carbon::parse($cotizacion->fecha_cotizacion ?? $cotizacion->created_at)->toDateString(), 'USD'
+            ))->fecha_bcv
+            : null;
+
         $pdf = PDF::loadView('admin.cotizaciones.factura', [
             'cotizacion' => $cotizacion,
             'subtotal' => $subtotal,
             'descuento' => $descuento,
             'iva' => $iva,
             'totalPagar' => $totalPagar,
+            'tasaValor' => $tasaValor,
+            'tasaFecha' => $tasaFecha,
         ])->setPaper('a4', 'portrait');
 
-        return $pdf->download('cotizacion_' . $cotizacion->id . '.pdf');
+        return $pdf->stream('cotizacion_' . $cotizacion->id . '.pdf');
     }
 
     /**
@@ -479,7 +582,7 @@ class CotizacionController extends Controller
             'cliente' => $cotizacion->cliente ? [
                 'id' => $cotizacion->cliente->id,
                 'nombre' => $cotizacion->cliente->nombre,
-                'apellido' => $cotizacion->cliente->apellido,
+                'apellido' => '',
                 'email' => $cotizacion->cliente->email,
                 'telefono' => $cotizacion->cliente->telefono,
                 'documento' => $cotizacion->cliente->documento,
@@ -537,6 +640,7 @@ class CotizacionController extends Controller
                     'cantidad_logo' => $cantidadLegacy ?: null,
                     'talla_id' => $detalle->talla_id,
                     'color_id' => $detalle->color_id,
+                    'genero_id' => $detalle->genero_id,
                     'precio_unitario' => $detalle->precio_unitario,
                 ];
             }),

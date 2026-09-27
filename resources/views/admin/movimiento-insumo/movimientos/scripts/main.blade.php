@@ -35,6 +35,7 @@
                 data: function (d) {
                     d.filter_tipo_movimiento = $('#filter-tipo').val();
                     d.filter_insumo_id = $('#filter-insumo').val();
+                    d.filter_stock = $('#filter-stock').val();
                     d.filter_fecha_desde = $('#filter-fecha-desde').val();
                     d.filter_fecha_hasta = $('#filter-fecha-hasta').val();
                 }
@@ -109,7 +110,7 @@
             },
             columns: [
                 {
-                    data: 'nombre', name: 'nombre', width: '32%',
+                    data: 'nombre', name: 'nombre', width: '28%',
                     render: function (data, type, row) {
                         var pill = row.codigo
                             ? '<span style="font-family:monospace;padding:.1rem .45rem;background:rgba(12,74,110,.10);color:#0c4a6e;border-radius:4px;font-size:.72rem;font-weight:600;margin-right:.4rem;">' + row.codigo + '</span>'
@@ -117,23 +118,28 @@
                         return pill + (data || '');
                     }
                 },
-                { data: 'tipo', name: 'tipo', width: '12%' },
+                { data: 'tipo', name: 'tipo', width: '10%' },
                 {
-                    data: 'stock_minimo', name: 'stock_minimo', width: '14%',
+                    data: 'stock_minimo', name: 'stock_minimo', width: '13%',
                     render: function (data) { return parseFloat(data).toFixed(2); }
                 },
                 {
-                    data: 'stock_actual', name: 'stock_actual', width: '14%',
+                    data: 'stock_actual', name: 'stock_actual', width: '13%',
                     render: function (data, type, row) {
                         return '<span class="stock-' + row.stock_status + '">' + parseFloat(data).toFixed(2) + '</span>';
                     }
                 },
                 {
-                    data: 'stock_maximo', name: 'stock_maximo', width: '14%',
+                    data: 'stock_maximo', name: 'stock_maximo', width: '12%',
                     render: function (data) { return parseFloat(data).toFixed(2); }
                 },
                 {
-                    data: 'stock_status', name: 'stock_status', width: '14%',
+                    // Precio de entrada: costo unitario de la última compra procesada
+                    data: 'costo_unitario', name: 'costo_unitario', width: '12%',
+                    render: function (data) { return '$' + parseFloat(data).toFixed(2); }
+                },
+                {
+                    data: 'stock_status', name: 'stock_status', width: '12%',
                     orderable: false, searchable: false,
                     render: function (data) { return badgeEstadoStock(data); }
                 }
@@ -298,88 +304,6 @@
             });
         });
 
-        // ── Movimiento masivo: misma Entrada/Salida a todos los insumos ──
-        $('#masivoForm').on('submit', function (e) {
-            e.preventDefault();
-
-            if (!this.checkValidity()) {
-                e.stopPropagation();
-                $(this).addClass('was-validated');
-                return;
-            }
-
-            var tipo     = $('#field-masivo_tipo_movimiento').val();
-            var cantidad = $('#masivo-cantidad').val();
-            var motivo   = $('#masivo-motivo').val();
-            var totalInsumos = {{ $insumosInventariables->count() }};
-
-            Swal.fire({
-                title: '¿Aplicar movimiento masivo?',
-                html: 'Se registrará una <strong>' + tipo + '</strong> de <strong>' + cantidad +
-                    '</strong> a los <strong>' + totalInsumos + ' insumos inventariables</strong>.',
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonText: 'Sí, aplicar a todos',
-                cancelButtonText: 'Cancelar'
-            }).then(function (result) {
-                if (!result.isConfirmed) return;
-
-                var $btn = $('#masivo-submit-btn').prop('disabled', true);
-
-                $.ajax({
-                    url: "{{ route('movimiento-insumo.masivo') }}",
-                    method: 'POST',
-                    data: {
-                        _token: "{{ csrf_token() }}",
-                        tipo_movimiento: tipo,
-                        cantidad: cantidad,
-                        motivo: motivo
-                    },
-                    success: function (response) {
-                        $('#masivoModal').modal('hide');
-                        table.ajax.reload();
-                        existenciasTable.ajax.reload(null, false);
-
-                        var omitidos = response.omitidos || [];
-                        var detalle = '';
-                        if (omitidos.length) {
-                            detalle = '<p class="mt-2 mb-1 text-muted small">Omitidos por stock insuficiente (' +
-                                omitidos.length + '):</p><p class="small mb-0">' + omitidos.join(', ') + '</p>';
-                        }
-
-                        Swal.fire({
-                            title: 'Éxito',
-                            html: response.success + detalle,
-                            icon: omitidos.length ? 'info' : 'success',
-                            confirmButtonText: 'Aceptar'
-                        });
-                    },
-                    error: function (xhr) {
-                        var r = xhr.responseJSON || {};
-                        var errorMessage = r.error || r.message || 'Ocurrió un error al procesar la solicitud';
-                        if (r.errors) {
-                            errorMessage = Object.values(r.errors).map(function (v) { return Array.isArray(v) ? v[0] : v; }).join('\n');
-                        }
-
-                        Swal.fire({
-                            title: 'Error',
-                            text: errorMessage,
-                            icon: 'error',
-                            confirmButtonText: 'Entendido'
-                        });
-                    },
-                    complete: function () {
-                        $btn.prop('disabled', false);
-                    }
-                });
-            });
-        });
-
-        // Limpiar el modal masivo al cerrar
-        $('#masivoModal').on('hidden.bs.modal', function () {
-            $('#masivoForm').trigger('reset').removeClass('was-validated');
-        });
-
         // Manejar clic en botón de ver
         $(document).on('click', '.view-btn', function () {
             var id = $(this).data('id');
@@ -453,7 +377,6 @@
                 });
                 $('#mv-prev').toggle(n > 1);
                 $('#mv-next').toggle(n < TOTAL);
-                $('#mv-close').toggle(n === TOTAL);
             };
             $(document).on('click', '#mv-next', function () { if (step < TOTAL) window.viewMovShowStep(step + 1); });
             $(document).on('click', '#mv-prev', function () { if (step > 1) window.viewMovShowStep(step - 1); });

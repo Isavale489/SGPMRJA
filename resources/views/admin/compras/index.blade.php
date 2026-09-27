@@ -126,12 +126,98 @@
                                     <th>N° Factura</th>
                                     <th>Fecha</th>
                                     <th class="text-end">Total</th>
-                                    <th>Estado</th>
-                                    <th>Acciones</th>
+                                    <th class="text-center">Estado</th>
+                                    <th class="text-center">Acciones</th>
                                 </tr>
                             </thead>
                             <tbody></tbody>
                         </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {{-- ============================================================
+             EXISTENCIAS DE INSUMOS — consulta de stock sin salir de Compras
+             (espejo del panel de /movimiento-insumo, mismo data-source)
+             Incluye el precio de entrada (costo de la última compra procesada).
+             ============================================================ --}}
+        <div class="row">
+            <div class="col-lg-12">
+                <div class="card card-transactional">
+                    <div class="card-header">
+                        <h5 class="card-title mb-1">
+                            <i class="ri-stack-line align-bottom me-1"></i>Existencias de Insumos
+                        </h5>
+                        <small class="text-muted">Stock mínimo, actual y máximo de cada insumo, con su precio de entrada. Se actualiza al procesar una compra.</small>
+                    </div>
+                    <div class="card-body">
+                        {{-- Búsqueda + filtros unificados — Patrón Maestro S-07 --}}
+                        <div class="advanced-filters-wrapper navy-theme" id="cexist-advanced-filters">
+                            <div class="navy-filter-header is-collapsed">
+                                <div class="navy-header-search">
+                                    <i class="ri-search-line"></i>
+                                    <input type="text" class="navy-search-input" id="cexist-search-input"
+                                        placeholder="Buscar insumo..." autocomplete="off">
+                                </div>
+                                <div class="navy-header-divider"></div>
+                                <button class="navy-filter-btn collapsed" type="button"
+                                    data-bs-toggle="collapse" data-bs-target="#cexist-filters-collapse"
+                                    aria-expanded="false" aria-controls="cexist-filters-collapse">
+                                    <i class="ri-filter-3-line"></i>
+                                    <span>Filtros</span>
+                                    <span class="navy-filter-badge d-none" id="cexist-active-filter-count"></span>
+                                    <i class="ri-arrow-down-s-line navy-filter-chevron"></i>
+                                </button>
+                            </div>
+                            <div class="collapse" id="cexist-filters-collapse">
+                                <div class="navy-filter-body">
+                                    <div class="row g-3">
+                                        <div class="col-12 col-md-4">
+                                            <label class="navy-filter-label" for="cexist-filter-tipo">
+                                                <i class="ri-price-tag-3-line"></i> Tipo de Insumo
+                                            </label>
+                                            <select class="form-select navy-filter-select" id="cexist-filter-tipo">
+                                                <option value="">Todos</option>
+                                                @foreach ($tiposInsumo as $tipoIns)
+                                                    <option value="{{ $tipoIns->nombre }}">{{ $tipoIns->nombre }}</option>
+                                                @endforeach
+                                            </select>
+                                        </div>
+                                        <div class="col-12 col-md-4">
+                                            <label class="navy-filter-label" for="cexist-filter-alerta">
+                                                <i class="ri-alarm-warning-line"></i> Disponibilidad
+                                            </label>
+                                            <select class="form-select navy-filter-select" id="cexist-filter-alerta">
+                                                <option value="">Todas</option>
+                                                <option value="alerta">Solo en alerta (stock bajo)</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="d-flex justify-content-end mt-2">
+                                        <button type="button" class="btn btn-link" id="cexist-btn-clear-filters">Limpiar filtros</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {{-- FIN FILTROS --}}
+
+                        <div class="table-responsive">
+                            <table id="cexistencias-table" class="table table-bordered table-striped table-sm align-middle dt-transactional table-operativa">
+                                <thead>
+                                    <tr>
+                                        <th>Insumo</th>
+                                        <th>Tipo</th>
+                                        <th>Existencia Mín.</th>
+                                        <th>Existencia Actual</th>
+                                        <th>Existencia Máx.</th>
+                                        <th>Precio Entrada ($)</th>
+                                        <th>Estado</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -178,6 +264,14 @@
                             <label class="form-label fw-semibold" for="pdf-fecha-hasta">Fecha Hasta</label>
                             <input type="date" class="form-control" id="pdf-fecha-hasta">
                         </div>
+                        <div class="col-12">
+                            <label class="form-label fw-semibold" for="pdf-orden">Ordenar por</label>
+                            <select class="form-select" id="pdf-orden">
+                                <option value="recientes">Fecha reciente</option>
+                                <option value="monto_desc">Mayor monto</option>
+                                <option value="monto_asc">Menor monto</option>
+                            </select>
+                        </div>
                     </div>
                 </div>
                 <div class="modal-footer bg-light border-0">
@@ -196,13 +290,15 @@
     <script>
         window.INSUMOS_DATA = @json($insumos);
         window.VER_ANULADAS = @json($verAnuladas);
-        window.IVA_TASA     = @json((float) config('impuestos.iva', 16));
+        window.IVA_TASA     = @json(\App\Models\Impuesto::tasaIva());
     </script>
 @endsection
 
 @push('scripts')
     <script src="{{ URL::asset('/assets/libs/sweetalert2/sweetalert2.min.js') }}"></script>
     <script src="{{ asset('assets/js/municipios-venezuela.js') }}"></script>
+    <script src="{{ asset('assets/js/telefonos-repeater.js') }}"></script>
+    <script src="{{ asset('assets/js/proyeccion-insumos.js') }}"></script>
     <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/1.11.5/js/dataTables.bootstrap5.min.js"></script>
     <script src="https://cdn.datatables.net/responsive/2.2.9/js/dataTables.responsive.min.js"></script>
@@ -210,6 +306,27 @@
     @include('admin.compras.scripts.main')
     @include('admin.compras.scripts.create')
     <script>
+        // Precarga de compra desde "Crear compra con faltantes" (Cotización/Pedido).
+        // Llega por ?prefill=1 + payload en localStorage (lo deja proyeccion-insumos.js).
+        $(function () {
+            var params = new URLSearchParams(window.location.search);
+            if (params.get('prefill') !== '1') return;
+            var raw = null;
+            try { raw = localStorage.getItem('sgpmrja_compra_prefill'); } catch (e) {}
+            // Limpiar el flag y el query param para no re-disparar al recargar.
+            try { localStorage.removeItem('sgpmrja_compra_prefill'); } catch (e) {}
+            if (window.history.replaceState) {
+                window.history.replaceState({}, '', window.location.pathname);
+            }
+            if (!raw) return;
+            var data;
+            try { data = JSON.parse(raw); } catch (e) { return; }
+            if (!data || !Array.isArray(data.insumos) || !data.insumos.length) return;
+            if (typeof window.compraPrefillFaltantes === 'function') {
+                window.compraPrefillFaltantes(data.insumos);
+            }
+        });
+
         // Exportar PDF con filtros — Compras
         $('#btn-generar-pdf').on('click', function () {
             var baseUrl = '{{ route('compras.reporte.pdf') }}';
@@ -218,15 +335,18 @@
             var estado  = $('#pdf-estado').val();
             var desde   = $('#pdf-fecha-desde').val();
             var hasta   = $('#pdf-fecha-hasta').val();
+            var orden   = $('#pdf-orden').val();
             if (prov)   params.push('proveedor_id=' + encodeURIComponent(prov));
             if (estado) params.push('estado='       + encodeURIComponent(estado));
             if (desde)  params.push('fecha_desde='   + encodeURIComponent(desde));
             if (hasta)  params.push('fecha_hasta='   + encodeURIComponent(hasta));
+            if (orden && orden !== 'recientes') params.push('orden=' + encodeURIComponent(orden));
             window.open(baseUrl + (params.length ? '?' + params.join('&') : ''), '_blank');
             bootstrap.Modal.getInstance(document.getElementById('pdfExportModal'))?.hide();
         });
         $('#pdfExportModal').on('show.bs.modal', function () {
             $('#pdf-proveedor, #pdf-estado, #pdf-fecha-desde, #pdf-fecha-hasta').val('');
+            $('#pdf-orden').val('recientes');
         });
     </script>
 @endpush

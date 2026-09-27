@@ -69,15 +69,21 @@ class OrdenProduccion extends Model
      */
     public function getNombreProductoAttribute(): string
     {
+        $d = $this->detallePedido;
+        $genero = ($d && $d->genero) ? $d->genero->nombre : null;
+
         if ($this->producto) {
-            return $this->producto->nombre;
+            return $this->producto->nombre . ($genero ? ' · ' . $genero : '');
         }
 
-        $d = $this->detallePedido;
         if ($d) {
             $partes = [];
             if ($d->tipoProducto) {
                 $partes[] = $d->tipoProducto->nombre;
+            }
+            // Género justo tras el tipo: define el patronaje (dama/caballero/unisex).
+            if ($genero) {
+                $partes[] = $genero;
             }
             if (is_array($d->tela_snapshot) && !empty($d->tela_snapshot['nombre'])) {
                 $partes[] = $d->tela_snapshot['nombre'];
@@ -126,6 +132,7 @@ class OrdenProduccion extends Model
     public function empleadosAsignados()
     {
         return $this->belongsToMany(Empleado::class, 'orden_produccion_empleado')
+            ->withPivot(['cantidad', 'cantidad_producida', 'cantidad_defectuosa'])
             ->withTimestamps();
     }
 
@@ -135,6 +142,15 @@ class OrdenProduccion extends Model
     public function subordenes()
     {
         return $this->hasMany(SubOrdenProduccion::class);
+    }
+
+    /**
+     * Inspecciones de control de calidad de esta orden (FEAT-006).
+     * 1:N por los ciclos de reproceso (cada rechazo genera una nueva inspección).
+     */
+    public function controlesCalidad()
+    {
+        return $this->hasMany(ControlCalidad::class, 'orden_produccion_id');
     }
 
     /**

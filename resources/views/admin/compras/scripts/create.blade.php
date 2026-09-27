@@ -49,48 +49,68 @@ $(document).ready(function () {
         recalcular();
     }
 
-    function buildInsumoOptions(selectedId) {
-        var html = '<option value="">Seleccione insumo...</option>';
-        INSUMOS.forEach(function (ins) {
-            var sel = (ins.id == selectedId) ? ' selected' : '';
-            // aplica_iva puede venir como 1/0/true/false desde el backend
-            var grav = (ins.aplica_iva === undefined || ins.aplica_iva === null)
-                ? 1 : (Number(ins.aplica_iva) ? 1 : 0);
-            html += '<option value="' + ins.id + '"'
-                + ' data-costo="' + ins.costo_unitario + '"'
-                + ' data-unidad="' + ins.unidad_medida + '"'
-                + ' data-iva="' + grav + '"'
-                + sel + '>'
-                + ins.nombre + ' (' + ins.tipo + ')'
-                + '</option>';
-        });
-        return html;
+    // aplica_iva puede venir como 1/0/true/false desde el backend → 1/0
+    function normIva(v) {
+        return (v === undefined || v === null) ? 1 : (Number(v) ? 1 : 0);
     }
 
-    // Reconstruye TODOS los <select> de insumo (tras un alta rápida), preservando
-    // la selección actual de cada fila para no perder ítems ya elegidos.
-    function rebuildAllInsumoSelects() {
-        $('#c-items-tbody tr').each(function () {
-            var $sel = $(this).find('.c-insumo');
-            $sel.html(buildInsumoOptions($sel.val()));
-        });
+    // Busca un insumo del catálogo local por id (sin Array.find, por consistencia ES5).
+    function findInsumo(id) {
+        for (var i = 0; i < INSUMOS.length; i++) {
+            if (String(INSUMOS[i].id) === String(id)) return INSUMOS[i];
+        }
+        return null;
+    }
+
+    // Fija el insumo elegido en la fila (id en el campo oculto + etiqueta visible +
+    // data-attrs). NO toca costo/cantidad/IVA → usado al repoblar en modo edición.
+    function setInsumoFila($tr, ins) {
+        $tr.find('.c-insumo')
+            .val(ins.id)
+            .attr('data-costo', ins.costo_unitario)
+            .attr('data-unidad', ins.unidad_medida)
+            .attr('data-iva', normIva(ins.aplica_iva));
+        $tr.find('.c-insumo-display').val(ins.nombre + ' (' + ins.tipo + ')');
+    }
+
+    // Selección interactiva (búsqueda o alta rápida): fija el insumo + precarga el
+    // costo (USD del maestro → Bs con la tasa de la compra), la unidad y el flag IVA.
+    function selectInsumoEnFila($tr, ins) {
+        setInsumoFila($tr, ins);
+        marcarValido($tr.find('.c-insumo-display'));
+
+        if (ins.costo_unitario) {
+            var tasa   = parseFloat($('#c-tasa').val()) || 0;
+            var unitBs = tasa > 0 ? parseFloat(ins.costo_unitario) * tasa : parseFloat(ins.costo_unitario);
+            $tr.find('.c-costo').val(formatBs(unitBs));
+        }
+        $tr.find('.c-unit-addon').text(ins.unidad_medida ? String(ins.unidad_medida).substring(0, 4) : '—');
+        $tr.find('.c-iva-check').prop('checked', normIva(ins.aplica_iva) !== 0);
+        // Recalcular el total de la línea y marcar el form como sucio (guard).
+        recomputeRow($tr, 'unit');
+        $tr.find('.c-insumo-display').trigger('change');
     }
 
     // Los costos se cargan en bolívares; el equivalente en USD se deriva de la tasa.
     function recalcular() {
+        var tasa = parseFloat($('#c-tasa').val()) || 0;
         var subtotal = 0, baseGravada = 0; // en Bs
         $('#c-items-tbody tr').each(function () {
-            var cantidad = parseFloat($(this).find('.c-cantidad').val()) || 0;
-            var costo    = parseBs($(this).find('.c-costo').val()); // Bs unitario
+            var $row     = $(this);
+            var cantidad = parseFloat($row.find('.c-cantidad').val()) || 0;
+            var costo    = parseBs($row.find('.c-costo').val()); // Bs unitario
             var sub      = cantidad * costo;
             subtotal += sub;
-            if ($(this).find('.c-iva-check').is(':checked')) baseGravada += sub;
+            if ($row.find('.c-iva-check').is(':checked')) baseGravada += sub;
+
+            // Equivalente USD en vivo bajo cada input en Bs (vacío si no hay tasa).
+            $row.find('.c-costo-usd').html(tasa > 0 && costo > 0 ? '≈ $' + formatBs(costo / tasa) : '&nbsp;');
+            $row.find('.c-total-usd').html(tasa > 0 && sub > 0 ? '≈ $' + formatBs(sub / tasa) : '&nbsp;');
         });
         var iva    = baseGravada * IVA_TASA / 100;
         var exento = subtotal - baseGravada;
         var total  = subtotal + iva;
 
-        var tasa        = parseFloat($('#c-tasa').val()) || 0;
         var subtotalUsd = tasa > 0 ? subtotal / tasa : 0;
         var totalUsd    = tasa > 0 ? total / tasa : 0;
 
@@ -99,6 +119,8 @@ $(document).ready(function () {
         $('#c-resumen-total').text(formatBs(total));
         $('#c-resumen-iva-pct').text(IVA_TASA);
         $('#c-resumen-tasa').text(tasa ? formatBs(tasa, 4) : '0,0000');
+        // Fecha de la tasa BCV aplicada (se limpia si la tasa es manual)
+        $('#c-resumen-tasa-fecha').text(window.__cTasaFechaFmt ? ' (' + window.__cTasaFechaFmt + ')' : '');
         $('#c-resumen-total-usd').text(formatBs(totalUsd));
         // Base exenta: solo se muestra si hay líneas exentas. Se alterna con
         // d-none (no con [hidden], que .d-flex !important anularía).
@@ -135,17 +157,20 @@ $(document).ready(function () {
     }
 
     // ── Agregar fila ────────────────────────────────────────────────────────
-    function addItemRow() {
+    // autoOpen: abre el buscador de insumo de inmediato (al pulsar "Agregar ítem").
+    function addItemRow(autoOpen) {
         var idx = rowCount++;
         var num = $('#c-items-tbody tr').length + 1;
 
         var row = '<tr id="c-row-' + idx + '">'
             + '<td class="c-row-num text-center text-muted cot-col-num">' + num + '</td>'
-            + '<td style="min-width:200px;">'
+            + '<td style="min-width:220px;">'
+            +   '<input type="hidden" class="c-insumo" id="c-ins-' + idx + '">'
             +   '<div class="input-group input-group-sm">'
-            +     '<select class="form-select form-select-sm c-insumo" id="c-ins-' + idx + '">'
-            +       buildInsumoOptions('')
-            +     '</select>'
+            +     '<button type="button" class="btn btn-outline-secondary c-insumo-browse-btn"'
+            +     ' data-row="' + idx + '" title="Buscar insumo"><i class="ri-search-2-line"></i></button>'
+            +     '<input type="text" class="form-control form-control-sm c-insumo-display"'
+            +     ' placeholder="Buscar insumo..." readonly style="cursor:pointer; background-color:#fff;">'
             +     '<button type="button" class="btn btn-soft-success c-add-insumo-btn"'
             +     ' data-row="' + idx + '" title="Crear insumo nuevo"><i class="ri-add-line"></i></button>'
             +   '</div>'
@@ -158,12 +183,18 @@ $(document).ready(function () {
             +   '</div>'
             + '</td>'
             + '<td class="text-center">'
-            +   '<input type="text" inputmode="decimal" class="form-control form-control-sm c-costo text-end"'
-            +   ' placeholder="0,00" style="max-width:120px;margin:0 auto;">'
+            +   '<div style="max-width:120px;margin:0 auto;">'
+            +     '<input type="text" inputmode="decimal" class="form-control form-control-sm c-costo text-end"'
+            +     ' placeholder="0,00">'
+            +     '<small class="c-usd-hint c-costo-usd">&nbsp;</small>'
+            +   '</div>'
             + '</td>'
             + '<td class="text-center">'
-            +   '<input type="text" inputmode="decimal" class="form-control form-control-sm c-total text-end"'
-            +   ' placeholder="0,00" style="max-width:130px;margin:0 auto;">'
+            +   '<div style="max-width:130px;margin:0 auto;">'
+            +     '<input type="text" inputmode="decimal" class="form-control form-control-sm c-total text-end"'
+            +     ' placeholder="0,00">'
+            +     '<small class="c-usd-hint c-total-usd">&nbsp;</small>'
+            +   '</div>'
             + '</td>'
             + '<td class="text-center">'
             +   '<div class="form-check d-inline-block m-0">'
@@ -180,29 +211,19 @@ $(document).ready(function () {
         $('#c-items-tbody').append(row);
         updateEmpty();
 
-        $('#c-ins-' + idx).on('change', function () {
-            var opt   = $(this).find('option:selected');
-            var costo = opt.data('costo'); // costo de referencia del insumo, en USD
-            var unid  = opt.data('unidad');
-            var $tr   = $(this).closest('tr');
-            // El maestro guarda el costo en USD; lo precargamos convertido a Bs
-            // con la tasa de la compra (editable por el usuario).
-            if (costo) {
-                var tasa = parseFloat($('#c-tasa').val()) || 0;
-                var unitBs = tasa > 0 ? parseFloat(costo) * tasa : parseFloat(costo);
-                $tr.find('.c-costo').val(formatBs(unitBs));
-            }
-            $tr.find('.c-unit-addon').text(unid ? String(unid).substring(0, 4) : '—');
-            // Heredar gravable/exento del insumo elegido (data-iva = 1/0)
-            if (opt.val()) {
-                $tr.find('.c-iva-check').prop('checked', Number(opt.data('iva')) !== 0);
-            }
-            // Recalcular el total de la línea a partir del unitario precargado.
-            recomputeRow($tr, 'unit');
-        }).trigger('focus');
+        var $tr = $('#c-row-' + idx);
+        // Al agregar manualmente, abrir el buscador de insumo de una vez (el campo
+        // es de solo lectura: la acción natural es buscar).
+        if (autoOpen) abrirBuscarInsumo($tr);
+        return $tr;
     }
 
-    $('#c-add-item-btn, #c-add-item-empty-btn').on('click', addItemRow);
+    $('#c-add-item-btn, #c-add-item-empty-btn').on('click', function () { addItemRow(true); });
+
+    // El campo de insumo (display de solo lectura) y la lupa abren el buscador.
+    $(document).on('click', '.c-insumo-browse-btn, .c-insumo-display', function () {
+        abrirBuscarInsumo($(this).closest('tr'));
+    });
 
     // ── Eliminar fila ───────────────────────────────────────────────────────
     $(document).on('click', '.c-remove-btn', function () {
@@ -226,6 +247,80 @@ $(document).ready(function () {
         $(this).val(v ? formatBs(v) : '');
     });
 
+    // ── Buscador de insumo (mini-modal, filtrado en cliente) ─────────────────
+    // Reemplaza al <select> por fila: la lupa abre #buscarInsumoModal con una
+    // tabla buscable del catálogo INSUMOS; al elegir, se carga en la fila origen.
+    var bsiTargetRow = null;   // fila que disparó la búsqueda
+    var bsiBase      = [];      // catálogo disponible para esta apertura (sin duplicados)
+
+    // Insumos aún no usados en otras filas (la fila objetivo puede re-elegir el suyo).
+    function bsiDisponibles() {
+        var usados = [];
+        $('#c-items-tbody tr').each(function () {
+            var v = $(this).find('.c-insumo').val();
+            if (v && (!bsiTargetRow || this !== bsiTargetRow[0])) usados.push(String(v));
+        });
+        return INSUMOS.filter(function (ins) { return usados.indexOf(String(ins.id)) === -1; });
+    }
+
+    function bsiRender(items) {
+        var $tbody = $('#bsi-tbody'), $empty = $('#bsi-empty'), $label = $('#bsi-count-label');
+        $tbody.empty();
+        if (!items || items.length === 0) {
+            $empty.removeClass('d-none');
+            $label.text('');
+            return;
+        }
+        $empty.addClass('d-none');
+        $label.text(items.length + ' insumo(s)');
+        items.forEach(function (ins) {
+            var ivaBadge = normIva(ins.aplica_iva)
+                ? '<span class="badge bg-soft-primary text-primary">Sí</span>'
+                : '<span class="badge bg-light text-muted">Exento</span>';
+            var $tr = $('<tr style="cursor:pointer;">')
+                .html(
+                    '<td class="fw-semibold">' + ins.nombre + '</td>'
+                    + '<td class="text-muted small font-monospace">' + (ins.codigo || '—') + '</td>'
+                    + '<td>' + ins.tipo + '</td>'
+                    + '<td class="text-center">' + (ins.unidad_medida || '—') + '</td>'
+                    + '<td class="text-end font-monospace small">$ ' + fmt(ins.costo_unitario) + '</td>'
+                    + '<td class="text-center">' + ivaBadge + '</td>'
+                )
+                .on('click', function () {
+                    if (bsiTargetRow && bsiTargetRow.length) selectInsumoEnFila(bsiTargetRow, ins);
+                    $('#buscarInsumoModal').modal('hide');
+                });
+            $tbody.append($tr);
+        });
+    }
+
+    function bsiAplicarFiltro(q) {
+        q = (q || '').trim().toLowerCase();
+        if (!q) { bsiRender(bsiBase); return; }
+        bsiRender(bsiBase.filter(function (ins) {
+            return (ins.nombre && ins.nombre.toLowerCase().indexOf(q) !== -1)
+                || (ins.codigo && String(ins.codigo).toLowerCase().indexOf(q) !== -1)
+                || (ins.tipo && ins.tipo.toLowerCase().indexOf(q) !== -1);
+        }));
+    }
+
+    function abrirBuscarInsumo($tr) {
+        bsiTargetRow = $tr;
+        bsiBase = bsiDisponibles();
+        $('#bsi-input').val('');
+        $('#buscarInsumoModal').modal('show');
+    }
+
+    $('#buscarInsumoModal').on('shown.bs.modal', function () {
+        $('#bsi-input').trigger('focus');
+        bsiAplicarFiltro('');
+    });
+    $('#bsi-input').on('input', function () { bsiAplicarFiltro($(this).val()); });
+    $('#bsi-clear-btn').on('click', function () {
+        $('#bsi-input').val('').trigger('focus');
+        bsiAplicarFiltro('');
+    });
+
     // ── Tasa de cambio: autocompletar según la fecha de compra ───────────────
     // Busca la tasa BCV del día (o la vigente anterior) en la DB. Es editable:
     // si la factura del proveedor usó otra tasa, el usuario la corrige.
@@ -241,6 +336,7 @@ $(document).ready(function () {
             var $tasa = $('#c-tasa');
             if (r.encontrada) {
                 // Tasa traída por el sistema: campo de solo lectura.
+                window.__cTasaFechaFmt = r.fecha_bcv_fmt;
                 $tasa.val(parseFloat(r.valor).toFixed(4)).prop('readonly', true).addClass('bg-light');
                 if (r.exacta) {
                     $hint.html('<i class="ri-checkbox-circle-line text-success me-1"></i>Tasa BCV oficial del ' + r.fecha_bcv_fmt + '.');
@@ -249,6 +345,8 @@ $(document).ready(function () {
                 }
             } else {
                 // El sistema no tiene tasa para esa fecha: se habilita la carga manual.
+                // Una tasa manual no tiene fecha BCV que mostrar.
+                window.__cTasaFechaFmt = null;
                 $tasa.val('').prop('readonly', false).removeClass('bg-light');
                 $hint.html('<i class="ri-error-warning-line text-danger me-1"></i>' + (r.message || 'Sin tasa BCV para esa fecha. Ingresala manualmente.'));
             }
@@ -257,7 +355,11 @@ $(document).ready(function () {
     }
 
     $('#c-fecha').on('change', function () { aplicarTasaPorFecha($(this).val()); });
-    $('#c-tasa').on('input', recalcular);
+    $('#c-tasa').on('input', function () {
+        // Si el usuario teclea la tasa, deja de ser la oficial de una fecha.
+        if (!$(this).prop('readonly')) window.__cTasaFechaFmt = null;
+        recalcular();
+    });
 
     // N° de factura: solo dígitos y guiones (formato 0001-000456).
     $('#c-factura').on('input', function () {
@@ -379,7 +481,36 @@ $(document).ready(function () {
                 $('#c-recap-fecha').text('—');
             }
             var n = $('#c-items-tbody tr').length;
-            $('#c-recap-items').text(n + ' insumo' + (n === 1 ? '' : 's'));
+            $('#c-recap-items').text('(' + n + ' insumo' + (n === 1 ? '' : 's') + ')');
+
+            // Detalle de ítems: espejo de la grilla del paso 2 (solo lectura).
+            // Bajo cada monto en Bs se muestra el equivalente en USD con la tasa.
+            var tasaRecap = parseFloat($('#c-tasa').val()) || 0;
+            var usdSub = function (bs) {
+                return tasaRecap > 0
+                    ? '<small class="text-muted d-block fw-normal">≈ $' + formatBs(bs / tasaRecap) + '</small>'
+                    : '';
+            };
+            var html = '';
+            $('#c-items-tbody tr').each(function () {
+                var $r       = $(this);
+                var nombre   = $r.find('.c-insumo-display').val() || '—';
+                var cantidad = parseFloat($r.find('.c-cantidad').val()) || 0;
+                var costo    = parseBs($r.find('.c-costo').val()); // Bs unitario
+                var subtotal = cantidad * costo;
+                var aplica   = $r.find('.c-iva-check').is(':checked');
+                var ivaBadge = aplica
+                    ? '<span class="badge bg-soft-success text-success">' + IVA_TASA + '%</span>'
+                    : '<span class="badge bg-soft-secondary text-muted">Exento</span>';
+                html += '<tr>'
+                    + '<td class="fw-semibold">' + nombre + '</td>'
+                    + '<td class="text-end">' + formatBs(cantidad) + '</td>'
+                    + '<td class="text-end">Bs ' + formatBs(costo) + usdSub(costo) + '</td>'
+                    + '<td class="text-center">' + ivaBadge + '</td>'
+                    + '<td class="text-end fw-semibold">Bs ' + formatBs(subtotal) + usdSub(subtotal) + '</td>'
+                    + '</tr>';
+            });
+            $('#c-recap-items-tbody').html(html);
         }
 
         // ── Mostrar paso N ───────────────────────────────────────────────────
@@ -421,9 +552,12 @@ $(document).ready(function () {
         function validateStep(n) {
             if (n === 1) {
                 if (!$('#c-proveedor').val()) {
-                    Swal.fire({ title: 'Campo requerido', text: 'Seleccione un proveedor.', icon: 'warning', confirmButtonText: 'Entendido' });
+                    marcarInvalido($('#c-proveedor'), 'Seleccione un proveedor.');
+                    $('#c-proveedor').parent().find('.select2-selection').trigger('focus');
                     return false;
                 }
+                marcarValido($('#c-proveedor'));
+
                 if (!$('#c-factura').val().trim()) {
                     Swal.fire({ title: 'Campo requerido', text: 'Ingrese el número de factura.', icon: 'warning', confirmButtonText: 'Entendido' });
                     return false;
@@ -433,9 +567,12 @@ $(document).ready(function () {
                     return false;
                 }
                 if (!$('#c-fecha').val()) {
-                    Swal.fire({ title: 'Campo requerido', text: 'Ingrese la fecha de compra.', icon: 'warning', confirmButtonText: 'Entendido' });
+                    marcarInvalido($('#c-fecha'), 'Ingrese la fecha de compra.');
+                    $('#c-fecha').trigger('focus');
                     return false;
                 }
+                marcarValido($('#c-fecha'));
+
                 // La fecha no puede ser futura (max = hoy según el servidor).
                 var maxFecha = $('#c-fecha').attr('max');
                 if (maxFecha && $('#c-fecha').val() > maxFecha) {
@@ -459,19 +596,28 @@ $(document).ready(function () {
             var items     = [];
             var insumoIds = [];
             var err       = null;
+            var $errField = null;
+            var errMsg    = null;
 
             $('#c-items-tbody tr').each(function () {
-                var insumoId = $(this).find('.c-insumo').val();
-                var cantidad = $(this).find('.c-cantidad').val();
-                var costo    = parseBs($(this).find('.c-costo').val()); // Bs unitario
-                var aplicaIva = $(this).find('.c-iva-check').is(':checked');
+                if (err) return false;
+                var $tr      = $(this);
+                var insumoId = $tr.find('.c-insumo').val();
+                var cantidad = $tr.find('.c-cantidad').val();
+                var costo    = parseBs($tr.find('.c-costo').val()); // Bs unitario
+                var aplicaIva = $tr.find('.c-iva-check').is(':checked');
 
                 if (!insumoId || !cantidad || parseFloat(cantidad) <= 0 || !costo || costo <= 0) {
                     err = 'incompleto';
+                    if (!insumoId)                                      { $errField = $tr.find('.c-insumo-display'); errMsg = 'Seleccione un insumo para esta fila.'; }
+                    else if (!cantidad || parseFloat(cantidad) <= 0)    { $errField = $tr.find('.c-cantidad');       errMsg = 'Ingrese una cantidad válida (mayor a 0).'; }
+                    else                                                 { $errField = $tr.find('.c-costo');          errMsg = 'Ingrese un costo válido (mayor a 0).'; }
                     return false;
                 }
                 if (insumoIds.indexOf(insumoId) !== -1) {
                     err = 'dup';
+                    $errField = $tr.find('.c-insumo-display');
+                    errMsg = 'Este insumo ya está en la lista. Cada insumo puede aparecer una sola vez.';
                     return false;
                 }
                 insumoIds.push(insumoId);
@@ -479,16 +625,13 @@ $(document).ready(function () {
                 items.push({ insumo_id: insumoId, cantidad: cantidad, costo_unitario_bs: costo, aplica_iva: aplicaIva });
             });
 
-            if (items.length === 0) {
+            if (items.length === 0 && !err) {
                 Swal.fire({ title: 'Sin ítems', text: 'Agregue al menos un insumo a la compra.', icon: 'warning', confirmButtonText: 'Entendido' });
                 return false;
             }
-            if (err === 'dup') {
-                Swal.fire({ title: 'Insumo duplicado', text: 'Hay insumos repetidos en la lista. Cada insumo puede aparecer una sola vez.', icon: 'warning', confirmButtonText: 'Entendido' });
-                return false;
-            }
-            if (err === 'incompleto') {
-                Swal.fire({ title: 'Datos incompletos', text: 'Complete todos los campos de cada ítem (insumo, cantidad y costo).', icon: 'warning', confirmButtonText: 'Entendido' });
+            if (err) {
+                marcarInvalido($errField, errMsg);
+                $errField.trigger('focus');
                 return false;
             }
             return items;
@@ -506,6 +649,17 @@ $(document).ready(function () {
             if (target < currentStep) { showStep(target); return; }
             for (var s = currentStep; s < target; s++) if (!validateStep(s)) return;
             showStep(target);
+        });
+
+        // ── Feedback en tiempo real — paso 1 ────────────────────────────────
+        $('#c-proveedor').on('select2:close', function () {
+            if (!$(this).val()) marcarInvalido($(this), 'Seleccione un proveedor.');
+            else marcarValido($(this));
+        });
+
+        $('#c-fecha').on('blur', function () {
+            if (!$(this).val()) marcarInvalido($(this), 'Ingrese la fecha de compra.');
+            else marcarValido($(this));
         });
 
         // ════════════════════════════════════════════════════════════════════
@@ -603,7 +757,7 @@ $(document).ready(function () {
             // Caso 2: existe pero no es proveedor → confirmar conversión
             Swal.fire({
                 title: '¿Crear proveedor con datos existentes?',
-                html: '<strong>' + nombre.trim() + '</strong> ya está registrado en el sistema pero aún no es proveedor.<br><br>¿Deseás crear el proveedor reutilizando estos datos?',
+                html: '<strong>' + nombre.trim() + '</strong> ya está registrado en el sistema pero aún no es proveedor.<br><br>¿Deseas crear el proveedor reutilizando estos datos?',
                 icon: 'question',
                 showCancelButton: true,
                 confirmButtonText: '<i class="ri-check-line me-1"></i>Sí, crear proveedor',
@@ -682,6 +836,16 @@ $(document).ready(function () {
             if (data.tasa_cambio) {
                 $('#c-tasa').val(parseFloat(data.tasa_cambio).toFixed(4)).prop('readonly', true).addClass('bg-light');
                 $('#c-tasa-hint').html('<i class="ri-history-line me-1"></i>Tasa con la que se registró esta compra.');
+                // Recuperar la fecha BCV del snapshot: solo si el valor guardado
+                // coincide con la tasa oficial vigente a la fecha de la compra.
+                window.__cTasaFechaFmt = null;
+                $.get('/compras/tasa', { fecha: data.fecha_compra }, function (r) {
+                    if (r.encontrada && Math.abs(parseFloat(r.valor) - parseFloat(data.tasa_cambio)) < 0.0001) {
+                        window.__cTasaFechaFmt = r.fecha_bcv_fmt;
+                        $('#c-tasa-hint').html('<i class="ri-history-line me-1"></i>Tasa BCV oficial del ' + r.fecha_bcv_fmt + ' con la que se registró esta compra.');
+                        recalcular();
+                    }
+                });
             } else {
                 $('#c-tasa').val('').prop('readonly', false).removeClass('bg-light');
                 $('#c-tasa-hint').html('<i class="ri-error-warning-line text-danger me-1"></i>Esta compra no tiene tasa registrada. Ingresala.');
@@ -694,9 +858,11 @@ $(document).ready(function () {
                 data.items.forEach(function (item) {
                     addItemRow();
                     var $row = $('#c-items-tbody tr:last');
-                    var $sel = $row.find('.c-insumo');
-                    $sel.val(item.insumo_id);
-                    var unid = $sel.find('option:selected').data('unidad') || '';
+                    // Fijar el insumo guardado SIN precargar costo/IVA (conservamos los
+                    // valores con que se registró la línea, no los del maestro).
+                    var ins = findInsumo(item.insumo_id);
+                    if (ins) setInsumoFila($row, ins);
+                    var unid = ins ? ins.unidad_medida : '';
                     $row.find('.c-unit-addon').text(unid ? String(unid).substring(0, 4) : '—');
                     $row.find('.c-cantidad').val(parseFloat(item.cantidad));
                     // Mostrar el costo en Bs (formato venezolano) tal como se tecleó.
@@ -710,6 +876,60 @@ $(document).ready(function () {
                 recalcular();
             }
         }
+
+        // ── Precarga desde "Crear compra con faltantes" (Cotización/Pedido) ──
+        // Abre el modal en modo Nueva Compra y carga los insumos faltantes con la
+        // cantidad sugerida. El usuario ajusta proveedor/costos y guarda borrador.
+        // NO llama resetModal() tras abrir para conservar la tasa BCV ya cargada
+        // por el handler show.bs.modal.
+        window.compraPrefillFaltantes = function (insumos) {
+            if (!Array.isArray(insumos) || !insumos.length) return;
+            var modalEl = document.getElementById('createCompraModal');
+            if (!modalEl) return;
+
+            var aplicar = function () {
+                $('#c-edit-id').val('');
+                $('#compraModalTitle').html('<i class="ri-shopping-bag-3-line me-1"></i>Nueva Compra');
+                $('#c-items-tbody').empty();
+                rowCount = 0;
+
+                var agregadas = 0, noMapeados = [];
+                insumos.forEach(function (f) {
+                    var ins = findInsumo(f.insumo_id);
+                    if (!ins) { noMapeados.push(f.nombre || ('#' + f.insumo_id)); return; }
+                    var $tr = addItemRow(false);
+                    selectInsumoEnFila($tr, ins);
+                    var qty = parseFloat(f.cantidad) || 0;
+                    if (qty > 0) $tr.find('.c-cantidad').val(qty).trigger('input');
+                    agregadas++;
+                });
+                updateEmpty();
+                recalcular();
+                showStep(1);
+
+                if (window.Swal) {
+                    Swal.fire({
+                        icon: agregadas ? 'info' : 'warning',
+                        title: agregadas ? 'Insumos faltantes precargados' : 'Sin coincidencias en el catálogo',
+                        html: agregadas
+                            ? ('Se cargaron <b>' + agregadas + '</b> insumo(s) faltante(s). Revisa el <b>proveedor</b> y los costos, luego guarda como borrador.'
+                               + (noMapeados.length ? '<br><small class="text-muted">No mapeados: ' + noMapeados.join(', ') + '</small>' : ''))
+                            : 'No se pudieron mapear los insumos faltantes al catálogo de insumos.',
+                        timer: agregadas ? 4500 : 3500, showConfirmButton: false
+                    });
+                }
+            };
+
+            if (modalEl.classList.contains('show')) {
+                aplicar();
+            } else {
+                modalEl.addEventListener('shown.bs.modal', function () {
+                    // Respiro para que aplicarTasaPorFecha (show.bs.modal) corra antes.
+                    setTimeout(aplicar, 60);
+                }, { once: true });
+                bootstrap.Modal.getOrCreateInstance(modalEl).show();
+            }
+        };
 
         // Estado inicial: fija display:none inline en la card (vence al display:flex)
         renderProveedorSeleccionado();
@@ -826,31 +1046,99 @@ $(document).ready(function () {
         });
 
         // Toggle Jurídico / Natural según el select de tipo
+        // El TIPO se deriva del prefijo del documento unificado (igual al maestro):
+        // V/E → natural, J/G → jurídico. El select de tipo queda read-only.
         function cprToggleCampos() {
-            var tipo = $('#cpr-tipo-proveedor-field').val();
+            var prefix = $('#cpr-doc-prefix-field').val() || 'V-';
+            var tipo = (prefix === 'J-' || prefix === 'G-') ? 'juridico' : 'natural';
             var esJur = tipo === 'juridico';
-            $('#cpr-campos-juridico, .cpr-tipo-juridico').toggle(esJur);
-            $('#cpr-campos-natural, .cpr-tipo-natural').toggle(!esJur);
+
+            $('#cpr-tipo-proveedor-field').val(tipo).trigger('change');
+            $('#cpr-campos-juridico').toggle(esJur);
+            $('#cpr-campos-natural').toggle(!esJur);
+
+            // Maxlength dinámico: RIF (J/G) 9 dígitos, cédula (V/E) 8.
+            var maxLen = esJur ? 9 : 8;
+            var $doc = $('#cpr-doc-number-field');
+            $doc.attr('maxlength', String(maxLen));
+            if (($doc.val() || '').length > maxLen) $doc.val($doc.val().slice(0, maxLen));
         }
-        $('#cpr-tipo-proveedor-field').on('change', cprToggleCampos);
+        $('#cpr-doc-prefix-field').on('change', cprToggleCampos);
+        $('#cpr-doc-number-field').on('input', function () {
+            var maxLen = ($('#cpr-doc-prefix-field').val() === 'V-' || $('#cpr-doc-prefix-field').val() === 'E-') ? 8 : 9;
+            this.value = this.value.replace(/[^0-9]/g, '').slice(0, maxLen);
+        });
+
+        function validarCprForm() {
+            var valido = true;
+            var tipo = $('#cpr-tipo-proveedor-field').val();
+            if (!tipo) {
+                marcarInvalido($('#cpr-tipo-proveedor-field'), 'Seleccione el tipo de proveedor.'); valido = false;
+            } else { marcarValido($('#cpr-tipo-proveedor-field')); }
+            if (tipo === 'juridico') {
+                if (!$('#cpr-razon-social-field').val().trim()) {
+                    marcarInvalido($('#cpr-razon-social-field'), 'La razón social es requerida.'); valido = false;
+                } else { marcarValido($('#cpr-razon-social-field')); }
+            } else if (tipo === 'natural') {
+                if (!$('#cpr-nombre-field').val().trim()) {
+                    marcarInvalido($('#cpr-nombre-field'), 'El nombre es requerido.'); valido = false;
+                } else { marcarValido($('#cpr-nombre-field')); }
+                if (!$('#cpr-apellido-field').val().trim()) {
+                    marcarInvalido($('#cpr-apellido-field'), 'El apellido es requerido.'); valido = false;
+                } else { marcarValido($('#cpr-apellido-field')); }
+            }
+            // Teléfonos del bloque activo (componente reutilizable)
+            var _cprTelRoot = document.getElementById((tipo === 'natural' ? 'cpr-nat-tel' : 'cpr-jur-tel') + '-repeater');
+            if (window.TelefonosRepeater && tipo && _cprTelRoot) {
+                var _cprTelChk = TelefonosRepeater.validate(_cprTelRoot);
+                $(_cprTelRoot).find('[data-tel-error]').toggle(!_cprTelChk.ok).text(_cprTelChk.message || '');
+                if (!_cprTelChk.ok) valido = false;
+            }
+            return valido;
+        }
+
+        // Blur/change en tiempo real — cprForm (solo valida campos del tipo activo)
+        $('#cpr-tipo-proveedor-field').on('change', function () {
+            if (!$(this).val()) marcarInvalido($(this), 'Seleccione el tipo de proveedor.');
+            else marcarValido($(this));
+        });
+        $('#cpr-razon-social-field').on('blur', function () {
+            if ($('#cpr-tipo-proveedor-field').val() !== 'juridico') return;
+            if (!$(this).val().trim()) marcarInvalido($(this), 'La razón social es requerida.');
+            else marcarValido($(this));
+        });
+        $('#cpr-nombre-field').on('blur', function () {
+            if ($('#cpr-tipo-proveedor-field').val() !== 'natural') return;
+            if (!$(this).val().trim()) marcarInvalido($(this), 'El nombre es requerido.');
+            else marcarValido($(this));
+        });
+        $('#cpr-apellido-field').on('blur', function () {
+            if ($('#cpr-tipo-proveedor-field').val() !== 'natural') return;
+            if (!$(this).val().trim()) marcarInvalido($(this), 'El apellido es requerido.');
+            else marcarValido($(this));
+        });
+        // (Los teléfonos los valida telefonos-repeater.js)
+
+        $('#crearProveedorRapidoModal').on('hidden.bs.modal', function () {
+            $('#cpr-tipo-proveedor-field, #cpr-razon-social-field, #cpr-nombre-field, #cpr-apellido-field').each(function () {
+                limpiarValidacion($(this));
+            });
+        });
 
         // Abrir el mini-modal, prellenando el documento escrito en el buscador
         $('#c-prov-create-btn').on('click', function () {
             $('#cprForm')[0].reset();
+            // Repetidores de teléfono (jurídico + natural): init + una fila vacía
+            ['cpr-jur-tel', 'cpr-nat-tel'].forEach(function (tid) {
+                var r = document.getElementById(tid + '-repeater');
+                if (window.TelefonosRepeater && r) { TelefonosRepeater.init(r); TelefonosRepeater.load(r, []); }
+            });
             $('#cpr-ciudad-jur-field, #cpr-ciudad-field').empty()
                 .append('<option value="">Primero seleccione un estado</option>');
 
-            var prefix = $('#c-prov-doc-prefix').val();
-            var number = $('#c-prov-doc-number').val().trim();
-            if (prefix === 'V-' || prefix === 'E-') {
-                $('#cpr-tipo-proveedor-field').val('natural');
-                $('#cpr-tipo-documento-field').val(prefix);
-                $('#cpr-documento-identidad-field').val(number);
-            } else {
-                $('#cpr-tipo-proveedor-field').val('juridico');
-                $('#cpr-rif-prefix-field').val(prefix === 'G-' ? 'G-' : 'J-');
-                $('#cpr-rif-number-field').val(number);
-            }
+            // Documento unificado: prellenar prefijo + número; el tipo se deriva solo.
+            $('#cpr-doc-prefix-field').val($('#c-prov-doc-prefix').val() || 'V-');
+            $('#cpr-doc-number-field').val($('#c-prov-doc-number').val().trim());
             cprToggleCampos();
             $('#c-prov-autocomplete').empty().hide();
             $('#crearProveedorRapidoModal').modal('show');
@@ -858,14 +1146,15 @@ $(document).ready(function () {
 
         $('#cprForm').on('submit', function (e) {
             e.preventDefault();
+            if (!validarCprForm()) return;
             var tipo = $('#cpr-tipo-proveedor-field').val();
             var payload = { _token: CSRF, tipo_proveedor: tipo };
 
             if (tipo === 'juridico') {
-                payload.rif               = $('#cpr-rif-prefix-field').val() + $('#cpr-rif-number-field').val().trim();
+                payload.rif               = $('#cpr-doc-prefix-field').val() + $('#cpr-doc-number-field').val().trim();
                 payload.razon_social      = $('#cpr-razon-social-field').val().trim();
                 payload.direccion         = $('#cpr-direccion-jur-field').val().trim();
-                payload.telefono          = $('#cpr-telefono-jur-prefix-field').val() + '-' + $('#cpr-telefono-jur-number-field').val().trim();
+                payload.telefonos         = window.TelefonosRepeater ? TelefonosRepeater.collect(document.getElementById('cpr-jur-tel-repeater')) : [];
                 payload.email             = $('#cpr-email-jur-field').val().trim();
                 payload.contacto          = $('#cpr-contacto-field').val().trim() || null;
                 payload.telefono_contacto = $('#cpr-telefono-contacto-number-field').val().trim()
@@ -874,12 +1163,12 @@ $(document).ready(function () {
                 payload.estado_territorial = $('#cpr-estado-territorial-jur-field').val();
                 payload.ciudad             = $('#cpr-ciudad-jur-field').val();
             } else {
-                payload.tipo_documento      = $('#cpr-tipo-documento-field').val();
-                payload.documento_identidad = $('#cpr-documento-identidad-field').val().trim();
+                payload.tipo_documento      = $('#cpr-doc-prefix-field').val();
+                payload.documento_identidad = $('#cpr-doc-number-field').val().trim();
                 payload.nombre              = $('#cpr-nombre-field').val().trim();
                 payload.apellido            = $('#cpr-apellido-field').val().trim();
                 payload.direccion           = $('#cpr-direccion-nat-field').val().trim();
-                payload.telefono            = $('#cpr-telefono-nat-prefix-field').val() + '-' + $('#cpr-telefono-nat-number-field').val().trim();
+                payload.telefonos           = window.TelefonosRepeater ? TelefonosRepeater.collect(document.getElementById('cpr-nat-tel-repeater')) : [];
                 payload.email               = $('#cpr-email-nat-field').val().trim();
                 payload.estado_territorial  = $('#cpr-estado-territorial-field').val();
                 payload.ciudad              = $('#cpr-ciudad-field').val();
@@ -914,15 +1203,22 @@ $(document).ready(function () {
         // ════════════════════════════════════════════════════════════════════
         //  MINI-MODAL: crear insumo nuevo inline (alta rápida del maestro)
         // ════════════════════════════════════════════════════════════════════
-        var cirTargetSelect = null;
+        var cirTargetRow = null;
 
-        // Abrir desde el "+" de una fila — recuerda el <select> a auto-seleccionar
+        // Abrir desde el "+" de una fila — recuerda la fila a auto-seleccionar
         $(document).on('click', '.c-add-insumo-btn', function () {
-            cirTargetSelect = $('#c-ins-' + $(this).data('row'));
+            cirTargetRow = $(this).closest('tr');
             $('#cirForm')[0].reset();
-            $('#cir-nombre-field, #cir-codigo-field, #cir-tipo-field, #cir-unidad-field, #cir-costo-field')
-                .removeClass('is-invalid');
+            $('#cir-nombre-field, #cir-tipo-field, #cir-unidad-field, #cir-costo-field').each(function () {
+                limpiarValidacion($(this));
+            });
             $('#crearInsumoRapidoModal').modal('show');
+        });
+
+        $('#crearInsumoRapidoModal').on('hidden.bs.modal', function () {
+            $('#cir-nombre-field, #cir-tipo-field, #cir-unidad-field, #cir-costo-field').each(function () {
+                limpiarValidacion($(this));
+            });
         });
 
         // Código: solo MAYÚSCULAS y alfanumérico (text-uppercase es solo visual)
@@ -930,22 +1226,53 @@ $(document).ready(function () {
             this.value = this.value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
         });
 
+        // Blur/change en tiempo real — cirForm
+        $('#cir-nombre-field').on('blur', function () {
+            if ($(this).val().trim().length < 3) marcarInvalido($(this), 'El nombre debe tener al menos 3 caracteres.');
+            else marcarValido($(this));
+        });
+        $('#cir-tipo-field').on('change', function () {
+            if (!$(this).val()) marcarInvalido($(this), 'Seleccione el tipo de insumo.');
+            else marcarValido($(this));
+        });
+        $('#cir-unidad-field').on('change', function () {
+            if (!$(this).val()) marcarInvalido($(this), 'Seleccione la unidad de medida.');
+            else marcarValido($(this));
+        });
+        $('#cir-costo-field').on('blur', function () {
+            var v = parseFloat($(this).val());
+            if (isNaN(v) || v <= 0) marcarInvalido($(this), 'Ingrese un costo válido (mayor a 0).');
+            else marcarValido($(this));
+        });
+
+        function validarCirForm() {
+            var valido = true;
+            if ($('#cir-nombre-field').val().trim().length < 3) {
+                marcarInvalido($('#cir-nombre-field'), 'El nombre debe tener al menos 3 caracteres.'); valido = false;
+            } else { marcarValido($('#cir-nombre-field')); }
+            if (!$('#cir-tipo-field').val()) {
+                marcarInvalido($('#cir-tipo-field'), 'Seleccione el tipo de insumo.'); valido = false;
+            } else { marcarValido($('#cir-tipo-field')); }
+            if (!$('#cir-unidad-field').val()) {
+                marcarInvalido($('#cir-unidad-field'), 'Seleccione la unidad de medida.'); valido = false;
+            } else { marcarValido($('#cir-unidad-field')); }
+            var costo = parseFloat($('#cir-costo-field').val());
+            if (isNaN(costo) || costo <= 0) {
+                marcarInvalido($('#cir-costo-field'), 'Ingrese un costo válido (mayor a 0).'); valido = false;
+            } else { marcarValido($('#cir-costo-field')); }
+            return valido;
+        }
+
         $('#cirForm').on('submit', function (e) {
             e.preventDefault();
+
+            if (!validarCirForm()) return;
 
             var nombre = $('#cir-nombre-field').val().trim();
             var codigo = $('#cir-codigo-field').val().trim();
             var tipo   = $('#cir-tipo-field').val();
             var unidad = $('#cir-unidad-field').val();
             var costo  = parseFloat($('#cir-costo-field').val());
-
-            var ok = true;
-            function flag(sel, bad) { $(sel).toggleClass('is-invalid', bad); if (bad) ok = false; }
-            flag('#cir-nombre-field', nombre.length < 3);
-            flag('#cir-tipo-field', !tipo);
-            flag('#cir-unidad-field', !unidad);
-            flag('#cir-costo-field', isNaN(costo) || costo <= 0);
-            if (!ok) return;
 
             var payload = {
                 _token:           CSRF,
@@ -972,7 +1299,7 @@ $(document).ready(function () {
                     $btn.removeAttr('disabled').html('<i class="ri-save-line me-1"></i>Guardar y seleccionar');
                     var ins = resp.insumo;
                     if (ins) {
-                        // Disponible para esta y futuras filas, sin recargar
+                        // Disponible para esta y futuras búsquedas, sin recargar
                         INSUMOS.push({
                             id:             ins.id,
                             nombre:         ins.nombre,
@@ -982,9 +1309,9 @@ $(document).ready(function () {
                             costo_unitario: ins.costo_unitario,
                             aplica_iva:     ins.aplica_iva
                         });
-                        rebuildAllInsumoSelects();
-                        if (cirTargetSelect && cirTargetSelect.length) {
-                            cirTargetSelect.val(ins.id).trigger('change');
+                        // Auto-seleccionar el insumo recién creado en su fila origen.
+                        if (cirTargetRow && cirTargetRow.length) {
+                            selectInsumoEnFila(cirTargetRow, ins);
                         }
                     }
                     $('#crearInsumoRapidoModal').modal('hide');

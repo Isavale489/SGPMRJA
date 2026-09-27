@@ -1,6 +1,9 @@
 <?php
 
 use App\Http\Controllers\CompraController;
+use App\Http\Controllers\ConfiguracionController;
+use App\Http\Controllers\DisponibilidadInsumoController;
+use App\Http\Controllers\ImpuestoController;
 use App\Http\Controllers\DetalleOrdenInsumoController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\InsumoController;
@@ -8,10 +11,12 @@ use App\Http\Controllers\TipoInsumoController;
 use App\Http\Controllers\MovimientoInsumoController;
 use App\Http\Controllers\NotificacionController;
 use App\Http\Controllers\OrdenProduccionController;
+use App\Http\Controllers\ControlCalidadController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProductoController;
 use App\Http\Controllers\ProveedorController;
 use App\Http\Controllers\ReportesController;
+use App\Http\Controllers\SeguridadController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\PagesController;
 use App\Http\Controllers\PedidoController;
@@ -44,7 +49,11 @@ Route::get('/portfolio', [PagesController::class, 'portfolio'])->name('portfolio
 // ============================================
 // RUTAS PROTEGIDAS (Requieren autenticación)
 // ============================================
-Route::middleware(['auth', 'throttle:60,1', 'active.user', 'recovery.questions.required'])->group(function () {
+// Autorización por permisos (FEAT-005 / TASK-038): el middleware 'permiso' resuelve
+// el permiso requerido desde el nombre de la ruta vía config/modulos.php (deny-by-default).
+// Sustituye a los antiguos grupos role:Administrador y role:Administrador,Supervisor:
+// el Administrador entra por Gate::before; el Supervisor y demás roles, por sus filas en permiso_rol.
+Route::middleware(['auth', 'throttle:60,1', 'active.user', 'recovery.questions.required', 'permiso'])->group(function () {
 
     // Dashboard - Acceso para todos los usuarios autenticados
     Route::get('/dashboard', [HomeController::class, 'index'])->name('dashboard');
@@ -54,12 +63,22 @@ Route::middleware(['auth', 'throttle:60,1', 'active.user', 'recovery.questions.r
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::patch('/profile/recovery-questions', [ProfileController::class, 'updateRecoveryQuestions'])
         ->name('profile.recovery-questions.update');
-    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    Route::post('/profile/avatar', [ProfileController::class, 'updateAvatar'])->name('profile.avatar.update');
 
     // ============================================
-    // SOLO ADMINISTRADOR (CRUD de escritura)
+    // CRUD DE ESCRITURA (antes role:Administrador) — ahora gateado por 'permiso'
+    // vía config/modulos.php (acciones 'gestionar' / módulos solo-admin).
     // ============================================
-    Route::middleware('role:Administrador')->group(function () {
+        // Configuración del sistema (FEAT-004)
+        Route::get('configuracion', [ConfiguracionController::class, 'index'])->name('configuracion.index');
+        Route::put('configuracion/{modulo}', [ConfiguracionController::class, 'update'])->name('configuracion.update');
+        Route::delete('configuracion/{modulo}/{clave}', [ConfiguracionController::class, 'reset'])->name('configuracion.reset');
+
+        // Impuestos (tabla `impuesto`) — gestionados desde el panel de configuración
+        Route::post('configuracion-impuestos', [ImpuestoController::class, 'store'])->name('impuestos.store');
+        Route::put('configuracion-impuestos/{impuesto}', [ImpuestoController::class, 'update'])->name('impuestos.update');
+        Route::delete('configuracion-impuestos/{impuesto}', [ImpuestoController::class, 'destroy'])->name('impuestos.destroy');
+
         // Usuarios
         Route::resource('users', UserController::class);
         Route::post('users/{id}/restore', [UserController::class, 'restore'])->name('users.restore');
@@ -83,7 +102,8 @@ Route::middleware(['auth', 'throttle:60,1', 'active.user', 'recovery.questions.r
         Route::get('personas-search', [PersonaController::class, 'search'])->name('personas.search');
 
         // Empleados
-        Route::resource('empleados', EmpleadoController::class);
+        // 'create' excluido: el alta se hace por el modal del index (no hay página aparte)
+        Route::resource('empleados', EmpleadoController::class)->except(['create']);
         Route::post('empleados/{id}/restore', [EmpleadoController::class, 'restore'])->name('empleados.restore');
         Route::get('empleados-data', [EmpleadoController::class, 'getEmpleados'])->name('empleados.data');
         Route::get('empleados-check-documento', [EmpleadoController::class, 'checkDocumento'])->name('empleados.check-documento');
@@ -134,24 +154,27 @@ Route::middleware(['auth', 'throttle:60,1', 'active.user', 'recovery.questions.r
         Route::delete('proveedores/{proveedor}', [ProveedorController::class, 'destroy'])->name('proveedores.destroy');
         Route::get('proveedores/{proveedor}/edit', [ProveedorController::class, 'edit'])->name('proveedores.edit');
         Route::post('proveedores/{id}/restore', [ProveedorController::class, 'restore'])->name('proveedores.restore');
-    });
 
     // ============================================
-    // ADMIN Y SUPERVISOR (Lectura + CRUD compartido)
+    // LECTURA + CRUD COMPARTIDO (antes role:Administrador,Supervisor) — ahora
+    // gateado por 'permiso' vía config/modulos.php (acciones 'ver'/'gestionar'/etc.).
     // ============================================
-    Route::middleware('role:Administrador,Supervisor')->group(function () {
         // Pedidos (lectura)
         Route::get('pedidos', [PedidoController::class, 'index'])->name('pedidos.index');
         Route::get('pedidos-data', [PedidoController::class, 'getPedidos'])->name('pedidos.data');
         Route::get('pedidos/cotizaciones-disponibles', [PedidoController::class, 'getCotizacionesDisponibles'])->name('pedidos.cotizacionesDisponibles');
         Route::get('pedidos/reporte/pdf', [PedidoController::class, 'reportePdf'])->name('pedidos.reporte.pdf');
         Route::get('pedidos/reporte', [PedidoController::class, 'reporteGeneral'])->name('pedidos.reporteGeneral');
+        // Proyección de insumos para producción (aviso NO bloqueante de stock).
+        Route::post('pedidos/proyeccion-insumos', [DisponibilidadInsumoController::class, 'proyectarLineas'])->name('pedidos.proyeccionInsumos');
         Route::get('pedidos/{pedido}', [PedidoController::class, 'show'])->name('pedidos.show');
         Route::get('pedidos/{pedido}/pdf', [PedidoController::class, 'pedidoPdf'])->name('pedidos.pdf');
 
         // Cotizaciones (lectura + conversión)
         Route::get('cotizaciones', [CotizacionController::class, 'index'])->name('cotizaciones.index');
         Route::get('cotizaciones-data', [CotizacionController::class, 'getCotizaciones'])->name('cotizaciones.data');
+        // Proyección en vivo de insumos desde el wizard (líneas aún sin guardar).
+        Route::post('cotizaciones/proyeccion-insumos', [DisponibilidadInsumoController::class, 'proyectarLineas'])->name('cotizaciones.proyeccionInsumos');
         Route::get('cotizaciones/reporte/pdf', [CotizacionController::class, 'reportePdf'])->name('cotizaciones.reporte.pdf');
         Route::get('cotizaciones/reporte', [CotizacionController::class, 'reporteGeneral'])->name('cotizaciones.reporteGeneral');
         Route::get('cotizaciones/{cotizacion}', [CotizacionController::class, 'show'])->name('cotizaciones.show');
@@ -173,6 +196,7 @@ Route::middleware(['auth', 'throttle:60,1', 'active.user', 'recovery.questions.r
 
         // Logos
         Route::get('logos-data', [LogoController::class, 'getLogos'])->name('logos.data');
+        Route::post('logos', [LogoController::class, 'store'])->name('logos.store');
 
         // Colores
         Route::get('colores-data', [ColorController::class, 'getColores'])->name('colores.data');
@@ -245,8 +269,10 @@ Route::middleware(['auth', 'throttle:60,1', 'active.user', 'recovery.questions.r
         // Órdenes de Producción
         // (rutas específicas ANTES del resource para que no colisionen con ordenes/{orden})
         Route::get('ordenes/pedidos-disponibles', [OrdenProduccionController::class, 'pedidosDisponibles'])->name('ordenes.pedidos-disponibles');
+        Route::post('ordenes/proyeccion-insumos', [OrdenProduccionController::class, 'proyeccionInsumos'])->name('ordenes.proyeccionInsumos');
         Route::get('ordenes/por-empleado/{empleado}', [OrdenProduccionController::class, 'ordenesPorEmpleado'])->name('ordenes.por-empleado');
         Route::get('ordenes-data', [OrdenProduccionController::class, 'getOrdenes'])->name('ordenes.data');
+        Route::get('ordenes-pedidos-data', [OrdenProduccionController::class, 'getPedidosOrdenes'])->name('ordenes.pedidos-data');
         Route::post('ordenes/batch', [OrdenProduccionController::class, 'storeBatch'])->name('ordenes.batch');
         Route::post('ordenes/{orden}/avance', [OrdenProduccionController::class, 'registrarAvance'])->name('ordenes.avance');
         Route::patch('ordenes/{orden}/cancelar', [OrdenProduccionController::class, 'cancelar'])->name('ordenes.cancelar');
@@ -256,7 +282,16 @@ Route::middleware(['auth', 'throttle:60,1', 'active.user', 'recovery.questions.r
         Route::delete('ordenes/{orden}/subordenes/{subId}', [OrdenProduccionController::class, 'destroySubOrden'])->name('ordenes.subordenes.destroy');
         Route::patch('ordenes/{orden}/subordenes/{subId}/estado', [OrdenProduccionController::class, 'updateSubOrdenEstado'])->name('ordenes.subordenes.estado');
         Route::get('ordenes/reporte/pdf', [OrdenProduccionController::class, 'reportePdf'])->name('ordenes.reporte.pdf');
+        Route::get('ordenes/{orden}/pdf', [OrdenProduccionController::class, 'ordenPdf'])->name('ordenes.pdf');
         Route::resource('ordenes', OrdenProduccionController::class);
+
+        // Control de Calidad (FEAT-006) — inspección de órdenes finalizadas
+        Route::get('calidad', [ControlCalidadController::class, 'index'])->name('calidad.index');
+        Route::get('calidad/reporte/pdf', [ControlCalidadController::class, 'reportePdf'])->name('calidad.reporte.pdf');
+        Route::get('calidad-data', [ControlCalidadController::class, 'getOrdenesCalidad'])->name('calidad.data');
+        Route::get('calidad-pedidos-data', [ControlCalidadController::class, 'getPedidosCalidad'])->name('calidad.pedidos-data');
+        Route::get('calidad/{orden}/detalle', [ControlCalidadController::class, 'detalle'])->name('calidad.detalle');
+        Route::post('calidad/{orden}/inspeccionar', [ControlCalidadController::class, 'inspeccionar'])->name('calidad.inspeccionar');
 
         // Control de Insumos por Orden
         Route::get('ordenes/{orden}/insumos', [DetalleOrdenInsumoController::class, 'index'])->name('ordenes.insumos.index');
@@ -271,6 +306,10 @@ Route::middleware(['auth', 'throttle:60,1', 'active.user', 'recovery.questions.r
         Route::put('compras/{compra}', [CompraController::class, 'update'])->name('compras.update');
         Route::get('compras/data', [CompraController::class, 'getCompras'])->name('compras.data');
         Route::get('compras/tasa', [CompraController::class, 'getTasa'])->name('compras.tasa');
+        // Panel de existencias dentro de /compras: reusa el data-source de
+        // movimiento-insumo, pero con nombre de ruta propio para que el
+        // permiso 'compras.ver' lo cubra (CheckPermiso mapea por nombre).
+        Route::get('compras/existencias-data', [MovimientoInsumoController::class, 'getExistencias'])->name('compras.existencias.data');
         Route::get('compras/reporte/pdf', [CompraController::class, 'reportePdf'])->name('compras.reporte.pdf');
         Route::get('compras/{compra}/editar-datos', [CompraController::class, 'getParaEditar'])->name('compras.editar-datos');
         Route::get('compras/{compra}/detalle', [CompraController::class, 'getDetalle'])->name('compras.detalle');
@@ -288,8 +327,8 @@ Route::middleware(['auth', 'throttle:60,1', 'active.user', 'recovery.questions.r
         Route::get('movimiento-insumo/reporte/pdf', [MovimientoInsumoController::class, 'reportePdf'])->name('movimiento-insumo.reporte.pdf');
         Route::get('movimiento-insumo/alertas', [MovimientoInsumoController::class, 'alertasStock'])->name('movimiento-insumo.alertas');
         Route::get('movimiento-insumo/historial/{id}', [MovimientoInsumoController::class, 'historialInsumo'])->name('movimiento-insumo.historial');
+        Route::get('movimiento-insumo/rotacion', [MovimientoInsumoController::class, 'analisisRotacion'])->name('movimiento-insumo.rotacion');
         Route::post('movimiento-insumo', [MovimientoInsumoController::class, 'store'])->name('movimiento-insumo.store');
-        Route::post('movimiento-insumo/masivo', [MovimientoInsumoController::class, 'storeMasivo'])->name('movimiento-insumo.masivo');
         Route::get('movimiento-insumo/{id}', [MovimientoInsumoController::class, 'show'])->name('movimiento-insumo.show');
 
         // Notificaciones (campanita del header)
@@ -297,12 +336,30 @@ Route::middleware(['auth', 'throttle:60,1', 'active.user', 'recovery.questions.r
 
         // Reportes
         Route::prefix('reportes')->group(function () {
+            Route::get('/general', [ReportesController::class, 'general'])->name('reportes.general');
             Route::get('/produccion', [ReportesController::class, 'produccion'])->name('reportes.produccion');
             Route::get('/eficiencia', [ReportesController::class, 'eficiencia'])->name('reportes.eficiencia');
             Route::get('/insumos', [ReportesController::class, 'insumos'])->name('reportes.insumos');
             Route::get('/empleados', [ReportesController::class, 'empleados'])->name('reportes.empleados');
         });
-    });
 });
+
+// ============================================
+// PANEL DE SEGURIDAD (FEAT-005 / TASK-039) — SOLO Administrador.
+// Deliberadamente FUERA del middleware 'permiso' y AUSENTE de config/modulos.php:
+// el acceso al panel no se gobierna por la matriz dinámica, para que nadie pueda
+// otorgárselo a sí mismo (anti-escalada). Gate 'acceso-seguridad' = admin por Gate::before.
+// ============================================
+Route::middleware(['auth', 'throttle:60,1', 'active.user', 'recovery.questions.required', 'can:acceso-seguridad'])
+    ->prefix('configuracion/seguridad')
+    ->name('seguridad.')
+    ->group(function () {
+        Route::get('/', [SeguridadController::class, 'index'])->name('index');
+        Route::post('roles', [SeguridadController::class, 'storeRol'])->name('roles.store');
+        Route::put('roles/{rol}', [SeguridadController::class, 'updateRol'])->name('roles.update');
+        Route::delete('roles/{rol}', [SeguridadController::class, 'destroyRol'])->name('roles.destroy');
+        Route::get('permisos/{rol}', [SeguridadController::class, 'getPermisos'])->name('permisos.get');
+        Route::put('permisos/{rol}', [SeguridadController::class, 'guardarMatriz'])->name('permisos.update');
+    });
 
 require __DIR__ . '/auth.php';

@@ -1,6 +1,6 @@
 ---
 type: feature        # feature | fix
-base_branch: enmanuel
+base_branch: dev
 ---
 
 # Feature Specification: <Nombre de la feature>
@@ -126,7 +126,7 @@ Schema::create('control_calidad', function (Blueprint $table) {
 - [ ] Vista respeta estándares visuales: card, modal, DataTable, validaciones JS
 - [ ] Sidebar actualizado con el ítem nuevo si aplica (ver `docs/conventions/sidebar-colors.md`)
 - [ ] Dark mode funcional sin estilos inline
-- [ ] PR mergeada a `enmanuel`
+- [ ] PR mergeada a `dev`
 - [ ] Doc nuevo en `docs/conventions/` si introduce patrón reusable
 
 ---

@@ -55,7 +55,7 @@
                             <div class="navy-header-search">
                                 <i class="ri-search-line"></i>
                                 <input type="text" class="navy-search-input" id="custom-search-input"
-                                    placeholder="Buscar orden..." autocomplete="off">
+                                    placeholder="Buscar por pedido o cliente..." autocomplete="off">
                             </div>
                             <div class="navy-header-divider"></div>
                             <button class="navy-filter-btn collapsed" type="button"
@@ -111,16 +111,16 @@
                             </div>
                         </div>
                     </div>
+                    {{-- Una fila por pedido; el detalle de sus órdenes vive en el
+                         modal "Ver órdenes" (pedido_ordenes.blade.php) --}}
                     <table id="ordenes-table" class="table table-bordered table-striped align-middle dt-transactional table-operativa">
                         <thead>
                             <tr>
-                                <th>Nro. Orden</th>
-                                <th>Nro. Pedido</th>
-                                <th>Producto</th>
-                                <th>Cant. Solicitada</th>
-                                <th>Progreso</th>
-                                <th>Estado</th>
-                                <th>Acciones</th>
+                                <th>Pedido</th>
+                                <th>Cliente</th>
+                                <th class="text-center">Órdenes</th>
+                                <th class="text-center">Progreso Global</th>
+                                <th class="text-center">Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -132,6 +132,7 @@
     </div>
 
     @include('admin.ordenes.modals.mis_ordenes')
+    @include('admin.ordenes.modals.pedido_ordenes')
     @include('admin.ordenes.modals.create')
     @include('admin.ordenes.modals.insumo_add')
     @include('admin.ordenes.modals.view')
@@ -168,12 +169,20 @@
                             <input type="date" class="form-control" id="pdf-fecha-hasta">
                         </div>
                     </div>
+                    <div class="mt-3">
+                        <label class="form-label fw-semibold" for="pdf-filter-orden">Ordenar por</label>
+                        <select class="form-select" id="pdf-filter-orden">
+                            <option value="recientes">Más recientes</option>
+                            <option value="progreso_desc">Mayor progreso</option>
+                            <option value="progreso_asc">Menor progreso</option>
+                        </select>
+                    </div>
                 </div>
                 <div class="modal-footer bg-light border-0">
                     <button type="button" class="btn btn-light" data-bs-dismiss="modal">
                         <i class="ri-close-line me-1"></i>Cancelar
                     </button>
-                    <button type="button" class="btn btn-danger" id="btn-generar-pdf">
+                    <button type="button" class="btn btn-danger" id="btn-generar-pdf" data-allow-future="1">
                         <i class="ri-file-pdf-fill me-1"></i>Generar PDF
                     </button>
                 </div>
@@ -202,6 +211,7 @@
     <script src="https://cdn.datatables.net/buttons/2.2.2/js/buttons.colVis.min.js"></script>
     <script src="{{ URL::asset('assets/libs/sweetalert2/sweetalert2.min.js') }}"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script src="{{ asset('assets/js/proyeccion-insumos.js') }}"></script>
 
     @include('admin.ordenes.scripts.main')
     @include('admin.ordenes.scripts.subordenes')
@@ -213,14 +223,17 @@
             var estado = $('#pdf-filter-estado').val();
             var fdesde = $('#pdf-fecha-desde').val();
             var fhasta = $('#pdf-fecha-hasta').val();
+            var orden  = $('#pdf-filter-orden').val();
             if (estado) params.push('estado=' + encodeURIComponent(estado));
             if (fdesde) params.push('fecha_desde=' + encodeURIComponent(fdesde));
             if (fhasta) params.push('fecha_hasta=' + encodeURIComponent(fhasta));
+            if (orden && orden !== 'recientes') params.push('orden=' + encodeURIComponent(orden));
             window.open(baseUrl + (params.length ? '?' + params.join('&') : ''), '_blank');
             bootstrap.Modal.getInstance(document.getElementById('pdfExportModal'))?.hide();
         });
         $('#pdfExportModal').on('show.bs.modal', function () {
             $('#pdf-filter-estado, #pdf-fecha-desde, #pdf-fecha-hasta').val('');
+            $('#pdf-filter-orden').val('recientes');
         });
     </script>
 @endpush

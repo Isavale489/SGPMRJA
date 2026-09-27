@@ -138,8 +138,8 @@ class ClienteFakeSeeder extends Seeder
         foreach ($clientes as $data) {
             // 1. Crear Persona
             $persona = Persona::create([
-                'nombre' => $data['nombre'],
-                'apellido' => $data['apellido'],
+                // Identidad consolidada en `nombre` (natural: nombre+apellido; jurídico: razón social)
+                'nombre' => trim($data['nombre'] . ' ' . ($data['apellido'] ?? '')),
                 'tipo_documento' => $data['tipo_doc'],
                 'documento_identidad' => $data['doc'],
                 'email' => $data['email'],

@@ -53,36 +53,48 @@
         });
     }
 
+    function escCotSel(s) {
+        return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
     // Renderizar cotizaciones como cards
     function renderCotizaciones(cotizaciones) {
         const container = $('#cotizaciones-container');
         container.empty();
 
         cotizaciones.forEach(function (cotizacion) {
+            const nombre  = escCotSel(cotizacion.cliente_nombre);
+            const inicial = escCotSel((cotizacion.cliente_nombre || '?').trim().charAt(0).toUpperCase() || '?');
+            const nProd   = parseInt(cotizacion.cantidad_productos, 10) || 0;
+            // Equivalente Bs con la tasa pactada en la cotización (fallback: BCV vigente)
+            const bs = window.bsEquivalente ? window.bsEquivalente(cotizacion.total_raw, cotizacion.tasa_cambio_valor) : null;
+
             const card = `
                 <div class="cotizacion-card" data-cotizacion-id="${cotizacion.id}">
                     <div class="cotizacion-header">
-                        <span class="cotizacion-numero">
-                            <i class="ri-file-text-line"></i> Cotización #${cotizacion.id}
+                        <div class="ped-cell">
+                            <span class="ped-cell-ic"><i class="ri-file-list-3-line"></i></span>
+                            <span class="ped-cell-txt"><span class="ped-cell-eyebrow">Cotización</span><span class="ped-cell-num">#${cotizacion.id}</span></span>
+                        </div>
+                        <span class="wiz-client-banner wiz-client-banner--sm" title="Cliente de la cotización">
+                            <span class="wiz-client-banner-avatar">${inicial}</span>
+                            <span class="wiz-client-banner-main">
+                                <span class="wiz-client-banner-eyebrow">Cliente</span>
+                                <span class="wiz-client-banner-name">${nombre}</span>
+                                <span class="wiz-client-banner-sub"><span class="wiz-client-banner-doc">${escCotSel(cotizacion.cliente_documento)}</span></span>
+                            </span>
                         </span>
-                        <span class="cotizacion-total">$${cotizacion.total}</span>
                     </div>
-                    <div class="cotizacion-info">
-                        <div class="cotizacion-info-item">
-                            <i class="ri-user-line"></i>
-                            <span>${cotizacion.cliente_nombre}</span>
+                    <div class="cot-card-body mb-1">
+                        <div class="cot-facts">
+                            <div class="cot-fact"><span class="cot-fact-label">Emitida</span><span class="cot-fact-val">${cotizacion.fecha_cotizacion}</span></div>
+                            <div class="cot-fact"><span class="cot-fact-label">Vence</span><span class="cot-fact-val">${cotizacion.fecha_validez}</span></div>
+                            <div class="cot-fact"><span class="cot-fact-label">Productos</span><span class="cot-fact-val">${nProd}</span></div>
                         </div>
-                        <div class="cotizacion-info-item">
-                            <i class="ri-calendar-line"></i>
-                            <span>${cotizacion.fecha_cotizacion}</span>
-                        </div>
-                        <div class="cotizacion-info-item">
-                            <i class="ri-bank-card-line"></i>
-                            <span>${cotizacion.cliente_documento}</span>
-                        </div>
-                        <div class="cotizacion-info-item">
-                            <i class="ri-shopping-bag-line"></i>
-                            <span>${cotizacion.cantidad_productos} producto(s)</span>
+                        <div class="cot-total-block">
+                            <span class="cot-total-eyebrow">Total</span>
+                            <span class="cotizacion-total">$${cotizacion.total}</span>
+                            ${bs ? `<span class="cot-total-bs">${bs}</span>` : ''}
                         </div>
                     </div>
                     <div class="cotizacion-footer">

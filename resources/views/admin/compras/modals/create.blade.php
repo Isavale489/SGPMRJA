@@ -56,10 +56,10 @@
                 <div class="wiz-stepper-side wiz-stepper-side--right">
                     <div class="wiz-client-banner wiz-client-banner--creator" id="c-creador-banner"
                         aria-hidden="true" title="Registrada por">
-                        <span class="wiz-client-banner-label">Registra:</span>
                         <img class="wiz-client-banner-avatar wiz-client-banner-avatar--img"
-                            src="{{ Auth::user()->avatar_url }}" alt="" />
+                            src="{{ Auth::user()->avatar_url }}" alt="" onerror="this.onerror=null;this.src=window.AMS_AVATAR_FALLBACK" />
                         <div class="wiz-client-banner-main">
+                            <span class="wiz-client-banner-eyebrow">Registrada por</span>
                             <span class="wiz-client-banner-name">{{ Auth::user()->name }}</span>
                             <div class="wiz-client-banner-sub">
                                 <span style="font-size:0.7rem; opacity:.8;">
@@ -329,8 +329,25 @@
                                                 <span id="c-recap-fecha">—</span>
                                             </div>
                                             <div class="col-12">
-                                                <small class="text-muted d-block mb-1"><i class="ri-archive-line me-1"></i>Ítems</small>
-                                                <span id="c-recap-items">0 insumo(s)</span>
+                                                <small class="text-muted d-block mb-2">
+                                                    <i class="ri-archive-line me-1"></i>Ítems
+                                                    <span class="ms-1" id="c-recap-items">0 insumo(s)</span>
+                                                </small>
+                                                {{-- Detalle de los insumos cargados (espejo de la grilla del paso 2) --}}
+                                                <div class="cot-grouped-tablewrap">
+                                                    <table class="cot-grouped-table">
+                                                        <thead>
+                                                            <tr>
+                                                                <th>Insumo</th>
+                                                                <th class="text-end" style="width:64px;">Cant.</th>
+                                                                <th class="text-end" style="width:120px;">Costo Unit.</th>
+                                                                <th class="text-center" style="width:56px;">IVA</th>
+                                                                <th class="text-end" style="width:128px;">Subtotal</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody id="c-recap-items-tbody"></tbody>
+                                                    </table>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -380,7 +397,7 @@
 
                                             <div class="c-ticket-conv">
                                                 <div class="c-ticket-conv-row">
-                                                    <span><i class="ri-exchange-dollar-line me-1"></i>Tasa aplicada</span>
+                                                    <span><i class="ri-exchange-dollar-line me-1"></i>Tasa aplicada<span id="c-resumen-tasa-fecha"></span></span>
                                                     <span>Bs <span id="c-resumen-tasa">0,0000</span> / USD</span>
                                                 </div>
                                                 <div class="c-ticket-conv-row">
@@ -390,7 +407,7 @@
                                             </div>
 
                                             <p class="c-ticket-note">
-                                                <i class="ri-information-line me-1"></i>Los costos se cargan en bolívares; el equivalente en USD usa la tasa del paso 1. El IVA ({{ (float) config('impuestos.iva', 16) }}%) aplica solo a las líneas gravables.
+                                                <i class="ri-information-line me-1"></i>Los costos se cargan en bolívares; el equivalente en USD usa la tasa del paso 1. El IVA ({{ rtrim(rtrim(number_format(\App\Models\Impuesto::tasaIva(), 2), '0'), '.') }}%) aplica solo a las líneas gravables.
                                             </p>
                                         </div>
                                     </div>
@@ -432,6 +449,7 @@
 </div>
 
 @include('admin.compras.modals.buscar-proveedor')
+@include('admin.compras.modals.buscar-insumo')
 
 {{-- ═══════════════════════════════════════════════════════════════════════════
      MINI-MODAL: Crear insumo nuevo (inline, "extensión" del maestro Insumos)
@@ -542,25 +560,18 @@
                     <div class="modal-form-section">
                         <div class="modal-form-section-title"><i class="ri-fingerprint-line"></i>Identificación</div>
                         <div class="row mb-0">
-                            <div class="col-md-6 cpr-tipo-juridico">
-                                <x-forms.input name="rif_number" label="RIF" id="cpr-rif-number-field"
-                                    placeholder="Ej: 123456789" maxlength="9" required prependRaw="true">
-                                    <x-slot:prepend>
-                                        <select class="form-select" id="cpr-rif-prefix-field" style="max-width: 80px;">
-                                            <option value="J-">J-</option>
-                                            <option value="G-">G-</option>
-                                        </select>
-                                    </x-slot:prepend>
-                                </x-forms.input>
-                            </div>
-                            <div class="col-md-6 cpr-tipo-natural" style="display: none;">
-                                <x-forms.input name="documento_identidad_number" label="Documento de Identidad"
-                                    id="cpr-documento-identidad-field" maxlength="8" placeholder="Ej: 12345678" required
+                            {{-- Documento unificado (igual al maestro de Proveedores): el prefijo
+                                 V/E/J/G determina el tipo. V/E → Natural, J/G → Jurídico. --}}
+                            <div class="col-md-6">
+                                <x-forms.input name="documento_number" label="Documento (Cédula o RIF)"
+                                    id="cpr-doc-number-field" maxlength="9" placeholder="Nro. de documento" required
                                     prependRaw="true">
                                     <x-slot:prepend>
-                                        <select class="form-select" id="cpr-tipo-documento-field" style="max-width: 80px;">
+                                        <select class="form-select" id="cpr-doc-prefix-field" style="max-width: 80px;">
                                             <option value="V-">V-</option>
                                             <option value="E-">E-</option>
+                                            <option value="J-">J-</option>
+                                            <option value="G-">G-</option>
                                         </select>
                                     </x-slot:prepend>
                                 </x-forms.input>
@@ -569,7 +580,9 @@
                                 <x-forms.select name="tipo_proveedor" label="Tipo de Proveedor" required
                                     id="cpr-tipo-proveedor-field"
                                     :options="['juridico' => 'Jurídico (Empresa)', 'natural' => 'Natural (Persona)']"
-                                    placeholder="" />
+                                    placeholder="" class="js-readonly" disabled
+                                    title="Se determina por el prefijo del documento"
+                                    hint="Se define por el prefijo del documento (V/E → Natural, J/G → Jurídico)." />
                             </div>
                         </div>
                     </div>
@@ -593,29 +606,13 @@
                         <div class="modal-form-section">
                             <div class="modal-form-section-title"><i class="ri-contacts-book-line"></i>Contacto</div>
                             <div class="row mb-0">
-                                <div class="col-md-6 mb-3">
-                                    <x-forms.input name="telefono_jur_number" label="Teléfono"
-                                        id="cpr-telefono-jur-number-field" maxlength="7" placeholder="1234567" required
-                                        prependRaw="true">
-                                        <x-slot:prepend>
-                                            <select class="form-select" id="cpr-telefono-jur-prefix-field"
-                                                style="max-width: 100px; min-width: 100px;">
-                                                <option value="0212">0212</option>
-                                                <option value="0251">0251</option>
-                                                <option value="0241">0241</option>
-                                                <option value="0255">0255</option>
-                                                <option value="0412">0412</option>
-                                                <option value="0414">0414</option>
-                                                <option value="0424" selected>0424</option>
-                                                <option value="0416">0416</option>
-                                                <option value="0426">0426</option>
-                                            </select>
-                                        </x-slot:prepend>
-                                    </x-forms.input>
-                                </div>
-                                <div class="col-md-6 mb-3">
+                                <div class="col-12 mb-3">
                                     <x-forms.input name="email_jur" label="Email" type="email"
                                         placeholder="correo@empresa.com" id="cpr-email-jur-field" />
+                                </div>
+                                <div class="col-12">
+                                    {{-- Teléfonos múltiples de la empresa (componente reutilizable) --}}
+                                    @include('admin.partials.telefonos-field', ['telId' => 'cpr-jur-tel'])
                                 </div>
                             </div>
                         </div>
@@ -689,26 +686,13 @@
                         <div class="modal-form-section">
                             <div class="modal-form-section-title"><i class="ri-contacts-book-line"></i>Contacto</div>
                             <div class="row mb-0">
-                                <div class="col-md-6 mb-3">
-                                    <x-forms.input name="telefono_nat_number" label="Teléfono"
-                                        id="cpr-telefono-nat-number-field" maxlength="7" placeholder="1234567" required
-                                        prependRaw="true">
-                                        <x-slot:prepend>
-                                            <select class="form-select" id="cpr-telefono-nat-prefix-field"
-                                                style="max-width: 100px; min-width: 100px;">
-                                                <option value="0412">0412</option>
-                                                <option value="0422">0422</option>
-                                                <option value="0414">0414</option>
-                                                <option value="0424" selected>0424</option>
-                                                <option value="0416">0416</option>
-                                                <option value="0426">0426</option>
-                                            </select>
-                                        </x-slot:prepend>
-                                    </x-forms.input>
-                                </div>
-                                <div class="col-md-6 mb-3">
+                                <div class="col-12 mb-3">
                                     <x-forms.input name="email_nat" label="Email" type="email"
                                         placeholder="correo@email.com" id="cpr-email-nat-field" />
+                                </div>
+                                <div class="col-12">
+                                    {{-- Teléfonos múltiples (componente reutilizable) --}}
+                                    @include('admin.partials.telefonos-field', ['telId' => 'cpr-nat-tel'])
                                 </div>
                             </div>
                         </div>

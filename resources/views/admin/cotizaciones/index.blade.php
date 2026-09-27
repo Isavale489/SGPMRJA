@@ -38,7 +38,7 @@
                     <div class="d-flex align-items-center">
                         <h5 class="card-title mb-0 flex-grow-1">Listado de Cotizaciones</h5>
                         <div class="flex-shrink-0 d-flex align-items-center gap-3">
-                            @if(Auth::user()->isAdmin())
+                            @if(tienePermiso('cotizaciones.gestionar'))
                                 <button type="button" class="btn btn-success add-btn" data-bs-toggle="modal" id="create-btn"
                                     data-bs-target="#showModal">
                                     <i class="ri-add-line align-bottom me-1"></i> Agregar Cotización
@@ -114,8 +114,8 @@
                                 <th>Cliente</th>
                                 <th>Fecha</th>
                                 <th>Total</th>
-                                <th>Estado</th>
-                                <th>Acciones</th>
+                                <th class="text-center">Estado</th>
+                                <th class="text-center">Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -148,7 +148,12 @@
                             <option value="Cancelada">Cancelada</option>
                         </select>
                     </div>
-                    <div class="row g-2 mb-0">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold" for="pdf-filter-cliente">Cliente</label>
+                        <select class="form-select" id="pdf-filter-cliente" style="width:100%"
+                            data-placeholder="Buscar cliente por nombre o documento…"></select>
+                    </div>
+                    <div class="row g-2 mb-3">
                         <div class="col-6">
                             <label class="form-label fw-semibold" for="pdf-fecha-desde">Fecha Desde</label>
                             <input type="date" class="form-control" id="pdf-fecha-desde">
@@ -157,6 +162,14 @@
                             <label class="form-label fw-semibold" for="pdf-fecha-hasta">Fecha Hasta</label>
                             <input type="date" class="form-control" id="pdf-fecha-hasta">
                         </div>
+                    </div>
+                    <div class="mb-0">
+                        <label class="form-label fw-semibold" for="pdf-filter-orden">Ordenar por</label>
+                        <select class="form-select" id="pdf-filter-orden">
+                            <option value="recientes">Más recientes</option>
+                            <option value="total_desc">Mayor total</option>
+                            <option value="total_asc">Menor total</option>
+                        </select>
                     </div>
                 </div>
                 <div class="modal-footer bg-light border-0">
@@ -176,26 +189,66 @@
     <!-- DataTables desde CDN, después de jQuery -->
     <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/1.11.5/js/dataTables.bootstrap5.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script src="{{ URL::asset('/assets/js/municipios-venezuela.js') }}"></script>
+    <script src="{{ URL::asset('/assets/js/telefonos-repeater.js') }}"></script>
+    <script src="{{ URL::asset('/assets/js/proyeccion-insumos.js') }}"></script>
     @include('admin.cotizaciones.scripts.main')
     <script>
         // PDF Export Modal — Cotizaciones
+        // Cliente: Select2 con búsqueda AJAX contra clientes.search (nombre/documento).
+        // dropdownParent = el modal para que el desplegable y el foco funcionen dentro.
+        $('#pdf-filter-cliente').select2({
+            theme: 'bootstrap-5',
+            width: '100%',
+            placeholder: '🔍 Buscar cliente por nombre o documento…',
+            allowClear: true,
+            dropdownParent: $('#pdfExportModal'),
+            minimumInputLength: 0,
+            language: {
+                inputTooShort: function () { return 'Escribe para buscar…'; },
+                searching: function () { return 'Buscando…'; },
+                noResults: function () { return 'Sin resultados'; }
+            },
+            ajax: {
+                url: '{{ route('clientes.search') }}',
+                dataType: 'json',
+                delay: 250,
+                data: function (params) { return { q: params.term || '' }; },
+                processResults: function (data) {
+                    return {
+                        results: (data || []).map(function (c) {
+                            var doc = c.documento ? ' — ' + c.documento : '';
+                            return { id: c.id, text: (c.nombre || 'N/A') + doc };
+                        })
+                    };
+                },
+                cache: true
+            }
+        });
+
         $('#btn-generar-pdf').on('click', function () {
-            var baseUrl = '{{ route('cotizaciones.reporte.pdf') }}';
-            var params  = [];
-            var estado  = $('#pdf-filter-estado').val();
-            var desde   = $('#pdf-fecha-desde').val();
-            var hasta   = $('#pdf-fecha-hasta').val();
-            if (estado) params.push('estado='       + encodeURIComponent(estado));
+            var baseUrl   = '{{ route('cotizaciones.reporte.pdf') }}';
+            var params    = [];
+            var estado    = $('#pdf-filter-estado').val();
+            var clienteId = $('#pdf-filter-cliente').val();
+            var desde     = $('#pdf-fecha-desde').val();
+            var hasta     = $('#pdf-fecha-hasta').val();
+            var orden     = $('#pdf-filter-orden').val();
+            if (estado)    params.push('estado='     + encodeURIComponent(estado));
+            if (clienteId) params.push('cliente_id=' + encodeURIComponent(clienteId));
             if (desde)  params.push('fecha_desde='  + encodeURIComponent(desde));
             if (hasta)  params.push('fecha_hasta='  + encodeURIComponent(hasta));
+            if (orden && orden !== 'recientes') params.push('orden=' + encodeURIComponent(orden));
             window.open(baseUrl + (params.length ? '?' + params.join('&') : ''), '_blank');
             bootstrap.Modal.getInstance(document.getElementById('pdfExportModal'))?.hide();
         });
         $('#pdfExportModal').on('show.bs.modal', function () {
             $('#pdf-filter-estado').val('');
+            $('#pdf-filter-cliente').val(null).trigger('change');
             $('#pdf-fecha-desde').val('');
             $('#pdf-fecha-hasta').val('');
+            $('#pdf-filter-orden').val('recientes');
         });
     </script>
 @endpush

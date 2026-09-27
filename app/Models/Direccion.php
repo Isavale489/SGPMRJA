@@ -15,24 +15,21 @@ class Direccion extends Model
     protected $fillable = [
         'persona_id',
         'direccion',
-        'estado',
-        'ciudad',
-        'tipo',
-        'es_principal',
-    ];
-
-    protected $casts = [
-        'es_principal' => 'boolean',
+        'estado_id',
+        'municipio_id',
     ];
 
     /**
-     * Tipos de dirección disponibles
+     * Exponer estado/ciudad (nombres del catálogo) al serializar, igual que
+     * cuando eran columnas de texto.
      */
-    public const TIPOS = [
-        'casa' => 'Casa',
-        'trabajo' => 'Trabajo',
-        'envio' => 'Envío',
-    ];
+    protected $appends = ['estado', 'ciudad'];
+
+    /**
+     * La ubicación (estado/municipio) se carga siempre para resolver los
+     * accessors `estado` y `ciudad` sin incurrir en consultas N+1.
+     */
+    protected $with = ['estadoRel', 'municipioRel'];
 
     /**
      * Relación con Persona
@@ -43,26 +40,50 @@ class Direccion extends Model
     }
 
     /**
-     * Scope para obtener solo direcciones principales
+     * Relaciones con el catálogo geográfico.
      */
-    public function scopePrincipal($query)
+    public function estadoRel()
     {
-        return $query->where('es_principal', true);
+        return $this->belongsTo(Estado::class, 'estado_id');
+    }
+
+    public function municipioRel()
+    {
+        return $this->belongsTo(Municipio::class, 'municipio_id');
     }
 
     /**
-     * Obtener el nombre del tipo
+     * Accessors de compatibilidad: el resto del sistema lee `$direccion->estado`
+     * y `$direccion->ciudad` como texto. Devuelven el nombre del catálogo.
      */
-    public function getTipoNombreAttribute()
+    public function getEstadoAttribute()
     {
-        return self::TIPOS[$this->tipo] ?? $this->tipo;
+        return $this->estadoRel?->nombre;
+    }
+
+    public function getCiudadAttribute()
+    {
+        return $this->municipioRel?->nombre;
     }
 
     /**
-     * Obtener dirección completa
+     * Resolver nombres (estado/municipio) a sus IDs del catálogo.
+     * Devuelve ['estado_id' => ?int, 'municipio_id' => ?int].
      */
-    public function getDireccionCompletaAttribute()
+    public static function resolverUbicacion(?string $estadoNombre, ?string $municipioNombre): array
     {
-        return $this->direccion . ($this->ciudad ? ', ' . $this->ciudad : '');
+        $estadoId = null;
+        $municipioId = null;
+
+        if (!empty($estadoNombre)) {
+            $estadoId = Estado::where('nombre', $estadoNombre)->value('id');
+        }
+        if ($estadoId && !empty($municipioNombre)) {
+            $municipioId = Municipio::where('estado_id', $estadoId)
+                ->where('nombre', $municipioNombre)
+                ->value('id');
+        }
+
+        return ['estado_id' => $estadoId, 'municipio_id' => $municipioId];
     }
 }

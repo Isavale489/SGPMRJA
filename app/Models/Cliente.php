@@ -38,11 +38,6 @@ class Cliente extends Model
         return $this->persona ? $this->persona->nombre : null;
     }
 
-    public function getApellidoAttribute()
-    {
-        return $this->persona ? $this->persona->apellido : null;
-    }
-
     public function getEmailAttribute()
     {
         return $this->persona ? $this->persona->email : null;

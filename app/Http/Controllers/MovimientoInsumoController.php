@@ -39,6 +39,9 @@ class MovimientoInsumoController extends Controller
         if ($request->filled('insumo_id')) {
             $query->where('insumo_id', $request->insumo_id);
         }
+        $query->when($request->filled('estado_stock'), function ($q) use ($request) {
+            $q->filtroStock($request->input('estado_stock'));
+        });
         if ($request->filled('fecha_desde')) {
             $query->where('created_at', '>=', $request->fecha_desde . ' 00:00:00');
         }
@@ -47,9 +50,25 @@ class MovimientoInsumoController extends Controller
         }
 
         $movimientos = $query->get();
-        $pdf = \PDF::loadView('admin.movimiento-insumo.movimientos.reporte_pdf', compact('movimientos'))
+
+        $filtros = [];
+        if ($request->filled('tipo_movimiento')) {
+            $filtros['Tipo de movimiento'] = ucfirst($request->tipo_movimiento);
+        }
+        if ($request->filled('insumo_id')) {
+            $filtros['Insumo'] = optional(\App\Models\Insumo::find($request->insumo_id))->nombre
+                ?? ('#' . $request->insumo_id);
+        }
+        if ($request->filled('estado_stock') && isset(MovimientoInsumo::ETIQUETAS_STOCK[$request->estado_stock])) {
+            $filtros['Estado de stock'] = MovimientoInsumo::ETIQUETAS_STOCK[$request->estado_stock];
+        }
+        if ($rango = \App\Support\ReporteFiltros::rango($request->fecha_desde, $request->fecha_hasta)) {
+            $filtros['Fecha'] = $rango;
+        }
+
+        $pdf = \PDF::loadView('admin.movimiento-insumo.movimientos.reporte_pdf', compact('movimientos', 'filtros'))
             ->setPaper('a4', 'landscape');
-        return $pdf->download('movimientos_insumo_' . now()->format('Y-m-d_H-i-s') . '.pdf');
+        return $pdf->stream('movimientos_insumo_' . now()->format('Y-m-d_H-i-s') . '.pdf');
     }
 
     public function getMovimientos(Request $request)
@@ -65,6 +84,10 @@ class MovimientoInsumoController extends Controller
         if ($request->filled('filter_insumo_id')) {
             $movimientos->where('movimiento_insumo.insumo_id', $request->input('filter_insumo_id'));
         }
+
+        $movimientos->when($request->filled('filter_stock'), function ($q) use ($request) {
+            $q->filtroStock($request->input('filter_stock'));
+        });
 
         $fechaDesde = $request->input('filter_fecha_desde');
         $fechaHasta = $request->input('filter_fecha_hasta');
@@ -139,7 +162,7 @@ class MovimientoInsumoController extends Controller
     {
         $query = Insumo::where('estado', true)
             ->where('is_inventoriable', true)
-            ->select('id', 'nombre', 'codigo', 'tipo', 'unidad_medida', 'stock_minimo', 'stock_actual', 'stock_maximo')
+            ->select('id', 'nombre', 'codigo', 'tipo', 'unidad_medida', 'stock_minimo', 'stock_actual', 'stock_maximo', 'costo_unitario')
             ->orderBy('id', 'desc'); // más reciente primero (estándar del sistema)
 
         if ($request->filled('filter_tipo')) {
@@ -164,9 +187,11 @@ class MovimientoInsumoController extends Controller
 
     public function store(Request $request)
     {
+        // Solo se admiten salidas manuales: las entradas de inventario entran
+        // exclusivamente por el módulo de Compras (con proveedor, costo y factura).
         $request->validate([
             'insumo_id' => 'required|exists:insumo,id',
-            'tipo_movimiento' => 'required|in:Entrada,Salida',
+            'tipo_movimiento' => 'required|in:Salida',
             'cantidad' => 'required|numeric|min:0.01',
             'motivo' => 'required|string|max:500',
         ]);
@@ -186,18 +211,14 @@ class MovimientoInsumoController extends Controller
 
             $stockAnterior = $insumo->stock_actual;
 
-            // Calcular nuevo stock
-            if ($request->tipo_movimiento == 'Entrada') {
-                $stockNuevo = $stockAnterior + $request->cantidad;
-            } else {
-                // Validar que haya suficiente stock para la salida
-                if ($stockAnterior < $request->cantidad) {
-                    return response()->json([
-                        'error' => 'No hay suficiente stock disponible para realizar esta salida'
-                    ], 422);
-                }
-                $stockNuevo = $stockAnterior - $request->cantidad;
+            // Validar que haya suficiente stock para la salida
+            if ($stockAnterior < $request->cantidad) {
+                DB::rollBack();
+                return response()->json([
+                    'error' => 'No hay suficiente stock disponible para realizar esta salida'
+                ], 422);
             }
+            $stockNuevo = $stockAnterior - $request->cantidad;
 
             // Crear el movimiento
             MovimientoInsumo::create([
@@ -227,83 +248,6 @@ class MovimientoInsumoController extends Controller
         }
     }
 
-    /**
-     * Movimiento masivo: aplica una misma Entrada/Salida a TODOS los insumos
-     * inventariables activos en una sola transacción. Atajo para hidratar
-     * inventario sin registrar insumo por insumo. En salidas, los insumos
-     * sin stock suficiente se omiten (y se informan), nunca quedan negativos.
-     */
-    public function storeMasivo(Request $request)
-    {
-        $request->validate([
-            'tipo_movimiento' => 'required|in:Entrada,Salida',
-            'cantidad' => 'required|numeric|min:0.01',
-            'motivo' => 'required|string|max:500',
-        ]);
-
-        $tipo     = $request->tipo_movimiento;
-        $cantidad = (float) $request->cantidad;
-
-        try {
-            $resultado = DB::transaction(function () use ($request, $tipo, $cantidad) {
-                // Orden de lock estable (por id) para no interbloquear con
-                // compras u otros movimientos concurrentes sobre el inventario.
-                $insumos = Insumo::where('estado', true)
-                    ->where('is_inventoriable', true)
-                    ->orderBy('id')
-                    ->lockForUpdate()
-                    ->get();
-
-                $aplicados = 0;
-                $omitidos  = [];
-
-                foreach ($insumos as $insumo) {
-                    $stockAnterior = (float) $insumo->stock_actual;
-
-                    if ($tipo === 'Salida' && $stockAnterior < $cantidad) {
-                        $omitidos[] = $insumo->nombre;
-                        continue;
-                    }
-
-                    $stockNuevo = $tipo === 'Entrada'
-                        ? $stockAnterior + $cantidad
-                        : $stockAnterior - $cantidad;
-
-                    MovimientoInsumo::create([
-                        'insumo_id'       => $insumo->id,
-                        'tipo_movimiento' => $tipo,
-                        'cantidad'        => $cantidad,
-                        'stock_anterior'  => $stockAnterior,
-                        'stock_nuevo'     => $stockNuevo,
-                        'motivo'          => $request->motivo,
-                        'created_by'      => Auth::id(),
-                    ]);
-
-                    $insumo->update(['stock_actual' => $stockNuevo]);
-                    $aplicados++;
-                }
-
-                return ['aplicados' => $aplicados, 'omitidos' => $omitidos];
-            });
-
-            if ($resultado['aplicados'] === 0) {
-                return response()->json([
-                    'error' => 'No se aplicó ningún movimiento: ningún insumo tiene stock suficiente para esa salida.'
-                ], 422);
-            }
-
-            return response()->json([
-                'success'   => "Movimiento de {$tipo} registrado en {$resultado['aplicados']} insumo(s).",
-                'aplicados' => $resultado['aplicados'],
-                'omitidos'  => $resultado['omitidos'],
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'error' => 'Error al registrar el movimiento masivo: ' . $e->getMessage()
-            ], 500);
-        }
-    }
-
     public function show($id)
     {
         $movimiento = MovimientoInsumo::with(['insumo', 'creadoPor'])->findOrFail($id);
@@ -326,6 +270,25 @@ class MovimientoInsumoController extends Controller
             ->get();
 
         return view('admin.movimiento-insumo.movimientos.historial', compact('insumo', 'movimientos'));
+    }
+
+    /**
+     * Análisis de Rotación: insumos ordenados por sus salidas acumuladas
+     * (histórico), para priorizar reposición. Inyecta la suma de la cantidad
+     * de los movimientos de tipo 'Salida' vía withSum; los de mayor rotación
+     * quedan primero (los sin salidas, con total NULL, caen al final en DESC).
+     */
+    public function analisisRotacion()
+    {
+        $insumos = Insumo::where('estado', true)
+            ->where('is_inventoriable', true)
+            ->withSum(['movimientos as total_salidas' => function ($q) {
+                $q->where('tipo_movimiento', 'Salida');
+            }], 'cantidad')
+            ->orderByDesc('total_salidas')
+            ->get();
+
+        return view('admin.movimiento-insumo.rotacion.index', compact('insumos'));
     }
 
     public function alertasStock()

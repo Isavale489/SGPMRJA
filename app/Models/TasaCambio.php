@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Carbon\Carbon;
 
 class TasaCambio extends Model
 {
@@ -24,13 +25,14 @@ class TasaCambio extends Model
     ];
 
     /**
-     * Obtiene la tasa más reciente de una moneda
+     * Tasa actualmente VIGENTE de una moneda. Una tasa que el BCV publica en la
+     * tarde rige legalmente desde las 00:00 del día siguiente, por lo que aquí se
+     * aplica el techo `fecha_bcv <= hoy`: cualquier tasa con fecha futura queda
+     * invisible hasta la medianoche. Reutiliza tasaVigente() (la lógica del techo).
      */
     public static function obtenerTasaActual(string $moneda = 'USD'): ?self
     {
-        return self::where('moneda', strtoupper($moneda))
-            ->orderBy('fecha_bcv', 'desc')
-            ->first();
+        return self::tasaVigente(Carbon::today()->toDateString(), $moneda);
     }
 
     /**
@@ -40,6 +42,28 @@ class TasaCambio extends Model
     {
         $tasa = self::obtenerTasaActual('USD');
         return $tasa ? (float) $tasa->valor : 0.00;
+    }
+
+    /**
+     * Fecha BCV de la tasa vigente para una fecha de referencia, SOLO si su
+     * valor coincide con el snapshot guardado en el documento. Los snapshots
+     * (compra.tasa_cambio, cotizacion.tasa_cambio_valor) no persisten la fecha
+     * de la tasa, así que se re-deriva; la comparación evita mostrar una fecha
+     * que no corresponde al valor (p. ej. tasas ingresadas manualmente o
+     * corregidas después en la tabla). Devuelve null si no hay coincidencia.
+     */
+    public static function fechaParaValor($valorSnapshot, ?string $fechaRef = null, string $moneda = 'USD'): ?Carbon
+    {
+        $valorSnapshot = (float) $valorSnapshot;
+        if ($valorSnapshot <= 0) {
+            return null;
+        }
+
+        $tasa = self::tasaVigente($fechaRef ?? Carbon::today()->toDateString(), $moneda);
+
+        return ($tasa && abs((float) $tasa->valor - $valorSnapshot) < 0.0001)
+            ? $tasa->fecha_bcv
+            : null;
     }
 
     /**

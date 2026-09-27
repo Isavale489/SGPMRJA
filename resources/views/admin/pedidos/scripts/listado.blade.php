@@ -51,7 +51,15 @@
                 }
             },
             columns: [
-                { data: 'id', name: 'id', title: 'Pedido', className: 'text-center', width: '8%' },
+                {
+                    data: 'id', name: 'id', title: 'Pedido', className: 'align-middle', width: '14%',
+                    render: function (data) {
+                        return `<div class="ped-cell">
+                            <span class="ped-cell-ic"><i class="ri-shopping-bag-3-line"></i></span>
+                            <span class="ped-cell-txt"><span class="ped-cell-eyebrow">Pedido</span><span class="ped-cell-num">#${data}</span></span>
+                        </div>`;
+                    }
+                },
                 { data: 'cliente_nombre_display', name: 'cliente_nombre_display', defaultContent: 'N/A', width: '30%' },
                 { data: 'fecha_entrega_estimada', name: 'fecha_entrega_estimada', width: '14%' },
                 {
@@ -90,7 +98,7 @@
                     searchable: false,
                     width: '22%',
                     render: function (data, type, row) {
-                        var isAdmin = {{ Auth::user()->isAdmin() ? 'true' : 'false' }};
+                        var puedeGestionar = {{ tienePermiso('pedidos.gestionar') ? 'true' : 'false' }};
                         // Ver inline (acción rápida, en todas las filas) + menú "⋮ Más" con
                         // el resto de acciones, que son contextuales. Así cada fila es
                         // idéntica ([Ver][⋮]): columna alineada y sin huecos en blanco.
@@ -99,20 +107,20 @@
                         var items = '';
                         // Editar / Eliminar (bloqueado si hay producción activa o el pedido
                         // ya está completado/cancelado).
-                        var puedeEditar = isAdmin && row.estado !== 'Completado' && row.estado !== 'Cancelado' && !row.tiene_produccion;
+                        var puedeEditar = puedeGestionar && row.estado !== 'Completado' && row.estado !== 'Cancelado' && !row.tiene_produccion;
                         if (puedeEditar) {
                             items += `<li><button type="button" class="dropdown-item act-item act-edit edit-btn" data-id="${data}"><span class="act-ic"><i class="ri-pencil-fill"></i></span>Editar</button></li>`;
                             items += `<li><button type="button" class="dropdown-item act-item act-del remove-btn" data-id="${data}"><span class="act-ic"><i class="ri-delete-bin-fill"></i></span>Eliminar</button></li>`;
                         }
                         // Cancelar (Pendiente/Procesando) o Reactivar (Cancelado).
-                        if (isAdmin && (row.estado === 'Pendiente' || row.estado === 'Procesando')) {
+                        if (puedeGestionar && (row.estado === 'Pendiente' || row.estado === 'Procesando')) {
                             items += `<li><button type="button" class="dropdown-item act-item act-warn cancelar-btn" data-id="${data}"><span class="act-ic"><i class="ri-close-circle-line"></i></span>Cancelar pedido</button></li>`;
-                        } else if (isAdmin && row.estado === 'Cancelado') {
+                        } else if (puedeGestionar && row.estado === 'Cancelado') {
                             items += `<li><button type="button" class="dropdown-item act-item act-restore reactivar-btn" data-id="${data}"><span class="act-ic"><i class="ri-refresh-line"></i></span>Reactivar pedido</button></li>`;
                         }
                         // Separador antes del PDF si hubo acciones previas.
                         if (items) items += `<li><hr class="dropdown-divider"></li>`;
-                        items += `<li><a class="dropdown-item act-item act-pdf" href="/pedidos/${data}/pdf" target="_blank"><span class="act-ic"><i class="ri-file-pdf-fill"></i></span>Ver / Descargar PDF</a></li>`;
+                        items += `<li><a class="dropdown-item act-item act-pdf" href="/pedidos/${data}/pdf" target="_blank"><span class="act-ic"><i class="ri-file-pdf-fill"></i></span>Ver PDF</a></li>`;
 
                         var menu = `
                             <div class="dropdown d-inline-block">
@@ -289,10 +297,14 @@
 
             var tasa = parseFloat(tasaPedido) || 0;
 
-            // Agrupar por producto_id + color_id
+            // Agrupar por variante + color_id (las líneas dinámicas no tienen
+            // producto materializado: se identifican por tipo + sku/nombre)
             var groups = {}, groupOrder = [];
             productos.forEach(function (item) {
-                var key = (item.producto ? item.producto.id : 'x') + '_' + (item.color_id || 'nc');
+                var variante = item.producto
+                    ? 'p' + item.producto.id
+                    : 'd' + (item.tipo_producto_id || '') + '|' + (item.sku || item.producto_nombre || '');
+                var key = variante + '_' + (item.color_id || 'nc');
                 if (!groups[key]) {
                     groups[key] = { ref: item, items: [], precio_unitario: item.precio_unitario };
                     groupOrder.push(key);
@@ -320,10 +332,13 @@
                 var subtotal = items.reduce(function (a, it) { return a + parseFloat(it.precio_unitario) * parseInt(it.cantidad); }, 0);
                 var llevaBordado = items.some(function (it) { return it.lleva_bordado; });
 
-                // Chips de talla (patrón cotizaciones)
+                // Chips de talla + género (patrón cotizaciones / wizard de pedido)
                 var tallasHtml = items.map(function (it) {
                     var lbl = getTallaLabel(it.talla_id) || 'S/T';
-                    return '<span class="cot-chip cot-chip-talla">' + lbl + '<span class="cot-chip-x">×</span>' + it.cantidad + '</span>';
+                    var genObj = it.genero || null;
+                    var genLbl = genObj ? (genObj.etiqueta || genObj.nombre) : '';
+                    var gen = genLbl ? '<span class="cot-chip-gen">' + genLbl + '</span>' : '';
+                    return '<span class="cot-chip cot-chip-talla">' + lbl + gen + '<span class="cot-chip-x">×</span>' + it.cantidad + '</span>';
                 }).join('');
 
                 // Detalle bordados compacto en la columna producto
@@ -361,9 +376,9 @@
                     bordadoBsExtra = ' · $' + recargo.toFixed(2) + (bsB ? ' · ' + bsB : '');
                 }
 
-                var prodNombre = prod.nombre_completo || prod.nombre ||
+                var prodNombre = g.ref.producto_nombre || prod.nombre_completo || prod.nombre ||
                     (prod.tipo_producto ? prod.tipo_producto.nombre : '') || 'Producto';
-                var prodCodigo = prod.codigo || '';
+                var prodCodigo = prod.codigo || g.ref.sku || '';
 
                 return '<tr class="cot-grouped-row">' +
                     '<td class="cot-col-num">' + (idx + 1) + '</td>' +
@@ -410,6 +425,7 @@
         // === Ver → viewModal (read-only) ====================================
         $('#pedidos-table').on('click', '.view-btn', function () {
             var id = $(this).data('id');
+            $('#view-ped-pdf-btn').attr('href', '/pedidos/' + id + '/pdf');
             $.ajax({
                 url: '/pedidos/' + id,
                 method: 'GET',
@@ -431,31 +447,22 @@
                     $('#view-fecha-pedido').text(formatDate(data.fecha_pedido));
                     $('#view-fecha-entrega-estimada').text(formatDate(data.fecha_entrega_estimada));
 
-                    // Mostrar estado con badge
-                    let estadoBadgeClass = '';
-                    switch (data.estado) {
-                        case 'Pendiente':
-                            estadoBadgeClass = 'bg-info';
-                            break;
-                        case 'Procesando':
-                            estadoBadgeClass = 'bg-warning';
-                            break;
-                        case 'Completado':
-                            estadoBadgeClass = 'bg-success';
-                            break;
-                        case 'Cancelado':
-                            estadoBadgeClass = 'bg-danger';
-                            break;
-                        default:
-                            estadoBadgeClass = 'bg-secondary';
-                    }
-                    $('#view-estado').html(`<span class="badge ${estadoBadgeClass}">${data.estado}</span>`);
+                    // Mostrar estado con badge — estilo + ícono consistentes con el índice
+                    var pedEstadoClasses = { 'Pendiente':'status-pendiente','Procesando':'status-procesando','Completado':'status-completado','Cancelado':'status-cancelado' };
+                    var pedEstadoIcons   = { 'Pendiente':'ri-time-line','Procesando':'ri-loader-4-line','Completado':'ri-check-double-line','Cancelado':'ri-close-circle-line' };
+                    let estadoBadgeClass = pedEstadoClasses[data.estado] || '';
+                    let estadoIcon       = pedEstadoIcons[data.estado] || 'ri-question-line';
+                    $('#view-estado').html(`<span class="badge badge-status ${estadoBadgeClass} rounded-pill"><i class="${estadoIcon} me-1"></i>${data.estado}</span>`);
 
                     var totalUsd = parseFloat(data.total);
                     $('#view-total-resumen').text('$' + totalUsd.toFixed(2));
                     var bsLbl = (typeof window.bsEquivalente === 'function') ? window.bsEquivalente(totalUsd) : null;
                     $('#view-total-resumen-bs').text(bsLbl || 'Sin tasa BCV');
-                    $('#view-usuario-creador').text(data.user ? data.user.name : 'N/A');
+                    // Chip "Creado por" (gutter derecho del stepper)
+                    var pedCreador = data.creador || (data.user ? { name: data.user.name } : null);
+                    $('#view-usuario-creador').text(pedCreador ? pedCreador.name : 'N/A');
+                    $('#view-ped-creador-avatar').attr('src', (pedCreador && pedCreador.avatar_url) ? pedCreador.avatar_url : window.AMS_AVATAR_FALLBACK).css('display', '');
+                    $('#view-ped-creador-fecha').text(pedCreador && pedCreador.fecha ? pedCreador.fecha : '—');
 
                     // Cargar y mostrar nuevos campos de pago y prioridad
                     $('#view-abono').text('$' + parseFloat(data.abono).toFixed(2));
@@ -471,35 +478,40 @@
                     var metodoBoxCls = { efectivo: 'emp-icon-box--green', transferencia: 'emp-icon-box--navy', pago_movil: 'emp-icon-box--teal' };
                     var metodoIcoCls = { efectivo: 'emp-icon--green', transferencia: 'emp-icon--navy', pago_movil: 'emp-icon--teal' };
 
-                    if (data.pagos && data.pagos.length > 0) {
+                    var totalPagado = 0;
+                    var nPagos = (data.pagos && data.pagos.length) ? data.pagos.length : 0;
+
+                    if (nPagos > 0) {
                         var cardsHtml = '';
                         data.pagos.forEach(function (pago) {
                             var label  = metodoLabels[pago.metodo]  || pago.metodo;
                             var icon   = metodoIcons[pago.metodo]   || 'ri-money-dollar-circle-line';
                             var boxCls = metodoBoxCls[pago.metodo]  || 'emp-icon-box--navy';
                             var icoCls = metodoIcoCls[pago.metodo]  || 'emp-icon--navy';
-                            var monto  = parseFloat(pago.monto).toFixed(2);
+                            var montoNum = parseFloat(pago.monto) || 0;
+                            totalPagado += montoNum;
+                            var monto = montoNum.toFixed(2);
 
                             var extraHtml = '';
                             if (pago.metodo !== 'efectivo') {
                                 var bancoNombre = pago.banco ? pago.banco.nombre : 'Sin banco';
                                 var referencia  = pago.referencia || 'Sin referencia';
                                 extraHtml =
-                                    '<div class="fs-12 text-muted d-flex flex-wrap gap-3 mt-1">' +
-                                        '<span><i class="ri-bank-line me-1"></i>' + bancoNombre + '</span>' +
-                                        '<span><i class="ri-hashtag me-1"></i>' + referencia + '</span>' +
+                                    '<div class="ped-pago-meta">' +
+                                        '<span><i class="ri-bank-line"></i>' + bancoNombre + '</span>' +
+                                        '<span><i class="ri-hashtag"></i>' + referencia + '</span>' +
                                     '</div>';
                             }
 
                             cardsHtml +=
-                                '<div class="d-flex align-items-start gap-2 px-3 py-2 border-bottom">' +
-                                    '<div class="emp-icon-box ' + boxCls + ' rounded-circle flex-shrink-0 d-flex align-items-center justify-content-center mt-1">' +
+                                '<div class="ped-pago-item">' +
+                                    '<div class="ped-pago-icon ' + boxCls + '">' +
                                         '<i class="' + icon + ' ' + icoCls + '"></i>' +
                                     '</div>' +
-                                    '<div class="flex-grow-1">' +
-                                        '<div class="d-flex justify-content-between align-items-center">' +
-                                            '<span class="fw-semibold fs-13 text-atlantico-dark">' + label + '</span>' +
-                                            '<span class="fw-bold fs-13 text-atlantico-dark">$' + monto + '</span>' +
+                                    '<div class="ped-pago-main">' +
+                                        '<div class="ped-pago-top">' +
+                                            '<span class="ped-pago-metodo">' + label + '</span>' +
+                                            '<span class="ped-pago-monto">$' + monto + '</span>' +
                                         '</div>' +
                                         extraHtml +
                                     '</div>' +
@@ -507,7 +519,29 @@
                         });
                         $pagosEl.html(cardsHtml);
                     } else {
-                        $pagosEl.html('<p class="text-muted fs-12 mb-0">Sin pagos registrados.</p>');
+                        $pagosEl.html(
+                            '<div class="ped-pagos-empty">' +
+                                '<i class="ri-wallet-3-line"></i>' +
+                                '<span>Sin pagos registrados.</span>' +
+                            '</div>'
+                        );
+                    }
+
+                    // Footer del card: conteo, total pagado y estado de pago
+                    $('#view-pagos-count').text(nPagos + (nPagos === 1 ? ' pago' : ' pagos'));
+                    $('#view-pagos-total').text('$' + totalPagado.toFixed(2));
+
+                    var totalPed = parseFloat(data.total) || 0;
+                    var $estadoPago = $('#view-pagos-status');
+                    if (nPagos === 0) {
+                        $estadoPago.attr('class', 'ped-pagos-status ped-pagos-status--none')
+                            .html('<i class="ri-information-line"></i>Sin pagos');
+                    } else if (totalPagado + 0.001 >= totalPed) {
+                        $estadoPago.attr('class', 'ped-pagos-status ped-pagos-status--full')
+                            .html('<i class="ri-checkbox-circle-line"></i>Pagado completo');
+                    } else {
+                        $estadoPago.attr('class', 'ped-pagos-status ped-pagos-status--part')
+                            .html('<i class="ri-progress-3-line"></i>Abono parcial');
                     }
 
                     // Mostrar prioridad con badge
@@ -531,8 +565,11 @@
                     var tasaHeredada = parseFloat(data.tasa_cambio_valor) || 0;
                     if (tasaHeredada > 0 && typeof window.bsTasaFmt === 'function') {
                         $('#view-ped-tasa').text(window.bsTasaFmt(tasaHeredada));
+                        $('#view-ped-tasa-fecha').text(data.tasa_fecha_fmt ? ' (' + data.tasa_fecha_fmt + ')' : '');
                     } else if (window.tasaBcv && window.tasaBcv.valor) {
                         $('#view-ped-tasa').text(window.bsTasaFmt ? window.bsTasaFmt() : 'Bs ' + parseFloat(window.tasaBcv.valor).toLocaleString('es-VE', { minimumFractionDigits: 4, maximumFractionDigits: 4 }));
+                        var pedTasaFecha = (typeof window.bcvFechaFmt === 'function') ? window.bcvFechaFmt() : '';
+                        $('#view-ped-tasa-fecha').text(pedTasaFecha ? ' (' + pedTasaFecha + ')' : '');
                     }
 
                     // Grilla de productos — paso 2

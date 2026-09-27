@@ -35,6 +35,7 @@
 | [`business-flows.md`](business-flows.md) | Antes de diseñar transacciones nuevas |
 | [`softdeletes-unique.md`](softdeletes-unique.md) | Generadores secuenciales en modelos con SoftDeletes |
 | [`column-naming.md`](column-naming.md) | Toda columna nueva |
+| [`system-config.md`](system-config.md) | Parámetro configurable nuevo o consumo del panel `/configuracion` |
 
 ### Productos y SKU
 
@@ -56,6 +57,7 @@
 | Doc | Cuándo leerlo |
 |---|---|
 | [`password-recovery.md`](password-recovery.md) | Tocar el flujo de auth o recuperación de contraseña |
+| [`permissions.md`](permissions.md) | Tocar roles/permisos, agregar un módulo/acción al registry, o el panel de seguridad |
 
 ### Lecciones aprendidas
 

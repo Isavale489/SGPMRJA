@@ -72,7 +72,7 @@
         <thead>
             <tr>
                 <th class="col-num">#</th>
-                <th class="col-nombre">Nombre</th>
+                <th class="col-nombre">Nombre / Razón Social</th>
                 <th class="col-tipo">Tipo</th>
                 <th class="col-email">Email</th>
                 <th class="col-telefono">Teléfono</th>
@@ -87,8 +87,7 @@
             @foreach($clientes as $index => $cliente)
                 <tr class="{{ $index % 2 === 1 ? 'zebra' : '' }}">
                     <td class="col-num">{{ $index + 1 }}</td>
-                    <td class="col-nombre">{{ $cliente->nombre }}{{ $cliente->apellido ? ' ' . $cliente->apellido : '' }}
-                    </td>
+                    <td class="col-nombre">{{ $cliente->nombre }}</td>
                     <td class="col-tipo">{{ ucfirst($cliente->tipo_cliente) }}</td>
                     <td class="col-email">{{ $cliente->email ?? '—' }}</td>
                     <td class="col-telefono">{{ $cliente->telefono ?? '—' }}</td>

@@ -38,6 +38,22 @@
                 }
                 sessionStorage.setItem('data-bs-theme', savedTheme);
             }
+
+            // Sidebar colapsado: hidratar la preferencia guardada (solo escritorio).
+            // En tablet/móvil la plantilla maneja el tamaño de forma responsiva.
+            var savedSidebar = localStorage.getItem('sgpmrja-sidebar-size');
+            if (savedSidebar && (savedSidebar === 'lg' || savedSidebar === 'sm') && window.innerWidth > 1025) {
+                document.documentElement.setAttribute('data-sidebar-size', savedSidebar);
+                var defaultsSb = sessionStorage.getItem('defaultAttribute');
+                if (defaultsSb) {
+                    try {
+                        var parsedSb = JSON.parse(defaultsSb);
+                        parsedSb['data-sidebar-size'] = savedSidebar;
+                        sessionStorage.setItem('defaultAttribute', JSON.stringify(parsedSb));
+                    } catch (e) { }
+                }
+                sessionStorage.setItem('data-sidebar-size', savedSidebar);
+            }
         })();
     </script>
     <!-- Layout config Js -->
@@ -50,8 +66,8 @@
     <link href="{{ asset('assets/css/app.min.css') }}" rel="stylesheet" type="text/css" />
     <!-- custom Css-->
     <link href="{{ asset('assets/css/custom.min.css') }}" rel="stylesheet" type="text/css" />
-    <!-- Custom Css Personalizado -->
-    <link href="{{ asset('assets/css/custom.css') }}" rel="stylesheet" type="text/css" />
+    <!-- Custom Css Personalizado — cache-busting por fecha de modificación del archivo -->
+    <link href="{{ asset('assets/css/custom.css') }}?v={{ filemtime(public_path('assets/css/custom.css')) }}" rel="stylesheet" type="text/css" />
 
     <!-- Estilo para campos obligatorios -->
     <style>
@@ -159,6 +175,14 @@
             return 'Bs ' + rate.toLocaleString('es-VE', { minimumFractionDigits: 4, maximumFractionDigits: 4 });
         };
 
+        // Helper: fecha de la tasa BCV vigente (window.tasaBcv) como "dd/mm/aaaa".
+        // Para acompañar TODO display de tasa con su fecha (estándar del sistema).
+        window.bcvFechaFmt = function () {
+            var f = (window.tasaBcv && window.tasaBcv.fecha) ? String(window.tasaBcv.fecha) : '';
+            var m = f.match(/^(\d{4})-(\d{2})-(\d{2})/);
+            return m ? (m[3] + '/' + m[2] + '/' + m[1]) : '';
+        };
+
         // Rellena toda píldora BCV declarativa: cualquier elemento con [data-bcv-pill]
         // que contenga spans [data-bcv-fecha] y [data-bcv-val]. Permite mostrar la tasa
         // del día en headers de modales sin repetir el script por módulo.
@@ -177,6 +201,12 @@
                 if (v) v.textContent = valor || 'N/D';
             });
         });
+    </script>
+
+    <script>
+        // Avatar de respaldo (silueta neutra) para chips de usuario cuando no hay
+        // foto, el registro no tiene creador, o falla la carga (p. ej. ui-avatars bloqueado).
+        window.AMS_AVATAR_FALLBACK = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc0MCcgaGVpZ2h0PSc0MCc+PHJlY3Qgd2lkdGg9JzQwJyBoZWlnaHQ9JzQwJyByeD0nMjAnIGZpbGw9JyNjYmQ1ZTEnLz48Y2lyY2xlIGN4PScyMCcgY3k9JzE2JyByPSc2JyBmaWxsPScjZWVmMmY3Jy8+PHBhdGggZD0nTTkgMzRjMS41LTcuNSAyMC41LTcuNSAyMiAweicgZmlsbD0nI2VlZjJmNycvPjwvc3ZnPg==";
     </script>
 
     <!-- JAVASCRIPT -->
@@ -202,8 +232,8 @@
     <script src="{{ asset('assets/libs/feather-icons/feather.min.js') }}"></script>
     <script src="{{ asset('assets/js/pages/plugins/lord-icon-2.1.0.js') }}"></script>
     <script src="{{ asset('assets/js/plugins.js') }}"></script>
-    <!-- apexcharts -->
-    <script src="{{ asset('assets/libs/apexcharts/apexcharts.min.js') }}"></script>
+    {{-- Charts: AG Charts se carga POR VISTA (dashboard y reportes) — ApexCharts y el
+         init demo de Velzon (dashboard-ecommerce) se retiraron al estandarizar (2026-07-05) --}}
 
     <!-- datatables se cargan en cada vista individual -->
 
@@ -214,15 +244,15 @@
     <!--Swiper slider js-->
     <script src="{{ asset('assets/libs/swiper/swiper-bundle.min.js') }}"></script>
 
-    <!-- Dashboard init -->
-    <script src="{{ asset('assets/js/pages/dashboard-ecommerce.init.js') }}"></script>
-
     <!-- App js -->
     <script src="{{ asset('assets/js/app.js') }}"></script>
 
     <!-- SweetAlert2 — global para todos los módulos y para AtlanticoGuard -->
     <link href="{{ asset('assets/libs/sweetalert2/sweetalert2.min.css') }}" rel="stylesheet" type="text/css" />
     <script src="{{ asset('assets/libs/sweetalert2/sweetalert2.min.js') }}"></script>
+
+    <!-- Validación lógica global de los filtros de exportación PDF (rango de fechas) -->
+    <script src="{{ asset('assets/js/pdf-export-filtros.js') }}"></script>
 
     <!-- Notificaciones del header (campanita) -->
     @auth
@@ -594,8 +624,11 @@
                 }
             });
 
-            // Validación de documento (mínimo 6 dígitos)
-            $(document).on('blur', '#documento-number-field, #documento-identidad-field, input[name="documento_identidad"]', function () {
+            // Validación de documento (mínimo 6 dígitos).
+            // NOTA: #documento-number-field (Clientes) se excluye a propósito: ese
+            // módulo tiene su propia validación con rango "entre 6 y N" sobre
+            // #documento-error; el handler global creaba un feedback duplicado.
+            $(document).on('blur', '#documento-identidad-field, input[name="documento_identidad"]', function () {
                 let value = $(this).val().trim();
                 if (value.length < 6) {
                     marcarInvalido($(this), 'El documento debe tener al menos 6 dígitos.');
@@ -933,6 +966,162 @@
         });
 
         // ──────────────────────────────────────────────────────────────────
+        // Sidebar colapsable — persistir la preferencia del usuario.
+        // El botón hamburguesa alterna data-sidebar-size lg↔sm; guardamos el
+        // estado en localStorage para que sobreviva al cerrar el navegador.
+        // Solo persistimos en escritorio (>1025px); por debajo la plantilla
+        // gestiona el tamaño de forma responsiva (overlay off-canvas).
+        // ──────────────────────────────────────────────────────────────────
+        (function () {
+            var html = document.documentElement;
+            new MutationObserver(function () {
+                if (window.innerWidth <= 1025) return;
+                var size = html.getAttribute('data-sidebar-size');
+                if (size === 'lg' || size === 'sm') {
+                    localStorage.setItem('sgpmrja-sidebar-size', size);
+                }
+            }).observe(html, { attributes: true, attributeFilter: ['data-sidebar-size'] });
+        })();
+
+        // ──────────────────────────────────────────────────────────────────
+        // Sidebar colapsado (sm) — tooltip + click para expandir.
+        // En modo icono NO queremos el flyout de submenú de Velzon; en su lugar:
+        //   · hover  → tooltip flotante con el nombre de la opción
+        //   · click  → si el item tiene submenú, expande el sidebar a lg y abre el grupo
+        // El flyout en sí se neutraliza por CSS (ver sidebar.blade.php).
+        // El tooltip se anexa a <body> con position:fixed para que NO lo recorte
+        // el overflow del scroll del sidebar (simplebar) ni choque con los
+        // pseudo-elementos (chevron) de los items.
+        // ──────────────────────────────────────────────────────────────────
+        (function () {
+            var html = document.documentElement;
+            var nav = document.getElementById('navbar-nav');
+            if (!nav) return;
+
+            function isCollapsed() {
+                return html.getAttribute('data-sidebar-size') === 'sm';
+            }
+
+            var tip = document.createElement('div');
+            tip.className = 'sb-collapsed-tooltip';
+            document.body.appendChild(tip);
+
+            function showTip(link) {
+                if (!isCollapsed()) return;
+                var span = link.querySelector('span');
+                var text = span ? span.textContent.trim() : '';
+                if (!text) return;
+                var r = link.getBoundingClientRect();
+                tip.textContent = text;
+                tip.style.top = (r.top + r.height / 2) + 'px';
+                tip.style.left = (r.right + 12) + 'px';
+                tip.classList.add('show');
+            }
+            function hideTip() { tip.classList.remove('show'); }
+
+            // NB: usamos selector de descendiente (no hijo directo). SimpleBar
+            // reparenta los <li> dentro de .simplebar-content, así que
+            // "#navbar-nav > li > a" matchearía 0. La clase .menu-link solo
+            // existe en los items de primer nivel (los submenús usan .nav-link).
+            nav.querySelectorAll('a.menu-link').forEach(function (link) {
+                link.addEventListener('mouseenter', function () { showTip(link); });
+                link.addEventListener('mouseleave', hideTip);
+
+                // Click en un item con submenú estando colapsado → expandir a lg.
+                // Fase de captura: el sidebar ya está en lg cuando Bootstrap
+                // procesa el toggle del collapse, así que abre el grupo.
+                link.addEventListener('click', function () {
+                    if (isCollapsed() && link.getAttribute('data-bs-toggle') === 'collapse') {
+                        hideTip();
+                        html.setAttribute('data-sidebar-size', 'lg');
+                        if (window.innerWidth > 1025) localStorage.setItem('sgpmrja-sidebar-size', 'lg');
+                        var hb = document.querySelector('.hamburger-icon');
+                        if (hb) hb.classList.add('open');
+                    }
+                }, true);
+            });
+
+            // El tooltip flotante debe seguir/ocultarse ante scroll o resize.
+            window.addEventListener('scroll', hideTip, true);
+            window.addEventListener('resize', hideTip);
+        })();
+
+        // ──────────────────────────────────────────────────────────────────
+        // AtlanticoCopy — copiar al portapapeles desde los modales "Ver".
+        // Inyecta un botón de copiar junto a cada valor real y avisa con un
+        // toast. Global, cubre dos familias de modales:
+        //   · Gestión General (clientes, empleados, insumos, proveedores,
+        //     users): #viewModal con .cli-view-card-body span.fs-13
+        //   · Gestión Operativa (cotizaciones, pedidos): #viewModal con
+        //     .card-body span.fs-13; compras: #viewCompraModal con .cli-copyable
+        // ──────────────────────────────────────────────────────────────────
+        (function () {
+            function copyText(text) {
+                if (navigator.clipboard && window.isSecureContext) {
+                    return navigator.clipboard.writeText(text);
+                }
+                return new Promise(function (resolve, reject) {
+                    var ta = document.createElement('textarea');
+                    ta.value = text;
+                    ta.style.position = 'fixed';
+                    ta.style.opacity = '0';
+                    document.body.appendChild(ta);
+                    ta.select();
+                    try { document.execCommand('copy') ? resolve() : reject(); }
+                    catch (e) { reject(e); }
+                    finally { document.body.removeChild(ta); }
+                });
+            }
+
+            var copyToast = Swal.mixin({
+                toast: true, position: 'top-end', showConfirmButton: false,
+                timer: 1600, timerProgressBar: true,
+                backdrop: false, heightAuto: false, scrollbarPadding: false
+            });
+
+            // Valores copiables dentro de un modal "Ver":
+            //   · .cli-view-card-body span.fs-13 → estándar hero + cards (Gestión General)
+            //   · .card-body span.fs-13          → modales "Ver" de cotizaciones y pedidos
+            //   · .cli-copyable                  → marca explícita (compras: factura, doc/tel/email)
+            var COPY_VAL_SELECTOR = '.cli-view-card-body span.fs-13, .card-body span.fs-13, .cli-copyable';
+
+            function inyectarBotonesCopiar($modal) {
+                $modal.find('.cli-copy-btn').remove();   // evita duplicados al reabrir
+                $modal.find(COPY_VAL_SELECTOR).each(function () {
+                    if ($(this).next('.cli-copy-btn').length) return;   // ya marcado en esta pasada
+                    var val = $.trim($(this).text());
+                    if (!val || val === '-' || val === '—') return;     // salta vacíos / placeholder
+                    $('<button type="button" class="cli-copy-btn" title="Copiar">' +
+                      '<i class="ri-file-copy-line"></i></button>').insertAfter(this);
+                });
+            }
+
+            // Inyecta los botones al abrir cualquier modal "Ver" del estándar.
+            // (#viewCompraModal usa otro id por convención del módulo de compras.)
+            $(document).on('shown.bs.modal', '#viewModal, #viewCompraModal', function () {
+                inyectarBotonesCopiar($(this));
+            });
+
+            // Click delegado: copia el valor hermano y avisa.
+            $(document).on('click', '#viewModal .cli-copy-btn, #viewCompraModal .cli-copy-btn', function () {
+                var $btn = $(this);
+                var text = $.trim($btn.prev().text());
+                if (!text) return;
+                copyText(text).then(function () {
+                    $btn.addClass('is-copied').find('i')
+                        .removeClass('ri-file-copy-line').addClass('ri-check-line');
+                    setTimeout(function () {
+                        $btn.removeClass('is-copied').find('i')
+                            .removeClass('ri-check-line').addClass('ri-file-copy-line');
+                    }, 1200);
+                    copyToast.fire({ icon: 'success', title: 'Copiado al portapapeles' });
+                }).catch(function () {
+                    copyToast.fire({ icon: 'error', title: 'No se pudo copiar' });
+                });
+            });
+        })();
+
+        // ──────────────────────────────────────────────────────────────────
         // AtlanticoSelect — realza los <select> a un dropdown Bootstrap cuyo menú
         // muestra ~4 ítems con scroll (el <select> nativo no permite limitar la
         // altura de su lista). Aplica a TODO el sistema con resguardos:
@@ -960,11 +1149,12 @@
             function rebuildMenu(sel, $menu) {
                 $menu.empty();
                 $.each(sel.options, function (i, opt) {
-                    $('<li></li>').append(
-                        $('<button type="button" class="dropdown-item afs-option"></button>')
-                            .attr('data-value', opt.value)
-                            .text(opt.text)
-                    ).appendTo($menu);
+                    var $btn = $('<button type="button" class="dropdown-item afs-option"></button>')
+                        .attr('data-value', opt.value)
+                        .text(opt.text);
+                    // Honrar <option disabled>: se muestra atenuado y no clickeable.
+                    if (opt.disabled) $btn.addClass('disabled').attr('aria-disabled', 'true');
+                    $('<li></li>').append($btn).appendTo($menu);
                 });
             }
 
@@ -1007,6 +1197,7 @@
 
                 // Elegir opción → refleja en el select + dispara change
                 $menu.on('click', '.afs-option', function () {
+                    if (this.classList.contains('disabled')) return;   // opción deshabilitada
                     var val = this.getAttribute('data-value');
                     if (sel.value !== val) { $select.val(val).trigger('change'); }
                     syncToggle(sel, $wrap);
@@ -1059,7 +1250,17 @@
                     });
                 }, 0);
             });
+
+            // API pública: realzar selects agregados dinámicamente por JS
+            // (filas clonadas de <template>, repetidores, etc.). Pasa el nodo/
+            // contexto recién insertado; solo realza los aún no realzados y visibles.
+            window.AtlanticoSelect = { enhance: enhanceVisible, enhanceOne: enhance };
         })();
+    </script>
+
+    {{-- Catálogo geográfico (estado → municipios) desde BD, consumido por municipios-venezuela.js --}}
+    <script>
+        window.municipiosVenezuela = @json(($mapaMunicipiosVe ?? []) ?: null);
     </script>
     @stack('scripts')
 </body>

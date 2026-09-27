@@ -45,9 +45,12 @@ class AppServiceProvider extends ServiceProvider
         // Compartir tasa BCV con todas las vistas del admin
         View::composer('admin.*', function ($view) {
             try {
+                // Tasa VIGENTE hoy (techo fecha_bcv <= hoy; ignora tasas futuras).
                 $tasaBcv = TasaCambio::obtenerTasaActual('USD');
 
-                // Verificar si la tasa está desactualizada (no es de hoy)
+                // Está desactualizada si no hay tasa vigente para hoy (la vigente
+                // quedó en un día anterior), lo que indica que falta capturar la
+                // publicación reciente del BCV.
                 $hoy = Carbon::today()->toDateString();
                 $necesitaActualizar = !$tasaBcv || Carbon::parse($tasaBcv->fecha_bcv)->toDateString() !== $hoy;
 
@@ -55,11 +58,12 @@ class AppServiceProvider extends ServiceProvider
                 if ($necesitaActualizar && !Cache::has('bcv_actualizado_hoy')) {
                     try {
                         $service = app(TasaBcvService::class);
-                        $resultado = $service->actualizarTasas();
+                        $service->actualizarTasas();
 
-                        if ($resultado['success']) {
-                            $tasaBcv = $resultado['tasa'];
-                        }
+                        // Re-leer la VIGENTE: la tasa recién guardada puede estar
+                        // fechada a mañana (vigencia = publicación + 1), así que no
+                        // se usa directo para no mostrar una tasa futura antes de tiempo.
+                        $tasaBcv = TasaCambio::obtenerTasaActual('USD');
 
                         // Marcar como actualizado por 1 hora para evitar múltiples intentos
                         Cache::put('bcv_actualizado_hoy', true, now()->addHour());
@@ -72,6 +76,45 @@ class AppServiceProvider extends ServiceProvider
             } catch (\Exception $e) {
                 $view->with('tasaBcv', null);
             }
+        });
+
+        // Compartir el catálogo geográfico (estados + municipios) con el admin.
+        // Fuente de verdad: tablas estado/municipio. Cacheado porque es estático.
+        View::composer('admin.*', function ($view) {
+            try {
+                [$estadosVe, $mapaMunicipiosVe] = Cache::remember('catalogo_geografico_ve', now()->addDay(), function () {
+                    $estados = \App\Models\Estado::with('municipios:id,estado_id,nombre')
+                        ->orderBy('nombre')->get();
+                    $mapa = [];
+                    foreach ($estados as $e) {
+                        $mapa[$e->nombre] = $e->municipios->pluck('nombre')->values()->all();
+                    }
+                    return [$estados->pluck('nombre')->values()->all(), $mapa];
+                });
+            } catch (\Exception $e) {
+                $estadosVe = [];
+                $mapaMunicipiosVe = [];
+            }
+
+            $view->with('estadosVe', $estadosVe)->with('mapaMunicipiosVe', $mapaMunicipiosVe);
+        });
+
+        // Compartir el catálogo de género de prenda (Dama/Caballero/Unisex) con
+        // el admin. Set estable → cacheado. Lo consumen los wizards de
+        // cotización/pedido para el cruce talla × género del configurador.
+        View::composer('admin.*', function ($view) {
+            try {
+                $generosCatalogo = Cache::remember('catalogo_genero', now()->addDay(), function () {
+                    return \App\Models\Genero::activo()
+                        ->orderBy('orden')
+                        ->get(['id', 'nombre', 'etiqueta', 'icono'])
+                        ->toArray();
+                });
+            } catch (\Exception $e) {
+                $generosCatalogo = [];
+            }
+
+            $view->with('generosCatalogo', $generosCatalogo);
         });
     }
 }

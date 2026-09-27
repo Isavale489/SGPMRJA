@@ -69,10 +69,10 @@
                         aria-hidden="true" title="Creada por"
                         data-default-name="{{ Auth::user()->name }}"
                         data-default-avatar="{{ Auth::user()->avatar_url }}">
-                        <span class="wiz-client-banner-label">Creada por:</span>
                         <img class="wiz-client-banner-avatar wiz-client-banner-avatar--img"
-                            id="ord-creador-avatar" src="{{ Auth::user()->avatar_url }}" alt="" />
+                            id="ord-creador-avatar" src="{{ Auth::user()->avatar_url }}" alt="" onerror="this.onerror=null;this.src=window.AMS_AVATAR_FALLBACK" />
                         <div class="wiz-client-banner-main">
+                            <span class="wiz-client-banner-eyebrow">Creada por</span>
                             <span class="wiz-client-banner-name" id="ord-creador-name">{{ Auth::user()->name }}</span>
                         </div>
                     </div>
@@ -284,14 +284,25 @@
                         <div class="px-3">
                             <div id="ord-resumen"></div>
 
-                            {{-- Notas (compartidas para todas las órdenes del lote) --}}
-                            <div class="card border-0 shadow-sm mt-2 mb-0">
-                                <div class="card-header border-0 bg-soft-primary py-2 px-3">
-                                    <h6 class="mb-0 text-atlantico-dark fs-13">
-                                        <i class="ri-sticky-note-line me-1"></i>Notas <span class="text-muted fw-normal" id="ord-notas-scope"></span>
-                                    </h6>
+                            {{-- Aviso de stock proyectado (NO bloqueante): compara los insumos
+                                 reales de las órdenes contra el stock y ofrece crear la compra
+                                 prellenada con los faltantes. Mismo renderer que cotización/pedido. --}}
+                            <div class="cli-view-card cli-view-card--flat mt-2 mb-0">
+                                <div class="cli-view-card-header d-flex align-items-center justify-content-between">
+                                    <span><i class="ri-scales-3-line"></i>Disponibilidad de insumos</span>
+                                    <span class="badge rounded-pill" id="ord-proyeccion-badge" hidden></span>
                                 </div>
-                                <div class="card-body p-3">
+                                <div class="cli-view-card-body">
+                                    <div id="ord-proyeccion-body"></div>
+                                </div>
+                            </div>
+
+                            {{-- Notas (compartidas para todas las órdenes del lote) --}}
+                            <div class="cli-view-card cli-view-card--flat mt-2 mb-0">
+                                <div class="cli-view-card-header">
+                                    <i class="ri-sticky-note-line"></i>Notas <span class="text-muted fw-normal" id="ord-notas-scope"></span>
+                                </div>
+                                <div class="cli-view-card-body">
                                     <textarea id="ord-notas-global" class="form-control form-control-sm" rows="2"
                                         placeholder="Observaciones sobre la orden (opcional)..."></textarea>
                                 </div>

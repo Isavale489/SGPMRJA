@@ -40,6 +40,9 @@
                                         data-bs-target="#createModal">
                                         <i class="ri-add-line align-bottom me-1"></i> Registrar Movimiento
                                     </button>
+                                    <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#pdfExportModal">
+                                        <i class="ri-file-pdf-fill align-bottom me-1"></i> Exportar PDF
+                                    </button>
                                     {{-- Acciones secundarias agrupadas — estándar .actions-menu --}}
                                     <div class="dropdown">
                                         <button type="button" class="btn btn-soft-secondary dropdown-toggle"
@@ -47,12 +50,6 @@
                                             <i class="ri-menu-2-line align-bottom me-1"></i> Más acciones
                                         </button>
                                         <ul class="dropdown-menu dropdown-menu-end actions-menu">
-                                            <li>
-                                                <button type="button" class="dropdown-item act-item act-primary"
-                                                    data-bs-toggle="modal" data-bs-target="#masivoModal">
-                                                    <span class="act-ic"><i class="ri-stack-line"></i></span>Movimiento masivo
-                                                </button>
-                                            </li>
                                             <li>
                                                 <a class="dropdown-item act-item act-warn" href="{{ route('movimiento-insumo.alertas') }}">
                                                     <span class="act-ic"><i class="ri-alarm-warning-line"></i></span>Alertas de Stock
@@ -63,12 +60,10 @@
                                                     <span class="act-ic"><i class="ri-file-list-3-line"></i></span>Reporte de Insumos
                                                 </a>
                                             </li>
-                                            <li><hr class="dropdown-divider"></li>
                                             <li>
-                                                <button type="button" class="dropdown-item act-item act-pdf"
-                                                    data-bs-toggle="modal" data-bs-target="#pdfExportModal">
-                                                    <span class="act-ic"><i class="ri-file-pdf-fill"></i></span>Exportar Movimientos
-                                                </button>
+                                                <a class="dropdown-item act-item act-restore" href="{{ route('movimiento-insumo.rotacion') }}">
+                                                    <span class="act-ic"><i class="ri-loop-right-line"></i></span>Análisis de Rotación
+                                                </a>
                                             </li>
                                         </ul>
                                     </div>
@@ -119,6 +114,17 @@
                                             </select>
                                         </div>
                                         <div class="col-12 col-md-3">
+                                            <label class="navy-filter-label" for="filter-stock">
+                                                <i class="ri-stack-line"></i> Estado de stock
+                                            </label>
+                                            <select class="form-select navy-filter-select" id="filter-stock">
+                                                <option value="">Todos</option>
+                                                <option value="critico">Crítico (por debajo del mínimo)</option>
+                                                <option value="exceso">Exceso (por encima del máximo)</option>
+                                                <option value="optimo">Óptimo (dentro del rango)</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-12 col-md-3">
                                             <label class="navy-filter-label" for="filter-fecha-desde">
                                                 <i class="ri-calendar-line"></i> Desde
                                             </label>
@@ -145,7 +151,7 @@
                                     <th>Cantidad</th>
                                     <th>Stock Nuevo</th>
                                     <th>Fecha</th>
-                                    <th>Acciones</th>
+                                    <th class="text-center">Acciones</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -232,6 +238,7 @@
                                         <th>Existencia Mín.</th>
                                         <th>Existencia Actual</th>
                                         <th>Existencia Máx.</th>
+                                        <th>Precio Entrada ($)</th>
                                         <th>Estado</th>
                                     </tr>
                                 </thead>
@@ -245,7 +252,6 @@
     </div>
 
     @include('admin.movimiento-insumo.movimientos.modals.create')
-    @include('admin.movimiento-insumo.movimientos.modals.masivo')
     @include('admin.movimiento-insumo.movimientos.modals.view')
     @include('admin.movimiento-insumo.movimientos.modals.create_insumo')
 
@@ -265,6 +271,15 @@
                             <option value="">Todos</option>
                             <option value="Entrada">Entrada</option>
                             <option value="Salida">Salida</option>
+                        </select>
+                    </div>
+                    <div class="mb-0 mt-3">
+                        <label class="form-label fw-semibold" for="pdf-filter-stock">Estado de stock</label>
+                        <select class="form-select" id="pdf-filter-stock">
+                            <option value="">Todos</option>
+                            <option value="critico">Crítico (por debajo del mínimo)</option>
+                            <option value="exceso">Exceso (por encima del máximo)</option>
+                            <option value="optimo">Óptimo (dentro del rango)</option>
                         </select>
                     </div>
                     <div class="row g-2 mt-3">
@@ -309,16 +324,18 @@
             var baseUrl = '{{ route('movimiento-insumo.reporte.pdf') }}';
             var params = [];
             var tipo   = $('#pdf-filter-tipo').val();
+            var estadoStock = $('#pdf-filter-stock').val();
             var fdesde = $('#pdf-fecha-desde').val();
             var fhasta = $('#pdf-fecha-hasta').val();
             if (tipo)   params.push('tipo_movimiento=' + encodeURIComponent(tipo));
+            if (estadoStock) params.push('estado_stock=' + encodeURIComponent(estadoStock));
             if (fdesde) params.push('fecha_desde=' + encodeURIComponent(fdesde));
             if (fhasta) params.push('fecha_hasta=' + encodeURIComponent(fhasta));
             window.open(baseUrl + (params.length ? '?' + params.join('&') : ''), '_blank');
             bootstrap.Modal.getInstance(document.getElementById('pdfExportModal'))?.hide();
         });
         $('#pdfExportModal').on('show.bs.modal', function () {
-            $('#pdf-filter-tipo, #pdf-fecha-desde, #pdf-fecha-hasta').val('');
+            $('#pdf-filter-tipo, #pdf-filter-stock, #pdf-fecha-desde, #pdf-fecha-hasta').val('');
         });
     </script>
 @endpush

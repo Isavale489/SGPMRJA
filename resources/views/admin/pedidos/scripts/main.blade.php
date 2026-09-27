@@ -656,7 +656,11 @@ $(document).ready(function () {
             $('#modalClienteTitle').text('Crear Cliente');
             $('#add-btn-cliente').show();
             $('#documento-prefix-field-cliente').val('V-');
-            $('#telefono-prefix-field-cliente').val('0424');
+            // Reset teléfonos del repetidor
+            (function () {
+                var r = document.getElementById('ped-cli-tel-repeater');
+                if (window.TelefonosRepeater && r) { TelefonosRepeater.init(r); TelefonosRepeater.load(r, []); }
+            })();
             $('#estatus-field-cliente').prop('checked', true);
             $('#estatus-label-cliente').text('Activo');
             $('#ciudad-field-cliente').html('<option value="">Primero seleccione un estado</option>');
@@ -731,9 +735,6 @@ $(document).ready(function () {
         $(document).on('input', '#documento-number-field-cliente', function () {
             this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);
         });
-        $(document).on('input', '#telefono-number-field-cliente', function () {
-            this.value = this.value.replace(/[^0-9]/g, '').slice(0, 7);
-        });
         $(document).on('change', '#estatus-field-cliente', function () {
             $('#estatus-label-cliente').text($(this).is(':checked') ? 'Activo' : 'Inactivo');
         });
@@ -744,9 +745,19 @@ $(document).ready(function () {
 
             // Concatenar campos compuestos antes de validar
             var documentoCompleto = $('#documento-prefix-field-cliente').val() + $('#documento-number-field-cliente').val();
-            var telefonoCompleto  = $('#telefono-prefix-field-cliente').val() + '-' + $('#telefono-number-field-cliente').val();
             $('#documento-field-cliente').val(documentoCompleto);
-            $('#telefono-field-cliente').val(telefonoCompleto);
+
+            // Teléfonos: validar el repetidor
+            var telRootPed = document.getElementById('ped-cli-tel-repeater');
+            if (window.TelefonosRepeater && telRootPed) {
+                var telChkPed = TelefonosRepeater.validate(telRootPed);
+                if (!telChkPed.ok) {
+                    Swal.fire({ icon: 'warning', title: 'Teléfonos', text: telChkPed.message });
+                    return;
+                }
+            }
+            var pedTels = (window.TelefonosRepeater && telRootPed) ? TelefonosRepeater.collect(telRootPed) : [];
+            var telefonoCompleto = ((pedTels.find(function (t) { return t.es_principal; }) || pedTels[0] || {}).numero) || '';
 
             // Validar apellido explícitamente
             var tipo     = $('#tipo_cliente-field-cliente').val();
@@ -776,6 +787,9 @@ $(document).ready(function () {
 
             $(this).prop('disabled', true);
 
+            if (window.TelefonosRepeater && telRootPed) {
+                TelefonosRepeater.syncHiddenInputs(document.getElementById('clienteFormCotizacion'), telRootPed);
+            }
             var formData = $('#clienteFormCotizacion').serialize() + '&_token=' + $('meta[name="csrf-token"]').attr('content');
 
             $.ajax({
@@ -846,6 +860,13 @@ $(document).ready(function () {
         var pedColoresHex = @json($colores->mapWithKeys(function ($c) {
             return [$c->id => $c->hex_referencial];
         }));
+        var pedGenerosArr = @json($generosCatalogo ?? []);
+        var pedGenerosCatalogo = {};
+        pedGenerosArr.forEach(function (g) { pedGenerosCatalogo[g.id] = (g.etiqueta || g.nombre); });
+        function pedDefaultGeneroId() {
+            var u = pedGenerosArr.find(function (g) { return String(g.nombre || '').toLowerCase() === 'unisex'; });
+            return u ? u.id : (pedGenerosArr[0] ? pedGenerosArr[0].id : null);
+        }
 
         function pedFmt(n) {
             // Formato es-VE (estándar de la app): $1.234,56
@@ -917,7 +938,7 @@ $(document).ready(function () {
                 var g = byKey[key];
                 g.totalQty      += (it.cantidad || 0);
                 g.totalSubtotal += (it.subtotal || 0);
-                g.tallas.push({ label: it.talla_label || 'Única', qty: it.cantidad || 0 });
+                g.tallas.push({ label: it.talla_label || 'Única', genero: it.genero_label || '', qty: it.cantidad || 0 });
                 if (it.bordados && it.bordados.length) {
                     g.llevaBordado = true;
                     // Bordados por unidad (las tallas del mismo producto+color comparten config)
@@ -939,7 +960,8 @@ $(document).ready(function () {
                 var hex = g.color_id ? (pedColoresHex[g.color_id] || '') : '';
                 var colorDot = '<span class="cot-color-dot" style="background:' + (hex || '#e2e8f0') + ';border-color:#cbd5e1;"></span>';
                 var tallasChips = g.tallas.map(function (t) {
-                    return '<span class="cot-chip cot-chip-talla">' + pedEscHtml(t.label) +
+                    var gen = t.genero ? '<span class="cot-chip-gen">' + pedEscHtml(t.genero) + '</span>' : '';
+                    return '<span class="cot-chip cot-chip-talla">' + pedEscHtml(t.label) + gen +
                            '<span class="cot-chip-x">×</span><strong>' + t.qty + '</strong></span>';
                 }).join('');
                 var bordadoLine;
@@ -995,6 +1017,7 @@ $(document).ready(function () {
                 $('#ped-prod-cantidad-field').val(item.cantidad);
                 $('#ped-prod-talla-field').val(item.talla_id || '');
                 $('#ped-prod-color-field').val(item.color_id || '');
+                $('#ped-prod-genero-field').val(item.genero_id || pedDefaultGeneroId());
                 $('#ped-prod-precio-field').val(item.precio_unitario);
                 pedRecalcularSubtotal();
             } else {
@@ -1005,6 +1028,7 @@ $(document).ready(function () {
                 $('#ped-prod-cantidad-field').val(1);
                 $('#ped-prod-talla-field').val('');
                 $('#ped-prod-color-field').val('');
+                $('#ped-prod-genero-field').val(pedDefaultGeneroId());
                 $('#ped-prod-precio-field').val('');
                 $('#ped-prod-subtotal-display').text('$0.00');
             }
@@ -1071,6 +1095,7 @@ $(document).ready(function () {
             var precio   = parseFloat($('#ped-prod-precio-field').val());
             var tallaId  = $('#ped-prod-talla-field').val() || null;
             var colorId  = $('#ped-prod-color-field').val() || null;
+            var generoId = $('#ped-prod-genero-field').val() || null;
 
             if (!nombre) {
                 Swal.fire({ icon: 'warning', title: 'Producto requerido',
@@ -1088,6 +1113,11 @@ $(document).ready(function () {
                     text: 'Ingresa un precio unitario válido.', timer: 2000, showConfirmButton: false });
                 return;
             }
+            if (!generoId) {
+                Swal.fire({ icon: 'warning', title: 'Género requerido',
+                    text: 'Selecciona el género de la prenda.', timer: 2000, showConfirmButton: false });
+                return;
+            }
 
             var item = {
                 producto_id:  $('#ped-prod-id-field').val() || null,
@@ -1097,6 +1127,8 @@ $(document).ready(function () {
                 talla_label:  tallaId ? (pedTallasCatalogo[tallaId] || '') : '',
                 color_id:     colorId ? parseInt(colorId, 10) : null,
                 color_label:  colorId ? (pedColoresCatalogo[colorId] || '') : '',
+                genero_id:    generoId ? parseInt(generoId, 10) : null,
+                genero_label: generoId ? (pedGenerosCatalogo[generoId] || '') : '',
                 precio_unitario: precio,
                 subtotal:     cantidad * precio,
                 heredado_cotizacion_id: null
@@ -1173,6 +1205,8 @@ $(document).ready(function () {
                             talla_label:  p.talla_id ? (pedTallasCatalogo[p.talla_id] || '') : '',
                             color_id:     p.color_id || null,
                             color_label:  p.color_id ? (pedColoresCatalogo[p.color_id] || '') : '',
+                            genero_id:    p.genero_id || null,
+                            genero_label: p.genero_id ? (pedGenerosCatalogo[p.genero_id] || '') : '',
                     color_hex:    p.color_id ? (pedColoresHex[p.color_id] || '') : '',
                     sku:          p.sku || '',
                     imagen_url:   p.imagen_url || '',
@@ -1217,6 +1251,8 @@ $(document).ready(function () {
                     talla_label:  p.talla_id ? (pedTallasCatalogo[p.talla_id] || '') : '',
                     color_id:     p.color_id || null,
                     color_label:  p.color_id ? (pedColoresCatalogo[p.color_id] || '') : '',
+                    genero_id:    p.genero_id || null,
+                    genero_label: p.genero_id ? (pedGenerosCatalogo[p.genero_id] || '') : '',
                     color_hex:    p.color_id ? (pedColoresHex[p.color_id] || '') : '',
                     sku:          p.sku || '',
                     imagen_url:   p.imagen_url || '',
@@ -1354,6 +1390,38 @@ $(document).ready(function () {
             }
 
             $('#ped-pay-list').append($row);
+            // Realza el <select> de banco recién clonado al estándar AtlanticoSelect
+            // (el <template> no pasa por el barrido global de selects). Se usa
+            // enhanceOne para que funcione aun si el paso 3 está oculto (hidratar edit).
+            if (window.AtlanticoSelect && meta.banco) {
+                window.AtlanticoSelect.enhanceOne($row.find('.ped-pay-banco')[0]);
+                // La card de pagos vive al pie del wizard. El menú del banco debe
+                // (1) FLOTAR libre por encima del UI, sin recortarse por el overflow
+                // del card/lista/modal, y (2) abrir SIEMPRE hacia arriba.
+                //  · dropup            → placement 'top-start'
+                //  · Popper strategy fixed → escapa el clipping de los ancestros
+                //  · flip deshabilitado → nunca se voltea hacia abajo (footer)
+                var $wrap = $row.find('.ped-pay-row-fields > .afs-wrap').addClass('dropup');
+                var toggleEl = $wrap.find('.afs-toggle')[0];
+                if (toggleEl && window.bootstrap && window.bootstrap.Dropdown) {
+                    new window.bootstrap.Dropdown(toggleEl, {
+                        popperConfig: function (cfg) {
+                            cfg.strategy = 'fixed';
+                            cfg.modifiers = (cfg.modifiers || []).concat([{ name: 'flip', enabled: false }]);
+                            return cfg;
+                        }
+                    });
+                    // Con strategy 'fixed' los anchos porcentuales del menú (w-100 y
+                    // min-width:100% de .afs-menu) se resuelven contra el VIEWPORT,
+                    // no contra el wrap → se estiraba a toda la pantalla y quedaba
+                    // desfasado. Se quita w-100 y se fija el ancho real del toggle
+                    // en px en cada apertura (cubre resize/zoom).
+                    var $menu = $wrap.children('.afs-menu').removeClass('w-100');
+                    $wrap.on('show.bs.dropdown', function () {
+                        $menu.css({ width: toggleEl.offsetWidth + 'px', minWidth: 0 });
+                    });
+                }
+            }
             pedRecalcularPago();
             if (!data) $row.find('.ped-pay-monto').trigger('focus');
             return $row;
@@ -1530,7 +1598,8 @@ $(document).ready(function () {
                 var bordadoChip = it.lleva_bordado
                     ? '<span class="cot-resumen-bordado-pill"><i class="ri-scissors-cut-line"></i> bordado</span>'
                     : '';
-                var tallaPill = '<span class="cot-linea-talla">' + esc(it.talla_label || 'Única') + '<b>×' + it.cantidad + '</b></span>';
+                var genTxt = it.genero_label ? '<span class="cot-linea-genero">' + esc(it.genero_label) + '</span>' : '';
+                var tallaPill = '<span class="cot-linea-talla">' + esc(it.talla_label || 'Única') + genTxt + '<b>×' + it.cantidad + '</b></span>';
                 var thumb = it.imagen_url
                     ? '<img src="' + esc(it.imagen_url) + '" alt="" class="ped-prod-thumb-img">'
                     : '<div class="ped-prod-thumb-ph"><i class="ri-t-shirt-2-line"></i></div>';
@@ -1571,7 +1640,9 @@ $(document).ready(function () {
             $('#ped-res-abono-hero').text(pedFmtRes(abono));
             $('#ped-res-restante-hero').text(pedFmtRes(restante));
 
-            // Tasa BCV y equivalente en Bs
+            // Tasa BCV (con su fecha en el label) y equivalente en Bs
+            var pedResFecha = (typeof window.bcvFechaFmt === 'function') ? window.bcvFechaFmt() : '';
+            $('#ped-res-tasa-fecha').text(pedResFecha ? ' (' + pedResFecha + ')' : '');
             if (window.tasaBcv && window.tasaBcv.valor) {
                 $('#ped-res-tasa-hero').text('Bs ' + parseFloat(window.tasaBcv.valor)
                     .toLocaleString('es-VE', { minimumFractionDigits: 4, maximumFractionDigits: 4 }));
@@ -1627,7 +1698,62 @@ $(document).ready(function () {
             pedRenderResDatos();
             pedRenderResProductos();
             pedRenderResPago();
+            pedRefreshProyeccion();
         };
+
+        // Proyección NO bloqueante de insumos para producir el pedido.
+        // Usa las líneas actuales del wizard (pedProdState) → funciona tanto al
+        // crear (desde cotización, aún sin id) como al ver/editar un pedido.
+        function pedRefreshProyeccion() {
+            var bodyEl = document.getElementById('ped-proyeccion-body');
+            var badgeEl = document.getElementById('ped-proyeccion-badge');
+            if (!bodyEl || !window.ProyeccionInsumos) return;
+
+            var items = (window.pedProdState && window.pedProdState.items) || [];
+            var lineas = items
+                .filter(function (it) { return parseInt(it.cantidad, 10) > 0; })
+                .map(function (it) {
+                    return {
+                        producto_id: it.producto_id || null,
+                        tipo_producto_id: it.tipo_producto_id || null,
+                        tela_id: it.insumo_tela_id || null,
+                        cantidad: parseInt(it.cantidad, 10)
+                    };
+                });
+
+            if (!lineas.length) {
+                bodyEl.innerHTML = '<div class="proy-state proy-state--muted">' +
+                    '<i class="ri-information-line me-1"></i>Sin productos para proyectar.</div>';
+                if (badgeEl) badgeEl.hidden = true;
+                return;
+            }
+
+            ProyeccionInsumos.cargar({
+                url: '{{ route("pedidos.proyeccionInsumos") }}',
+                method: 'POST',
+                csrf: $('meta[name="csrf-token"]').attr('content'),
+                payload: { lineas: lineas },
+                bodyEl: bodyEl,
+                badgeEl: badgeEl,
+                contexto: 'pedido'
+            });
+        }
+
+        // Recalcular al volver a esta pestaña (tras procesar una compra en otra
+        // pestaña). offsetParent != null ⇒ el panel está visible (modal + paso 4).
+        document.addEventListener('visibilitychange', function () {
+            if (document.visibilityState !== 'visible') return;
+            var body = document.getElementById('ped-proyeccion-body');
+            if (body && body.offsetParent !== null) pedRefreshProyeccion();
+        });
+
+        // Tiempo real entre pestañas: compra procesada/anulada en otra pestaña.
+        if (window.ProyeccionInsumos && ProyeccionInsumos.onStockChange) {
+            ProyeccionInsumos.onStockChange(function () {
+                var body = document.getElementById('ped-proyeccion-body');
+                if (body && body.offsetParent !== null) pedRefreshProyeccion();
+            });
+        }
 
         // Construir payload para el store
         function pedConstruirPayload() {
@@ -1651,6 +1777,7 @@ $(document).ready(function () {
                         cantidad:    it.cantidad,
                         talla_id:    it.talla_id || null,
                         color_id:    it.color_id || null,
+                        genero_id:   it.genero_id || null,
                         // precio_unitario = BASE (sin bordado); el backend re-suma el recargo.
                         // Si por algún motivo no hay precio_base, cae al precio mostrado.
                         precio_unitario: (it.precio_base != null ? it.precio_base : it.precio_unitario),
@@ -1975,6 +2102,7 @@ $(document).ready(function () {
                         cantidad:        d.cantidad,
                         talla_id:        d.talla_id || null,
                         color_id:        d.color_id || null,
+                        genero_id:       d.genero_id || null,
                         precio_unitario: d.precio_unitario,
                         bordados:        Array.isArray(d.bordados) ? d.bordados : []
                     };

@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests;
 
+use App\Services\BordadoPricingService;
+use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -44,6 +46,29 @@ class UpdatePedidoRequest extends FormRequest
             'productos.*.bordados.*.cantidad' => 'nullable|integer|min:1',
             'productos.*.color_id' => ['nullable', 'integer', Rule::exists('color', 'id')],
             'productos.*.talla_id' => ['nullable', 'integer', Rule::exists('talla', 'id')],
+            'productos.*.genero_id' => ['required', 'integer', Rule::exists('genero', 'id')],
         ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'productos.*.genero_id.required' => 'El género es obligatorio.',
+            'productos.*.genero_id.exists' => 'El género seleccionado no es válido.',
+        ];
+    }
+
+    /**
+     * Tope de bordados por producto (suma de cantidades por línea). Misma política
+     * que la cotización; ver App\Services\BordadoPricingService.
+     */
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $v) {
+            $max = parametro('cotizaciones.max_bordados_producto');
+            foreach (BordadoPricingService::indicesQueExcedenMaximo($this->input('productos', []), $max) as $i) {
+                $v->errors()->add("productos.$i.bordados", "No se pueden agregar más de {$max} bordados por producto.");
+            }
+        });
     }
 }

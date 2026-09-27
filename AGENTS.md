@@ -45,9 +45,9 @@ Para contexto histórico (sprints cerrados, decisiones pasadas), ver `docs/histo
 ### Git
 - **NUNCA** correr `git reset --hard`, `git clean -fd`, `git push --force` sin confirmación del usuario.
 - **NUNCA** hacer commits que sumen `-i` (interactivos).
-- Rama default: `enmanuel`. Rama productiva: `main`. Sin staging.
+- Rama default: `dev`. Rama productiva: `main`. Sin staging.
 - Antes de cambios grandes, ofrecer crear rama nueva: `feat/<slug>` o `fix/<slug>`.
-- Toda PR cierra contra `enmanuel`. `main` solo recibe merges desde `enmanuel`.
+- Toda PR cierra contra `dev`. `main` solo recibe merges desde `dev`.
 - **NUNCA** sobrescribir tags ni reescribir historia pública.
 
 ### Archivos
@@ -243,12 +243,12 @@ php artisan cache:clear
 php artisan view:clear
 
 # Git
-git checkout enmanuel
-git pull origin enmanuel
+git checkout dev
+git pull origin dev
 git checkout -b feat/<slug>          # o fix/<slug>
 # ...trabajo...
 git push -u origin feat/<slug>
-gh pr create --base enmanuel
+gh pr create --base dev
 ```
 
 ---

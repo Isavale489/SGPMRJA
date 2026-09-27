@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\Color;
 use App\Models\Talla;
+use App\Models\Genero;
 
 class DetalleCotizacion extends Model
 {
@@ -25,6 +26,7 @@ class DetalleCotizacion extends Model
         'lleva_bordado',
         'color_id',
         'talla_id',
+        'genero_id',
         'precio_unitario',
     ];
 
@@ -49,6 +51,11 @@ class DetalleCotizacion extends Model
     public function talla()
     {
         return $this->belongsTo(Talla::class);
+    }
+
+    public function genero()
+    {
+        return $this->belongsTo(Genero::class);
     }
 
     public function cotizacion()

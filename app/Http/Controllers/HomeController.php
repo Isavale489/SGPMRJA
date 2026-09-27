@@ -46,11 +46,14 @@ class HomeController extends Controller
         $tendenciaMontos = [];
 
         try {
-            // 1 query: conteos de maestros usando subqueries
+            // 1 query: conteos de maestros usando subqueries.
+            // "Productos" = catálogo de Tipos de Producto (tipo_producto): es lo que
+            // lista el módulo /productos ("Catálogo de Productos (Tipos)"). La tabla
+            // `producto` solo guarda variantes materializadas (normalmente 0).
             $counts = DB::selectOne("
                 SELECT
                     (SELECT COUNT(*) FROM cliente WHERE deleted_at IS NULL) as clientes,
-                    (SELECT COUNT(*) FROM producto WHERE deleted_at IS NULL) as productos,
+                    (SELECT COUNT(*) FROM tipo_producto WHERE deleted_at IS NULL) as productos,
                     (SELECT COUNT(*) FROM empleado WHERE deleted_at IS NULL) as empleados,
                     (SELECT COUNT(*) FROM proveedor WHERE deleted_at IS NULL) as proveedores
             ");

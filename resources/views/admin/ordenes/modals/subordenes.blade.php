@@ -18,11 +18,11 @@
                 </p>
 
                 {{-- Alta de sub-orden + asignación de empleados --}}
-                <div class="card border-0 shadow-sm mb-3">
-                    <div class="card-header border-0 bg-soft-primary">
-                        <h6 class="mb-0 text-atlantico-dark"><i class="ri-add-line me-1"></i>Nueva sub-orden</h6>
+                <div class="cli-view-card cli-view-card--flat mb-3">
+                    <div class="cli-view-card-header">
+                        <i class="ri-add-line"></i>Nueva sub-orden
                     </div>
-                    <div class="card-body">
+                    <div class="cli-view-card-body">
                         <form id="soForm" novalidate>
                             <input type="hidden" id="so-orden-id">
                             <div class="row g-2">

@@ -33,8 +33,7 @@ class ProveedorController extends Controller
 
         if ($q) {
             $query->whereHas('persona', function ($sub) use ($q) {
-                $sub->where('nombre', 'like', "{$q}%")
-                    ->orWhere('apellido', 'like', "{$q}%")
+                $sub->where('nombre', 'like', "%{$q}%")
                     ->orWhere('documento_identidad', 'like', "{$q}%");
             });
         }
@@ -78,7 +77,7 @@ class ProveedorController extends Controller
         if ($request->filled('filter_estado_territorial')) {
             $estado = $request->input('filter_estado_territorial');
             $query->whereHas('persona.direcciones', function ($q) use ($estado) {
-                $q->where('estado', $estado);
+                $q->whereHas('estadoRel', fn ($e) => $e->where('nombre', $estado));
             });
         }
 
@@ -127,10 +126,9 @@ class ProveedorController extends Controller
                     return;
                 }
                 $query->whereHas('persona', function ($p) use ($keyword) {
-                    $p->where('nombre', 'like', "{$keyword}%")
-                      ->orWhere('apellido', 'like', "{$keyword}%")
+                    // `nombre` ya contiene el nombre completo / razón social.
+                    $p->where('nombre', 'like', "%{$keyword}%")
                       ->orWhere('email', 'like', "{$keyword}%")
-                      ->orWhereRaw("CONCAT(nombre, ' ', apellido) like ?", ["{$keyword}%"])
                       ->orWhereRaw("CONCAT(tipo_documento, documento_identidad) like ?", ["{$keyword}%"]);
                 });
             }, true)
@@ -156,12 +154,15 @@ class ProveedorController extends Controller
                 'apellido' => 'required|string|max:100',
                 'tipo_documento' => 'required|in:V-,E-,J-,G-',
                 'documento_identidad' => 'required|string|max:20|unique:persona,documento_identidad',
-                'telefono' => 'required|string|max:20',
+                'telefonos' => 'required|array|min:1|max:3',
+                'telefonos.*.numero' => ['required', 'string', 'regex:/^[0-9]{4}-[0-9]{7}$/'],
+                'telefonos.*.tipo' => 'required|in:movil,casa,trabajo',
+                'telefonos.*.es_principal' => 'required|boolean',
                 'email' => 'required|email|max:255|unique:persona,email',
                 'direccion' => 'required|string|max:255',
                 'ciudad' => 'nullable|string|max:100',
                 'estado_territorial' => 'nullable|string|max:50',
-            ]);
+            ], $this->telefonosMessages());
 
             $proveedor = $this->proveedorService->crearNatural($request->all());
             return response()->json([
@@ -174,11 +175,14 @@ class ProveedorController extends Controller
                 'razon_social' => 'required|string|max:100',
                 'rif' => 'required|string|max:15|unique:persona,documento_identidad,NULL,id,tipo_documento,' . $this->parseRifPrefix($request->rif),
                 'direccion' => 'required|string|max:200',
-                'telefono' => 'required|string|max:20',
+                'telefonos' => 'required|array|min:1|max:3',
+                'telefonos.*.numero' => ['required', 'string', 'regex:/^[0-9]{4}-[0-9]{7}$/'],
+                'telefonos.*.tipo' => 'required|in:movil,casa,trabajo',
+                'telefonos.*.es_principal' => 'required|boolean',
                 'email' => 'required|email|max:100|unique:persona,email',
                 'contacto' => 'nullable|string|max:100',
                 'telefono_contacto' => 'nullable|string|max:20',
-            ]);
+            ], $this->telefonosMessages());
 
             $proveedor = $this->proveedorService->crearJuridico($request->all());
             return response()->json([
@@ -259,6 +263,22 @@ class ProveedorController extends Controller
     }
 
     /**
+     * Mensajes de validación (ES) para el conjunto de teléfonos. Compartidos por
+     * los validate() de store/update (natural y jurídico).
+     */
+    private function telefonosMessages(): array
+    {
+        return [
+            'telefonos.required' => 'Agrega al menos un teléfono.',
+            'telefonos.min' => 'Agrega al menos un teléfono.',
+            'telefonos.max' => 'Máximo 3 teléfonos por persona.',
+            'telefonos.*.numero.required' => 'El número de teléfono es obligatorio.',
+            'telefonos.*.numero.regex' => 'El teléfono debe tener el formato 0424-1234567.',
+            'telefonos.*.tipo.in' => 'El tipo de teléfono no es válido.',
+        ];
+    }
+
+    /**
      * Serializa un proveedor para el autocomplete/card del wizard de compras.
      */
     private function proveedorPayload(Proveedor $proveedor): array
@@ -283,13 +303,14 @@ class ProveedorController extends Controller
         $proveedor = Proveedor::withTrashed()->with('persona.telefonos', 'persona.direcciones')->findOrFail($id);
         $persona = $proveedor->persona;
         $telefonoPrincipal = $persona ? $persona->telefonos->where('es_principal', true)->first() : null;
-        $direccionPrincipal = $persona ? $persona->direcciones->where('es_principal', true)->first() : null;
+        $direccionPrincipal = $persona ? $persona->direccion : null;
 
         $data = [
             'id' => $proveedor->id,
             'tipo_proveedor' => $proveedor->tipo_proveedor,
             'persona_id' => $proveedor->persona_id,
             'telefono' => $telefonoPrincipal ? $telefonoPrincipal->numero : null,
+            'telefonos' => $persona ? $persona->telefonos : [],
             'email' => $persona ? $persona->email : null,
             'direccion' => $direccionPrincipal ? $direccionPrincipal->direccion : null,
             'contacto' => $proveedor->contacto,
@@ -304,7 +325,8 @@ class ProveedorController extends Controller
 
         if ($proveedor->esNatural() && $persona) {
             $data['nombre'] = $persona->nombre;
-            $data['apellido'] = $persona->apellido;
+            // `nombre` ya consolida nombre+apellido; el campo apellido queda vacío en edición.
+            $data['apellido'] = '';
             $data['tipo_documento'] = $persona->tipo_documento;
             $data['documento_identidad'] = $persona->documento_identidad;
             $data['ciudad'] = $direccionPrincipal ? $direccionPrincipal->ciudad : null;
@@ -329,12 +351,15 @@ class ProveedorController extends Controller
                 'apellido' => 'required|string|max:100',
                 'tipo_documento' => 'required|in:V-,E-,J-,G-',
                 'documento_identidad' => 'required|string|max:20|unique:persona,documento_identidad,' . ($proveedor->persona_id ?? 0),
-                'telefono' => 'required|string|max:20',
+                'telefonos' => 'required|array|min:1|max:3',
+                'telefonos.*.numero' => ['required', 'string', 'regex:/^[0-9]{4}-[0-9]{7}$/'],
+                'telefonos.*.tipo' => 'required|in:movil,casa,trabajo',
+                'telefonos.*.es_principal' => 'required|boolean',
                 'email' => 'required|email|max:255|unique:persona,email,' . ($proveedor->persona_id ?? 0),
                 'direccion' => 'required|string|max:255',
                 'ciudad' => 'nullable|string|max:100',
                 'estado_territorial' => 'nullable|string|max:50',
-            ]);
+            ], $this->telefonosMessages());
 
             $this->proveedorService->actualizarNatural($proveedor, $request->all());
             return response()->json(['success' => 'Proveedor actualizado exitosamente.']);
@@ -343,13 +368,16 @@ class ProveedorController extends Controller
                 'razon_social' => 'required|string|max:100',
                 'rif' => 'required|string|max:15',
                 'direccion' => 'required|string|max:200',
-                'telefono' => 'required|string|max:20',
+                'telefonos' => 'required|array|min:1|max:3',
+                'telefonos.*.numero' => ['required', 'string', 'regex:/^[0-9]{4}-[0-9]{7}$/'],
+                'telefonos.*.tipo' => 'required|in:movil,casa,trabajo',
+                'telefonos.*.es_principal' => 'required|boolean',
                 'email' => 'required|email|max:100|unique:persona,email,' . ($proveedor->persona_id ?? 0),
                 'contacto' => 'nullable|string|max:100',
                 'telefono_contacto' => 'nullable|string|max:20',
                 'ciudad' => 'nullable|string|max:100',
                 'estado_territorial' => 'nullable|string|max:50',
-            ]);
+            ], $this->telefonosMessages());
 
             $this->proveedorService->actualizarJuridico($proveedor, $request->all());
             return response()->json(['success' => 'Proveedor actualizado exitosamente.']);
@@ -392,9 +420,21 @@ class ProveedorController extends Controller
             $query->whereDate('created_at', '<=', $request->fecha_hasta);
         }
         $proveedores = $query->get();
-        $pdf = \PDF::loadView('admin.proveedores.reporte_pdf', compact('proveedores'))
+
+        $filtros = [];
+        if ($request->filled('tipo_proveedor')) {
+            $filtros['Tipo'] = ucfirst($request->tipo_proveedor);
+        }
+        if ($request->input('estatus') === '0') {
+            $filtros['Estatus'] = 'Inhabilitados';
+        }
+        if ($rango = \App\Support\ReporteFiltros::rango($request->fecha_desde, $request->fecha_hasta)) {
+            $filtros['Fecha de registro'] = $rango;
+        }
+
+        $pdf = \PDF::loadView('admin.proveedores.reporte_pdf', compact('proveedores', 'filtros'))
             ->setPaper('a4', 'landscape');
-        return $pdf->download('proveedores_' . now()->format('Y-m-d_H-i-s') . '.pdf');
+        return $pdf->stream('proveedores_' . now()->format('Y-m-d_H-i-s') . '.pdf');
     }
 
     public function checkRif(Request $request)

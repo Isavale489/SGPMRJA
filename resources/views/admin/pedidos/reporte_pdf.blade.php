@@ -49,7 +49,6 @@
     <table class="data-table">
         <thead>
             <tr>
-                <th class="col-num">#</th>
                 <th class="col-nro">Nro. Pedido</th>
                 <th class="col-cliente">Cliente</th>
                 <th class="col-fecha">Fecha</th>
@@ -61,7 +60,6 @@
         <tbody>
             @foreach($pedidos as $index => $pedido)
                 <tr class="{{ $index % 2 === 1 ? 'zebra' : '' }}">
-                    <td class="col-num">{{ $index + 1 }}</td>
                     <td class="col-nro">{{ $pedido->id }}</td>
                     <td class="col-cliente">{{ $pedido->cliente_nombre_completo }}</td>
                     <td class="col-fecha">{{ \Carbon\Carbon::parse($pedido->fecha_pedido)->format('d/m/Y') }}</td>

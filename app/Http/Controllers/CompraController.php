@@ -247,6 +247,9 @@ class CompraController extends Controller
             'total'            => number_format($compra->total, 2, ',', '.'),
             // Bolívares (formato venezolano: miles con '.', decimales con ',')
             'tasa_cambio'      => $compra->tasa_cambio ? number_format($compra->tasa_cambio, 4, ',', '.') : null,
+            // Fecha de la tasa BCV aplicada (null si el valor no coincide con
+            // la tasa vigente a la fecha de la compra, p. ej. tasa manual).
+            'tasa_fecha_fmt'   => TasaCambio::fechaParaValor($compra->tasa_cambio, $compra->fecha_compra?->toDateString())?->format('d/m/Y'),
             'subtotal_bs'      => number_format($subtotalBs, 2, ',', '.'),
             'iva_bs'           => number_format($ivaBs, 2, ',', '.'),
             'total_bs'         => number_format($subtotalBs + $ivaBs, 2, ',', '.'),
@@ -269,6 +272,7 @@ class CompraController extends Controller
             ],
             'items' => $compra->detalles->map(fn($d) => [
                 'nombre'            => $d->insumo?->nombre ?? 'N/A',
+                'codigo'            => $d->insumo?->codigo,
                 'tipo'              => $d->insumo?->tipo ?? '—',
                 'unidad'            => $d->insumo?->unidad_medida ?? '—',
                 'cantidad'          => number_format($d->cantidad, 2, ',', '.'),
@@ -330,8 +334,6 @@ class CompraController extends Controller
                       ->orWhereRaw("DATE_FORMAT(compra.fecha_compra, '%d/%m/%Y') like ?", ["%{$keyword}%"])
                       ->orWhereHas('proveedor.persona', function ($p) use ($keyword) {
                           $p->where('nombre', 'like', "%{$keyword}%")
-                            ->orWhere('apellido', 'like', "%{$keyword}%")
-                            ->orWhereRaw("CONCAT(nombre, ' ', apellido) like ?", ["%{$keyword}%"])
                             ->orWhereRaw("CONCAT(tipo_documento, documento_identidad) like ?", ["%{$keyword}%"]);
                       });
                 });
@@ -341,8 +343,10 @@ class CompraController extends Controller
             ->addColumn('fecha_formateada', fn($c) => $c->fecha_compra?->format('d/m/Y') ?? '')
             ->addColumn('estado_badge', function ($c) {
                 $map   = ['recibida' => 'success', 'borrador' => 'warning', 'anulada' => 'danger'];
-                $color = $map[$c->estado] ?? 'secondary';
-                $html  = '<span class="badge bg-' . $color . '">' . ucfirst($c->estado) . '</span>';
+                $icons = ['recibida' => 'ri-checkbox-circle-line', 'borrador' => 'ri-draft-line', 'anulada' => 'ri-close-circle-line'];
+                $color = $map[$c->estado] ?? 'info';
+                $icon  = $icons[$c->estado] ?? 'ri-question-line';
+                $html  = '<span class="badge badge-soft-' . $color . '"><i class="' . $icon . ' me-1"></i>' . ucfirst($c->estado) . '</span>';
 
                 if ($c->estado === 'anulada' && $c->anuladoPor) {
                     $nombre = e($c->anuladoPor->name);
@@ -357,25 +361,38 @@ class CompraController extends Controller
                 return $html;
             })
             ->addColumn('actions', function ($c) {
-                $btn = '<div class="d-flex gap-2 justify-content-center">';
+                // Botón Ver siempre visible
+                $btn = '<div class="d-flex gap-1 justify-content-center align-items-center">';
                 $btn .= '<button class="btn btn-sm btn-soft-info ver-btn" data-id="' . $c->id . '" title="Ver detalle"><i class="ri-eye-fill"></i></button>';
 
+                $items = '';
+
+                // PDF (Ver PDF)
+                $items .= '<li><a href="' . route('compras.pdf', $c->id) . '" target="_blank" class="dropdown-item act-item act-pdf" title="Ver PDF"><span class="act-ic"><i class="ri-file-pdf-fill"></i></span>Ver PDF</a></li>';
+
                 if ($c->estado === 'borrador') {
-                    $btn .= '<button class="btn btn-sm btn-soft-warning editar-btn" data-id="' . $c->id . '" title="Editar borrador"><i class="ri-pencil-fill"></i></button>';
-                    $btn .= '<button class="btn btn-sm btn-soft-success procesar-btn" data-id="' . $c->id . '" title="Procesar — actualiza stock"><i class="ri-check-double-line"></i></button>';
-                    $btn .= '<button class="btn btn-sm btn-soft-danger eliminar-compra-btn" data-id="' . $c->id . '" title="Eliminar borrador"><i class="ri-delete-bin-line"></i></button>';
+                    $items .= '<li><button type="button" class="dropdown-item act-item act-edit editar-btn" data-id="' . $c->id . '" title="Editar borrador"><span class="act-ic"><i class="ri-pencil-fill"></i></span>Editar</button></li>';
+                    $items .= '<li><button type="button" class="dropdown-item act-item act-primary procesar-btn" data-id="' . $c->id . '" title="Procesar — actualiza stock"><span class="act-ic"><i class="ri-check-double-line"></i></span>Procesar</button></li>';
+                    $items .= '<li><button type="button" class="dropdown-item act-item act-del eliminar-compra-btn" data-id="' . $c->id . '" title="Eliminar borrador"><span class="act-ic"><i class="ri-delete-bin-line"></i></span>Eliminar</button></li>';
                 }
 
                 if ($c->estado === 'recibida') {
-                    $btn .= '<button class="btn btn-sm btn-soft-danger anular-btn" data-id="' . $c->id . '" title="Anular — revierte stock"><i class="ri-close-circle-line"></i></button>';
+                    $items .= '<li><button type="button" class="dropdown-item act-item act-del anular-btn" data-id="' . $c->id . '" title="Anular — revierte stock"><span class="act-ic"><i class="ri-close-circle-line"></i></span>Anular</button></li>';
                 }
 
                 if ($c->estado === 'anulada') {
                     if ($c->clonada) {
-                        $btn .= '<button class="btn btn-sm btn-soft-secondary" disabled title="Esta compra ya fue clonada"><i class="ri-file-copy-line"></i></button>';
+                        $items .= '<li><button type="button" class="dropdown-item act-item act-primary" disabled title="Esta compra ya fue clonada"><span class="act-ic"><i class="ri-file-copy-line"></i></span>Clonada</button></li>';
                     } else {
-                        $btn .= '<button class="btn btn-sm btn-soft-secondary clonar-btn" data-id="' . $c->id . '" title="Clonar como nuevo borrador"><i class="ri-file-copy-line"></i></button>';
+                        $items .= '<li><button type="button" class="dropdown-item act-item act-primary clonar-btn" data-id="' . $c->id . '" title="Clonar como nuevo borrador"><span class="act-ic"><i class="ri-file-copy-line"></i></span>Clonar</button></li>';
                     }
+                }
+
+                if (!empty($items)) {
+                    $btn .= '<div class="dropdown d-inline-block">';
+                    $btn .= '<button class="btn btn-sm btn-soft-secondary" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Más acciones"><i class="ri-more-2-fill"></i></button>';
+                    $btn .= '<ul class="dropdown-menu dropdown-menu-end actions-menu">' . $items . '</ul>';
+                    $btn .= '</div>';
                 }
 
                 $btn .= '</div>';
@@ -402,21 +419,53 @@ class CompraController extends Controller
             $query->whereDate('fecha_compra', '<=', $request->fecha_hasta);
         }
 
-        $compras = $query->orderByDesc('fecha_compra')->orderByDesc('id')->get();
+        // Orden del reporte.
+        $orden = $request->input('orden', 'recientes');
+        switch ($orden) {
+            case 'monto_desc':
+                $query->orderByDesc('total')->orderByDesc('id');
+                break;
+            case 'monto_asc':
+                $query->orderBy('total')->orderByDesc('id');
+                break;
+            default:
+                $orden = 'recientes';
+                $query->orderByDesc('fecha_compra')->orderByDesc('id');
+                break;
+        }
 
-        $pdf = PDF::loadView('admin.compras.reporte_pdf', compact('compras'))
+        $compras = $query->get();
+
+        $filtros = [];
+        if ($request->filled('estado')) {
+            $filtros['Estado'] = ucfirst($request->estado);
+        }
+        if ($request->filled('proveedor_id')) {
+            $filtros['Proveedor'] = optional(\App\Models\Proveedor::find($request->proveedor_id))->nombre
+                ?? ('#' . $request->proveedor_id);
+        }
+        if ($rango = \App\Support\ReporteFiltros::rango($request->fecha_desde, $request->fecha_hasta)) {
+            $filtros['Fecha de compra'] = $rango;
+        }
+        $filtros['Orden'] = ['recientes' => 'Fecha reciente', 'monto_desc' => 'Mayor monto', 'monto_asc' => 'Menor monto'][$orden];
+
+        $pdf = PDF::loadView('admin.compras.reporte_pdf', compact('compras', 'filtros'))
             ->setPaper('a4', 'portrait');
 
-        return $pdf->download('reporte_compras_' . now()->format('Ymd_His') . '.pdf');
+        return $pdf->stream('reporte_compras_' . now()->format('Ymd_His') . '.pdf');
     }
 
     public function compraPdf(Compra $compra)
     {
         $compra->load(['proveedor.persona', 'detalles.insumo', 'registradoPor:id,name']);
 
-        $pdf = PDF::loadView('admin.compras.comprobante', compact('compra'))
+        // Fecha de la tasa BCV aplicada; null si el snapshot no coincide con la
+        // tasa vigente a la fecha de la compra (tasa manual) — no se muestra.
+        $tasaFecha = TasaCambio::fechaParaValor($compra->tasa_cambio, $compra->fecha_compra?->toDateString());
+
+        $pdf = PDF::loadView('admin.compras.comprobante', compact('compra', 'tasaFecha'))
             ->setPaper('a4', 'portrait');
 
-        return $pdf->download('compra_' . str_pad($compra->id, 5, '0', STR_PAD_LEFT) . '.pdf');
+        return $pdf->stream('compra_' . str_pad($compra->id, 5, '0', STR_PAD_LEFT) . '.pdf');
     }
 }

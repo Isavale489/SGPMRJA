@@ -61,10 +61,19 @@
         padding-top: 5px;
     }
 
-    /* ── Estado ── */
-    .estado-recibida { background-color: #d4edda; color: #155724; padding: 2px 8px; font-size: 8.5px; font-weight: 600; }
-    .estado-borrador { background-color: #fff3cd; color: #856404; padding: 2px 8px; font-size: 8.5px; font-weight: 600; }
-    .estado-anulada  { background-color: #f8d7da; color: #721c24; padding: 2px 8px; font-size: 8.5px; font-weight: 600; }
+    /* ── Estado (badge alineado verticalmente con la etiqueta) ── */
+    .estado-recibida, .estado-borrador, .estado-anulada {
+        display: inline-block;
+        vertical-align: middle;
+        padding: 2px 8px;
+        border-radius: 10px;
+        font-size: 8.5px;
+        font-weight: 600;
+        line-height: 1.3;
+    }
+    .estado-recibida { background-color: #d4edda; color: #155724; }
+    .estado-borrador { background-color: #fff3cd; color: #856404; }
+    .estado-anulada  { background-color: #f8d7da; color: #721c24; }
 
     /* ── Nota de observaciones ── */
     .nota-obs {
@@ -75,6 +84,14 @@
         font-size: 9px;
         color: #2d3436;
         margin-top: 4px;
+    }
+
+    /* ── Bloque anclado al pie de la página (montos + observaciones) ── */
+    .doc-bottom {
+        position: fixed;
+        left: 30px;
+        right: 30px;
+        bottom: 42px;
     }
 @endsection
 
@@ -102,7 +119,7 @@
             <td>
                 <span class="label">N° de Factura:</span> {{ $compra->numero_factura ?: 'S/N' }}<br>
                 <span class="label">Fecha de Compra:</span> {{ $compra->fecha_compra?->format('d/m/Y') }}<br>
-                <span class="label">Tasa de cambio:</span> {{ $compra->tasa_cambio ? 'Bs ' . number_format($compra->tasa_cambio, 4, ',', '.') . ' / USD' : '—' }}<br>
+                <span class="label">Tasa de cambio BCV{{ $tasaFecha ? ' (' . $tasaFecha->format('d/m/Y') . ')' : '' }}:</span> {{ $compra->tasa_cambio ? 'Bs ' . number_format($compra->tasa_cambio, 4, ',', '.') . ' / USD' : '—' }}<br>
                 <span class="label">Estado:</span>
                 <span class="estado-{{ $compra->estado }}">{{ ucfirst($compra->estado) }}</span><br>
                 <span class="label">Registrado por:</span> {{ $compra->registradoPor?->name ?? 'Sistema' }}
@@ -148,6 +165,8 @@
         </tbody>
     </table>
 
+    {{-- ═══════ Pie anclado: totales + observaciones ═══════ --}}
+    <div class="doc-bottom">
     {{-- ═══════ Totales ═══════ --}}
     <table class="totals-block">
         <tr>
@@ -182,7 +201,7 @@
                         <td class="t-value t-grand">Bs {{ number_format($totalBs, 2, ',', '.') }}</td>
                     </tr>
                     <tr>
-                        <td class="t-label" style="padding-top:5px;">Tasa aplicada:</td>
+                        <td class="t-label" style="padding-top:5px;">Tasa aplicada{{ $tasaFecha ? ' (' . $tasaFecha->format('d/m/Y') . ')' : '' }}:</td>
                         <td class="t-value" style="padding-top:5px; font-weight:normal;">{{ $compra->tasa_cambio ? 'Bs ' . number_format($compra->tasa_cambio, 4, ',', '.') : '—' }}</td>
                     </tr>
                     <tr>
@@ -201,4 +220,5 @@
             {!! nl2br(e($compra->observaciones)) !!}
         </div>
     @endif
+    </div>{{-- /.doc-bottom --}}
 @endsection

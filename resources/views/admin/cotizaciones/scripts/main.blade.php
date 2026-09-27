@@ -176,30 +176,29 @@
         line-height: 1.2;
     }
 
-    /* ─── Overlay difuminador del wizard cuando el offcanvas está abierto ── */
-    #bordado-modal-overlay {
-        position: fixed;
-        inset: 0;
-        z-index: 1065;
-        background: rgba(10, 18, 40, 0.45);
-        backdrop-filter: blur(3px);
-        -webkit-backdrop-filter: blur(3px);
-        opacity: 0;
-        pointer-events: none;
-        transition: opacity 0.28s ease;
+    /* ─── Modal configurador de bordados (sobre el modal de cotización) ──── */
+    /* z-index por encima del modal padre (#showModal, 1055). El backdrop se
+       ajusta en JS para quedar entre ambos (patrón del modal de logos). */
+    .bordado-modal {
+        z-index: 1075;
     }
 
-    #bordado-modal-overlay.is-active {
-        opacity: 1;
-        pointer-events: auto;
-        cursor: pointer;
+    .bordado-modal-dialog {
+        max-width: 560px;
     }
 
-    /* ─── Offcanvas configurador de bordados ─────────────────────────────── */
-    #bordadoOffcanvas {
-        width: 480px !important;
-        max-width: 95vw;
-        z-index: 1070;
+    /* modal-content acotado en alto + flex column para que la lista scrollee
+       internamente y header/buscador/footer queden fijos. */
+    .bordado-modal .modal-content {
+        max-height: 90vh;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        border: none;
+    }
+
+    #bordadoOffcanvas .modal-body {
+        min-height: 0;
     }
 
     .bordado-oc-header {
@@ -300,8 +299,8 @@
         font-size: 1.05rem;
     }
 
-    /* Dark mode — offcanvas bordados */
-    [data-bs-theme="dark"] #bordadoOffcanvas .offcanvas-body {
+    /* Dark mode — modal bordados */
+    [data-bs-theme="dark"] #bordadoOffcanvas .modal-body {
         background: #1a2035;
     }
 
@@ -328,6 +327,33 @@
     }
 </style>
 <script>
+    // Vigencia de precios por defecto (config del sistema). La fecha_validez
+    // de cada cotización es la que manda; esto solo pre-siembra el default.
+    window.COT_DIAS_VIGENCIA = {{ (int) \App\Models\Cotizacion::diasVigencia() }};
+
+    // Fecha en formato YYYY-MM-DD según la hora LOCAL del navegador. No usar
+    // toISOString() (devuelve UTC): en zonas con offset negativo (ej. Venezuela
+    // UTC-4) al crear en la tarde/noche la fecha UTC ya es el día siguiente y la
+    // emisión/validez quedaba corrida un día.
+    window.cotFechaLocalISO = function (d) {
+        d = (d instanceof Date && !isNaN(d.getTime())) ? d : new Date();
+        var y = d.getFullYear();
+        var m = String(d.getMonth() + 1).padStart(2, '0');
+        var day = String(d.getDate()).padStart(2, '0');
+        return y + '-' + m + '-' + day;
+    };
+
+    // Setea #fecha-validez-field a base + días y sincroniza los chips de
+    // "Validez rápida" (activa el que coincida con los días indicados).
+    window.cotSeedValidez = function (baseIso, dias) {
+        var base = baseIso ? new Date(baseIso + 'T00:00:00') : new Date();
+        if (isNaN(base.getTime())) base = new Date();
+        base.setDate(base.getDate() + dias);
+        $('#fecha-validez-field').val(window.cotFechaLocalISO(base));
+        $('.cot-date-chip').removeClass('is-active')
+            .filter('[data-days="' + dias + '"]').addClass('is-active');
+    };
+
     // Validación onblur: fecha_validez debe ser >= fecha_cotizacion
     $(document).on('blur', '#fecha-validez-field, input[name="fecha_validez"]', function () {
         let validezVal = $(this).val();
@@ -442,19 +468,27 @@
                 }
             },
             columns: [
-                { data: 'id', name: 'id', title: 'Nro.', width: '5%' },
-                { data: 'cliente_nombre', name: 'cliente_nombre', width: '32%' },
-                { data: 'fecha_cotizacion', name: 'fecha_cotizacion', width: '15%' },
+                {
+                    data: 'id', name: 'id', title: 'Nro.', className: 'align-middle', width: '15%',
+                    render: function (data) {
+                        return `<div class="ped-cell">
+                            <span class="ped-cell-ic"><i class="ri-file-list-3-line"></i></span>
+                            <span class="ped-cell-txt"><span class="ped-cell-eyebrow">Cotización</span><span class="ped-cell-num">#${data}</span></span>
+                        </div>`;
+                    }
+                },
+                { data: 'cliente_nombre', name: 'cliente_nombre', width: '25%' },
+                { data: 'fecha_cotizacion', name: 'fecha_cotizacion', width: '12%' },
                 {
                     data: 'total',
                     name: 'total',
-                    width: '15%',
+                    width: '12%',
                     render: $.fn.dataTable.render.number(',', '.', 2, '$')
                 },
                 {
                     data: 'estado',
                     name: 'estado',
-                    width: '16%',
+                    width: '12%',
                     className: 'text-center',
                     render: function (data, type, row) {
                         var estadoClasses = {
@@ -476,10 +510,10 @@
 
                         var badge = '<span class="badge badge-status ' + badgeClass + ' rounded-pill"><i class="' + icon + ' me-1"></i>' + data + '</span>';
 
-                        var isAdmin = {{ Auth::user()->isAdmin() ? 'true' : 'false' }};
+                        var puedeConvertir = {{ tienePermiso('cotizaciones.convertir') ? 'true' : 'false' }};
 
-                        // Si no es admin o ya está convertida, solo mostrar badge
-                        if (!isAdmin || data === 'Convertida') {
+                        // Sin permiso de conversión/cambio de estado, o ya convertida: solo badge
+                        if (!puedeConvertir || data === 'Convertida') {
                             return badge;
                         }
 
@@ -517,7 +551,8 @@
                     searchable: false,
                     className: 'text-center',
                     render: function (data, type, row) {
-                        var isAdmin = {{ Auth::user()->isAdmin() ? 'true' : 'false' }};
+                        var puedeConvertir = {{ tienePermiso('cotizaciones.convertir') ? 'true' : 'false' }};
+                        var puedeGestionar = {{ tienePermiso('cotizaciones.gestionar') ? 'true' : 'false' }};
 
                         // Ver inline
                         var sVer = `<button class="btn btn-sm btn-soft-info view-btn" data-id="${data}" title="Ver"><i class="ri-eye-fill"></i></button>`;
@@ -527,19 +562,19 @@
                         var hadItems = false;
 
                         // Convertir a Pedido (solo si está Aprobada)
-                        if (row.estado === 'Aprobada' && isAdmin) {
+                        if (row.estado === 'Aprobada' && puedeConvertir) {
                             items += `<li><button type="button" class="dropdown-item act-item act-primary convert-to-pedido-btn" data-id="${data}"><span class="act-ic"><i class="ri-exchange-line"></i></span>Convertir a Pedido</button></li>`;
                             hadItems = true;
                         }
 
                         // Reactivar (solo si está Vencida)
-                        if (isAdmin && row.estado === 'Vencida') {
+                        if (puedeConvertir && row.estado === 'Vencida') {
                             items += `<li><button type="button" class="dropdown-item act-item act-primary reactivar-btn" data-id="${data}"><span class="act-ic"><i class="ri-refresh-line"></i></span>Reactivar cotización</button></li>`;
                             hadItems = true;
                         }
 
                         // Editar y Eliminar (solo si NO está Convertida ni Cancelada ni Vencida)
-                        if (isAdmin && row.estado !== 'Convertida' && row.estado !== 'Cancelada' && row.estado !== 'Vencida') {
+                        if (puedeGestionar && row.estado !== 'Convertida' && row.estado !== 'Cancelada' && row.estado !== 'Vencida') {
                             items += `<li><button type="button" class="dropdown-item act-item act-edit edit-btn" data-id="${data}"><span class="act-ic"><i class="ri-pencil-fill"></i></span>Editar</button></li>`;
                             items += `<li><button type="button" class="dropdown-item act-item act-del remove-btn" data-id="${data}"><span class="act-ic"><i class="ri-delete-bin-fill"></i></span>Eliminar</button></li>`;
                             hadItems = true;
@@ -551,7 +586,7 @@
                         }
 
                         // PDF como enlace
-                        items += `<li><a class="dropdown-item act-item act-pdf" href="/cotizaciones/${data}/pdf" target="_blank"><span class="act-ic"><i class="ri-file-pdf-fill"></i></span>Ver / Descargar PDF</a></li>`;
+                        items += `<li><a class="dropdown-item act-item act-pdf" href="/cotizaciones/${data}/pdf" target="_blank"><span class="act-ic"><i class="ri-file-pdf-fill"></i></span>Ver PDF</a></li>`;
 
                         var menu = `
                             <div class="dropdown d-inline-block">
@@ -743,6 +778,12 @@
         var logoModal = null;
         var currentLogoInput = null; // Referencia al nombre-logo-input de la fila activa
 
+        // Estándar de negocio: máximo de bordados por producto (suma de cantidades
+        // de todas las ubicaciones), configurable en /configuracion →
+        // cotizaciones.max_bordados_producto. El backend valida lo mismo; este tope
+        // es la primera línea de defensa en el configurador.
+        var MAX_BORDADOS = parseInt(@json($maxBordadosProducto ?? 6), 10) || 6;
+
         // Inicializar modal de logos
         try {
             logoModal = new bootstrap.Modal(document.getElementById('logoSearchModal'));
@@ -910,6 +951,66 @@
         }
 
         // ============================================================
+        // --- Alta rápida de logo (atajo del catálogo) -----------------------
+        // Crea el logo por AJAX, lo suma al catálogo en memoria y lo deja
+        // seleccionado en la ubicación que se estaba configurando.
+        function logoQuickReset() {
+            $('#logoQuickName, #logoQuickFile').val('').removeClass('is-invalid');
+            $('#logoQuickCreateForm').collapse('hide');
+        }
+
+        $(document).on('click', '#logoQuickCreateToggle', function () {
+            $('#logoQuickCreateForm').collapse('toggle');
+            setTimeout(function () { $('#logoQuickName').trigger('focus'); }, 350);
+        });
+
+        $(document).on('click', '#logoQuickCancel', logoQuickReset);
+
+        $('#logoSearchModal').on('hidden.bs.modal', logoQuickReset);
+
+        $(document).on('click', '#logoQuickSave', function () {
+            var nombre  = $('#logoQuickName').val().trim();
+            var archivo = $('#logoQuickFile').val().trim();
+
+            if (!nombre) {
+                $('#logoQuickName').addClass('is-invalid').trigger('focus');
+                return;
+            }
+            $('#logoQuickName').removeClass('is-invalid');
+
+            var $btn = $(this).prop('disabled', true);
+
+            $.ajax({
+                url: '/logos',
+                method: 'POST',
+                data: { name: nombre, original_filename: archivo || null, _token: '{{ csrf_token() }}' },
+                success: function (r) {
+                    // Sumar al catálogo en memoria (ordenado por nombre) y re-renderizar
+                    logos.push(r.logo);
+                    logos.sort(function (a, b) { return a.name.localeCompare(b.name, 'es'); });
+                    $('#buscarLogoModal').val('');
+                    renderizarLogosModal('');
+                    logoQuickReset();
+
+                    Swal.fire({
+                        toast: true, position: 'top-end', icon: 'success',
+                        title: 'Logo "' + r.logo.name + '" registrado',
+                        showConfirmButton: false, timer: 2000, timerProgressBar: true
+                    });
+
+                    // Atajo completo: queda seleccionado en la ubicación activa
+                    seleccionarLogo(r.logo.id, r.logo.name);
+                },
+                error: function (xhr) {
+                    var msg = xhr.responseJSON?.message || 'No se pudo registrar el logo.';
+                    if (xhr.responseJSON?.errors?.name) $('#logoQuickName').addClass('is-invalid');
+                    if (xhr.responseJSON?.errors?.original_filename) $('#logoQuickFile').addClass('is-invalid');
+                    Swal.fire({ icon: 'error', title: 'No se pudo registrar', text: msg });
+                },
+                complete: function () { $btn.prop('disabled', false); }
+            });
+        });
+
         // === FIN LÓGICA MODAL DE LOGOS ===
         // ============================================================
 
@@ -1123,13 +1224,35 @@
                 // Cerrar modal antes de agregar
                 cerrarModalSeguro();
                 // Agregar item
-                addProductItem(producto.id, 1, producto.precio_base, '', false, '', '', '', []);
+                addProductItem(producto.id, 1, producto.precio_base, '', false, '', '', '', defaultGeneroId(), []);
                 // Recalcular
                 calculateCotizacionTotals();
             }
         }
 
         var tallasArray = [];
+
+        // Catálogo de género de prenda (Dama/Caballero/Unisex), inyectado desde el
+        // View Composer (set estable, cacheado). Lo consume el configurador para el
+        // cruce talla × género.
+        var generosArray = @json($generosCatalogo ?? []);
+
+        function getGenerosArray() {
+            return Array.isArray(generosArray) ? generosArray : [];
+        }
+
+        function getGeneroNombre(generoId) {
+            if (!generoId) return '';
+            var g = getGenerosArray().find(function (x) { return x.id == generoId; });
+            return g ? (g.etiqueta || g.nombre) : '';
+        }
+
+        // Género por defecto (Unisex) para rutas de alta rápida sin configurador.
+        function defaultGeneroId() {
+            var arr = getGenerosArray();
+            var uni = arr.find(function (g) { return String(g.nombre || '').toLowerCase() === 'unisex'; });
+            return uni ? uni.id : (arr[0] ? arr[0].id : '');
+        }
 
         function cargarTallasCatalogo(callback) {
             $.get("{{ route('tallas.data') }}", function (data) {
@@ -1272,7 +1395,7 @@
         window.cotGroupBordadosState = window.cotGroupBordadosState || {};
 
         if (ubicacionModalEl) {
-            ubicacionModal = new bootstrap.Offcanvas(ubicacionModalEl);
+            ubicacionModal = new bootstrap.Modal(ubicacionModalEl);
         }
 
         function cargarUbicacionesBordado(callback) {
@@ -1592,7 +1715,7 @@
             }
 
             if (!logo) {
-                aplicarEstadoVisualUbicacion($row, 'pending', 'Falta logo', 'Selecciona un logo para completar esta ubicación.');
+                aplicarEstadoVisualUbicacion($row, 'complete', 'Sin logo', 'Ubicación lista (sin logo asignado).');
                 return;
             }
 
@@ -1616,7 +1739,7 @@
             }
 
             if (!logo) {
-                aplicarEstadoVisualUbicacion($row, 'pending', 'Falta logo', 'Selecciona el logo de esta ubicación personalizada.');
+                aplicarEstadoVisualUbicacion($row, 'complete', 'Sin logo', 'Ubicación personalizada lista (sin logo asignado).');
                 return;
             }
 
@@ -1631,6 +1754,23 @@
             $('#ubicacionesPersonalizadasContainer .ubicacion-personalizada-row').each(function () {
                 actualizarEstadoUbicacionPersonalizadaRow($(this));
             });
+        }
+
+        // Total de bordados seleccionados en el configurador = SUMA de cantidades
+        // por línea (no número de líneas): una ubicación con cantidad 10 son 10
+        // bordados. Es la unidad que se compara contra MAX_BORDADOS (igual que el
+        // backend en BordadoPricingService::indicesQueExcedenMaximo).
+        function contarBordadosSeleccionados() {
+            var total = 0;
+            $('#ubicacionesCatalogoGrid .ubicacion-std-check:checked').each(function () {
+                var row = $(this).closest('.ubicacion-std-row');
+                total += Math.max(1, parseInt(row.find('.ubicacion-std-cantidad').val() || 1, 10));
+            });
+            $('#ubicacionesPersonalizadasContainer .ubicacion-personalizada-row').each(function () {
+                if (!String($(this).find('.ubicacion-personalizada-nombre').val() || '').trim()) return;
+                total += Math.max(1, parseInt($(this).find('.ubicacion-personalizada-cantidad').val() || 1, 10));
+            });
+            return total;
         }
 
         function actualizarResumenRecargoModal() {
@@ -1655,7 +1795,9 @@
             });
 
             $('#resumenRecargoBordadoModal').text(formatMoney(recargo));
-            $('#bordado-oc-active-count').text(activeCount);
+            $('#bordado-oc-active-count')
+                .text(activeCount + ' / ' + MAX_BORDADOS)
+                .toggleClass('text-danger', activeCount >= MAX_BORDADOS);
 
             // Equivalente en Bolívares (VES) del servicio de bordado — tasa BCV vigente
             var bsBordado = (typeof window.bsEquivalente === 'function') ? window.bsEquivalente(recargo) : null;
@@ -1668,8 +1810,20 @@
             // Permitir aplicar tanto desde una card concreta como desde un grupo de la grilla
             if (!currentBordadoCard && !currentBordadoGroupKey) return;
 
+            // Tope de líneas de bordado por producto (estándar configurable).
+            if (contarBordadosSeleccionados() > MAX_BORDADOS) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Máximo de bordados por producto',
+                    text: 'No se pueden agregar más de ' + MAX_BORDADOS + ' bordados por producto. Quita alguna ubicación antes de aplicar.',
+                    customClass: { confirmButton: 'btn btn-primary w-xs me-2' },
+                    buttonsStyling: false,
+                    showCloseButton: true
+                });
+                return;
+            }
+
             var bordados = [];
-            var erroresLogo = [];
 
             $('#ubicacionesCatalogoGrid .ubicacion-std-check:checked').each(function () {
                 var row = $(this).closest('.ubicacion-std-row');
@@ -1678,13 +1832,9 @@
                 var precio = parseFloat(row.find('.ubicacion-std-precio').val()) || 0;
                 var cantidad = Math.max(1, parseInt(row.find('.ubicacion-std-cantidad').val() || 1, 10));
                 var $logoInput = row.find('.ubicacion-std-logo');
+                // Logo opcional: si no se asignó, se envía sin logo.
                 var logoId = $logoInput.data('logo-id') || null;
                 var logoNombre = String($logoInput.val() || '').trim();
-
-                if (!logoId || !logoNombre) {
-                    erroresLogo.push('Asigna un logo para: ' + nombre);
-                    return;
-                }
 
                 bordados.push({
                     ubicacion_bordado_id: ubicacionId,
@@ -1703,13 +1853,9 @@
                 var precio = parseFloat($(this).find('.ubicacion-personalizada-precio').val()) || 0;
                 var cantidad = Math.max(1, parseInt($(this).find('.ubicacion-personalizada-cantidad').val() || 1, 10));
                 var $logoInput = $(this).find('.ubicacion-personalizada-logo');
+                // Logo opcional: la ubicación personalizada solo requiere nombre.
                 var logoId = $logoInput.data('logo-id') || null;
                 var logoNombre = String($logoInput.val() || '').trim();
-
-                if (!logoId || !logoNombre) {
-                    erroresLogo.push('Asigna un logo para ubicación personalizada: ' + nombre);
-                    return;
-                }
 
                 bordados.push({
                     ubicacion_bordado_id: null,
@@ -1721,20 +1867,6 @@
                     cantidad: cantidad
                 });
             });
-
-            if (erroresLogo.length) {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Logo requerido',
-                    text: erroresLogo[0],
-                    customClass: {
-                        confirmButton: 'btn btn-primary w-xs me-2',
-                    },
-                    buttonsStyling: false,
-                    showCloseButton: true
-                });
-                return;
-            }
 
             if (currentBordadoGroupKey) {
                 setGroupBordados(currentBordadoGroupKey, bordados);
@@ -1751,21 +1883,21 @@
         }
 
         if (ubicacionModalEl) {
-            var $bordadoOverlay = $('#bordado-modal-overlay');
-
-            ubicacionModalEl.addEventListener('show.bs.offcanvas', function () {
-                $bordadoOverlay.addClass('is-active');
+            // El configurador es un modal SOBRE el modal de cotización (#showModal).
+            // Se ajusta su z-index y el de su backdrop para quedar por encima del
+            // modal padre (mismo patrón que el modal de logos).
+            ubicacionModalEl.addEventListener('show.bs.modal', function () {
+                var zIndex = $('#showModal').hasClass('show') ? 1080 : 1075;
+                $(ubicacionModalEl).css('z-index', zIndex);
+                window.requestAnimationFrame(function () {
+                    var $lastBackdrop = $('.modal-backdrop').last();
+                    if ($lastBackdrop.length) {
+                        $lastBackdrop.css('z-index', zIndex - 1).addClass('bordado-modal-backdrop');
+                    }
+                });
             });
 
-            ubicacionModalEl.addEventListener('hidden.bs.offcanvas', function () {
-                $bordadoOverlay.removeClass('is-active');
-            });
-
-            $bordadoOverlay.on('click', function () {
-                if (ubicacionModal) ubicacionModal.hide();
-            });
-
-            ubicacionModalEl.addEventListener('shown.bs.offcanvas', function () {
+            ubicacionModalEl.addEventListener('shown.bs.modal', function () {
                 $('#buscarUbicacionModal').val('').trigger('focus');
 
                 if (!ubicacionesBordadoArray.length) {
@@ -1780,6 +1912,21 @@
                 renderizarUbicacionesPersonalizadasModal();
                 renderizarUbicacionesModal('');
             });
+
+            // Al cerrar, el modal de cotización sigue abierto: se restaura su
+            // scroll-lock y se eliminan backdrops sobrantes (igual que el de logos).
+            ubicacionModalEl.addEventListener('hidden.bs.modal', function () {
+                $(ubicacionModalEl).css('z-index', '');
+                $('.modal-backdrop.bordado-modal-backdrop').removeClass('bordado-modal-backdrop').css('z-index', '');
+
+                if ($('#showModal').hasClass('show')) {
+                    $('body').addClass('modal-open');
+                    var backdrops = $('.modal-backdrop');
+                    if (backdrops.length > 1) {
+                        backdrops.not(backdrops.first()).remove();
+                    }
+                }
+            });
         }
 
         $('#buscarUbicacionModal').on('keyup', function () {
@@ -1787,8 +1934,24 @@
         });
 
         $(document).on('change', '.ubicacion-std-check', function () {
-            var row = $(this).closest('.ubicacion-std-row');
             var enabled = $(this).is(':checked');
+
+            // Tope de bordados: al marcar (el check ya suma su cantidad al total),
+            // si se supera el máximo se revierte y se avisa.
+            if (enabled && contarBordadosSeleccionados() > MAX_BORDADOS) {
+                $(this).prop('checked', false);
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Máximo de bordados por producto',
+                    text: 'Solo se permiten ' + MAX_BORDADOS + ' bordados por producto.',
+                    customClass: { confirmButton: 'btn btn-primary w-xs me-2' },
+                    buttonsStyling: false,
+                    showCloseButton: true
+                });
+                return;
+            }
+
+            var row = $(this).closest('.ubicacion-std-row');
             row.find('.ubicacion-std-logo, .bordado-logo-picker').prop('disabled', !enabled);
             if (!enabled) {
                 row.find('.ubicacion-std-logo').val('');
@@ -1822,7 +1985,51 @@
             actualizarResumenRecargoModal();
         });
 
+        // Validación lógica de la cantidad por línea (on-blur): la SUMA de bordados
+        // del producto no puede pasar de MAX_BORDADOS. Si al salir del campo la suma
+        // se excede, se capea la cantidad de ESTA línea al máximo posible y se avisa.
+        // Ej.: con tope 6, poner 10 en la manga se recorta a 6.
+        $(document).on('blur', '.ubicacion-std-cantidad, .ubicacion-personalizada-cantidad', function () {
+            var $inp = $(this);
+            var val = Math.max(1, parseInt($inp.val() || 1, 10));
+            $inp.val(val);
+
+            var total = contarBordadosSeleccionados();
+            if (total > MAX_BORDADOS) {
+                var capped = Math.max(1, val - (total - MAX_BORDADOS));
+                $inp.val(capped);
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Máximo de bordados por producto',
+                    text: 'El total de bordados por producto no puede pasar de ' + MAX_BORDADOS +
+                        '. La cantidad de esta ubicación se ajustó a ' + capped + '.',
+                    customClass: { confirmButton: 'btn btn-primary w-xs me-2' },
+                    buttonsStyling: false,
+                    showCloseButton: true
+                });
+                var row = $inp.closest('.ubicacion-std-row, .ubicacion-personalizada-row');
+                if (row.hasClass('ubicacion-std-row')) {
+                    actualizarEstadoUbicacionStdRow(row);
+                } else {
+                    actualizarEstadoUbicacionPersonalizadaRow(row);
+                }
+                actualizarResumenRecargoModal();
+            }
+        });
+
         $('#agregarUbicacionPersonalizadaBtn').on('click', function () {
+            // Tope de bordados: no permitir agregar otra ubicación si el total ya llegó.
+            if (contarBordadosSeleccionados() >= MAX_BORDADOS) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Máximo de bordados por producto',
+                    text: 'Ya alcanzaste el máximo de ' + MAX_BORDADOS + ' bordados por producto.',
+                    customClass: { confirmButton: 'btn btn-primary w-xs me-2' },
+                    buttonsStyling: false,
+                    showCloseButton: true
+                });
+                return;
+            }
             var container = $('#ubicacionesPersonalizadasContainer');
             if (container.find('small.text-muted').length) container.empty();
             container.append(crearFilaUbicacionPersonalizada('', 0, 1, null, ''));
@@ -1845,7 +2052,7 @@
         // === FIN LÓGICA MODAL DE UBICACIÓN DE BORDADO ===
         // ============================================================
 
-        function addProductItem(productoId = '', cantidad = '', precioUnitario = '', descripcion = '', llevaBordado = false, _unused = '', colorId = null, tallaId = null, bordados = []) {
+        function addProductItem(productoId = '', cantidad = '', precioUnitario = '', descripcion = '', llevaBordado = false, _unused = '', colorId = null, tallaId = null, generoId = null, bordados = []) {
             var productoDisplay = 'Clic para buscar producto...';
             var textClass = 'text-muted';
             var cardVariant = productItemIndex % 2;
@@ -1963,6 +2170,9 @@
                                     style="background-color: #fff !important; cursor:text;" />
                                 <input type="hidden" name="productos[${productItemIndex}][talla_id]"
                                     class="talla-input-value" value="${tallaId || ''}" />
+                                <input type="hidden" name="productos[${productItemIndex}][genero_id]"
+                                    class="genero-id-input" value="${generoId || ''}"
+                                    data-genero-label="${escAttr(getGeneroNombre(generoId))}" />
                                 <button type="button"
                                     class="btn btn-sm btn-atlantico-brand buscar-talla-trigger px-2"
                                     data-bs-toggle="tooltip" data-bs-placement="top"
@@ -2161,7 +2371,7 @@
         // "lleva bordado" pero SIN ubicaciones vuelve a "Sin bordado".
         // (Abrir y cerrar el panel sin agregar nada NO debe comprometer bordado
         // ni bloquear el guardado pidiendo una ubicación.)
-        $(document).on('hidden.bs.offcanvas', '#bordadoOffcanvas', function () {
+        $(document).on('hidden.bs.modal', '#bordadoOffcanvas', function () {
             $('#productos-container .product-item').each(function () {
                 var $card = $(this);
                 var marcado = parseInt($card.find('.lleva-bordado-value').val() || 0, 10) === 1;
@@ -2232,7 +2442,9 @@
             $('#cotizacionForm')[0].reset();
             $('#id-field').val('');
             $('#cliente-id-field').val('').prop('disabled', false).removeClass('campo-protegido');
-            $('#fecha-cotizacion-field').val(new Date().toISOString().slice(0, 10)).prop('readonly', false).removeClass('campo-protegido');
+            $('#fecha-cotizacion-field').val(window.cotFechaLocalISO()).prop('readonly', false).removeClass('campo-protegido');
+            // Default de validez: emisión + vigencia configurada (ajustable con los chips)
+            window.cotSeedValidez($('#fecha-cotizacion-field').val(), window.COT_DIAS_VIGENCIA);
             $('#prioridad-field').val('Normal');
 
             $('#productos-container').empty();
@@ -2297,12 +2509,15 @@
                 }
             }
 
-            // Fecha validez (opcional, pero si se ingresa debe ser ≥ fecha cotización)
+            // Fecha validez (obligatoria y ≥ fecha cotización)
             let $fechaVal = $('#fecha-validez-field');
-            if ($fechaVal.val() && $fechaCot.val() && $fechaVal.val() < $fechaCot.val()) {
+            if (!$fechaVal.val()) {
+                marcarInvalido($fechaVal, 'La fecha de validez es obligatoria.');
+                esValido = false;
+            } else if ($fechaCot.val() && $fechaVal.val() < $fechaCot.val()) {
                 marcarInvalido($fechaVal, 'La fecha de validez no puede ser anterior a la fecha de cotización.');
                 esValido = false;
-            } else if ($fechaVal.val()) {
+            } else {
                 marcarValido($fechaVal);
             }
 
@@ -2468,7 +2683,14 @@
                     var fechaValidez = data.fecha_validez ? data.fecha_validez.split('T')[0] : '';
 
                     $('#fecha-cotizacion-field').val(fechaCotizacion).prop('readonly', true).addClass('campo-protegido');
-                    $('#fecha-validez-field').val(fechaValidez);
+                    if (fechaValidez) {
+                        $('#fecha-validez-field').val(fechaValidez);
+                        $('.cot-date-chip').removeClass('is-active');
+                    } else {
+                        // Legacy sin fecha de validez: pre-sembrar el fallback vigente
+                        // (emisión + vigencia por defecto) para que pueda guardarse.
+                        window.cotSeedValidez(fechaCotizacion, window.COT_DIAS_VIGENCIA);
+                    }
                     $('#estado-field').val(data.estado);
                     $('#prioridad-field').val(data.prioridad || 'Normal');
                     $('#notas-field').val(data.notas || '');
@@ -2545,6 +2767,7 @@
                                 '',
                                 detalle.color_id || null,
                                 detalle.talla_id || null,
+                                detalle.genero_id || defaultGeneroId(),
                                 detalle.bordados || []
                             );
 
@@ -2656,7 +2879,9 @@
 
                 var tallasHtml = items.map(function (it) {
                     var lbl = getTallaLabel(it.talla_id) || 'S/T';
-                    return '<span class="cot-chip cot-chip-talla">' + lbl + '<span class="cot-chip-x">×</span>' + it.cantidad + '</span>';
+                    var gen = getGeneroNombre(it.genero_id);
+                    var genHtml = gen ? '<span class="cot-chip-gen">' + gen + '</span>' : '';
+                    return '<span class="cot-chip cot-chip-talla">' + lbl + genHtml + '<span class="cot-chip-x">×</span>' + it.cantidad + '</span>';
                 }).join('');
 
                 var totalQty = items.reduce(function (a, it) { return a + parseInt(it.cantidad); }, 0);
@@ -2749,20 +2974,25 @@
                 success: function (data) {
                     // Paso 1 — Cliente
                     if (data.cliente) {
-                        var nombreHtml = data.cliente.nombre || 'N/A';
+                        // Jurídico (J-/G-): mostrar Razón Social como nombre y ocultar "Apellido".
+                        // Natural (V-/E-): Nombre + Apellido como siempre.
+                        var esJuridico = ['J-', 'G-'].includes(String(data.cliente.tipo_documento || '').toUpperCase());
+                        var nombreBase = esJuridico
+                            ? (data.cliente.razon_social || data.cliente.nombre || 'N/A')
+                            : (data.cliente.nombre || 'N/A');
+                        var nombreHtml = nombreBase;
                         if (data.cliente.eliminado) {
                             nombreHtml += ' <span class="badge bg-danger ms-1" title="Este cliente fue eliminado">Eliminado</span>';
                         }
                         $('#view-cliente-nombre').html(nombreHtml);
                         var muted = data.cliente.eliminado;
                         function vm(v) { return muted ? '<span class="text-muted">' + (v || '') + '</span>' : (v || 'N/A'); }
-                        $('#view-cliente-apellido').html(vm(data.cliente.apellido));
                         $('#view-cliente-email').html(vm(data.cliente.email));
                         $('#view-cliente-telefono').html(vm(data.cliente.telefono));
                         $('#view-ci-rif').html(vm(data.cliente.documento));
                     } else {
                         $('#view-cliente-nombre').html('<span class="text-danger">Cliente no encontrado</span>');
-                        $('#view-cliente-apellido, #view-cliente-email, #view-cliente-telefono, #view-ci-rif').text('N/A');
+                        $('#view-cliente-email, #view-cliente-telefono, #view-ci-rif').text('N/A');
                     }
 
                     function formatDate(dateStr) {
@@ -2780,7 +3010,11 @@
                     var badgeClass = estadoClasses[data.estado] || '';
                     var icon       = estadoIcons[data.estado]   || 'ri-question-line';
                     $('#view-estado').html('<span class="badge badge-status ' + badgeClass + ' rounded-pill"><i class="' + icon + ' me-1"></i>' + data.estado + '</span>');
-                    $('#view-usuario-creador').text(data.user ? data.user.name : '');
+                    // Chip "Creada por" (gutter derecho del stepper)
+                    var cotCreador = data.creador || (data.user ? { name: data.user.name } : null);
+                    $('#view-usuario-creador').text(cotCreador ? cotCreador.name : '');
+                    $('#view-cot-creador-avatar').attr('src', (cotCreador && cotCreador.avatar_url) ? cotCreador.avatar_url : window.AMS_AVATAR_FALLBACK).css('display', '');
+                    $('#view-cot-creador-fecha').text(cotCreador && cotCreador.fecha ? cotCreador.fecha : '—');
 
                     // Paso 2 — Productos (grilla)
                     viewRenderProductosGrilla(data.productos, data.tasa_cambio_valor);
@@ -2794,14 +3028,18 @@
                     $('#view-resumen-subtotal').text(formatMoney(subtotalUsd));
                     $('#view-resumen-iva').text(formatMoney(ivaUsd));
                     $('#view-total').text(formatMoney(totalUsd));
-                    var bsLbl = (typeof window.bsEquivalente === 'function') ? window.bsEquivalente(totalUsd) : null;
+                    // Equivalentes en Bs con la tasa GUARDADA de la cotización (snapshot
+                    // a su fecha), no la del día. bsEquivalente/bsTasaFmt caen a la tasa
+                    // vigente solo si la cotización no tiene snapshot.
+                    var bsLbl = (typeof window.bsEquivalente === 'function')
+                        ? window.bsEquivalente(totalUsd, data.tasa_cambio_valor) : null;
                     $('#view-total-bs').text(bsLbl || 'Sin tasa BCV');
-                    if (window.tasaBcv && window.tasaBcv.valor) {
-                        $('#view-resumen-tasa').text('Bs ' + parseFloat(window.tasaBcv.valor)
-                            .toLocaleString('es-VE', { minimumFractionDigits: 4, maximumFractionDigits: 4 }));
-                    }
+                    var tasaCotFmt = (typeof window.bsTasaFmt === 'function')
+                        ? window.bsTasaFmt(data.tasa_cambio_valor) : null;
+                    $('#view-resumen-tasa').text(tasaCotFmt || '—');
+                    $('#view-resumen-tasa-fecha').text(data.tasa_fecha_fmt ? ' (' + data.tasa_fecha_fmt + ')' : '');
 
-                    // PDF
+                    // PDF de ESTA cotización
                     $('#view-pdf-btn').attr('href', '/cotizaciones/' + id + '/pdf');
 
                     $('#viewModal').modal('show');
@@ -2873,7 +3111,7 @@
             var id = $(this).data('id');
             Swal.fire({
                 title: '¿Reactivar cotización?',
-                text: 'La cotización volverá a estado Pendiente con 15 días de validez desde hoy.',
+                text: 'La cotización volverá a estado Pendiente con {{ \App\Models\Cotizacion::diasVigencia() }} días de validez desde hoy.',
                 icon: 'question',
                 showCancelButton: true,
                 confirmButtonText: 'Sí, reactivar',
@@ -3259,10 +3497,7 @@
             this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);
         });
 
-        // Validación en tiempo real para teléfono (solo números)
-        $(document).on('input', '#telefono-number-field-cliente', function () {
-            this.value = this.value.replace(/[^0-9]/g, '').slice(0, 7);
-        });
+        // (Teléfonos los maneja telefonos-repeater.js)
 
         // Validación onblur para nombre
         $(document).on('blur', '#nombre-field-cliente', function () {
@@ -3300,17 +3535,6 @@
             }
         });
 
-        // Validación onblur para teléfono
-        $(document).on('blur', '#telefono-number-field-cliente', function () {
-            let value = $(this).val().trim();
-            if (value.length < 7) {
-                $(this).addClass('is-invalid');
-                $('#telefono-error-cliente').text('El teléfono debe tener 7 dígitos.').show();
-            } else {
-                $(this).removeClass('is-invalid').addClass('is-valid');
-                $('#telefono-error-cliente').hide();
-            }
-        });
 
         // Validación onblur para email
         $(document).on('blur', '#email-field-cliente', function () {
@@ -3368,52 +3592,134 @@
         });
 
         // === Lógica dinámica: Natural vs Jurídico/Gubernamental (modal cliente cotización) ===
+        // El TIPO se deriva del prefijo del documento (regla del maestro de Clientes):
+        // V/E → natural, J → jurídico, G → gubernamental. El select queda read-only.
+        function cotCliTipoDesdePrefijo(prefix) {
+            if (prefix === 'J-') return 'juridico';
+            if (prefix === 'G-') return 'gubernamental';
+            return 'natural'; // V- y E-
+        }
+
+        function cotCliDocMaxLength() {
+            var prefix = $('#documento-prefix-field-cliente').val();
+            return (prefix === 'J-' || prefix === 'G-') ? 9 : 8;
+        }
+
         function toggleClienteFieldsCotizacion() {
-            var tipo = $('#tipo_cliente-field-cliente').val();
-            var $prefixSelect = $('#documento-prefix-field-cliente');
+            var prefix = $('#documento-prefix-field-cliente').val() || 'V-';
+            var tipo = cotCliTipoDesdePrefijo(prefix);
             var $docInput = $('#documento-number-field-cliente');
 
-            if (tipo === 'natural' || tipo === '') {
+            // Reflejar el tipo en el select read-only (trigger para AtlanticoSelect)
+            $('#tipo_cliente-field-cliente').val(tipo).trigger('change');
+
+            if (tipo === 'natural') {
                 $('#campos-persona-natural-cliente').removeClass('d-none');
                 $('#nombre-field-cliente').prop('required', true).prop('disabled', false);
                 $('#apellido-field-cliente').prop('required', true).prop('disabled', false);
 
                 $('#campos-razon-social-cliente').addClass('d-none');
                 $('#razon-social-field-cliente').prop('required', false).prop('disabled', true).val('');
-
-                $prefixSelect.html('<option value="V-">V-</option><option value="E-">E-</option>');
-                $prefixSelect.prop('disabled', false);
-                $docInput.attr('maxlength', '8');
-                if ($docInput.val().length > 8) $docInput.val($docInput.val().slice(0, 8));
-
-            } else if (tipo === 'juridico') {
+            } else {
                 $('#campos-persona-natural-cliente').addClass('d-none');
                 $('#nombre-field-cliente').prop('required', false).prop('disabled', true).val('');
                 $('#apellido-field-cliente').prop('required', false).prop('disabled', true).val('');
 
                 $('#campos-razon-social-cliente').removeClass('d-none');
                 $('#razon-social-field-cliente').prop('required', true).prop('disabled', false);
-
-                $prefixSelect.html('<option value="J-">J-</option>');
-                $prefixSelect.prop('disabled', true);
-                $docInput.attr('maxlength', '9');
-                if ($docInput.val().length > 9) $docInput.val($docInput.val().slice(0, 9));
-
-            } else if (tipo === 'gubernamental') {
-                $('#campos-persona-natural-cliente').addClass('d-none');
-                $('#nombre-field-cliente').prop('required', false).prop('disabled', true).val('');
-                $('#apellido-field-cliente').prop('required', false).prop('disabled', true).val('');
-
-                $('#campos-razon-social-cliente').removeClass('d-none');
-                $('#razon-social-field-cliente').prop('required', true).prop('disabled', false);
-
-                $prefixSelect.html('<option value="G-">G-</option>');
-                $prefixSelect.prop('disabled', true);
-                $docInput.attr('maxlength', '9');
-                if ($docInput.val().length > 9) $docInput.val($docInput.val().slice(0, 9));
             }
+
+            var maxLen = cotCliDocMaxLength();
+            $docInput.attr('maxlength', String(maxLen));
+            if ($docInput.val().length > maxLen) $docInput.val($docInput.val().slice(0, maxLen));
         }
-        $(document).on('change', '#tipo_cliente-field-cliente', toggleClienteFieldsCotizacion);
+        $(document).on('change', '#documento-prefix-field-cliente', toggleClienteFieldsCotizacion);
+
+        // Sanitización en tiempo real (igual al maestro)
+        $(document).on('input', '#nombre-field-cliente, #apellido-field-cliente', function () {
+            this.value = this.value.replace(/[^a-zA-Z\u00e1\u00e9\u00ed\u00f3\u00fa\u00c1\u00c9\u00cd\u00d3\u00da\u00f1\u00d1\s]/g, '');
+        });
+        $(document).on('input', '#documento-number-field-cliente', function () {
+            this.value = this.value.replace(/[^0-9]/g, '').slice(0, cotCliDocMaxLength());
+        });
+
+        // Chequeo de duplicado + persona registrada en otro rol (al salir del documento)
+        $(document).on('blur', '#documento-number-field-cliente', function () {
+            var $input = $(this);
+            var value = $input.val().trim();
+            var $error = $('#documento-error-cliente');
+
+            if (value.length > 0 && value.length < 6) {
+                $input.addClass('is-invalid');
+                $error.text('El documento debe tener entre 6 y ' + cotCliDocMaxLength() + ' dígitos.').show();
+                return;
+            }
+            if (!value) return;
+
+            $.get("{{ route('clientes.check-documento') }}", { numero: value }, function (response) {
+                if (response.exists) {
+                    $input.addClass('is-invalid');
+                    $error.text('Este cliente ya se encuentra registrado.').show();
+                    $('#add-btn-cliente').prop('disabled', true);
+                    $('#documento-persona-card-cliente').addClass('d-none');
+                    $('#documento-vinculado-notice-cliente').addClass('d-none');
+                    return;
+                }
+                $input.removeClass('is-invalid').addClass('is-valid');
+                $error.hide();
+                $('#add-btn-cliente').prop('disabled', false);
+                if (response.other_role && response.persona) {
+                    var p = response.persona;
+                    var detalles = '<strong>' + p.nombre + (p.apellido ? ' ' + p.apellido : '') + '</strong>';
+                    if (p.email) detalles += '<br>' + p.email;
+                    if (p.telefono) detalles += '<br>' + p.telefono;
+                    $('#persona-card-role-cliente').text(response.other_role);
+                    $('#persona-card-data-cliente').html(detalles);
+                    $('#persona-vincular-btn-cliente').data('persona', p).data('role', response.other_role);
+                    $('#documento-persona-card-cliente').removeClass('d-none');
+                } else {
+                    $('#documento-persona-card-cliente').addClass('d-none');
+                }
+            });
+        });
+
+        // Vincular persona existente (precarga sus datos en solo lectura)
+        $(document).on('click', '#persona-vincular-btn-cliente', function () {
+            var p = $(this).data('persona');
+            var role = $(this).data('role');
+
+            if (p.tipo_documento) {
+                $('#documento-prefix-field-cliente').val(p.tipo_documento).trigger('change');
+            }
+
+            $('#nombre-field-cliente, #apellido-field-cliente, #razon-social-field-cliente, #email-field-cliente')
+                .prop('readonly', true).addClass('bg-light').css('cursor', 'not-allowed');
+            $('#nombre-field-cliente').val(p.nombre || '');
+            $('#apellido-field-cliente').val(p.apellido || '');
+            $('#razon-social-field-cliente').val(p.nombre || '');
+            $('#email-field-cliente').val(p.email || '');
+
+            var _telRoot = document.getElementById('cot-cli-tel-repeater');
+            if (window.TelefonosRepeater && _telRoot) {
+                TelefonosRepeater.load(_telRoot, p.telefonos
+                    || (p.telefono ? [{ numero: p.telefono, tipo: 'movil', es_principal: true }] : []));
+            }
+
+            if (p.direccion) {
+                $('#direccion-field-cliente').val(p.direccion)
+                    .prop('readonly', true).addClass('bg-light').css('cursor', 'not-allowed');
+            }
+            if (p.estado_geografico) {
+                $('#estado_territorial-field-cliente').val(p.estado_geografico).trigger('change');
+                if (p.ciudad) $('#ciudad-field-cliente').val(p.ciudad);
+                $('#estado_territorial-field-cliente, #ciudad-field-cliente').prop('disabled', true);
+            }
+
+            $('#documento-persona-card-cliente').addClass('d-none');
+            $('#documento-vinculado-text-cliente').text('Datos vinculados de persona registrada como ' + role + '.');
+            $('#documento-vinculado-notice-cliente').removeClass('d-none');
+            $('#add-btn-cliente').prop('disabled', false);
+        });
 
         // Abrir modal de agregar cliente
         $('#open-add-cliente-modal').on('click', function () {
@@ -3424,9 +3730,19 @@
             $('#edit-btn-cliente').hide();
             // Reset valores por defecto
             $('#documento-prefix-field-cliente').val('V-');
-            $('#telefono-prefix-field-cliente').val('0424');
+            // Reset teléfonos del repetidor
+            (function () {
+                var r = document.getElementById('cot-cli-tel-repeater');
+                if (window.TelefonosRepeater && r) { TelefonosRepeater.init(r); TelefonosRepeater.load(r, []); }
+            })();
             $('#ciudad-field-cliente').html('<option value="">Primero seleccione un estado</option>');
-            $('#tipo_cliente-field-cliente').val('');
+            // Limpiar estado de vinculación/duplicado de aperturas anteriores
+            $('#documento-persona-card-cliente, #documento-vinculado-notice-cliente').addClass('d-none');
+            $('#documento-error-cliente').hide();
+            $('#add-btn-cliente').prop('disabled', false);
+            $('#clienteFormCotizacion input, #clienteFormCotizacion textarea')
+                .prop('readonly', false).removeClass('bg-light is-invalid is-valid').css('cursor', '');
+            $('#estado_territorial-field-cliente, #ciudad-field-cliente').prop('disabled', false);
             toggleClienteFieldsCotizacion();
             $('#modalAddCliente').modal('show');
         });
@@ -3439,22 +3755,36 @@
             var documentoCompleto = $('#documento-prefix-field-cliente').val() + $('#documento-number-field-cliente').val();
             $('#documento-field-cliente').val(documentoCompleto);
 
-            // Concatenar teléfono completo
-            var telefonoCompleto = $('#telefono-prefix-field-cliente').val() + '-' + $('#telefono-number-field-cliente').val();
-            $('#telefono-field-cliente').val(telefonoCompleto);
-
-            // Validar campo apellido explícitamente
-            var apellido = $('#apellido-field-cliente').val().trim();
-            if (apellido.length < 2) {
-                $('#apellido-field-cliente').addClass('is-invalid');
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Campo requerido',
-                    text: 'El campo Apellido es obligatorio (mínimo 2 caracteres)'
-                });
-                return;
+            // Teléfonos: validar el repetidor del bloque
+            var telRootCot = document.getElementById('cot-cli-tel-repeater');
+            if (window.TelefonosRepeater && telRootCot) {
+                var telChkCot = TelefonosRepeater.validate(telRootCot);
+                if (!telChkCot.ok) {
+                    Swal.fire({ icon: 'warning', title: 'Teléfonos', text: telChkCot.message });
+                    return;
+                }
             }
-            $('#apellido-field-cliente').removeClass('is-invalid');
+            var telTels = (window.TelefonosRepeater && telRootCot) ? TelefonosRepeater.collect(telRootCot) : [];
+            var telefonoCompleto = ((telTels.find(function (t) { return t.es_principal; }) || telTels[0] || {}).numero) || '';
+
+            // Apellido solo aplica a clientes naturales (jurídico/gubernamental usan razón
+            // social) y NO cuando los datos vienen vinculados de una persona existente:
+            // su nombre ya viene consolidado y el campo queda readonly (los readonly se
+            // excluyen de la validación, igual que en el maestro y en el backend, donde
+            // apellido es nullable).
+            if ($('#tipo_cliente-field-cliente').val() === 'natural' && !$('#apellido-field-cliente').prop('readonly')) {
+                var apellido = $('#apellido-field-cliente').val().trim();
+                if (apellido.length < 2) {
+                    $('#apellido-field-cliente').addClass('is-invalid');
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Campo requerido',
+                        text: 'El campo Apellido es obligatorio (mínimo 2 caracteres)'
+                    });
+                    return;
+                }
+                $('#apellido-field-cliente').removeClass('is-invalid');
+            }
 
             // Validar campo dirección explícitamente
             var direccion = $('#direccion-field-cliente').val().trim();
@@ -3479,8 +3809,13 @@
             // Deshabilitar botón para evitar múltiples envíos
             $(this).prop('disabled', true);
 
-            // Enviar por AJAX
+            // Enviar por AJAX (sincronizar teléfonos[] en el form antes de serializar)
+            if (window.TelefonosRepeater && telRootCot) {
+                TelefonosRepeater.syncHiddenInputs(document.getElementById('clienteFormCotizacion'), telRootCot);
+            }
             var formData = $('#clienteFormCotizacion').serialize() + '&_token=' + $('meta[name="csrf-token"]').attr('content');
+            // El select de tipo es disabled (read-only) → serialize lo omite; lo añadimos.
+            formData += '&tipo_cliente=' + encodeURIComponent($('#tipo_cliente-field-cliente').val());
 
             $.ajax({
                 url: '/clientes',
@@ -3752,7 +4087,7 @@
                 var base = emisionVal ? new Date(emisionVal + 'T00:00:00') : new Date();
                 if (isNaN(base.getTime())) base = new Date();
                 base.setDate(base.getDate() + days);
-                var iso = base.toISOString().split('T')[0];
+                var iso = window.cotFechaLocalISO(base);
                 $('#fecha-validez-field').val(iso).trigger('change').trigger('blur');
                 $('.cot-date-chip').removeClass('is-active');
                 $(this).addClass('is-active');
@@ -4550,11 +4885,12 @@
                 colorId: null,
                 colorNombre: '',
                 colorHex: null,
-                tallas: {},             // { tallaId: cantidad }
+                tallas: {},             // { tallaId: { generoId: cantidad } }
                 precioUnitario: null,   // precio editable, default = producto.precio_base
                 cartItemId: null        // si edita un item existente del carrito
             };
             var cfgModalInstance = null;
+            var cfgTallaGrupo = null;   // escala de tallas visible (Letras/Numéricas/Única)
 
             function $cfg(id) { return document.getElementById(id); }
 
@@ -4596,7 +4932,8 @@
                     cfgState.colorId = opts.existing.colorId || null;
                     cfgState.colorNombre = opts.existing.colorNombre || '';
                     cfgState.colorHex = opts.existing.colorHex || null;
-                    cfgState.tallas = Object.assign({}, opts.existing.tallas || {});
+                    // Clon profundo: la estructura es 2D { tallaId: { generoId: qty } }
+                    cfgState.tallas = JSON.parse(JSON.stringify(opts.existing.tallas || {}));
                     cfgState.precioUnitario = (opts.existing.precioUnitario != null)
                         ? parseFloat(opts.existing.precioUnitario) : basePrice;
                 } else {
@@ -4607,6 +4944,7 @@
                     cfgState.precioUnitario = basePrice;
                 }
 
+                cfgTallaGrupo = null; // re-elige escala según los datos del producto
                 renderInfo();
                 renderColorGrid();
                 renderTallasGrid();
@@ -4657,6 +4995,30 @@
                 }
             }
 
+            // Filtra los chips de color por nombre según el buscador. Oculta los
+            // títulos de grupo que queden sin chips visibles y muestra el estado
+            // vacío. Usa la clase .cfg-hidden (display:none !important) porque el
+            // atributo [hidden] no oculta elementos inline-flex como los chips.
+            function filterColorChips() {
+                var term = ($('#cfg-color-search').val() || '').trim().toLowerCase();
+                $('#cfg-color-search-clear').prop('hidden', term === '');
+                var $grid = $('#cfg-color-grid');
+                var anyVisible = false;
+                $grid.find('.cfg-color-group-items').each(function () {
+                    var $items = $(this);
+                    var groupHasVisible = false;
+                    $items.find('.cfg-color-chip').each(function () {
+                        var name = ($(this).data('color-nombre') || '').toString().toLowerCase();
+                        var match = term === '' || name.indexOf(term) !== -1;
+                        $(this).toggleClass('cfg-hidden', !match);
+                        if (match) { groupHasVisible = true; anyVisible = true; }
+                    });
+                    $items.toggleClass('cfg-hidden', !groupHasVisible);
+                    $items.prev('.cfg-color-group-title').toggleClass('cfg-hidden', !groupHasVisible);
+                });
+                $('#cfg-color-noresults').toggleClass('cfg-hidden', anyVisible || term === '');
+            }
+
             function renderColorGrid() {
                 var colors = (typeof coloresArray !== 'undefined' && Array.isArray(coloresArray)) ? coloresArray : [];
                 var $grid = $('#cfg-color-grid');
@@ -4695,35 +5057,140 @@
 
                 // Indicador de color seleccionado en el header
                 $('#cfg-color-selected').text(cfgState.colorNombre || 'Sin seleccionar');
+
+                // Buscador arranca limpio en cada render (nuevo producto o color creado)
+                $('#cfg-color-search').val('');
+                filterColorChips();
             }
 
+            // ── Escala de tallas activa (Letras / Numéricas / Única) ──
+            // Solo se muestran las tallas del grupo elegido para no abrumar con
+            // las ~15 del catálogo. Los datos de otros grupos se conservan en
+            // cfgState.tallas y cuentan en el total.
+            function tallaGruposDisponibles() {
+                var seen = [];
+                getTallasArray().forEach(function (t) {
+                    var g = t.grupo || 'Otras';
+                    if (seen.indexOf(g) === -1) seen.push(g);
+                });
+                return seen;
+            }
+            function tallaGrupoDeId(tid) {
+                var t = getTallasArray().find(function (x) { return x.id == tid; });
+                return t ? (t.grupo || 'Otras') : null;
+            }
+            function unidadesPorGrupo() {
+                var acc = {};
+                Object.keys(cfgState.tallas).forEach(function (tid) {
+                    var g = tallaGrupoDeId(tid);
+                    if (!g) return;
+                    var byGen = cfgState.tallas[tid] || {};
+                    Object.keys(byGen).forEach(function (gid) {
+                        acc[g] = (acc[g] || 0) + (parseInt(byGen[gid] || 0, 10) || 0);
+                    });
+                });
+                return acc;
+            }
+            function ensureTallaGrupo() {
+                var grupos = tallaGruposDisponibles();
+                if (!grupos.length) { cfgTallaGrupo = null; return; }
+                if (cfgTallaGrupo && grupos.indexOf(cfgTallaGrupo) !== -1) return;
+                // Preferir el grupo que ya tiene datos (al editar); si no, Letras; si no, el primero.
+                var conDatos = Object.keys(unidadesPorGrupo());
+                if (conDatos.length && grupos.indexOf(conDatos[0]) !== -1) {
+                    cfgTallaGrupo = conDatos[0];
+                } else if (grupos.indexOf('Letras') !== -1) {
+                    cfgTallaGrupo = 'Letras';
+                } else {
+                    cfgTallaGrupo = grupos[0];
+                }
+            }
+
+            // Grilla 2D: filas = tallas (solo del grupo activo), columnas = género.
+            // cfgState.tallas tiene forma { tallaId: { generoId: cantidad } }.
             function renderTallasGrid() {
                 var tallas = getTallasArray();
+                var generos = getGenerosArray();
                 var $grid = $('#cfg-tallas-grid');
-                if (!tallas.length) {
+                if (!tallas.length || !generos.length) {
                     $grid.html('<p class="text-muted small mb-0"><em>Cargando tallas…</em></p>');
                     return;
                 }
 
-                var html = tallas.map(function (t) {
+                ensureTallaGrupo();
+                var grupos = tallaGruposDisponibles();
+                var porGrupo = unidadesPorGrupo();
+
+                // Toggle de escala (solo si hay más de un grupo). El badge muestra
+                // cuántas unidades hay cargadas en escalas no visibles.
+                // Ícono por escala de tallas (con respaldo neutro si aparece otra).
+                var TG_GROUP_ICONS = { 'Única': 'ri-focus-3-line', 'Numéricas': 'ri-hashtag', 'Letras': 'ri-font-size' };
+                var toggle = '';
+                if (grupos.length > 1) {
+                    toggle = '<div class="cfg-tg-groups">' + grupos.map(function (g) {
+                        var n = porGrupo[g] || 0;
+                        var badge = (n && g !== cfgTallaGrupo) ? '<span class="cfg-tg-group-badge">' + n + '</span>' : '';
+                        var ico = '<i class="' + (TG_GROUP_ICONS[g] || 'ri-ruler-2-line') + '"></i>';
+                        return '<button type="button" class="cfg-tg-group-btn' + (g === cfgTallaGrupo ? ' is-active' : '') +
+                            '" data-grupo="' + escForHtml(g) + '">' + ico + '<span>' + escForHtml(g) + '</span>' + badge + '</button>';
+                    }).join('') + '</div>';
+                }
+
+                var visibles = tallas.filter(function (t) { return (t.grupo || 'Otras') === cfgTallaGrupo; });
+
+                // Slug semántico del género para colorear su columna por CSS
+                // (no por posición → robusto ante cambios de orden/catálogo).
+                function generoSlug(g) {
+                    var n = String(g.nombre || g.etiqueta || '').toLowerCase().trim();
+                    if (n.indexOf('dama') !== -1 || n.indexOf('mujer') !== -1) return 'dama';
+                    if (n.indexOf('caballero') !== -1 || n.indexOf('hombre') !== -1) return 'caballero';
+                    if (n.indexOf('unisex') !== -1) return 'unisex';
+                    return 'otro';
+                }
+
+                var head = '<div class="cfg-tg-row cfg-tg-head">' +
+                    '<span class="cfg-tg-talla cfg-tg-corner"><i class="ri-ruler-2-line"></i> Talla</span>' +
+                    generos.map(function (g) {
+                        var ic = g.icono ? '<i class="' + escForHtml(g.icono) + '"></i> ' : '';
+                        return '<span class="cfg-tg-genhead" data-genero="' + generoSlug(g) + '">' + ic + escForHtml(g.etiqueta || g.nombre) + '</span>';
+                    }).join('') +
+                    '</div>';
+
+                var rows = visibles.map(function (t) {
                     var label = t.etiqueta || t.nombre || '—';
-                    var qty = cfgState.tallas[t.id] || '';
+                    var byGen = cfgState.tallas[t.id] || {};
+                    var cells = generos.map(function (g) {
+                        var qty = byGen[g.id] || '';
+                        return (
+                            '<div class="cfg-tg-cell' + (qty ? ' is-active' : '') + '" data-genero="' + generoSlug(g) + '">' +
+                                '<button type="button" class="cfg-tg-step" data-step="-1" tabindex="-1" aria-label="Restar">&minus;</button>' +
+                                '<input type="number" class="cfg-tg-input" inputmode="numeric"' +
+                                    ' min="0" step="1" placeholder="0" value="' + qty + '"' +
+                                    ' data-talla-id="' + t.id + '" data-genero-id="' + g.id + '"' +
+                                    ' aria-label="' + escForHtml(label + ' · ' + (g.etiqueta || g.nombre)) + '">' +
+                                '<button type="button" class="cfg-tg-step" data-step="1" tabindex="-1" aria-label="Sumar">+</button>' +
+                            '</div>'
+                        );
+                    }).join('');
                     return (
-                        '<div class="cfg-talla-cell" data-talla-id="' + t.id + '" data-talla-label="' + escForHtml(label) + '">' +
-                            '<span class="cfg-talla-cell-label">' + escForHtml(label) + '</span>' +
-                            '<input type="number" class="cfg-talla-cell-input" min="0" step="1" placeholder="0"' +
-                                ' value="' + qty + '" data-talla-id="' + t.id + '">' +
+                        '<div class="cfg-tg-row" data-talla-id="' + t.id + '">' +
+                            '<span class="cfg-tg-talla">' + escForHtml(label) + '</span>' + cells +
                         '</div>'
                     );
                 }).join('');
 
-                $grid.html(html);
+                $grid.html(toggle + '<div class="cfg-tg" style="--cfg-tg-cols:' + generos.length + '">' + head + rows + '</div>');
             }
 
             function totalTallas() {
-                return Object.keys(cfgState.tallas).reduce(function (acc, k) {
-                    return acc + (parseInt(cfgState.tallas[k] || 0, 10) || 0);
-                }, 0);
+                var total = 0;
+                Object.keys(cfgState.tallas).forEach(function (tid) {
+                    var byGen = cfgState.tallas[tid] || {};
+                    Object.keys(byGen).forEach(function (gid) {
+                        total += parseInt(byGen[gid] || 0, 10) || 0;
+                    });
+                });
+                return total;
             }
 
             function renderPrecio() {
@@ -4749,6 +5216,12 @@
 
                 $('#cfg-save-btn').prop('disabled', !(cfgState.colorId && qty > 0 && unit > 0));
             }
+
+            // Buscador de color: filtra en vivo y botón para limpiar
+            $(document).on('input', '#cfg-color-search', filterColorChips);
+            $(document).on('click', '#cfg-color-search-clear', function () {
+                $('#cfg-color-search').val('').trigger('input').focus();
+            });
 
             // Click en chip de color
             $(document).on('click', '#cfg-color-grid .cfg-color-chip', function () {
@@ -4876,50 +5349,87 @@
             })();
 
             // Cambio en cantidad por talla
-            $(document).on('input', '#cfg-tallas-grid .cfg-talla-cell-input', function () {
+            // Cambiar de escala de tallas (Letras / Numéricas / Única)
+            $(document).on('click', '#cfg-tallas-grid .cfg-tg-group-btn', function () {
+                cfgTallaGrupo = $(this).data('grupo');
+                renderTallasGrid();
+            });
+
+            $(document).on('input', '#cfg-tallas-grid .cfg-tg-input', function () {
                 var tid = parseInt($(this).data('talla-id'), 10);
+                var gid = parseInt($(this).data('genero-id'), 10);
                 var v = parseInt($(this).val(), 10);
-                if (isNaN(v) || v <= 0) {
-                    delete cfgState.tallas[tid];
+                var has = !(isNaN(v) || v <= 0);
+                if (!cfgState.tallas[tid]) cfgState.tallas[tid] = {};
+                if (!has) {
+                    delete cfgState.tallas[tid][gid];
+                    if (Object.keys(cfgState.tallas[tid]).length === 0) delete cfgState.tallas[tid];
                 } else {
-                    cfgState.tallas[tid] = v;
+                    cfgState.tallas[tid][gid] = v;
                 }
-                // Resaltar la celda con valor
-                $(this).closest('.cfg-talla-cell').toggleClass('is-active', !!cfgState.tallas[tid]);
+                $(this).closest('.cfg-tg-cell').toggleClass('is-active', has);
                 refreshSummary();
             });
 
-            // Distribuir uniforme
+            // Steppers +/- de cada celda: ajustan el input y reusan su lógica de estado.
+            $(document).on('click', '#cfg-tallas-grid .cfg-tg-step', function () {
+                var $inp = $(this).closest('.cfg-tg-cell').find('.cfg-tg-input');
+                var delta = parseInt($(this).data('step'), 10) || 0;
+                var v = (parseInt($inp.val(), 10) || 0) + delta;
+                if (v < 0) v = 0;
+                $inp.val(v > 0 ? v : '').trigger('input');
+            });
+
+            // Distribuir uniforme: reparte un total entre las tallas para un
+            // género elegido (las celdas de los otros géneros se conservan).
             $(document).on('click', '#cfg-distribute-btn', function () {
+                var generos = getGenerosArray();
+                if (!generos.length) return;
+                var inputOptions = {};
+                generos.forEach(function (g) { inputOptions[g.id] = g.etiqueta || g.nombre; });
+
                 Swal.fire({
                     title: 'Distribuir uniforme',
-                    text: '¿Cuántas unidades en total?',
-                    input: 'number',
-                    inputAttributes: { min: 1, step: 1 },
-                    inputValue: 50,
+                    text: '¿Para qué género?',
+                    input: 'select',
+                    inputOptions: inputOptions,
+                    inputValue: String(generos[0].id),
                     showCancelButton: true,
-                    confirmButtonText: 'Distribuir',
+                    confirmButtonText: 'Siguiente',
                     cancelButtonText: 'Cancelar',
                     customClass: { container: 'swal-over-modal' }
-                }).then(function (res) {
-                    if (!res.isConfirmed) return;
-                    var total = parseInt(res.value, 10);
-                    if (!total || total < 1) return;
-                    var tallas = getTallasArray();
-                    if (!tallas.length) return;
-                    var per = Math.floor(total / tallas.length);
-                    var rem = total % tallas.length;
-                    cfgState.tallas = {};
-                    tallas.forEach(function (t, i) {
-                        var v = per + (i < rem ? 1 : 0);
-                        if (v > 0) cfgState.tallas[t.id] = v;
+                }).then(function (r1) {
+                    if (!r1.isConfirmed) return;
+                    var gid = parseInt(r1.value, 10);
+                    Swal.fire({
+                        title: 'Distribuir uniforme',
+                        text: '¿Cuántas unidades en total para ' + (inputOptions[gid] || '') + '?',
+                        input: 'number',
+                        inputAttributes: { min: 1, step: 1 },
+                        inputValue: 50,
+                        showCancelButton: true,
+                        confirmButtonText: 'Distribuir',
+                        cancelButtonText: 'Cancelar',
+                        customClass: { container: 'swal-over-modal' }
+                    }).then(function (r2) {
+                        if (!r2.isConfirmed) return;
+                        var total = parseInt(r2.value, 10);
+                        if (!total || total < 1) return;
+                        // Repartir solo entre las tallas de la escala visible.
+                        var tallas = getTallasArray().filter(function (t) { return (t.grupo || 'Otras') === cfgTallaGrupo; });
+                        if (!tallas.length) return;
+                        var per = Math.floor(total / tallas.length);
+                        var rem = total % tallas.length;
+                        tallas.forEach(function (t, i) {
+                            var v = per + (i < rem ? 1 : 0);
+                            if (!cfgState.tallas[t.id]) cfgState.tallas[t.id] = {};
+                            if (v > 0) cfgState.tallas[t.id][gid] = v;
+                            else delete cfgState.tallas[t.id][gid];
+                            if (Object.keys(cfgState.tallas[t.id]).length === 0) delete cfgState.tallas[t.id];
+                        });
+                        renderTallasGrid();
+                        refreshSummary();
                     });
-                    renderTallasGrid();
-                    // Restaurar visual de inputs activos
-                    Object.keys(cfgState.tallas).forEach(function (tid) {
-                        $('#cfg-tallas-grid .cfg-talla-cell[data-talla-id="' + tid + '"]').addClass('is-active');
-                    });
-                    refreshSummary();
                 });
             });
 
@@ -4984,14 +5494,23 @@
                 if (!cfgState.colorId || totalTallas() === 0) return;
                 var p = cfgState.producto;
 
-                var tallasItems = Object.keys(cfgState.tallas).map(function (tid) {
+                // Una entrada por celda (talla × género) con cantidad > 0.
+                var tallasItems = [];
+                Object.keys(cfgState.tallas).forEach(function (tid) {
                     var t = getTallasArray().find(function (x) { return x.id == tid; });
-                    return {
-                        tallaId: parseInt(tid, 10),
-                        tallaLabel: t ? (t.etiqueta || t.nombre) : '—',
-                        qty: parseInt(cfgState.tallas[tid], 10) || 0
-                    };
-                }).filter(function (x) { return x.qty > 0; });
+                    var byGen = cfgState.tallas[tid] || {};
+                    Object.keys(byGen).forEach(function (gid) {
+                        var qty = parseInt(byGen[gid], 10) || 0;
+                        if (qty <= 0) return;
+                        tallasItems.push({
+                            tallaId: parseInt(tid, 10),
+                            tallaLabel: t ? (t.etiqueta || t.nombre) : '—',
+                            generoId: parseInt(gid, 10),
+                            generoNombre: getGeneroNombre(gid),
+                            qty: qty
+                        });
+                    });
+                });
 
                 var totalQty = tallasItems.reduce(function (a, x) { return a + x.qty; }, 0);
                 var basePrice = parseFloat(p.precio_base || 0);
@@ -5016,7 +5535,7 @@
                     precioCustom: unit !== basePrice,
                     subtotal: subtotal,
                     summary: cfgState.colorNombre + ' · ' +
-                             tallasItems.map(function (x) { return x.tallaLabel + '×' + x.qty; }).join(' · ') +
+                             tallasItems.map(function (x) { return x.tallaLabel + '·' + x.generoNombre + '×' + x.qty; }).join(' · ') +
                              (unit !== basePrice ? ' · @' + formatMoney(unit) : '')
                 };
 
@@ -5050,6 +5569,11 @@
 
             // Cargar colores/tallas si aún no están cargados al abrir
             $('#cotConfiguradorModal').on('show.bs.modal', function () {
+                // El catálogo (más ancho) queda abierto detrás; ocultarlo para que
+                // su cabecera/✕ no asomen por los bordes del configurador.
+                var catEl = document.getElementById('catalogoProductosModal');
+                if (catEl && catEl.classList.contains('show')) catEl.classList.add('cot-modal-hidden-behind');
+
                 if (typeof coloresArray !== 'undefined' && (!coloresArray || coloresArray.length === 0)) {
                     $.get("{{ route('colores.data') }}", function (data) {
                         coloresArray = data;
@@ -5061,6 +5585,12 @@
                         cargarTallasCatalogo(renderTallasGrid);
                     }
                 }
+            });
+
+            // Al cerrar el configurador, restaurar el catálogo (para "Volver al catálogo")
+            $('#cotConfiguradorModal').on('hide.bs.modal', function () {
+                var catEl = document.getElementById('catalogoProductosModal');
+                if (catEl) catEl.classList.remove('cot-modal-hidden-behind');
             });
 
             // Reset al cerrar
@@ -5112,6 +5642,7 @@
                             '',                 // _unused
                             item.colorId,
                             t.tallaId,
+                            t.generoId,
                             []                  // bordados vacíos
                         );
                         totalLineas++;
@@ -5205,11 +5736,15 @@
                     var unit = base + recargo;
                     var tallaId = $card.find('.talla-input-value').val() || '';
                     var tallaLabel = $card.find('.talla-input-display').val() || '';
+                    var generoId = $card.find('.genero-id-input').val() || '';
+                    var generoNombre = $card.find('.genero-id-input').attr('data-genero-label') || getGeneroNombre(generoId);
                     byKey[key].cards.push({
                         $card: $card,
                         productIndex: $card.data('product-index'),
                         tallaId: tallaId,
                         tallaLabel: tallaLabel,
+                        generoId: generoId,
+                        generoNombre: generoNombre,
                         qty: qty,
                         base: base,
                         unit: unit
@@ -5274,8 +5809,9 @@
                     var lightHex = (String(colorHex).toUpperCase() === '#FFFFFF' || String(colorHex).toUpperCase() === '#FFFDD0');
 
                     var tallasChips = g.cards.map(function (c) {
+                        var gen = c.generoNombre ? '<span class="cot-chip-gen">' + escForHtml(c.generoNombre) + '</span>' : '';
                         return '<span class="cot-chip cot-chip-talla">' +
-                                    escForHtml(c.tallaLabel || '?') + '<span class="cot-chip-x">×</span>' +
+                                    escForHtml(c.tallaLabel || '?') + gen + '<span class="cot-chip-x">×</span>' +
                                     '<strong>' + c.qty + '</strong>' +
                                '</span>';
                     }).join('');
@@ -5404,8 +5940,12 @@
                     var cid = parseInt($c.find('.color-id-input').val(), 10);
                     if (pid !== String(prodId) || cid !== colorId) return;
                     var tid = parseInt($c.find('.talla-input-value').val(), 10);
+                    var gid = parseInt($c.find('.genero-id-input').val(), 10);
                     var qty = parseInt($c.find('.cantidad-input').val(), 10) || 0;
-                    if (tid && qty > 0) tallasMap[tid] = qty;
+                    if (tid && gid && qty > 0) {
+                        if (!tallasMap[tid]) tallasMap[tid] = {};
+                        tallasMap[tid][gid] = qty;
+                    }
                     var price = parseFloat($c.find('.precio-unitario-input').val());
                     if (precioFromCards == null && !isNaN(price)) precioFromCards = price;
                 });
@@ -5466,7 +6006,7 @@
                 if (typeof ubicacionModal !== 'undefined' && ubicacionModal && typeof ubicacionModal.show === 'function') {
                     ubicacionModal.show();
                 } else if (offcanvasEl) {
-                    bootstrap.Offcanvas.getOrCreateInstance(offcanvasEl).show();
+                    bootstrap.Modal.getOrCreateInstance(offcanvasEl).show();
                 } else {
                     Swal.fire({ icon: 'error', title: 'Panel de bordados no disponible',
                         text: 'El sistema de bordados no se cargó correctamente.',
@@ -5504,7 +6044,7 @@
                             if (!t.qty || t.qty <= 0) return;
                             addProductItem(
                                 lastItem.productoId, t.qty, unit, '', false, '',
-                                lastItem.colorId, t.tallaId, []
+                                lastItem.colorId, t.tallaId, t.generoId, []
                             );
                         });
 
@@ -5672,7 +6212,16 @@
                         $('#fecha-cotizacion-field').trigger('focus');
                         return false;
                     }
-                    if (validez && validez < fecha) {
+                    if (!validez) {
+                        Swal.fire({
+                            icon: 'warning', title: 'Fecha de validez requerida',
+                            text: 'Indica hasta cuándo son válidos los precios (puedes usar los atajos de validez rápida).',
+                            timer: 2600, showConfirmButton: false
+                        });
+                        $('#fecha-validez-field').trigger('focus');
+                        return false;
+                    }
+                    if (validez < fecha) {
                         Swal.fire({
                             icon: 'warning', title: 'Fechas inconsistentes',
                             text: 'La fecha de validez no puede ser anterior a la fecha de emisión.',
@@ -5775,7 +6324,7 @@
                             ? window.cotBuildVariantLabel(g.producto)
                             : '';
                         var colorName = g.color ? g.color.nombre : (g.colorId ? '#' + g.colorId : '');
-                        var tallasTxt = g.cards.map(function (c) { return c.tallaLabel + '×' + c.qty; }).join(' · ');
+                        var tallasTxt = g.cards.map(function (c) { return c.tallaLabel + (c.generoNombre ? '·' + c.generoNombre : '') + '×' + c.qty; }).join(' · ');
                         var bordadoBadge = g.llevaBordado
                             ? ' <span class="cot-resumen-bordado-pill"><i class="ri-scissors-cut-line"></i> bordado</span>'
                             : '';
@@ -5787,7 +6336,8 @@
                         var tipoNombre = (g.producto && g.producto.tipo_producto) ? g.producto.tipo_producto.nombre : '(sin tipo)';
                         var colorHex = g.color ? g.color.hex_referencial : null;
                         var tallasPills = g.cards.map(function (c) {
-                            return '<span class="cot-linea-talla">' + escHtmlW(c.tallaLabel) + '<b>×' + c.qty + '</b></span>';
+                            var gen = c.generoNombre ? '<span class="cot-linea-genero">' + escHtmlW(c.generoNombre) + '</span>' : '';
+                            return '<span class="cot-linea-talla">' + escHtmlW(c.tallaLabel) + gen + '<b>×' + c.qty + '</b></span>';
                         }).join('');
                         var imgUrl = (g.producto && g.producto.imagen) ? g.producto.imagen : '';
                         var thumb = imgUrl
@@ -5859,7 +6409,9 @@
                 $('#cot-resumen-subtotal').text(formatMoney(subtotal));
                 $('#cot-resumen-iva').text(formatMoney(iva));
                 $('#cot-resumen-total').text(formatMoney(total));
-                // Tasa BCV del día y equivalente en Bs
+                // Tasa BCV del día (con su fecha en el label) y equivalente en Bs
+                var cotResFecha = (typeof window.bcvFechaFmt === 'function') ? window.bcvFechaFmt() : '';
+                $('#cot-resumen-tasa-fecha').text(cotResFecha ? ' (' + cotResFecha + ')' : '');
                 if (window.tasaBcv && window.tasaBcv.valor) {
                     $('#cot-resumen-tasa').text('Bs ' + parseFloat(window.tasaBcv.valor).toLocaleString('es-VE', { minimumFractionDigits: 4, maximumFractionDigits: 4 }));
                 } else {
@@ -5867,6 +6419,73 @@
                 }
                 var bsLabel = (typeof window.bsEquivalente === 'function') ? window.bsEquivalente(total) : null;
                 $('#cot-resumen-total-bs').text(bsLabel || 'Sin tasa BCV');
+
+                cotRefreshProyeccion();
+            }
+
+            // Recolecta las líneas actuales del wizard (fuente de verdad: los
+            // inputs ocultos de #productos-container) para la proyección de stock.
+            function cotCollectLineasProyeccion() {
+                var lineas = [];
+                $('#productos-container .product-item').each(function () {
+                    var $c = $(this);
+                    var pick = function (suffix) {
+                        var $el = $c.find('[name$="[' + suffix + ']"]').first();
+                        return $el.length ? $el.val() : null;
+                    };
+                    var cantidad = parseInt(pick('cantidad') || '0', 10);
+                    if (!cantidad || cantidad < 1) return;
+                    lineas.push({
+                        producto_id: pick('producto_id') || null,
+                        tipo_producto_id: pick('tipo_producto_id') || null,
+                        tela_id: pick('insumo_tela_id') || null,
+                        cantidad: cantidad
+                    });
+                });
+                return lineas;
+            }
+
+            // Pide y pinta la proyección NO bloqueante de insumos para producción.
+            function cotRefreshProyeccion() {
+                var bodyEl = document.getElementById('cot-proyeccion-body');
+                var badgeEl = document.getElementById('cot-proyeccion-badge');
+                if (!bodyEl || !window.ProyeccionInsumos) return;
+
+                var lineas = cotCollectLineasProyeccion();
+                if (!lineas.length) {
+                    bodyEl.innerHTML = '<div class="proy-state proy-state--muted">' +
+                        '<i class="ri-information-line me-1"></i>Agrega productos para ver la proyección de insumos.</div>';
+                    if (badgeEl) badgeEl.hidden = true;
+                    return;
+                }
+
+                ProyeccionInsumos.cargar({
+                    url: '{{ route("cotizaciones.proyeccionInsumos") }}',
+                    method: 'POST',
+                    csrf: $('meta[name="csrf-token"]').attr('content'),
+                    payload: { lineas: lineas },
+                    bodyEl: bodyEl,
+                    badgeEl: badgeEl,
+                    contexto: 'cotizacion'
+                });
+            }
+
+            // Recalcular al volver a esta pestaña (p.ej. tras procesar una compra
+            // en otra pestaña con el atajo). offsetParent != null ⇒ el panel está
+            // realmente visible (modal abierto + paso 3), así no se pide en vano.
+            document.addEventListener('visibilitychange', function () {
+                if (document.visibilityState !== 'visible') return;
+                var body = document.getElementById('cot-proyeccion-body');
+                if (body && body.offsetParent !== null) cotRefreshProyeccion();
+            });
+
+            // Tiempo real entre pestañas: si en otra pestaña se procesa/anula una
+            // compra, recalcular al instante (sin esperar a recuperar el foco).
+            if (window.ProyeccionInsumos && ProyeccionInsumos.onStockChange) {
+                ProyeccionInsumos.onStockChange(function () {
+                    var body = document.getElementById('cot-proyeccion-body');
+                    if (body && body.offsetParent !== null) cotRefreshProyeccion();
+                });
             }
 
             // === LISTENERS =====================================================

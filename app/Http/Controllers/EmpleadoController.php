@@ -28,11 +28,6 @@ class EmpleadoController extends Controller
         return view('admin.empleados.index', compact('departamentos', 'cargos', 'historial'));
     }
 
-    public function create()
-    {
-        $departamentos = Departamento::orderBy('nombre')->pluck('nombre', 'id');
-        return view('admin.empleados.create', compact('departamentos'));
-    }
 
     public function getEmpleados(Request $request)
     {
@@ -93,10 +88,9 @@ class EmpleadoController extends Controller
                 }
                 $query->where(function ($q) use ($keyword) {
                     $q->whereHas('persona', function ($p) use ($keyword) {
-                        $p->where('nombre', 'like', "{$keyword}%")
-                          ->orWhere('apellido', 'like', "{$keyword}%")
+                        // `nombre` ya contiene el nombre completo del empleado.
+                        $p->where('nombre', 'like', "%{$keyword}%")
                           ->orWhere('email', 'like', "{$keyword}%")
-                          ->orWhereRaw("CONCAT(nombre, ' ', apellido) like ?", ["{$keyword}%"])
                           ->orWhereRaw("CONCAT(tipo_documento, documento_identidad) like ?", ["{$keyword}%"]);
                     })
                     ->orWhereHas('cargo', fn($c) => $c->where('nombre', 'like', "{$keyword}%"))
@@ -143,7 +137,10 @@ class EmpleadoController extends Controller
             'documento_identidad' => 'required|string|min:6|max:15|regex:/^[0-9]+$/',
             'tipo_documento'      => 'required|in:V-,E-,J-,G-',
             'email'               => 'nullable|email:rfc|max:255',
-            'telefono'            => 'nullable|string|regex:/^[0-9]{4}-[0-9]{7}$/',
+            'telefonos'           => 'required|array|min:1|max:3',
+            'telefonos.*.numero'  => ['required', 'string', 'regex:/^[0-9]{4}-[0-9]{7}$/'],
+            'telefonos.*.tipo'    => 'required|in:movil,casa,trabajo',
+            'telefonos.*.es_principal' => 'required|boolean',
             'direccion'           => 'nullable|string|max:500',
             'ciudad'              => 'nullable|string|max:100',
             'estado_geografico'   => 'nullable|string|max:100',
@@ -170,7 +167,10 @@ class EmpleadoController extends Controller
             'documento_identidad.regex'    => 'El documento solo puede contener números',
             'tipo_documento.required'      => 'Debe seleccionar el tipo de documento',
             'email.email'                  => 'El email debe ser una dirección válida',
-            'telefono.regex'               => 'El teléfono debe tener el formato 0424-1234567',
+            'telefonos.required'           => 'Agrega al menos un teléfono.',
+            'telefonos.max'                => 'Máximo 3 teléfonos por persona.',
+            'telefonos.*.numero.required'  => 'El número de teléfono es obligatorio.',
+            'telefonos.*.numero.regex'     => 'El teléfono debe tener el formato 0424-1234567.',
             'fecha_nacimiento.before'      => 'El empleado debe ser mayor de 18 años',
             'fecha_ingreso.required'       => 'La fecha de ingreso es obligatoria',
             'fecha_ingreso.before_or_equal' => 'La fecha de ingreso no puede ser futura',
@@ -194,6 +194,7 @@ class EmpleadoController extends Controller
 
         $data                = $empleado->toArray();
         $data['telefono']    = $empleado->telefono;
+        $data['telefonos']   = $empleado->persona ? $empleado->persona->telefonos : [];
         $data['direccion']   = $empleado->direccion;
         $data['ciudad']      = $empleado->ciudad;
         $data['cargo']       = $empleado->cargo ? $empleado->cargo->nombre : null;
@@ -208,16 +209,22 @@ class EmpleadoController extends Controller
         $empleado = Empleado::with(['persona.telefonos', 'persona.direcciones', 'cargo', 'departamento'])->findOrFail($id);
 
         $data = $empleado->toArray();
-        $data['persona']['fecha_nacimiento'] = $empleado->persona->fecha_nacimiento
-            ? $empleado->persona->fecha_nacimiento->format('Y-m-d')
+        // fecha_nacimiento y genero ahora viven en empleado (no en persona)
+        $data['fecha_nacimiento'] = $empleado->fecha_nacimiento
+            ? $empleado->fecha_nacimiento->format('Y-m-d')
             : null;
+        $data['genero'] = $empleado->genero;
         $data['fecha_ingreso'] = $empleado->fecha_ingreso
             ? \Carbon\Carbon::parse($empleado->fecha_ingreso)->format('Y-m-d')
             : null;
 
         $data['telefono']         = $empleado->telefono;
+        $data['telefonos']        = $empleado->persona ? $empleado->persona->telefonos : [];
         $data['direccion']        = $empleado->direccion;
         $data['ciudad']           = $empleado->ciudad;
+        // El estado de ubicación vive ahora en la dirección (no en persona)
+        $dirPrincipal = $empleado->persona?->direccionPrincipal;
+        $data['persona']['estado_geografico'] = $dirPrincipal?->estado;
         $data['cargo']            = $empleado->cargo ? $empleado->cargo->nombre : null;
         $data['departamento']     = $empleado->departamento ? $empleado->departamento->nombre : null;
         $data['cargo_id']         = $empleado->cargo_id;
@@ -242,7 +249,10 @@ class EmpleadoController extends Controller
             'nombre'              => 'required|string|min:2|max:100|regex:/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/',
             'apellido'            => 'required|string|min:2|max:100|regex:/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/',
             'email'               => 'nullable|email:rfc|max:255|unique:persona,email,' . $persona->id,
-            'telefono'            => 'nullable|string|regex:/^[0-9]{4}-[0-9]{7}$/',
+            'telefonos'           => 'required|array|min:1|max:3',
+            'telefonos.*.numero'  => ['required', 'string', 'regex:/^[0-9]{4}-[0-9]{7}$/'],
+            'telefonos.*.tipo'    => 'required|in:movil,casa,trabajo',
+            'telefonos.*.es_principal' => 'required|boolean',
             'direccion'           => 'nullable|string|max:500',
             'ciudad'              => 'nullable|string|max:100',
             'estado_geografico'   => 'nullable|string|max:100',
@@ -266,7 +276,10 @@ class EmpleadoController extends Controller
             'apellido.regex'                => 'El apellido solo puede contener letras y espacios',
             'email.email'                   => 'El email debe ser una dirección válida',
             'email.unique'                  => 'Este email ya está registrado',
-            'telefono.regex'                => 'El teléfono debe tener el formato 0424-1234567',
+            'telefonos.required'            => 'Agrega al menos un teléfono.',
+            'telefonos.max'                 => 'Máximo 3 teléfonos por persona.',
+            'telefonos.*.numero.required'   => 'El número de teléfono es obligatorio.',
+            'telefonos.*.numero.regex'      => 'El teléfono debe tener el formato 0424-1234567.',
             'fecha_nacimiento.before'       => 'El empleado debe ser mayor de 18 años',
             'fecha_ingreso.required'        => 'La fecha de ingreso es obligatoria',
             'fecha_ingreso.before_or_equal' => 'La fecha de ingreso no puede ser futura',
@@ -316,13 +329,16 @@ class EmpleadoController extends Controller
                 $dir = $persona->direccionPrincipal;
                 $personaData = [
                     'nombre'            => $persona->nombre,
-                    'apellido'          => $persona->apellido ?? '',
+                    'apellido'          => '',
                     'tipo_documento'    => $persona->tipo_documento,
                     'email'             => $persona->email ?? '',
                     'telefono'          => $persona->telefonoPrincipal ?? '',
-                    'genero'            => $persona->genero ?? '',
-                    'fecha_nacimiento'  => $persona->fecha_nacimiento?->format('Y-m-d') ?? '',
-                    'estado_geografico' => $persona->estado_geografico ?? ($dir?->estado ?? ''),
+                    'telefonos'         => $persona->telefonos,
+                    // fecha_nacimiento/genero ya no viven en persona; al promover un
+                    // cliente a empleado estos campos se capturan en el form de empleado.
+                    'genero'            => '',
+                    'fecha_nacimiento'  => '',
+                    'estado_geografico' => $dir?->estado ?? '',
                     'ciudad'            => $dir?->ciudad ?? '',
                     'direccion'         => $dir?->direccion ?? '',
                 ];
@@ -353,9 +369,26 @@ class EmpleadoController extends Controller
             $query->whereDate('fecha_ingreso', '<=', $request->fecha_hasta);
         }
         $empleados = $query->get();
-        $pdf = \PDF::loadView('admin.empleados.reporte_pdf', compact('empleados'))
+
+        $filtros = [];
+        if ($request->filled('departamento_id')) {
+            $filtros['Departamento'] = optional(Departamento::find($request->departamento_id))->nombre
+                ?? ('#' . $request->departamento_id);
+        }
+        if ($request->filled('cargo_id')) {
+            $filtros['Cargo'] = optional(Cargo::find($request->cargo_id))->nombre
+                ?? ('#' . $request->cargo_id);
+        }
+        if ($request->input('estatus') === '0') {
+            $filtros['Estatus'] = 'Inhabilitados';
+        }
+        if ($rango = \App\Support\ReporteFiltros::rango($request->fecha_desde, $request->fecha_hasta)) {
+            $filtros['Fecha de ingreso'] = $rango;
+        }
+
+        $pdf = \PDF::loadView('admin.empleados.reporte_pdf', compact('empleados', 'filtros'))
             ->setPaper('a4', 'landscape');
-        return $pdf->download('reporte_empleados_' . now()->format('Ymd_His') . '.pdf');
+        return $pdf->stream('reporte_empleados_' . now()->format('Ymd_His') . '.pdf');
     }
 
     public function checkEmail(Request $request)

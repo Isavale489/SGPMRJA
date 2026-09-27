@@ -3,8 +3,7 @@
      Pasos: Cliente → Productos → Resumen
      Lógica JS en: cotizaciones/scripts/main.blade.php
      ═══════════════════════════════════════════════════════════════════ --}}
-<div class="modal fade atlantico-modal atlantico-modal--op" id="viewModal" tabindex="-1" aria-hidden="true"
-    data-bs-backdrop="static" data-bs-keyboard="false">
+<div class="modal fade atlantico-modal atlantico-modal--op" id="viewModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-xl modal-fullscreen-sm-down">
         <div class="modal-content">
 
@@ -35,7 +34,22 @@
                         <span class="wiz-step-label">Resumen</span>
                     </button>
                 </div>
-                <div class="wiz-stepper-side wiz-stepper-side--right"></div>
+                {{-- Chip "Creada por" — gutter derecho del stepper (estándar de las transacciones) --}}
+                <div class="wiz-stepper-side wiz-stepper-side--right">
+                    <div class="wiz-client-banner wiz-client-banner--creator" title="Creada por">
+                        <img class="wiz-client-banner-avatar wiz-client-banner-avatar--img"
+                            id="view-cot-creador-avatar" src="" alt="" onerror="this.onerror=null;this.src=window.AMS_AVATAR_FALLBACK" />
+                        <div class="wiz-client-banner-main">
+                            <span class="wiz-client-banner-eyebrow">Creada por</span>
+                            <span class="wiz-client-banner-name" id="view-usuario-creador">—</span>
+                            <span class="wiz-client-banner-sub">
+                                <span class="wiz-client-banner-doc">
+                                    <i class="ri-time-line me-1"></i><span id="view-cot-creador-fecha">—</span>
+                                </span>
+                            </span>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <div class="modal-body p-0 wiz-wizard-body">
@@ -48,27 +62,18 @@
                     </div>
                     <div class="row g-3">
                         <div class="col-md-6">
-                            <div class="card border-0 shadow-sm h-100">
-                                <div class="card-header border-0 bg-soft-primary py-2 px-3">
-                                    <h6 class="mb-0 text-atlantico-dark fs-13">
-                                        <i class="ri-user-star-line me-1"></i>Información del Cliente
-                                    </h6>
+                            <div class="cli-view-card h-100">
+                                <div class="cli-view-card-header">
+                                    <i class="ri-user-star-line"></i>Información del Cliente
                                 </div>
-                                <div class="card-body p-3">
+                                <div class="cli-view-card-body">
                                     <div class="row g-2">
                                         <div class="col-6 d-flex align-items-start">
                                             <div class="emp-icon-box emp-icon-box--navy rounded-circle me-2 flex-shrink-0 d-flex align-items-center justify-content-center">
                                                 <i class="ri-user-line emp-icon--navy"></i>
                                             </div>
-                                            <div><small class="text-muted d-block fs-12">Nombre</small>
+                                            <div><small class="text-muted d-block fs-12">Nombre / Razón Social</small>
                                             <span class="fw-semibold fs-13" id="view-cliente-nombre">-</span></div>
-                                        </div>
-                                        <div class="col-6 d-flex align-items-start">
-                                            <div class="emp-icon-box emp-icon-box--navy rounded-circle me-2 flex-shrink-0 d-flex align-items-center justify-content-center">
-                                                <i class="ri-user-follow-line emp-icon--navy"></i>
-                                            </div>
-                                            <div><small class="text-muted d-block fs-12">Apellido</small>
-                                            <span class="fw-semibold fs-13" id="view-cliente-apellido">-</span></div>
                                         </div>
                                         <div class="col-6 d-flex align-items-start">
                                             <div class="emp-icon-box emp-icon-box--green rounded-circle me-2 flex-shrink-0 d-flex align-items-center justify-content-center">
@@ -96,13 +101,11 @@
                             </div>
                         </div>
                         <div class="col-md-6">
-                            <div class="card border-0 shadow-sm h-100">
-                                <div class="card-header border-0 bg-soft-primary py-2 px-3">
-                                    <h6 class="mb-0 text-atlantico-dark fs-13">
-                                        <i class="ri-calendar-todo-line me-1"></i>Datos de la Cotización
-                                    </h6>
+                            <div class="cli-view-card h-100">
+                                <div class="cli-view-card-header">
+                                    <i class="ri-calendar-todo-line"></i>Datos de la Cotización
                                 </div>
-                                <div class="card-body p-3">
+                                <div class="cli-view-card-body">
                                     <div class="row g-2">
                                         <div class="col-6 d-flex align-items-start">
                                             <div class="emp-icon-box emp-icon-box--navy rounded-circle me-2 flex-shrink-0 d-flex align-items-center justify-content-center">
@@ -124,13 +127,6 @@
                                             </div>
                                             <div><small class="text-muted d-block fs-12">Estado</small>
                                             <span class="fs-13" id="view-estado">-</span></div>
-                                        </div>
-                                        <div class="col-6 d-flex align-items-start">
-                                            <div class="emp-icon-box emp-icon-box--navy rounded-circle me-2 flex-shrink-0 d-flex align-items-center justify-content-center">
-                                                <i class="ri-user-settings-line emp-icon--navy"></i>
-                                            </div>
-                                            <div><small class="text-muted d-block fs-12">Creado por</small>
-                                            <span class="fw-semibold fs-13" id="view-usuario-creador">-</span></div>
                                         </div>
                                     </div>
                                 </div>
@@ -179,7 +175,7 @@
                                 </div>
                                 <div class="cot-resumen-card-body">
                                     <div class="cot-resumen-row">
-                                        <span class="cot-resumen-row-label"><i class="ri-bank-line me-1" style="font-size:.9rem;opacity:.7"></i>Tasa BCV (USD/VES)</span>
+                                        <span class="cot-resumen-row-label"><i class="ri-bank-line me-1" style="font-size:.9rem;opacity:.7"></i>Tasa BCV<span id="view-resumen-tasa-fecha"></span></span>
                                         <span class="cot-resumen-row-value fs-13" id="view-resumen-tasa">—</span>
                                     </div>
                                     <div class="cot-resumen-divider"></div>
@@ -213,8 +209,8 @@
 
             <div class="modal-footer wiz-wizard-footer">
                 <div class="wiz-wizard-footer-info">
-                    <a href="#" id="view-pdf-btn" class="btn btn-sm btn-warning" target="_blank">
-                        <i class="ri-file-pdf-line me-1"></i>PDF
+                    <a href="#" id="view-pdf-btn" class="btn btn-soft-danger" target="_blank">
+                        <i class="ri-file-pdf-fill align-bottom me-1"></i> Exportar PDF
                     </a>
                 </div>
                 <div class="wiz-wizard-footer-actions">
@@ -310,10 +306,10 @@
                 <div class="wiz-stepper-side wiz-stepper-side--right">
                     <div class="wiz-client-banner wiz-client-banner--creator" id="cot-creador-banner" hidden
                         aria-hidden="true" title="Creada por">
-                        <span class="wiz-client-banner-label">Creada por:</span>
                         <img class="wiz-client-banner-avatar wiz-client-banner-avatar--img"
-                            id="cot-creador-avatar" src="{{ Auth::user()->avatar_url }}" alt="" />
+                            id="cot-creador-avatar" src="{{ Auth::user()->avatar_url }}" alt="" onerror="this.onerror=null;this.src=window.AMS_AVATAR_FALLBACK" />
                         <div class="wiz-client-banner-main">
+                            <span class="wiz-client-banner-eyebrow">Creada por</span>
                             <span class="wiz-client-banner-name" id="cot-creador-name">{{ Auth::user()->name }}</span>
                         </div>
                     </div>
@@ -337,13 +333,11 @@
                         <div class="row g-3">
                             {{-- Card Cliente --}}
                             <div class="col-lg-7">
-                                <div class="card border-0 shadow-sm h-100">
-                                    <div class="card-header border-0 bg-soft-primary">
-                                        <h6 class="mb-0 text-atlantico-dark">
-                                            <i class="ri-user-3-line me-2"></i>Datos del Cliente
-                                        </h6>
+                                <div class="cli-view-card cli-view-card--flat h-100">
+                                    <div class="cli-view-card-header">
+                                        <i class="ri-user-3-line"></i>Datos del Cliente
                                     </div>
-                                    <div class="card-body">
+                                    <div class="cli-view-card-body">
                                         {{-- Buscador de documento con icono de lupa --}}
                                         <label for="ci-rif-number-field" class="form-label small fw-semibold mb-1">
                                             Documento de identidad <span class="text-danger">*</span>
@@ -453,13 +447,11 @@
 
                             {{-- Card Detalles + Estado --}}
                             <div class="col-lg-5">
-                                <div class="card border-0 shadow-sm mb-3">
-                                    <div class="card-header border-0 bg-soft-primary">
-                                        <h6 class="mb-0 text-atlantico-dark">
-                                            <i class="ri-calendar-event-line me-2"></i>Detalles de la cotización
-                                        </h6>
+                                <div class="cli-view-card cli-view-card--flat">
+                                    <div class="cli-view-card-header">
+                                        <i class="ri-calendar-event-line"></i>Detalles de la cotización
                                     </div>
-                                    <div class="card-body">
+                                    <div class="cli-view-card-body">
                                         <div class="row g-2">
                                             <div class="col-md-6">
                                                 <label for="fecha-cotizacion-field"
@@ -472,10 +464,10 @@
                                             <div class="col-md-6">
                                                 <label for="fecha-validez-field"
                                                     class="form-label small fw-semibold mb-1">
-                                                    Fecha validez
+                                                    Fecha validez <span class="text-danger">*</span>
                                                 </label>
                                                 <input type="date" id="fecha-validez-field" name="fecha_validez"
-                                                    class="form-control form-control-sm" />
+                                                    class="form-control form-control-sm" required />
                                             </div>
                                             <div class="col-12">
                                                 <div class="cot-date-shortcuts" id="cot-date-shortcuts">
@@ -602,13 +594,11 @@
 
                         <div class="row g-3">
                             <div class="col-lg-7">
-                                <div class="card border-0 shadow-sm">
-                                    <div class="card-header border-0 bg-soft-primary">
-                                        <h6 class="mb-0 text-atlantico-dark">
-                                            <i class="ri-sticky-note-line me-2"></i>Notas internas
-                                        </h6>
+                                <div class="cli-view-card cli-view-card--flat">
+                                    <div class="cli-view-card-header">
+                                        <i class="ri-sticky-note-line"></i>Notas internas
                                     </div>
-                                    <div class="card-body">
+                                    <div class="cli-view-card-body">
                                         <textarea id="notas-field" name="notas" class="form-control"
                                             rows="3"
                                             placeholder="Observaciones internas sobre la cotización..."
@@ -622,18 +612,30 @@
                                     </div>
                                 </div>
 
-                                <div class="card border-0 shadow-sm mt-3">
-                                    <div class="card-header border-0 bg-soft-primary">
-                                        <h6 class="mb-0 text-atlantico-dark">
-                                            <i class="ri-list-check-2 me-2"></i>Líneas incluidas
-                                        </h6>
+                                <div class="cli-view-card cli-view-card--flat mt-3">
+                                    <div class="cli-view-card-header">
+                                        <i class="ri-list-check-2"></i>Líneas incluidas
                                     </div>
-                                    <div class="card-body p-3">
+                                    <div class="cli-view-card-body">
                                         <div id="cot-resumen-lineas" class="cot-lineas-list">
                                             <div class="cot-lineas-empty text-center text-muted py-3 small">
                                                 Sin productos agregados
                                             </div>
                                         </div>
+                                    </div>
+                                </div>
+
+                                {{-- Proyección de producción — aviso NO bloqueante de stock de insumos.
+                                     Informa si para fabricar estas líneas faltará materia prima. No impide guardar. --}}
+                                <div class="cli-view-card cli-view-card--flat mt-3" id="cot-proyeccion-card">
+                                    <div class="cli-view-card-header justify-content-between">
+                                        <span class="d-inline-flex align-items-center gap-1">
+                                            <i class="ri-archive-2-line"></i>Proyección de producción
+                                        </span>
+                                        <span class="badge rounded-pill" id="cot-proyeccion-badge" hidden></span>
+                                    </div>
+                                    <div class="cli-view-card-body">
+                                        <div id="cot-proyeccion-body"></div>
                                     </div>
                                 </div>
                             </div>
@@ -647,7 +649,7 @@
                                     <div class="cot-resumen-card-body">
                                         <div class="cot-resumen-row" style="opacity: 0.8; font-size: 0.75rem; margin-bottom: 6px;">
                                             <span class="cot-resumen-row-label">
-                                                <i class="ri-bank-line me-1"></i>Tasa BCV (USD/VES)
+                                                <i class="ri-bank-line me-1"></i>Tasa BCV<span id="cot-resumen-tasa-fecha"></span>
                                             </span>
                                             <span class="cot-resumen-row-value" id="cot-resumen-tasa">Bs 0,0000</span>
                                         </div>
@@ -896,7 +898,7 @@
                             <span class="vs-section-status" id="vs-status-tela"><i class="ri-check-line"></i></span>
                             <span class="vs-section-title"><i class="ri-shirt-line"></i>Tela</span>
                             <span class="vs-section-pick" id="vs-pick-tela"></span>
-                            @if(Auth::user()->hasRole(['Administrador', 'Supervisor']))
+                            @if(tienePermiso('tipo-productos.gestionar'))
                                 <button type="button" class="cfg-newcolor-btn ms-auto" id="vs-add-tela-btn">
                                     <i class="ri-add-line"></i><span>Nueva tela</span>
                                 </button>
@@ -1021,15 +1023,28 @@
                                     <h6 class="cfg-section-title">Color</h6>
                                     <p class="cfg-section-desc">Selecciona el color para esta configuración.</p>
                                 </div>
-                                @if(Auth::user()->hasRole(['Administrador', 'Supervisor']))
+                                @if(tienePermiso('colores.gestionar'))
                                     <button type="button" class="cfg-newcolor-btn" id="cfg-add-color-btn">
                                         <i class="ri-palette-line"></i><span>Nuevo color</span>
                                     </button>
                                 @endif
                                 <span class="cfg-color-selected" id="cfg-color-selected">Sin seleccionar</span>
                             </header>
+                            {{-- Buscador en vivo: filtra los chips por nombre. Útil cuando
+                                 el catálogo de colores es largo. --}}
+                            <div class="cfg-color-search">
+                                <i class="ri-search-line cfg-color-search-icon"></i>
+                                <input type="text" id="cfg-color-search" class="cfg-color-search-input"
+                                    placeholder="Buscar color…" autocomplete="off">
+                                <button type="button" class="cfg-color-search-clear" id="cfg-color-search-clear"
+                                    hidden aria-label="Limpiar búsqueda"><i class="ri-close-line"></i></button>
+                            </div>
                             <div class="cfg-color-grid" id="cfg-color-grid">
                                 {{-- Renderizado por JS --}}
+                            </div>
+                            <div class="cfg-color-noresults cfg-hidden" id="cfg-color-noresults">
+                                <i class="ri-palette-line"></i>
+                                <span>Ningún color coincide con la búsqueda.</span>
                             </div>
                         </section>
 
@@ -1041,9 +1056,8 @@
                                     <h6 class="cfg-section-title">Tallas y cantidades</h6>
                                     <p class="cfg-section-desc">Indica cuántas unidades de cada talla.</p>
                                 </div>
-                                <button type="button" class="btn btn-sm btn-link cfg-distribute-btn"
-                                    id="cfg-distribute-btn">
-                                    <i class="ri-equalizer-line me-1"></i>Distribuir uniforme
+                                <button type="button" class="cfg-distribute-btn" id="cfg-distribute-btn">
+                                    <i class="ri-equalizer-line"></i>Distribuir uniforme
                                 </button>
                             </header>
                             <div class="cfg-tallas-grid" id="cfg-tallas-grid">
@@ -1152,20 +1166,38 @@
                                     <option value="G-">G-</option>
                                 </select>
                                 <input type="text" id="documento-number-field-cliente" class="form-control"
-                                    placeholder="Nro. documento" maxlength="10" required />
+                                    placeholder="Nro. documento" maxlength="9" required />
                             </div>
                             <input type="hidden" id="documento-field-cliente" name="documento" />
-                            <small class="text-muted d-block mt-1 mb-1">Máximo 10 dígitos</small>
+                            <small class="text-muted d-block mt-1 mb-1">Entre 6 y 9 dígitos</small>
                             <div id="documento-error-cliente" class="invalid-feedback" style="display: none;"></div>
+                            {{-- Persona ya registrada en otro rol: ofrecer vincular sus datos --}}
+                            <div id="documento-persona-card-cliente" class="d-none mt-2 rounded"
+                                style="border:1px solid rgba(8,145,178,0.35); background:rgba(8,145,178,0.06); padding:10px 12px;">
+                                <div style="font-size:0.78rem; font-weight:600; color:#0891b2; margin-bottom:4px;">
+                                    <i class="ri-user-shared-line me-1"></i>
+                                    Persona ya registrada como <span id="persona-card-role-cliente" style="text-transform:capitalize;"></span>
+                                </div>
+                                <div id="persona-card-data-cliente" style="font-size:0.8rem; line-height:1.8; margin-bottom:8px;"></div>
+                                <button type="button" id="persona-vincular-btn-cliente" class="btn btn-sm"
+                                    style="background:#0891b2; color:white; font-size:0.75rem; padding:3px 12px; border-radius:20px;">
+                                    <i class="ri-link me-1"></i>Usar estos datos
+                                </button>
+                            </div>
+                            <div id="documento-vinculado-notice-cliente" class="d-none mt-1" style="font-size:0.78rem; color:#0891b2;">
+                                <i class="ri-link me-1"></i><span id="documento-vinculado-text-cliente"></span>
+                            </div>
                         </div>
                         <div class="col-md-6">
                             <label for="tipo_cliente-field-cliente" class="form-label required">Tipo de Cliente</label>
-                            <select id="tipo_cliente-field-cliente" name="tipo_cliente" class="form-select" required>
-                                <option value="">Seleccione</option>
+                            <select id="tipo_cliente-field-cliente" name="tipo_cliente" class="form-select js-readonly"
+                                disabled title="Se determina por el prefijo del documento" required>
                                 <option value="natural">Natural</option>
                                 <option value="juridico">Jurídico</option>
                                 <option value="gubernamental">Gubernamental</option>
                             </select>
+                            <small class="text-muted d-block mt-1">Se define solo por el prefijo del documento
+                                (V/E → Natural, J → Jurídico, G → Gubernamental).</small>
                         </div>
                     </div>
                 </div>
@@ -1206,29 +1238,15 @@
                         <i class="ri-contacts-book-2-line"></i>Contacto
                     </div>
                     <div class="row g-2 mb-2">
-                        <div class="col-md-6">
+                        <div class="col-12">
                             <label for="email-field-cliente" class="form-label">Email</label>
                             <input type="email" id="email-field-cliente" name="email" class="form-control"
                                 placeholder="correo@ejemplo.com" />
                             <div id="email-error-cliente" class="invalid-feedback"></div>
                         </div>
-                        <div class="col-md-6">
-                            <label for="telefono-number-field-cliente" class="form-label required">Teléfono</label>
-                            <div class="input-group">
-                                <select class="form-select" id="telefono-prefix-field-cliente"
-                                    style="max-width: 100px; min-width: 100px;">
-                                    <option value="0412">0412</option>
-                                    <option value="0422">0422</option>
-                                    <option value="0414">0414</option>
-                                    <option value="0424" selected>0424</option>
-                                    <option value="0416">0416</option>
-                                    <option value="0426">0426</option>
-                                </select>
-                                <input type="text" id="telefono-number-field-cliente" class="form-control"
-                                    placeholder="1234567" maxlength="7" required />
-                            </div>
-                            <input type="hidden" id="telefono-field-cliente" name="telefono" />
-                            <div id="telefono-error-cliente" class="invalid-feedback" style="display: none;"></div>
+                        <div class="col-12 mt-2">
+                            {{-- Teléfonos múltiples (componente reutilizable) --}}
+                            @include('admin.partials.telefonos-field', ['telId' => 'cot-cli-tel'])
                         </div>
                     </div>
                     <div class="row g-2 mb-0">
@@ -1252,30 +1270,9 @@
                             <select name="estado_territorial" id="estado_territorial-field-cliente"
                                 class="form-select" required>
                                 <option value="">Seleccione estado</option>
-                                <option value="Amazonas">Amazonas</option>
-                                <option value="Anzoátegui">Anzoátegui</option>
-                                <option value="Apure">Apure</option>
-                                <option value="Aragua">Aragua</option>
-                                <option value="Barinas">Barinas</option>
-                                <option value="Bolívar">Bolívar</option>
-                                <option value="Carabobo">Carabobo</option>
-                                <option value="Cojedes">Cojedes</option>
-                                <option value="Delta Amacuro">Delta Amacuro</option>
-                                <option value="Distrito Capital">Distrito Capital</option>
-                                <option value="Falcón">Falcón</option>
-                                <option value="Guárico">Guárico</option>
-                                <option value="La Guaira">La Guaira</option>
-                                <option value="Lara">Lara</option>
-                                <option value="Mérida">Mérida</option>
-                                <option value="Miranda">Miranda</option>
-                                <option value="Monagas">Monagas</option>
-                                <option value="Nueva Esparta">Nueva Esparta</option>
-                                <option value="Portuguesa">Portuguesa</option>
-                                <option value="Sucre">Sucre</option>
-                                <option value="Táchira">Táchira</option>
-                                <option value="Trujillo">Trujillo</option>
-                                <option value="Yaracuy">Yaracuy</option>
-                                <option value="Zulia">Zulia</option>
+                                @foreach ($estadosVe as $__est)
+                                    <option value="{{ $__est }}">{{ $__est }}</option>
+                                @endforeach
                             </select>
                         </div>
                         <div class="col-md-6">
@@ -1420,7 +1417,7 @@
                 <div class="input-group mb-3">
                     <span class="input-group-text"><i class="ri-search-2-line"></i></span>
                     <input type="text" id="bcl-input" class="form-control"
-                        placeholder="Buscar por nombre, apellido o documento..." autocomplete="off">
+                        placeholder="Buscar por nombre, razón social o documento..." autocomplete="off">
                     <button type="button" class="btn btn-light" id="bcl-clear-btn" title="Limpiar">
                         <i class="ri-close-line"></i>
                     </button>
@@ -1463,7 +1460,7 @@
     </div>
 </div>
 
-@if(Auth::user()->hasRole(['Administrador', 'Supervisor']))
+@if(tienePermiso('colores.gestionar'))
 {{-- ═══════════════════════════════════════════════════════════════════════════
      MINI-MODAL: Crear color nuevo (inline, extensión del maestro Colores)
      Prefijo de IDs: cc-  ·  navy (atlantico-modal) porque pertenece al maestro.
@@ -1529,7 +1526,7 @@
 
 @include('admin.partials.catalog_modals')
 
-@if(Auth::user()->hasRole(['Administrador', 'Supervisor']))
+@if(tienePermiso('tipo-productos.gestionar'))
 {{-- ═══════════════════════════════════════════════════════════════════════════
      MINI-MODAL: Crear tela inline (Insumo tipo='Tela') desde el selector de variante.
      Réplica del form de Insumo del maestro (tipo fijo en Tela). Al guardar, la tela

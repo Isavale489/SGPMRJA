@@ -1,14 +1,17 @@
 /**
- * Municipios de Venezuela organizados por Estado
- * Fuente: División político-territorial de Venezuela
+ * Municipios de Venezuela organizados por Estado.
  *
  * ESTÁNDAR GEOGRÁFICO DEL SISTEMA:
- * Este script maneja la relación jerárquica "Estado" → "Municipio" según la
- * división político-territorial oficial de Venezuela.
- * Nota: En la base de datos el campo se llama 'ciudad' por retrocompatibilidad,
- * pero en toda la interfaz de usuario se muestra como "Municipio".
+ * La fuente de verdad es la BD (tablas `estado` y `municipio`). El layout admin
+ * inyecta el catálogo en `window.municipiosVenezuela` (ver AppServiceProvider +
+ * admin/layouts/app.blade.php). Este script solo lo consume para la cascada
+ * Estado → Municipio. El objeto de respaldo de abajo se mantiene como fallback
+ * por si la variable global no está disponible.
+ *
+ * Nota: en la BD el municipio se referencia con `direccion.municipio_id`, pero
+ * en toda la interfaz de usuario se muestra como "Municipio".
  */
-const municipiosVenezuela = {
+const municipiosVenezuela = window.municipiosVenezuela || {
     "Amazonas": [
         "Alto Orinoco", "Atabapo", "Atures", "Autana", "Manapiare", "Maroa", "Río Negro"
     ],

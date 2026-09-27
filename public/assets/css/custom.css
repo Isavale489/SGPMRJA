@@ -16,12 +16,19 @@ html > body > .swal2-container,
   align-items: center !important;
   justify-content: center !important;
   pointer-events: all !important;
-  background-color: rgba(0, 0, 0, 0.4) !important;
-  /* Backdrop semi-transparente */
+  /* El fondo oscuro NO va aquí: pintaría todo contenedor (incl. toast) a
+     pantalla completa y causa un flash negro de 1 frame antes de que se
+     aplique .swal2-toast-shown. El backdrop real se define abajo, atado a
+     .swal2-backdrop-show (solo modales). */
 }
 
-/* Backdrop del modal de SweetAlert */
-.swal2-backdrop-show {
+/* Backdrop del modal de SweetAlert.
+   IMPORTANTE: se excluye cualquier contenedor que tenga un popup .swal2-toast
+   adentro. .swal2-backdrop-show es una clase de ANIMACIÓN de entrada que el
+   contenedor recibe en un 2º frame (vía rAF), también en los toasts → sin esta
+   exclusión, el toast parpadea en negro a pantalla completa. El popup .swal2-toast
+   existe desde el 1er frame del render, así que :has() lo detecta sin huecos. */
+.swal2-backdrop-show:not(:has(.swal2-toast)) {
   background-color: rgba(0, 0, 0, 0.4) !important;
 }
 
@@ -69,8 +76,11 @@ body {
   z-index: auto !important;
 }
 
-html.swal2-shown,
-body.swal2-shown {
+/* Bloquear scroll SOLO para modales. Los toasts también reciben
+   .swal2-shown, y ocultar el overflow les quita la barra de scroll →
+   la página se corre ~15px (el "salto de la vista"). */
+html.swal2-shown:not(.swal2-toast-shown),
+body.swal2-shown:not(.swal2-toast-shown) {
   overflow: hidden !important;
   position: static !important;
   z-index: auto !important;
@@ -82,11 +92,18 @@ body.swal2-shown {
   user-select: none !important;
 }
 
-/* Forzar backdrop semi-transparente con blur — solo modales, nunca toasts */
-body:not(.swal2-toast-shown) > div.swal2-container,
-body:not(.swal2-toast-shown) div.swal2-container.swal2-backdrop-show {
+/* Backdrop con blur — SOLO modales (contenedor sin .swal2-toast adentro) */
+div.swal2-container.swal2-backdrop-show:not(:has(.swal2-toast)) {
   background: rgba(0, 0, 0, 0.5) !important;
   backdrop-filter: blur(2px) !important;
+}
+
+/* Toast: contenedor SIEMPRE transparente y sin blur, desde el 1er frame,
+   sin depender de clases del <body> (que llegan con desfase). */
+div.swal2-container:has(.swal2-toast) {
+  background: transparent !important;
+  background-color: transparent !important;
+  backdrop-filter: none !important;
 }
 
 /* Asegurar que el popup tenga fondo blanco */
@@ -1204,11 +1221,11 @@ header#page-topbar,
    ============================================ */
 
 /* ── DataTable — anchos de columna (base en .table-operativa) ── */
-#cotizaciones-table th:nth-child(1) { width: 5%; }
-#cotizaciones-table th:nth-child(2) { width: 30%; }
-#cotizaciones-table th:nth-child(3) { width: 13%; }
-#cotizaciones-table th:nth-child(4) { width: 13%; }
-#cotizaciones-table th:nth-child(5) { width: 15%; text-align: center; }
+#cotizaciones-table th:nth-child(1) { width: 15%; }                    /* Nro. (.ped-cell) */
+#cotizaciones-table th:nth-child(2) { width: 25%; }
+#cotizaciones-table th:nth-child(3) { width: 12%; }
+#cotizaciones-table th:nth-child(4) { width: 12%; }
+#cotizaciones-table th:nth-child(5) { width: 12%; text-align: center; }
 #cotizaciones-table th:nth-child(6) { width: 24%; text-align: center; }
 
 #cotizaciones-table td:nth-child(5) {
@@ -1580,7 +1597,8 @@ header#page-topbar,
     display: flex;
     align-items: center;
 }
-.wiz-stepper-side--right { justify-content: flex-end; }
+.wiz-stepper-side--left { justify-content: center; }
+.wiz-stepper-side--right { justify-content: center; }
 
 /* ── Chip cliente persistente (visible en pasos 2+) ─────────────────
    Vive en el espacio libre a la derecha del stepper. Mantiene visible
@@ -1675,6 +1693,56 @@ header#page-topbar,
 .wiz-client-banner--sm .wiz-client-banner-name {
     font-size: 0.78rem;
 }
+
+/* Variantes compactas "Creado por" (gutter derecho) y "Cliente" espejo (gutter
+   izquierdo): info secundaria. La etiqueta va como EYEBROW sobre el nombre (no
+   en línea), así el chip ocupa poco ancho horizontal y el nombre/fecha caben
+   sin romperse letra a letra ni inflar el pill cuando el gutter queda angosto. */
+.wiz-client-banner--creator,
+.wiz-client-banner--client {
+    padding: 4px 12px 4px 5px;
+    gap: 8px;
+}
+.wiz-client-banner--creator .wiz-client-banner-avatar,
+.wiz-client-banner--client .wiz-client-banner-avatar {
+    width: 30px;
+    height: 30px;
+}
+.wiz-client-banner--creator .wiz-client-banner-main,
+.wiz-client-banner--client .wiz-client-banner-main {
+    overflow: hidden;
+    min-width: 0;
+}
+.wiz-client-banner-eyebrow {
+    font-size: 0.54rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #94a3b8;
+    line-height: 1.1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.wiz-client-banner--creator .wiz-client-banner-name,
+.wiz-client-banner--client .wiz-client-banner-name {
+    font-size: 0.8rem;
+    line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    word-break: normal;
+}
+.wiz-client-banner--creator .wiz-client-banner-sub,
+.wiz-client-banner--client .wiz-client-banner-sub {
+    flex-wrap: nowrap;
+    margin-top: 0;
+}
+.wiz-client-banner--creator .wiz-client-banner-doc,
+.wiz-client-banner--client .wiz-client-banner-doc {
+    white-space: nowrap;
+}
+[data-bs-theme="dark"] .wiz-client-banner-eyebrow { color: #64748b; }
 
 /* Pantallas chicas: los chips bajan apilados y centrados bajo el stepper */
 @media (max-width: 991.98px) {
@@ -1933,6 +2001,18 @@ header#page-topbar,
 }
 
 /* ── Acordeón informativo de Términos y Condiciones (paso 3 cotización) ── */
+/* Bloque sin marco: el acordeón ya es un panel autónomo; solo un título ligero. */
+.cot-terminos-block-title {
+    display: flex;
+    align-items: center;
+    margin-bottom: 0.5rem;
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: #1e3c72;
+}
+.cot-terminos-block-title i { font-size: 1rem; color: #2a5298; }
+[data-bs-theme="dark"] .cot-terminos-block-title { color: #cdd9f0; }
+[data-bs-theme="dark"] .cot-terminos-block-title i { color: #9db4e6; }
 .cot-terminos-accordion { --bs-accordion-border-color: rgba(30, 60, 114, 0.10); }
 .cot-terminos-accordion .accordion-item {
     border-color: rgba(30, 60, 114, 0.10);
@@ -2021,6 +2101,228 @@ header#page-topbar,
 .cot-resumen-card--compact .cot-resumen-row { padding: 4px 0; font-size: 0.85rem; }
 .cot-resumen-card--compact .cot-resumen-divider { margin: 4px 0; }
 .cot-resumen-card--compact .cot-resumen-row--total .cot-resumen-row-value { font-size: 1.4rem; }
+
+/* ── Pedidos · paso 3 (vista detalle) — card "Métodos de Pago" ──
+   White card que iguala el alto del resumen navy: cabecera + lista scrollable + footer con total pagado. */
+.ped-pagos-card {
+    display: flex;
+    flex-direction: column;
+    background: #ffffff;
+    border: 1px solid #e9eef5;
+    border-radius: 14px;
+    box-shadow: 0 16px 32px -20px rgba(30, 60, 114, 0.35);
+    overflow: hidden;
+}
+.ped-pagos-card-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 18px;
+    border-bottom: 1px solid #eef2f7;
+    background: linear-gradient(135deg, rgba(30, 60, 114, 0.05), rgba(0, 217, 165, 0.05));
+}
+.ped-pagos-card-header > i { font-size: 1.05rem; color: #1e3c72; }
+.ped-pagos-title {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: #1e3c72;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin: 0;
+}
+.ped-pagos-count {
+    margin-left: auto;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: #1e3c72;
+    background: rgba(30, 60, 114, 0.08);
+    padding: 2px 10px;
+    border-radius: 999px;
+    white-space: nowrap;
+}
+.ped-pagos-body {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    max-height: 260px;
+}
+.ped-pagos-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 140px;
+    height: 100%;
+    color: #94a3b8;
+    font-size: 0.82rem;
+}
+.ped-pagos-empty i { font-size: 1.8rem; opacity: 0.5; }
+
+.ped-pago-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px 18px;
+}
+.ped-pago-item + .ped-pago-item { border-top: 1px solid #f1f5f9; }
+.ped-pago-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 1.05rem;
+}
+.ped-pago-main { flex: 1 1 auto; min-width: 0; }
+.ped-pago-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+.ped-pago-metodo { font-size: 0.88rem; font-weight: 600; color: #1e293b; }
+.ped-pago-monto {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: #1e3c72;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+.ped-pago-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 14px;
+    margin-top: 4px;
+    font-size: 0.76rem;
+    color: #64748b;
+}
+.ped-pago-meta span { display: inline-flex; align-items: center; gap: 4px; min-width: 0; }
+.ped-pago-meta i { font-size: 0.85rem; opacity: 0.7; }
+
+.ped-pagos-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 12px 18px;
+    border-top: 1px solid #eef2f7;
+    background: #fafcff;
+}
+.ped-pagos-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.74rem;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 999px;
+    white-space: nowrap;
+}
+.ped-pagos-status i { font-size: 0.85rem; }
+.ped-pagos-status--full { color: #047857; background: rgba(16, 185, 129, 0.12); }
+.ped-pagos-status--part { color: #b45309; background: rgba(245, 158, 11, 0.14); }
+.ped-pagos-status--none { color: #64748b; background: rgba(100, 116, 139, 0.12); }
+.ped-pagos-total { text-align: right; line-height: 1.15; }
+.ped-pagos-total-label {
+    display: block;
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #94a3b8;
+}
+.ped-pagos-total-value {
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: #1e3c72;
+    font-variant-numeric: tabular-nums;
+}
+
+[data-bs-theme="dark"] .ped-pagos-card { background: #1a2236; border-color: #2a3447; }
+[data-bs-theme="dark"] .ped-pagos-card-header {
+    border-bottom-color: #2a3447;
+    background: linear-gradient(135deg, rgba(157, 180, 230, 0.08), rgba(0, 217, 165, 0.06));
+}
+[data-bs-theme="dark"] .ped-pagos-card-header > i,
+[data-bs-theme="dark"] .ped-pagos-title { color: #cdd9f0; }
+[data-bs-theme="dark"] .ped-pagos-count { color: #cdd9f0; background: rgba(157, 180, 230, 0.14); }
+[data-bs-theme="dark"] .ped-pago-item + .ped-pago-item { border-top-color: #242d42; }
+[data-bs-theme="dark"] .ped-pago-metodo { color: #e2e8f0; }
+[data-bs-theme="dark"] .ped-pago-monto { color: #9db4e6; }
+[data-bs-theme="dark"] .ped-pago-meta { color: #94a3b8; }
+[data-bs-theme="dark"] .ped-pagos-footer { background: #161d2e; border-top-color: #2a3447; }
+[data-bs-theme="dark"] .ped-pagos-total-label { color: #64748b; }
+[data-bs-theme="dark"] .ped-pagos-total-value { color: #9db4e6; }
+
+/* ── Paso 3 Órdenes — card de progreso de producción (compacta) ──
+   Reusa el gradiente navy de .cot-resumen-card; aquí solo el layout interno. */
+.ord-prog-body { padding: 16px 20px; }
+.ord-prog-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+}
+.ord-prog-title {
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.72);
+}
+.ord-prog-pct {
+    font-size: 1.5rem;
+    font-weight: 800;
+    line-height: 1;
+    color: #00d9a5;
+}
+.ord-prog-bar {
+    height: 7px;
+    background: rgba(255, 255, 255, 0.16);
+    border-radius: 99px;
+    margin-bottom: 16px;
+    overflow: hidden;
+}
+.ord-prog-bar .progress-bar {
+    background: #00d9a5;
+    border-radius: 99px;
+    transition: width 0.5s ease;
+}
+.ord-prog-stats {
+    display: flex;
+    gap: 2px;
+    border-radius: 10px;
+    overflow: hidden;
+}
+.ord-prog-stat {
+    flex: 1;
+    text-align: center;
+    padding: 10px 8px;
+    background: rgba(255, 255, 255, 0.05);
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+.ord-prog-stat-label {
+    font-size: 0.62rem;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.62);
+}
+.ord-prog-stat-num {
+    font-size: 1.4rem;
+    font-weight: 700;
+    line-height: 1;
+    color: #ffffff;
+}
+.ord-prog-stat-num small {
+    font-size: 0.6rem;
+    font-weight: 500;
+    opacity: 0.6;
+    margin-left: 1px;
+}
 
 .cot-resumen-tabla-wrap { max-height: 220px; overflow-y: auto; }
 .cot-resumen-tabla thead th {
@@ -2525,8 +2827,21 @@ header#page-topbar,
     display: inline-flex;
     align-items: center;
     gap: 5px;
+    /* FEAT-006 TASK-043: permitir que un email/dato largo encoja y quiebre
+       dentro del item en vez de desbordar la card */
+    min-width: 0;
+    max-width: 100%;
 }
 .cot-cliente-contact-item i { color: #94a3b8; font-size: 0.95rem; }
+/* FEAT-006 TASK-043: quiebre de email largo (overflow-wrap:anywhere reduce el
+   tamaño mínimo del flex item, así el texto rompe en vez de desbordar). Aplica
+   al detalle "Ver" (#view-cliente-email) y a la card del wizard de edición. */
+#view-cliente-email,
+#cot-cliente-email-display {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    min-width: 0;
+}
 .cot-cliente-stats {
     display: flex;
     flex-wrap: wrap;
@@ -3442,6 +3757,18 @@ header#page-topbar,
 }
 .cot-grouped-table tbody tr:last-child td { border-bottom: 0; }
 
+/* Pie de la grilla (p.ej. subtotal de líneas en el detalle de compra) */
+.cot-grouped-table tfoot td {
+    padding: 11px 12px;
+    border-top: 2px solid rgba(30, 60, 114, 0.12);
+    background: #f8fafc;
+    font-size: 0.88rem;
+}
+[data-bs-theme="dark"] .cot-grouped-table tfoot td {
+    border-top-color: rgba(255, 255, 255, 0.14);
+    background: #11151f;
+}
+
 /* Columnas */
 .cot-grouped-table .cot-col-num {
     width: 44px;
@@ -3865,13 +4192,49 @@ header#page-topbar,
     border-radius: 999px;
 }
 
+/* Catálogo de productos oculto mientras el configurador está abierto encima:
+   evita que su cabecera/✕ (más anchos) asomen por los bordes. Se conserva en el
+   DOM con .show para poder restaurarlo al "Volver al catálogo". */
+.modal.cot-modal-hidden-behind {
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* "Distribuir uniforme" — chip de acción secundaria (outline suave),
+   anclado al header pero subordinado al pill sólido de "Nuevo color". */
 .cfg-distribute-btn {
-    color: #00b88c;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+    line-height: 1;
+    color: #00916c;
     text-decoration: none;
     font-size: 0.78rem;
     font-weight: 600;
+    padding: 6px 12px;
+    border-radius: 999px;
+    border: 1px solid rgba(0, 184, 140, 0.35);
+    background: rgba(0, 184, 140, 0.08);
+    cursor: pointer;
+    transition: background 0.12s, border-color 0.12s, color 0.12s;
 }
-.cfg-distribute-btn:hover { color: #008f6c; }
+.cfg-distribute-btn i { font-size: 0.95rem; }
+.cfg-distribute-btn:hover {
+    color: #008f6c;
+    background: rgba(0, 184, 140, 0.15);
+    border-color: rgba(0, 184, 140, 0.55);
+}
+[data-bs-theme="dark"] .cfg-distribute-btn {
+    color: #34d399;
+    border-color: rgba(52, 211, 153, 0.35);
+    background: rgba(52, 211, 153, 0.10);
+}
+[data-bs-theme="dark"] .cfg-distribute-btn:hover {
+    color: #6ee7b7;
+    background: rgba(52, 211, 153, 0.18);
+    border-color: rgba(52, 211, 153, 0.55);
+}
 
 /* Botón "Nuevo color" — pill resaltado en el header de la sección Color */
 .cfg-newcolor-btn {
@@ -3903,7 +4266,78 @@ header#page-topbar,
 }
 
 /* ── Selector de colores (chips) ─────────────────────────────── */
-.cfg-color-grid { padding: 0; }
+/* Buscador en vivo sobre los chips */
+.cfg-color-search {
+    position: relative;
+    margin-bottom: 10px;
+}
+.cfg-color-search-icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #94a3b8;
+    font-size: 0.95rem;
+    pointer-events: none;
+}
+.cfg-color-search-input {
+    width: 100%;
+    border: 2px solid #e2e8f0;
+    border-radius: 999px;
+    padding: 7px 34px 7px 34px;
+    font-size: 0.8rem;
+    color: #1e293b;
+    background: #ffffff;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+.cfg-color-search-input::placeholder { color: #94a3b8; }
+.cfg-color-search-input:focus {
+    outline: none;
+    border-color: #1e3c72;
+    box-shadow: 0 0 0 3px rgba(30, 60, 114, 0.12);
+}
+.cfg-color-search-clear {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    border: none;
+    background: #e2e8f0;
+    color: #475569;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+.cfg-color-search-clear:hover { background: #cbd5e1; }
+
+/* Estado vacío del buscador */
+.cfg-color-noresults {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px;
+    color: #94a3b8;
+    font-size: 0.8rem;
+    font-style: italic;
+}
+.cfg-color-noresults i { font-size: 1rem; }
+
+/* Utilidad: ocultar chips/grupos filtrados. Necesario porque el atributo
+   [hidden] no vence al display:inline-flex de los chips. */
+.cfg-hidden { display: none !important; }
+
+.cfg-color-grid {
+    padding: 0;
+    max-height: 220px;
+    overflow-y: auto;
+    padding-right: 4px;
+}
 .cfg-color-group-title {
     font-size: 0.68rem;
     text-transform: uppercase;
@@ -3956,9 +4390,10 @@ header#page-topbar,
 
 /* ── Matrix de tallas ────────────────────────────────────────── */
 .cfg-tallas-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
-    gap: 8px;
+    /* Contenedor en stack vertical: segmented control arriba, matriz debajo.
+       (antes era un grid de 70px que aplastaba el control de escala) */
+    display: flex;
+    flex-direction: column;
 }
 .cfg-talla-cell {
     background: #ffffff;
@@ -4002,6 +4437,249 @@ header#page-topbar,
 .cfg-talla-cell-input::-webkit-outer-spin-button,
 .cfg-talla-cell-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 .cfg-talla-cell-input { appearance: textfield; -moz-appearance: textfield; }
+
+/* ══ Grilla 2D talla × género (configurador) ══ */
+
+/* Segmented control de escala (Letras / Numéricas / Única) */
+.cfg-tg-groups {
+    display: flex;
+    width: 100%;
+    gap: 2px;
+    background: #f1f5f9;
+    border-radius: 10px;
+    padding: 3px;
+    margin-bottom: 16px;
+}
+.cfg-tg-group-btn {
+    flex: 1 1 0;
+    border: 0;
+    background: transparent;
+    color: #64748b;
+    border-radius: 7px;
+    padding: 6px 14px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: color 0.15s, background 0.15s, box-shadow 0.15s;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    white-space: nowrap;
+}
+.cfg-tg-group-btn i { font-size: 0.95rem; opacity: 0.8; }
+.cfg-tg-group-btn:hover { color: #1e3c72; background: rgba(255, 255, 255, 0.55); }
+/* Activo: relleno navy sólido + texto blanco → inequívoco cuál escala está activa */
+.cfg-tg-group-btn.is-active {
+    background: #1e3c72;
+    color: #ffffff;
+    box-shadow: 0 2px 6px rgba(30, 60, 114, 0.30);
+}
+.cfg-tg-group-btn.is-active i { opacity: 1; }
+.cfg-tg-group-badge {
+    background: #00d9a5;
+    color: #06251d;
+    border-radius: 999px;
+    font-size: 0.64rem;
+    font-weight: 700;
+    padding: 0 6px;
+    line-height: 1.55;
+}
+
+/* Matriz tipo card-tabla: contenedor con borde, banda de encabezado y
+   separadores verticales entre columnas de género (DAMA/CABALLERO/UNISEX) */
+.cfg-tg {
+    display: grid;
+    grid-template-columns: minmax(56px, 0.7fr) repeat(var(--cfg-tg-cols, 3), 1fr);
+    gap: 0;
+    align-items: stretch;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    overflow: hidden;
+    background: #ffffff;
+}
+.cfg-tg-row { display: contents; }
+.cfg-tg-talla {
+    display: flex;
+    align-items: center;
+    font-size: 0.8rem;
+    color: #334155;
+    font-weight: 600;
+    padding: 6px 8px 6px 14px;
+    border-bottom: 1px solid #f1f5f9;
+}
+/* Banda de encabezado (fila de títulos) */
+.cfg-tg-head .cfg-tg-talla,
+.cfg-tg-head .cfg-tg-genhead {
+    background: #f8fafc;
+    border-bottom: 1.5px solid #e2e8f0;
+    padding-top: 9px;
+    padding-bottom: 9px;
+}
+.cfg-tg-head .cfg-tg-genhead {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+.cfg-tg-corner {
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #1e3c72;
+    font-weight: 700;
+}
+.cfg-tg-corner i { font-size: 0.9rem; opacity: 0.85; }
+/* Color por género en el encabezado: cada columna gana identidad (fondo
+   tintado suave + ícono/texto a color + borde inferior de acento). Semántico
+   por data-genero (no por posición). Dama=rosa · Caballero=azul · Unisex=teal. */
+.cfg-tg-head .cfg-tg-genhead[data-genero="dama"] {
+    background: rgba(225, 29, 72, 0.07);
+    color: #be123c;
+    border-bottom-color: #fb7185;
+}
+.cfg-tg-head .cfg-tg-genhead[data-genero="dama"] i { color: #e11d48; }
+.cfg-tg-head .cfg-tg-genhead[data-genero="caballero"] {
+    background: rgba(37, 99, 235, 0.07);
+    color: #1d4ed8;
+    border-bottom-color: #60a5fa;
+}
+.cfg-tg-head .cfg-tg-genhead[data-genero="caballero"] i { color: #2563eb; }
+.cfg-tg-head .cfg-tg-genhead[data-genero="unisex"] {
+    background: rgba(13, 148, 136, 0.08);
+    color: #0f766e;
+    border-bottom-color: #5eead4;
+}
+.cfg-tg-head .cfg-tg-genhead[data-genero="unisex"] i { color: #0d9488; }
+/* Separadores verticales entre columnas de género */
+.cfg-tg-genhead,
+.cfg-tg-cell { border-left: 1px solid #f1f5f9; }
+
+/* Celda: −  [input]  +  */
+.cfg-tg-cell {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1px;
+    padding: 3px 2px;
+    border-bottom: 1px solid #f1f5f9;
+    transition: background 0.15s, box-shadow 0.15s;
+}
+.cfg-tg-cell.is-active { background: rgba(0, 217, 165, 0.07); }
+.cfg-tg-cell:focus-within {
+    background: #ffffff;
+    box-shadow: inset 0 0 0 2px rgba(30, 60, 114, 0.35);
+}
+/* Sin doble línea contra el borde inferior de la card */
+.cfg-tg-row:last-child .cfg-tg-talla,
+.cfg-tg-row:last-child .cfg-tg-cell { border-bottom: 0; }
+.cfg-tg-input {
+    width: 38px;
+    border: 0;
+    background: transparent;
+    text-align: center;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #cbd5e1; /* vacío = tenue */
+    font-variant-numeric: tabular-nums;
+    outline: none;
+    padding: 5px 0;
+    appearance: textfield;
+    -moz-appearance: textfield;
+}
+.cfg-tg-input::placeholder { color: #cbd5e1; }
+.cfg-tg-input::-webkit-outer-spin-button,
+.cfg-tg-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.cfg-tg-cell.is-active .cfg-tg-input { color: #0f3a2e; font-weight: 700; }
+.cfg-tg-step {
+    border: 0;
+    background: transparent;
+    color: #cbd5e1;
+    cursor: pointer;
+    width: 20px;
+    height: 22px;
+    border-radius: 6px;
+    font-size: 1.05rem;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.12s, color 0.12s;
+    flex: 0 0 auto;
+}
+.cfg-tg-step:hover { background: #eef2f7; color: #1e3c72; }
+.cfg-tg-cell.is-active .cfg-tg-step { color: #94a3b8; }
+/* Celda vacía: ocultar los steppers para bajar el ruido de "− 0 +" repetido;
+   queda solo el 0 tenue. Se revelan al pasar el cursor o enfocar, y al llenar
+   la celda pasa a .is-active y permanecen visibles. */
+.cfg-tg-cell:not(.is-active) .cfg-tg-step {
+    opacity: 0;
+    transition: opacity 0.12s;
+}
+.cfg-tg-cell:not(.is-active):hover .cfg-tg-step,
+.cfg-tg-cell:not(.is-active):focus-within .cfg-tg-step { opacity: 1; }
+
+/* Chip de género en listas de resumen/agrupado */
+.cot-chip-gen {
+    margin-left: 4px;
+    padding: 0 5px;
+    border-radius: 5px;
+    background: rgba(30, 60, 114, 0.08);
+    color: #1e3c72;
+    font-size: 0.7rem;
+    font-weight: 600;
+}
+.cot-linea-genero {
+    margin: 0 3px;
+    padding: 0 4px;
+    border-radius: 4px;
+    background: rgba(30, 60, 114, 0.08);
+    color: #1e3c72;
+    font-size: 0.66rem;
+    font-weight: 600;
+}
+
+/* ── Dark mode ── */
+[data-bs-theme="dark"] .cfg-tg-groups { background: #1e293b; }
+[data-bs-theme="dark"] .cfg-tg-group-btn { color: #94a3b8; }
+[data-bs-theme="dark"] .cfg-tg-group-btn:hover { color: #e2e8f0; background: rgba(255, 255, 255, 0.04); }
+[data-bs-theme="dark"] .cfg-tg-group-btn.is-active { background: #3b5fa8; color: #fff; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45); }
+[data-bs-theme="dark"] .cfg-tg { border-color: #334155; background: #0f172a; }
+[data-bs-theme="dark"] .cfg-tg-talla { color: #cbd5e1; border-bottom-color: #1e293b; }
+[data-bs-theme="dark"] .cfg-tg-head .cfg-tg-talla,
+[data-bs-theme="dark"] .cfg-tg-head .cfg-tg-genhead { background: #1e293b; border-bottom-color: #334155; }
+[data-bs-theme="dark"] .cfg-tg-genhead { color: #94a3b8; }
+[data-bs-theme="dark"] .cfg-tg-corner { color: #cbd5e1; }
+/* Color por género en oscuro: tintes desaturados sobre fondo profundo */
+[data-bs-theme="dark"] .cfg-tg-head .cfg-tg-genhead[data-genero="dama"] {
+    background: rgba(244, 63, 94, 0.14); color: #fda4af; border-bottom-color: #fb7185;
+}
+[data-bs-theme="dark"] .cfg-tg-head .cfg-tg-genhead[data-genero="dama"] i { color: #fb7185; }
+[data-bs-theme="dark"] .cfg-tg-head .cfg-tg-genhead[data-genero="caballero"] {
+    background: rgba(59, 130, 246, 0.14); color: #93c5fd; border-bottom-color: #60a5fa;
+}
+[data-bs-theme="dark"] .cfg-tg-head .cfg-tg-genhead[data-genero="caballero"] i { color: #60a5fa; }
+[data-bs-theme="dark"] .cfg-tg-head .cfg-tg-genhead[data-genero="unisex"] {
+    background: rgba(45, 212, 191, 0.14); color: #5eead4; border-bottom-color: #2dd4bf;
+}
+[data-bs-theme="dark"] .cfg-tg-head .cfg-tg-genhead[data-genero="unisex"] i { color: #2dd4bf; }
+[data-bs-theme="dark"] .cfg-tg-genhead,
+[data-bs-theme="dark"] .cfg-tg-cell { border-left-color: #1e293b; }
+[data-bs-theme="dark"] .cfg-tg-cell { border-bottom-color: #1e293b; }
+[data-bs-theme="dark"] .cfg-tg-cell.is-active { background: rgba(52, 211, 153, 0.12); }
+[data-bs-theme="dark"] .cfg-tg-cell:focus-within { background: #0f172a; box-shadow: inset 0 0 0 2px rgba(59, 130, 246, 0.5); }
+[data-bs-theme="dark"] .cfg-tg-input { color: #475569; }
+[data-bs-theme="dark"] .cfg-tg-input::placeholder { color: #475569; }
+[data-bs-theme="dark"] .cfg-tg-cell.is-active .cfg-tg-input { color: #6ee7b7; }
+[data-bs-theme="dark"] .cfg-tg-step { color: #475569; }
+[data-bs-theme="dark"] .cfg-tg-step:hover { background: #1e293b; color: #93c5fd; }
+[data-bs-theme="dark"] .cot-chip-gen,
+[data-bs-theme="dark"] .cot-linea-genero { background: #1e293b; color: #93c5fd; }
 
 .cfg-tallas-summary {
     margin-top: 12px;
@@ -4194,6 +4872,21 @@ header#page-topbar,
 }
 [data-bs-theme="dark"] .cfg-color-chip.is-selected .cfg-color-chip-label { color: #34d399; }
 
+[data-bs-theme="dark"] .cfg-color-search-input {
+    background: #1f2937;
+    border-color: rgba(255, 255, 255, 0.08);
+    color: #e2e8f0;
+}
+[data-bs-theme="dark"] .cfg-color-search-input:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+}
+[data-bs-theme="dark"] .cfg-color-search-clear {
+    background: #374151;
+    color: #cbd5e1;
+}
+[data-bs-theme="dark"] .cfg-color-search-clear:hover { background: #4b5563; }
+
 [data-bs-theme="dark"] .cfg-talla-cell {
     background: #1f2937;
     border-color: rgba(255, 255, 255, 0.08);
@@ -4231,8 +4924,8 @@ header#page-topbar,
    ============================================ */
 
 /* ── DataTable — anchos de columna (base en .table-operativa) ── */
-#pedidos-table th:nth-child(1) { width: 8%;  text-align: center; }
-#pedidos-table th:nth-child(2) { width: 40%; }
+#pedidos-table th:nth-child(1) { width: 14%; }                     /* Pedido (.ped-cell) */
+#pedidos-table th:nth-child(2) { width: 34%; }
 #pedidos-table th:nth-child(3) { width: 14%; }
 #pedidos-table th:nth-child(4) { width: 12%; }
 #pedidos-table th:nth-child(5) { width: 14%; text-align: center; }
@@ -4565,18 +5258,70 @@ header#page-topbar,
     justify-content: space-between;
     align-items: center;
     margin-bottom: 12px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #eef2f7;
 }
 
-.cotizacion-numero {
+/* Bloque de total etiquetado (espejo del .ped-cell, alineado a la derecha) */
+.cot-total-block {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    line-height: 1.15;
+    flex-shrink: 0;
+}
+.cot-total-eyebrow {
+    font-size: 10px;
     font-weight: 600;
-    color: #1e3c72;
-    font-size: 1.1rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #94a3b8;
+}
+.cot-total-bs {
+    font-size: 11px;
+    font-weight: 600;
+    color: #64748b;
+    white-space: nowrap;
 }
 
 .cotizacion-total {
     font-weight: 700;
     color: #059669;
     font-size: 1.2rem;
+}
+
+/* Cuerpo de la card: cliente (chip avatar + doc) a la izquierda, mini-stats
+   etiquetadas (Emitida / Vence / Productos) a la derecha */
+.cot-card-body {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px 16px;
+    flex-wrap: wrap;
+}
+.cot-facts {
+    display: flex;
+    align-items: center;
+    gap: 22px;
+    flex-wrap: wrap;
+}
+.cot-fact {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.2;
+}
+.cot-fact-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #94a3b8;
+}
+.cot-fact-val {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: #1e293b;
+    white-space: nowrap;
 }
 
 .cotizacion-info {
@@ -4622,8 +5367,16 @@ header#page-topbar,
     box-shadow: 0 2px 8px rgba(78, 122, 199, 0.25);
 }
 
-[data-bs-theme="dark"] .cotizacion-numero {
-    color: #93c5fd;   /* blue-300 — contraste WCAG AA sobre fondo oscuro */
+[data-bs-theme="dark"] .cotizacion-header {
+    border-bottom-color: rgba(255, 255, 255, 0.08);
+}
+
+[data-bs-theme="dark"] .cot-total-bs {
+    color: #94a3b8;
+}
+
+[data-bs-theme="dark"] .cot-fact-val {
+    color: #ced4da;
 }
 
 [data-bs-theme="dark"] .cotizacion-total {
@@ -4762,6 +5515,22 @@ header#page-topbar,
 
 [data-bs-theme="dark"] .atlantico-modal--op .modal-header {
     background: linear-gradient(135deg, #10b981 0%, #0891b2 50%, #0d6efd 100%) !important;
+}
+
+/* ── .atlantico-modal--reportes ──────────────────────────────────
+   Modificador Consultas y Reportes — header en la paleta Sky
+   Analítico de la sección (misma familia que el thead de
+   .dt-reportes: sky-900 → sky-800 → sky-500), para que el modal
+   se lea como parte del reporte y no de Maestros/Transacciones.
+   Uso: agregar junto a .atlantico-modal en modals de la sección
+   (drill-downs de Eficiencia y futuros reportes).                  */
+.atlantico-modal--reportes .modal-header {
+    background: linear-gradient(135deg, #0c4a6e 0%, #075985 45%, #0ea5e9 100%) !important;
+    border-bottom: none !important;
+}
+
+[data-bs-theme="dark"] .atlantico-modal--reportes .modal-header {
+    background: linear-gradient(135deg, #0c4a6e 0%, #075985 45%, #0ea5e9 100%) !important;
 }
 
 /* Header del modal "Ver orden": el gradiente --op es claro, así que los
@@ -5093,6 +5862,55 @@ header#page-topbar,
     background-color: #2d3139 !important;
 }
 
+/* ── Select realzado (AtlanticoSelect) en SOLO LECTURA ───────────────
+   Para selects derivados de otro campo (p.ej. Tipo de Cliente/Proveedor,
+   que lo define el prefijo del documento). Mismo lenguaje que
+   .campo-protegido: fondo gris, sin caret y candado a la derecha. */
+.afs-wrap:has(> select.js-readonly) { position: relative; }
+
+.afs-wrap:has(> select.js-readonly) .afs-toggle {
+    background-color: #f0f0f0 !important;
+    color: #878a99 !important;
+    border-style: dashed !important;
+    cursor: not-allowed !important;
+    background-image: none !important;   /* no es desplegable: sin flecha */
+    opacity: 1;
+}
+
+/* El VALOR sí debe leerse con claridad (no apagado) */
+.afs-wrap:has(> select.js-readonly) .afs-toggle .afs-label {
+    color: #2c3e50 !important;
+    font-weight: 600;
+}
+
+.afs-wrap:has(> select.js-readonly)::after {
+    content: '\F1A4';                    /* candado (remixicon) */
+    font-family: 'remixicon';
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #878a99;
+    font-size: 14px;
+    pointer-events: none;
+}
+
+[data-bs-theme="dark"] .afs-wrap:has(> select.js-readonly) .afs-toggle {
+    background-color: #2d3139 !important;
+    color: #9aa4b2 !important;
+}
+[data-bs-theme="dark"] .afs-wrap:has(> select.js-readonly) .afs-toggle .afs-label {
+    color: #e9ecef !important;
+}
+
+/* Fallback: si el select NO está realzado (widget no aplicado), opacar el nativo */
+select.js-readonly.afs-native { display: none; }
+select.js-readonly:not(.afs-native) {
+    background-color: #f0f0f0 !important;
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
 /* ── .btn-purple ─────────────────────────────────────────────────
    Botón violeta para acciones secundarias (importar, etc.)        */
 .btn-purple            { background-color: #6f42c1; border-color: #6f42c1; color: #fff; }
@@ -5173,6 +5991,18 @@ header#page-topbar,
 .stock-medio  { color: #ffc107; }
 .stock-normal { color: #198754; }
 
+/* Pill de código de insumo en el Análisis de Rotación */
+.rot-code-pill {
+    font-family: monospace;
+    padding: .1rem .45rem;
+    background: rgba(12, 74, 110, .10);
+    color: #0c4a6e;
+    border-radius: 4px;
+    font-size: .72rem;
+    font-weight: 600;
+    margin-right: .4rem;
+}
+
 [data-bs-theme="dark"] .stock-normal { color: #6ee7b7; }
 
 /* ============================================
@@ -5224,9 +6054,13 @@ header#page-topbar,
 .emp-icon-box--teal  { background: rgba(0, 217, 165, 0.1); }
 .emp-icon-box--green { background: rgba(46, 204, 113, 0.1); }
 .emp-icon-box--navy  { background: rgba(30, 60, 114, 0.1); }
+.emp-icon-box--blue  { background: rgba(42, 82, 152, 0.12); }
+.emp-icon-box--slate { background: rgba(100, 116, 139, 0.14); }
 .emp-icon--teal  { color: #00d9a5; }
 .emp-icon--green { color: #2ecc71; }
 .emp-icon--navy  { color: #1e3c72; }
+.emp-icon--blue  { color: #2a5298; }
+.emp-icon--slate { color: #64748b; }
 
 /* Persona lookup card en showModal de Empleados */
 .emp-persona-card { border: 1px solid rgba(8, 145, 178, 0.35); background: rgba(8, 145, 178, 0.06); padding: 10px 12px; }
@@ -5454,7 +6288,8 @@ header#page-topbar,
 #insumos-container .row { margin-bottom: 10px; }
 
 /* Progress bars en columna de tabla */
-#ordenes-table .progress { height: 20px; }
+#ordenes-table .progress,
+#pedido-ordenes-table .progress { height: 20px; }
 
 /* Colores de estado → progress bar fill */
 .estado-Pendiente  { background-color: #ffc107; }
@@ -5462,18 +6297,143 @@ header#page-topbar,
 .estado-Finalizado { background-color: #198754; }
 .estado-Cancelado  { background-color: #dc3545; }
 
-/* Anchos de columna #ordenes-table (7 columnas) */
-#ordenes-table th:nth-child(1) { width: 8%;  text-align: center; } /* Nro. Orden */
-#ordenes-table th:nth-child(2) { width: 9%;  text-align: center; } /* Nro. Pedido */
-#ordenes-table th:nth-child(3) { width: 26%; }                     /* Producto / Empleado */
-#ordenes-table th:nth-child(4) { width: 10%; text-align: center; } /* Cant. Solicitada */
-#ordenes-table th:nth-child(5) { width: 18%; text-align: center; } /* Progreso */
-#ordenes-table th:nth-child(6) { width: 13%; text-align: center; } /* Estado */
-#ordenes-table th:nth-child(7) { width: 16%; text-align: center; } /* Acciones */
+/* Tabla principal: una fila por pedido — toda la fila abre el modal "Ver órdenes" */
+#ordenes-table tbody tr { cursor: pointer; }
 
-/* Estado (6) y Acciones (última) sin recorte para badges y menú ⋮ */
-#ordenes-table td:nth-child(6),
+/* Celda Pedido: tile de ícono emerald + texto en dos niveles (eyebrow + número) */
+.ped-cell { display: flex; align-items: center; gap: 0.6rem; }
+.ped-cell-ic {
+    flex-shrink: 0;
+    width: 2.1rem;
+    height: 2.1rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.55rem;
+    background: rgba(16, 185, 129, 0.14);
+    color: #047857;
+    font-size: 1.05rem;
+}
+.ped-cell-ic--manual { background: rgba(100, 116, 139, 0.14); color: #475569; }
+/* Variante Calidad: acento navy + escudo — distingue el módulo de Órdenes,
+   cuyas primeras columnas (Pedido/Cliente) son casi idénticas */
+.ped-cell-ic--calidad { background: rgba(30, 60, 114, 0.10); color: #1e3c72; }
+.ped-cell-txt { display: flex; flex-direction: column; line-height: 1.15; }
+.ped-cell-eyebrow {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #94a3b8;
+}
+.ped-cell-num { font-weight: 700; font-size: 0.95rem; color: var(--vz-heading-color, #364574); }
+[data-bs-theme="dark"] .ped-cell-ic { background: rgba(16, 185, 129, 0.18); color: #6ee7b7; }
+[data-bs-theme="dark"] .ped-cell-ic--manual { background: rgba(148, 163, 184, 0.16); color: #94a3b8; }
+[data-bs-theme="dark"] .ped-cell-ic--calidad { background: rgba(78, 122, 199, 0.18); color: #93c5fd; }
+[data-bs-theme="dark"] .ped-cell-num { color: #ced4da; }
+
+/* Chip contador de órdenes del pedido (paleta emerald de la sección Operativa) */
+.ord-count-chip {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 600;
+    color: #047857;
+    background: rgba(16, 185, 129, 0.14);
+    border: 1px solid rgba(16, 185, 129, 0.25);
+    border-radius: 999px;
+    padding: 0.15rem 0.6rem;
+    white-space: nowrap;
+}
+[data-bs-theme="dark"] .ord-count-chip {
+    color: #6ee7b7;
+    background: rgba(16, 185, 129, 0.18);
+    border-color: rgba(52, 211, 153, 0.35);
+}
+/* Variante Calidad del chip contador (acento navy del módulo) */
+.ord-count-chip--calidad {
+    color: #1e3c72;
+    background: rgba(30, 60, 114, 0.08);
+    border-color: rgba(30, 60, 114, 0.22);
+}
+[data-bs-theme="dark"] .ord-count-chip--calidad {
+    color: #93c5fd;
+    background: rgba(78, 122, 199, 0.16);
+    border-color: rgba(78, 122, 199, 0.35);
+}
+
+/* Anchos de columna #ordenes-table (nivel pedido) */
+#ordenes-table th:nth-child(1) { width: 18%; }                     /* Pedido */
+#ordenes-table th:nth-child(2) { width: 28%; }                     /* Cliente */
+#ordenes-table th:nth-child(3) { width: 12%; text-align: center; } /* Órdenes */
+#ordenes-table th:nth-child(4) { width: 26%; text-align: center; } /* Progreso Global */
+#ordenes-table th:nth-child(5) { width: 16%; text-align: center; } /* Acciones */
+
 #ordenes-table td:last-child { overflow: visible; text-overflow: clip; text-align: center; }
+
+/* Anchos de columna #pedido-ordenes-table (modal "Ver órdenes", nivel orden) */
+#pedido-ordenes-table th:nth-child(1) { width: 9%;  text-align: center; } /* Nro. Orden */
+#pedido-ordenes-table th:nth-child(2) { width: 34%; }                     /* Producto / Empleado */
+#pedido-ordenes-table th:nth-child(3) { width: 12%; text-align: center; } /* Cant. Solicitada */
+#pedido-ordenes-table th:nth-child(4) { width: 16%; text-align: center; } /* Progreso */
+#pedido-ordenes-table th:nth-child(5) { width: 14%; text-align: center; } /* Estado */
+#pedido-ordenes-table th:nth-child(6) { width: 15%; text-align: center; } /* Acciones */
+
+/* Estado (5) y Acciones (última) sin recorte para badges y menú ⋮ */
+#pedido-ordenes-table td:nth-child(5),
+#pedido-ordenes-table td:last-child { overflow: visible; text-overflow: clip; text-align: center; }
+
+/* El visor scrolleable (scrollY) recortaría el menú ⋮ abierto: mientras haya
+   un menú desplegado se libera el overflow (mismo patrón del fix global de
+   .table-responsive en app.blade.php) */
+#pedidoOrdenesModal .dataTables_scrollBody:has(.actions-menu.show) {
+    overflow: visible !important;
+}
+
+/* Con scrollY, DataTables conserva un thead OCULTO dentro del scrollBody
+   (solo para calcular anchos); el gradiente del tema lo pintaba como una
+   franja verde bajo el header real — se aplasta y despinta por completo.
+   Aplica a los modales "Ver órdenes" de Órdenes y de Control de Calidad. */
+#pedidoOrdenesModal .dataTables_scrollBody thead,
+#pedidoOrdenesModal .dataTables_scrollBody thead tr,
+#pedidoOrdenesModal .dataTables_scrollBody thead th,
+#pedidoCalidadModal .dataTables_scrollBody thead,
+#pedidoCalidadModal .dataTables_scrollBody thead tr,
+#pedidoCalidadModal .dataTables_scrollBody thead th {
+    background: transparent !important;
+    background-image: none !important;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+    border: 0 !important;
+    height: 0 !important;
+    line-height: 0 !important;
+    font-size: 0 !important;
+}
+
+/* Header del scroll a ancho completo SIEMPRE: DataTables le escribe un ancho
+   inline en px al contenedor y a su tabla, y hasta que ese número queda bien
+   (primer columns.adjust) el header mide 0 → la banda verde "aparecía tarde"
+   al abrir el modal. El 100% pisa el inline y la banda existe desde el primer
+   frame; los anchos exactos por columna los sigue afinando adjust(). */
+#pedidoOrdenesModal .dataTables_scrollHeadInner,
+#pedidoOrdenesModal .dataTables_scrollHeadInner > table,
+#pedidoCalidadModal .dataTables_scrollHeadInner,
+#pedidoCalidadModal .dataTables_scrollHeadInner > table {
+    width: 100% !important;
+}
+
+/* ============================================================
+   MÓDULO COMPRAS — Anchos de columna
+   Nro. · Proveedor · N° Factura · Fecha · Total · Estado · Acciones
+   ============================================================ */
+#compras-table th:nth-child(1) { width: 5%;  text-align: center; } /* Nro. */
+#compras-table th:nth-child(2) { width: 25%; }                     /* Proveedor */
+#compras-table th:nth-child(3) { width: 13%; }                     /* N° Factura */
+#compras-table th:nth-child(4) { width: 12%; }                     /* Fecha */
+#compras-table th:nth-child(5) { width: 14%; text-align: right;  } /* Total */
+#compras-table th:nth-child(6) { width: 11%; text-align: center; } /* Estado */
+#compras-table th:nth-child(7) { width: 20%; text-align: center; } /* Acciones */
+
+#compras-table td:last-child { overflow: visible; text-overflow: clip; text-align: center; }
 
 /* ============================================================
    MÓDULO ÓRDENES — WIZARD: PASO ASIGNACIÓN (#showModal)
@@ -5873,20 +6833,321 @@ header#page-topbar,
    MÓDULO REPORTES — Anchos de columna por tabla
    ============================================================ */
 
-/* Gráfico de eficiencia — altura del contenedor ApexCharts */
-#eficienciaPorOrdenChart { height: 350px; }
+/* ============================================================
+   MÓDULO REPORTES — AG Charts (piloto en Producción)
+   El chart llena su contenedor y auto-redimensiona (observa el
+   tamaño solo); aquí solo se fija la altura. Tema light/dark se
+   resuelve en JS (baseTheme ag-default / ag-default-dark).
+   ============================================================ */
 
-/* Anchos #eficienciaTable */
-#eficienciaTable th:nth-child(1) { width: 35%; }
-#eficienciaTable th:nth-child(2),
-#eficienciaTable th:nth-child(3),
-#eficienciaTable th:nth-child(4) { width: 16%; text-align: center; }
-#eficienciaTable th:nth-child(5) { width: 17%; text-align: center; }
+.ag-chart-box { width: 100%; height: 340px; }
 
-#eficienciaTable td:nth-child(2),
-#eficienciaTable td:nth-child(3),
-#eficienciaTable td:nth-child(4),
-#eficienciaTable td:nth-child(5) { overflow: visible; text-overflow: clip; text-align: center; }
+/* ============================================================
+   MÓDULO REPORTES — Panel interactivo (widgets arrastrables)
+   Gráficos ECharts + SortableJS: agarre en el header de la card,
+   orden persistido en localStorage por página.
+   ============================================================ */
+
+.rep-chart { width: 100%; min-height: 300px; }
+
+.rep-chart-hint {
+    font-size: 0.72rem;
+    color: #9199ad;
+    margin-top: 0.35rem;
+}
+
+/* Botón exportar-imagen del header de la card (junto al agarre) */
+.rep-chart-dl {
+    border: none;
+    background: transparent;
+    color: #74788d;
+    font-size: 1rem;
+    line-height: 1;
+    padding: 0.15rem 0.3rem;
+    border-radius: 0.4rem;
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+.rep-chart-dl:hover {
+    background: rgba(14, 165, 233, 0.12);
+    color: #0ea5e9;
+}
+[data-bs-theme="dark"] .rep-chart-dl { color: #8a9ab0; }
+[data-bs-theme="dark"] .rep-chart-dl:hover {
+    background: rgba(14, 165, 233, 0.16);
+    color: #7dd3fc;
+}
+
+.rep-drag-handle {
+    cursor: grab;
+    color: #74788d;
+    font-size: 1.05rem;
+    line-height: 1;
+    padding: 0.15rem 0.3rem;
+    border-radius: 0.4rem;
+    transition: background-color 0.15s ease, color 0.15s ease;
+    flex-shrink: 0;
+    user-select: none;
+    touch-action: none;   /* permite arrastrar también en táctil */
+}
+.rep-drag-handle:hover {
+    background: rgba(14, 165, 233, 0.12);
+    color: #0ea5e9;
+}
+.rep-drag-handle:active { cursor: grabbing; }
+
+/* Widget fantasma (hueco de destino) y widget en mano */
+.rep-widget-ghost { opacity: 0.35; }
+.rep-widget-chosen > .card {
+    box-shadow: 0 10px 28px rgba(14, 165, 233, 0.25);
+    outline: 2px solid rgba(14, 165, 233, 0.45);
+    outline-offset: -2px;
+}
+
+[data-bs-theme="dark"] .rep-chart-hint { color: #6c7a93; }
+[data-bs-theme="dark"] .rep-drag-handle { color: #8a9ab0; }
+[data-bs-theme="dark"] .rep-drag-handle:hover {
+    background: rgba(14, 165, 233, 0.16);
+    color: #7dd3fc;
+}
+
+/* ============================================================
+   MÓDULO REPORTES — Eficiencia (pulso de producción)
+   Patrón dedicado: UNA metáfora (barra segmentada conforme/defecto,
+   proporcional a unidades reales) en 3 alturas: hero global → fila
+   por pedido → orden dentro del modal drill-down.
+   ============================================================ */
+
+/* ── Barra de rendimiento (elemento firma) ── */
+.efi-bar {
+    display: flex;
+    width: 100%;
+    height: 0.65rem;
+    border-radius: 999px;
+    overflow: hidden;
+    background: rgba(116, 120, 141, 0.12);
+}
+.efi-bar-ok  { background: #0ab39c; }
+.efi-bar-def { background: #f06548; }
+.efi-bar--vacia {
+    background: transparent;
+    border: 1px dashed rgba(116, 120, 141, 0.45);
+}
+.efi-bar--hero { height: 1.6rem; border-radius: 0.5rem; }
+
+/* Celda barra + chip (tabla y modal) */
+.efi-celda { display: flex; align-items: center; gap: 0.6rem; min-width: 10rem; }
+.efi-celda .efi-bar { flex: 1; }
+
+/* ── Chip de porcentaje por umbral ── */
+.efi-chip {
+    flex-shrink: 0;
+    min-width: 3.6rem;
+    text-align: center;
+    padding: 0.14rem 0.5rem;
+    border-radius: 999px;
+    font-size: 0.74rem;
+    font-weight: 700;
+}
+.efi-chip--ok   { background: rgba(10, 179, 156, 0.14);  color: #0ab39c; }
+.efi-chip--warn { background: rgba(14, 165, 233, 0.12);   color: #0ea5e9; }
+
+/* Tramo intermedio (70-89%) de las barras de progreso — mismo sky de la
+   escala verde/sky/rojo del módulo (sustituye a bg-warning en reportes) */
+.progress-bar.bg-efi-media { background-color: #0ea5e9 !important; }
+.efi-chip--bad  { background: rgba(240, 101, 72, 0.14);  color: #f06548; }
+.efi-chip--na   { background: rgba(116, 120, 141, 0.12); color: #74788d; font-weight: 600; font-style: italic; }
+
+/* ── Hero "Pulso de producción" ── */
+.efi-pulso { border: none; border-left: 4px solid #0ea5e9; }
+.efi-pulso-eyebrow {
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: #0ea5e9;
+}
+.efi-pulso-valor { font-size: 3.2rem; font-weight: 800; line-height: 1; }
+.efi-pulso-valor small { font-size: 1.6rem; font-weight: 700; }
+.efi-pulso-valor--ok   { color: #0ab39c; }
+.efi-pulso-valor--warn { color: #0ea5e9; }
+.efi-pulso-valor--bad  { color: #f06548; }
+.efi-pulso-valor--na   { color: #74788d; }
+.efi-pulso-sub { color: #74788d; font-size: 0.82rem; }
+
+.efi-leyenda { font-size: 0.78rem; color: #74788d; display: inline-flex; align-items: center; gap: 0.35rem; }
+.efi-leyenda-dot { width: 0.7rem; height: 0.7rem; border-radius: 3px; display: inline-block; }
+.efi-leyenda-dot--ok  { background: #0ab39c; }
+.efi-leyenda-dot--def { background: #f06548; }
+.efi-formula { font-size: 0.74rem; color: #9199ad; }
+
+/* ── Celda Pedido en la tabla ── */
+.efi-ped { display: flex; flex-direction: column; line-height: 1.25; }
+.efi-ped-num { font-weight: 700; color: #364574; }
+.efi-ped-cliente { font-size: 0.76rem; color: #74788d; }
+
+/* Anchos #efiPedidosTable (7 col: Pedido · Órdenes · Solicitado · Producido · Defectuoso · Eficiencia · Detalle) */
+#efiPedidosTable th:nth-child(1) { width: 24%; }
+#efiPedidosTable th:nth-child(2),
+#efiPedidosTable th:nth-child(3),
+#efiPedidosTable th:nth-child(4),
+#efiPedidosTable th:nth-child(5) { width: 9%; text-align: center; }
+#efiPedidosTable th:nth-child(6) { width: 26%; text-align: center; }
+#efiPedidosTable th:nth-child(7) { width: 14%; text-align: center; }
+
+#efiPedidosTable td:nth-child(2),
+#efiPedidosTable td:nth-child(3),
+#efiPedidosTable td:nth-child(4),
+#efiPedidosTable td:nth-child(5),
+#efiPedidosTable td:nth-child(7) { overflow: visible; text-overflow: clip; text-align: center; }
+#efiPedidosTable td:nth-child(6) { overflow: visible; text-overflow: clip; }
+
+/* ── Modal drill-down: resumen del pedido + lista de órdenes ── */
+
+/* Eyebrow reutilizable del modal (Cliente / Orden #N) */
+.efi-eyebrow {
+    display: block;
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: #0ea5e9;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    line-height: 1.4;
+}
+
+/* Bloque resumen: cliente + totales (izq) · % ponderado + barra (der) */
+.efi-resumen {
+    display: flex;
+    align-items: stretch;
+    gap: 1.25rem;
+    flex-wrap: wrap;
+    padding: 0.9rem 1.1rem;
+    margin-bottom: 1rem;
+    border: 1px solid rgba(14, 165, 233, 0.22);
+    border-left: 4px solid #0ea5e9;
+    border-radius: 0.65rem;
+    background: rgba(14, 165, 233, 0.045);
+}
+.efi-resumen-cliente { flex: 1; min-width: 14rem; }
+.efi-resumen-nombre {
+    display: block;
+    font-weight: 700;
+    font-size: 1rem;
+    color: #364574;
+    margin-bottom: 0.6rem;
+}
+.efi-resumen-yield {
+    min-width: 15rem;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 0.35rem;
+}
+.efi-resumen-valor { font-size: 2.1rem; font-weight: 800; line-height: 1; }
+.efi-resumen-valor small { font-size: 1.1rem; font-weight: 700; }
+.efi-resumen-valor--ok   { color: #0ab39c; }
+.efi-resumen-valor--warn { color: #0ea5e9; }
+.efi-resumen-valor--bad  { color: #f06548; }
+.efi-resumen-valor--na   { color: #74788d; }
+.efi-resumen-leyenda { font-size: 0.75rem; color: #74788d; }
+
+/* Tiles de totales del pedido */
+.efi-stats { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.efi-stat {
+    min-width: 5.2rem;
+    padding: 0.35rem 0.6rem;
+    border-radius: 0.5rem;
+    background: #fff;
+    border: 1px solid #e3e6ef;
+    line-height: 1.25;
+}
+.efi-stat span {
+    display: block;
+    font-size: 0.66rem;
+    font-weight: 600;
+    color: #74788d;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+.efi-stat b { font-size: 1rem; color: #364574; }
+.efi-stat--def b { color: #f06548; }
+
+/* Título de la sección de órdenes */
+.efi-lista-titulo {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #74788d;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 0.5rem;
+}
+
+.efi-modal-lista {
+    max-height: min(46vh, 30rem);
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    padding-right: 0.25rem;
+}
+.efi-orden {
+    border: 1px solid #e3e6ef;
+    border-radius: 0.6rem;
+    padding: 0.75rem 0.95rem;
+    background: #fff;
+    transition: border-color 0.15s ease;
+}
+.efi-orden:hover { border-color: rgba(14, 165, 233, 0.45); }
+.efi-orden-cab {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.55rem;
+    margin-bottom: 0.55rem;
+}
+.efi-orden-titulo { min-width: 0; }
+.efi-orden-producto { font-weight: 600; font-size: 0.88rem; color: #364574; }
+.efi-orden-datos {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.55rem;
+}
+.efi-orden-cifra { font-size: 0.75rem; color: #74788d; white-space: nowrap; }
+.efi-orden-cifra b { color: #364574; font-size: 0.85rem; }
+.efi-orden-sep { width: 1px; height: 0.9rem; background: #e3e6ef; }
+
+/* ── Dark mode ── */
+[data-bs-theme="dark"] .efi-bar { background: rgba(255, 255, 255, 0.08); }
+[data-bs-theme="dark"] .efi-bar--vacia { background: transparent; border-color: rgba(255, 255, 255, 0.25); }
+[data-bs-theme="dark"] .efi-chip--warn { color: #7dd3fc; }
+[data-bs-theme="dark"] .efi-pulso-valor--warn { color: #7dd3fc; }
+[data-bs-theme="dark"] .efi-pulso-sub,
+[data-bs-theme="dark"] .efi-leyenda,
+[data-bs-theme="dark"] .efi-ped-cliente,
+[data-bs-theme="dark"] .efi-orden-cifra { color: #8a9ab0; }
+[data-bs-theme="dark"] .efi-formula { color: #6c7a93; }
+[data-bs-theme="dark"] .efi-ped-num,
+[data-bs-theme="dark"] .efi-resumen-nombre,
+[data-bs-theme="dark"] .efi-orden-producto,
+[data-bs-theme="dark"] .efi-stat b,
+[data-bs-theme="dark"] .efi-orden-cifra b { color: #d5dbe6; }
+[data-bs-theme="dark"] .efi-orden { background: #212734; border-color: #2f3a4e; }
+[data-bs-theme="dark"] .efi-orden:hover { border-color: rgba(125, 211, 252, 0.45); }
+[data-bs-theme="dark"] .efi-orden-sep { background: #2f3a4e; }
+[data-bs-theme="dark"] .efi-eyebrow { color: #7dd3fc; }
+[data-bs-theme="dark"] .efi-resumen {
+    background: rgba(14, 165, 233, 0.07);
+    border-color: rgba(14, 165, 233, 0.28);
+    border-left-color: #7dd3fc;
+}
+[data-bs-theme="dark"] .efi-resumen-leyenda,
+[data-bs-theme="dark"] .efi-lista-titulo,
+[data-bs-theme="dark"] .efi-stat span { color: #8a9ab0; }
+[data-bs-theme="dark"] .efi-resumen-valor--warn { color: #7dd3fc; }
+[data-bs-theme="dark"] .efi-stat { background: #212734; border-color: #2f3a4e; }
+[data-bs-theme="dark"] .efi-stat--def b { color: #f06548; }
 
 /* Anchos #insumosTable */
 #insumosTable th:nth-child(1) { width: 28%; }
@@ -5902,19 +7163,174 @@ header#page-topbar,
 #insumosTable td:nth-child(5),
 #insumosTable td:nth-child(6) { overflow: visible; text-overflow: clip; text-align: center; }
 
-/* Anchos #empleadosTable (reporte) */
-#empleadosTable th:nth-child(1) { width: 28%; }
-#empleadosTable th:nth-child(2) { width: 12%; text-align: center; }
+/* Anchos #empleadosTable (7 col: Nombre · Órdenes · Asignado · Producido · Defectuoso · Eficiencia · Promedio) */
+#empleadosTable th:nth-child(1) { width: 26%; }
+#empleadosTable th:nth-child(2) { width: 10%; text-align: center; }
 #empleadosTable th:nth-child(3),
-#empleadosTable th:nth-child(4) { width: 14%; text-align: center; }
-#empleadosTable th:nth-child(5) { width: 18%; text-align: center; }
-#empleadosTable th:nth-child(6) { width: 14%; text-align: center; }
+#empleadosTable th:nth-child(4),
+#empleadosTable th:nth-child(5) { width: 12%; text-align: center; }
+#empleadosTable th:nth-child(6) { width: 16%; text-align: center; }
+#empleadosTable th:nth-child(7) { width: 12%; text-align: center; }
 
 #empleadosTable td:nth-child(2),
 #empleadosTable td:nth-child(3),
 #empleadosTable td:nth-child(4),
 #empleadosTable td:nth-child(5),
-#empleadosTable td:nth-child(6) { overflow: visible; text-overflow: clip; text-align: center; }
+#empleadosTable td:nth-child(6),
+#empleadosTable td:nth-child(7) { overflow: visible; text-overflow: clip; text-align: center; }
+
+/* ============================================================
+   MÓDULO REPORTES — Reportes Generales (hub /reportes/general)
+   KPIs del mes + catálogo de reportes (registry config/reportes.php).
+   Acento de la sección: sky #0ea5e9 (mismo del sidebar).
+   ============================================================ */
+
+/* ── KPIs del resumen ejecutivo ── */
+.rep-kpi { border: none; border-left: 4px solid transparent; }
+.rep-kpi .rep-kpi-icon {
+    width: 3rem;
+    height: 3rem;
+    border-radius: 0.65rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.45rem;
+    flex-shrink: 0;
+}
+.rep-kpi .rep-kpi-valor { font-weight: 700; }
+.rep-kpi .rep-kpi-label { color: #74788d; font-size: 0.8rem; }
+
+.rep-kpi--sky     { border-left-color: #0ea5e9; }
+.rep-kpi--sky     .rep-kpi-icon { background: rgba(14, 165, 233, 0.12);  color: #0ea5e9; }
+.rep-kpi--navy    { border-left-color: #2a5298; }
+.rep-kpi--navy    .rep-kpi-icon { background: rgba(42, 82, 152, 0.12);   color: #2a5298; }
+/* emerald = Gestión Operativa (pedidos, cotizaciones, órdenes) */
+.rep-kpi--emerald { border-left-color: #10b981; }
+.rep-kpi--emerald .rep-kpi-icon { background: rgba(16, 185, 129, 0.10);  color: #0f9d76; }
+.rep-kpi--amber   { border-left-color: #f7b84b; }
+.rep-kpi--amber   .rep-kpi-icon { background: rgba(247, 184, 75, 0.15);  color: #d29b36; }
+.rep-kpi--green   { border-left-color: #0ab39c; }
+.rep-kpi--green   .rep-kpi-icon { background: rgba(10, 179, 156, 0.12);  color: #0ab39c; }
+.rep-kpi--red     { border-left-color: #f06548; }
+.rep-kpi--red     .rep-kpi-icon { background: rgba(240, 101, 72, 0.12);  color: #f06548; }
+
+[data-bs-theme="dark"] .rep-kpi--emerald { border-left-color: #6ee7b7; }
+[data-bs-theme="dark"] .rep-kpi--emerald .rep-kpi-icon { background: rgba(16, 185, 129, 0.15); color: #6ee7b7; }
+
+[data-bs-theme="dark"] .rep-kpi .rep-kpi-label { color: #8a9ab0; }
+
+/* ── Descripción del grupo en el header de la card ── */
+.card-reportes .rep-hub-grupo-desc {
+    color: #74788d;
+    font-size: 0.78rem;
+}
+[data-bs-theme="dark"] .card-reportes .rep-hub-grupo-desc { color: #8a9ab0; }
+
+/* ── Card de cada reporte del catálogo ── */
+.rep-hub-card {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    height: 100%;
+    padding: 0.9rem 1rem;
+    border: 1px solid #e3e6ef;
+    border-radius: 0.65rem;
+    background: #fff;
+    color: inherit;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+}
+.rep-hub-card:hover {
+    border-color: #0ea5e9;
+    box-shadow: 0 6px 16px rgba(14, 165, 233, 0.14);
+    transform: translateY(-2px);
+    color: inherit;
+}
+.rep-hub-card-icon {
+    width: 2.6rem;
+    height: 2.6rem;
+    border-radius: 0.55rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
+    background: rgba(14, 165, 233, 0.1);
+    color: #0ea5e9;
+    flex-shrink: 0;
+}
+.rep-hub-card-body { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.rep-hub-card-titulo { font-weight: 600; font-size: 0.9rem; color: #364574; }
+.rep-hub-card-desc {
+    font-size: 0.76rem;
+    color: #74788d;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+}
+.rep-hub-card-meta { display: flex; align-items: center; gap: 0.35rem; flex-shrink: 0; }
+.rep-hub-card-flecha { font-size: 1.2rem; color: #b9bfcc; transition: color 0.15s ease, transform 0.15s ease; }
+.rep-hub-card:hover .rep-hub-card-flecha { color: #0ea5e9; transform: translateX(3px); }
+
+.rep-hub-badge-pdf   { background: rgba(240, 101, 72, 0.12); color: #f06548; }
+.rep-hub-badge-vista { background: rgba(14, 165, 233, 0.12); color: #0ea5e9; }
+
+/* ── Identidad por grupo: cada sección del catálogo hereda el color
+      de su sección de origen (navy=Maestros, emerald=Operativa,
+      sky=Reportes). El marco de la página sigue siendo sky. ── */
+.rep-hub-grupo-ic { color: #0ea5e9; }
+
+/* Gestión general — navy institucional (Maestros) */
+.card-reportes.rep-hub-group--navy > .card-header { border-left-color: #1e3c72; }
+.rep-hub-group--navy .rep-hub-grupo-ic { color: #2a5298; }
+.rep-hub-group--navy .rep-hub-card-icon {
+    background: rgba(30, 60, 114, 0.10);
+    color: #2a5298;
+}
+
+/* Gestión operativa — emerald (Transacciones) */
+.card-reportes.rep-hub-group--emerald > .card-header { border-left-color: #10b981; }
+.rep-hub-group--emerald .rep-hub-grupo-ic { color: #0f9d76; }
+.rep-hub-group--emerald .rep-hub-card-icon {
+    background: rgba(16, 185, 129, 0.10);
+    color: #0f9d76;
+}
+
+/* Análisis y rendimiento — sky (identidad propia de Reportes);
+   explícito por claridad, coincide con el default */
+.card-reportes.rep-hub-group--sky > .card-header { border-left-color: #0ea5e9; }
+.rep-hub-group--sky .rep-hub-grupo-ic { color: #0ea5e9; }
+
+/* Dark mode: acentos claros consistentes con el resto del sistema */
+[data-bs-theme="dark"] .card-reportes.rep-hub-group--navy > .card-header { border-left-color: #93c5fd; }
+[data-bs-theme="dark"] .rep-hub-group--navy .rep-hub-grupo-ic { color: #93c5fd; }
+[data-bs-theme="dark"] .rep-hub-group--navy .rep-hub-card-icon {
+    background: rgba(78, 122, 199, 0.18);
+    color: #93c5fd;
+}
+[data-bs-theme="dark"] .card-reportes.rep-hub-group--emerald > .card-header { border-left-color: #6ee7b7; }
+[data-bs-theme="dark"] .rep-hub-group--emerald .rep-hub-grupo-ic { color: #6ee7b7; }
+[data-bs-theme="dark"] .rep-hub-group--emerald .rep-hub-card-icon {
+    background: rgba(16, 185, 129, 0.15);
+    color: #6ee7b7;
+}
+[data-bs-theme="dark"] .rep-hub-group--sky .rep-hub-grupo-ic { color: #7dd3fc; }
+[data-bs-theme="dark"] .rep-hub-group--sky .rep-hub-card-icon {
+    background: rgba(14, 165, 233, 0.16);
+    color: #7dd3fc;
+}
+
+/* ── Dark mode del hub ── */
+[data-bs-theme="dark"] .rep-hub-card {
+    background: #212734;
+    border-color: #2f3a4e;
+}
+[data-bs-theme="dark"] .rep-hub-card:hover {
+    border-color: #0ea5e9;
+    box-shadow: 0 6px 16px rgba(14, 165, 233, 0.18);
+}
+[data-bs-theme="dark"] .rep-hub-card-titulo { color: #d5dbe6; }
+[data-bs-theme="dark"] .rep-hub-card-desc   { color: #8a9ab0; }
+[data-bs-theme="dark"] .rep-hub-card-flecha { color: #55617a; }
 
 /* ============================================================
    TOAST RESTAURAR FULLSCREEN (V-10)
@@ -6058,7 +7474,9 @@ header#page-topbar,
 [data-bs-theme="dark"] .swal2-footer             { border-top-color: #2d3139 !important; color: #8b92a7 !important; }
 [data-bs-theme="dark"] .swal2-validation-message { background-color: #1f2229 !important; color: #e74c3c !important; }
 [data-bs-theme="dark"] .swal2-timer-progress-bar { background: rgba(96, 165, 250, 0.5) !important; }
-[data-bs-theme="dark"] .swal2-container          { background: rgba(0, 0, 0, 0.6) !important; }
+/* Backdrop oscuro en dark mode SOLO para modales, nunca toasts (ver nota en línea ~31) */
+[data-bs-theme="dark"] .swal2-container:not(:has(.swal2-toast)) { background: rgba(0, 0, 0, 0.6) !important; }
+[data-bs-theme="dark"] .swal2-container:has(.swal2-toast)       { background: transparent !important; }
 
 /* ── Dark mode — botones secundarios ── */
 [data-bs-theme="dark"] .swal2-actions .btn-secondary,
@@ -6545,6 +7963,14 @@ header#page-topbar,
     background-color: #1e3c72;
     color: #ffffff;
 }
+/* Opción deshabilitada (<option disabled>): atenuada pero legible, no clickeable */
+.afs-menu .dropdown-item.disabled {
+    color: #64748b !important;
+    background-color: transparent !important;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+[data-bs-theme="dark"] .afs-menu .dropdown-item.disabled { color: #94a3b8 !important; }
 
 [data-bs-theme="dark"] .afs-toggle {
     background-color: #1f2229 !important;
@@ -7336,6 +8762,200 @@ header#page-topbar,
     border-color: var(--op-accent) !important;
 }
 
+/* ================================================================
+   FILTROS AVANZADOS — Variante ANALÍTICA (.sky-theme)
+   Paleta: Sky Analítico #0c4a6e / #0ea5e9 (vars --rp-*)
+   Aplica a: Consultas y Reportes (Eficiencia, Consumo de Insumos,
+             Rendimiento de Empleados y futuros reportes con tabla).
+   Estrategia: overrides scoped sobre las clases estructurales
+   .navy-filter-* cuando el wrapper tiene .sky-theme (espejo del
+   .emerald-theme de la sección Operativa).
+   ================================================================ */
+
+/* ── Wrapper ─────────────────────────────────────────────────── */
+.advanced-filters-wrapper.sky-theme {
+    background: linear-gradient(135deg, rgba(14, 165, 233, 0.04) 0%, rgba(14, 165, 233, 0.08) 100%);
+    border: 1px solid rgba(12, 74, 110, 0.18);
+    border-left: 4px solid var(--rp-accent);
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    transition: box-shadow 0.2s ease;
+}
+
+.advanced-filters-wrapper.sky-theme:hover {
+    box-shadow: 0 2px 12px rgba(14, 165, 233, 0.12);
+}
+
+.advanced-filters-wrapper.sky-theme .navy-filter-toggle,
+.advanced-filters-wrapper.sky-theme .navy-filter-header {
+    background: rgba(14, 165, 233, 0.05);
+}
+
+.advanced-filters-wrapper.sky-theme .navy-filter-toggle:hover {
+    background: rgba(14, 165, 233, 0.1);
+}
+
+.advanced-filters-wrapper.sky-theme .navy-filter-toggle:not(.collapsed),
+.advanced-filters-wrapper.sky-theme .navy-filter-header {
+    border-bottom: 1px solid rgba(14, 165, 233, 0.15);
+}
+
+.advanced-filters-wrapper.sky-theme .navy-filter-header.is-collapsed {
+    border-bottom: none;
+}
+
+/* ── Chevron / Título / Labels ───────────────────────────────── */
+.advanced-filters-wrapper.sky-theme .navy-filter-chevron,
+.advanced-filters-wrapper.sky-theme .navy-filter-title,
+.advanced-filters-wrapper.sky-theme .navy-filter-title i,
+.advanced-filters-wrapper.sky-theme .navy-filter-label,
+.advanced-filters-wrapper.sky-theme .navy-filter-btn,
+.advanced-filters-wrapper.sky-theme .navy-filter-btn .navy-filter-chevron {
+    color: var(--rp-dark);
+}
+
+/* ── Select / Input ──────────────────────────────────────────── */
+.advanced-filters-wrapper.sky-theme .navy-filter-select,
+.advanced-filters-wrapper.sky-theme .navy-filter-input {
+    border-color: rgba(12, 74, 110, 0.25) !important;
+}
+
+.advanced-filters-wrapper.sky-theme .navy-filter-select:hover,
+.advanced-filters-wrapper.sky-theme .navy-filter-input:hover {
+    border-color: rgba(12, 74, 110, 0.45) !important;
+}
+
+.advanced-filters-wrapper.sky-theme .navy-filter-select:focus,
+.advanced-filters-wrapper.sky-theme .navy-filter-input:focus {
+    border-color: var(--rp-accent) !important;
+    box-shadow: 0 0 0 0.2rem rgba(14, 165, 233, 0.18) !important;
+}
+
+.advanced-filters-wrapper.sky-theme .navy-filter-input-icon {
+    color: rgba(12, 74, 110, 0.45);
+}
+
+.advanced-filters-wrapper.sky-theme .navy-filter-input:focus ~ .navy-filter-input-icon {
+    color: var(--rp-dark);
+}
+
+/* ── Header unificado: divisor + search ──────────────────────── */
+.advanced-filters-wrapper.sky-theme .navy-header-divider {
+    background: rgba(12, 74, 110, 0.2);
+}
+
+.advanced-filters-wrapper.sky-theme .navy-header-search > i {
+    color: rgba(12, 74, 110, 0.5);
+}
+
+.advanced-filters-wrapper.sky-theme .navy-header-search:focus-within > i {
+    color: var(--rp-dark);
+}
+
+.advanced-filters-wrapper.sky-theme .navy-filter-btn:hover {
+    background: rgba(14, 165, 233, 0.1);
+}
+
+/* ── Badge contador ──────────────────────────────────────────── */
+.advanced-filters-wrapper.sky-theme .navy-filter-badge {
+    background: var(--rp-dark);
+}
+
+/* ── Botón limpiar (btn-navy-outline en wrapper sky) ─────────── */
+.advanced-filters-wrapper.sky-theme .btn-navy-outline {
+    color: var(--rp-dark) !important;
+    border-color: rgba(12, 74, 110, 0.35) !important;
+}
+
+.advanced-filters-wrapper.sky-theme .btn-navy-outline:hover {
+    background: var(--rp-dark) !important;
+    color: #ffffff !important;
+    border-color: var(--rp-dark) !important;
+    box-shadow: 0 2px 8px rgba(12, 74, 110, 0.28) !important;
+}
+
+/* ── DARK MODE — Variante Sky ────────────────────────────────── */
+[data-bs-theme="dark"] .advanced-filters-wrapper.sky-theme {
+    background: linear-gradient(135deg, rgba(14, 165, 233, 0.06) 0%, rgba(14, 165, 233, 0.1) 100%);
+    border-color: rgba(14, 165, 233, 0.22);
+    border-left-color: var(--rp-accent);
+}
+
+[data-bs-theme="dark"] .advanced-filters-wrapper.sky-theme .navy-filter-toggle,
+[data-bs-theme="dark"] .advanced-filters-wrapper.sky-theme .navy-filter-header {
+    background: rgba(14, 165, 233, 0.06);
+}
+
+[data-bs-theme="dark"] .advanced-filters-wrapper.sky-theme .navy-filter-toggle:hover,
+[data-bs-theme="dark"] .advanced-filters-wrapper.sky-theme .navy-filter-btn:hover {
+    background: rgba(14, 165, 233, 0.12);
+}
+
+[data-bs-theme="dark"] .advanced-filters-wrapper.sky-theme .navy-filter-toggle:not(.collapsed),
+[data-bs-theme="dark"] .advanced-filters-wrapper.sky-theme .navy-filter-header {
+    border-bottom-color: rgba(14, 165, 233, 0.18);
+}
+
+[data-bs-theme="dark"] .advanced-filters-wrapper.sky-theme .navy-filter-header.is-collapsed {
+    border-bottom: none;
+}
+
+[data-bs-theme="dark"] .advanced-filters-wrapper.sky-theme .navy-filter-chevron,
+[data-bs-theme="dark"] .advanced-filters-wrapper.sky-theme .navy-filter-title,
+[data-bs-theme="dark"] .advanced-filters-wrapper.sky-theme .navy-filter-title i,
+[data-bs-theme="dark"] .advanced-filters-wrapper.sky-theme .navy-filter-label,
+[data-bs-theme="dark"] .advanced-filters-wrapper.sky-theme .navy-filter-btn,
+[data-bs-theme="dark"] .advanced-filters-wrapper.sky-theme .navy-filter-btn .navy-filter-chevron {
+    color: #7dd3fc;   /* sky-300 — mismo acento dark del thead .dt-reportes */
+}
+
+[data-bs-theme="dark"] .advanced-filters-wrapper.sky-theme .navy-filter-select,
+[data-bs-theme="dark"] .advanced-filters-wrapper.sky-theme .navy-filter-input {
+    border-color: rgba(14, 165, 233, 0.3) !important;
+}
+
+[data-bs-theme="dark"] .advanced-filters-wrapper.sky-theme .navy-filter-select:focus,
+[data-bs-theme="dark"] .advanced-filters-wrapper.sky-theme .navy-filter-input:focus {
+    border-color: var(--rp-accent) !important;
+    box-shadow: 0 0 0 0.2rem rgba(14, 165, 233, 0.22) !important;
+}
+
+[data-bs-theme="dark"] .advanced-filters-wrapper.sky-theme .navy-filter-input-icon {
+    color: rgba(125, 211, 252, 0.45);
+}
+
+[data-bs-theme="dark"] .advanced-filters-wrapper.sky-theme .navy-filter-input:focus ~ .navy-filter-input-icon {
+    color: #7dd3fc;
+}
+
+[data-bs-theme="dark"] .advanced-filters-wrapper.sky-theme .navy-header-divider {
+    background: rgba(14, 165, 233, 0.28);
+}
+
+[data-bs-theme="dark"] .advanced-filters-wrapper.sky-theme .navy-header-search > i {
+    color: rgba(125, 211, 252, 0.5);
+}
+
+[data-bs-theme="dark"] .advanced-filters-wrapper.sky-theme .navy-header-search:focus-within > i {
+    color: #7dd3fc;
+}
+
+[data-bs-theme="dark"] .advanced-filters-wrapper.sky-theme .navy-filter-badge {
+    background: var(--rp-accent);
+    color: #082f49;
+}
+
+[data-bs-theme="dark"] .advanced-filters-wrapper.sky-theme .btn-navy-outline {
+    color: #7dd3fc !important;
+    border-color: rgba(14, 165, 233, 0.42) !important;
+}
+
+[data-bs-theme="dark"] .advanced-filters-wrapper.sky-theme .btn-navy-outline:hover {
+    background: var(--rp-accent) !important;
+    color: #082f49 !important;
+    border-color: var(--rp-accent) !important;
+}
+
 /* ── Botón toggle Historial — Patrón Maestro ─────────────────── */
 .btn-historial {
     display: inline-flex;
@@ -7888,6 +9508,10 @@ header#page-topbar,
     overflow-y: auto;
     padding-right: 4px;
 }
+/* Mientras un dropdown de banco (AtlanticoSelect) está abierto, libera el scroll
+   del contenedor para que el menú no quede recortado por el overflow de la lista
+   (mismo patrón que .table-responsive:has(.actions-menu.show)). */
+.ped-pay-list:has(.afs-menu.show) { overflow: visible; }
 .ped-pay-row {
     display: flex;
     align-items: center;
@@ -7923,6 +9547,9 @@ header#page-topbar,
 .ped-pay-row-fields { display: flex; gap: 8px; flex: 1 1 240px; min-width: 190px; }
 .ped-pay-row-fields .ped-pay-banco { flex: 1 1 45%; min-width: 0; }
 .ped-pay-row-fields .ped-pay-ref { flex: 1 1 55%; min-width: 0; }
+/* Al realzar el banco con AtlanticoSelect, el .afs-wrap pasa a ser el flex item
+   visible (el <select> nativo queda oculto) → hereda el reparto 45/55. */
+.ped-pay-row-fields > .afs-wrap { flex: 1 1 45%; min-width: 0; }
 .ped-pay-amount { width: 140px; margin-left: auto; flex-shrink: 0; }
 .ped-pay-amount .ped-pay-monto { text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
 .ped-pay-fill {
@@ -8066,6 +9693,23 @@ header#page-topbar,
 .navbar-menu .navbar-nav .nav-item:not([class*="section-"]) .menu-link.nav-link.active i {
     color: #1e3c72 !important;
 }
+
+/* ── Equivalente USD en vivo bajo los inputs en Bs (paso 2 de la compra) ──
+   Hint sutil, alineado a la derecha; reserva alto fijo para que la fila no
+   salte al aparecer/desaparecer el valor. */
+.c-usd-hint {
+    display: block;
+    text-align: right;
+    font-size: 0.7rem;
+    line-height: 1.1;
+    margin-top: 2px;
+    min-height: 0.85rem;
+    color: #10b981;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.2px;
+}
+[data-bs-theme="dark"] .c-usd-hint { color: #34d399; }
 
 /* ════════════════════════════════════════════════════════════════════
    COMPRAS — Wizard "Nueva Compra" (paso 3: ticket de totales)
@@ -8252,6 +9896,40 @@ header#page-topbar,
     line-height: 1;
 }
 
+/* Hero del modal "Ver" de Órdenes — ícono navy (tema de producción).
+   Mueve producto/estado/meta FUERA del header con degradado, donde el texto
+   oscuro/muted no contrastaba; aquí va sobre card blanca, legible. */
+.ord-show-hero-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+    color: #fff;
+    font-size: 1.5rem;
+    flex-shrink: 0;
+    box-shadow: 0 6px 16px -6px rgba(30, 60, 114, 0.5);
+    overflow: hidden;
+}
+/* Cuando muestra foto del producto: marco neutro (sin degradado ni glow navy). */
+.ord-show-hero-icon.is-photo {
+    background: #fff;
+    border: 1px solid #e9eef5;
+    box-shadow: 0 2px 8px -4px rgba(16, 24, 40, 0.18);
+}
+.ord-show-hero-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+[data-bs-theme="dark"] .ord-show-hero-icon.is-photo {
+    background: #1a2236;
+    border-color: #2a3447;
+}
+
 /* Unidad de medida embebida en el input de cantidad (input-group append) */
 .c-unit-addon {
     min-width: 38px;
@@ -8347,139 +10025,183 @@ header#page-topbar,
     margin-top: 3px;
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   MÓDULO ÓRDENES — Tablero Kanban (viewModal paso 4)
-   ═══════════════════════════════════════════════════════════════ */
-
-.kanban-board {
-    display: flex;
-    gap: 10px;
-    overflow-x: auto;
-    padding-bottom: 6px;
-    align-items: flex-start;
-}
-
-.kanban-col {
-    flex: 1 1 0;
-    min-width: 148px;
-    background: #f0f4f8;
+/* ── Reparto de unidades por empleado (orden de equipo) ── */
+.ord-asig-reparto:empty { display: none; }
+.ord-asig-reparto-inner {
+    margin-top: 10px;
+    padding: 10px 12px;
+    border: 1px solid #e2e8f0;
     border-radius: 10px;
-    padding: 10px 8px 6px;
-    display: flex;
-    flex-direction: column;
+    background: #f8fafc;
 }
-[data-bs-theme="dark"] .kanban-col { background: #1e2837; }
+.ord-rep-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: #64748b;
+    margin-bottom: 8px;
+}
+/* Lista de empleados: cap con scroll interno para que no crezca infinito con
+   equipos grandes. El total ("Repartido X/N") queda FUERA del scroll (siempre
+   visible), siguiendo la regla de modales con listas dinámicas. */
+/* Grilla tipo hoja de cálculo: encabezado fijo + filas con líneas de celda.
+   El cuerpo (.ord-rep-rows) tiene scroll interno; el total queda FUERA. */
+/* La grilla ENTERA scrollea (header sticky adentro) → header y filas comparten
+   el mismo ancho, así la columna UNID. queda siempre alineada aunque haya scroll. */
+.ord-rep-grid {
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    overflow-y: auto;
+    max-height: 11rem;   /* encabezado + ~4 filas; luego scroll */
+    background: #ffffff;
+}
+.ord-rep-head {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+}
+.ord-rep-row {
+    display: flex;
+    align-items: stretch;
+}
+.ord-rep-cell {
+    display: flex;
+    align-items: center;
+    padding: 5px 8px;
+    min-width: 0;
+    border-bottom: 1px solid #e2e8f0;
+}
+.ord-rep-c-emp { flex: 1 1 auto; gap: 5px; }
+.ord-rep-c-qty {
+    flex: 0 0 84px;
+    justify-content: center;
+    border-left: 1px solid #e2e8f0;   /* línea vertical entre columnas */
+    padding: 0;
+}
+/* Encabezado de la grilla — mismo azul que los chips de empleados seleccionados */
+.ord-rep-head .ord-rep-cell {
+    background: #e7f0ff;
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: #0d6efd;
+    border-bottom: 1.5px solid #b9d4ff;
+}
+.ord-rep-head .ord-rep-c-qty { justify-content: center; padding: 5px 8px; border-left-color: #b9d4ff; }
+/* Zebra + última fila sin doble borde */
+.ord-rep-rows .ord-rep-row:nth-child(even) .ord-rep-cell { background: #f8fafc; }
+.ord-rep-rows .ord-rep-row:last-child .ord-rep-cell { border-bottom: 0; }
+.ord-rep-c-emp i { color: #94a3b8; flex: 0 0 auto; }
+.ord-rep-name-txt {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: #334155;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+/* Input embebido en la celda (sin borde propio: la celda es la "casilla") */
+.ord-rep-c-qty .ord-asig-emp-cant {
+    width: 100%;
+    height: 100%;
+    border: 0;
+    background: transparent;
+    text-align: center;
+    font-weight: 700;
+    font-size: 0.85rem;
+    font-variant-numeric: tabular-nums;
+    padding: 5px 4px;
+    outline: none;
+    -moz-appearance: textfield;
+    appearance: textfield;
+}
+.ord-rep-c-qty .ord-asig-emp-cant::-webkit-outer-spin-button,
+.ord-rep-c-qty .ord-asig-emp-cant::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.ord-rep-c-qty:focus-within { box-shadow: inset 0 0 0 2px rgba(30,60,114,0.35); }
+/* Empleado en 0 unidades: casilla marcada como inválida */
+.ord-rep-c-qty:has(.ord-asig-emp-cant.is-zero) { background: #fef2f2 !important; box-shadow: inset 0 0 0 1.5px #f87171; }
 
-.kanban-col-header {
+[data-bs-theme="dark"] .ord-rep-grid { border-color: #475569; background: #0f172a; }
+[data-bs-theme="dark"] .ord-rep-cell { border-bottom-color: #1e293b; }
+[data-bs-theme="dark"] .ord-rep-c-qty { border-left-color: #1e293b; }
+[data-bs-theme="dark"] .ord-rep-head .ord-rep-cell { background: #1e3058; color: #74a8fc; border-bottom-color: #2c4a7e; }
+[data-bs-theme="dark"] .ord-rep-head .ord-rep-c-qty { border-left-color: #2c4a7e; }
+[data-bs-theme="dark"] .ord-rep-rows .ord-rep-row:nth-child(even) .ord-rep-cell { background: #131c2e; }
+[data-bs-theme="dark"] .ord-rep-name-txt { color: #e2e8f0; }
+[data-bs-theme="dark"] .ord-rep-c-emp i { color: #64748b; }
+[data-bs-theme="dark"] .ord-rep-c-qty .ord-asig-emp-cant { color: #e2e8f0; }
+[data-bs-theme="dark"] .ord-rep-c-qty:has(.ord-asig-emp-cant.is-zero) { background: rgba(248,113,113,0.10) !important; box-shadow: inset 0 0 0 1.5px #f87171; }
+.ord-rep-total {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 2px;
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px dashed #cbd5e1;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+.ord-rep-total.is-ok { color: #047857; }
+.ord-rep-total.is-bad { color: #b91c1c; }
+.ord-rep-total strong { font-variant-numeric: tabular-nums; }
+
+/* Franja de contexto del modal de Avance (producto + piezas por producir) */
+.am-ctx {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 8px;
-    padding: 0 2px;
+    gap: 10px;
+    padding: 8px 12px;
+    margin-bottom: 1rem;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
 }
-
-.kanban-col-title {
-    font-size: 11px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: .06em;
-}
-
-.kanban-col-count {
-    font-size: 11px;
-    font-weight: 700;
-    min-width: 20px;
-    text-align: center;
-    border-radius: 20px;
-    padding: 1px 7px;
-}
-
-.kanban-col-body {
-    flex: 1;
-    min-height: 72px;
-}
-
-/* colores de encabezado por estado */
-.kanban-col--pendiente  .kanban-col-title  { color: #9a6700; }
-.kanban-col--pendiente  .kanban-col-count  { background: #fff4e0; color: #9a6700; }
-.kanban-col--en-proceso .kanban-col-title  { color: #0d6efd; }
-.kanban-col--en-proceso .kanban-col-count  { background: #e7f0ff; color: #0d6efd; }
-.kanban-col--finalizado .kanban-col-title  { color: #1a7f5a; }
-.kanban-col--finalizado .kanban-col-count  { background: #e7f7ef; color: #1a7f5a; }
-.kanban-col--cancelado  .kanban-col-title  { color: #b42318; }
-.kanban-col--cancelado  .kanban-col-count  { background: #fdecea; color: #b42318; }
-
-/* Tickets */
-.kanban-ticket {
-    background: #fff;
-    border-radius: 8px;
-    padding: 9px 10px;
-    margin-bottom: 7px;
-    box-shadow: 0 1px 3px rgba(0,0,0,.07);
-    cursor: grab;
-    border-left: 3px solid transparent;
-    user-select: none;
-}
-[data-bs-theme="dark"] .kanban-ticket { background: #243043; }
-.kanban-ticket:active { cursor: grabbing; }
-
-.kanban-ticket--pendiente  { border-left-color: #9a6700; }
-.kanban-ticket--en-proceso { border-left-color: #0d6efd; }
-.kanban-ticket--finalizado { border-left-color: #1a7f5a; }
-.kanban-ticket--cancelado  { border-left-color: #b42318; }
-
-.kanban-ticket-nombre {
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--vz-heading-color, #1c2430);
-    margin-bottom: 5px;
-    line-height: 1.3;
-}
-[data-bs-theme="dark"] .kanban-ticket-nombre { color: #e2e8f0; }
-
-.kanban-ticket-meta {
+.am-ctx-prod {
     display: flex;
-    flex-wrap: wrap;
-    gap: 4px;
     align-items: center;
+    gap: 6px;
+    min-width: 0;
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: #1e3c72;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
-
-.kanban-ticket-cant {
-    font-size: 11px;
-    color: #6c757d;
-    background: #f0f4f8;
-    border-radius: 4px;
-    padding: 1px 6px;
-}
-[data-bs-theme="dark"] .kanban-ticket-cant { background: #1e2837; }
-
-.kanban-ticket-emp {
-    font-size: 10px;
+.am-ctx-prod i { color: #64748b; flex: 0 0 auto; }
+.am-ctx-prod span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.am-ctx-pill {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 700;
     background: #e7f0ff;
     color: #0d6efd;
-    border-radius: 20px;
-    padding: 1px 7px;
-    font-weight: 600;
+    white-space: nowrap;
 }
-[data-bs-theme="dark"] .kanban-ticket-emp { background: #1e3058; color: #74a8fc; }
+.am-ctx-pill.is-done { background: #dcfce7; color: #047857; }
+[data-bs-theme="dark"] .am-ctx { background: #0f172a; border-color: #334155; }
+[data-bs-theme="dark"] .am-ctx-prod { color: #93c5fd; }
+[data-bs-theme="dark"] .am-ctx-prod i { color: #94a3b8; }
+[data-bs-theme="dark"] .am-ctx-pill { background: #1e3058; color: #74a8fc; }
+[data-bs-theme="dark"] .am-ctx-pill.is-done { background: rgba(52,211,153,0.15); color: #6ee7b7; }
 
-/* Estados de arrastre */
-.kanban-ghost {
-    opacity: .35 !important;
-    background: #dde3ed !important;
-    border-radius: 8px;
+[data-bs-theme="dark"] .ord-asig-reparto-inner {
+    background: #0f172a;
+    border-color: #334155;
 }
-.kanban-drag {
-    box-shadow: 0 6px 18px rgba(0,0,0,.18) !important;
-    transform: rotate(1.5deg);
-}
-
-/* Zona de soltar vacía — resalta al arrastrar sobre una columna */
-.kanban-col-body.sortable-over {
-    background: rgba(13,110,253,.07);
-    border-radius: 6px;
-    transition: background .15s;
-}
+[data-bs-theme="dark"] .ord-rep-label { color: #94a3b8; }
+[data-bs-theme="dark"] .ord-rep-name { color: #cbd5e1; }
+[data-bs-theme="dark"] .ord-rep-total { border-top-color: #334155; }
+[data-bs-theme="dark"] .ord-rep-total.is-ok { color: #6ee7b7; }
+[data-bs-theme="dark"] .ord-rep-total.is-bad { color: #fca5a5; }
 
 /* ════════════════════════════════════════════════════════════════════
    Equivalente en Bs junto a montos en $ (tasa BCV del día)
@@ -8508,3 +10230,1640 @@ header#page-topbar,
     letter-spacing: 0.04em;
 }
 .cat-cart-total-row--bs .cat-cart-total-value { font-size: 0.85rem; opacity: 0.85; }
+
+/* ================================================================
+   PANEL DE CONFIGURACIÓN DEL SISTEMA (FEAT-004)
+   Página /configuracion — nav-pills por módulo + form por módulo.
+   Paleta: Navy Institucional (misma de maestros).
+   ================================================================ */
+
+/* ── Card accent — borde izquierdo navy ── */
+.card-config > .card-header {
+    border-left: 4px solid #1e3c72;
+    padding-left: 16px;
+}
+[data-bs-theme="dark"] .card-config > .card-header {
+    border-left-color: #4e7ac7;
+}
+
+/* ── Nav-pills vertical de módulos ── */
+.config-pills .nav-link {
+    color: #405189;
+    font-weight: 500;
+    border-radius: 6px;
+    padding: 0.55rem 0.9rem;
+}
+.config-pills .nav-link:hover {
+    background: rgba(30, 60, 114, 0.08);
+}
+.config-pills .nav-link.active {
+    background: #1e3c72;
+    color: #ffffff;
+}
+[data-bs-theme="dark"] .config-pills .nav-link {
+    color: #a8b9d9;
+}
+[data-bs-theme="dark"] .config-pills .nav-link:hover {
+    background: rgba(78, 122, 199, 0.15);
+}
+[data-bs-theme="dark"] .config-pills .nav-link.active {
+    background: #4e7ac7;
+    color: #ffffff;
+}
+
+/* ── Campo de parámetro ── */
+.config-campo + .config-campo {
+    margin-top: 1.25rem;
+    padding-top: 1.25rem;
+    border-top: 1px dashed var(--vz-border-color, #e9ebec);
+}
+
+/* Numéricos: ancho acotado (un número de 1-3 dígitos no necesita toda la fila)
+   + sufijo de unidad desde el registry ('%', 'días', …) */
+.config-input-group { max-width: 260px; }
+.config-sufijo {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #1e3c72;
+    background: rgba(30, 60, 114, 0.06);
+}
+
+/* Ayuda del parámetro: bloque con sangría colgante y acento, escaneable.
+   Texto en slate (NO text-muted: quedaba demasiado claro) y una línea por
+   idea — cada \n de la descripción del registry renderiza como línea propia. */
+.config-help {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    margin-top: 10px;
+    padding: 9px 12px;
+    font-size: 0.8rem;
+    line-height: 1.55;
+    color: #475569;
+    background: rgba(30, 60, 114, 0.035);
+    border-left: 3px solid rgba(30, 60, 114, 0.25);
+    border-radius: 0 8px 8px 0;
+    max-width: 62rem;
+}
+.config-help > i {
+    font-size: 0.95rem;
+    line-height: 1.3;
+    color: #1e3c72;
+    flex-shrink: 0;
+}
+.config-help-body { min-width: 0; }
+.config-help-line { display: block; }
+.config-help-line + .config-help-line { margin-top: 5px; }
+
+[data-bs-theme="dark"] .config-sufijo {
+    color: #a8b9d9;
+    background: rgba(78, 122, 199, 0.14);
+}
+[data-bs-theme="dark"] .config-help {
+    color: #b8c4d4;
+    background: rgba(78, 122, 199, 0.08);
+    border-left-color: rgba(78, 122, 199, 0.45);
+}
+[data-bs-theme="dark"] .config-help > i { color: #a8b9d9; }
+
+/* Párrafos introductorios de los paneles admin (Impuestos, Roles):
+   mismo tono slate legible en vez del text-muted lavado */
+.cfg-intro { color: #475569 !important; }
+[data-bs-theme="dark"] .cfg-intro { color: #b8c4d4 !important; }
+
+/* ── Badge "Por defecto" ── */
+.config-badge-default {
+    background: rgba(30, 60, 114, 0.1);
+    color: #1e3c72;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+}
+[data-bs-theme="dark"] .config-badge-default {
+    background: rgba(78, 122, 199, 0.18);
+    color: #a8b9d9;
+}
+
+/* ── Pills del panel: etiquetas de grupo y enlaces externos ── */
+.config-pills-label {
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #878a99;
+    padding: 0.35rem 0.9rem 0.25rem;
+}
+.config-pills-label--separado {
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px dashed var(--vz-border-color, #e9ebec);
+}
+.config-pill-link {
+    position: relative;
+    padding-right: 1.9rem !important;
+}
+.config-pill-link .config-pill-link-arrow {
+    position: absolute;
+    right: 0.7rem;
+    top: 50%;
+    transform: translateY(-50%);
+    opacity: 0.45;
+}
+.config-pill-link:hover .config-pill-link-arrow { opacity: 1; }
+[data-bs-theme="dark"] .config-pills-label { color: #7a8db0; }
+
+/* ── GESTIÓN GENERAL — View modal: Hero strip + Icon grid ─────────────── */
+.cli-view-hero {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 1.1rem;
+    padding: 1.25rem 1.5rem;
+    background:
+        radial-gradient(120% 140% at 0% 0%, rgba(42, 82, 152, 0.10) 0%, rgba(42, 82, 152, 0) 55%),
+        linear-gradient(135deg, #1c365f 0%, #244a82 100%);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    overflow: hidden;
+}
+/* Trama geométrica muy tenue ligada a la marca */
+.cli-view-hero::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1px);
+    background-size: 16px 16px;
+    pointer-events: none;
+}
+.cli-view-hero > * { position: relative; z-index: 1; }
+.cli-view-hero-avatar {
+    width: 56px;
+    height: 56px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #2a5298 0%, #3a6dbf 100%);
+    color: #fff;
+    font-size: 1.05rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    overflow: hidden;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.28), 0 0 0 4px rgba(255, 255, 255, 0.10);
+}
+.cli-view-hero-avatar i { font-size: 1.4rem; line-height: 1; }
+.cli-view-hero-info { flex: 1; min-width: 0; }
+.cli-view-hero-name {
+    font-size: 1.02rem;
+    font-weight: 700;
+    color: #fff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.3;
+}
+.cli-view-hero-doc {
+    font-size: 0.76rem;
+    color: rgba(255, 255, 255, 0.62);
+    margin-top: 2px;
+    letter-spacing: 0.02em;
+}
+.cli-view-hero-badge {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.4rem;
+}
+/* Estatus como chip glass con halo según estado */
+.cli-view-hero-badge .badge {
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    padding: 0.34em 0.85em;
+    border: 1px solid transparent;
+    backdrop-filter: blur(4px);
+}
+.cli-view-hero-badge .badge.bg-success {
+    background: rgba(34, 197, 94, 0.20) !important;
+    color: #b6f3cf !important;
+    border-color: rgba(134, 239, 172, 0.45);
+    box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.12);
+}
+.cli-view-hero-badge .badge.bg-danger {
+    background: rgba(239, 68, 68, 0.20) !important;
+    color: #fecaca !important;
+    border-color: rgba(252, 165, 165, 0.45);
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.12);
+}
+/* Fecha como chip translúcido legible */
+.cli-view-hero-date {
+    display: inline-flex;
+    align-items: center;
+    font-size: 0.7rem;
+    color: rgba(255, 255, 255, 0.85);
+    background: rgba(255, 255, 255, 0.10);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    padding: 0.22rem 0.6rem;
+    border-radius: 999px;
+}
+.cli-view-hero-date i { color: rgba(255, 255, 255, 0.6); }
+
+/* Card por sección — profundidad en capas + flotación al hover */
+.cli-view-card {
+    position: relative;
+    border: 1px solid #e7ebf2;
+    border-left: 4px solid #1e3c72;          /* acento por defecto: navy */
+    border-radius: 12px;
+    background: #fff;
+    overflow: hidden;
+    box-shadow: 0 1px 2px rgba(16, 24, 40, 0.05), 0 6px 18px -8px rgba(16, 24, 40, 0.10);
+    transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+.cli-view-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 2px 4px rgba(16, 24, 40, 0.06), 0 14px 32px -10px rgba(16, 24, 40, 0.20);
+}
+.cli-view-card + .cli-view-card { margin-top: 1rem; }
+.cli-view-card-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.65rem 1rem;
+    background: #f8fafc;
+    border-bottom: 1px solid #eef1f6;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: #1e3c72;
+}
+.cli-view-card-header i {
+    font-size: 0.95rem;
+    color: #2a5298;
+}
+.cli-view-card-body { padding: 1rem; }
+
+/* Variante sin elevación al hover — para cards de FORMULARIO (wizards de
+   gestión operativa), donde el "lift" del estándar estorba al interactuar
+   con los inputs. Conserva el resto del look (borde, acento, header). */
+.cli-view-card--flat:hover {
+    transform: none;
+    box-shadow: 0 1px 2px rgba(16, 24, 40, 0.05), 0 6px 18px -8px rgba(16, 24, 40, 0.10);
+}
+
+/* ── Card "blanda" de resumen (Gestión Operativa) ──
+   Para bloques INFORMATIVOS que ya tienen su propio diseño interno (resumen de
+   pago, etc.). A diferencia del .cli-view-card de datos, NO lleva el acento navy
+   a la izquierda ni el header en mayúsculas: deja respirar el contenido. */
+.op-summary-card {
+    border: 1px solid #e9eef5;
+    border-radius: 12px;
+    background: #fff;
+    box-shadow: 0 1px 2px rgba(16, 24, 40, 0.05), 0 6px 18px -8px rgba(16, 24, 40, 0.10);
+    overflow: hidden;
+}
+.op-summary-card-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.7rem 1rem 0.4rem;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #1e3c72;
+}
+.op-summary-card-header i { font-size: 1.05rem; color: #2a5298; }
+.op-summary-card-body { padding: 0.25rem 1rem 1rem; }
+[data-bs-theme="dark"] .op-summary-card { background: #1a2236; border-color: #2a3447; }
+[data-bs-theme="dark"] .op-summary-card-header { color: #cdd9f0; }
+[data-bs-theme="dark"] .op-summary-card-header i { color: #9db4e6; }
+
+/* Acentos por sección — paleta monocromática navy, POR POSICIÓN.
+   Global para los 5 módulos del estándar "Ver" (clientes, empleados, insumos,
+   proveedores, users): 1ª sección = navy (default), 2ª = azul medio, 3ª = slate.
+   Vía :nth-child para no requerir clases modificadoras en el HTML de cada módulo. */
+.cli-view-sections > .cli-view-card:nth-child(2) { border-left-color: #2a5298; }
+.cli-view-sections > .cli-view-card:nth-child(2) .cli-view-card-header { color: #2a5298; background: rgba(42, 82, 152, 0.06); }
+.cli-view-sections > .cli-view-card:nth-child(2) .cli-view-card-header i { color: #2a5298; }
+.cli-view-sections > .cli-view-card:nth-child(2) .emp-icon-box { background: rgba(42, 82, 152, 0.12) !important; }
+.cli-view-sections > .cli-view-card:nth-child(2) [class*="emp-icon--"] { color: #2a5298 !important; }
+.cli-view-sections > .cli-view-card:nth-child(3) { border-left-color: #64748b; }
+.cli-view-sections > .cli-view-card:nth-child(3) .cli-view-card-header { color: #475569; background: rgba(100, 116, 139, 0.07); }
+.cli-view-sections > .cli-view-card:nth-child(3) .cli-view-card-header i { color: #64748b; }
+.cli-view-sections > .cli-view-card:nth-child(3) .emp-icon-box { background: rgba(100, 116, 139, 0.14) !important; }
+.cli-view-sections > .cli-view-card:nth-child(3) [class*="emp-icon--"] { color: #64748b !important; }
+
+/* Dark mode: los acentos se aclaran para contraste sobre superficie oscura */
+[data-bs-theme="dark"] .cli-view-sections > .cli-view-card:nth-child(2) { border-left-color: #9db4e6; }
+[data-bs-theme="dark"] .cli-view-sections > .cli-view-card:nth-child(2) .cli-view-card-header,
+[data-bs-theme="dark"] .cli-view-sections > .cli-view-card:nth-child(2) .cli-view-card-header i,
+[data-bs-theme="dark"] .cli-view-sections > .cli-view-card:nth-child(2) [class*="emp-icon--"] { color: #9db4e6 !important; }
+[data-bs-theme="dark"] .cli-view-sections > .cli-view-card:nth-child(2) .emp-icon-box { background: rgba(157, 180, 230, 0.14) !important; }
+[data-bs-theme="dark"] .cli-view-sections > .cli-view-card:nth-child(3) { border-left-color: #b6c2d1; }
+[data-bs-theme="dark"] .cli-view-sections > .cli-view-card:nth-child(3) .cli-view-card-header,
+[data-bs-theme="dark"] .cli-view-sections > .cli-view-card:nth-child(3) .cli-view-card-header i,
+[data-bs-theme="dark"] .cli-view-sections > .cli-view-card:nth-child(3) [class*="emp-icon--"] { color: #b6c2d1 !important; }
+[data-bs-theme="dark"] .cli-view-sections > .cli-view-card:nth-child(3) .emp-icon-box { background: rgba(182, 194, 209, 0.14) !important; }
+
+/* Jerarquía tipográfica label → dato dentro de las cards */
+.cli-view-card .text-muted.fs-12 {
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-size: 0.66rem !important;
+    font-weight: 600;
+    color: #94a3b8 !important;
+}
+.cli-view-card .fs-13 {
+    font-size: 0.9rem !important;
+    color: #1a2c50;
+    line-height: 1.35;
+}
+
+/* ── Dark mode del modal Ver (Clientes) ──────────────────────────
+   El hero (gradiente navy) y header/footer ya funcionan en dark;
+   aquí se adaptan el wrapper de secciones, las cards y la tipografía
+   usando las variables de tema --vz-* (igual que .view-plate).      */
+.cli-view-sections { background: #fbfcfe; }
+[data-bs-theme="dark"] .cli-view-sections { background: var(--vz-body-bg); }
+
+[data-bs-theme="dark"] .cli-view-card {
+    background: var(--vz-card-bg);
+    border-color: var(--vz-border-color);
+}
+[data-bs-theme="dark"] .cli-view-card-header {
+    background: rgba(255, 255, 255, 0.03);
+    border-bottom-color: var(--vz-border-color);
+}
+[data-bs-theme="dark"] .cli-view-card .fs-13 { color: var(--vz-body-color); }
+[data-bs-theme="dark"] .cli-view-card .text-muted.fs-12 { color: #8a9ab0 !important; }
+
+/* Acentos: se aclaran para mantener contraste sobre superficie oscura */
+[data-bs-theme="dark"] .cli-view-card            { border-left-color: #6f8fd6; }
+[data-bs-theme="dark"] .cli-view-card-header,
+[data-bs-theme="dark"] .cli-view-card-header i   { color: #9db4e6; }
+[data-bs-theme="dark"] .cli-view-card--blue      { border-left-color: #6f8fd6; }
+[data-bs-theme="dark"] .cli-view-card--blue  .cli-view-card-header,
+[data-bs-theme="dark"] .cli-view-card--blue  .cli-view-card-header i { color: #9db4e6; }
+[data-bs-theme="dark"] .cli-view-card--slate     { border-left-color: #94a3b8; }
+[data-bs-theme="dark"] .cli-view-card--slate .cli-view-card-header,
+[data-bs-theme="dark"] .cli-view-card--slate .cli-view-card-header i { color: #b6c2d1; }
+
+/* Iconos: los tonos navy/blue/slate son muy oscuros sobre fondo dark */
+[data-bs-theme="dark"] .cli-view-card .emp-icon--navy,
+[data-bs-theme="dark"] .cli-view-card .emp-icon--blue  { color: #9db4e6; }
+[data-bs-theme="dark"] .cli-view-card .emp-icon--slate { color: #b6c2d1; }
+[data-bs-theme="dark"] .cli-view-card .emp-icon-box--navy,
+[data-bs-theme="dark"] .cli-view-card .emp-icon-box--blue  { background: rgba(157, 180, 230, 0.14); }
+[data-bs-theme="dark"] .cli-view-card .emp-icon-box--slate { background: rgba(182, 194, 209, 0.14); }
+
+/* ── Botón copiar dato (aparece al pasar el mouse por la fila) ──── */
+.cli-copy-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    margin-left: 6px;
+    padding: 0;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    color: #94a3b8;
+    cursor: pointer;
+    vertical-align: middle;
+    opacity: 0;                       /* oculto: ocupa espacio para no mover el layout */
+    transition: opacity 0.15s ease, background-color 0.15s ease, color 0.15s ease;
+}
+.cli-copy-btn i { font-size: 0.92rem; line-height: 1; }
+.cli-view-card-body .align-items-start:hover .cli-copy-btn,
+/* Gestión Operativa (cotizaciones, pedidos, compras): revela el botón al pasar
+   el mouse por el contenedor del valor, sin depender de .cli-view-card-body. */
+#viewModal *:hover > .cli-copy-btn,
+#viewCompraModal *:hover > .cli-copy-btn,
+.cli-copy-btn:focus-visible { opacity: 1; }
+.cli-copy-btn:hover { background: rgba(42, 82, 152, 0.10); color: #2a5298; }
+.cli-copy-btn.is-copied { background: rgba(34, 197, 94, 0.14); color: #16a34a; opacity: 1; }
+
+[data-bs-theme="dark"] .cli-copy-btn { color: #8a9ab0; }
+[data-bs-theme="dark"] .cli-copy-btn:hover { background: rgba(157, 180, 230, 0.14); color: #9db4e6; }
+[data-bs-theme="dark"] .cli-copy-btn.is-copied { background: rgba(34, 197, 94, 0.18); color: #4ade80; }
+
+/* ══════════════════════════════════════════════════════════
+   PANEL DE SEGURIDAD (FEAT-005 / TASK-039)
+   Roles + matriz de permisos. Reusa el shell de Configuración.
+══════════════════════════════════════════════════════════ */
+
+/* Tabs Roles / Permisos dentro de la card-config */
+.seg-tabs {
+    padding: 0 1rem;
+    border-bottom: 1px solid var(--vz-border-color);
+}
+.seg-tabs .nav-link {
+    font-weight: 500;
+    color: var(--vz-secondary-color);
+    border: none;
+    padding: 0.85rem 1rem;
+}
+.seg-tabs .nav-link.active {
+    color: #1e3c72;
+    background: transparent;
+    border-bottom: 2px solid #1e3c72;
+}
+[data-bs-theme="dark"] .seg-tabs .nav-link.active {
+    color: #9db4e6;
+    border-bottom-color: #9db4e6;
+}
+
+/* Chips de acción (checkbox + etiqueta) en la matriz */
+.seg-accion-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0;
+    padding: 4px 10px;
+    border: 1px solid var(--vz-border-color);
+    border-radius: 999px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    user-select: none;
+    transition: background .15s ease, border-color .15s ease, color .15s ease;
+}
+.seg-accion-chip:hover {
+    border-color: var(--seg-c, #1e3c72);
+}
+.seg-accion-chip input.form-check-input {
+    margin: 0;
+    cursor: pointer;
+    float: none;
+}
+/* Resaltar el chip cuando su checkbox está marcado (color de la sección) */
+.seg-accion-chip:has(input:checked) {
+    background: var(--seg-c-soft, rgba(30, 60, 114, 0.10));
+    border-color: var(--seg-c, #1e3c72);
+    color: var(--seg-c, #1e3c72);
+    font-weight: 500;
+}
+/* Checkboxes (chips y "Todo el módulo") marcados/indeterminados en el color de sección */
+.seg-seccion .form-check-input:checked,
+.seg-seccion .form-check-input:indeterminate {
+    background-color: var(--seg-c);
+    border-color: var(--seg-c);
+}
+
+/* Tabla de la matriz */
+.seg-matriz th {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+.seg-matriz td {
+    vertical-align: middle;
+}
+.seg-matriz .form-check-sm .form-check-input {
+    margin-top: 0.15rem;
+}
+
+/* ============================================================
+   COMPONENTE — Teléfonos múltiples (telefonos-repeater)
+   Partial: admin/partials/telefonos-field.blade.php
+   ============================================================ */
+.tel-repeater-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    max-height: min(40vh, 22rem);
+    overflow-y: auto;
+    padding-right: 2px;
+}
+/* Grid de columnas fijas: estrella · tipo · número · quitar.
+   Garantiza filas alineadas al agregar/quitar (independiente del contenido). */
+.tel-row {
+    display: grid;
+    grid-template-columns: auto 110px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 0.5rem;
+}
+.tel-row .tel-tipo {
+    width: 100%;
+    min-width: 0;
+}
+.tel-row .tel-numero-group {
+    min-width: 0;
+    flex-wrap: nowrap;
+}
+.tel-row .tel-numero-group .tel-prefijo {
+    flex: 0 0 92px;
+    max-width: 92px;
+}
+.tel-row .tel-numero-group .tel-numero {
+    min-width: 0;
+}
+/* Estrella "principal" (radio oculto + estrella gris→dorada) */
+.tel-principal {
+    flex: 0 0 auto;
+    margin: 0;
+    cursor: pointer;
+    line-height: 1;
+}
+.tel-principal input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+.tel-principal .tel-star {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    color: #cbd5e1;
+    font-size: 1rem;
+    transition: color .15s, background .15s, transform .15s;
+}
+.tel-principal:hover .tel-star {
+    color: #f59e0b;
+    background: rgba(245, 158, 11, .12);
+}
+.tel-principal input[type="radio"]:checked + .tel-star {
+    color: #f59e0b;
+    background: rgba(245, 158, 11, .15);
+}
+.tel-principal input[type="radio"]:focus-visible + .tel-star {
+    outline: 2px solid #f59e0b;
+    outline-offset: 1px;
+}
+.tel-row .tel-remove {
+    flex: 0 0 auto;
+    color: #ef4444;
+    border: none;
+    background: transparent;
+    padding: .35rem .5rem;
+    line-height: 1;
+}
+.tel-row .tel-remove:hover {
+    color: #fff;
+    background: #ef4444;
+}
+.tel-add-btn {
+    margin-top: 0.5rem;
+}
+/* Dark mode */
+[data-bs-theme="dark"] .tel-principal .tel-star {
+    color: #475569;
+}
+
+/* ============================================================
+   FEAT-006 — Control de Calidad: historial de inspecciones en el modal
+   ============================================================ */
+.cc-historial-list {
+    max-height: 9rem;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+.cc-historial-item {
+    border: 1px solid var(--vz-border-color, #e9ebec);
+    border-radius: 0.375rem;
+    padding: 0.4rem 0.6rem;
+    font-size: 0.8rem;
+    line-height: 1.4;
+}
+
+/* ============================================================
+   FEAT-006 — Modal de inspección de Control de Calidad (compacto)
+   ============================================================ */
+/* Altura acotada + scroll interno: header y footer quedan fijos y solo el cuerpo
+   hace scroll cuando hay muchos elementos (evita que el modal crezca/encoja según
+   el contenido y que el footer se salga del viewport). */
+.qc-body {
+    padding: 1rem 1.25rem;
+    min-height: 13rem;
+    max-height: calc(100vh - 13rem);
+    overflow-y: auto;
+}
+
+/* Contexto del lote: producto a ancho completo (envuelve) + fila Pedido/Producidas */
+.qc-context {
+    background: #f8fafc;
+    border: 1px solid #e9ecef;
+    border-radius: 0.5rem;
+    padding: 0.6rem 0.9rem;
+    margin-bottom: 0.9rem;
+}
+.qc-ctx { display: flex; flex-direction: column; gap: 0.1rem; min-width: 0; }
+.qc-ctx--full { padding-bottom: 0.5rem; }
+.qc-context-row {
+    display: flex;
+    border-top: 1px solid #e9ecef;
+    padding-top: 0.5rem;
+}
+.qc-context-row .qc-ctx { flex: 1 1 0; min-width: 0; padding-left: 0.9rem; justify-content: center; }
+.qc-context-row .qc-ctx:first-child { padding-left: 0; }
+.qc-context-row .qc-ctx + .qc-ctx { border-left: 1px solid #e9ecef; }
+.qc-ctx-label { font-size: 0.66rem; text-transform: uppercase; letter-spacing: .04em; color: #94a3b8; font-weight: 600; }
+.qc-ctx-value { font-size: 0.85rem; font-weight: 600; color: #1e293b; }
+.qc-ctx-prod { font-size: 0.95rem; line-height: 1.3; }
+.qc-ctx--count .qc-ctx-value { font-size: 1.3rem; line-height: 1; color: #0f766e; }
+
+/* Fila de control compacta: 3 celdas (inspeccionadas · defectuosas · conformes) */
+.qc-controls {
+    display: flex;
+    align-items: center;
+    border: 1px solid #e9ecef;
+    border-radius: 0.5rem;
+    padding: 0.5rem 0;
+    margin-bottom: 0.6rem;
+}
+.qc-field { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 0.3rem; border-left: 1px solid #e9ecef; padding: 0 0.75rem; }
+.qc-field:first-child { border-left: 0; }
+.qc-field-label { font-size: 0.66rem; text-transform: uppercase; letter-spacing: .04em; color: #94a3b8; font-weight: 600; }
+.qc-label-bad { color: #dc2626; }
+.qc-label-ok  { color: #16a34a; }
+.qc-mini-input {
+    width: 70px; height: 31px; text-align: center; font-weight: 600;
+    border: 1px solid #ced4da; border-radius: 0.375rem; background: #fff; color: #1e293b;
+}
+.qc-field-num { font-size: 1.5rem; font-weight: 700; line-height: 1; color: #16a34a; }
+
+/* Stepper − [n] + (compacto) */
+.qc-stepper { display: inline-flex; align-items: center; gap: 0.3rem; }
+.qc-step {
+    width: 28px; height: 28px; border-radius: 50%;
+    border: 1px solid #fca5a5; background: #fff; color: #dc2626;
+    font-size: 1.05rem; font-weight: 700; line-height: 1;
+    display: inline-flex; align-items: center; justify-content: center;
+    cursor: pointer; transition: background .12s, transform .08s;
+}
+.qc-step:hover { background: #dc2626; color: #fff; }
+.qc-step:active { transform: scale(.9); }
+.qc-step-input {
+    width: 46px; height: 31px; text-align: center; font-size: 1.05rem; font-weight: 700;
+    border: 1px solid #fecaca; border-radius: 0.375rem; color: #b91c1c; background: #fff;
+}
+.qc-step-input::-webkit-outer-spin-button,
+.qc-step-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.qc-step-input, .qc-mini-input { -moz-appearance: textfield; }
+
+/* Barra de conformidad */
+.qc-bar { display: flex; height: 8px; border-radius: 999px; overflow: hidden; background: #e5e7eb; margin-bottom: 0.5rem; }
+.qc-bar-seg { height: 100%; transition: width .35s ease; }
+.qc-bar-ok  { background: #22c55e; }
+.qc-bar-bad { background: #ef4444; }
+
+/* Veredicto en vivo (slim) */
+.qc-verdict {
+    display: flex; align-items: center; gap: 0.6rem;
+    border-radius: 0.5rem; padding: 0.55rem 0.8rem;
+    border: 1px solid transparent; transition: background .2s, border-color .2s;
+}
+.qc-verdict.is-ok        { background: #f0fdf4; border-color: #bbf7d0; }
+.qc-verdict.is-reproceso { background: #fffbeb; border-color: #fde68a; }
+.qc-verdict-icon { font-size: 1.35rem; line-height: 1; }
+.qc-verdict.is-ok .qc-verdict-icon        { color: #16a34a; }
+.qc-verdict.is-reproceso .qc-verdict-icon { color: #d97706; }
+.qc-verdict-text { display: flex; flex-direction: column; line-height: 1.25; }
+.qc-verdict-title { font-weight: 700; font-size: 0.9rem; }
+.qc-verdict.is-ok .qc-verdict-title        { color: #15803d; }
+.qc-verdict.is-reproceso .qc-verdict-title { color: #b45309; }
+.qc-verdict-sub { font-size: 0.78rem; color: #64748b; }
+
+.qc-motivo { margin-top: 0.8rem; }
+
+/* Atribución del rechazo por empleado (órdenes de equipo) */
+.qc-atrib { margin-top: 0.8rem; padding: 0.7rem 0.85rem; border: 1px solid #fde68a; border-radius: 0.6rem; background: #fffbeb; }
+/* Cap con scroll interno; el total "Atribuido X/N" queda fuera (siempre visible). */
+#cc-atrib-rows { max-height: 9.5rem; overflow-y: auto; margin: 0 -4px; padding: 0 4px; }
+.qc-atrib-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 3px 0; }
+.qc-atrib-name { font-size: 0.83rem; font-weight: 600; color: #334155; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.qc-atrib-input { width: 84px; flex: 0 0 auto; text-align: center; font-weight: 700; font-variant-numeric: tabular-nums; border: 1px solid #d1d5db; border-radius: 0.375rem; padding: 0.25rem 0.4rem; }
+.qc-atrib-total { display: flex; align-items: center; justify-content: flex-end; gap: 2px; margin-top: 6px; padding-top: 6px; border-top: 1px dashed #fcd34d; font-size: 0.8rem; font-weight: 600; }
+.qc-atrib-total.is-ok { color: #047857; }
+.qc-atrib-total.is-bad { color: #b91c1c; }
+[data-bs-theme="dark"] .qc-atrib { background: rgba(245,158,11,.08); border-color: rgba(245,158,11,.3); }
+[data-bs-theme="dark"] .qc-atrib-name { color: #e2e8f0; }
+[data-bs-theme="dark"] .qc-atrib-input { background: transparent; color: #e2e8f0; border-color: rgba(255,255,255,.15); }
+[data-bs-theme="dark"] .qc-atrib-total { border-top-color: rgba(245,158,11,.3); }
+[data-bs-theme="dark"] .qc-atrib-total.is-ok { color: #6ee7b7; }
+[data-bs-theme="dark"] .qc-atrib-total.is-bad { color: #fca5a5; }
+
+.qc-historial-wrap { margin-top: 0.9rem; border-top: 1px dashed #e9ecef; padding-top: 0.7rem; }
+.qc-historial-title { font-size: 0.78rem; color: #94a3b8; font-weight: 600; margin-bottom: 0.45rem; }
+.cc-historial-list { max-height: 10rem; overflow-y: auto; display: flex; flex-direction: column; gap: 0.5rem; }
+.cc-historial-item { border: 1px solid #e9ecef; border-radius: 0.5rem; padding: 0.5rem 0.65rem; line-height: 1.4; }
+.cc-hist-top { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.cc-hist-top .badge { font-size: 0.68rem; }
+.cc-hist-top small { font-size: 0.72rem; }
+.cc-hist-nums { font-size: 0.74rem; color: #64748b; margin-top: 2px; }
+/* Motivo: es lo relevante → se muestra destacado, no como texto pequeño inline */
+.cc-hist-motivo {
+    display: flex;
+    align-items: flex-start;
+    gap: 5px;
+    margin-top: 5px;
+    padding: 5px 8px;
+    font-size: 0.83rem;
+    color: #1f2937;
+    background: #f8fafc;
+    border-left: 3px solid #cbd5e1;
+    border-radius: 0 5px 5px 0;
+}
+.cc-hist-motivo i { color: #94a3b8; line-height: 1.35; flex: 0 0 auto; }
+.cc-hist-motivo--danger { background: #fef2f2; border-left-color: #f87171; }
+.cc-hist-motivo--warning { background: #fffbeb; border-left-color: #fbbf24; }
+[data-bs-theme="dark"] .cc-hist-nums { color: #94a3b8; }
+[data-bs-theme="dark"] .cc-hist-motivo { background: #131c2e; color: #e2e8f0; border-left-color: #475569; }
+[data-bs-theme="dark"] .cc-hist-motivo i { color: #64748b; }
+[data-bs-theme="dark"] .cc-hist-motivo--danger { background: rgba(248,113,113,0.10); border-left-color: #f87171; }
+[data-bs-theme="dark"] .cc-hist-motivo--warning { background: rgba(251,191,36,0.10); border-left-color: #fbbf24; }
+
+/* ── Dark mode ── */
+[data-bs-theme="dark"] .qc-context,
+[data-bs-theme="dark"] .qc-controls { background: rgba(255,255,255,.03); border-color: rgba(255,255,255,.08); }
+[data-bs-theme="dark"] .qc-field,
+[data-bs-theme="dark"] .qc-context-row .qc-ctx + .qc-ctx { border-left-color: rgba(255,255,255,.08); }
+[data-bs-theme="dark"] .qc-context-row { border-top-color: rgba(255,255,255,.08); }
+[data-bs-theme="dark"] .qc-ctx-value { color: #e2e8f0; }
+[data-bs-theme="dark"] .qc-ctx--count .qc-ctx-value { color: #5eead4; }
+[data-bs-theme="dark"] .qc-mini-input { background: transparent; color: #e2e8f0; border-color: rgba(255,255,255,.15); }
+[data-bs-theme="dark"] .qc-step { background: transparent; }
+[data-bs-theme="dark"] .qc-step-input { background: transparent; color: #fca5a5; }
+[data-bs-theme="dark"] .qc-bar { background: rgba(255,255,255,.1); }
+[data-bs-theme="dark"] .qc-verdict.is-ok        { background: rgba(34,197,94,.08); border-color: rgba(34,197,94,.3); }
+[data-bs-theme="dark"] .qc-verdict.is-reproceso { background: rgba(245,158,11,.08); border-color: rgba(245,158,11,.3); }
+[data-bs-theme="dark"] .qc-verdict-sub { color: #94a3b8; }
+[data-bs-theme="dark"] .qc-historial-wrap { border-top-color: rgba(255,255,255,.08); }
+[data-bs-theme="dark"] .cc-historial-item { border-color: rgba(255,255,255,.08); }
+/* Eliminar bloqueado (rol de sistema o con usuarios): atenuado pero clickeable,
+   para explicar el motivo en vez de quedar como un botón muerto. */
+.seg-del-rol.is-blocked { opacity: 0.45; }
+.seg-del-rol.is-blocked:hover { opacity: 0.7; }
+
+/* ===================================================================
+   Matriz de permisos — grilla de tarjetas por módulo (reemplaza la
+   tabla módulo×acción que se veía escalonada con los chips envueltos).
+   =================================================================== */
+
+/* Barra de herramientas: buscar módulo + acciones globales + contador */
+.seg-matriz-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+}
+.seg-matriz-search {
+    position: relative;
+    flex: 1 1 240px;
+    min-width: 200px;
+}
+.seg-matriz-search > i {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--vz-secondary-color);
+    pointer-events: none;
+}
+.seg-matriz-search .form-control { padding-left: 34px; }
+.seg-matriz-toolbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: auto;
+    flex-wrap: wrap;
+}
+.seg-global-count {
+    font-size: 0.8rem;
+    color: var(--vz-secondary-color);
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+/* Grilla responsiva: las tarjetas tilean parejo (sin escalera) */
+.seg-matriz-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 14px;
+}
+
+.seg-mod-card {
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--vz-border-color);
+    border-radius: 12px;
+    background: var(--vz-card-bg, #fff);
+    overflow: hidden;
+    transition: border-color .15s ease, box-shadow .15s ease;
+}
+.seg-mod-card:hover {
+    border-color: var(--seg-c, #1e3c72);
+    box-shadow: 0 2px 10px rgba(16, 24, 40, .06);
+}
+.seg-mod-card.has-perms { border-color: var(--seg-c-border, rgba(30, 60, 114, .35)); }
+
+.seg-mod-card-head {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--vz-border-color);
+    background: rgba(30, 60, 114, .03);
+}
+.seg-mod-ic {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 8px;
+    background: var(--seg-c-soft, rgba(30, 60, 114, .09));
+    color: var(--seg-c, #1e3c72);
+    font-size: 0.95rem;
+    flex-shrink: 0;
+}
+.seg-mod-name {
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--vz-heading-color, #1e293b);
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.seg-mod-count {
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--vz-secondary-color);
+    background: var(--vz-light, #f3f6f9);
+    border-radius: 999px;
+    padding: 2px 9px;
+    white-space: nowrap;
+}
+.seg-mod-card.has-perms .seg-mod-count {
+    background: var(--seg-c-soft, rgba(30, 60, 114, .12));
+    color: var(--seg-c, #1e3c72);
+}
+.seg-mod-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+    padding: 14px;
+    flex: 1 1 auto;
+    align-content: flex-start;
+}
+.seg-mod-card-foot {
+    padding: 9px 14px;
+    border-top: 1px dashed var(--vz-border-color);
+    background: rgba(0, 0, 0, .012);
+}
+.seg-all-wrap {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    cursor: pointer;
+    margin: 0;
+    font-size: 0.8rem;
+    color: var(--vz-secondary-color);
+}
+.seg-all-wrap .form-check-input { margin: 0; cursor: pointer; float: none; }
+
+/* Barra de guardado fija al pie del panel */
+.seg-save-bar {
+    position: sticky;
+    bottom: 0;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-top: 1rem;
+    padding: 12px 0 2px;
+    background: linear-gradient(to top, var(--vz-card-bg, #fff) 70%, transparent);
+}
+
+/* ── Secciones de la matriz (espejo del sidebar) ──
+   Cada sección hereda el color de identidad del sistema vía variables:
+   maestros navy · operativa emerald · reportes sky · admin violeta (propio
+   del panel). Los elementos internos (íconos, chips, contadores, bordes)
+   consumen var(--seg-c) y cambian solos por sección y por tema. */
+.seg-seccion {
+    --seg-c: #1e3c72;                        /* maestros (default) */
+    --seg-c-soft: rgba(30, 60, 114, .09);
+    --seg-c-border: rgba(30, 60, 114, .35);
+}
+.seg-sec-operativa {
+    --seg-c: #059669;
+    --seg-c-soft: rgba(16, 185, 129, .10);
+    --seg-c-border: rgba(16, 185, 129, .40);
+}
+.seg-sec-reportes {
+    --seg-c: #0369a1;
+    --seg-c-soft: rgba(14, 165, 233, .10);
+    --seg-c-border: rgba(14, 165, 233, .40);
+}
+.seg-sec-admin {
+    --seg-c: #3b82f6;
+    --seg-c-soft: rgba(59, 130, 246, .10);
+    --seg-c-border: rgba(59, 130, 246, .40);
+}
+[data-bs-theme="dark"] .seg-seccion {
+    --seg-c: #9db4e6;
+    --seg-c-soft: rgba(157, 180, 230, .14);
+    --seg-c-border: rgba(157, 180, 230, .55);
+}
+[data-bs-theme="dark"] .seg-sec-operativa {
+    --seg-c: #34d399;
+    --seg-c-soft: rgba(16, 185, 129, .18);
+    --seg-c-border: rgba(52, 211, 153, .55);
+}
+[data-bs-theme="dark"] .seg-sec-reportes {
+    --seg-c: #38bdf8;
+    --seg-c-soft: rgba(14, 165, 233, .18);
+    --seg-c-border: rgba(56, 189, 248, .55);
+}
+[data-bs-theme="dark"] .seg-sec-admin {
+    --seg-c: #60a5fa;
+    --seg-c-soft: rgba(96, 165, 250, .16);
+    --seg-c-border: rgba(96, 165, 250, .55);
+}
+
+.seg-secciones {
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+}
+.seg-seccion-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+.seg-seccion-ic {
+    font-size: 1rem;
+    color: var(--seg-c);
+}
+.seg-seccion-title {
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--seg-c);
+    white-space: nowrap;
+}
+.seg-seccion-count {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--seg-c);
+    background: var(--seg-c-soft);
+    border-radius: 999px;
+    padding: 1px 8px;
+    white-space: nowrap;
+}
+.seg-seccion-line {
+    flex: 1 1 auto;
+    height: 1px;
+    background: var(--vz-border-color);
+}
+.seg-seccion-tools { display: flex; gap: 4px; }
+.seg-seccion-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border: 1px solid var(--vz-border-color);
+    border-radius: 7px;
+    background: var(--vz-card-bg, #fff);
+    color: var(--vz-secondary-color);
+    font-size: 0.85rem;
+    padding: 0;
+    transition: color .15s ease, border-color .15s ease;
+}
+.seg-seccion-btn:hover { color: var(--seg-c); border-color: var(--seg-c); }
+
+/* ── Tab Roles: grilla de tarjetas de rol ── */
+.seg-roles-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 14px;
+}
+.seg-rol-card {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 14px 16px;
+    border: 1px solid var(--vz-border-color);
+    border-radius: 12px;
+    background: var(--vz-card-bg, #fff);
+    transition: border-color .15s ease, box-shadow .15s ease;
+}
+.seg-rol-card:hover {
+    border-color: #1e3c72;
+    box-shadow: 0 2px 10px rgba(16, 24, 40, .06);
+}
+.seg-rol-card-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.seg-rol-card-ic {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    background: rgba(30, 60, 114, .09);
+    color: #1e3c72;
+    font-size: 1.2rem;
+    flex-shrink: 0;
+}
+.seg-rol-card--admin { border-left: 3px solid #3b82f6; }
+.seg-rol-card--admin:hover { border-color: #3b82f6; }
+.seg-rol-card--admin .seg-rol-card-ic {
+    background: rgba(59, 130, 246, .12);
+    color: #3b82f6;
+}
+.seg-rol-card-id {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    min-width: 0;
+}
+.seg-rol-card-nombre {
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: var(--vz-heading-color, #1e293b);
+}
+.seg-rol-card-desc {
+    margin: 0;
+    font-size: 0.8rem;
+    line-height: 1.4;
+    color: var(--vz-secondary-color);
+    flex: 1 1 auto;
+}
+.seg-rol-card-desc.is-empty { font-style: italic; opacity: .65; }
+.seg-rol-card-meta {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+.seg-rol-meta-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.74rem;
+    font-weight: 600;
+    color: var(--vz-secondary-color);
+    background: var(--vz-light, #f3f6f9);
+    border-radius: 999px;
+    padding: 3px 10px;
+}
+.seg-rol-meta-chip > i { font-size: 0.85rem; }
+.seg-rol-meta-chip--total {
+    color: #3b82f6;
+    background: rgba(59, 130, 246, .11);
+}
+.seg-rol-card-foot {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding-top: 10px;
+    border-top: 1px dashed var(--vz-border-color);
+}
+.seg-rol-foot-nota {
+    display: inline-flex;
+    align-items: center;
+    font-size: 0.76rem;
+    color: var(--vz-secondary-color);
+    font-style: italic;
+}
+
+[data-bs-theme="dark"] .seg-rol-card:hover { border-color: #9db4e6; }
+[data-bs-theme="dark"] .seg-rol-card-ic {
+    background: rgba(157, 180, 230, .14);
+    color: #9db4e6;
+}
+[data-bs-theme="dark"] .seg-rol-card--admin { border-left-color: #60a5fa; }
+[data-bs-theme="dark"] .seg-rol-card--admin:hover { border-color: #60a5fa; }
+[data-bs-theme="dark"] .seg-rol-card--admin .seg-rol-card-ic {
+    background: rgba(96, 165, 250, .16);
+    color: #60a5fa;
+}
+[data-bs-theme="dark"] .seg-rol-meta-chip--total {
+    color: #60a5fa;
+    background: rgba(96, 165, 250, .14);
+}
+
+/* ── .table-admin — header de tabla del área administrativa ──
+   Mismo patrón que .table-maestro (navy) / .dt-transactional (teal) /
+   .dt-reportes (sky): fondo oscuro + texto blanco + franja de acento.
+   Azul admin (#3b82f6) — la identidad de Administración en el panel. */
+.table-admin thead th {
+    background: #1e3c72 !important;
+    color: #ffffff !important;
+    font-weight: 600 !important;
+    font-size: 12.5px !important;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    border-color: #2a5298 !important;
+    border-bottom: 3px solid #4d7fd9 !important;
+}
+
+[data-bs-theme="dark"] .table-admin thead th {
+    background: #16294d !important;
+    border-color: #1e3c72 !important;
+    border-bottom-color: #5c8ad2 !important;
+}
+
+/* ── Tabla de impuestos (/configuracion): descripción bajo el nombre ──
+   `table-nowrap` fuerza nowrap en las celdas; la línea de descripción debe
+   poder envolver y quedar acotada. */
+#tabla-impuestos .imp-desc-line {
+    white-space: normal;
+    font-size: 0.75rem;
+    line-height: 1.35;
+    max-width: 420px;
+    margin-top: 1px;
+}
+
+/* ── Nota "Administrador = acceso total" (callout legible, no alert lavado) ── */
+.seg-admin-nota {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    padding: 9px 14px;
+    border: 1px solid rgba(3, 105, 161, .22);
+    border-left: 3px solid #0ea5e9;
+    border-radius: 10px;
+    background: rgba(14, 165, 233, .06);
+}
+.seg-admin-nota-ic {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 9px;
+    background: rgba(14, 165, 233, .14);
+    color: #0369a1;
+    font-size: 1.05rem;
+    flex-shrink: 0;
+}
+.seg-admin-nota-text {
+    font-size: 0.8rem;
+    line-height: 1.45;
+    color: #334155;
+}
+.seg-admin-nota-text strong { color: #0f172a; }
+.seg-admin-nota-text em { color: #0369a1; font-weight: 600; font-style: normal; }
+
+[data-bs-theme="dark"] .seg-admin-nota {
+    background: rgba(14, 165, 233, .10);
+    border-color: rgba(56, 189, 248, .28);
+    border-left-color: #38bdf8;
+}
+[data-bs-theme="dark"] .seg-admin-nota-ic {
+    background: rgba(56, 189, 248, .16);
+    color: #38bdf8;
+}
+[data-bs-theme="dark"] .seg-admin-nota-text { color: #cbd5e1; }
+[data-bs-theme="dark"] .seg-admin-nota-text strong { color: #f1f5f9; }
+[data-bs-theme="dark"] .seg-admin-nota-text em { color: #38bdf8; }
+
+/* ── Resumen del rol en edición ── */
+.seg-rol-resumen {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    border: 1px solid var(--vz-border-color);
+    border-left: 3px solid #1e3c72;
+    border-radius: 10px;
+    background: rgba(30, 60, 114, .03);
+    margin-bottom: 1rem;
+}
+.seg-rol-resumen-ic {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: rgba(30, 60, 114, .1);
+    color: #1e3c72;
+    font-size: 1.15rem;
+    flex-shrink: 0;
+}
+.seg-rol-resumen-main { min-width: 0; }
+.seg-rol-resumen-top {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+.seg-rol-resumen-nombre {
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: var(--vz-heading-color, #1e293b);
+}
+.seg-rol-resumen-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--vz-secondary-color);
+    background: var(--vz-light, #f3f6f9);
+    border-radius: 999px;
+    padding: 2px 9px;
+}
+.seg-rol-resumen-desc {
+    font-size: 0.78rem;
+    color: var(--vz-secondary-color);
+    margin-top: 1px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Menú "Copiar de…" con scroll si hay muchos roles */
+#seg-copiar-menu {
+    max-height: 260px;
+    overflow-y: auto;
+    min-width: 220px;
+}
+
+/* ── Chip de cambios sin guardar (barra de guardado) ── */
+.seg-cambios-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-left: auto;
+    font-size: 0.76rem;
+    font-weight: 600;
+    color: #b25e09;
+    background: #fef6e7;
+    border: 1px solid rgba(178, 94, 9, .25);
+    border-radius: 999px;
+    padding: 3px 11px;
+    white-space: nowrap;
+}
+.seg-cambios-chip > i { font-size: 0.45rem; }
+.seg-save-bar .seg-save-hint { margin-right: auto; }
+.seg-save-bar .seg-cambios-chip + #seg-guardar-permisos { margin-left: 0; }
+
+/* Dark mode: los colores de sección los resuelven las variables --seg-c* de
+   arriba; aquí solo los fondos neutros de las tarjetas y el resumen del rol. */
+[data-bs-theme="dark"] .seg-mod-card-head { background: rgba(157, 180, 230, .06); }
+[data-bs-theme="dark"] .seg-mod-card-foot { background: rgba(255, 255, 255, .02); }
+[data-bs-theme="dark"] .seg-rol-resumen {
+    background: rgba(157, 180, 230, .05);
+    border-left-color: #9db4e6;
+}
+[data-bs-theme="dark"] .seg-rol-resumen-ic {
+    background: rgba(157, 180, 230, .14);
+    color: #9db4e6;
+}
+[data-bs-theme="dark"] .seg-cambios-chip {
+    color: #fbbf24;
+    background: rgba(251, 191, 36, .12);
+    border-color: rgba(251, 191, 36, .3);
+}
+
+/* ============================================================================
+   Proyección de insumos para producción — aviso NO bloqueante de stock.
+   Compartido por Cotizaciones y Pedidos (renderer: proyeccion-insumos.js).
+   Estados por insumo: falta (rojo) / ajustado (ámbar) / ok (verde).
+   ========================================================================== */
+.proy-state {
+    padding: 14px 12px;
+    font-size: .8rem;
+    text-align: center;
+}
+.proy-state--muted { color: #94a3b8; }
+
+.proy-summary {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    margin-bottom: 10px;
+    font-size: .8rem;
+    line-height: 1.3;
+}
+.proy-summary > i { font-size: 1.15rem; line-height: 1; margin-top: 1px; }
+.proy-summary strong { display: block; font-weight: 600; }
+.proy-summary span { display: block; opacity: .85; font-size: .74rem; margin-top: 1px; }
+.proy-summary.proy-falta    { background: #fef2f2; color: #b42318; }
+.proy-summary.proy-ajustado { background: #fef6e7; color: #b25e09; }
+.proy-summary.proy-ok       { background: #eafaf1; color: #137a4a; }
+
+.proy-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.proy-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border-radius: 9px;
+    background: #f8fafc;
+    border-left: 3px solid #e2e8f0;
+}
+.proy-row-ic { font-size: 1rem; line-height: 1; flex: 0 0 auto; }
+.proy-row.proy-falta    { background: #fef2f2; border-left-color: #ef4444; }
+.proy-row.proy-falta .proy-row-ic { color: #ef4444; }
+.proy-row.proy-ajustado { background: #fff8ec; border-left-color: #f59e0b; }
+.proy-row.proy-ajustado .proy-row-ic { color: #f59e0b; }
+.proy-row.proy-ok       { background: #f6fdf9; border-left-color: #22c55e; }
+.proy-row.proy-ok .proy-row-ic { color: #22c55e; }
+
+.proy-row-main { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; }
+.proy-row-nombre { font-weight: 600; font-size: .8rem; color: #1e293b; }
+.proy-row-meta { font-size: .7rem; color: #94a3b8; }
+.proy-row-end { flex: 0 0 auto; text-align: right; font-size: .74rem; font-weight: 600; }
+.proy-row-falta { color: #b42318; }
+.proy-row-rest  { color: #64748b; font-weight: 500; }
+
+/* Dark mode */
+[data-bs-theme="dark"] .proy-row { background: rgba(255,255,255,.03); border-left-color: #334155; }
+[data-bs-theme="dark"] .proy-row-nombre { color: #e2e8f0; }
+[data-bs-theme="dark"] .proy-row.proy-falta    { background: rgba(239,68,68,.10); }
+[data-bs-theme="dark"] .proy-row.proy-ajustado { background: rgba(245,158,11,.10); }
+[data-bs-theme="dark"] .proy-row.proy-ok       { background: rgba(34,197,94,.08); }
+[data-bs-theme="dark"] .proy-summary.proy-falta    { background: rgba(239,68,68,.12); color: #fca5a5; }
+[data-bs-theme="dark"] .proy-summary.proy-ajustado { background: rgba(245,158,11,.12); color: #fcd34d; }
+[data-bs-theme="dark"] .proy-summary.proy-ok       { background: rgba(34,197,94,.10); color: #86efac; }
+[data-bs-theme="dark"] .proy-row-falta { color: #fca5a5; }
+[data-bs-theme="dark"] .proy-row-rest  { color: #94a3b8; }
+
+/* Nota tranquilizadora bajo el botón "Crear compra" (proyección de insumos). */
+.proy-note {
+    margin: 8px 2px 0;
+    font-size: .72rem;
+    line-height: 1.35;
+    color: #94a3b8;
+    text-align: center;
+}
+[data-bs-theme="dark"] .proy-note { color: #94a3b8; }
+
+/* ==========================================================================
+   Selector de avatar con previsualización (Perfil + Usuarios)
+   ========================================================================== */
+.avatar-preview-zone {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: .75rem;
+    padding: 1.5rem 1rem;
+    border: 2px dashed rgba(30,60,114,0.30);
+    border-radius: 10px;
+    background: rgba(30,60,114,0.03);
+    cursor: pointer;
+    transition: border-color .2s ease, background .2s ease;
+}
+.avatar-preview-zone:hover,
+.avatar-preview-zone.is-dragover {
+    border-color: #1e3c72;
+    background: rgba(30,60,114,0.07);
+}
+.avatar-preview-img {
+    width: 140px; height: 140px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 4px solid #fff;
+    box-shadow: 0 4px 16px rgba(30,60,114,0.25);
+    background: #fff;
+}
+/* Variante compacta (formularios): horizontal, círculo pequeño a la izquierda */
+.avatar-preview-zone--sm {
+    flex-direction: row;
+    align-items: center;
+    gap: .9rem;
+    padding: .7rem .9rem;
+}
+.avatar-preview-zone--sm .avatar-preview-img {
+    width: 64px; height: 64px;
+    border-width: 3px;
+    flex-shrink: 0;
+}
+.avatar-preview-zone--sm .avatar-preview-text {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: .3rem;
+    min-width: 0;
+}
+.avatar-preview-zone--sm .avatar-preview-hint { text-align: left; }
+.avatar-preview-hint {
+    text-align: center;
+    font-size: .8rem;
+    color: #64748b;
+    margin: 0;
+}
+.avatar-preview-hint strong { color: #1e3c72; }
+.avatar-preview-filename {
+    display: none;
+    align-items: center;
+    gap: .4rem;
+    max-width: 100%;
+    font-size: .78rem;
+    background: rgba(16,185,129,0.10);
+    color: #047857;
+    border: 1px solid rgba(16,185,129,0.30);
+    border-radius: 999px;
+    padding: .2rem .7rem;
+}
+.avatar-preview-filename.has-file { display: inline-flex; }
+.avatar-preview-filename span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+[data-bs-theme="dark"] .avatar-preview-zone {
+    border-color: rgba(255,255,255,0.20);
+    background: rgba(255,255,255,0.03);
+}
+[data-bs-theme="dark"] .avatar-preview-zone:hover,
+[data-bs-theme="dark"] .avatar-preview-zone.is-dragover {
+    border-color: #7dd3fc;
+    background: rgba(255,255,255,0.06);
+}
+[data-bs-theme="dark"] .avatar-preview-hint { color: #94a3b8; }
+[data-bs-theme="dark"] .avatar-preview-hint strong { color: #7dd3fc; }
+[data-bs-theme="dark"] .avatar-preview-filename {
+    background: rgba(16,185,129,0.18);
+    color: #6ee7b7;
+}
+
+/* ==========================================================================
+   Detalle de Compra — documento comercial (membrete · líneas · cierre)
+   Firma visual: puntos conductores tipo recibo en los metadatos.
+   ========================================================================== */
+.cv-doc {
+    background: #fff;
+    border: 1px solid rgba(30, 60, 114, 0.14);
+    border-radius: 12px;
+    overflow: hidden;
+}
+.cv-doc-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1.25rem 2rem;
+    padding: 1.25rem 1.5rem;
+}
+.cv-letterhead { display: flex; gap: 1rem; align-items: center; flex: 1 1 300px; min-width: 0; }
+.cv-letterhead-name-row { display: flex; align-items: center; gap: .6rem; flex-wrap: wrap; }
+.cv-letterhead-name-row h5 { margin: 0; font-weight: 700; color: #1e3c72; }
+.cv-letterhead-eyebrow {
+    display: inline-flex; align-items: center;
+    margin-bottom: .2rem;
+    font-size: .64rem; letter-spacing: .12em; text-transform: uppercase;
+    font-weight: 700; color: #64748b;
+}
+.cv-letterhead-doc {
+    margin: .2rem 0 .35rem;
+    font-family: var(--vz-font-monospace, monospace);
+    font-size: .84rem;
+    font-weight: 600;
+    color: #334155;
+    display: flex; align-items: center; gap: .4rem;
+}
+.cv-letterhead-contact { display: flex; flex-wrap: wrap; gap: .35rem 1.1rem; font-size: .8rem; color: #475569; }
+.cv-letterhead-contact > span { display: inline-flex; align-items: center; gap: .35rem; }
+.cv-letterhead-contact i { color: #94a3b8; }
+
+/* Metadatos del comprobante con puntos conductores (vernáculo de recibo) */
+.cv-meta { flex: 0 1 340px; min-width: 250px; align-self: center; }
+.cv-meta-row { display: flex; align-items: baseline; gap: .45rem; padding: .32rem 0; }
+.cv-meta-label {
+    font-size: .66rem; letter-spacing: .1em; text-transform: uppercase;
+    font-weight: 700; color: #64748b; white-space: nowrap;
+}
+.cv-meta-fill { flex: 1; border-bottom: 2px dotted rgba(30,60,114,.22); transform: translateY(-3px); min-width: 1.25rem; }
+.cv-meta-value {
+    font-weight: 700; color: #16305e; font-size: .92rem;
+    font-variant-numeric: tabular-nums; white-space: nowrap;
+    min-width: 0; overflow: hidden; text-overflow: ellipsis;
+}
+.cv-meta-sub { font-weight: 500; font-size: .72rem; color: #64748b; margin-left: .3rem; }
+
+/* Cinta divisoria de sección (línea de corte, como un recibo) */
+.cv-doc-strip {
+    display: flex; align-items: center; gap: .45rem;
+    padding: .55rem 1.5rem;
+    background: #f8fafc;
+    border-top: 1px dashed rgba(30,60,114,.25);
+    border-bottom: 1px dashed rgba(30,60,114,.25);
+    font-size: .68rem; letter-spacing: .12em; text-transform: uppercase;
+    font-weight: 700; color: #64748b;
+}
+.cv-doc-strip i { font-size: .95rem; color: #1e3c72; }
+
+/* Cierre del documento: banda de totales horizontal a todo lo ancho.
+   La aritmética fluye de izquierda a derecha hacia el total (emerald). */
+.cv-totals-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: stretch;
+    border-top: 1px dashed rgba(30,60,114,.25);
+    background: #fbfcfe;
+}
+.cv-total-cell {
+    flex: 1 1 160px;
+    min-width: 150px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: .25rem;
+    padding: .95rem 1.5rem;
+}
+.cv-total-cell + .cv-total-cell { border-left: 1px solid rgba(30,60,114,.10); }
+.cv-total-label {
+    font-size: .64rem; letter-spacing: .1em; text-transform: uppercase;
+    font-weight: 700; color: #64748b; white-space: nowrap;
+}
+.cv-total-value {
+    font-weight: 700; color: #16305e; font-size: 1.05rem;
+    font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+.cv-total-cell--pay {
+    flex: 1.6 1 220px;
+    background: rgba(16, 185, 129, 0.06);
+    box-shadow: inset 3px 0 0 #10b981;
+}
+.cv-total-cell--pay .cv-total-label { color: #047857; }
+.cv-total-cell--pay .cv-total-value { color: #047857; font-size: 1.45rem; font-weight: 800; line-height: 1.1; }
+.cv-total-conv {
+    display: flex; align-items: baseline; gap: .75rem; flex-wrap: wrap;
+    font-size: .85rem; font-weight: 700; color: #334155;
+    font-variant-numeric: tabular-nums;
+}
+.cv-total-tasa {
+    display: inline-flex; align-items: center; gap: .3rem;
+    font-size: .7rem; font-weight: 500; color: #64748b;
+}
+.cv-obs-note--doc { margin: .9rem 1.5rem 1.1rem; }
+
+.cv-obs-note {
+    display: flex; gap: .6rem; align-items: flex-start;
+    padding: .75rem .9rem;
+    background: rgba(245, 158, 11, 0.06);
+    border-left: 3px solid #f59e0b;
+    border-radius: 6px;
+    font-size: .85rem;
+}
+.cv-obs-note > i { color: #b45309; flex-shrink: 0; margin-top: 2px; }
+.cv-obs-eyebrow {
+    display: block; margin-bottom: .15rem;
+    font-size: .66rem; letter-spacing: .1em; text-transform: uppercase;
+    font-weight: 700; color: #b45309;
+}
+
+/* La tabla de ítems va a sangre completa dentro del documento.
+   Tope de altura con scroll interno (regla de modales con listas dinámicas)
+   y encabezado sticky para no perder las columnas al desplazarse. */
+.cv-doc .cot-grouped-tablewrap {
+    border: 0; border-radius: 0;
+    max-height: min(46vh, 30rem);
+    overflow-y: auto;
+}
+.cv-doc .cot-grouped-table thead th { position: sticky; top: 0; z-index: 2; }
+/* Equivalentes en USD: secundarios pero legibles (nada de text-muted pálido) */
+.cv-usd-eq { color: #526175; font-variant-numeric: tabular-nums; }
+
+/* Dark mode */
+[data-bs-theme="dark"] .cv-doc { background: var(--vz-card-bg, #1f2937); border-color: rgba(255,255,255,.10); }
+[data-bs-theme="dark"] .cv-letterhead-name-row h5 { color: #f1f5f9; }
+[data-bs-theme="dark"] .cv-letterhead-eyebrow { color: #94a3b8; }
+[data-bs-theme="dark"] .cv-letterhead-doc { color: #cbd5e1; }
+[data-bs-theme="dark"] .cv-letterhead-contact { color: #a8b6c8; }
+[data-bs-theme="dark"] .cv-meta-label { color: #94a3b8; }
+[data-bs-theme="dark"] .cv-meta-value { color: #eef2f8; }
+[data-bs-theme="dark"] .cv-meta-sub { color: #94a3b8; }
+[data-bs-theme="dark"] .cv-usd-eq { color: #a6b4c6; }
+[data-bs-theme="dark"] .cv-meta-fill { border-bottom-color: rgba(255,255,255,.22); }
+[data-bs-theme="dark"] .cv-doc-strip { background: rgba(255,255,255,.03); border-color: rgba(255,255,255,.16); color: #94a3b8; }
+[data-bs-theme="dark"] .cv-doc-strip i { color: #7dd3fc; }
+[data-bs-theme="dark"] .cv-totals-bar {
+    border-top-color: rgba(255,255,255,.16);
+    background: rgba(255,255,255,.02);
+}
+[data-bs-theme="dark"] .cv-total-cell + .cv-total-cell { border-left-color: rgba(255,255,255,.10); }
+[data-bs-theme="dark"] .cv-total-cell--pay { background: rgba(16,185,129,.10); }
+[data-bs-theme="dark"] .cv-total-cell--pay .cv-total-label,
+[data-bs-theme="dark"] .cv-total-cell--pay .cv-total-value { color: #6ee7b7; }
+[data-bs-theme="dark"] .cv-total-conv { color: #cbd5e1; }
+[data-bs-theme="dark"] .cv-total-tasa { color: #94a3b8; }
+[data-bs-theme="dark"] .cv-total-label { color: #94a3b8; }
+[data-bs-theme="dark"] .cv-total-value { color: #eef2f8; }
+[data-bs-theme="dark"] .cv-obs-note { background: rgba(245,158,11,.12); }
+[data-bs-theme="dark"] .cv-obs-note > i,
+[data-bs-theme="dark"] .cv-obs-eyebrow { color: #fbbf24; }

@@ -60,6 +60,9 @@
                                         <i class="ri-add-line align-bottom me-1"></i> Agregar Empleado
                                     </button>
                                 @endif
+                                <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#pdfExportModal">
+                                    <i class="ri-file-pdf-fill align-bottom me-1"></i> Exportar PDF
+                                </button>
                                 {{-- Acciones secundarias agrupadas — estándar .actions-menu --}}
                                 <div class="dropdown">
                                     <button type="button" class="btn btn-soft-secondary dropdown-toggle"
@@ -76,13 +79,6 @@
                                             <a class="dropdown-item act-item act-warn" href="{{ url('cargos') }}">
                                                 <span class="act-ic"><i class="ri-briefcase-line"></i></span>Cargos
                                             </a>
-                                        </li>
-                                        <li><hr class="dropdown-divider"></li>
-                                        <li>
-                                            <button type="button" class="dropdown-item act-item act-pdf"
-                                                data-bs-toggle="modal" data-bs-target="#pdfExportModal">
-                                                <span class="act-ic"><i class="ri-file-pdf-fill"></i></span>Exportar PDF
-                                            </button>
                                         </li>
                                     </ul>
                                 </div>
@@ -204,212 +200,152 @@
                     <h5 class="modal-title">Detalles del Empleado</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <div class="modal-body p-4">
-                    <div class="row g-4">
-                        <!-- Columna Izquierda: Datos Personales -->
-                        <div class="col-lg-6">
-                            <!-- Card Datos Personales -->
-                            <div class="card border-0 shadow-sm mb-4">
-                                <div class="card-header border-0">
-                                    <h6 class="mb-0">
-                                        <i class="ri-user-line me-2"></i>Datos Personales
-                                    </h6>
-                                </div>
-                                <div class="card-body">
-                                    <div class="row g-3">
-                                        <div class="col-12">
-                                            <div class="d-flex align-items-center">
-                                                <div class="rounded-circle me-2 d-flex align-items-center justify-content-center emp-icon-box emp-icon-box--navy">
-                                                    <i class="ri-user-line emp-icon--navy"></i>
-                                                </div>
-                                                <div>
-                                                    <small class="text-muted d-block">Nombre Completo</small>
-                                                    <span class="fw-semibold" id="view-nombre-completo">-</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="col-6">
-                                            <div class="d-flex align-items-center">
-                                                <div class="rounded-circle me-2 d-flex align-items-center justify-content-center emp-icon-box emp-icon-box--green">
-                                                    <i class="ri-bank-card-line emp-icon--green"></i>
-                                                </div>
-                                                <div>
-                                                    <small class="text-muted d-block">Documento</small>
-                                                    <span class="fw-semibold" id="view-documento">-</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="col-6">
-                                            <div class="d-flex align-items-center">
-                                                <div class="rounded-circle me-2 d-flex align-items-center justify-content-center emp-icon-box emp-icon-box--teal">
-                                                    <i class="ri-user-heart-line emp-icon--teal"></i>
-                                                </div>
-                                                <div>
-                                                    <small class="text-muted d-block">Género</small>
-                                                    <span class="fw-semibold" id="view-genero">-</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="col-6">
-                                            <div class="d-flex align-items-center">
-                                                <div class="rounded-circle me-2 d-flex align-items-center justify-content-center emp-icon-box emp-icon-box--navy">
-                                                    <i class="ri-cake-2-line emp-icon--navy"></i>
-                                                </div>
-                                                <div>
-                                                    <small class="text-muted d-block">Fecha Nacimiento</small>
-                                                    <span class="fw-semibold" id="view-fecha-nacimiento">-</span>
-                                                </div>
-                                            </div>
-                                        </div>
+                <div class="modal-body p-0">
+
+                    {{-- Hero strip --}}
+                    <div class="cli-view-hero">
+                        <div class="cli-view-hero-avatar" id="view-hero-avatar">—</div>
+                        <div class="cli-view-hero-info">
+                            <div class="cli-view-hero-name" id="view-hero-name">—</div>
+                            <div class="cli-view-hero-doc" id="view-hero-doc">—</div>
+                        </div>
+                        <div class="cli-view-hero-badge text-end">
+                            <div><span id="view-estado">—</span></div>
+                            <div class="cli-view-hero-date mt-1"><i class="ri-calendar-line me-1"></i><span id="view-hero-date">—</span></div>
+                        </div>
+                    </div>
+
+                    {{-- Secciones --}}
+                    <div class="px-4 py-3 cli-view-sections">
+
+                        {{-- Datos Personales --}}
+                        <div class="cli-view-card">
+                        <div class="cli-view-card-header"><i class="ri-user-line"></i>Datos Personales</div>
+                        <div class="cli-view-card-body">
+                        <div class="row g-3">
+                            {{-- Documento SIEMPRE primero --}}
+                            <div class="col-sm-6">
+                                <div class="d-flex align-items-start">
+                                    <div class="emp-icon-box emp-icon-box--navy rounded-circle me-2 flex-shrink-0 d-flex align-items-center justify-content-center">
+                                        <i class="ri-bank-card-line emp-icon--navy"></i>
                                     </div>
+                                    <div><small class="text-muted d-block fs-12">Documento</small>
+                                    <span class="fw-semibold fs-13" id="view-documento">-</span></div>
                                 </div>
                             </div>
-
-                            <!-- Card Contacto -->
-                            <div class="card border-0 shadow-sm">
-                                <div class="card-header border-0">
-                                    <h6 class="mb-0">
-                                        <i class="ri-contacts-line me-2"></i>Contacto y Ubicación
-                                    </h6>
-                                </div>
-                                <div class="card-body">
-                                    <div class="row g-3">
-                                        <div class="col-6">
-                                            <div class="d-flex align-items-center">
-                                                <div class="rounded-circle me-2 d-flex align-items-center justify-content-center emp-icon-box emp-icon-box--navy">
-                                                    <i class="ri-mail-line emp-icon--navy"></i>
-                                                </div>
-                                                <div>
-                                                    <small class="text-muted d-block">Email</small>
-                                                    <span class="fw-semibold" id="view-email">-</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="col-6">
-                                            <div class="d-flex align-items-center">
-                                                <div class="rounded-circle me-2 d-flex align-items-center justify-content-center emp-icon-box emp-icon-box--teal">
-                                                    <i class="ri-phone-line emp-icon--teal"></i>
-                                                </div>
-                                                <div>
-                                                    <small class="text-muted d-block">Teléfono</small>
-                                                    <span class="fw-semibold" id="view-telefono">-</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="col-12">
-                                            <div class="d-flex align-items-center">
-                                                <div class="rounded-circle me-2 d-flex align-items-center justify-content-center emp-icon-box emp-icon-box--green">
-                                                    <i class="ri-home-4-line emp-icon--green"></i>
-                                                </div>
-                                                <div>
-                                                    <small class="text-muted d-block">Dirección</small>
-                                                    <span class="fw-semibold" id="view-direccion">-</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="col-12">
-                                            <div class="d-flex align-items-center">
-                                                <div class="rounded-circle me-2 d-flex align-items-center justify-content-center emp-icon-box emp-icon-box--navy">
-                                                    <i class="ri-building-line emp-icon--navy"></i>
-                                                </div>
-                                                <div>
-                                                    <small class="text-muted d-block">Municipio</small>
-                                                    <span class="fw-semibold" id="view-ciudad">-</span>
-                                                </div>
-                                            </div>
-                                        </div>
+                            <div class="col-sm-6">
+                                <div class="d-flex align-items-start">
+                                    <div class="emp-icon-box emp-icon-box--navy rounded-circle me-2 flex-shrink-0 d-flex align-items-center justify-content-center">
+                                        <i class="ri-user-line emp-icon--navy"></i>
                                     </div>
+                                    <div><small class="text-muted d-block fs-12">Nombre Completo</small>
+                                    <span class="fw-semibold fs-13" id="view-nombre-completo">-</span></div>
+                                </div>
+                            </div>
+                            <div class="col-sm-6">
+                                <div class="d-flex align-items-start">
+                                    <div class="emp-icon-box emp-icon-box--navy rounded-circle me-2 flex-shrink-0 d-flex align-items-center justify-content-center">
+                                        <i class="ri-user-heart-line emp-icon--navy"></i>
+                                    </div>
+                                    <div><small class="text-muted d-block fs-12">Género</small>
+                                    <span class="fw-semibold fs-13" id="view-genero">-</span></div>
+                                </div>
+                            </div>
+                            <div class="col-sm-6">
+                                <div class="d-flex align-items-start">
+                                    <div class="emp-icon-box emp-icon-box--navy rounded-circle me-2 flex-shrink-0 d-flex align-items-center justify-content-center">
+                                        <i class="ri-cake-2-line emp-icon--navy"></i>
+                                    </div>
+                                    <div><small class="text-muted d-block fs-12">Fecha de Nacimiento</small>
+                                    <span class="fw-semibold fs-13" id="view-fecha-nacimiento">-</span></div>
                                 </div>
                             </div>
                         </div>
+                        </div></div>
 
-                        <!-- Columna Derecha: Datos Laborales -->
-                        <div class="col-lg-6">
-                            <!-- Card Datos Laborales -->
-                            <div class="card border-0 shadow-sm mb-4">
-                                <div class="card-header border-0">
-                                    <h6 class="mb-0">
-                                        <i class="ri-briefcase-line me-2"></i>Datos Laborales
-                                    </h6>
-                                </div>
-                                <div class="card-body">
-                                    <div class="row g-3">
-                                        <div class="col-6">
-                                            <div class="d-flex align-items-center">
-                                                <div class="rounded-circle me-2 d-flex align-items-center justify-content-center emp-icon-box emp-icon-box--green">
-                                                    <i class="ri-hashtag emp-icon--green"></i>
-                                                </div>
-                                                <div>
-                                                    <small class="text-muted d-block">Código</small>
-                                                    <span class="fw-semibold" id="view-codigo">-</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="col-6">
-                                            <div class="d-flex align-items-center">
-                                                <div class="rounded-circle me-2 d-flex align-items-center justify-content-center emp-icon-box emp-icon-box--teal">
-                                                    <i class="ri-user-star-line emp-icon--teal"></i>
-                                                </div>
-                                                <div>
-                                                    <small class="text-muted d-block">Cargo</small>
-                                                    <span class="fw-semibold" id="view-cargo">-</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="col-12">
-                                            <div class="d-flex align-items-center">
-                                                <div class="rounded-circle me-2 d-flex align-items-center justify-content-center emp-icon-box emp-icon-box--navy">
-                                                    <i class="ri-building-2-line emp-icon--navy"></i>
-                                                </div>
-                                                <div>
-                                                    <small class="text-muted d-block">Departamento</small>
-                                                    <span class="fw-semibold" id="view-departamento">-</span>
-                                                </div>
-                                            </div>
-                                        </div>
+                        {{-- Datos Laborales --}}
+                        <div class="cli-view-card">
+                        <div class="cli-view-card-header"><i class="ri-briefcase-line"></i>Datos Laborales</div>
+                        <div class="cli-view-card-body">
+                        <div class="row g-3">
+                            <div class="col-sm-4 col-6">
+                                <div class="d-flex align-items-start">
+                                    <div class="emp-icon-box emp-icon-box--navy rounded-circle me-2 flex-shrink-0 d-flex align-items-center justify-content-center">
+                                        <i class="ri-hashtag emp-icon--navy"></i>
                                     </div>
+                                    <div><small class="text-muted d-block fs-12">Código</small>
+                                    <span class="fw-semibold fs-13" id="view-codigo">-</span></div>
                                 </div>
                             </div>
-
-                            <!-- Card Estado -->
-                            <div class="card border-0 shadow-sm">
-                                <div class="card-header border-0">
-                                    <h6 class="mb-0">
-                                        <i class="ri-information-line me-2"></i>Estado del Empleado
-                                    </h6>
-                                </div>
-                                <div class="card-body">
-                                    <div class="row g-3">
-                                        <div class="col-6">
-                                            <div class="d-flex align-items-center">
-                                                <div class="rounded-circle me-2 d-flex align-items-center justify-content-center emp-icon-box emp-icon-box--green">
-                                                    <i class="ri-calendar-check-line emp-icon--green"></i>
-                                                </div>
-                                                <div>
-                                                    <small class="text-muted d-block">Fecha Ingreso</small>
-                                                    <span class="fw-semibold" id="view-fecha-ingreso">-</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="col-6">
-                                            <div class="d-flex align-items-center">
-                                                <div class="rounded-circle me-2 d-flex align-items-center justify-content-center emp-icon-box emp-icon-box--navy">
-                                                    <i class="ri-checkbox-circle-line emp-icon--navy"></i>
-                                                </div>
-                                                <div>
-                                                    <small class="text-muted d-block">Estado</small>
-                                                    <span class="fw-semibold" id="view-estado">-</span>
-                                                </div>
-                                            </div>
-                                        </div>
+                            <div class="col-sm-4 col-6">
+                                <div class="d-flex align-items-start">
+                                    <div class="emp-icon-box emp-icon-box--navy rounded-circle me-2 flex-shrink-0 d-flex align-items-center justify-content-center">
+                                        <i class="ri-user-star-line emp-icon--navy"></i>
                                     </div>
+                                    <div><small class="text-muted d-block fs-12">Cargo</small>
+                                    <span class="fw-semibold fs-13" id="view-cargo">-</span></div>
+                                </div>
+                            </div>
+                            <div class="col-sm-4 col-6">
+                                <div class="d-flex align-items-start">
+                                    <div class="emp-icon-box emp-icon-box--navy rounded-circle me-2 flex-shrink-0 d-flex align-items-center justify-content-center">
+                                        <i class="ri-building-2-line emp-icon--navy"></i>
+                                    </div>
+                                    <div><small class="text-muted d-block fs-12">Departamento</small>
+                                    <span class="fw-semibold fs-13" id="view-departamento">-</span></div>
                                 </div>
                             </div>
                         </div>
+                        </div></div>
+
+                        {{-- Contacto y Ubicación --}}
+                        <div class="cli-view-card">
+                        <div class="cli-view-card-header"><i class="ri-contacts-line"></i>Contacto y Ubicación</div>
+                        <div class="cli-view-card-body">
+                        <div class="row g-3">
+                            <div class="col-sm-6">
+                                <div class="d-flex align-items-start">
+                                    <div class="emp-icon-box emp-icon-box--navy rounded-circle me-2 flex-shrink-0 d-flex align-items-center justify-content-center">
+                                        <i class="ri-mail-line emp-icon--navy"></i>
+                                    </div>
+                                    <div><small class="text-muted d-block fs-12">Correo electrónico</small>
+                                    <span class="fw-semibold fs-13" id="view-email">-</span></div>
+                                </div>
+                            </div>
+                            <div class="col-sm-6">
+                                <div class="d-flex align-items-start">
+                                    <div class="emp-icon-box emp-icon-box--navy rounded-circle me-2 flex-shrink-0 d-flex align-items-center justify-content-center">
+                                        <i class="ri-phone-line emp-icon--navy"></i>
+                                    </div>
+                                    <div><small class="text-muted d-block fs-12">Teléfonos</small>
+                                    <div class="fw-semibold fs-13" id="view-telefonos">-</div></div>
+                                </div>
+                            </div>
+                            <div class="col-sm-6">
+                                <div class="d-flex align-items-start">
+                                    <div class="emp-icon-box emp-icon-box--navy rounded-circle me-2 flex-shrink-0 d-flex align-items-center justify-content-center">
+                                        <i class="ri-home-4-line emp-icon--navy"></i>
+                                    </div>
+                                    <div><small class="text-muted d-block fs-12">Dirección</small>
+                                    <span class="fw-semibold fs-13" id="view-direccion">-</span></div>
+                                </div>
+                            </div>
+                            <div class="col-sm-6">
+                                <div class="d-flex align-items-start">
+                                    <div class="emp-icon-box emp-icon-box--navy rounded-circle me-2 flex-shrink-0 d-flex align-items-center justify-content-center">
+                                        <i class="ri-building-line emp-icon--navy"></i>
+                                    </div>
+                                    <div><small class="text-muted d-block fs-12">Municipio</small>
+                                    <span class="fw-semibold fs-13" id="view-ciudad">-</span></div>
+                                </div>
+                            </div>
+                        </div>
+                        </div></div>
+
                     </div>
                 </div>
                 <div class="modal-footer bg-light border-0">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">
                         <i class="ri-close-line me-1"></i>Cerrar
                     </button>
                 </div>
@@ -474,24 +410,12 @@
                             </div>
 
                             <div class="row mb-3">
-                                <div class="col-md-6">
+                                <div class="col-12">
                                     <x-forms.input name="email" label="Email" type="email" placeholder="correo@ejemplo.com" />
                                 </div>
-                                <div class="col-md-6">
-                                    <x-forms.input name="telefono_number" label="Teléfono" id="telefono-number-field"
-                                        maxlength="7" placeholder="1234567" prependRaw="true">
-                                        <x-slot:prepend>
-                                            <select class="form-select phone-prefix-select" id="telefono-prefix-field">
-                                                <option value="0412">0412</option>
-                                                <option value="0422">0422</option>
-                                                <option value="0414">0414</option>
-                                                <option value="0424" selected>0424</option>
-                                                <option value="0416">0416</option>
-                                                <option value="0426">0426</option>
-                                            </select>
-                                        </x-slot:prepend>
-                                    </x-forms.input>
-                                    <input type="hidden" id="telefono-field" name="telefono" />
+                                <div class="col-12 mt-3">
+                                    {{-- Teléfonos múltiples (componente reutilizable) --}}
+                                    @include('admin.partials.telefonos-field', ['telId' => 'emp-tel'])
                                 </div>
                             </div>
 
@@ -520,30 +444,9 @@
                                     <label for="estado_geografico-field" class="form-label">Estado</label>
                                     <select name="estado_geografico" id="estado_geografico-field" class="form-select">
                                         <option value="">Seleccione estado</option>
-                                        <option value="Amazonas">Amazonas</option>
-                                        <option value="Anzoátegui">Anzoátegui</option>
-                                        <option value="Apure">Apure</option>
-                                        <option value="Aragua">Aragua</option>
-                                        <option value="Barinas">Barinas</option>
-                                        <option value="Bolívar">Bolívar</option>
-                                        <option value="Carabobo">Carabobo</option>
-                                        <option value="Cojedes">Cojedes</option>
-                                        <option value="Delta Amacuro">Delta Amacuro</option>
-                                        <option value="Distrito Capital">Distrito Capital</option>
-                                        <option value="Falcón">Falcón</option>
-                                        <option value="Guárico">Guárico</option>
-                                        <option value="La Guaira">La Guaira</option>
-                                        <option value="Lara">Lara</option>
-                                        <option value="Mérida">Mérida</option>
-                                        <option value="Miranda">Miranda</option>
-                                        <option value="Monagas">Monagas</option>
-                                        <option value="Nueva Esparta">Nueva Esparta</option>
-                                        <option value="Portuguesa">Portuguesa</option>
-                                        <option value="Sucre">Sucre</option>
-                                        <option value="Táchira">Táchira</option>
-                                        <option value="Trujillo">Trujillo</option>
-                                        <option value="Yaracuy">Yaracuy</option>
-                                        <option value="Zulia">Zulia</option>
+                                        @foreach ($estadosVe as $__est)
+                                            <option value="{{ $__est }}">{{ $__est }}</option>
+                                        @endforeach
                                     </select>
                                 </div>
                                 <div class="col-md-6">
@@ -737,6 +640,7 @@
 @push('scripts')
     <script src="{{ URL::asset('/assets/libs/sweetalert2/sweetalert2.min.js') }}"></script>
     <script src="{{ URL::asset('/assets/js/municipios-venezuela.js') }}"></script>
+    <script src="{{ URL::asset('/assets/js/telefonos-repeater.js') }}"></script>
     <script>
         $(function () {
             // Tooltips
@@ -808,11 +712,11 @@
                 $('#field-apellido').val(p.apellido || '').prop('readonly', true).addClass('bg-light').css('cursor', 'not-allowed');
                 $('#field-email').val(p.email || '').prop('readonly', true).addClass('bg-light').css('cursor', 'not-allowed');
 
-                // Teléfono
-                if (p.telefono && p.telefono.includes('-')) {
-                    var parts = p.telefono.split('-');
-                    $('#telefono-prefix-field').val(parts[0]).prop('disabled', true);
-                    $('#telefono-number-field').val(parts[1]).prop('readonly', true).addClass('bg-light').css('cursor', 'not-allowed');
+                // Teléfonos (de la persona reutilizada)
+                var _telRoot = document.getElementById('emp-tel-repeater');
+                if (window.TelefonosRepeater && _telRoot) {
+                    TelefonosRepeater.load(_telRoot, p.telefonos
+                        || (p.telefono ? [{ numero: p.telefono, tipo: 'movil', es_principal: true }] : []));
                 }
 
                 // Opcionales
@@ -887,22 +791,7 @@
             }
         });
 
-        // Sanitización del número de teléfono (solo dígitos, máx 7)
-        $(document).on('input', '#telefono-number-field', function () {
-            this.value = this.value.replace(/[^0-9]/g, '').slice(0, 7);
-        });
-
-        // Validación onblur para teléfono (opcional — solo valida si hay valor)
-        $(document).on('blur', '#telefono-number-field', function () {
-            let value = $(this).val().trim();
-            if (value.length === 0) {
-                limpiarValidacion($(this));
-            } else if (!/^[0-9]{7}$/.test(value)) {
-                marcarInvalido($(this), 'El número debe tener exactamente 7 dígitos.');
-            } else {
-                marcarValido($(this));
-            }
-        });
+        // (La validación/sanitización de teléfonos la maneja telefonos-repeater.js)
     </script>
     <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/1.11.5/js/dataTables.bootstrap5.min.js"></script>
@@ -1076,6 +965,9 @@
             });
 
             // === Funciones del modal crear/editar (estándar Clientes) ===
+            var telRoot = document.getElementById('emp-tel-repeater');
+            if (window.TelefonosRepeater && telRoot) { TelefonosRepeater.init(telRoot); }
+
             function resetForm() {
                 $("#empleadoForm").trigger("reset");
                 $("#id-field").val("");
@@ -1085,9 +977,8 @@
                 $("#field-codigo_empleado").val("");
                 $("#tipo-documento-field").val("V-").prop('disabled', false).removeClass('campo-protegido');
                 $("#field-documento_identidad").prop('disabled', false).removeClass('campo-protegido');
-                // Resetear teléfono
-                $("#telefono-prefix-field").val("0424");
-                $("#telefono-number-field").val("");
+                // Resetear teléfonos
+                if (window.TelefonosRepeater && telRoot) { TelefonosRepeater.load(telRoot, []); }
                 // Resetear departamento y cargo
                 $("#field-departamento_id").val("");
                 $("#field-cargo_id").empty().append('<option value="">Elija un departamento</option>').prop('disabled', true);
@@ -1099,8 +990,8 @@
                 $("#empleadoForm .is-invalid").removeClass("is-invalid");
                 $("#empleadoForm .is-valid").removeClass("is-valid");
                 // Desbloquear campos vinculados de persona existente
-                $('#field-nombre, #field-apellido, #field-email, #field-fecha_nacimiento, #field-direccion, #telefono-number-field').prop('readonly', false).removeClass('bg-light').css('cursor', '');
-                $('#telefono-prefix-field, #field-genero, #estado_geografico-field, #ciudad-field').prop('disabled', false);
+                $('#field-nombre, #field-apellido, #field-email, #field-fecha_nacimiento, #field-direccion').prop('readonly', false).removeClass('bg-light').css('cursor', '');
+                $('#field-genero, #estado_geografico-field, #ciudad-field').prop('disabled', false);
                 $('#documento-persona-card').addClass('d-none');
                 $('#documento-vinculado-notice').addClass('d-none');
                 $('#edit-shared-persona-notice').addClass('d-none');
@@ -1191,11 +1082,11 @@
                     }
                 }
 
-                // Teléfono (opcional — solo valida si se ingresó número)
-                let $telNum = $('#telefono-number-field');
-                if ($telNum.val().trim().length > 0 && !/^[0-9]{7}$/.test($telNum.val().trim())) {
-                    marcarInvalido($telNum, 'El número debe tener exactamente 7 dígitos.');
-                    esValido = false;
+                // Teléfonos (componente reutilizable)
+                if (window.TelefonosRepeater && telRoot) {
+                    var telChk = TelefonosRepeater.validate(telRoot);
+                    $(telRoot).find('[data-tel-error]').toggle(!telChk.ok).text(telChk.message || '');
+                    if (!telChk.ok) esValido = false;
                 }
 
                 return esValido;
@@ -1214,9 +1105,10 @@
                 var id = $("#id-field").val();
                 var url = id ? "{{ route('empleados.update', ':id') }}".replace(':id', id) : "{{ route('empleados.store') }}";
                 var method = id ? "PUT" : "POST";
-                // Concatenar teléfono: prefijo-número → campo oculto
-                var telefonoCompleto = $("#telefono-prefix-field").val() + "-" + $("#telefono-number-field").val();
-                $("#telefono-field").val(telefonoCompleto);
+                // Teléfonos → inputs ocultos telefonos[i][...]
+                if (window.TelefonosRepeater && telRoot) {
+                    TelefonosRepeater.syncHiddenInputs(this, telRoot);
+                }
                 var formData = $(this).serialize();
                 if (method === 'PUT') { formData += '&_method=PUT'; }
 
@@ -1241,19 +1133,34 @@
                 var id = $(this).data("id");
                 $.get("{{ route('empleados.show', '') }}/" + id, function (data) {
                     $("#viewModal").modal("show");
-                    $("#view-nombre-completo").text(data.persona.nombre + ' ' + data.persona.apellido);
-                    $("#view-documento").text(data.persona.tipo_documento + data.persona.documento_identidad);
+                    var nombreCompleto = (data.persona.nombre || '') + ' ' + (data.persona.apellido || '');
+                    var documento = data.persona.tipo_documento + data.persona.documento_identidad;
+                    var initials = (data.persona.nombre ? data.persona.nombre.charAt(0) : '') + (data.persona.apellido ? data.persona.apellido.charAt(0) : '');
+                    $("#view-hero-avatar").text(initials.toUpperCase() || '?');
+                    $("#view-hero-name").text(nombreCompleto.trim() || 'N/A');
+                    $("#view-hero-doc").text(documento);
+                    $("#view-hero-date").text(formatDate(data.fecha_ingreso));
+                    $("#view-nombre-completo").text(nombreCompleto.trim());
+                    $("#view-documento").text(documento);
                     $("#view-email").text(data.persona.email || 'N/A');
-                    $("#view-telefono").text(data.telefono || 'N/A');
+                    // Lista de teléfonos (principal con estrella)
+                    var tipoTel = { movil: 'Móvil', casa: 'Casa', trabajo: 'Trabajo' };
+                    if (Array.isArray(data.telefonos) && data.telefonos.length) {
+                        $("#view-telefonos").html(data.telefonos.map(function (t) {
+                            return '<div>' + (t.es_principal ? '<i class="ri-star-fill text-warning me-1"></i>' : '')
+                                + t.numero + ' <small class="text-muted">· ' + (tipoTel[t.tipo] || t.tipo) + '</small></div>';
+                        }).join(''));
+                    } else {
+                        $("#view-telefonos").text(data.telefono || 'N/A');
+                    }
                     $("#view-direccion").text(data.direccion || 'N/A');
                     $("#view-ciudad").text(data.ciudad || 'N/A');
-                    $("#view-fecha-nacimiento").text(formatDate(data.persona.fecha_nacimiento));
-                    $("#view-genero").text(data.persona.genero || 'N/A');
+                    $("#view-fecha-nacimiento").text(formatDate(data.fecha_nacimiento));
+                    $("#view-genero").text(data.genero || 'N/A');
                     $("#view-codigo").text(data.codigo_empleado);
                     $("#view-cargo").text(data.cargo);
                     $("#view-departamento").text(data.departamento);
-                    $("#view-fecha-ingreso").text(formatDate(data.fecha_ingreso));
-                    $("#view-estado").html(data.trashed ? '<span class="badge bg-danger">Inhabilitado</span>' : '<span class="badge bg-success">Activo</span>');
+                    $("#view-estado").html(data.trashed ? '<span class="badge rounded-pill bg-danger">Inhabilitado</span>' : '<span class="badge rounded-pill bg-success">Activo</span>');
                 });
             });
 
@@ -1268,21 +1175,14 @@
                     }
                     $("#id-field").val(data.id);
                     $("#field-nombre").val(data.persona.nombre);
-                    $("#field-apellido").val(data.persona.apellido);
+                    $("#field-apellido").val(data.persona.apellido || '');
                     $("#tipo-documento-field").val(data.persona.tipo_documento);
                     $("#field-documento_identidad").val(data.persona.documento_identidad);
                     $("#field-email").val(data.persona.email);
-                    // Separar teléfono en prefijo y número
-                    if (data.telefono && data.telefono.includes('-')) {
-                        var telParts = data.telefono.split('-');
-                        $("#telefono-prefix-field").val(telParts[0]);
-                        $("#telefono-number-field").val(telParts[1]);
-                    } else if (data.telefono) {
-                        $("#telefono-prefix-field").val(data.telefono.slice(0, 4));
-                        $("#telefono-number-field").val(data.telefono.slice(4));
-                    } else {
-                        $("#telefono-prefix-field").val("0424");
-                        $("#telefono-number-field").val("");
+                    // Cargar los teléfonos en el componente
+                    if (window.TelefonosRepeater && telRoot) {
+                        TelefonosRepeater.load(telRoot, data.telefonos
+                            || (data.telefono ? [{ numero: data.telefono, tipo: 'movil', es_principal: true }] : []));
                     }
                     $("#field-direccion").val(data.direccion || '');
                     // Estado y municipio dependiente
@@ -1299,8 +1199,8 @@
                         });
                     }
                     $ciudadEdit.val(data.ciudad || '');
-                    $("#field-fecha_nacimiento").val(data.persona.fecha_nacimiento);
-                    $("#field-genero").val(data.persona.genero);
+                    $("#field-fecha_nacimiento").val(data.fecha_nacimiento || '');
+                    $("#field-genero").val(data.genero || '');
                     $("#field-codigo_empleado").val(data.codigo_empleado);
                     $("#field-fecha_ingreso").val(data.fecha_ingreso);
 

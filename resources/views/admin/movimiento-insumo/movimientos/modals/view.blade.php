@@ -1,5 +1,4 @@
-<div class="modal fade atlantico-modal atlantico-modal--op" id="viewModal" tabindex="-1" aria-labelledby="viewModalLabel" aria-hidden="true"
-    data-bs-backdrop="static" data-bs-keyboard="false">
+<div class="modal fade atlantico-modal atlantico-modal--op" id="viewModal" tabindex="-1" aria-labelledby="viewModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content">
             <div class="modal-header p-3">
@@ -28,13 +27,11 @@
 
                 {{-- ─ Paso 1: Información del Insumo ─────────────────────── --}}
                 <section class="wiz-step-content is-active" data-step="1">
-                    <div class="card border-0 shadow-sm mb-0">
-                        <div class="card-header border-0 inv-card-header-navy">
-                            <h6 class="mb-0">
-                                <i class="ri-stack-line me-2"></i>Información del Insumo
-                            </h6>
+                    <div class="cli-view-card mb-0">
+                        <div class="cli-view-card-header">
+                            <i class="ri-stack-line"></i>Información del Insumo
                         </div>
-                        <div class="card-body">
+                        <div class="cli-view-card-body">
                             <div class="d-flex align-items-center mb-3">
                                 <div class="rounded-circle me-3 d-flex align-items-center justify-content-center inv-icon-circle inv-icon-circle-navy">
                                     <i class="ri-archive-line"></i>
@@ -68,13 +65,11 @@
 
                 {{-- ─ Paso 2: Cambio de stock + registro ────────────────── --}}
                 <section class="wiz-step-content" data-step="2" hidden>
-                    <div class="card border-0 shadow-sm mb-3">
-                        <div class="card-header border-0 inv-card-header-emerald">
-                            <h6 class="mb-0">
-                                <i class="ri-bar-chart-box-line me-2"></i>Cambio de Stock
-                            </h6>
+                    <div class="cli-view-card mb-3">
+                        <div class="cli-view-card-header">
+                            <i class="ri-bar-chart-box-line"></i>Cambio de Stock
                         </div>
-                        <div class="card-body">
+                        <div class="cli-view-card-body">
                             <div class="row text-center mb-3">
                                 <div class="col-5">
                                     <div class="border rounded p-2 inv-stock-prev">
@@ -101,8 +96,11 @@
                     </div>
 
                     {{-- Registro --}}
-                    <div class="card border-0 shadow-sm inv-meta-card mb-0">
-                        <div class="card-body py-3">
+                    <div class="cli-view-card mb-0">
+                        <div class="cli-view-card-header">
+                            <i class="ri-user-line"></i>Registro
+                        </div>
+                        <div class="cli-view-card-body">
                             <div class="row">
                                 <div class="col-md-6 border-end">
                                     <div class="d-flex align-items-center h-100 ps-3">
@@ -133,17 +131,17 @@
 
             </div>{{-- /modal-body --}}
 
-            <div class="modal-footer wiz-wizard-footer py-2 px-3">
+            <div class="modal-footer wiz-wizard-footer">
                 <div class="wiz-wizard-footer-info"></div>
                 <div class="wiz-wizard-footer-actions">
-                    <button type="button" class="btn btn-sm btn-light border" id="mv-prev" style="display:none;">
+                    <button type="button" class="btn btn-light wiz-wizard-btn-prev" id="mv-prev" style="display:none;">
                         <i class="ri-arrow-left-line me-1"></i>Anterior
                     </button>
-                    <button type="button" class="btn btn-sm btn-primary" id="mv-next">
-                        Siguiente<i class="ri-arrow-right-line ms-1"></i>
-                    </button>
-                    <button type="button" class="btn btn-sm btn-light border" data-bs-dismiss="modal" id="mv-close" style="display:none;">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">
                         <i class="ri-close-line me-1"></i>Cerrar
+                    </button>
+                    <button type="button" class="btn btn-atlantico-brand wiz-wizard-btn-next" id="mv-next">
+                        Continuar<i class="ri-arrow-right-line ms-1"></i>
                     </button>
                 </div>
             </div>

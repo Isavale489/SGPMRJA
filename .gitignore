@@ -13,3 +13,5 @@
 
 /storage/framework/sessions/*
 !/storage/framework/sessions/.gitignore
+# parrot LLM-wiki state (local retrieval plane)
+.parrot/

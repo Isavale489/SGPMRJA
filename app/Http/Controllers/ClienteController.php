@@ -57,7 +57,7 @@ class ClienteController extends Controller
         if ($request->filled('filter_estado_territorial')) {
             $estado = $request->input('filter_estado_territorial');
             $query->whereHas('persona.direcciones', function ($q) use ($estado) {
-                $q->where('estado', $estado);
+                $q->whereHas('estadoRel', fn ($e) => $e->where('nombre', $estado));
             });
         }
 
@@ -106,15 +106,15 @@ class ClienteController extends Controller
                     return;
                 }
                 $query->whereHas('persona', function ($p) use ($keyword) {
-                    $p->where('nombre', 'like', "{$keyword}%")
-                      ->orWhere('apellido', 'like', "{$keyword}%")
+                    // `nombre` ya contiene el nombre completo / razón social;
+                    // se busca por coincidencia parcial para hallar también por apellido.
+                    $p->where('nombre', 'like', "%{$keyword}%")
                       ->orWhere('email', 'like', "{$keyword}%")
-                      ->orWhereRaw("CONCAT(nombre, ' ', apellido) like ?", ["{$keyword}%"])
                       ->orWhereRaw("CONCAT(tipo_documento, documento_identidad) like ?", ["{$keyword}%"]);
                 });
             }, true)
             ->addColumn('nombre', fn($c) => $c->nombre ?? 'N/A')
-            ->addColumn('apellido', fn($c) => $c->apellido ?? '')
+            ->addColumn('apellido', fn($c) => '')
             ->addColumn('tipo_cliente', fn($c) => $c->tipo_cliente)
             ->addColumn('email', fn($c) => $c->email)
             ->addColumn('telefono', fn($c) => $c->telefono)
@@ -157,7 +157,9 @@ class ClienteController extends Controller
             'id' => $cliente->id,
             'persona_id' => $cliente->persona_id,
             'nombre' => $cliente->persona ? $cliente->persona->nombre : '',
-            'apellido' => $cliente->persona ? $cliente->persona->apellido : '',
+            // `nombre` ya consolida nombre+apellido; el campo apellido del form
+            // queda vacío en edición (la identidad completa vive en `nombre`).
+            'apellido' => '',
             'tipo_cliente' => $cliente->tipo_cliente,
             'email' => $cliente->persona ? $cliente->persona->email : '',
             'telefono' => $telefonoPrincipal ?? '',
@@ -234,10 +236,11 @@ class ClienteController extends Controller
         return response()->json([
             'id' => $cliente->id,
             'nombre' => $cliente->nombre ?? 'N/A',
-            'apellido' => $cliente->apellido ?? '',
+            'apellido' => '',
             'tipo_cliente' => $cliente->tipo_cliente,
             'email' => $cliente->email,
             'telefono' => $cliente->telefono,
+            'telefonos' => $cliente->persona ? $cliente->persona->telefonos : [],
             'documento' => $cliente->documento,
             'direccion' => $cliente->direccion,
             'estado_territorial' => $cliente->estado_territorial,
@@ -261,8 +264,7 @@ class ClienteController extends Controller
             ->when($query !== '', function ($q) use ($escaped) {
                 $q->whereHas('persona', function ($sub) use ($escaped) {
                     $sub->where('documento_identidad', 'LIKE', "{$escaped}%")
-                        ->orWhere('nombre', 'LIKE', "{$escaped}%")
-                        ->orWhere('apellido', 'LIKE', "{$escaped}%");
+                        ->orWhere('nombre', 'LIKE', "%{$escaped}%");
                 });
             })
             ->where('estatus', 1)
@@ -275,7 +277,7 @@ class ClienteController extends Controller
             return [
                 'id' => $cliente->id,
                 'nombre' => $cliente->nombre ?? 'N/A',
-                'apellido' => $cliente->apellido ?? '',
+                'apellido' => '',
                 'email' => $cliente->email,
                 'telefono' => $cliente->telefono, // Usa accessor
                 'documento' => $cliente->documento,
@@ -308,11 +310,12 @@ class ClienteController extends Controller
                 $dir = $persona->direccionPrincipal;
                 $personaData = [
                     'nombre'           => $persona->nombre,
-                    'apellido'         => $persona->apellido ?? '',
+                    'apellido'         => '',
                     'tipo_documento'   => $persona->tipo_documento,
                     'email'            => $persona->email ?? '',
                     'telefono'         => $persona->telefonoPrincipal ?? '',
-                    'estado_geografico'=> $persona->estado_geografico ?? ($dir?->estado ?? ''),
+                    'telefonos'        => $persona->telefonos,
+                    'estado_geografico'=> $dir?->estado ?? '',
                     'ciudad'           => $dir?->ciudad ?? '',
                     'direccion'        => $dir?->direccion ?? '',
                 ];
@@ -343,8 +346,20 @@ class ClienteController extends Controller
             $query->whereDate('created_at', '<=', $request->fecha_hasta);
         }
         $clientes = $query->get();
-        $pdf = Pdf::loadView('admin.clientes.reporte_pdf', compact('clientes'))->setPaper('a4', 'landscape');
-        return $pdf->download('reporte_clientes_' . now()->format('Ymd_His') . '.pdf');
+
+        $filtros = [];
+        if ($request->input('estado') === '0') {
+            $filtros['Estatus'] = 'Inhabilitados';
+        }
+        if ($request->filled('tipo_cliente')) {
+            $filtros['Tipo'] = ucfirst($request->tipo_cliente);
+        }
+        if ($rango = \App\Support\ReporteFiltros::rango($request->fecha_desde, $request->fecha_hasta)) {
+            $filtros['Fecha de registro'] = $rango;
+        }
+
+        $pdf = Pdf::loadView('admin.clientes.reporte_pdf', compact('clientes', 'filtros'))->setPaper('a4', 'landscape');
+        return $pdf->stream('reporte_clientes_' . now()->format('Ymd_His') . '.pdf');
     }
 
     public function checkEmail(Request $request)

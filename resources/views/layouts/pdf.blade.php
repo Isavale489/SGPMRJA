@@ -88,6 +88,49 @@
             font-weight: 600;
         }
 
+        /* ── Filter Bar (parámetros aplicados al listado) ── */
+        .filter-bar {
+            background-color: #eef2f9;
+            border: 1px solid #dfe6f0;
+            border-left: 3px solid #1e3c72;
+            padding: 7px 12px;
+            margin: 0 2px 10px 2px;
+            font-size: 8.5px;
+            color: #2d3436;
+            line-height: 1.6;
+        }
+
+        /* Label como badge (encabezado claramente diferenciado de los chips) */
+        .filter-bar .filter-bar-label {
+            display: inline-block;
+            vertical-align: middle;
+            background-color: #1e3c72;
+            color: #ffffff;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 2px 8px;
+            border-radius: 3px;
+            margin-right: 14px;
+        }
+
+        .filter-bar .filter-chip {
+            display: inline-block;
+            vertical-align: middle;
+            margin-right: 16px;
+        }
+
+        /* Etiqueta del chip (atenuada) vs valor (negrita, resaltado) */
+        .filter-bar .filter-chip strong {
+            color: #6b7480;
+            font-weight: 600;
+        }
+
+        .filter-bar .filter-chip .chip-val {
+            font-weight: bold;
+            color: #1e3c72;
+        }
+
         /* ── Summary Bar ── */
         .summary-bar {
             background-color: #f1f3f8;
@@ -220,13 +263,15 @@
             font-weight: 600;
         }
 
-        /* ── Footer ── */
+        /* ── Footer (fijo: se repite en cada página) ── */
         .doc-footer {
-            width: 100%;
-            border-top: 1px solid #dfe6f0;
-            padding-top: 8px;
-            margin-top: 14px;
-            font-size: 9px;
+            position: fixed;
+            left: 30px;
+            right: 30px;
+            bottom: 14px;
+            border-top: 1px solid #cbd5e1;
+            padding-top: 5px;
+            font-size: 8.5px;
             color: #555555;
             font-weight: 600;
         }
@@ -239,11 +284,27 @@
         .doc-footer td {
             border: none;
             padding: 0;
+            vertical-align: middle;
         }
 
-        /* ── Page break helper ── */
+        .doc-footer .ft-center {
+            text-align: center;
+            color: #555555;
+            font-weight: normal;
+        }
+
+        .doc-footer .ft-right {
+            text-align: right;
+            white-space: nowrap;
+        }
+
+        /* Paginación: contadores nativos de DomPDF (requieren position:fixed) */
+        .doc-footer .pg-cur:after { content: counter(page); }
+        .doc-footer .pg-tot:after { content: counter(pages); }
+
+        /* ── Page break helper ── (margen inferior extra reservado para el footer fijo) */
         @page {
-            margin: 35px 45px;
+            margin: 35px 45px 58px 45px;
         }
 
         /* ── Estilos extra inyectados por la vista hija ── */
@@ -283,6 +344,16 @@
     {{-- ═══════ REPORT TITLE ═══════ --}}
     <div class="report-title">@yield('report-title')</div>
 
+    {{-- ═══════ FILTROS APLICADOS (listados) ═══════ --}}
+    @if(!empty($filtros ?? []))
+        <div class="filter-bar">
+            <span class="filter-bar-label">Filtros aplicados</span>
+            @foreach($filtros as $etiqueta => $valor)
+                <span class="filter-chip"><strong>{{ $etiqueta }}:</strong> <span class="chip-val">{{ $valor }}</span></span>
+            @endforeach
+        </div>
+    @endif
+
     {{-- ═══════ SUMMARY BAR ═══════ --}}
     @hasSection('summary-bar')
         <div class="summary-bar">
@@ -297,12 +368,16 @@
     {{-- ═══════ CONTENT ═══════ --}}
     @yield('content')
 
-    {{-- ═══════ FOOTER ═══════ --}}
+    {{-- ═══════ FOOTER (estandarizado · se repite en cada página) ═══════ --}}
     <div class="doc-footer">
         <table>
             <tr>
-                <td>Manufacturas R.J. Atlántico C.A. — Sistema de Gestión de Pedidos</td>
-                <td style="text-align: right;">Página 1</td>
+                <td>Manufacturas R.J. Atlántico C.A. &middot; RIF J-40391423-0</td>
+                <td class="ft-center">
+                    Emitido por {{ optional(auth()->user())->name ?? 'Sistema' }}
+                    &middot; {{ now()->format('d/m/Y h:i A') }}
+                </td>
+                <td class="ft-right">Página <span class="pg-cur"></span></td>
             </tr>
         </table>
     </div>

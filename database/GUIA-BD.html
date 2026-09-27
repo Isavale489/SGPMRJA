@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Guía BD · MySQL 8 — SGPMRJA</title>
+<style>
+  :root{
+    --bg:#0f172a; --bg2:#1e293b; --card:#ffffff; --ink:#0f172a; --muted:#64748b;
+    --line:#e2e8f0; --brand:#0ea5e9; --brand-d:#0369a1; --accent:#14b8a6;
+    --ok:#16a34a; --warn:#d97706; --danger:#dc2626;
+    --code-bg:#0f172a; --code-ink:#e2e8f0; --code-key:#7dd3fc; --code-com:#64748b;
+    --radius:14px; --shadow:0 10px 30px rgba(2,8,23,.08);
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    color:var(--ink);background:#f1f5f9;line-height:1.6;
+  }
+  /* ---- Header ---- */
+  .hero{
+    background:linear-gradient(135deg,#0369a1 0%,#0ea5e9 55%,#14b8a6 100%);
+    color:#fff;padding:54px 24px 64px;position:relative;overflow:hidden;
+  }
+  .hero::after{
+    content:"";position:absolute;right:-80px;top:-80px;width:320px;height:320px;
+    background:radial-gradient(circle,rgba(255,255,255,.18),transparent 70%);
+  }
+  .hero-inner{max-width:920px;margin:0 auto;position:relative;z-index:1}
+  .badge{display:inline-block;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.3);
+    padding:5px 13px;border-radius:999px;font-size:13px;font-weight:600;letter-spacing:.3px;margin-bottom:16px}
+  .hero h1{margin:0 0 8px;font-size:34px;font-weight:800;letter-spacing:-.5px}
+  .hero p{margin:0;font-size:17px;opacity:.92;max-width:640px}
+  /* ---- Layout ---- */
+  .wrap{max-width:920px;margin:-32px auto 64px;padding:0 24px;position:relative;z-index:2}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+    box-shadow:var(--shadow);padding:28px 30px;margin-bottom:24px}
+  .card h2{margin:0 0 4px;font-size:22px;display:flex;align-items:center;gap:12px}
+  .num{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;
+    border-radius:10px;background:linear-gradient(135deg,var(--brand),var(--accent));color:#fff;
+    font-size:16px;font-weight:800;flex:none}
+  .card h3{margin:22px 0 8px;font-size:16px;color:var(--brand-d)}
+  .lead{color:var(--muted);margin:0 0 6px}
+  /* ---- Callouts ---- */
+  .note{border-left:4px solid var(--brand);background:#f0f9ff;padding:12px 16px;border-radius:8px;margin:16px 0;font-size:14.5px}
+  .note.warn{border-color:var(--warn);background:#fffbeb}
+  .note.ok{border-color:var(--ok);background:#f0fdf4}
+  .note strong{color:var(--ink)}
+  /* ---- Code ---- */
+  .codehead{display:flex;align-items:center;gap:8px;margin:18px 0 0}
+  .os{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);
+    background:#f1f5f9;border:1px solid var(--line);padding:3px 10px;border-radius:6px}
+  pre{background:var(--code-bg);color:var(--code-ink);border-radius:10px;padding:16px 18px;
+    overflow:auto;margin:8px 0 0;font-size:13.5px;line-height:1.7;position:relative}
+  code{font-family:"SF Mono",SFMono-Regular,Consolas,"Liberation Mono",Menlo,monospace}
+  pre .c{color:var(--code-com)}      /* comentario */
+  pre .k{color:var(--code-key)}      /* keyword/comando */
+  pre .v{color:#86efac}             /* valor */
+  /* ---- Table ---- */
+  table{width:100%;border-collapse:collapse;margin-top:12px;font-size:14px}
+  th,td{text-align:left;padding:11px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{background:#f8fafc;font-size:12.5px;text-transform:uppercase;letter-spacing:.4px;color:var(--muted)}
+  tr:last-child td{border-bottom:none}
+  td code{background:#f1f5f9;padding:2px 6px;border-radius:5px;font-size:12.5px;color:var(--brand-d)}
+  /* ---- Steps inline ---- */
+  ol,ul{margin:8px 0;padding-left:22px}
+  li{margin:5px 0}
+  .env-table td:first-child{font-family:monospace;color:var(--brand-d);white-space:nowrap}
+  .pill{display:inline-block;background:#ecfeff;color:var(--brand-d);border:1px solid #bae6fd;
+    border-radius:6px;padding:1px 8px;font-size:12px;font-weight:600}
+  .foot{text-align:center;color:var(--muted);font-size:13px;padding:8px 0 0}
+  hr{border:none;border-top:1px dashed var(--line);margin:22px 0}
+  .toc{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}
+  .toc a{text-decoration:none;color:var(--brand-d);background:#fff;border:1px solid var(--line);
+    padding:8px 14px;border-radius:999px;font-size:13.5px;font-weight:600;transition:.15s}
+  .toc a:hover{background:var(--brand);color:#fff;border-color:var(--brand)}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="hero-inner">
+    <span class="badge">📦 SGPMRJA · Base de Datos</span>
+    <h1>Guía: subir y bajar la base de datos</h1>
+    <p>Estándar del equipo con <strong>MySQL 8</strong>. Exportar e importar la BD del sistema
+       con un solo comando, igual para todos y compatible con producción.</p>
+    <div class="toc">
+      <a href="#req">1 · Requisitos</a>
+      <a href="#bajar">2 · Bajar la BD</a>
+      <a href="#subir">3 · Subir la BD</a>
+      <a href="#problemas">4 · Problemas</a>
+      <a href="#alt">5 · Alternativa</a>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div class="note warn" style="margin-top:0">
+    ⚠️ <strong>Regla de oro:</strong> usá <strong>solo los scripts</strong> de la carpeta <code>database/</code>
+    para exportar/importar. <strong>No</strong> uses phpMyAdmin ni el <code>mysqldump</code> de XAMPP/MariaDB
+    — generan SQL incompatible que falla al importar en MySQL 8 (tablas sin <code>AUTO_INCREMENT</code>, sintaxis MariaDB, etc.).
+  </div>
+
+  <!-- 1 -->
+  <section class="card" id="req">
+    <h2><span class="num">1</span> Requisitos (una sola vez)</h2>
+
+    <h3>1.1 · Instalar MySQL 8</h3>
+    <ul>
+      <li>Instalá <strong>MySQL Community Server 8.0</strong> y <strong>anotá la contraseña de <code>root</code></strong>.</li>
+      <li>Agregá la carpeta <code>bin</code> al <strong>PATH</strong> del sistema:
+          <code>C:\Program Files\MySQL\MySQL Server 8.0\bin</code>
+          <span class="pill">si no lo hacés, los scripts igual la buscan ahí</span></li>
+    </ul>
+    <div class="note">
+      🐘 <strong>¿Tenés XAMPP?</strong> Su MySQL/MariaDB ocupa el puerto <code>3306</code>. Lo más prolijo:
+      pará el MySQL de XAMPP desde el panel, <strong>destildá su autostart</strong> y dejá MySQL 8 en el 3306.
+      (Si preferís, dejá XAMPP y poné MySQL 8 en otro puerto, ej. <code>3308</code>, y ajustá <code>DB_PORT</code> en el <code>.env</code>.)
+    </div>
+
+    <h3>1.2 · Verificar que responde MySQL 8</h3>
+    <div class="codehead"><span class="os">Cualquier SO</span></div>
+<pre><code><span class="k">mysql</span> --user=root -p -e <span class="v">"SELECT VERSION();"</span></code></pre>
+    <p class="lead" style="margin-top:8px">Debe imprimir <code>8.0.xx</code>. Si dice <code>10.x-MariaDB</code>, estás pegándole a XAMPP, no a MySQL 8.</p>
+
+    <h3>1.3 · Configurar el <code>.env</code></h3>
+    <p class="lead">En la raíz del proyecto, dejá la sección de BD así:</p>
+<pre><code><span class="k">DB_CONNECTION</span>=mysql
+<span class="k">DB_HOST</span>=127.0.0.1
+<span class="k">DB_PORT</span>=3306              <span class="c"># el puerto de TU MySQL 8</span>
+<span class="k">DB_DATABASE</span>=sistema_atlantico
+<span class="k">DB_USERNAME</span>=root
+<span class="k">DB_PASSWORD</span>=tu_password   <span class="c"># la contraseña de root de MySQL 8</span></code></pre>
+    <div class="note ok">✅ El <code>.env</code> es <strong>local de cada máquina</strong> y no se sube al repo: cada uno pone su puerto y contraseña sin afectar a los demás.</div>
+  </section>
+
+  <!-- 2 -->
+  <section class="card" id="bajar">
+    <h2><span class="num">2</span> Bajar la BD desde el repo (importar)</h2>
+    <p class="lead">Cada vez que quieras la base de datos al día:</p>
+
+    <div class="codehead"><span class="os">Windows</span></div>
+<pre><code><span class="k">git</span> pull
+<span class="k">powershell</span> -ExecutionPolicy Bypass -File database\import-db.ps1</code></pre>
+
+    <div class="codehead"><span class="os">Linux / Mac</span></div>
+<pre><code><span class="k">git</span> pull
+<span class="k">bash</span> database/import-db.sh</code></pre>
+
+    <p class="lead" style="margin-top:14px">El script crea la base <code>sistema_atlantico</code> (si no existe) e importa el dump. Después levantá la app:</p>
+<pre><code><span class="k">php</span> artisan config:clear
+<span class="k">php</span> artisan serve</code></pre>
+
+    <h3>Verificar que quedó bien</h3>
+<pre><code><span class="k">php</span> artisan db:show</code></pre>
+    <div class="note ok">✅ Debe decir <strong>MySQL 8</strong>, host <code>127.0.0.1</code>, base <code>sistema_atlantico</code> y la cantidad de tablas.</div>
+  </section>
+
+  <!-- 3 -->
+  <section class="card" id="subir">
+    <h2><span class="num">3</span> Subir la BD al repo (exportar)</h2>
+    <p class="lead">Cuando hagas cambios en datos o esquema y quieras compartirlos:</p>
+
+    <div class="codehead"><span class="os">Windows</span></div>
+<pre><code><span class="k">powershell</span> -ExecutionPolicy Bypass -File database\export-db.ps1</code></pre>
+
+    <div class="codehead"><span class="os">Linux / Mac</span></div>
+<pre><code><span class="k">bash</span> database/export-db.sh</code></pre>
+
+    <div class="codehead"><span class="os">Luego, en cualquier SO</span></div>
+<pre><code><span class="k">git</span> add database/sistema_atlantico.sql
+<span class="k">git</span> commit -m <span class="v">"chore(db): actualizar dump"</span>
+<span class="k">git</span> push</code></pre>
+    <div class="note">📝 El script genera <code>database/sistema_atlantico.sql</code> en formato <strong>MySQL 8 nativo</strong>, idéntico sin importar quién lo corra.</div>
+  </section>
+
+  <!-- 4 -->
+  <section class="card" id="problemas">
+    <h2><span class="num">4</span> Solución de problemas</h2>
+    <table>
+      <thead><tr><th>Síntoma</th><th>Causa probable</th><th>Solución</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><code>mysql no se reconoce…</code> / <code>command not found</code></td>
+          <td>MySQL 8 no está en el PATH</td>
+          <td>Agregá <code>…\MySQL Server 8.0\bin</code> al PATH y abrí una terminal nueva.</td>
+        </tr>
+        <tr>
+          <td><code>VERSION()</code> devuelve <code>10.x-MariaDB</code></td>
+          <td>Estás pegándole a XAMPP, no a MySQL 8</td>
+          <td>Pará XAMPP MySQL o corregí <code>DB_PORT</code> en el <code>.env</code>.</td>
+        </tr>
+        <tr>
+          <td><code>Access denied for user 'root'</code></td>
+          <td>Contraseña incorrecta en el <code>.env</code></td>
+          <td>Poné la contraseña real de root de MySQL 8 en <code>DB_PASSWORD</code>.</td>
+        </tr>
+        <tr>
+          <td><code>Field 'id' doesn't have a default value</code> al usar la app</td>
+          <td>Importaste un dump viejo de phpMyAdmin</td>
+          <td>Reimportá con <code>import-db.ps1</code> el dump del repo (es MySQL 8 nativo).</td>
+        </tr>
+        <tr>
+          <td>El 3306 está ocupado al iniciar MySQL 8</td>
+          <td>XAMPP MySQL tomó el 3306 primero</td>
+          <td>Pará XAMPP MySQL y destildá su autostart, o usá otro puerto.</td>
+        </tr>
+        <tr>
+          <td>Error 500 al entrar al dashboard tras <code>git pull</code></td>
+          <td>Falta regenerar el autoload de Composer</td>
+          <td><code>composer dump-autoload</code> + <code>php artisan optimize:clear</code>.</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 5 -->
+  <section class="card" id="alt">
+    <h2><span class="num">5</span> Alternativa sin importar dump <span style="font-size:14px;font-weight:500;color:var(--muted)">(opcional)</span></h2>
+    <p class="lead">Para reconstruir la BD desde cero con migraciones + datos de catálogo, sin depender del <code>.sql</code>:</p>
+<pre><code><span class="k">php</span> artisan migrate:fresh --seed</code></pre>
+    <div class="note">Crea el esquema desde las migraciones y carga los seeders. Útil si querés un entorno limpio.</div>
+  </section>
+
+  <p class="foot">SGPMRJA · Sistema de gestión — Estándar de base de datos en MySQL 8</p>
+</div>
+
+</body>
+</html>

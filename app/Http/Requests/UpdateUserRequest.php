@@ -19,7 +19,19 @@ class UpdateUserRequest extends FormRequest
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:user,email,' . $userId,
             'avatar' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-            'role' => 'required|in:Administrador,Supervisor',
+            'role_id' => 'required|exists:rol,id',
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'name.required'    => 'El nombre es obligatorio.',
+            'email.required'   => 'El email es obligatorio.',
+            'email.email'      => 'Ingrese un email válido.',
+            'email.unique'     => 'Este correo ya está registrado.',
+            'role_id.required' => 'El rol es obligatorio.',
+            'role_id.exists'   => 'El rol seleccionado no es válido.',
         ];
     }
 }

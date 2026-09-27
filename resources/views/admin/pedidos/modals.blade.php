@@ -61,10 +61,10 @@
                 <div class="wiz-stepper-side wiz-stepper-side--right">
                     <div class="wiz-client-banner wiz-client-banner--creator" id="ped-creador-banner" hidden
                         aria-hidden="true" title="Creado por">
-                        <span class="wiz-client-banner-label">Creado por:</span>
                         <img class="wiz-client-banner-avatar wiz-client-banner-avatar--img"
-                            id="ped-creador-avatar" src="{{ Auth::user()->avatar_url }}" alt="" />
+                            id="ped-creador-avatar" src="{{ Auth::user()->avatar_url }}" alt="" onerror="this.onerror=null;this.src=window.AMS_AVATAR_FALLBACK" />
                         <div class="wiz-client-banner-main">
+                            <span class="wiz-client-banner-eyebrow">Creado por</span>
                             <span class="wiz-client-banner-name" id="ped-creador-name">{{ Auth::user()->name }}</span>
                         </div>
                     </div>
@@ -81,7 +81,7 @@
 
                     {{-- Banner de formalización (solo al editar un pedido formalizado):
                          las líneas quedan congeladas; solo se permite registrar pagos. --}}
-                    <div id="ped-formalizado-banner" class="alert alert-warning d-flex align-items-start gap-2 m-3 mb-0 d-none" role="alert">
+                    <div id="ped-formalizado-banner" class="alert alert-warning d-flex align-items-start gap-2 mb-4 d-none" role="alert">
                         <i class="ri-lock-2-line fs-5 lh-1 mt-1"></i>
                         <div class="small">
                             <strong>Pedido formalizado</strong> — las líneas (productos, tallas, cantidades y diseño) están congeladas. Solo puedes registrar pagos.
@@ -108,13 +108,11 @@
 
                             {{-- Card Cliente --}}
                             <div class="col-lg-7">
-                                <div class="card border-0 shadow-sm h-100">
-                                    <div class="card-header border-0 bg-soft-primary">
-                                        <h6 class="mb-0 text-atlantico-dark">
-                                            <i class="ri-user-3-line me-2"></i>Datos del Cliente
-                                        </h6>
+                                <div class="cli-view-card cli-view-card--flat h-100">
+                                    <div class="cli-view-card-header">
+                                        <i class="ri-user-3-line"></i>Datos del Cliente
                                     </div>
-                                    <div class="card-body">
+                                    <div class="cli-view-card-body">
                                         {{-- Buscador de documento --}}
                                         <label for="ped-ci-rif-number-field" class="form-label small fw-semibold mb-1">
                                             Documento de identidad <span class="text-danger">*</span>
@@ -202,13 +200,11 @@
 
                             {{-- Card Detalles + Estado --}}
                             <div class="col-lg-5">
-                                <div class="card border-0 shadow-sm mb-3">
-                                    <div class="card-header border-0 bg-soft-primary">
-                                        <h6 class="mb-0 text-atlantico-dark">
-                                            <i class="ri-calendar-event-line me-2"></i>Detalles del pedido
-                                        </h6>
+                                <div class="cli-view-card cli-view-card--flat">
+                                    <div class="cli-view-card-header">
+                                        <i class="ri-calendar-event-line"></i>Detalles del pedido
                                     </div>
-                                    <div class="card-body">
+                                    <div class="cli-view-card-body">
                                         <div class="row g-2">
                                             <div class="col-md-6">
                                                 <label for="ped-fecha-pedido-field"
@@ -271,14 +267,12 @@
                                 </div>
 
                                 {{-- Card Estado (solo en modo edición) --}}
-                                <div class="card border-0 shadow-sm" id="ped-estado-field-wrapper"
+                                <div class="cli-view-card cli-view-card--flat" id="ped-estado-field-wrapper"
                                     style="display: none;">
-                                    <div class="card-header border-0 bg-soft-secondary">
-                                        <h6 class="mb-0 text-atlantico-green">
-                                            <i class="ri-flag-line me-2"></i>Estado del pedido
-                                        </h6>
+                                    <div class="cli-view-card-header">
+                                        <i class="ri-flag-line"></i>Estado del pedido
                                     </div>
-                                    <div class="card-body py-3">
+                                    <div class="cli-view-card-body">
                                         <div class="ped-estado-readonly">
                                             <span class="badge" id="ped-estado-badge">—</span>
                                             <span class="ped-estado-auto-hint">
@@ -377,11 +371,11 @@
                         <input type="hidden" id="ped-pago-abono-field" />
 
                         {{-- Card: Métodos de pago (agregar + lista) --}}
-                        <div class="card border-0 shadow-sm">
-                            <div class="card-header border-0 bg-soft-primary ped-pay-card-head">
-                                <h6 class="mb-0 text-atlantico-dark">
-                                    <i class="ri-bank-card-line me-2"></i>Métodos de pago
-                                </h6>
+                        <div class="cli-view-card cli-view-card--flat">
+                            <div class="cli-view-card-header ped-pay-card-head">
+                                <span class="d-inline-flex align-items-center gap-1">
+                                    <i class="ri-bank-card-line"></i>Métodos de pago
+                                </span>
                                 <div class="ped-pay-add-btns">
                                     <button type="button" class="ped-pay-add-btn" data-metodo="efectivo" id="ped-pay-add-efectivo">
                                         <i class="ri-add-line"></i><span>Efectivo</span>
@@ -394,7 +388,7 @@
                                     </button>
                                 </div>
                             </div>
-                            <div class="card-body">
+                            <div class="cli-view-card-body">
                                 {{-- Lista de pagos --}}
                                 <div class="ped-pay-list" id="ped-pay-list"></div>
 
@@ -442,13 +436,11 @@
 
                             {{-- Card: Cliente --}}
                             <div class="col-md-6">
-                                <div class="card border-0 shadow-sm h-100">
-                                    <div class="card-header border-0 bg-soft-primary py-2 px-3">
-                                        <h6 class="mb-0 text-atlantico-dark fs-13">
-                                            <i class="ri-user-star-line me-1"></i>Cliente
-                                        </h6>
+                                <div class="cli-view-card cli-view-card--flat h-100">
+                                    <div class="cli-view-card-header">
+                                        <i class="ri-user-star-line"></i>Cliente
                                     </div>
-                                    <div class="card-body p-3" id="ped-res-cliente-bloque">
+                                    <div class="cli-view-card-body" id="ped-res-cliente-bloque">
                                         <p class="text-muted small mb-0">—</p>
                                     </div>
                                 </div>
@@ -456,13 +448,11 @@
 
                             {{-- Card: Datos del pedido --}}
                             <div class="col-md-6">
-                                <div class="card border-0 shadow-sm h-100">
-                                    <div class="card-header border-0 bg-soft-primary py-2 px-3">
-                                        <h6 class="mb-0 text-atlantico-dark fs-13">
-                                            <i class="ri-calendar-todo-line me-1"></i>Datos del pedido
-                                        </h6>
+                                <div class="cli-view-card cli-view-card--flat h-100">
+                                    <div class="cli-view-card-header">
+                                        <i class="ri-calendar-todo-line"></i>Datos del pedido
                                     </div>
-                                    <div class="card-body p-3" id="ped-res-datos-bloque">
+                                    <div class="cli-view-card-body" id="ped-res-datos-bloque">
                                         <p class="text-muted small mb-0">—</p>
                                     </div>
                                 </div>
@@ -470,14 +460,12 @@
 
                             {{-- Card: Productos --}}
                             <div class="col-12">
-                                <div class="card border-0 shadow-sm">
-                                    <div class="card-header border-0 bg-soft-primary py-2 px-3">
-                                        <h6 class="mb-0 text-atlantico-dark fs-13">
-                                            <i class="ri-shopping-bag-3-line me-1"></i>Productos
-                                            (<span id="ped-res-lineas">0</span>&nbsp;línea(s))
-                                        </h6>
+                                <div class="cli-view-card cli-view-card--flat">
+                                    <div class="cli-view-card-header">
+                                        <i class="ri-shopping-bag-3-line"></i>Productos
+                                        (<span id="ped-res-lineas">0</span>&nbsp;línea(s))
                                     </div>
-                                    <div class="card-body p-3">
+                                    <div class="cli-view-card-body">
                                         <div id="ped-res-productos-list" class="cot-lineas-list">
                                             <div class="cot-lineas-empty text-center text-muted py-3 small">Sin productos</div>
                                         </div>
@@ -485,15 +473,31 @@
                                 </div>
                             </div>
 
-                            {{-- Card: Pago --}}
-                            <div class="col-lg-8">
-                                <div class="card border-0 shadow-sm h-100">
-                                    <div class="card-header border-0 bg-soft-primary py-2 px-3">
-                                        <h6 class="mb-0 text-atlantico-dark fs-13">
-                                            <i class="ri-wallet-line me-1"></i>Pago
-                                        </h6>
+                            {{-- Card: Proyección de producción — aviso NO bloqueante de stock.
+                                 Para producir el pedido se necesitan insumos; aquí se avisa si faltan. --}}
+                            <div class="col-12">
+                                <div class="cli-view-card cli-view-card--flat" id="ped-proyeccion-card">
+                                    <div class="cli-view-card-header justify-content-between">
+                                        <span class="d-inline-flex align-items-center gap-1">
+                                            <i class="ri-archive-2-line"></i>Proyección de producción
+                                        </span>
+                                        <span class="badge rounded-pill" id="ped-proyeccion-badge" hidden></span>
                                     </div>
-                                    <div class="card-body p-3" id="ped-res-pago-bloque">
+                                    <div class="cli-view-card-body">
+                                        <div id="ped-proyeccion-body"></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {{-- Card: Pago — bloque informativo (resumen de pago con
+                                 su propio diseño: progreso + métodos). Card blanda, sin
+                                 el marco de datos del estándar cli-view-card. --}}
+                            <div class="col-lg-8">
+                                <div class="op-summary-card h-100">
+                                    <div class="op-summary-card-header">
+                                        <i class="ri-wallet-line"></i>Pago
+                                    </div>
+                                    <div class="op-summary-card-body" id="ped-res-pago-bloque">
                                         <p class="text-muted small mb-0">—</p>
                                     </div>
                                 </div>
@@ -509,7 +513,7 @@
                                     <div class="cot-resumen-card-body">
                                         <div class="cot-resumen-row">
                                             <span class="cot-resumen-row-label">
-                                                <i class="ri-bank-line me-1" style="font-size:.9rem;opacity:.7"></i>Tasa BCV (USD/VES)
+                                                <i class="ri-bank-line me-1" style="font-size:.9rem;opacity:.7"></i>Tasa BCV<span id="ped-res-tasa-fecha"></span>
                                             </span>
                                             <span class="cot-resumen-row-value fs-13" id="ped-res-tasa-hero">—</span>
                                         </div>
@@ -585,8 +589,7 @@
      Pasos: Cliente → Productos → Resumen/Pago
      Lógica JS en: pedidos/scripts/listado.blade.php
      ═══════════════════════════════════════════════════════════════════ --}}
-<div class="modal fade atlantico-modal atlantico-modal--op" id="viewModal" tabindex="-1" aria-hidden="true"
-    data-bs-backdrop="static" data-bs-keyboard="false">
+<div class="modal fade atlantico-modal atlantico-modal--op" id="viewModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-xl modal-fullscreen-sm-down">
         <div class="modal-content">
 
@@ -614,7 +617,22 @@
                         <span class="wiz-step-label">Resumen</span>
                     </button>
                 </div>
-                <div class="wiz-stepper-side wiz-stepper-side--right"></div>
+                {{-- Chip "Creado por" — gutter derecho del stepper (estándar de las transacciones) --}}
+                <div class="wiz-stepper-side wiz-stepper-side--right">
+                    <div class="wiz-client-banner wiz-client-banner--creator" title="Creado por">
+                        <img class="wiz-client-banner-avatar wiz-client-banner-avatar--img"
+                            id="view-ped-creador-avatar" src="" alt="" onerror="this.onerror=null;this.src=window.AMS_AVATAR_FALLBACK" />
+                        <div class="wiz-client-banner-main">
+                            <span class="wiz-client-banner-eyebrow">Creado por</span>
+                            <span class="wiz-client-banner-name" id="view-usuario-creador">—</span>
+                            <span class="wiz-client-banner-sub">
+                                <span class="wiz-client-banner-doc">
+                                    <i class="ri-time-line me-1"></i><span id="view-ped-creador-fecha">—</span>
+                                </span>
+                            </span>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <div class="modal-body p-0 wiz-wizard-body">
@@ -627,13 +645,11 @@
                     </div>
                     <div class="row g-3">
                         <div class="col-md-6">
-                            <div class="card border-0 shadow-sm h-100">
-                                <div class="card-header border-0 bg-soft-primary py-2 px-3">
-                                    <h6 class="mb-0 text-atlantico-dark fs-13">
-                                        <i class="ri-user-star-line me-1"></i>Información del Cliente
-                                    </h6>
+                            <div class="cli-view-card h-100">
+                                <div class="cli-view-card-header">
+                                    <i class="ri-user-star-line"></i>Información del Cliente
                                 </div>
-                                <div class="card-body p-3">
+                                <div class="cli-view-card-body">
                                     <div class="row g-2">
                                         <div class="col-6 d-flex align-items-start">
                                             <div class="emp-icon-box emp-icon-box--navy rounded-circle me-2 flex-shrink-0 d-flex align-items-center justify-content-center">
@@ -668,13 +684,11 @@
                             </div>
                         </div>
                         <div class="col-md-6">
-                            <div class="card border-0 shadow-sm h-100">
-                                <div class="card-header border-0 bg-soft-primary py-2 px-3">
-                                    <h6 class="mb-0 text-atlantico-dark fs-13">
-                                        <i class="ri-calendar-todo-line me-1"></i>Datos del Pedido
-                                    </h6>
+                            <div class="cli-view-card h-100">
+                                <div class="cli-view-card-header">
+                                    <i class="ri-calendar-todo-line"></i>Datos del Pedido
                                 </div>
-                                <div class="card-body p-3">
+                                <div class="cli-view-card-body">
                                     <div class="row g-2">
                                         <div class="col-6 d-flex align-items-start">
                                             <div class="emp-icon-box emp-icon-box--navy rounded-circle me-2 flex-shrink-0 d-flex align-items-center justify-content-center">
@@ -703,13 +717,6 @@
                                             </div>
                                             <div><small class="text-muted d-block fs-12">Estado</small>
                                             <span class="fs-13" id="view-estado">-</span></div>
-                                        </div>
-                                        <div class="col-12 d-flex align-items-start">
-                                            <div class="emp-icon-box emp-icon-box--navy rounded-circle me-2 flex-shrink-0 d-flex align-items-center justify-content-center">
-                                                <i class="ri-user-settings-line emp-icon--navy"></i>
-                                            </div>
-                                            <div><small class="text-muted d-block fs-12">Creado por</small>
-                                            <span class="fw-semibold fs-13" id="view-usuario-creador">-</span></div>
                                         </div>
                                     </div>
                                 </div>
@@ -761,7 +768,7 @@
                                 </div>
                                 <div class="cot-resumen-card-body">
                                     <div class="cot-resumen-row">
-                                        <span class="cot-resumen-row-label"><i class="ri-bank-line me-1" style="font-size:.9rem;opacity:.7"></i>Tasa BCV (USD/VES)</span>
+                                        <span class="cot-resumen-row-label"><i class="ri-bank-line me-1" style="font-size:.9rem;opacity:.7"></i>Tasa BCV<span id="view-ped-tasa-fecha"></span></span>
                                         <span class="cot-resumen-row-value fs-13" id="view-ped-tasa">—</span>
                                     </div>
                                     <div class="cot-resumen-divider"></div>
@@ -786,16 +793,26 @@
                             </div>
                         </div>
                         <div class="col-lg-7">
-                            <div class="card border-0 shadow-sm h-100">
-                                <div class="card-header border-0 bg-soft-primary py-2 px-3">
-                                    <h6 class="mb-0 text-atlantico-dark fs-13">
-                                        <i class="ri-wallet-line me-1"></i>Métodos de Pago
-                                    </h6>
+                            <div class="ped-pagos-card h-100">
+                                <div class="ped-pagos-card-header">
+                                    <i class="ri-wallet-3-line"></i>
+                                    <span class="ped-pagos-title">Métodos de Pago</span>
+                                    <span class="ped-pagos-count" id="view-pagos-count">0 pagos</span>
                                 </div>
-                                <div class="card-body p-0">
-                                    <div id="view-pagos-list" class="p-3">
-                                        <p class="text-muted fs-12 mb-0">Sin pagos registrados.</p>
+                                <div class="ped-pagos-body" id="view-pagos-list">
+                                    <div class="ped-pagos-empty">
+                                        <i class="ri-wallet-3-line"></i>
+                                        <span>Sin pagos registrados.</span>
                                     </div>
+                                </div>
+                                <div class="ped-pagos-footer">
+                                    <span class="ped-pagos-status ped-pagos-status--none" id="view-pagos-status">
+                                        <i class="ri-information-line"></i>Sin pagos
+                                    </span>
+                                    <span class="ped-pagos-total">
+                                        <span class="ped-pagos-total-label">Total pagado</span>
+                                        <span class="ped-pagos-total-value" id="view-pagos-total">$0.00</span>
+                                    </span>
                                 </div>
                             </div>
                         </div>
@@ -805,7 +822,11 @@
             </div>{{-- /modal-body --}}
 
             <div class="modal-footer wiz-wizard-footer">
-                <div class="wiz-wizard-footer-info"></div>
+                <div class="wiz-wizard-footer-info">
+                    <a href="#" id="view-ped-pdf-btn" class="btn btn-soft-danger" target="_blank">
+                        <i class="ri-file-pdf-fill align-bottom me-1"></i> Exportar PDF
+                    </a>
+                </div>
                 <div class="wiz-wizard-footer-actions">
                     <button type="button" class="btn btn-light wiz-wizard-btn-prev" id="btn-view-ped-prev" style="display:none;">
                         <i class="ri-arrow-left-line me-1"></i>Anterior
@@ -908,29 +929,15 @@
                         <i class="ri-contacts-book-2-line"></i>Contacto
                     </div>
                     <div class="row g-2 mb-2">
-                        <div class="col-md-6">
+                        <div class="col-12">
                             <label for="email-field-cliente" class="form-label">Email</label>
                             <input type="email" id="email-field-cliente" name="email" class="form-control"
                                 placeholder="correo@ejemplo.com" />
                             <div id="email-error-cliente" class="invalid-feedback"></div>
                         </div>
-                        <div class="col-md-6">
-                            <label for="telefono-number-field-cliente" class="form-label required">Teléfono</label>
-                            <div class="input-group">
-                                <select class="form-select" id="telefono-prefix-field-cliente"
-                                    style="max-width: 100px; min-width: 100px;">
-                                    <option value="0412">0412</option>
-                                    <option value="0422">0422</option>
-                                    <option value="0414">0414</option>
-                                    <option value="0424" selected>0424</option>
-                                    <option value="0416">0416</option>
-                                    <option value="0426">0426</option>
-                                </select>
-                                <input type="text" id="telefono-number-field-cliente" class="form-control"
-                                    placeholder="1234567" maxlength="7" required />
-                            </div>
-                            <input type="hidden" id="telefono-field-cliente" name="telefono" />
-                            <div id="telefono-error-cliente" class="invalid-feedback" style="display: none;"></div>
+                        <div class="col-12 mt-2">
+                            {{-- Teléfonos múltiples (componente reutilizable) --}}
+                            @include('admin.partials.telefonos-field', ['telId' => 'ped-cli-tel'])
                         </div>
                     </div>
                     <div class="row g-2 mb-0">
@@ -953,30 +960,9 @@
                             <select name="estado_territorial" id="estado_territorial-field-cliente"
                                 class="form-select" required>
                                 <option value="">Seleccione estado</option>
-                                <option value="Amazonas">Amazonas</option>
-                                <option value="Anzoátegui">Anzoátegui</option>
-                                <option value="Apure">Apure</option>
-                                <option value="Aragua">Aragua</option>
-                                <option value="Barinas">Barinas</option>
-                                <option value="Bolívar">Bolívar</option>
-                                <option value="Carabobo">Carabobo</option>
-                                <option value="Cojedes">Cojedes</option>
-                                <option value="Delta Amacuro">Delta Amacuro</option>
-                                <option value="Distrito Capital">Distrito Capital</option>
-                                <option value="Falcón">Falcón</option>
-                                <option value="Guárico">Guárico</option>
-                                <option value="La Guaira">La Guaira</option>
-                                <option value="Lara">Lara</option>
-                                <option value="Mérida">Mérida</option>
-                                <option value="Miranda">Miranda</option>
-                                <option value="Monagas">Monagas</option>
-                                <option value="Nueva Esparta">Nueva Esparta</option>
-                                <option value="Portuguesa">Portuguesa</option>
-                                <option value="Sucre">Sucre</option>
-                                <option value="Táchira">Táchira</option>
-                                <option value="Trujillo">Trujillo</option>
-                                <option value="Yaracuy">Yaracuy</option>
-                                <option value="Zulia">Zulia</option>
+                                @foreach ($estadosVe as $__est)
+                                    <option value="{{ $__est }}">{{ $__est }}</option>
+                                @endforeach
                             </select>
                         </div>
                         <div class="col-md-6">
@@ -1068,6 +1054,14 @@
                             <option value="">Sin color</option>
                             @foreach($colores as $color)
                                 <option value="{{ $color->id }}">{{ $color->nombre }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="ped-prod-genero-field" class="form-label small fw-semibold mb-1">Género <span class="text-danger">*</span></label>
+                        <select id="ped-prod-genero-field" class="form-select">
+                            @foreach($generosCatalogo as $g)
+                                <option value="{{ $g['id'] }}" {{ ($g['nombre'] ?? '') === 'Unisex' ? 'selected' : '' }}>{{ $g['etiqueta'] ?? $g['nombre'] }}</option>
                             @endforeach
                         </select>
                     </div>

@@ -157,7 +157,7 @@
                             <i class="ri-close-line me-1"></i> Cerrar
                         </button>
                         <button type="button" class="btn btn-success" id="btn-save-atributo">
-                            <i class="ri-save-line me-1"></i> <span class="btn-label">Guardar</span>
+                            <i class="ri-save-line me-1"></i> <span class="btn-text">Guardar</span>
                         </button>
                     </div>
                 </form>
@@ -203,7 +203,7 @@
                             <i class="ri-close-line me-1"></i> Cerrar
                         </button>
                         <button type="button" class="btn btn-success" id="btn-save-valor">
-                            <i class="ri-save-line me-1"></i> <span class="btn-label">Guardar</span>
+                            <i class="ri-save-line me-1"></i> <span class="btn-text">Guardar</span>
                         </button>
                     </div>
                 </form>
@@ -376,17 +376,49 @@
             const isEdit = !!atr;
             $('#atributoModalTitle').text(isEdit ? 'Editar Atributo' : 'Nuevo Atributo');
             $('#atr-id').val(atr?.id || '');
-            $('#atr-nombre').val(atr?.nombre || '').removeClass('is-invalid');
-            $('#atr-codigo').val(atr?.codigo || '').removeClass('is-invalid').prop('readonly', isEdit);
+            $('#atr-nombre').val(atr?.nombre || '').removeClass('is-invalid is-valid');
+            $('#atr-codigo').val(atr?.codigo || '').removeClass('is-invalid is-valid').prop('readonly', isEdit);
+            $('#atr-nombre-error, #atr-codigo-error').text('').hide();
+            $('#btn-save-atributo').prop('disabled', false);
             $('#atr-descripcion').val(atr?.descripcion || '');
             // Pre-seleccionar tipos de producto asociados (Select2 refleja el valor al disparar change)
             const ids = (atr?.tipos_producto_ids || []).map(String);
             $('#atr-tipos-producto').val(ids).trigger('change');
-            $('#btn-save-atributo .btn-label').text(isEdit ? 'Actualizar' : 'Crear');
+            $('#btn-save-atributo .btn-text').text(isEdit ? 'Actualizar' : 'Crear');
             new bootstrap.Modal('#atributoModal').show();
         }
 
         $('#btn-save-atributo').on('click', saveAtributo);
+
+        // Validación en vivo del nombre: avisa "ya está registrado" al salir del campo
+        // (equivalente al Tipo de Producto). Soporta edición vía exclude_id.
+        $('#atr-nombre').on('blur', function () {
+            const $input = $(this);
+            const value = $input.val().trim();
+            const id = $('#atr-id').val();
+
+            if (value.length < 3) {
+                marcarInvalido($input, 'Mínimo 3 caracteres.');
+                return;
+            }
+
+            $.get('{{ route('atributos.check-nombre') }}', { nombre: value, exclude_id: id }, function (res) {
+                if (res.exists) {
+                    marcarInvalido($input, 'Este nombre ya está registrado.');
+                    $('#btn-save-atributo').prop('disabled', true);
+                } else {
+                    marcarValido($input);
+                    $('#btn-save-atributo').prop('disabled', false);
+                }
+            });
+        });
+
+        // Al volver a escribir, limpia el estado y reactiva el guardado.
+        $('#atr-nombre').on('input', function () {
+            $(this).removeClass('is-invalid is-valid');
+            $('#atr-nombre-error').text('').hide();
+            $('#btn-save-atributo').prop('disabled', false);
+        });
 
         function saveAtributo() {
             const id = $('#atr-id').val();
@@ -513,7 +545,7 @@
             $('#val-nombre').val(val?.nombre || '').removeClass('is-invalid');
             $('#val-codigo').val(val?.codigo || '').removeClass('is-invalid').prop('readonly', isEdit);
             $('#val-orden').val(val?.orden && val.orden !== '—' ? val.orden : '');
-            $('#btn-save-valor .btn-label').text(isEdit ? 'Actualizar' : 'Crear');
+            $('#btn-save-valor .btn-text').text(isEdit ? 'Actualizar' : 'Crear');
             new bootstrap.Modal('#valorModal').show();
         }
 

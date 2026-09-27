@@ -36,7 +36,7 @@ class CotizacionService
                 'cliente_id'          => $data['cliente_id'],
                 'fecha_cotizacion'    => $data['fecha_cotizacion'],
                 'fecha_validez'       => $data['fecha_validez']
-                    ?? \Carbon\Carbon::parse($data['fecha_cotizacion'])->addDays(15)->toDateString(),
+                    ?? \Carbon\Carbon::parse($data['fecha_cotizacion'])->addDays(Cotizacion::diasVigencia())->toDateString(),
                 'estado'              => 'Pendiente',
                 'total'               => $total,
                 'tasa_cambio_valor'   => TasaCambio::obtenerValorUsd(),
@@ -74,7 +74,8 @@ class CotizacionService
             $cotizacion->update([
                 'cliente_id'           => $data['cliente_id'],
                 'fecha_cotizacion'     => $data['fecha_cotizacion'],
-                'fecha_validez'        => $data['fecha_validez'] ?? null,
+                'fecha_validez'        => $data['fecha_validez']
+                    ?? \Carbon\Carbon::parse($data['fecha_cotizacion'])->addDays(Cotizacion::diasVigencia())->toDateString(),
                 'estado'               => $data['estado'],
                 'total'                => $total,
                 'tasa_cambio_valor'    => TasaCambio::obtenerValorUsd(),
@@ -94,7 +95,8 @@ class CotizacionService
     }
 
     /**
-     * Reactivar una cotización vencida, reseteando su validez a 15 días desde hoy.
+     * Reactivar una cotización vencida, otorgando una nueva fecha_validez de
+     * diasVigencia() días desde hoy (con la tasa de cambio actualizada).
      */
     public function reactivar(Cotizacion $cotizacion): void
     {
@@ -104,7 +106,7 @@ class CotizacionService
 
         $cotizacion->update([
             'estado'              => 'Pendiente',
-            'fecha_validez'       => now()->addDays(15)->toDateString(),
+            'fecha_validez'       => now()->addDays(Cotizacion::diasVigencia())->toDateString(),
             'tasa_cambio_valor'   => TasaCambio::obtenerValorUsd(),
         ]);
 
@@ -132,13 +134,14 @@ class CotizacionService
                 throw new \InvalidArgumentException('Solo se pueden convertir cotizaciones con estado Aprobada.');
             }
 
-            // 2.b Vigencia de precios: bloquear si pasaron más de DIAS_VIGENCIA días
-            //     desde la emisión. La marca como 'Vencida' para reflejarlo en el listado.
+            // 2.b Vigencia de precios: bloquear si la fecha de validez pactada en la
+            //     cotización ya pasó. La marca como 'Vencida' para reflejarlo en el listado.
             if ($cotizacion->estaVencidaPorVigencia()) {
                 $cotizacion->update(['estado' => 'Vencida']);
                 throw new \InvalidArgumentException(
-                    'La cotización venció: pasaron más de ' . Cotizacion::DIAS_VIGENCIA .
-                    ' días desde su emisión. Reactívala para actualizar los precios antes de convertirla a pedido.'
+                    'La cotización venció: su validez expiró el ' .
+                    $cotizacion->fechaLimiteVigencia()->format('d/m/Y') .
+                    '. Reactívala para actualizar los precios antes de convertirla a pedido.'
                 );
             }
 
@@ -180,6 +183,7 @@ class CotizacionService
                     'lleva_bordado' => $detalle->lleva_bordado ?? false,
                     'color_id' => $detalle->color_id,
                     'talla_id' => $detalle->talla_id,
+                    'genero_id' => $detalle->genero_id,
                 ]);
 
                 foreach ($detalle->bordados as $index => $bordado) {
@@ -296,6 +300,7 @@ class CotizacionService
                 'lleva_bordado' => $item['lleva_bordado'] ?? false,
                 'color_id' => $item['color_id'] ?? null,
                 'talla_id' => $item['talla_id'] ?? null,
+                'genero_id' => $item['genero_id'] ?? null,
                 'precio_unitario' => $precioUnitarioFinal,
             ]);
 

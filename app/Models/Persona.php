@@ -14,20 +14,12 @@ class Persona extends Model
 
     protected $fillable = [
         'nombre',
-        'apellido',
         'documento_identidad',
         'tipo_documento',
-        'email',
-        'estado_geografico',
-        'fecha_nacimiento',
-        'genero'
+        'email'
     ];
 
     protected $appends = ['nombre_completo'];
-
-    protected $casts = [
-        'fecha_nacimiento' => 'date'
-    ];
 
     // Relaciones
     public function user()
@@ -59,7 +51,16 @@ class Persona extends Model
     }
 
     /**
-     * Relación con direcciones (normalizada)
+     * Relación con la dirección (1:1). Cada persona tiene una sola dirección.
+     */
+    public function direccion()
+    {
+        return $this->hasOne(Direccion::class);
+    }
+
+    /**
+     * Compatibilidad: algunos accessors leen la colección de direcciones.
+     * Con el modelo 1:1 devuelve a lo sumo un elemento.
      */
     public function direcciones()
     {
@@ -67,9 +68,12 @@ class Persona extends Model
     }
 
     // Accessors
+    // El nombre completo vive ya consolidado en `nombre` (natural: nombre +
+    // apellido; jurídica: razón social). Se conserva el accessor por
+    // compatibilidad con el código existente que lo invoca.
     public function getNombreCompletoAttribute()
     {
-        return "{$this->nombre} {$this->apellido}";
+        return trim((string) $this->nombre);
     }
 
     public function getDocumentoCompletoAttribute()
@@ -88,11 +92,11 @@ class Persona extends Model
     }
 
     /**
-     * Obtener dirección principal (de la tabla normalizada)
-     * Usa la colección cargada para evitar N+1 queries.
+     * Dirección de la persona (modelo 1:1). Se conserva el nombre del accessor
+     * por compatibilidad con el código existente (`direccion_principal`).
      */
     public function getDireccionPrincipalAttribute()
     {
-        return $this->direcciones->firstWhere('es_principal', true);
+        return $this->direccion;
     }
 }

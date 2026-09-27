@@ -33,7 +33,7 @@ Esta metodología convierte las **especificaciones en la única fuente de verdad
    │
    └─ Ejecutor (humano o Claude Code) implementa la task
                               → mueve archivo a sdd/tasks/completed/
-                              → PR a `enmanuel`
+                              → PR a `dev`
 ```
 
 ---
@@ -42,12 +42,12 @@ Esta metodología convierte las **especificaciones en la única fuente de verdad
 
 | Rama | Rol |
 |---|---|
-| `main` | Entregable al profesor. Solo merges desde `enmanuel`. |
-| `enmanuel` | Rama de integración del equipo. Default para PRs. |
-| `feat/<slug>` | Rama por feature/spec. Sale de `enmanuel`, vuelve a `enmanuel`. |
+| `main` | Entregable al profesor. Solo merges desde `dev`. |
+| `dev` | Rama de integración del equipo. Default para PRs. |
+| `feat/<slug>` | Rama por feature/spec. Sale de `dev`, vuelve a `dev`. |
 | `fix/<slug>` | Rama por bug o corrección puntual del profesor. |
 
-**Regla:** ninguna rama de trabajo sale directamente de `main`. Toda PR cierra contra `enmanuel`. Cuando el profesor revise, se mergea `enmanuel → main`.
+**Regla:** ninguna rama de trabajo sale directamente de `main`. Toda PR cierra contra `dev`. Cuando el profesor revise, se mergea `dev → main`.
 
 ---
 
@@ -131,11 +131,11 @@ Cualquier miembro del equipo (o Claude Code) puede tomar una task. Pasos:
 
 1. Verificar que `Depends-on` esté en `tasks/completed/`.
 2. Actualizar el encabezado: `Status: in-progress`, `Assigned-to: <tu-nombre>`.
-3. Crear rama: `git checkout -b feat/TASK-NNN-<slug>` (sale de `enmanuel`).
+3. Crear rama: `git checkout -b feat/TASK-NNN-<slug>` (sale de `dev`).
 4. Implementar **solo el scope** de la task. Si descubres trabajo extra, anótalo como nueva task.
 5. Cumplir criterios de aceptación y QA manual.
 6. Mover el archivo a `sdd/tasks/completed/` y rellenar la **Nota de Completitud**.
-7. PR contra `enmanuel`. En el PR enlazar la task: `Cierra sdd/tasks/completed/TASK-NNN-<slug>.md`.
+7. PR contra `dev`. En el PR enlazar la task: `Cierra sdd/tasks/completed/TASK-NNN-<slug>.md`.
 8. Revisar entre miembros del equipo antes de mergear.
 
 ---

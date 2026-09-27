@@ -5,10 +5,11 @@ namespace App\Http\Controllers;
 use App\Http\Controllers\Auth\RecoveryQuestionController;
 use App\Http\Requests\ProfileUpdateRequest;
 use App\Models\UserRecoveryQuestion;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\ValidationException;
@@ -182,6 +183,37 @@ class ProfileController extends Controller
     }
 
     /**
+     * Actualiza la foto de perfil del usuario (subida AJAX desde el hero de /profile).
+     */
+    public function updateAvatar(Request $request): JsonResponse
+    {
+        $request->validate([
+            'avatar' => ['required', 'image', 'mimes:jpeg,png,jpg,gif', 'max:2048'],
+        ], [
+            'avatar.required' => 'Selecciona una imagen.',
+            'avatar.image'    => 'El archivo debe ser una imagen.',
+            'avatar.mimes'    => 'Formatos permitidos: JPG, PNG o GIF.',
+            'avatar.max'      => 'La imagen no debe superar los 2 MB.',
+        ]);
+
+        $user = $request->user();
+
+        if ($user->avatar && Storage::disk('public')->exists($user->avatar)) {
+            Storage::disk('public')->delete($user->avatar);
+        }
+
+        $file = $request->file('avatar');
+        $filename = uniqid() . '.' . $file->getClientOriginalExtension();
+        $user->avatar = $file->storeAs('avatars', $filename, 'public');
+        $user->save();
+
+        return response()->json([
+            'success'    => true,
+            'avatar_url' => $user->avatar_url,
+        ]);
+    }
+
+    /**
      * Update the user's profile information.
      */
     public function update(ProfileUpdateRequest $request): RedirectResponse
@@ -197,24 +229,7 @@ class ProfileController extends Controller
         return Redirect::route('profile.edit')->with('status', 'profile-updated');
     }
 
-    /**
-     * Delete the user's account.
-     */
-    public function destroy(Request $request): RedirectResponse
-    {
-        $request->validateWithBag('userDeletion', [
-            'password' => ['required', 'current_password'],
-        ]);
-
-        $user = $request->user();
-
-        Auth::logout();
-
-        $user->delete();
-
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
-
-        return Redirect::to('/');
-    }
+    // NOTA: el método destroy() (autoborrado de cuenta) se eliminó por política:
+    // una cuenta de usuario NO se borra nunca. Solo un administrador puede
+    // inhabilitarla (estado=0) desde el módulo de Usuarios (UserController@destroy).
 }

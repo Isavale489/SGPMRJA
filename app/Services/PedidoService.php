@@ -66,6 +66,34 @@ class PedidoService
     }
 
     /**
+     * Elimina (soft delete) un pedido y revierte el estado de su cotización de
+     * origen. Si la cotización estaba 'Convertida' vuelve a 'Aprobada' para poder
+     * re-convertirla; además se desliga el cotizacion_id del pedido borrado para
+     * liberar el índice único pedido_cotizacion_id_unique (las filas soft-deleted
+     * lo siguen ocupando; MySQL sí admite múltiples NULL).
+     */
+    public function eliminar(Pedido $pedido): void
+    {
+        DB::transaction(function () use ($pedido) {
+            if ($pedido->cotizacion_id) {
+                $cotizacion = Cotizacion::lockForUpdate()->find($pedido->cotizacion_id);
+                if ($cotizacion && $cotizacion->estado === 'Convertida') {
+                    $cotizacion->update(['estado' => 'Aprobada']);
+                }
+                // Liberar el slot del índice único antes del soft delete.
+                $pedido->update(['cotizacion_id' => null]);
+            }
+
+            $pedido->delete();
+        });
+
+        Log::info('Pedido eliminado con reversión de cotización', [
+            'pedido_id' => $pedido->id,
+            'user_id' => Auth::id(),
+        ]);
+    }
+
+    /**
      * Actualizar un pedido existente y sincronizar sus detalles.
      */
     public function actualizar(Pedido $pedido, array $data): void
@@ -190,6 +218,7 @@ class PedidoService
                 'lleva_bordado' => $item['lleva_bordado'] ?? false,
                 'color_id' => $item['color_id'] ?? null,
                 'talla_id' => $item['talla_id'] ?? null,
+                'genero_id' => $item['genero_id'] ?? null,
                 'precio_unitario' => $precioUnitarioFinal,
             ]);
 
@@ -297,13 +326,14 @@ class PedidoService
             throw new \InvalidArgumentException('La cotización seleccionada no está aprobada para crear pedido.');
         }
 
-        // Vigencia de precios: no permitir crear pedido desde una cotización vencida
-        // (más de DIAS_VIGENCIA días desde la emisión). Se marca como 'Vencida'.
+        // Vigencia de precios: no permitir crear pedido desde una cotización cuya
+        // fecha de validez pactada ya pasó. Se marca como 'Vencida'.
         if ($cotizacion->estaVencidaPorVigencia()) {
             $cotizacion->update(['estado' => 'Vencida']);
             throw new \InvalidArgumentException(
-                'La cotización venció: pasaron más de ' . Cotizacion::DIAS_VIGENCIA .
-                ' días desde su emisión. Reactívala para actualizar los precios antes de convertirla a pedido.'
+                'La cotización venció: su validez expiró el ' .
+                $cotizacion->fechaLimiteVigencia()->format('d/m/Y') .
+                '. Reactívala para actualizar los precios antes de convertirla a pedido.'
             );
         }
 

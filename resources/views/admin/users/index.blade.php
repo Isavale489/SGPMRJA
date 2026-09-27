@@ -87,9 +87,9 @@
                                         </label>
                                         <select class="form-select navy-filter-select" id="filter-role">
                                             <option value="">Todos los roles</option>
-                                            <option value="Administrador">Administrador</option>
-                                            <option value="Supervisor">Supervisor</option>
-                                            <option value="Usuario">Usuario</option>
+                                            @foreach($roles as $rol)
+                                                <option value="{{ $rol->id }}">{{ $rol->nombre }}</option>
+                                            @endforeach
                                         </select>
                                     </div>
                                 </div>
@@ -119,97 +119,63 @@
     <!-- Modal para ver detalles del Usuario -->
     <div class="modal fade atlantico-modal" id="viewModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static"
         data-bs-keyboard="false">
-        <div class="modal-dialog modal-dialog-centered modal-md">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content">
                 <div class="modal-header bg-light p-3">
                     <h5 class="modal-title">Detalles del Usuario</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <div class="modal-body p-4">
-                    <!-- Avatar centrado -->
-                    <div class="text-center mb-4" id="user-avatar-container">
-                        <div class="rounded-circle mx-auto d-flex align-items-center justify-content-center"
-                            style="width: 100px; height: 100px; background: linear-gradient(135deg, #1e3c72 0%, #00d9a5 100%); padding: 3px;">
-                            <img id="user-avatar" src="/assets/images/users/user-dummy-img.jpg" alt="Avatar del usuario"
-                                class="rounded-circle bg-white" style="width: 94px; height: 94px; object-fit: cover;">
+                <div class="modal-body p-0">
+
+                    {{-- Hero strip --}}
+                    <div class="cli-view-hero">
+                        <div class="cli-view-hero-avatar">
+                            <img id="user-avatar" src="/assets/images/users/user-dummy-img.jpg" alt="Avatar"
+                                style="width:100%;height:100%;object-fit:cover;">
+                        </div>
+                        <div class="cli-view-hero-info">
+                            <div class="cli-view-hero-name" id="view-name">—</div>
+                            <div class="cli-view-hero-doc" id="view-email">—</div>
+                        </div>
+                        <div class="cli-view-hero-badge text-end">
+                            <div><span class="badge rounded-pill" id="view-estado">—</span></div>
+                            <div class="cli-view-hero-date mt-1"><i class="ri-calendar-line me-1"></i><span id="view-created">—</span></div>
                         </div>
                     </div>
 
-                    <!-- Card Información del Usuario -->
-                    <div class="card border-0 shadow-sm">
-                        <div class="card-header border-0" style="background: rgba(30, 60, 114, 0.1);">
-                            <h6 class="mb-0" style="color: #1e3c72;">
-                                <i class="ri-information-line me-2"></i>Información del Usuario
-                            </h6>
-                        </div>
-                        <div class="card-body">
-                            <div class="row g-3">
-                                <div class="col-12">
-                                    <div class="d-flex align-items-center">
-                                        <div class="rounded-circle me-2 d-flex align-items-center justify-content-center"
-                                            style="width: 32px; height: 32px; background: rgba(30, 60, 114, 0.1);">
-                                            <i class="ri-user-line" style="color: #1e3c72;"></i>
-                                        </div>
-                                        <div>
-                                            <small class="text-muted d-block">Nombre</small>
-                                            <span class="fw-semibold" id="view-name">-</span>
-                                        </div>
+                    {{-- Secciones --}}
+                    <div class="px-4 py-3 cli-view-sections">
+
+                        {{-- Acceso al Sistema --}}
+                        <div class="cli-view-card">
+                        <div class="cli-view-card-header"><i class="ri-shield-user-line"></i>Acceso al Sistema</div>
+                        <div class="cli-view-card-body">
+                        <div class="row g-3">
+                            <div class="col-sm-6">
+                                <div class="d-flex align-items-start">
+                                    <div class="emp-icon-box emp-icon-box--navy rounded-circle me-2 flex-shrink-0 d-flex align-items-center justify-content-center">
+                                        <i class="ri-shield-user-line emp-icon--navy"></i>
                                     </div>
+                                    <div><small class="text-muted d-block fs-12">Rol</small>
+                                    <span class="fw-semibold fs-13" id="view-role">-</span></div>
                                 </div>
-                                <div class="col-12">
-                                    <div class="d-flex align-items-center">
-                                        <div class="rounded-circle me-2 d-flex align-items-center justify-content-center"
-                                            style="width: 32px; height: 32px; background: rgba(30, 60, 114, 0.1);">
-                                            <i class="ri-mail-line" style="color: #1e3c72;"></i>
-                                        </div>
-                                        <div>
-                                            <small class="text-muted d-block">Email</small>
-                                            <span class="fw-semibold" id="view-email">-</span>
-                                        </div>
+                            </div>
+                            <div class="col-sm-6">
+                                <div class="d-flex align-items-start">
+                                    <div class="emp-icon-box emp-icon-box--navy rounded-circle me-2 flex-shrink-0 d-flex align-items-center justify-content-center">
+                                        <i class="ri-mail-line emp-icon--navy"></i>
                                     </div>
-                                </div>
-                                <div class="col-6">
-                                    <div class="d-flex align-items-center">
-                                        <div class="rounded-circle me-2 d-flex align-items-center justify-content-center"
-                                            style="width: 32px; height: 32px; background: rgba(30, 60, 114, 0.1);">
-                                            <i class="ri-shield-user-line" style="color: #1e3c72;"></i>
-                                        </div>
-                                        <div>
-                                            <small class="text-muted d-block">Rol</small>
-                                            <span class="fw-semibold" id="view-role">-</span>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-6">
-                                    <div class="d-flex align-items-center">
-                                        <div class="rounded-circle me-2 d-flex align-items-center justify-content-center"
-                                            style="width: 32px; height: 32px; background: rgba(30, 60, 114, 0.1);">
-                                            <i class="ri-calendar-line" style="color: #1e3c72;"></i>
-                                        </div>
-                                        <div>
-                                            <small class="text-muted d-block">Fecha Registro</small>
-                                            <span class="fw-semibold" id="view-created">-</span>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-12">
-                                    <div class="d-flex align-items-center">
-                                        <div class="rounded-circle me-2 d-flex align-items-center justify-content-center"
-                                            style="width: 32px; height: 32px; background: rgba(30, 60, 114, 0.1);">
-                                            <i class="ri-shield-check-line" style="color: #1e3c72;"></i>
-                                        </div>
-                                        <div>
-                                            <small class="text-muted d-block">Estado (acceso al sistema)</small>
-                                            <span class="badge rounded-pill" id="view-estado">-</span>
-                                        </div>
-                                    </div>
+                                    <div><small class="text-muted d-block fs-12">Correo electrónico</small>
+                                    <span class="fw-semibold fs-13" id="view-email-card">-</span></div>
                                 </div>
                             </div>
                         </div>
+                        </div></div>
+
                     </div>
                 </div>
                 <div class="modal-footer bg-light border-0">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">
                         <i class="ri-close-line me-1"></i>Cerrar
                     </button>
                 </div>
@@ -260,8 +226,8 @@
 
                             <div class="row mb-3">
                                 <div class="col-md-12">
-                                    <x-forms.select name="role" label="Rol" required
-                                        :options="['Administrador' => 'Administrador', 'Supervisor' => 'Supervisor']"
+                                    <x-forms.select name="role_id" label="Rol" required
+                                        :options="$roles->pluck('nombre', 'id')"
                                         placeholder="Seleccione un rol" />
                                 </div>
                             </div>
@@ -275,14 +241,24 @@
                             </div>
 
                             <div class="row mb-0">
-                                <div class="col-md-6">
-                                    <label for="field-avatar" class="form-label">Avatar</label>
-                                    <input type="file" id="field-avatar" name="avatar" class="form-control"
-                                        accept="image/*" />
-                                    <div id="avatar-preview" class="mt-2 text-center" style="display: none;">
-                                        <img src="" alt="Vista previa del avatar" class="img-fluid rounded-circle"
-                                            style="max-width: 100px;">
+                                <div class="col-12">
+                                    <label class="form-label">Avatar</label>
+                                    <div class="avatar-preview-zone avatar-preview-zone--sm" id="avatar-preview-zone"
+                                         role="button" tabindex="0" aria-label="Seleccionar avatar">
+                                        <img src="/assets/images/users/user-dummy-img.jpg" alt="Previsualización"
+                                            class="avatar-preview-img" id="avatar-preview-img">
+                                        <div class="avatar-preview-text">
+                                            <p class="avatar-preview-hint">
+                                                <strong>Haz clic para elegir una imagen</strong> o arrástrala aquí<br>
+                                                JPG, PNG o GIF · máximo 2 MB
+                                            </p>
+                                            <span class="avatar-preview-filename" id="avatar-preview-filename">
+                                                <i class="ri-image-line flex-shrink-0"></i><span></span>
+                                            </span>
+                                        </div>
                                     </div>
+                                    <input type="file" id="field-avatar" name="avatar" class="d-none"
+                                        accept="image/png,image/jpeg,image/jpg,image/gif" />
                                 </div>
                             </div>
                         </div>
@@ -383,9 +359,9 @@
                         <label class="form-label fw-semibold" for="pdf-filter-role">Rol</label>
                         <select class="form-select" id="pdf-filter-role">
                             <option value="">Todos los roles</option>
-                            <option value="Administrador">Administrador</option>
-                            <option value="Supervisor">Supervisor</option>
-                            <option value="Usuario">Usuario</option>
+                            @foreach($roles as $rol)
+                                <option value="{{ $rol->id }}">{{ $rol->nombre }}</option>
+                            @endforeach
                         </select>
                     </div>
                     <div class="mb-0">
@@ -428,6 +404,20 @@
 
 
     <script>
+        // Formatea a dd/mm/aaaa (sin hora) — igual que en los demás módulos del estándar "Ver".
+        function formatDate(dateStr) {
+            if (!dateStr) return 'N/A';
+            if (typeof dateStr === 'string') {
+                var datePart = dateStr.trim().split(' ')[0] || '';
+                if (/^\d{2}\/\d{2}\/\d{4}$/.test(datePart)) return datePart;
+            }
+            var date = new Date(dateStr);
+            if (isNaN(date.getTime())) return dateStr;
+            var day = String(date.getDate()).padStart(2, '0');
+            var month = String(date.getMonth() + 1).padStart(2, '0');
+            return day + '/' + month + '/' + date.getFullYear();
+        }
+
         $(document).ready(function () {
             $.ajaxSetup({
                 headers: {
@@ -615,7 +605,7 @@
                     marcarValido($email);
                 }
 
-                let $role = $('#field-role');
+                let $role = $('#field-role_id');
                 if (!$role.val()) {
                     marcarInvalido($role, 'El rol es obligatorio.');
                     esValido = false;
@@ -659,7 +649,7 @@
                 $('#modalTitle').text('Agregar Usuario');
                 $('#userForm')[0].reset();
                 $('#userForm input[type="hidden"]').val('');
-                $('#avatar-preview').hide().find('img').attr('src', '');
+                resetAvatarZone();
                 $('#add-btn').show();
                 $('#edit-btn').hide();
                 $('#password-group').show();
@@ -680,27 +670,68 @@
                 $('#field-password_confirmation').prop('required', false);
             }
 
-            // Función para mostrar vista previa de imágenes
-            function readURL(input, previewId) {
-                if (input.files && input.files[0]) {
-                    var reader = new FileReader();
-                    reader.onload = function (e) {
-                        $(previewId).find('img').attr('src', e.target.result);
-                        $(previewId).show();
-                    }
-                    reader.readAsDataURL(input.files[0]);
+            // === Zona de avatar con previsualización (mismo patrón que /profile) ===
+            var AVATAR_DUMMY = '/assets/images/users/user-dummy-img.jpg';
+            var $avatarZone  = $('#avatar-preview-zone');
+            var $avatarInput = $('#field-avatar');
+            var $avatarImg   = $('#avatar-preview-img');
+            var $avatarChip  = $('#avatar-preview-filename');
+
+            function validarAvatar(file) {
+                var tiposOk = ['image/jpeg', 'image/png', 'image/gif'];
+                if (tiposOk.indexOf(file.type) === -1) {
+                    Swal.fire({ icon: 'error', title: 'Formato no permitido', text: 'La imagen debe ser JPG, PNG o GIF.' });
+                    return false;
                 }
+                if (file.size > 2 * 1024 * 1024) {
+                    Swal.fire({ icon: 'error', title: 'Imagen muy pesada', text: 'La imagen no debe superar los 2 MB.' });
+                    return false;
+                }
+                return true;
             }
 
-            // Vista previa de imágenes al seleccionarlas
-            $('#field-avatar').change(function () {
-                readURL(this, '#avatar-preview');
+            function aplicarAvatar(file) {
+                if (!validarAvatar(file)) {
+                    $avatarInput.val('');
+                    return;
+                }
+                // Asignar al input para que viaje con el FormData del submit
+                var dt = new DataTransfer();
+                dt.items.add(file);
+                $avatarInput[0].files = dt.files;
+
+                var reader = new FileReader();
+                reader.onload = function (e) { $avatarImg.attr('src', e.target.result); };
+                reader.readAsDataURL(file);
+                $avatarChip.addClass('has-file').find('span').text(file.name);
+            }
+
+            function resetAvatarZone(src) {
+                $avatarInput.val('');
+                $avatarImg.attr('src', src || AVATAR_DUMMY);
+                $avatarChip.removeClass('has-file');
+            }
+
+            $avatarZone.on('click', function () { $avatarInput.trigger('click'); });
+            $avatarZone.on('keydown', function (e) {
+                if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); $avatarInput.trigger('click'); }
+            });
+            $avatarInput.on('change', function () {
+                if (this.files && this.files[0]) aplicarAvatar(this.files[0]);
+            });
+            $avatarZone.on('dragover dragenter', function (e) {
+                e.preventDefault(); $avatarZone.addClass('is-dragover');
+            });
+            $avatarZone.on('dragleave drop', function (e) {
+                e.preventDefault(); $avatarZone.removeClass('is-dragover');
+            });
+            $avatarZone.on('drop', function (e) {
+                var files = e.originalEvent.dataTransfer && e.originalEvent.dataTransfer.files;
+                if (files && files[0]) aplicarAvatar(files[0]);
             });
 
             $("#create-btn").click(function () {
                 resetForm();
-                // Ocultar vista previa
-                $('#avatar-preview').hide();
             });
 
             $("#showModal").on('hidden.bs.modal', function () {
@@ -774,8 +805,9 @@
                     $("#viewModal").modal("show");
                     $("#view-name").text(data.name);
                     $("#view-email").text(data.email);
+                    $("#view-email-card").text(data.email);
                     $("#view-role").text(data.role || 'Sin rol');
-                    $("#view-created").text(data.created_at);
+                    $("#view-created").text(formatDate(data.created_at));
                     var _activo = (data.estado == 1 || data.estado === true);
                     $("#view-estado")
                         .text(_activo ? 'Activo' : 'Inhabilitado')
@@ -801,13 +833,10 @@
                     $("#id-field").val(data.id);
                     $("#field-name").val(data.name);
                     $("#field-email").val(data.email);
-                    $("#field-role").val(data.role);
+                    $("#field-role_id").val(data.role_id);
 
-                    // Mostrar las imágenes existentes si las hay
-                    if (data.avatar) {
-                        $("#avatar-preview img").attr('src', data.avatar);
-                        $("#avatar-preview").show();
-                    }
+                    // Mostrar el avatar existente en la zona de previsualización
+                    resetAvatarZone(data.avatar || null);
 
 
                     $("#showModal").modal("show");
@@ -1099,7 +1128,7 @@
             var estatus = $('#pdf-filter-estatus').val();
             var fdesde  = $('#pdf-fecha-desde').val();
             var fhasta  = $('#pdf-fecha-hasta').val();
-            if (role)            params.push('role=' + encodeURIComponent(role));
+            if (role)            params.push('role_id=' + encodeURIComponent(role));
             if (estatus !== '')  params.push('estatus=' + encodeURIComponent(estatus));
             if (fdesde)          params.push('fecha_desde=' + encodeURIComponent(fdesde));
             if (fhasta)          params.push('fecha_hasta=' + encodeURIComponent(fhasta));

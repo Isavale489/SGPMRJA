@@ -18,7 +18,7 @@
                 <div class="input-group mb-3">
                     <span class="input-group-text"><i class="ri-search-2-line"></i></span>
                     <input type="text" id="bsp-input" class="form-control"
-                        placeholder="Buscar por nombre, apellido o documento..." autocomplete="off">
+                        placeholder="Buscar por nombre, razón social o documento..." autocomplete="off">
                     <button type="button" class="btn btn-light" id="bsp-clear-btn" title="Limpiar">
                         <i class="ri-close-line"></i>
                     </button>

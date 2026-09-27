@@ -40,23 +40,13 @@ class ClienteService
                         'documento' => ['Este documento ya está registrado como cliente.'],
                     ]);
                 }
-                // Reutilizar la persona existente — agregar teléfono/dirección si se proveyeron
-                if (!empty($data['telefono'])) {
-                    Telefono::create([
-                        'persona_id' => $persona->id,
-                        'numero' => $data['telefono'],
-                        'tipo' => 'movil',
-                        'es_principal' => true,
-                    ]);
-                }
+                // Reutilizar la persona existente — sincronizar teléfonos/dirección
+                Telefono::sincronizar($persona, $data['telefonos'] ?? []);
                 if (!empty($data['direccion']) || !empty($data['ciudad']) || !empty($data['estado_territorial'])) {
                     Direccion::create([
                         'persona_id' => $persona->id,
                         'direccion' => $data['direccion'] ?? '',
-                        'estado' => $data['estado_territorial'] ?? null,
-                        'ciudad' => $data['ciudad'] ?? null,
-                        'tipo' => 'casa',
-                        'es_principal' => true,
+                        ...Direccion::resolverUbicacion($data['estado_territorial'] ?? null, $data['ciudad'] ?? null),
                     ]);
                 }
             } else {
@@ -68,32 +58,21 @@ class ClienteService
                 }
 
                 $persona = Persona::create([
-                    'nombre' => $data['nombre'],
-                    'apellido' => $data['apellido'] ?? '',
+                    'nombre' => trim($data['nombre'] . ' ' . ($data['apellido'] ?? '')),
                     'documento_identidad' => $numeroDocumento,
                     'tipo_documento' => $tipoDocumento,
                     'email' => $data['email'] ?? null,
                 ]);
 
-                // Crear teléfono principal
-                if (!empty($data['telefono'])) {
-                    Telefono::create([
-                        'persona_id' => $persona->id,
-                        'numero' => $data['telefono'],
-                        'tipo' => 'movil',
-                        'es_principal' => true,
-                    ]);
-                }
+                // Crear teléfonos
+                Telefono::sincronizar($persona, $data['telefonos'] ?? []);
 
                 // Crear dirección principal
                 if (!empty($data['direccion']) || !empty($data['ciudad']) || !empty($data['estado_territorial'])) {
                     Direccion::create([
                         'persona_id' => $persona->id,
                         'direccion' => $data['direccion'] ?? '',
-                        'estado' => $data['estado_territorial'] ?? null,
-                        'ciudad' => $data['ciudad'] ?? null,
-                        'tipo' => 'casa',
-                        'es_principal' => true,
+                        ...Direccion::resolverUbicacion($data['estado_territorial'] ?? null, $data['ciudad'] ?? null),
                     ]);
                 }
             }
@@ -122,43 +101,26 @@ class ClienteService
             // Actualizar persona (sin documento)
             if ($cliente->persona) {
                 $cliente->persona->update([
-                    'nombre' => $data['nombre'],
-                    'apellido' => $data['apellido'] ?? '',
+                    'nombre' => trim($data['nombre'] . ' ' . ($data['apellido'] ?? '')),
                     'email' => $data['email'] ?? null,
                 ]);
 
-                // Actualizar o crear teléfono principal
-                if (!empty($data['telefono'])) {
-                    $telefonoPrincipal = $cliente->persona->telefonos()->where('es_principal', true)->first();
-                    if ($telefonoPrincipal) {
-                        $telefonoPrincipal->update(['numero' => $data['telefono']]);
-                    } else {
-                        Telefono::create([
-                            'persona_id' => $cliente->persona->id,
-                            'numero' => $data['telefono'],
-                            'tipo' => 'movil',
-                            'es_principal' => true,
-                        ]);
-                    }
-                }
+                // Sincronizar el set completo de teléfonos
+                Telefono::sincronizar($cliente->persona, $data['telefonos'] ?? []);
 
                 // Actualizar o crear dirección principal
                 if (!empty($data['direccion']) || !empty($data['ciudad']) || !empty($data['estado_territorial'])) {
-                    $direccionPrincipal = $cliente->persona->direcciones()->where('es_principal', true)->first();
+                    $direccionPrincipal = $cliente->persona->direccion;
                     if ($direccionPrincipal) {
                         $direccionPrincipal->update([
                             'direccion' => $data['direccion'] ?? '',
-                            'estado' => $data['estado_territorial'] ?? null,
-                            'ciudad' => $data['ciudad'] ?? null,
+                            ...Direccion::resolverUbicacion($data['estado_territorial'] ?? null, $data['ciudad'] ?? null),
                         ]);
                     } else {
                         Direccion::create([
                             'persona_id' => $cliente->persona->id,
                             'direccion' => $data['direccion'] ?? '',
-                            'estado' => $data['estado_territorial'] ?? null,
-                            'ciudad' => $data['ciudad'] ?? null,
-                            'tipo' => 'casa',
-                            'es_principal' => true,
+                            ...Direccion::resolverUbicacion($data['estado_territorial'] ?? null, $data['ciudad'] ?? null),
                         ]);
                     }
                 }
@@ -171,4 +133,5 @@ class ClienteService
             ]);
         });
     }
+
 }

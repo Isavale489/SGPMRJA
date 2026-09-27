@@ -1,7 +1,7 @@
 # CLAUDE.md — Contexto de proyecto para Claude Code
 
 > Leído automáticamente por Claude Code al iniciar sesión.
-> Última actualización: 2026-06-03 (dump SQL limpio · commit `caa618b`) · Rama activa: `enmanuel`
+> Última actualización: 2026-07-08 (QoL cotizaciones/dashboard + reversión cotización + dropdown banco · commit `6a4a5cc`) · Rama activa: `dev`
 
 ---
 
@@ -25,6 +25,63 @@
 | IDs de form | Campo oculto `#id-field` para el ID del registro (convención universal) |
 | DataTables | Siempre server-side; método `getX()` en el controller |
 | Modelos | Soft deletes en la mayoría; `estado` como ENUM en lugar de booleano |
+
+---
+
+## Trabajo realizado en sesión 2026-07-07/08
+
+### 1. Paquete QoL — Cotizaciones y Dashboard
+
+| Commit | Cambio |
+|---|---|
+| `8177e91` | **Logo/bordado opcional**: `logo_id` de bordados pasa de `required` a `nullable` en store/update de `CotizacionController`; el configurador ya no bloquea al aplicar sin logo (estado "Sin logo asignado" en vez de "Falta logo"). El servicio ya persistía nullable |
+| `5e56df3` | **Días de validez dinámicos**: el cálculo ya usaba `Cotizacion::diasVigencia()` (parámetro `cotizaciones.dias_vigencia`); el único hardcode restante era el mensaje "Nueva validez: 15 días" de `reactivar`, ahora interpolado |
+| `0c5d049` | **Widget Productos del dashboard**: contaba la tabla `producto` (solo variantes materializadas, 0 filas) → ahora cuenta `tipo_producto` (deleted_at IS NULL), que es lo que lista el módulo `/productos` ("Catálogo de Productos (Tipos)") |
+| `948f5c1` | **Fecha emisión/validez en hora local**: `new Date().toISOString()` devuelve UTC; en Venezuela (UTC−4) crear en la tarde/noche corría la emisión al día siguiente. Nuevo helper `cotFechaLocalISO()` en `cotizaciones/scripts/main.blade.php`, usado en default de emisión, `cotSeedValidez` y chips de validez rápida |
+
+### 2. Dropdown de Banco (wizard Pedido, paso Pago) — clipping por footer
+
+**Problema**: el menú de banco (realzado por AtlanticoSelect) abría hacia abajo
+y el footer opaco del modal + el `overflow-y:auto` del `wiz-wizard-body` tapaban
+las opciones (peor con una sola fila de pago).
+
+**Solución final** (commits `9f28dbd` → `6a4a5cc`, en `pedAgregarFila` de
+`pedidos/scripts/main.blade.php`): `.afs-wrap` con clase `dropup` + Dropdown de
+Bootstrap instanciado con `popperConfig` → `strategy:'fixed'` (el menú flota
+libre, escapa el clipping de ancestros) y modificador `flip` deshabilitado
+(siempre abre hacia arriba). **Gotchas aprendidos**:
+- `data-bs-display="static"` NO sirve: desactiva Popper y el menú vuelve al
+  flujo → lo recorta el overflow del contenedor.
+- Con `strategy:'fixed'` los anchos porcentuales (`w-100`, `min-width:100%` de
+  `.afs-menu`) se resuelven contra el **viewport** → menú a pantalla completa y
+  desfasado. Hay que **quitar la clase `w-100`** (es `!important`) y fijar el
+  ancho del toggle en px en cada `show.bs.dropdown` (+ `min-width:0`).
+
+Patrón reutilizable si otro módulo sufre el mismo clipping con AtlanticoSelect.
+
+### 3. Reversión de estado de Cotización al eliminar su Pedido
+
+**Problema**: al eliminar un pedido creado desde una cotización, esta quedaba
+atascada en estado `Convertida` y ya no se podía volver a convertir
+(`Cotizacion::puedeConvertirse()` exige `Aprobada`). Segundo bloqueo: el índice
+único **plano** `pedido_cotizacion_id_unique` (migración `2026_02_19_200000…`)
+no ignora filas soft-deleted, así que la fila borrada seguía ocupando el
+`cotizacion_id` y re-convertir fallaba por *duplicate key*.
+
+**Solución** (commit `f3922f9`):
+
+| Archivo | Cambio |
+|---|---|
+| `app/Services/PedidoService.php` | Nuevo `eliminar(Pedido $pedido)`: en transacción revierte cotización `Convertida → Aprobada` (con `lockForUpdate()`), **desliga** `cotizacion_id` del pedido (`NULL` libera el índice único; MySQL admite múltiples NULL) y hace el soft delete |
+| `app/Http/Controllers/PedidoController.php` | `destroy()` conserva sus guards (Completado/Cancelado, `tieneProduccionActiva`) y delega en `pedidoService->eliminar()` en vez del `$pedido->delete()` directo |
+
+**Reglas / decisiones**:
+- Solo aplica a **eliminación**. `cancelar()` NO revierte: el pedido sigue
+  existiendo (estado `Cancelado`), la cotización permanece `Convertida` a propósito.
+- Sin migración (el desligue por `NULL` resuelve el índice único) ni cambios de
+  frontend (el botón "Convertir a pedido" reaparece solo, es data-driven).
+- La conversión sigue por `CotizacionService::convertirAPedido` (re-chequea
+  vigencia); `yaFueConvertida()` = `pedido()->exists()` ya excluye trashed.
 
 ---
 
@@ -73,7 +130,7 @@ El modal de edición de cotizaciones tenía chips interactivos para cambiar el e
 
 ### 3. Módulo Compras — Flujo Borrador/Procesar/Anular/Clonar
 
-**Rama**: `feat/compras-ajustes` (mergeada a `enmanuel`)
+**Rama**: `feat/compras-ajustes` (mergeada a `dev`)
 
 #### Flujo de estados
 ```
@@ -139,19 +196,45 @@ Migraciones relevantes recientes:
 
 ## Dump SQL — `database/sistema_atlantico.sql`
 
-> El sistema corre sobre **MySQL 8** (no MariaDB; el local es solo el motor de desarrollo). El dump debe quedar siempre en formato MySQL nativo.
+> **ESTÁNDAR DEL EQUIPO (2026-06-25):** todos corren **MySQL 8 local** (igual que producción) y exportan/importan **solo con los scripts** `database/export-db.*` / `database/import-db.*`. **Prohibido** subir dumps de phpMyAdmin o del `mysqldump` de XAMPP/MariaDB.
 
-**Estado al 2026-06-03** (commit `caa618b` en `enmanuel`): dump limpio y funcional, listo para importar directamente en cualquier gestor de DB.
+### Por qué este estándar
+El equipo usaba motores distintos (MariaDB en XAMPP vs MySQL 8 en Ubuntu/producción), y phpMyAdmin generaba dumps incompatibles que fallaban al importar en MySQL 8. Causas concretas detectadas:
+- phpMyAdmin **difería `PRIMARY KEY` + `AUTO_INCREMENT`** a bloques `ALTER TABLE` al final → si la importación se corta, las tablas quedan **sin autoincrement** (`Field 'id' doesn't have a default value`).
+- No desactivaba `FOREIGN_KEY_CHECKS`.
+- Sintaxis MariaDB: `current_timestamp()` (con paréntesis) y anchos `bigint(20)`, que MySQL 8 estricto rechaza o deprecia.
 
-- Header MySQL nativo (`MySQL dump 10.13 Distrib 8.0.46`), DB `sistema_atlantico5`
-- 43 tablas, datos sin basura de testeo
-- `compra`: 2 filas reales (ambas `recibida`); incluye las 3 columnas nuevas (`clonada`, `anulado_por_id`, `fecha_anulacion`) + FK `compra_anulado_por_id_foreign`
-- Migraciones registradas hasta la `121` (batch 68)
+Con todos en MySQL 8 + `mysqldump`, los dumps salen idénticos y siempre importan limpio.
 
-**Para regenerar el dump** (cuidando compatibilidad MySQL):
-- Preferir partir del dump de referencia MySQL nativo + aplicar solo el delta de esquema, en vez de re-dumpear desde la MariaDB local (arrastra header "MariaDB dump", `current_timestamp()`, anchos `bigint(20)` y data de prueba).
-- Cliente/dump en `C:\xampp\mysql\bin\`. **Bash tool**: la redirección `<`/`>` funciona bien. **PowerShell**: NO usar `>` (genera UTF-16/BOM y rompe el archivo) — usar `--result-file`.
-- Validar siempre importando en una BD temporal antes de commitear, y hacer `DROP` al terminar.
+### Exportar la BD al repo (cualquier SO)
+```bash
+# Windows
+powershell -ExecutionPolicy Bypass -File database\export-db.ps1
+# Linux / Mac
+bash database/export-db.sh
+```
+Genera `database/sistema_atlantico.sql` en formato MySQL 8 nativo (lee config del `.env`). Luego `git add database/sistema_atlantico.sql && git commit`.
+
+### Importar la BD desde el repo (cualquier SO)
+```bash
+git pull
+# Windows
+powershell -ExecutionPolicy Bypass -File database\import-db.ps1
+# Linux / Mac
+bash database/import-db.sh
+```
+Crea la BD (nombre tomado del `.env`, default `sistema_atlantico`) e importa el dump. El `.sql` es **agnóstico al nombre de BD** (no trae `CREATE DATABASE`/`USE`), por eso no importa cómo se llame la BD en cada máquina.
+
+### Características del dump generado por los scripts
+- Header MySQL nativo, **sin** `CREATE DATABASE`/`USE` ni `GTID_PURGED`.
+- `PRIMARY KEY` + `AUTO_INCREMENT` **dentro** del `CREATE TABLE`; `FOREIGN_KEY_CHECKS=0`; charset `utf8mb4`.
+- Flags: `--single-transaction --no-tablespaces --set-gtid-purged=OFF --add-drop-table --result-file=…`.
+- **PowerShell**: nunca usar `>` (genera UTF-16/BOM y rompe el archivo) — los scripts usan `--result-file`.
+
+### Setup de MySQL 8 local (una vez por máquina)
+1. Instalar **MySQL Server 8.0** y agregar su carpeta `bin` al PATH (`mysqldump`/`mysql` accesibles).
+2. Ajustar el `.env` (`DB_PORT`, `DB_USERNAME`, `DB_PASSWORD`) a la instancia MySQL 8.
+3. (Alternativa sin importar dump) `php artisan migrate --seed` reconstruye esquema + data de catálogo desde migraciones y seeders.
 
 ---
 
@@ -160,5 +243,48 @@ Migraciones relevantes recientes:
 | Rama | Propósito |
 |---|---|
 | `main` | Producción / base estable |
-| `enmanuel` | Rama de trabajo principal de Emmanuel (contiene todo lo reciente) |
-| `feat/compras-ajustes` | Feature de compras (mergeada a `enmanuel`) |
+| `dev` | Rama de integración del equipo (contiene todo lo reciente). Renombrada desde `enmanuel` el 2026-08-25 |
+| `feat/compras-ajustes` | Feature de compras (mergeada a `dev`) |
+
+<!-- parrot:wiki:begin -->
+## Codebase Knowledge Graph (LLM Wiki)
+
+This repository maintains a machine-first knowledge graph of the
+codebase (pages + typed edges over a local SQLite plane, built by
+`wikitoolkit build`). For ANY question about the codebase — where
+something lives, how modules relate, what a subsystem does — you MUST
+run a scoped wiki query FIRST, before Grep/Glob/Read or any shell
+search (`grep`/`rg`/`find`/`cat` via Bash):
+
+- `wikitoolkit query "<question>"` — token-budgeted, ranked page
+  stubs for a scoped question. ALWAYS start here.
+- `wikitoolkit page <id>` — read one page in full (file summaries,
+  API outlines, content). Use the ids returned by `query`.
+- `wikitoolkit related <id>` — follow typed edges (`contains`,
+  `references`) to neighbouring files/modules.
+- `wikitoolkit status` — plane statistics and staleness.
+- `wikitoolkit build` — refresh the graph after large changes
+  (a git post-commit hook may already keep it fresh).
+
+**Query discipline** (avoids the two most common ways the wiki
+"fails" — which are usually caller error, not missing coverage):
+
+1. **Query for the *thing*, not for your *hypothesis* about it.** The
+   ranking is lexical — extra concept words steer it toward those
+   concepts. To locate a class or feature, name the symbol/module/
+   subsystem you want (`"attestation model service"`), not your theory
+   about where it might live.
+2. **Follow the thread before falling back.** If a result scores low
+   or names a parent module, resolve it with `wikitoolkit page <id>`
+   or `wikitoolkit related <id>` — one hop usually lands the real
+   page. Do NOT jump to grep just because the first `query` didn't
+   rank the exact page first.
+
+Only fall back to Grep/Glob/Read (or shell search) once a clean query
+*and* a page/related follow-up have genuinely come up empty — and say
+so before you do. Consider `wikitoolkit build` if results look stale.
+
+The `/parrotwiki` command wraps these (e.g. `/parrotwiki query how
+does ingest work`, `/parrotwiki --wiki` to export a human-readable
+markdown wiki).
+<!-- parrot:wiki:end -->

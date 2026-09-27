@@ -129,30 +129,9 @@
                                         </label>
                                         <select class="form-select navy-filter-select" id="filter-estado-territorial" data-col-index="8">
                                             <option value="">Todos</option>
-                                            <option value="Amazonas">Amazonas</option>
-                                            <option value="Anzoátegui">Anzoátegui</option>
-                                            <option value="Apure">Apure</option>
-                                            <option value="Aragua">Aragua</option>
-                                            <option value="Barinas">Barinas</option>
-                                            <option value="Bolívar">Bolívar</option>
-                                            <option value="Carabobo">Carabobo</option>
-                                            <option value="Cojedes">Cojedes</option>
-                                            <option value="Delta Amacuro">Delta Amacuro</option>
-                                            <option value="Distrito Capital">Distrito Capital</option>
-                                            <option value="Falcón">Falcón</option>
-                                            <option value="Guárico">Guárico</option>
-                                            <option value="La Guaira">La Guaira</option>
-                                            <option value="Lara">Lara</option>
-                                            <option value="Mérida">Mérida</option>
-                                            <option value="Miranda">Miranda</option>
-                                            <option value="Monagas">Monagas</option>
-                                            <option value="Nueva Esparta">Nueva Esparta</option>
-                                            <option value="Portuguesa">Portuguesa</option>
-                                            <option value="Sucre">Sucre</option>
-                                            <option value="Táchira">Táchira</option>
-                                            <option value="Trujillo">Trujillo</option>
-                                            <option value="Yaracuy">Yaracuy</option>
-                                            <option value="Zulia">Zulia</option>
+                                            @foreach ($estadosVe as $__est)
+                                                <option value="{{ $__est }}">{{ $__est }}</option>
+                                            @endforeach
                                         </select>
                                     </div>
                                     {{-- Filtro 4: Ordenar por --}}
@@ -209,214 +188,126 @@
                     <h5 class="modal-title">Detalles del Cliente</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <div class="modal-body p-4">
-                    <div class="row g-4">
-                        <!-- Columna Izquierda: Datos Personales -->
-                        <div class="col-lg-6">
-                            <!-- Card Datos Personales -->
-                            <div class="card border-0 shadow-sm mb-4">
-                                <div class="card-header border-0" style="background: rgba(30, 60, 114, 0.1);">
-                                    <h6 class="mb-0" style="color: #1e3c72;">
-                                        <i class="ri-user-line me-2"></i>Información Personal
-                                    </h6>
-                                </div>
-                                <div class="card-body">
-                                    <div class="row g-3">
-                                        {{-- Cliente Natural: Nombre + Apellido en 2 columnas --}}
-                                        <div class="col-6" id="view-block-nombre">
-                                            <div class="d-flex align-items-center">
-                                                <div class="rounded-circle me-2 d-flex align-items-center justify-content-center"
-                                                    style="width: 32px; height: 32px; background: rgba(30, 60, 114, 0.1);">
-                                                    <i class="ri-user-line" style="color: #1e3c72;"></i>
-                                                </div>
-                                                <div>
-                                                    <small class="text-muted d-block">Nombre</small>
-                                                    <span class="fw-semibold" id="view-nombre">-</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="col-6" id="view-block-apellido">
-                                            <div class="d-flex align-items-center">
-                                                <div class="rounded-circle me-2 d-flex align-items-center justify-content-center"
-                                                    style="width: 32px; height: 32px; background: rgba(30, 60, 114, 0.1);">
-                                                    <i class="ri-user-follow-line" style="color: #1e3c72;"></i>
-                                                </div>
-                                                <div>
-                                                    <small class="text-muted d-block">Apellido</small>
-                                                    <span class="fw-semibold" id="view-apellido">-</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        {{-- Cliente Jurídico/Gubernamental: Razón Social en ancho completo --}}
-                                        <div class="col-12 d-none" id="view-block-razon-social">
-                                            <div class="d-flex align-items-center">
-                                                <div class="rounded-circle me-2 d-flex align-items-center justify-content-center"
-                                                    style="width: 32px; height: 32px; background: rgba(30, 60, 114, 0.1);">
-                                                    <i class="ri-building-line" style="color: #1e3c72;"></i>
-                                                </div>
-                                                <div>
-                                                    <small class="text-muted d-block">Razón Social</small>
-                                                    <span class="fw-semibold" id="view-razon-social">-</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="col-6">
-                                            <div class="d-flex align-items-center">
-                                                <div class="rounded-circle me-2 d-flex align-items-center justify-content-center"
-                                                    style="width: 32px; height: 32px; background: rgba(30, 60, 114, 0.1);">
-                                                    <i class="ri-bank-card-line" style="color: #1e3c72;"></i>
-                                                </div>
-                                                <div>
-                                                    <small class="text-muted d-block">Documento</small>
-                                                    <span class="fw-semibold" id="view-documento">-</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="col-6">
-                                            <div class="d-flex align-items-center">
-                                                <div class="rounded-circle me-2 d-flex align-items-center justify-content-center"
-                                                    style="width: 32px; height: 32px; background: rgba(30, 60, 114, 0.1);">
-                                                    <i class="ri-user-settings-line" style="color: #1e3c72;"></i>
-                                                </div>
-                                                <div>
-                                                    <small class="text-muted d-block">Tipo Cliente</small>
-                                                    <span class="fw-semibold" id="view-tipo_cliente">-</span>
-                                                </div>
-                                            </div>
-                                        </div>
+                <div class="modal-body p-0">
+
+                    {{-- Hero strip --}}
+                    <div class="cli-view-hero">
+                        <div class="cli-view-hero-avatar" id="view-hero-avatar">—</div>
+                        <div class="cli-view-hero-info">
+                            <div class="cli-view-hero-name" id="view-hero-name">—</div>
+                            <div class="cli-view-hero-doc" id="view-hero-doc">—</div>
+                        </div>
+                        <div class="cli-view-hero-badge text-end">
+                            <div><span id="view-estatus">—</span></div>
+                            <div class="cli-view-hero-date mt-1"><i class="ri-calendar-line me-1"></i><span id="view-hero-date">—</span></div>
+                        </div>
+                    </div>
+
+                    {{-- Secciones --}}
+                    <div class="px-4 py-3 cli-view-sections">
+
+                        {{-- Identificación --}}
+                        <div class="cli-view-card">
+                        <div class="cli-view-card-header"><i class="ri-fingerprint-line"></i>Identificación</div>
+                        <div class="cli-view-card-body">
+                        <div class="row g-3">
+                            {{-- Documento SIEMPRE primero --}}
+                            <div class="col-sm-6">
+                                <div class="d-flex align-items-start">
+                                    <div class="emp-icon-box emp-icon-box--navy rounded-circle me-2 flex-shrink-0 d-flex align-items-center justify-content-center">
+                                        <i class="ri-bank-card-line emp-icon--navy"></i>
                                     </div>
+                                    <div><small class="text-muted d-block fs-12">Documento</small>
+                                    <span class="fw-semibold fs-13" id="view-documento">-</span></div>
                                 </div>
                             </div>
-
-                            <!-- Card Contacto -->
-                            <div class="card border-0 shadow-sm">
-                                <div class="card-header border-0" style="background: rgba(30, 60, 114, 0.1);">
-                                    <h6 class="mb-0" style="color: #1e3c72;">
-                                        <i class="ri-contacts-line me-2"></i>Información de Contacto
-                                    </h6>
-                                </div>
-                                <div class="card-body">
-                                    <div class="row g-3">
-                                        <div class="col-12">
-                                            <div class="d-flex align-items-center">
-                                                <div class="rounded-circle me-2 d-flex align-items-center justify-content-center"
-                                                    style="width: 32px; height: 32px; background: rgba(30, 60, 114, 0.1);">
-                                                    <i class="ri-mail-line" style="color: #1e3c72;"></i>
-                                                </div>
-                                                <div>
-                                                    <small class="text-muted d-block">Email</small>
-                                                    <span class="fw-semibold" id="view-email">-</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="col-12">
-                                            <div class="d-flex align-items-center">
-                                                <div class="rounded-circle me-2 d-flex align-items-center justify-content-center"
-                                                    style="width: 32px; height: 32px; background: rgba(30, 60, 114, 0.1);">
-                                                    <i class="ri-phone-line" style="color: #1e3c72;"></i>
-                                                </div>
-                                                <div>
-                                                    <small class="text-muted d-block">Teléfono</small>
-                                                    <span class="fw-semibold" id="view-telefono">-</span>
-                                                </div>
-                                            </div>
-                                        </div>
+                            <div class="col-sm-6">
+                                <div class="d-flex align-items-start">
+                                    <div class="emp-icon-box emp-icon-box--navy rounded-circle me-2 flex-shrink-0 d-flex align-items-center justify-content-center">
+                                        <i class="ri-user-settings-line emp-icon--navy"></i>
                                     </div>
+                                    <div><small class="text-muted d-block fs-12">Tipo de Cliente</small>
+                                    <span class="fw-semibold fs-13" id="view-tipo_cliente">-</span></div>
+                                </div>
+                            </div>
+                            {{-- Identidad unificada: nombre completo (natural) o razón social (jurídico) --}}
+                            <div class="col-12" id="view-block-nombre">
+                                <div class="d-flex align-items-start">
+                                    <div class="emp-icon-box emp-icon-box--navy rounded-circle me-2 flex-shrink-0 d-flex align-items-center justify-content-center">
+                                        <i class="ri-user-line emp-icon--navy"></i>
+                                    </div>
+                                    <div><small class="text-muted d-block fs-12">Nombre / Razón Social</small>
+                                    <span class="fw-semibold fs-13" id="view-nombre">-</span></div>
                                 </div>
                             </div>
                         </div>
+                        </div></div>
 
-                        <!-- Columna Derecha: Ubicación y Estado -->
-                        <div class="col-lg-6">
-                            <!-- Card Ubicación -->
-                            <div class="card border-0 shadow-sm mb-4">
-                                <div class="card-header border-0" style="background: rgba(30, 60, 114, 0.1);">
-                                    <h6 class="mb-0" style="color: #1e3c72;">
-                                        <i class="ri-map-pin-line me-2"></i>Ubicación
-                                    </h6>
-                                </div>
-                                <div class="card-body">
-                                    <div class="row g-3">
-                                        <div class="col-12">
-                                            <div class="d-flex align-items-center">
-                                                <div class="rounded-circle me-2 d-flex align-items-center justify-content-center"
-                                                    style="width: 32px; height: 32px; background: rgba(30, 60, 114, 0.1);">
-                                                    <i class="ri-home-4-line" style="color: #1e3c72;"></i>
-                                                </div>
-                                                <div>
-                                                    <small class="text-muted d-block">Dirección</small>
-                                                    <span class="fw-semibold" id="view-direccion">-</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="col-6">
-                                            <div class="d-flex align-items-center">
-                                                <div class="rounded-circle me-2 d-flex align-items-center justify-content-center"
-                                                    style="width: 32px; height: 32px; background: rgba(30, 60, 114, 0.1);">
-                                                    <i class="ri-government-line" style="color: #1e3c72;"></i>
-                                                </div>
-                                                <div>
-                                                    <small class="text-muted d-block">Estado</small>
-                                                    <span class="fw-semibold" id="view-estado-territorial">-</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="col-6">
-                                            <div class="d-flex align-items-center">
-                                                <div class="rounded-circle me-2 d-flex align-items-center justify-content-center"
-                                                    style="width: 32px; height: 32px; background: rgba(30, 60, 114, 0.1);">
-                                                    <i class="ri-building-line" style="color: #1e3c72;"></i>
-                                                </div>
-                                                <div>
-                                                    <small class="text-muted d-block">Municipio</small>
-                                                    <span class="fw-semibold" id="view-ciudad">-</span>
-                                                </div>
-                                            </div>
-                                        </div>
+                        {{-- Contacto --}}
+                        <div class="cli-view-card cli-view-card--blue">
+                        <div class="cli-view-card-header"><i class="ri-contacts-line"></i>Contacto</div>
+                        <div class="cli-view-card-body">
+                        <div class="row g-3">
+                            <div class="col-sm-6">
+                                <div class="d-flex align-items-start">
+                                    <div class="emp-icon-box emp-icon-box--blue rounded-circle me-2 flex-shrink-0 d-flex align-items-center justify-content-center">
+                                        <i class="ri-mail-line emp-icon--blue"></i>
                                     </div>
+                                    <div><small class="text-muted d-block fs-12">Correo electrónico</small>
+                                    <span class="fw-semibold fs-13" id="view-email">-</span></div>
                                 </div>
                             </div>
-
-                            <!-- Card Estatus -->
-                            <div class="card border-0 shadow-sm mb-4">
-                                <div class="card-header border-0" style="background: rgba(30, 60, 114, 0.1);">
-                                    <h6 class="mb-0" style="color: #1e3c72;">
-                                        <i class="ri-information-line me-2"></i>Estatus del Cliente
-                                    </h6>
-                                </div>
-                                <div class="card-body">
-                                    <div class="row g-3">
-                                        <div class="col-6">
-                                            <div class="d-flex align-items-center">
-                                                <div class="rounded-circle me-2 d-flex align-items-center justify-content-center"
-                                                    style="width: 32px; height: 32px; background: rgba(30, 60, 114, 0.1);">
-                                                    <i class="ri-checkbox-circle-line" style="color: #1e3c72;"></i>
-                                                </div>
-                                                <div>
-                                                    <span class="fw-semibold" id="view-estatus">-</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="col-6">
-                                            <div class="d-flex align-items-center">
-                                                <div class="rounded-circle me-2 d-flex align-items-center justify-content-center"
-                                                    style="width: 32px; height: 32px; background: rgba(30, 60, 114, 0.1);">
-                                                    <i class="ri-calendar-line" style="color: #1e3c72;"></i>
-                                                </div>
-                                                <div>
-                                                    <small class="text-muted d-block">Fecha Registro</small>
-                                                    <span class="fw-semibold" id="view-created">-</span>
-                                                </div>
-                                            </div>
-                                        </div>
+                            <div class="col-sm-6">
+                                <div class="d-flex align-items-start">
+                                    <div class="emp-icon-box emp-icon-box--blue rounded-circle me-2 flex-shrink-0 d-flex align-items-center justify-content-center">
+                                        <i class="ri-phone-line emp-icon--blue"></i>
                                     </div>
+                                    <div><small class="text-muted d-block fs-12">Teléfonos</small>
+                                    <div class="fw-semibold fs-13" id="view-telefonos">-</div></div>
                                 </div>
                             </div>
                         </div>
+                        </div></div>
+
+                        {{-- Ubicación --}}
+                        <div class="cli-view-card cli-view-card--slate">
+                        <div class="cli-view-card-header"><i class="ri-map-pin-line"></i>Ubicación</div>
+                        <div class="cli-view-card-body">
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <div class="d-flex align-items-start">
+                                    <div class="emp-icon-box emp-icon-box--slate rounded-circle me-2 flex-shrink-0 d-flex align-items-center justify-content-center">
+                                        <i class="ri-home-4-line emp-icon--slate"></i>
+                                    </div>
+                                    <div><small class="text-muted d-block fs-12">Dirección</small>
+                                    <span class="fw-semibold fs-13" id="view-direccion">-</span></div>
+                                </div>
+                            </div>
+                            <div class="col-sm-6">
+                                <div class="d-flex align-items-start">
+                                    <div class="emp-icon-box emp-icon-box--slate rounded-circle me-2 flex-shrink-0 d-flex align-items-center justify-content-center">
+                                        <i class="ri-government-line emp-icon--slate"></i>
+                                    </div>
+                                    <div><small class="text-muted d-block fs-12">Estado</small>
+                                    <span class="fw-semibold fs-13" id="view-estado-territorial">-</span></div>
+                                </div>
+                            </div>
+                            <div class="col-sm-6">
+                                <div class="d-flex align-items-start">
+                                    <div class="emp-icon-box emp-icon-box--slate rounded-circle me-2 flex-shrink-0 d-flex align-items-center justify-content-center">
+                                        <i class="ri-building-line emp-icon--slate"></i>
+                                    </div>
+                                    <div><small class="text-muted d-block fs-12">Municipio</small>
+                                    <span class="fw-semibold fs-13" id="view-ciudad">-</span></div>
+                                </div>
+                            </div>
+                        </div>
+                        </div></div>
+
                     </div>
                 </div>
                 <div class="modal-footer bg-light border-0">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">
                         <i class="ri-close-line me-1"></i>Cerrar
                     </button>
                 </div>
@@ -450,7 +341,7 @@
                         <div class="row g-2 mb-0">
                             <div class="col-md-6">
                                 <x-forms.input name="documento_number" label="Documento (Cédula o RIF)"
-                                    id="documento-number-field" required maxlength="10" placeholder="Nro. documento"
+                                    id="documento-number-field" required maxlength="9" placeholder="Nro. documento"
                                     prependRaw="true">
                                     <x-slot:prepend>
                                         <select class="form-select" id="documento-prefix-field" style="max-width: 70px;">
@@ -463,8 +354,7 @@
                                 </x-forms.input>
                                 <input type="hidden" id="documento-field" name="documento" />
                                 <small class="text-muted"
-                                    style="margin-top: -6px; display: block; margin-bottom: 6px;">Máximo
-                                    10 dígitos</small>
+                                    style="margin-top: -6px; display: block; margin-bottom: 6px;">Entre 6 y 9 dígitos</small>
                                 <div id="documento-error" class="invalid-feedback" style="display: none;"></div>
                                 <div id="documento-persona-card" class="d-none mt-2 rounded"
                                     style="border:1px solid rgba(8,145,178,0.35); background:rgba(8,145,178,0.06); padding:10px 12px;">
@@ -484,7 +374,9 @@
                             </div>
                             <div class="col-md-6">
                                 <x-forms.select name="tipo_cliente" label="Tipo de Cliente" required id="tipo_cliente-field"
-                                    :options="['natural' => 'Natural', 'juridico' => 'Jurídico', 'gubernamental' => 'Gubernamental']" />
+                                    :options="['natural' => 'Natural', 'juridico' => 'Jurídico', 'gubernamental' => 'Gubernamental']"
+                                    class="js-readonly" disabled title="Se determina por el prefijo del documento"
+                                    hint="Se define solo por el prefijo del documento (V/E → Natural, J → Jurídico, G → Gubernamental)." />
                             </div>
                         </div>
                     </div>
@@ -515,40 +407,25 @@
                         <div class="modal-form-section-title"><i class="ri-contacts-book-2-line"></i>Contacto</div>
 
                         <div class="row g-2 mb-2">
-                            <div class="col-md-6">
+                            <div class="col-12">
                                 <x-forms.input name="email" label="Email" type="email" placeholder="correo@ejemplo.com"
                                     id="email-field" />
                             </div>
-                            <div class="col-md-6">
-                                <x-forms.input name="telefono_number" label="Teléfono" id="telefono-number-field" required
-                                    maxlength="7" placeholder="1234567" prependRaw="true">
-                                    <x-slot:prepend>
-                                        <select class="form-select" id="telefono-prefix-field"
-                                            style="max-width: 100px; min-width: 100px;">
-                                            <option value="0412">0412</option>
-                                            <option value="0422">0422</option>
-                                            <option value="0414">0414</option>
-                                            <option value="0424" selected>0424</option>
-                                            <option value="0416">0416</option>
-                                            <option value="0426">0426</option>
-                                        </select>
-                                    </x-slot:prepend>
-                                </x-forms.input>
-                                <input type="hidden" id="telefono-field" name="telefono" />
-                                <div id="telefono-error" class="invalid-feedback" style="display: none;"></div>
-                            </div>
                         </div>
 
-                        <div class="row g-2 mb-0">
+                        {{-- Teléfonos múltiples (componente reutilizable), dentro de Contacto --}}
+                        @include('admin.partials.telefonos-field', ['telId' => 'cli-tel'])
+                    </div>
+
+                    <div class="modal-form-section">
+                        <div class="modal-form-section-title"><i class="ri-map-pin-2-line"></i>Ubicación</div>
+
+                        <div class="row g-2 mb-2">
                             <div class="col-12">
                                 <x-forms.textarea name="direccion" label="Dirección" placeholder="Dirección completa"
                                     maxlength="500" required id="direccion-field" rows="2" />
                             </div>
                         </div>
-                    </div>
-
-                    <div class="modal-form-section">
-                        <div class="modal-form-section-title"><i class="ri-map-pin-2-line"></i>Ubicación</div>
 
                         <div class="row g-2">
                             <div class="col-md-6">
@@ -556,30 +433,9 @@
                                 <select name="estado_territorial" id="estado_territorial-field" class="form-select"
                                     required>
                                     <option value="">Seleccione estado</option>
-                                    <option value="Amazonas">Amazonas</option>
-                                    <option value="Anzoátegui">Anzoátegui</option>
-                                    <option value="Apure">Apure</option>
-                                    <option value="Aragua">Aragua</option>
-                                    <option value="Barinas">Barinas</option>
-                                    <option value="Bolívar">Bolívar</option>
-                                    <option value="Carabobo">Carabobo</option>
-                                    <option value="Cojedes">Cojedes</option>
-                                    <option value="Delta Amacuro">Delta Amacuro</option>
-                                    <option value="Distrito Capital">Distrito Capital</option>
-                                    <option value="Falcón">Falcón</option>
-                                    <option value="Guárico">Guárico</option>
-                                    <option value="La Guaira">La Guaira</option>
-                                    <option value="Lara">Lara</option>
-                                    <option value="Mérida">Mérida</option>
-                                    <option value="Miranda">Miranda</option>
-                                    <option value="Monagas">Monagas</option>
-                                    <option value="Nueva Esparta">Nueva Esparta</option>
-                                    <option value="Portuguesa">Portuguesa</option>
-                                    <option value="Sucre">Sucre</option>
-                                    <option value="Táchira">Táchira</option>
-                                    <option value="Trujillo">Trujillo</option>
-                                    <option value="Yaracuy">Yaracuy</option>
-                                    <option value="Zulia">Zulia</option>
+                                    @foreach ($estadosVe as $__est)
+                                        <option value="{{ $__est }}">{{ $__est }}</option>
+                                    @endforeach
                                 </select>
                             </div>
                             <div class="col-md-6">
@@ -662,6 +518,7 @@
 @push('scripts')
     <script src="{{ URL::asset('/assets/libs/sweetalert2/sweetalert2.min.js') }}"></script>
     <script src="{{ URL::asset('/assets/js/municipios-venezuela.js') }}"></script>
+    <script src="{{ URL::asset('/assets/js/telefonos-repeater.js') }}"></script>
     <script>
         $(function () {
             // Activa tooltips para todos los elementos con atributo title
@@ -673,10 +530,7 @@
             });
         });
 
-        // Sanitización del número de teléfono (campo visible, solo dígitos, máx 7)
-        $(document).on('input', '#telefono-number-field', function () {
-            this.value = this.value.replace(/[^0-9]/g, '').slice(0, 7);
-        });
+        // (La sanitización del teléfono ahora la maneja telefonos-repeater.js)
 
         // === Capitalizar solo la primera letra del campo dirección ===
         $(document).on('blur', '#direccion-field', function () {
@@ -707,7 +561,11 @@
             var p = $(this).data('persona');
             var role = $(this).data('role');
 
-            if (p.tipo_documento) $('#documento-prefix-field').val(p.tipo_documento);
+            if (p.tipo_documento) {
+                $('#documento-prefix-field').val(p.tipo_documento);
+                // Derivar el tipo (read-only) y la visibilidad según el prefijo.
+                toggleClienteFields();
+            }
 
             // Datos personales
             $('#nombre-field').val(p.nombre || '').prop('readonly', true).addClass('bg-light').css('cursor', 'not-allowed');
@@ -715,11 +573,11 @@
             $('#razon-social-field').val(p.nombre || '').prop('readonly', true).addClass('bg-light').css('cursor', 'not-allowed');
             $('#email-field').val(p.email || '').prop('readonly', true).addClass('bg-light').css('cursor', 'not-allowed');
 
-            // Teléfono
-            if (p.telefono && p.telefono.includes('-')) {
-                var parts = p.telefono.split('-');
-                $('#telefono-prefix-field').val(parts[0]).prop('disabled', true);
-                $('#telefono-number-field').val(parts[1]).prop('readonly', true).addClass('bg-light').css('cursor', 'not-allowed');
+            // Teléfonos (de la persona reutilizada)
+            var _telRoot = document.getElementById('cli-tel-repeater');
+            if (window.TelefonosRepeater && _telRoot) {
+                TelefonosRepeater.load(_telRoot, p.telefonos
+                    || (p.telefono ? [{ numero: p.telefono, tipo: 'movil', es_principal: true }] : []));
             }
 
             // Dirección
@@ -822,16 +680,7 @@
         });
 
         // Validación onblur para teléfono (campo visible: solo los 7 dígitos)
-        $(document).on('blur', '#telefono-number-field', function () {
-            let value = $(this).val().trim();
-            if (value.length === 0) {
-                marcarInvalido($(this), 'El teléfono es obligatorio.');
-            } else if (!/^[0-9]{7}$/.test(value)) {
-                marcarInvalido($(this), 'El número debe tener exactamente 7 dígitos.');
-            } else {
-                marcarValido($(this));
-            }
-        });
+        // (La validación de teléfonos la maneja telefonos-repeater.js)
 
         // Validación onblur para email
         $(document).on('blur', '#email-field', function () {
@@ -875,14 +724,24 @@
             $('.invalid-feedback').hide();
         });
 
-        // === Lógica dinámica: Natural vs Jurídico/Gubernamental ===
+        // === Lógica dinámica: el TIPO se DERIVA del PREFIJO del documento ===
+        // El prefijo es el control editable; el select de tipo es de solo lectura.
+        function tipoDesdePrefijo(prefix) {
+            if (prefix === 'J-') return 'juridico';
+            if (prefix === 'G-') return 'gubernamental';
+            return 'natural'; // V- y E-
+        }
+
         function toggleClienteFields() {
-            var tipo = $('#tipo_cliente-field').val();
-            var esNatural = (tipo === 'natural' || tipo === '');
-            var $prefixSelect = $('#documento-prefix-field');
+            var prefix = $('#documento-prefix-field').val() || 'V-';
+            var tipo = tipoDesdePrefijo(prefix);
             var $docInput = $('#documento-number-field');
 
-            if (esNatural) {
+            // Reflejar el tipo en el select de solo lectura (trigger change para que
+            // AtlanticoSelect resincronice la etiqueta del widget realzado).
+            $('#tipo_cliente-field').val(tipo).trigger('change');
+
+            if (tipo === 'natural') {
                 // Mostrar Nombre + Apellido, ocultar Razón Social
                 $('#campos-persona-natural').removeClass('d-none');
                 $('#nombre-field').prop('required', true).prop('disabled', false);
@@ -891,18 +750,13 @@
                 $('#campos-razon-social').addClass('d-none');
                 $('#razon-social-field').prop('required', false).prop('disabled', true).val('');
 
-                // Prefijos: V- y E- para Natural
-                $prefixSelect.html('<option value="V-">V-</option><option value="E-">E-</option>');
-                $prefixSelect.prop('disabled', false);
                 // Maxlength: 8 dígitos para cédula
                 $docInput.attr('maxlength', '8');
-                // Truncar si el valor actual excede el nuevo máximo
                 if ($docInput.val().length > 8) {
                     $docInput.val($docInput.val().slice(0, 8));
                 }
-
-            } else if (tipo === 'juridico') {
-                // Ocultar Nombre + Apellido, mostrar Razón Social
+            } else {
+                // Jurídico o Gubernamental → Razón Social
                 $('#campos-persona-natural').addClass('d-none');
                 $('#nombre-field').prop('required', false).prop('disabled', true).val('');
                 $('#apellido-field').prop('required', false).prop('disabled', true).val('');
@@ -910,28 +764,7 @@
                 $('#campos-razon-social').removeClass('d-none');
                 $('#razon-social-field').prop('required', true).prop('disabled', false);
 
-                // Prefijo: solo J- (bloqueado)
-                $prefixSelect.html('<option value="J-">J-</option>');
-                $prefixSelect.prop('disabled', true);
                 // Maxlength: 9 dígitos para RIF
-                $docInput.attr('maxlength', '9');
-                if ($docInput.val().length > 9) {
-                    $docInput.val($docInput.val().slice(0, 9));
-                }
-
-            } else if (tipo === 'gubernamental') {
-                // Ocultar Nombre + Apellido, mostrar Razón Social
-                $('#campos-persona-natural').addClass('d-none');
-                $('#nombre-field').prop('required', false).prop('disabled', true).val('');
-                $('#apellido-field').prop('required', false).prop('disabled', true).val('');
-
-                $('#campos-razon-social').removeClass('d-none');
-                $('#razon-social-field').prop('required', true).prop('disabled', false);
-
-                // Prefijo: solo G- (bloqueado)
-                $prefixSelect.html('<option value="G-">G-</option>');
-                $prefixSelect.prop('disabled', true);
-                // Maxlength: 9 dígitos para RIF gubernamental
                 $docInput.attr('maxlength', '9');
                 if ($docInput.val().length > 9) {
                     $docInput.val($docInput.val().slice(0, 9));
@@ -945,8 +778,8 @@
             return (prefix === 'J-' || prefix === 'G-') ? 9 : 8;
         }
 
-        // Disparar al cambiar el tipo de cliente
-        $(document).on('change', '#tipo_cliente-field', function () {
+        // Disparar al cambiar el prefijo del documento (el tipo se deriva)
+        $(document).on('change', '#documento-prefix-field', function () {
             toggleClienteFields();
         });
 
@@ -1045,10 +878,8 @@
                     {                                                 // col 1
                         data: null,
                         render: function (data, type, row) {
-                            if (row.tipo_cliente === 'juridico' || row.tipo_cliente === 'gubernamental') {
-                                return row.nombre || 'N/A';
-                            }
-                            return (row.nombre || '') + ' ' + (row.apellido || '');
+                            // `nombre` ya consolida nombre completo / razón social
+                            return row.nombre || 'N/A';
                         }
                     },
                     {                                                 // col 2
@@ -1144,6 +975,9 @@
             setTimeout(function () {
                 table.columns.adjust();
             }, 100);
+            var telRoot = document.getElementById('cli-tel-repeater');
+            if (window.TelefonosRepeater && telRoot) { TelefonosRepeater.init(telRoot); }
+
             function resetForm() {
                 $("#clienteForm").trigger("reset");
                 $("#id-field").val("");
@@ -1154,16 +988,15 @@
                 $("#documento-prefix-field").prop('disabled', false).removeClass('campo-protegido');
                 $("#documento-number-field").val("");
                 $("#documento-number-field").prop('disabled', false).removeClass('campo-protegido');
-                // Reset teléfono
-                $("#telefono-prefix-field").val("0424");
-                $("#telefono-number-field").val("");
+                // Reset teléfonos: una fila vacía
+                if (window.TelefonosRepeater && telRoot) { TelefonosRepeater.load(telRoot, []); }
                 // Resetear tipo cliente a Natural y actualizar campos
                 $("#tipo_cliente-field").val("");
                 $("#razon-social-field").val("");
                 toggleClienteFields();
                 // Desbloquear campos vinculados de persona existente
-                $('#nombre-field, #apellido-field, #razon-social-field, #email-field, #telefono-number-field, #direccion-field').prop('readonly', false).removeClass('bg-light').css('cursor', '');
-                $('#telefono-prefix-field, #estado_territorial-field, #ciudad-field').prop('disabled', false);
+                $('#nombre-field, #apellido-field, #razon-social-field, #email-field, #direccion-field').prop('readonly', false).removeClass('bg-light').css('cursor', '');
+                $('#estado_territorial-field, #ciudad-field').prop('disabled', false);
                 $('#documento-persona-card').addClass('d-none');
                 $('#documento-vinculado-notice').addClass('d-none');
                 $('#edit-shared-persona-notice').addClass('d-none');
@@ -1246,15 +1079,11 @@
                     esValido = false;
                 } else { marcarValido($doc); }
 
-                let $tel = $('#telefono-number-field');
-                let tel = $tel.val().trim();
-                if (tel.length === 0) {
-                    marcarInvalido($tel, 'El teléfono es obligatorio.');
-                    esValido = false;
-                } else if (!/^[0-9]{7}$/.test(tel)) {
-                    marcarInvalido($tel, 'El número debe tener exactamente 7 dígitos.');
-                    esValido = false;
-                } else { marcarValido($tel); }
+                if (window.TelefonosRepeater && telRoot) {
+                    var telChk = TelefonosRepeater.validate(telRoot);
+                    $(telRoot).find('[data-tel-error]').toggle(!telChk.ok).text(telChk.message || '');
+                    if (!telChk.ok) esValido = false;
+                }
 
                 let $email = $('#email-field');
                 let emailVal = $email.val().trim();
@@ -1304,10 +1133,19 @@
                 var method = id ? "PUT" : "POST";
                 var documentoCompleto = $("#documento-prefix-field").val() + $("#documento-number-field").val();
                 $("#documento-field").val(documentoCompleto);
-                // Concatenar teléfono: prefijo-número
-                var telefonoCompleto = $("#telefono-prefix-field").val() + "-" + $("#telefono-number-field").val();
-                $("#telefono-field").val(telefonoCompleto);
+                // Teléfonos: validar y volcar el set en inputs ocultos telefonos[i][...]
+                if (window.TelefonosRepeater && telRoot) {
+                    var telCheck = TelefonosRepeater.validate(telRoot);
+                    if (!telCheck.ok) {
+                        Swal.fire({ icon: 'warning', title: 'Teléfonos', text: telCheck.message });
+                        $('#add-btn').prop('disabled', false);
+                        return;
+                    }
+                    TelefonosRepeater.syncHiddenInputs(this, telRoot);
+                }
                 var formData = $(this).serialize();
+                // El select de tipo es disabled (read-only) → serialize lo omite; lo añadimos.
+                formData += '&tipo_cliente=' + encodeURIComponent($('#tipo_cliente-field').val());
                 if (method === 'PUT') { formData += '&_method=PUT'; }
                 $.ajax({
                     url: url,
@@ -1331,27 +1169,32 @@
                 $.get("{{ route('clientes.show', '') }}/" + id, function (data) {
                     $("#viewModal").modal("show");
                     var tipoTexto = data.tipo_cliente === 'natural' ? 'Natural' : (data.tipo_cliente === 'juridico' ? 'Jurídico' : 'Gubernamental');
-                    if (data.tipo_cliente === 'natural') {
-                        $("#view-block-nombre").removeClass('d-none');
-                        $("#view-block-apellido").removeClass('d-none');
-                        $("#view-block-razon-social").addClass('d-none');
-                        $("#view-nombre").text(data.nombre || 'N/A');
-                        $("#view-apellido").text(data.apellido || 'N/A');
-                    } else {
-                        $("#view-block-nombre").addClass('d-none');
-                        $("#view-block-apellido").addClass('d-none');
-                        $("#view-block-razon-social").removeClass('d-none');
-                        $("#view-razon-social").text(data.nombre || 'N/A');
-                    }
+                    // `nombre` ya consolida nombre+apellido (natural) o razón social (jurídico)
+                    $("#view-nombre").text(data.nombre || 'N/A');
+                    var fullName = data.nombre || 'N/A';
+                    var words = (data.nombre || '').trim().split(/\s+/);
+                    var initials = words.length >= 2 ? words[0].charAt(0) + words[1].charAt(0) : (words[0] ? words[0].charAt(0) : '?');
+                    $("#view-hero-avatar").text(initials.toUpperCase());
+                    $("#view-hero-name").text(fullName.trim() || 'N/A');
+                    $("#view-hero-doc").text(data.documento || 'N/A');
+                    $("#view-hero-date").text(formatDate(data.created_at));
                     $("#view-tipo_cliente").text(tipoTexto);
                     $("#view-email").text(data.email || 'N/A');
-                    $("#view-telefono").text(data.telefono || 'N/A');
+                    // Lista de teléfonos (principal con estrella)
+                    var tipoTel = { movil: 'Móvil', casa: 'Casa', trabajo: 'Trabajo' };
+                    if (Array.isArray(data.telefonos) && data.telefonos.length) {
+                        $("#view-telefonos").html(data.telefonos.map(function (t) {
+                            return '<div>' + (t.es_principal ? '<i class="ri-star-fill text-warning me-1"></i>' : '')
+                                + t.numero + ' <small class="text-muted">· ' + (tipoTel[t.tipo] || t.tipo) + '</small></div>';
+                        }).join(''));
+                    } else {
+                        $("#view-telefonos").text(data.telefono || 'N/A');
+                    }
                     $("#view-documento").text(data.documento || 'N/A');
                     $("#view-direccion").text(data.direccion || 'N/A');
                     $("#view-estado-territorial").text(data.estado_territorial || 'N/A');
                     $("#view-ciudad").text(data.ciudad || 'N/A');
-                    $("#view-estatus").html(data.trashed ? '<span class="badge bg-danger">Inhabilitado</span>' : '<span class="badge bg-success">Activo</span>');
-                    $("#view-created").text(formatDate(data.created_at));
+                    $("#view-estatus").html(data.trashed ? '<span class="badge rounded-pill bg-danger">Inhabilitado</span>' : '<span class="badge rounded-pill bg-success">Activo</span>');
                 });
             });
             $(document).on("click", ".edit-item-btn", function () {
@@ -1365,27 +1208,22 @@
                     $("#id-field").val(data.id);
                     $("#nombre-field").val(data.nombre || '');
                     $("#apellido-field").val(data.apellido || '');
-                    $("#tipo_cliente-field").val(data.tipo_cliente);
-                    // Actualizar visibilidad de campos según tipo
+                    // El tipo se deriva del prefijo del documento: lo fijamos primero.
+                    if (data.documento) {
+                        $("#documento-prefix-field").val(data.documento.slice(0, 2));
+                        $("#documento-number-field").val(data.documento.slice(2));
+                    }
+                    // Actualizar tipo (read-only) y visibilidad de campos según el prefijo
                     toggleClienteFields();
                     // Si es Jurídico/Gubernamental, llenar Razón Social con nombre
                     if (data.tipo_cliente === 'juridico' || data.tipo_cliente === 'gubernamental') {
                         $("#razon-social-field").val(data.nombre || '');
                     }
                     $("#email-field").val(data.email || '');
-                    // Separar teléfono en prefijo y número
-                    if (data.telefono && data.telefono.includes('-')) {
-                        var telParts = data.telefono.split('-');
-                        $("#telefono-prefix-field").val(telParts[0]);
-                        $("#telefono-number-field").val(telParts[1]);
-                    } else if (data.telefono) {
-                        // Si no tiene guión, asumir formato 0424XXXXXXX
-                        $("#telefono-prefix-field").val(data.telefono.slice(0, 4));
-                        $("#telefono-number-field").val(data.telefono.slice(4));
-                    }
-                    if (data.documento) {
-                        $("#documento-prefix-field").val(data.documento.slice(0, 2));
-                        $("#documento-number-field").val(data.documento.slice(2));
+                    // Cargar los teléfonos en el componente
+                    if (window.TelefonosRepeater && telRoot) {
+                        TelefonosRepeater.load(telRoot, data.telefonos
+                            || (data.telefono ? [{ numero: data.telefono, tipo: 'movil', es_principal: true }] : []));
                     }
                     $("#direccion-field").val(data.direccion || '');
 
@@ -1513,8 +1351,9 @@
                 });
             });
             $("#create-btn").click(function () {
-                $('#id-field').val('');
-                $('#clienteForm')[0].reset();
+                // NB: resetForm() (otro handler de #create-btn) ya restablece los campos
+                // y deriva el tipo desde el prefijo. Aquí solo limpiamos validación; NO
+                // re-resetear el form o se borraría el tipo recién derivado.
                 $('#modalTitle').text('Agregar Cliente');
                 $('#add-btn').show();
                 $('#edit-btn').hide();

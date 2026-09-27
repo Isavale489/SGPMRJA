@@ -41,33 +41,33 @@ $(document).ready(function () {
         autoWidth: false,
         columns: [
             {
-                data: 'id', name: 'id', width: '5%',
+                data: 'id', name: 'id',
                 render: function (data) {
                     return '<span class="text-muted">#' + data + '</span>';
                 }
             },
             { data: 'proveedor_nombre', name: 'proveedor_nombre', width: '25%', orderable: false },
             {
-                data: 'numero_factura', name: 'numero_factura', width: '12%',
+                data: 'numero_factura', name: 'numero_factura',
                 render: function (data) {
                     return data
                         ? '<span style="font-family:monospace;font-size:.82rem;">' + data + '</span>'
                         : '<span class="text-muted fst-italic">S/N</span>';
                 }
             },
-            { data: 'fecha_formateada', name: 'fecha_compra', width: '12%' },
+            { data: 'fecha_formateada', name: 'fecha_compra' },
             {
-                data: 'total', name: 'total', width: '14%', className: 'text-end',
+                data: 'total', name: 'total', className: 'text-end',
                 render: function (data) {
                     return parseFloat(data).toFixed(2);
                 }
             },
             {
-                data: 'estado_badge', name: 'estado', width: '10%',
+                data: 'estado_badge', name: 'estado', className: 'text-center',
                 orderable: false, searchable: false
             },
             {
-                data: 'actions', name: 'actions', width: '16%',
+                data: 'actions', name: 'actions',
                 orderable: false, searchable: false
             }
         ],
@@ -100,22 +100,20 @@ $(document).ready(function () {
 
     // ── Ver detalle ─────────────────────────────────────────────────────────
     window.verDetalleCompra = function verDetalleCompra(compraId) {
-        var badgeMap = { recibida: 'success', borrador: 'warning', anulada: 'danger' };
+        var badgeMap = { recibida: 'success', borrador: 'warning', anulada: 'danger', info: 'info' };
 
         $.ajax({
             url: '/compras/' + compraId + '/detalle',
             method: 'GET',
             success: function (d) {
-                // Header y hero
+                // Header y estado
                 $('#cv-titulo').html('<i class="ri-shopping-bag-3-line me-1"></i>Compra #' + d.id);
-                $('#cv-hero-titulo').text('Compra #' + d.id);
-                var badgeColor = badgeMap[d.estado] || 'secondary';
-                $('#cv-estado-badge').attr('class', 'badge bg-' + badgeColor).text(
-                    d.estado.charAt(0).toUpperCase() + d.estado.slice(1)
+                var badgeColor = badgeMap[d.estado] || 'info';
+                var iconMap = { recibida: 'ri-checkbox-circle-line', borrador: 'ri-draft-line', anulada: 'ri-close-circle-line' };
+                var estadoIcon = iconMap[d.estado] || 'ri-question-line';
+                $('#cv-estado-badge').attr('class', 'badge badge-soft-' + badgeColor).html(
+                    '<i class="' + estadoIcon + ' me-1"></i>' + d.estado.charAt(0).toUpperCase() + d.estado.slice(1)
                 );
-                $('#cv-hero-proveedor').text(d.proveedor.nombre);
-                $('#cv-hero-fecha').text(d.fecha_compra);
-                $('#cv-total').text(d.total);
 
                 // Proveedor card
                 $('#cv-prov-ini').text(d.proveedor.ini);
@@ -138,7 +136,11 @@ $(document).ready(function () {
                 // Comprobante
                 $('#cv-factura').text(d.numero_factura);
                 $('#cv-fecha').text(d.fecha_compra);
-                $('#cv-tasa').text(d.tasa_cambio ? 'Bs ' + d.tasa_cambio + ' / USD' : '—');
+                // La fecha de la tasa va en el label — "Tasa BCV (08/07/2026)" — y
+                // solo se muestra cuando el snapshot coincide con la tasa oficial
+                // de la fecha de compra (tasa_fecha_fmt viene null si fue manual).
+                $('#cv-tasa-label').text('Tasa BCV' + (d.tasa_fecha_fmt ? ' (' + d.tasa_fecha_fmt + ')' : ''));
+                $('#cv-tasa').text(d.tasa_cambio ? 'Bs ' + d.tasa_cambio : '—');
 
                 if (d.observaciones) {
                     $('#cv-observaciones').text(d.observaciones);
@@ -153,23 +155,30 @@ $(document).ready(function () {
                     var ivaBadge = item.aplica_iva
                         ? '<span class="badge bg-soft-success text-success">' + d.iva_porcentaje + '%</span>'
                         : '<span class="badge bg-soft-secondary text-muted">Exento</span>';
+                    var codigo = item.codigo
+                        ? '<small class="text-muted d-block font-monospace">' + item.codigo + '</small>'
+                        : '';
                     itemsHtml += '<tr>'
                         + '<td class="text-center cot-col-num">' + (i + 1) + '</td>'
-                        + '<td class="fw-semibold">' + item.nombre + '</td>'
+                        + '<td class="fw-semibold">' + item.nombre + codigo + '</td>'
                         + '<td class="text-center"><span class="cot-tipo-pill">' + item.tipo + '</span></td>'
-                        + '<td class="text-center text-muted">' + item.unidad + '</td>'
-                        + '<td class="text-end">' + item.cantidad + '</td>'
-                        + '<td class="text-end">' + item.costo_unitario_bs + '</td>'
+                        + '<td class="text-center">' + item.unidad + '</td>'
+                        + '<td class="text-end fw-semibold">' + item.cantidad + '</td>'
+                        + '<td class="text-end fw-semibold">' + item.costo_unitario_bs + '</td>'
+                        + '<td class="text-end cv-usd-eq">' + item.costo_unitario + '</td>'
                         + '<td class="text-center">' + ivaBadge + '</td>'
-                        + '<td class="text-end fw-semibold">' + item.subtotal_bs + '</td>'
+                        + '<td class="text-end fw-bold">' + item.subtotal_bs + '</td>'
+                        + '<td class="text-end cv-usd-eq">' + item.subtotal + '</td>'
                         + '</tr>';
                 });
                 $('#cv-items-tbody').html(itemsHtml);
                 $('#cv-items-count').text('(' + (d.items || []).length + ')');
+                // Pie de la grilla: subtotal de las líneas (Bs + equivalente USD)
+                // (El subtotal de líneas vive solo en el ticket de totales;
+                //  la tabla ya no lleva tfoot para no duplicarlo.)
 
-                // Registro
-                $('#cv-reg-avatar').attr('src', d.registrado_por.avatar_url);
-                $('#cv-reg-nombre').text(d.registrado_por.name);
+                // Registro (fila de metadatos: nombre + fecha/hora en pequeño)
+                $('#cv-reg-nombre').text(d.registrado_por ? d.registrado_por.name : '—');
                 $('#cv-reg-fecha').text(d.created_at);
 
                 // Totales en bolívares (lo pagado) + equivalente USD y tasa
@@ -178,6 +187,7 @@ $(document).ready(function () {
                 $('#cv-iva-pct').text(d.iva_porcentaje);
                 $('#cv-total-ticket').text(d.total_bs);
                 $('#cv-tasa-ticket').text(d.tasa_cambio || '0.0000');
+                $('#cv-tasa-ticket-fecha').text(d.tasa_fecha_fmt ? ' (' + d.tasa_fecha_fmt + ')' : '');
                 $('#cv-total-usd').text(d.total);
                 // Base exenta = suma de subtotales en Bs de líneas no gravadas.
                 // subtotal_bs viene en formato venezolano ("1.234,56").
@@ -192,7 +202,7 @@ $(document).ready(function () {
                     $('#cv-exento-wrap').addClass('d-none');
                 }
 
-                // PDF
+                // PDF de ESTA compra
                 $('#cv-pdf-btn').attr('href', '/compras/' + d.id + '/pdf');
 
                 $('#viewCompraModal').modal('show');
@@ -207,29 +217,8 @@ $(document).ready(function () {
         verDetalleCompra($(this).data('id'));
     });
 
-    // ── Detalle de compra: navegación del wizard de solo lectura ─────────────
-    (function () {
-        var TOTAL = 3, step = 1;
-        window.viewCompraShowStep = function (n) {
-            step = n;
-            $('#viewCompraModal .wiz-step-content').removeClass('is-active').attr('hidden', true);
-            $('#viewCompraModal .wiz-step-content[data-step="' + n + '"]').removeAttr('hidden').addClass('is-active');
-            $('#viewCompraModal .wiz-step-marker').each(function () {
-                var s = parseInt($(this).data('step'), 10);
-                $(this).toggleClass('is-active', s === n).toggleClass('is-complete', s < n);
-            });
-            $('#viewCompraModal .wiz-step-line-fill').each(function () {
-                $(this).css('width', parseInt($(this).data('line'), 10) < n ? '100%' : '0%');
-            });
-            $('#cv-prev').toggle(n > 1);
-            $('#cv-next').toggle(n < TOTAL);
-            $('#cv-close').toggle(n === TOTAL);
-        };
-        $(document).on('click', '#cv-next', function () { if (step < TOTAL) window.viewCompraShowStep(step + 1); });
-        $(document).on('click', '#cv-prev', function () { if (step > 1) window.viewCompraShowStep(step - 1); });
-        $('#viewCompraModal').on('click', '.wiz-step-marker', function () { window.viewCompraShowStep(parseInt($(this).data('step'), 10)); });
-        $('#viewCompraModal').on('show.bs.modal', function () { window.viewCompraShowStep(1); });
-    }());
+    // (El detalle de compra dejó de ser wizard: ahora es una vista única,
+    //  así que ya no hay navegación de pasos que manejar.)
 
     // ── Procesar borrador ────────────────────────────────────────────────────
     $(document).on('click', '.procesar-btn', function () {
@@ -253,6 +242,8 @@ $(document).ready(function () {
                 data: { _method: 'PATCH', _token: '{{ csrf_token() }}' },
                 success: function (response) {
                     window.comprasTable.ajax.reload(null, false);
+                    // Procesar mueve stock → avisar a otras pestañas (cotización/pedido).
+                    if (window.ProyeccionInsumos) ProyeccionInsumos.notifyStockChange('compra-procesada');
                     Swal.fire({
                         title: 'Procesada',
                         text: response.message,
@@ -392,6 +383,8 @@ $(document).ready(function () {
                 data: { _method: 'PATCH', _token: '{{ csrf_token() }}' },
                 success: function (response) {
                     window.comprasTable.ajax.reload(null, false);
+                    // Anular revierte stock → avisar a otras pestañas.
+                    if (window.ProyeccionInsumos) ProyeccionInsumos.notifyStockChange('compra-anulada');
                     Swal.fire({
                         title: 'Anulada',
                         text: response.message,
@@ -406,6 +399,113 @@ $(document).ready(function () {
                 }
             });
         });
+    });
+
+    // ══════════════════════════════════════════════════
+    // PANEL DE EXISTENCIAS — espejo del de /movimiento-insumo,
+    // con precio de entrada (costo de la última compra procesada).
+    // ══════════════════════════════════════════════════
+    function cexistBadgeEstado(status) {
+        if (status === 'bajo')  return '<span class="badge bg-danger">Bajo</span>';
+        if (status === 'medio') return '<span class="badge bg-warning text-dark">Medio</span>';
+        return '<span class="badge bg-success">Normal</span>';
+    }
+
+    var cexistTable = $('#cexistencias-table').DataTable({
+        processing: true,
+        serverSide: true,
+        autoWidth: false,
+        ajax: {
+            url: "{{ route('compras.existencias.data') }}",
+            data: function (d) {
+                d.filter_tipo   = $('#cexist-filter-tipo').val();
+                d.filter_estado = $('#cexist-filter-alerta').val();
+            }
+        },
+        columns: [
+            {
+                data: 'nombre', name: 'nombre', width: '28%',
+                render: function (data, type, row) {
+                    var pill = row.codigo
+                        ? '<span style="font-family:monospace;padding:.1rem .45rem;background:rgba(12,74,110,.10);color:#0c4a6e;border-radius:4px;font-size:.72rem;font-weight:600;margin-right:.4rem;">' + row.codigo + '</span>'
+                        : '';
+                    return pill + (data || '');
+                }
+            },
+            { data: 'tipo', name: 'tipo', width: '10%' },
+            {
+                data: 'stock_minimo', name: 'stock_minimo', width: '13%',
+                render: function (data) { return parseFloat(data).toFixed(2); }
+            },
+            {
+                data: 'stock_actual', name: 'stock_actual', width: '13%',
+                render: function (data, type, row) {
+                    return '<span class="stock-' + row.stock_status + '">' + parseFloat(data).toFixed(2) + '</span>';
+                }
+            },
+            {
+                data: 'stock_maximo', name: 'stock_maximo', width: '12%',
+                render: function (data) { return parseFloat(data).toFixed(2); }
+            },
+            {
+                data: 'costo_unitario', name: 'costo_unitario', width: '12%',
+                render: function (data) { return '$' + parseFloat(data).toFixed(2); }
+            },
+            {
+                data: 'stock_status', name: 'stock_status', width: '12%',
+                orderable: false, searchable: false,
+                render: function (data) { return cexistBadgeEstado(data); }
+            }
+        ],
+        order: [],
+        pageLength: 5,
+        dom: 'rtip',
+        language: lenguajeData,
+        responsive: true
+    });
+    window.cexistTable = cexistTable;
+
+    // Refrescar existencias cuando una compra afecta stock (procesar/anular)
+    // sin tocar los handlers existentes: se cuelga del mismo aviso que ya
+    // emite ProyeccionInsumos hacia otras pestañas.
+    if (window.ProyeccionInsumos && typeof ProyeccionInsumos.notifyStockChange === 'function') {
+        var cexistNotifyOriginal = ProyeccionInsumos.notifyStockChange.bind(ProyeccionInsumos);
+        ProyeccionInsumos.notifyStockChange = function (motivo) {
+            cexistTable.ajax.reload(null, false);
+            return cexistNotifyOriginal(motivo);
+        };
+    }
+
+    // ── Búsqueda + filtros unificados (estándar navy-filter) ──
+    function cexistUpdateBadge() {
+        let count = 0;
+        $('#cexist-advanced-filters .navy-filter-select').each(function () {
+            if ($(this).val() && $(this).val() !== '') count++;
+        });
+        $('#cexist-active-filter-count').text(count).toggleClass('d-none', count === 0);
+    }
+
+    $('#cexist-filters-collapse')
+        .on('show.bs.collapse', function () {
+            $('#cexist-advanced-filters .navy-filter-header').removeClass('is-collapsed');
+        })
+        .on('hidden.bs.collapse', function () {
+            $('#cexist-advanced-filters .navy-filter-header').addClass('is-collapsed');
+        });
+
+    $('#cexist-search-input').on('input', debounce(function () {
+        cexistTable.search(this.value).draw();
+    }, 300));
+
+    $('#cexist-advanced-filters .navy-filter-select').on('change', function () {
+        cexistTable.ajax.reload();
+        cexistUpdateBadge();
+    });
+
+    $('#cexist-btn-clear-filters').on('click', function () {
+        $('#cexist-advanced-filters .navy-filter-select').val('');
+        cexistTable.ajax.reload();
+        cexistUpdateBadge();
     });
 });
 </script>
