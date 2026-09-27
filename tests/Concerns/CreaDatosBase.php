@@ -3,8 +3,11 @@
 namespace Tests\Concerns;
 
 use App\Models\Cliente;
+use App\Models\DetallePedido;
+use App\Models\Empleado;
 use App\Models\Genero;
 use App\Models\Insumo;
+use App\Models\Pedido;
 use App\Models\Talla;
 use App\Models\TipoProducto;
 use App\Models\Persona;
@@ -81,6 +84,48 @@ trait CreaDatosBase
                 'lleva_bordado' => false,
             ]],
         ];
+    }
+
+    protected function empleado(string $nombre = 'Ana Pérez'): Empleado
+    {
+        $persona = Persona::create([
+            'nombre' => $nombre,
+            'tipo_documento' => 'V-',
+            'documento_identidad' => (string) fake()->unique()->numberBetween(1000000, 30000000),
+        ]);
+
+        return Empleado::forceCreate([
+            'persona_id' => $persona->id,
+            'codigo_empleado' => strtoupper(fake()->unique()->bothify('EMP-###')),
+            'fecha_ingreso' => now()->subYear()->toDateString(),
+        ]);
+    }
+
+    /**
+     * Pedido con UNA línea producible de $cantidad unidades. Por defecto trae el
+     * abono completo (cumple el mínimo para producir).
+     */
+    protected function pedidoConLinea(int $cantidad = 10, float $abono = 100): DetallePedido
+    {
+        $pedido = Pedido::forceCreate([
+            'cliente_id' => $this->cliente()->id,
+            'fecha_pedido' => now()->toDateString(),
+            'total' => 100,
+            'abono' => $abono,
+            'prioridad' => 'Normal',
+            'estado' => 'Pendiente',
+            'user_id' => User::query()->value('id') ?? $this->admin()->id,
+        ]);
+
+        $tipo = TipoProducto::forceCreate(['nombre' => 'Chemise', 'prefijo' => 'CHE']);
+
+        return DetallePedido::forceCreate([
+            'pedido_id' => $pedido->id,
+            'tipo_producto_id' => $tipo->id,
+            'cantidad' => $cantidad,
+            'precio_unitario' => 10,
+            'genero_id' => Genero::query()->value('id'),
+        ]);
     }
 
     protected function insumo(array $attrs = []): Insumo
