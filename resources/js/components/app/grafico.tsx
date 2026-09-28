@@ -1,4 +1,4 @@
-import { BarSeriesModule, CategoryAxisModule, DonutSeriesModule, LegendModule, ModuleRegistry, NumberAxisModule, type AgChartInstance, type AgChartOptions } from 'ag-charts-community';
+import { AreaSeriesModule, BarSeriesModule, CategoryAxisModule, DonutSeriesModule, LegendModule, ModuleRegistry, NumberAxisModule, type AgChartInstance, type AgChartOptions } from 'ag-charts-community';
 import { AgCharts } from 'ag-charts-react';
 import { Download } from 'lucide-react';
 import { useMemo, useRef, type ReactNode } from 'react';
@@ -8,8 +8,8 @@ import { Card, CardAction, CardContent, CardHeader, CardTitle } from '@/componen
 import { useTema } from '@/hooks/use-tema';
 import { cn } from '@/lib/utils';
 
-// Solo lo que usan los reportes (barras, donut, ejes, leyenda): el bundle queda chico.
-ModuleRegistry.registerModules([BarSeriesModule, DonutSeriesModule, CategoryAxisModule, NumberAxisModule, LegendModule]);
+// Solo lo que usan los gráficos del sistema (barras, área, donut, ejes, leyenda).
+ModuleRegistry.registerModules([AreaSeriesModule, BarSeriesModule, DonutSeriesModule, CategoryAxisModule, NumberAxisModule, LegendModule]);
 
 /** Colores de estado de las órdenes (los mismos en todo el sistema). */
 export const COLOR_ESTADO: Record<string, string> = {

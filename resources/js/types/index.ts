@@ -6,7 +6,8 @@ export interface UsuarioAutenticado {
     id: number;
     name: string;
     email: string;
-    avatar_url: string;
+    /** Foto subida; null → se muestran las iniciales. */
+    avatar_url: string | null;
     rol: string | null;
 }
 

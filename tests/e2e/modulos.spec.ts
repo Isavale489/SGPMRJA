@@ -28,10 +28,12 @@ for (const { modulo, path } of paginas) {
   test(`el módulo ${modulo} carga sin errores (${path})`, async ({ page }) => {
     const errores = vigilarErrores(page);
 
-    const resp = await page.goto(path);
+    // networkidle dentro del goto: esperarlo aparte, después del load, se
+    // cuelga cuando Inertia hace su replaceState tarde (páginas con chunks
+    // pesados como los gráficos), aunque la red ya esté inactiva.
+    const resp = await page.goto(path, { waitUntil: 'networkidle' });
     expect(resp?.status(), `HTTP de ${path}`).toBeLessThan(400);
     await expect(page).not.toHaveURL(/\/login|\/profile/);
-    await page.waitForLoadState('networkidle');
 
     // Si la página tiene una tabla server-side, su petición de datos debe cerrar.
     const tablas = page.locator('table.dataTable');

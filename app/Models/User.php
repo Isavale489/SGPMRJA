@@ -67,14 +67,22 @@ class User extends Authenticatable
         return $this->persona ? $this->persona->direccion_principal : null;
     }
 
+    /** Foto subida por el usuario (si el archivo existe), sin respaldo generado. */
+    public function avatarSubido(): ?string
+    {
+        return $this->avatar && Storage::disk('public')->exists($this->avatar)
+            ? asset('storage/' . $this->avatar)
+            : null;
+    }
+
     /**
      * URL segura del avatar: verifica existencia física del archivo.
      * Si no existe, devuelve un avatar generado con la inicial del usuario.
      */
     public function getAvatarUrlAttribute(): string
     {
-        if ($this->avatar && Storage::disk('public')->exists($this->avatar)) {
-            return asset('storage/' . $this->avatar);
+        if ($url = $this->avatarSubido()) {
+            return $url;
         }
 
         // Fallback: avatar con inicial vía ui-avatars.com

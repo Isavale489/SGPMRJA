@@ -47,7 +47,8 @@ class HandleInertiaRequests extends Middleware
                     'id' => $user->id,
                     'name' => $user->name,
                     'email' => $user->email,
-                    'avatar_url' => $user->avatar_url,
+                    // Sin foto: null y el menú muestra las iniciales (sin pedir a ui-avatars.com).
+                    'avatar_url' => $user->avatarSubido(),
                     'rol' => $user->role,
                 ] : null,
                 // El Administrador no tiene filas en permiso_rol: entra por Gate::before.

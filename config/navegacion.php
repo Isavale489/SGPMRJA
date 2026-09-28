@@ -26,7 +26,7 @@
 
 return [
 
-    ['titulo' => 'Inicio', 'icono' => 'LayoutDashboard', 'ruta' => 'dashboard'],
+    ['titulo' => 'Inicio', 'icono' => 'LayoutDashboard', 'ruta' => 'dashboard', 'inertia' => true],
 
     [
         'titulo' => 'Gestión General',

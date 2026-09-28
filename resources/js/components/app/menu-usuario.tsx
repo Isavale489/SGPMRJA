@@ -20,7 +20,7 @@ export function MenuUsuario() {
         <DropdownMenu>
             <DropdownMenuTrigger className="hover:bg-accent flex items-center gap-2 rounded-md px-1.5 py-1 transition-colors duration-rapido">
                 <Avatar className="size-7">
-                    <AvatarImage src={auth.user.avatar_url} alt="" />
+                    {auth.user.avatar_url && <AvatarImage src={auth.user.avatar_url} alt="" />}
                     <AvatarFallback className="text-xs">{iniciales(auth.user.name)}</AvatarFallback>
                 </Avatar>
                 <span className="hidden text-left leading-tight sm:block">
