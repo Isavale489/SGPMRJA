@@ -112,7 +112,14 @@ export default function ClientesIndex({ clientes, filtros: filtrosIniciales, est
                         </Button>
                     )}
                     {puede('clientes.pdf') && (
-                        <ExportarPdf url={urls.reportePdf} recurso="clientes" tipos={TIPOS_CLIENTE} parametros={{ tipo: 'tipo_cliente', estatus: 'estado' }} />
+                        <ExportarPdf
+                            url={urls.reportePdf}
+                            recurso="clientes"
+                            filtros={[
+                                { parametro: 'tipo_cliente', etiqueta: 'Tipo', todos: 'Todos los tipos', opciones: TIPOS_CLIENTE },
+                                { parametro: 'estado', etiqueta: 'Estatus', todos: 'Activos', opciones: [{ valor: '0', etiqueta: 'Inhabilitados' }] },
+                            ]}
+                        />
                     )}
                     {gestionar && !historial && (
                         <Button onClick={() => abrirFormulario()}>

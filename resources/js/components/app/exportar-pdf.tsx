@@ -7,27 +7,36 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
+/** Un filtro del reporte: su parámetro en la URL y las opciones (la primera, "todos", no se envía). */
+export interface FiltroPdf {
+    parametro: string;
+    etiqueta: string;
+    todos: string;
+    opciones: { valor: string; etiqueta: string }[];
+}
+
 interface Props {
     url: string;
     /** "proveedores", "clientes": para el texto del diálogo. */
     recurso: string;
-    tipos: { valor: string; etiqueta: string }[];
-    /** Nombres de los parámetros que espera cada reporte (no son iguales en todos los módulos). */
-    parametros: { tipo: string; estatus: string };
+    /** Los parámetros no son iguales en todos los reportes (tipo_proveedor, estatus, stock…). */
+    filtros: FiltroPdf[];
 }
 
+const TODOS = 'todos';
+
 /** Reporte PDF (dompdf, sin cambios en el servidor): abre en otra pestaña con los filtros elegidos. */
-export function ExportarPdf({ url, recurso, tipos, parametros }: Props) {
+export function ExportarPdf({ url, recurso, filtros }: Props) {
     const [abierto, setAbierto] = useState(false);
-    const [tipo, setTipo] = useState('todos');
-    const [estatus, setEstatus] = useState('todos');
+    const [valores, setValores] = useState<Record<string, string>>({});
     const [desde, setDesde] = useState('');
     const [hasta, setHasta] = useState('');
 
     const generar = () => {
         const p = new URLSearchParams();
-        if (tipo !== 'todos') p.set(parametros.tipo, tipo);
-        if (estatus !== 'todos') p.set(parametros.estatus, estatus);
+        for (const [parametro, valor] of Object.entries(valores)) {
+            if (valor !== TODOS) p.set(parametro, valor);
+        }
         if (desde) p.set('fecha_desde', desde);
         if (hasta) p.set('fecha_hasta', hasta);
         window.open(`${url}${p.size ? `?${p}` : ''}`, '_blank', 'noopener');
@@ -47,30 +56,21 @@ export function ExportarPdf({ url, recurso, tipos, parametros }: Props) {
                     <DialogDescription>Elige qué {recurso} incluir en el reporte.</DialogDescription>
                 </DialogHeader>
                 <div className="grid gap-4">
-                    <Campo etiqueta="Tipo">
-                        {(control) => (
-                        <Select value={tipo} onValueChange={setTipo}>
-                            <SelectTrigger {...control} className="w-full"><SelectValue /></SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="todos">Todos los tipos</SelectItem>
-                                {tipos.map((t) => (
-                                    <SelectItem key={t.valor} value={t.valor}>{t.etiqueta}</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                        )}
-                    </Campo>
-                    <Campo etiqueta="Estatus">
-                        {(control) => (
-                        <Select value={estatus} onValueChange={setEstatus}>
-                            <SelectTrigger {...control} className="w-full"><SelectValue /></SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="todos">Activos</SelectItem>
-                                <SelectItem value="0">Inhabilitados</SelectItem>
-                            </SelectContent>
-                        </Select>
-                        )}
-                    </Campo>
+                    {filtros.map((f) => (
+                        <Campo key={f.parametro} etiqueta={f.etiqueta}>
+                            {(control) => (
+                                <Select value={valores[f.parametro] ?? TODOS} onValueChange={(v) => setValores((a) => ({ ...a, [f.parametro]: v }))}>
+                                    <SelectTrigger {...control} className="w-full"><SelectValue /></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value={TODOS}>{f.todos}</SelectItem>
+                                        {f.opciones.map((o) => (
+                                            <SelectItem key={o.valor} value={o.valor}>{o.etiqueta}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            )}
+                        </Campo>
+                    ))}
                     <div className="grid grid-cols-2 gap-3">
                         <Campo etiqueta="Registro desde">
                             <Input type="date" value={desde} onChange={(e) => setDesde(e.target.value)} />

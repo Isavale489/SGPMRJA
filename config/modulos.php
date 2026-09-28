@@ -272,8 +272,8 @@ return [
         ],
         'rutas' => [
             // El PDF va bajo 'ver' (paridad Supervisor, TASK-038).
-            'insumos.index|insumos.show|insumos.data|insumos.reporte.pdf' => 'ver',
-            'insumos.create|insumos.store|insumos.edit|insumos.update|insumos.destroy|insumos.restore|insumos.check-nombre' => 'gestionar',
+            'insumos.index|insumos.reporte.pdf' => 'ver',
+            'insumos.store|insumos.update|insumos.destroy|insumos.restore|insumos.check-nombre' => 'gestionar',
         ],
     ],
 
@@ -284,8 +284,8 @@ return [
             'gestionar' => 'Crear, editar y eliminar tipos de insumo',
         ],
         'rutas' => [
-            'tipo-insumos.index|tipo-insumos.show' => 'ver',
-            'tipo-insumos.store|tipo-insumos.update|tipo-insumos.destroy|tipo-insumos.restore|tipo-insumos.check-nombre' => 'gestionar',
+            'tipo-insumos.index' => 'ver',
+            'tipo-insumos.store|tipo-insumos.update|tipo-insumos.destroy|tipo-insumos.restore' => 'gestionar',
         ],
     ],
 
