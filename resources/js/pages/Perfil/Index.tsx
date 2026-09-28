@@ -94,7 +94,7 @@ export default function Perfil({ usuario, catalogo, preguntas, configuradas, deb
 
             {abierto?.cual === 'datos' && <FormularioDatos key={abierto.n} usuario={usuario} url={urls.perfil} onCerrar={cerrar} />}
             {abierto?.cual === 'contrasena' && <FormularioContrasena key={abierto.n} url={urls.contrasena} onCerrar={cerrar} />}
-            {abierto?.cual === 'preguntas' && <FormularioPreguntas key={abierto.n} catalogo={catalogo} preguntas={preguntas} configuradas={configuradas && !debeReconfigurar} url={urls.preguntas} onCerrar={cerrar} />}
+            {abierto?.cual === 'preguntas' && <FormularioPreguntas key={abierto.n} catalogo={catalogo} preguntas={preguntas} configuradas={configuradas} reconfigurar={configuradas && debeReconfigurar} url={urls.preguntas} onCerrar={cerrar} />}
             {abierto?.cual === 'foto' && <FormularioFoto key={abierto.n} actual={usuario.avatar} nombre={usuario.name} url={urls.avatar} onCerrar={cerrar} />}
         </AppLayout>
     );
@@ -103,7 +103,10 @@ export default function Perfil({ usuario, catalogo, preguntas, configuradas, deb
 const opciones = (onCerrar: () => void) => ({ preserveScroll: true, onSuccess: onCerrar });
 
 function FormularioDatos({ usuario, url, onCerrar }: { usuario: PaginaPerfil['usuario']; url: string; onCerrar: () => void }) {
-    const form = useForm({ name: usuario.name, email: usuario.email });
+    const form = useForm({ name: usuario.name, email: usuario.email, current_password: '' });
+    // Cambiar el correo (vía de recuperación de la cuenta) pide la contraseña.
+    const cambiaCorreo = form.data.email.trim().toLowerCase() !== usuario.email.toLowerCase();
+    form.transform((d) => ({ name: d.name, email: d.email, ...(cambiaCorreo ? { current_password: d.current_password } : {}) }));
     return (
         <DialogoFormulario abierto onCerrar={onCerrar} titulo="Editar datos" sucio={form.isDirty} procesando={form.processing} textoGuardar="Guardar cambios" onGuardar={() => form.patch(url, opciones(onCerrar))}>
             <Campo etiqueta="Nombre" requerido error={form.errors.name}>
@@ -112,6 +115,11 @@ function FormularioDatos({ usuario, url, onCerrar }: { usuario: PaginaPerfil['us
             <Campo etiqueta="Correo electrónico" requerido error={form.errors.email}>
                 <Input type="email" value={form.data.email} maxLength={255} autoComplete="email" onChange={(e) => form.setData('email', e.target.value)} />
             </Campo>
+            {cambiaCorreo && (
+                <Campo etiqueta="Tu contraseña actual" requerido error={form.errors.current_password} ayuda="Para confirmar el cambio de correo.">
+                    <Input type="password" autoComplete="current-password" value={form.data.current_password} onChange={(e) => form.setData('current_password', e.target.value)} />
+                </Campo>
+            )}
         </DialogoFormulario>
     );
 }
@@ -150,13 +158,28 @@ interface Bloque {
 
 /**
  * Las 3 preguntas. Configuración inicial: las 3 obligatorias. Edición: se
- * cambian solo los bloques elegidos y se pide la contraseña actual. Las
- * respuestas nunca vuelven del servidor (están cifradas).
+ * cambian solo los bloques elegidos y se pide la contraseña actual.
+ * Reconfiguración obligatoria: las 3 abiertas (con su pregunta actual) y con
+ * contraseña. Las respuestas nunca vuelven del servidor (están cifradas).
  */
-function FormularioPreguntas({ catalogo, preguntas, configuradas, url, onCerrar }: { catalogo: PaginaPerfil['catalogo']; preguntas: PaginaPerfil['preguntas']; configuradas: boolean; url: string; onCerrar: () => void }) {
+function FormularioPreguntas({
+    catalogo,
+    preguntas,
+    configuradas,
+    reconfigurar,
+    url,
+    onCerrar,
+}: {
+    catalogo: PaginaPerfil['catalogo'];
+    preguntas: PaginaPerfil['preguntas'];
+    configuradas: boolean;
+    reconfigurar: boolean;
+    url: string;
+    onCerrar: () => void;
+}) {
     const actual = (orden: number) => preguntas.find((p) => p.orden === orden)?.pregunta_id;
     const form = useForm<{ bloques: Bloque[]; current_password: string }>({
-        bloques: [1, 2, 3].map((o) => ({ editing: !configuradas, pregunta_id: configuradas ? String(actual(o) ?? '') : '', respuesta: '' })),
+        bloques: [1, 2, 3].map((o) => ({ editing: !configuradas || reconfigurar, pregunta_id: configuradas ? String(actual(o) ?? '') : '', respuesta: '' })),
         current_password: '',
     });
     const e = form.errors as Record<string, string | undefined>;
@@ -174,7 +197,7 @@ function FormularioPreguntas({ catalogo, preguntas, configuradas, url, onCerrar 
             abierto
             onCerrar={onCerrar}
             titulo={configuradas ? 'Actualizar preguntas de seguridad' : 'Configurar preguntas de seguridad'}
-            descripcion={configuradas ? 'Cambia solo los bloques que quieras.' : 'Elige 3 preguntas distintas y respóndelas. No distingue mayúsculas.'}
+            descripcion={reconfigurar ? 'Por seguridad, vuelve a responder las 3 preguntas.' : configuradas ? 'Cambia solo los bloques que quieras.' : 'Elige 3 preguntas distintas y respóndelas. No distingue mayúsculas.'}
             sucio={form.isDirty}
             procesando={form.processing}
             textoGuardar="Guardar preguntas"
@@ -184,7 +207,7 @@ function FormularioPreguntas({ catalogo, preguntas, configuradas, url, onCerrar 
             {e.cambios && <p className="text-destructive text-sm" role="alert">{e.cambios}</p>}
             {form.data.bloques.map((b, i) => {
                 const usadas = form.data.bloques.filter((_, k) => k !== i).map((x) => x.pregunta_id);
-                const err = (c: string) => e[`cambios.${i}.${c}`] ?? e[`cambios.${i + 1}`];
+                const err = (c: string) => e[`cambios.${i}.${c}`] ?? (c === 'respuesta' ? e[`cambios.${i + 1}`] : undefined);
                 return (
                     <fieldset key={i} className="grid gap-3 rounded-lg border p-3">
                         <legend className="px-1 text-sm font-medium">Pregunta {i + 1}</legend>
@@ -211,7 +234,7 @@ function FormularioPreguntas({ catalogo, preguntas, configuradas, url, onCerrar 
                                 <Campo etiqueta="Respuesta" requerido error={err('respuesta')}>
                                     <Input value={b.respuesta} maxLength={255} autoComplete="off" placeholder="Tu respuesta" onChange={(ev) => cambiar(i, { respuesta: ev.target.value })} />
                                 </Campo>
-                                {configuradas && (
+                                {configuradas && !reconfigurar && (
                                     <Button type="button" variant="ghost" size="sm" className="justify-self-start" onClick={() => cambiar(i, { editing: false, pregunta_id: String(actual(i + 1) ?? ''), respuesta: '' })}>No cambiar esta</Button>
                                 )}
                             </>
@@ -237,6 +260,11 @@ function FormularioFoto({ actual, nombre, url, onCerrar }: { actual: string | nu
     useEffect(() => () => { if (vista && vista !== actual) URL.revokeObjectURL(vista); }, [vista, actual]);
     const elegir = (f?: File | null) => {
         if (!f) return;
+        if (!f.type.startsWith('image/')) {
+            form.setError('avatar', 'El archivo debe ser una imagen.');
+            return;
+        }
+        form.clearErrors('avatar');
         form.setData('avatar', f);
         setVista(URL.createObjectURL(f));
     };

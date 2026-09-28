@@ -104,6 +104,14 @@ class ProfileController extends Controller
                 ->with('warning_recovery_no_changes', '1');
         }
 
+        // 2b) Reconfiguración obligatoria (se usó la recuperación o un
+        //     administrador la pidió): se responden de nuevo las 3.
+        if ($configured && $user->recovery_must_reset_questions && count($editedIndices) !== 3) {
+            throw ValidationException::withMessages([
+                'cambios' => 'Por seguridad, debes volver a responder las 3 preguntas.',
+            ]);
+        }
+
         // 3) Si está configurado y hay edición, exigir contraseña actual
         if ($configured && count($editedIndices) > 0) {
             $request->validate([
@@ -222,15 +230,18 @@ class ProfileController extends Controller
         ]);
 
         $user = $request->user();
+        $anterior = $user->avatar;
 
-        if ($user->avatar && Storage::disk('public')->exists($user->avatar)) {
-            Storage::disk('public')->delete($user->avatar);
-        }
-
-        $file = $request->file('avatar');
-        $filename = uniqid() . '.' . $file->getClientOriginalExtension();
-        $user->avatar = $file->storeAs('avatars', $filename, 'public');
+        // store() nombra el archivo con la extensión que corresponde a su
+        // contenido real (no la que trae el nombre del cliente): un .html
+        // disfrazado no queda servido como página desde /storage.
+        $user->avatar = $request->file('avatar')->store('avatars', 'public');
         $user->save();
+
+        // La foto vieja se borra solo cuando la nueva ya quedó guardada.
+        if ($anterior && $anterior !== $user->avatar && Storage::disk('public')->exists($anterior)) {
+            Storage::disk('public')->delete($anterior);
+        }
 
         return $this->responder($request, 'Foto de perfil actualizada.', [
             'success'    => true,
@@ -243,7 +254,7 @@ class ProfileController extends Controller
      */
     public function update(ProfileUpdateRequest $request): RedirectResponse
     {
-        $request->user()->fill($request->validated());
+        $request->user()->fill($request->datos());
 
         if ($request->user()->isDirty('email')) {
             $request->user()->email_verified_at = null;
