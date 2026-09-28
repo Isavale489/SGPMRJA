@@ -75,6 +75,13 @@ class PedidoService
     public function eliminar(Pedido $pedido): void
     {
         DB::transaction(function () use ($pedido) {
+            // Con el pedido bloqueado: una orden de producción creada mientras
+            // tanto (store la crea con este mismo bloqueo) impide eliminarlo.
+            Pedido::whereKey($pedido->id)->lockForUpdate()->first();
+            if ($pedido->tieneProduccionActiva()) {
+                throw new \DomainException('No se puede eliminar un pedido con producción iniciada. Cancela primero sus órdenes de producción.');
+            }
+
             if ($pedido->cotizacion_id) {
                 $cotizacion = Cotizacion::lockForUpdate()->find($pedido->cotizacion_id);
                 if ($cotizacion && $cotizacion->estado === 'Convertida') {

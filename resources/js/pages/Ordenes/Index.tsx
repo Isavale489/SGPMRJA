@@ -35,7 +35,7 @@ export default function OrdenesIndex({ filtros: iniciales, registros, ordenes, o
 
     // Lo abierto va en la URL (?pedido, ?ver, ?empleado): recargar conserva la vista.
     const [pedido, setPedido] = useState<string | undefined>(pedidoInicial);
-    const [ver, setVer] = useState<{ id: string; modo: ModoOrden } | undefined>(verInicial ? { id: verInicial, modo: 'ver' } : undefined);
+    const [ver, setVer] = useState<{ id: string; modo: ModoOrden; quien?: string } | undefined>(verInicial ? { id: verInicial, modo: 'ver' } : undefined);
     const [empleado, setEmpleado] = useState<string | undefined>(empleadoInicial);
     const [misAbierto, setMisAbierto] = useState(Boolean(empleadoInicial));
     const [cancelando, setCancelando] = useState<OrdenFila>();
@@ -49,8 +49,9 @@ export default function OrdenesIndex({ filtros: iniciales, registros, ordenes, o
         setPedido(clave);
         visitar({ pedido: clave, empleado }, ['ordenes']);
     };
-    const abrirOrden = (id: number, modo: ModoOrden) => {
-        setVer({ id: String(id), modo });
+    // `quien`: al registrar avance desde «Órdenes por empleado», el avance se le atribuye a él.
+    const abrirOrden = (id: number, modo: ModoOrden, quien?: string) => {
+        setVer({ id: String(id), modo, quien });
         visitar({ pedido, ver: String(id), empleado }, ['orden']);
     };
     const cerrarOrden = () => {
@@ -178,7 +179,7 @@ export default function OrdenesIndex({ filtros: iniciales, registros, ordenes, o
                 empleado={empleado}
                 datos={misOrdenes}
                 onElegir={elegirEmpleado}
-                onAvance={(id) => abrirOrden(id, 'avance')}
+                onAvance={(id) => abrirOrden(id, 'avance', empleado)}
             />
 
             <DetalleOrden
@@ -188,7 +189,7 @@ export default function OrdenesIndex({ filtros: iniciales, registros, ordenes, o
                 onModo={(modo) => ver && setVer({ ...ver, modo })}
                 urls={urls}
             />
-            {ver?.modo === 'avance' && <Avance orden={ordenCargada} onCerrar={cerrarOrden} url={urls.index} />}
+            {ver?.modo === 'avance' && <Avance orden={ordenCargada} empleadoId={ver.quien ? Number(ver.quien) : undefined} onCerrar={cerrarOrden} url={urls.index} />}
             {ver?.modo === 'etapas' && <Etapas orden={ordenCargada} empleados={empleados} onCerrar={cerrarOrden} url={urls.index} />}
 
             {cancelando && <CancelarOrden key={cancelando.id} orden={cancelando} onCerrar={() => setCancelando(undefined)} url={urls.index} />}

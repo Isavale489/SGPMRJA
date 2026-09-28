@@ -50,6 +50,7 @@ class EnsureRecoveryQuestionsConfigured
                 'profile.edit',
                 'profile.update',
                 'profile.recovery-questions.update',
+                'profile.avatar.update', // la página la ofrece: sin esto la subida se perdía en silencio
                 'logout',
             ];
             if (in_array($routeName, $allowed, true)) {
