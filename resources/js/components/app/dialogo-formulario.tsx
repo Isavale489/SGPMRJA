@@ -14,6 +14,8 @@ interface Props {
     procesando: boolean;
     onGuardar: () => void;
     textoGuardar: string;
+    /** «Cancelar» por defecto; otro texto si la acción misma es cancelar algo. */
+    textoCerrar?: string;
     className?: string;
     children: ReactNode;
 }
@@ -23,7 +25,7 @@ interface Props {
  * y aviso de cambios sin guardar (al cerrar el diálogo o salir de la página).
  * Montarlo con una `key` por apertura (ver docs/conventions/frontend.md).
  */
-export function DialogoFormulario({ abierto, onCerrar, titulo, descripcion, sucio, procesando, onGuardar, textoGuardar, className, children }: Props) {
+export function DialogoFormulario({ abierto, onCerrar, titulo, descripcion, sucio, procesando, onGuardar, textoGuardar, textoCerrar = 'Cancelar', className, children }: Props) {
     useGuardCambios(abierto && sucio);
 
     const cerrar = (abrir: boolean) => {
@@ -44,7 +46,7 @@ export function DialogoFormulario({ abierto, onCerrar, titulo, descripcion, suci
                 <form onSubmit={enviar} className="grid gap-4" noValidate>
                     {children}
                     <DialogFooter>
-                        <Button type="button" variant="outline" onClick={() => cerrar(false)}>Cancelar</Button>
+                        <Button type="button" variant="outline" onClick={() => cerrar(false)}>{textoCerrar}</Button>
                         <Button type="submit" disabled={procesando}>{procesando ? 'Guardando…' : textoGuardar}</Button>
                     </DialogFooter>
                 </form>

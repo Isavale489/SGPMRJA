@@ -2,22 +2,29 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\OrdenProduccion;
-use App\Models\SubOrdenProduccion;
-use App\Models\Insumo;
-use App\Models\Pedido;
+use App\Exceptions\StockInsuficienteException;
+use App\Http\Controllers\Concerns\RespondeSegunCliente;
 use App\Models\DetallePedido;
 use App\Models\Empleado;
-use App\Exceptions\StockInsuficienteException;
-use App\Services\ProduccionInventarioService;
+use App\Models\Insumo;
+use App\Models\OrdenProduccion;
+use App\Models\Pedido;
+use App\Models\SubOrdenProduccion;
 use App\Services\DisponibilidadInsumoService;
+use App\Services\ProduccionInventarioService;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Yajra\DataTables\DataTables;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
+use Inertia\Inertia;
+use Inertia\Response;
 
 class OrdenProduccionController extends Controller
 {
+    use RespondeSegunCliente;
+
     public function __construct(
         private ProduccionInventarioService $inventario,
         private DisponibilidadInsumoService $disponibilidad
@@ -100,84 +107,66 @@ class OrdenProduccionController extends Controller
         ];
     }
 
-    public function index()
-    {
-        $insumos = Insumo::where('estado', true)->get();
-
-        // Empleados del departamento de Producción (asignables a una orden)
-        $empleados = Empleado::with('persona')
-            ->whereHas('departamento', fn($q) => $q->whereRaw("LOWER(nombre) LIKE 'producc%'"))
-            ->where('estado', 1)
-            ->get()
-            ->map(fn($e) => (object)[
-                'id'   => $e->id,
-                'name' => $e->persona->nombre_completo ?? 'Sin nombre',
-            ]);
-
-        return view('admin.ordenes.index', compact('insumos', 'empleados'));
-    }
-
     /**
-     * Órdenes de un pedido (o las manuales) para el DataTable del modal
-     * "Ver órdenes". `pedido_id` = id numérico o 'manual' (sin pedido).
+     * Regla de negocio que impide guardar. Inertia: error en el campo `$campo`
+     * del formulario (y, si los hay, los faltantes por flash para ofrecer la
+     * compra). JSON: el 422 de siempre ({message, ...extra}).
      */
-    public function getOrdenes(Request $request)
+    private function fallar(Request $request, string $mensaje, string $campo = 'general', array $extra = []): JsonResponse
     {
-        $ordenes = OrdenProduccion::with(['producto.tipoProducto', 'detallePedido.tipoProducto', 'detallePedido.genero', 'empleado.persona', 'creadoPor:id,name', 'pedido.cliente.persona'])
-            ->select('orden_produccion.*');
-
-        if ($request->filled('pedido_id')) {
-            $request->input('pedido_id') === 'manual'
-                ? $ordenes->whereNull('orden_produccion.pedido_id')
-                : $ordenes->where('orden_produccion.pedido_id', $request->input('pedido_id'));
+        if ($this->esInertia($request)) {
+            if ($extra) {
+                Inertia::flash($extra);
+            }
+            throw ValidationException::withMessages([$campo => $mensaje]);
         }
 
-        $ordenes->orderByDesc('orden_produccion.created_at');
+        return response()->json(['message' => $mensaje, ...$extra], 422);
+    }
 
-        return DataTables::of($ordenes)
-            ->addColumn('producto_info', function ($orden) {
-                $producto = $orden->nombre_producto;
-                $empleado = $orden->empleado && $orden->empleado->persona
-                    ? $orden->empleado->persona->nombre_completo
-                    : null;
-                $html = '<div class="fw-medium">' . e($producto) . '</div>';
-                if ($empleado) {
-                    $html .= '<small class="text-muted"><i class="ri-user-line"></i> ' . e($empleado) . '</small>';
-                }
-                return $html;
-            })
-            ->addColumn('creado_por', function ($orden) {
-                return $orden->creadoPor ? $orden->creadoPor->name : 'N/A';
-            })
-            ->addColumn('actions', function ($orden) {
-                $actions = '<div class="d-flex gap-2 justify-content-center">';
-                $actions .= '<button type="button" class="btn btn-sm btn-soft-info view-btn" data-id="' . $orden->id . '" title="Ver detalles"><i class="ri-eye-fill"></i></button>';
-                $actions .= '<button type="button" class="btn btn-sm btn-soft-primary subordenes-btn" data-id="' . $orden->id . '" title="Sub-órdenes y empleados"><i class="ri-node-tree"></i></button>';
-                $actions .= '<button type="button" class="btn btn-sm btn-soft-success edit-btn" data-id="' . $orden->id . '" title="Editar orden"><i class="ri-pencil-fill"></i></button>';
-
-                if ($orden->estado === 'Pendiente') {
-                    $actions .= '<button type="button" class="btn btn-sm btn-soft-danger remove-btn" data-id="' . $orden->id . '" title="Eliminar orden"><i class="ri-delete-bin-fill"></i></button>';
-                }
-
-                $actions .= '</div>';
-                return $actions;
-            })
-            ->rawColumns(['producto_info', 'actions'])
-            ->make(true);
+    /** Empleados del departamento de Producción (asignables a una orden). */
+    private function empleadosProduccion(): array
+    {
+        return Empleado::with('persona')
+            ->whereHas('departamento', fn ($q) => $q->whereRaw("LOWER(nombre) LIKE 'producc%'"))
+            ->where('estado', 1)
+            ->get()
+            ->map(fn ($e) => ['id' => $e->id, 'nombre' => $e->persona->nombre_completo ?? 'Sin nombre'])
+            ->sortBy('nombre', SORT_NATURAL | SORT_FLAG_CASE)->values()->all();
     }
 
     /**
-     * Tabla principal de /ordenes: una fila por pedido (más una para las
-     * órdenes manuales) con agregados de sus órdenes de producción. El detalle
-     * por orden vive en el modal "Ver órdenes" (getOrdenes con pedido_id).
+     * Página Inertia: una fila por pedido (más una para las órdenes manuales)
+     * con los agregados de sus órdenes. Por recarga parcial llegan las órdenes
+     * de un pedido (?pedido=ID|manual), el detalle de una orden (?ver=ID) y las
+     * órdenes de un empleado (?empleado=ID).
      *
      * Los filtros de estado/fecha se aplican ANTES de agrupar: el pedido
-     * aparece solo si tiene órdenes que cumplan, y los agregados (conteos,
-     * progreso) reflejan únicamente esas órdenes.
+     * aparece solo si tiene órdenes que cumplan, y los agregados reflejan
+     * únicamente esas órdenes.
      */
-    public function getPedidosOrdenes(Request $request)
+    public function index(Request $request): Response
     {
-        $pedidos = OrdenProduccion::query()
+        $filtros = array_filter($request->only(['buscar', 'estado', 'desde', 'hasta', 'orden', 'pedido', 'ver', 'empleado']), fn ($v) => $v !== null && $v !== '');
+
+        return Inertia::render('Ordenes/Index', [
+            'filtros' => (object) $filtros,
+            'registros' => fn () => $this->pedidosConOrdenes($filtros),
+            'ordenes' => fn () => isset($filtros['pedido']) ? $this->ordenesDePedido($filtros['pedido']) : null,
+            'orden' => fn () => ($o = isset($filtros['ver']) ? OrdenProduccion::find($filtros['ver']) : null) ? $this->detalle($o) : null,
+            'misOrdenes' => fn () => isset($filtros['empleado']) ? $this->ordenesDeEmpleado((int) $filtros['empleado']) : null,
+            'empleados' => $this->empleadosProduccion(),
+            'urls' => [
+                'index' => route('ordenes.index', absolute: false),
+                'crear' => route('ordenes.create', absolute: false),
+                'reportePdf' => route('ordenes.reporte.pdf', absolute: false),
+            ],
+        ]);
+    }
+
+    private function pedidosConOrdenes(array $f)
+    {
+        $q = OrdenProduccion::query()
             ->leftJoin('pedido', 'pedido.id', '=', 'orden_produccion.pedido_id')
             ->leftJoin('cliente', 'cliente.id', '=', 'pedido.cliente_id')
             ->leftJoin('persona', 'persona.id', '=', 'cliente.persona_id')
@@ -186,7 +175,7 @@ class OrdenProduccionController extends Controller
             // envuelto en agregado para cumplir ONLY_FULL_GROUP_BY de MySQL 8.
             ->selectRaw("
                 orden_produccion.pedido_id,
-                MAX(persona.nombre) as cliente_nombre,
+                MAX(persona.nombre) as cliente,
                 COUNT(*) as total_ordenes,
                 SUM(orden_produccion.estado = 'Pendiente')  as pendientes,
                 SUM(orden_produccion.estado = 'En Proceso') as en_proceso,
@@ -194,63 +183,209 @@ class OrdenProduccionController extends Controller
                 SUM(orden_produccion.estado = 'Cancelado')  as canceladas,
                 SUM(IF(orden_produccion.estado <> 'Cancelado', orden_produccion.cantidad_solicitada, 0)) as solicitado,
                 SUM(IF(orden_produccion.estado <> 'Cancelado', orden_produccion.cantidad_producida, 0))  as producido,
-                MAX(orden_produccion.created_at) as ultima_orden
+                MAX(orden_produccion.fecha_fin_estimada) as entrega
             ");
 
-        if ($request->filled('filter_estado')) {
-            $pedidos->where('orden_produccion.estado', $request->input('filter_estado'));
+        if (! empty($f['estado'])) {
+            $q->where('orden_produccion.estado', $f['estado']);
         }
-
-        if ($request->filled('filter_fecha_desde')) {
-            $pedidos->whereDate('orden_produccion.fecha_fin_estimada', '>=', $request->input('filter_fecha_desde'));
+        if (! empty($f['desde'])) {
+            $q->whereDate('orden_produccion.fecha_fin_estimada', '>=', $f['desde']);
         }
-
-        if ($request->filled('filter_fecha_hasta')) {
-            $pedidos->whereDate('orden_produccion.fecha_fin_estimada', '<=', $request->input('filter_fecha_hasta'));
+        if (! empty($f['hasta'])) {
+            $q->whereDate('orden_produccion.fecha_fin_estimada', '<=', $f['hasta']);
+        }
+        if (! empty($f['buscar'])) {
+            $kw = trim($f['buscar']);
+            $q->where(function ($w) use ($kw) {
+                $w->where('persona.nombre', 'like', "%{$kw}%");
+                if (preg_match('/\d+/', $kw, $m)) {
+                    // Acepta "11" o "Pedido #11"
+                    $w->orWhereRaw('CAST(orden_produccion.pedido_id AS CHAR) LIKE ?', ["%{$m[0]}%"]);
+                }
+                if (stripos('manuales', $kw) !== false) {
+                    $w->orWhereNull('orden_produccion.pedido_id');
+                }
+            });
         }
 
         // El progreso global excluye canceladas (mismos SUM del select).
         $progreso = "SUM(IF(orden_produccion.estado <> 'Cancelado', orden_produccion.cantidad_producida, 0))
             / NULLIF(SUM(IF(orden_produccion.estado <> 'Cancelado', orden_produccion.cantidad_solicitada, 0)), 0)";
+        match ($f['orden'] ?? 'recientes') {
+            'progreso_desc' => $q->orderByRaw("({$progreso}) desc"),
+            'progreso_asc' => $q->orderByRaw("({$progreso}) asc"),
+            default => $q->orderByRaw('MAX(orden_produccion.created_at) desc'),
+        };
 
-        switch ($request->input('filter_orden', 'recientes')) {
-            case 'progreso_desc':
-                $pedidos->orderByRaw("({$progreso}) desc");
-                break;
-            case 'progreso_asc':
-                $pedidos->orderByRaw("({$progreso}) asc");
-                break;
-            case 'recientes':
-            default:
-                $pedidos->orderByRaw('MAX(orden_produccion.created_at) desc');
-                break;
+        return $q->paginate(15)->withQueryString()->through(fn ($r) => [
+            'pedido_id' => $r->pedido_id,
+            'cliente' => $r->cliente,
+            'total_ordenes' => (int) $r->total_ordenes,
+            'pendientes' => (int) $r->pendientes,
+            'en_proceso' => (int) $r->en_proceso,
+            'finalizadas' => (int) $r->finalizadas,
+            'canceladas' => (int) $r->canceladas,
+            'solicitado' => (int) $r->solicitado,
+            'producido' => (int) $r->producido,
+            'entrega' => $r->entrega ? substr((string) $r->entrega, 0, 10) : null,
+        ]);
+    }
+
+    /** Equipo de la orden con su reparto y avance. */
+    private function equipo(OrdenProduccion $o): array
+    {
+        return $o->empleadosAsignados->map(fn ($e) => [
+            'id' => $e->id,
+            'nombre' => $e->persona->nombre_completo ?? ('Empleado #'.$e->id),
+            'cantidad' => (int) $e->pivot->cantidad,
+            'producida' => (int) $e->pivot->cantidad_producida,
+            'defectuosa' => (int) $e->pivot->cantidad_defectuosa,
+        ])->values()->all();
+    }
+
+    /** Talla, color y género de la línea del pedido ("M · Azul · Caballero"). */
+    private function variante(OrdenProduccion $o): ?string
+    {
+        $d = $o->detallePedido;
+        if (! $d) {
+            return null;
         }
 
-        return DataTables::of($pedidos)
-            ->filter(function ($query) use ($request) {
-                $kw = trim((string) $request->input('search.value', ''));
-                if ($kw === '') {
-                    return;
-                }
-                $query->where(function ($w) use ($kw) {
-                    $w->where('persona.nombre', 'like', "%{$kw}%");
-                    if (preg_match('/\d+/', $kw, $m)) {
-                        // Acepta "11" o "Pedido #11"
-                        $w->orWhereRaw('CAST(orden_produccion.pedido_id AS CHAR) LIKE ?', ["%{$m[0]}%"]);
-                    }
-                    if (stripos('manual', $kw) !== false || stripos('manuales', $kw) !== false) {
-                        $w->orWhereNull('orden_produccion.pedido_id');
-                    }
-                });
-            })
-            ->make(true);
+        // Sin repetir lo que el nombre del producto ya dice (suele incluir el género).
+        $nombre = mb_strtolower($o->nombre_producto);
+
+        return collect([$d->talla ? ($d->talla->etiqueta ?: $d->talla->nombre) : null, $d->color?->nombre, $d->genero?->nombre])
+            ->filter(fn ($v) => $v && ! str_contains($nombre, mb_strtolower($v)))->implode(' · ') ?: null;
+    }
+
+    /** Órdenes de un pedido ('manual' = sin pedido), para el diálogo «Órdenes del pedido». */
+    private function ordenesDePedido(string $pedido): array
+    {
+        return OrdenProduccion::with(['producto.tipoProducto', 'detallePedido.tipoProducto', 'detallePedido.genero', 'detallePedido.color', 'detallePedido.talla', 'empleadosAsignados.persona', 'creadoPor:id,name'])
+            ->withCount('subordenes')
+            ->when($pedido === 'manual', fn ($q) => $q->whereNull('pedido_id'), fn ($q) => $q->where('pedido_id', (int) $pedido))
+            ->orderByDesc('created_at')->orderByDesc('id')
+            ->get()
+            ->map(fn (OrdenProduccion $o) => [
+                'id' => $o->id,
+                'producto' => $o->nombre_producto,
+                'variante' => $this->variante($o),
+                'equipo' => $this->equipo($o),
+                'cantidad_solicitada' => $o->cantidad_solicitada,
+                'cantidad_producida' => $o->cantidad_producida,
+                'cantidad_defectuosa' => (int) $o->cantidad_defectuosa,
+                'estado' => $o->estado,
+                'fecha_inicio' => $o->fecha_inicio?->toDateString(),
+                'fecha_fin_estimada' => $o->fecha_fin_estimada?->toDateString(),
+                'etapas' => (int) $o->subordenes_count,
+                'creado_por' => $o->creadoPor?->name,
+            ])->all();
+    }
+
+    /** Ficha de una orden: la usan «Ver», «Registrar avance» y «Etapas». */
+    private function detalle(OrdenProduccion $o): array
+    {
+        $o->load([
+            'producto.tipoProducto', 'empleadosAsignados.persona', 'insumos',
+            'detallePedido.tipoProducto', 'detallePedido.genero', 'detallePedido.color', 'detallePedido.talla', 'detallePedido.bordados.logo',
+            'subordenes.empleados.persona', 'creadoPor:id,name,avatar', 'pedido.cliente.persona',
+        ]);
+        $tipo = $o->producto?->tipoProducto ?? $o->detallePedido?->tipoProducto;
+
+        return [
+            'id' => $o->id,
+            'pedido_id' => $o->pedido_id,
+            'pedido_cancelado' => $o->pedido?->estado === 'Cancelado',
+            'cliente' => $o->pedido?->cliente_nombre_completo,
+            'cliente_documento' => $o->pedido?->cliente_documento,
+            'producto' => $o->nombre_producto,
+            'variante' => $this->variante($o),
+            'imagen' => $tipo?->imagen_url,
+            'estado' => $o->estado,
+            'cantidad_solicitada' => $o->cantidad_solicitada,
+            'cantidad_producida' => $o->cantidad_producida,
+            'cantidad_defectuosa' => (int) $o->cantidad_defectuosa,
+            'fecha_inicio' => $o->fecha_inicio?->toDateString(),
+            'fecha_fin_estimada' => $o->fecha_fin_estimada?->toDateString(),
+            'fecha_fin_real' => $o->fecha_fin_real?->toDateString(),
+            'notas' => $o->notas,
+            'motivo_cancelacion' => $o->motivo_cancelacion,
+            'creado' => $o->created_at?->format('Y-m-d H:i'),
+            'creador' => $o->creadoPor ? ['nombre' => $o->creadoPor->name, 'avatar' => $o->creadoPor->avatar_url] : null,
+            'equipo' => $this->equipo($o),
+            'insumos' => $o->insumos->map(fn ($i) => [
+                'id' => $i->id,
+                'nombre' => $i->nombre,
+                'unidad' => $i->unidad_medida,
+                'estimada' => (float) $i->pivot->cantidad_estimada,
+            ])->values()->all(),
+            'bordados' => ($o->detallePedido?->bordados ?? collect())->map(fn ($b) => [
+                'id' => $b->id,
+                'aplicacion' => $b->nombre_aplicado,
+                'logo' => $b->logo?->name ?? $b->nombre_logo_aplicado,
+                'cantidad' => (int) ($b->cantidad ?: 1),
+            ])->values()->all(),
+            'etapas' => $o->subordenes->map(fn ($s) => [
+                'id' => $s->id,
+                'nombre' => $s->nombre,
+                'cantidad' => $s->cantidad_asignada,
+                'estado' => $s->estado,
+                'notas' => $s->notas,
+                'empleados' => $s->empleados->map(fn ($e) => [
+                    'id' => $e->id,
+                    'nombre' => $e->persona->nombre_completo ?? ('Empleado #'.$e->id),
+                    'rol' => $e->pivot->rol,
+                ])->values()->all(),
+            ])->values()->all(),
+        ];
     }
 
     /**
-     * Pedidos activos con sus líneas de producto, marcando cuáles ya tienen
-     * orden de producción. Alimenta el modal de selección (1 orden por línea).
+     * Órdenes en las que participa un empleado (responsable o parte del
+     * equipo), las activas primero. Antes solo veía las que tenía como
+     * responsable principal.
      */
-    public function pedidosDisponibles()
+    private function ordenesDeEmpleado(int $empleadoId): ?array
+    {
+        $empleado = Empleado::with('persona')->find($empleadoId);
+        if (! $empleado) {
+            return null;
+        }
+
+        $ordenes = OrdenProduccion::with(['producto', 'detallePedido.tipoProducto', 'detallePedido.genero', 'empleadosAsignados'])
+            ->where(fn ($q) => $q->where('empleado_id', $empleadoId)->orWhereHas('empleadosAsignados', fn ($e) => $e->where('empleado.id', $empleadoId)))
+            ->orderByRaw("FIELD(estado,'En Proceso','Pendiente','Finalizado','Cancelado')")
+            ->orderBy('fecha_fin_estimada')
+            ->get()
+            ->map(function (OrdenProduccion $o) use ($empleadoId) {
+                $mio = $o->empleadosAsignados->firstWhere('id', $empleadoId);
+
+                return [
+                    'id' => $o->id,
+                    'pedido_id' => $o->pedido_id,
+                    'producto' => $o->nombre_producto,
+                    'estado' => $o->estado,
+                    'cantidad_solicitada' => $o->cantidad_solicitada,
+                    'cantidad_producida' => $o->cantidad_producida,
+                    // Su parte del reparto (null en órdenes antiguas sin equipo).
+                    'mi_cantidad' => $mio ? (int) $mio->pivot->cantidad : null,
+                    'mi_producida' => $mio ? (int) $mio->pivot->cantidad_producida : null,
+                    'fecha_fin_estimada' => $o->fecha_fin_estimada?->toDateString(),
+                ];
+            });
+
+        return [
+            'empleado' => ['id' => $empleado->id, 'nombre' => $empleado->persona?->nombre_completo ?? ('Empleado #'.$empleado->id)],
+            'ordenes' => $ordenes->values()->all(),
+        ];
+    }
+
+    /**
+     * Pedidos activos con sus líneas fabricables y las unidades que aún no
+     * tienen orden. Una línea admite VARIAS órdenes (reparto entre empleados).
+     */
+    private function pedidosDisponibles(): array
     {
         $pedidos = Pedido::with([
                 'cliente.persona',
@@ -267,148 +402,95 @@ class OrdenProduccionController extends Controller
             ->get();
 
         // Unidades comprometidas por línea en órdenes activas (no canceladas).
-        // Una línea admite VARIAS órdenes (reparto entre empleados) y sigue
-        // disponible mientras le queden unidades sin asignar.
         $asignadoPorDetalle = OrdenProduccion::whereIn('pedido_id', $pedidos->pluck('id'))
             ->whereNotNull('detalle_pedido_id')
             ->where('estado', '!=', 'Cancelado')
-            ->selectRaw('detalle_pedido_id, SUM(cantidad_solicitada) as asignado, COUNT(*) as ordenes')
+            ->selectRaw('detalle_pedido_id, SUM(cantidad_solicitada) as asignado')
             ->groupBy('detalle_pedido_id')
-            ->get()
-            ->keyBy('detalle_pedido_id');
+            ->pluck('asignado', 'detalle_pedido_id');
 
-        $data = $pedidos->map(function ($pedido) use ($asignadoPorDetalle) {
+        return $pedidos->map(function (Pedido $pedido) use ($asignadoPorDetalle) {
             $lineas = $pedido->productos
                 // Solo líneas fabricables: los productos de reventa
                 // (tipo->requiere_produccion = false) se venden pero no se producen.
-                ->filter(fn($d) => $d->requiereProduccion())
+                ->filter(fn ($d) => $d->requiereProduccion())
                 ->map(function ($d) use ($asignadoPorDetalle) {
-                // Tipo: legacy desde el producto; dinámico desde la relación directa.
-                $tipo = $d->producto ? $d->producto->tipoProducto : $d->tipoProducto;
+                    // Tipo: legacy desde el producto; dinámico desde la relación directa.
+                    $tipo = $d->producto ? $d->producto->tipoProducto : $d->tipoProducto;
 
-                // Insumos por defecto del tipo de producto (template para la orden).
-                // Se envía el consumo POR UNIDAD: el wizard lo multiplica por las
-                // unidades asignadas a cada orden (la línea puede repartirse).
-                $insumosDefault = $tipo
-                    ? $tipo->insumosDefault->map(fn($i) => [
-                        'id'                => $i->id,
-                        'nombre'            => $i->nombre,
-                        'unidad'            => $i->unidad_medida,
-                        'cantidad_unitaria' => (float) $i->pivot->cantidad_estimada,
-                    ])->values()
-                    : collect();
+                    // Consumo POR UNIDAD del tipo de producto (plantilla de la orden):
+                    // el formulario lo multiplica por las unidades de cada orden.
+                    $insumos = $tipo
+                        ? $tipo->insumosDefault->map(fn ($i) => [
+                            'id' => $i->id,
+                            'nombre' => $i->nombre,
+                            'unidad' => $i->unidad_medida,
+                            'por_unidad' => (float) $i->pivot->cantidad_estimada,
+                        ])->values()
+                        : collect();
 
-                // Tela de la variante: legacy desde producto->tela; dinámico desde tela_snapshot.
-                $telaId = $telaNombre = $telaUnidad = null;
-                if ($d->producto && $d->producto->tela) {
-                    $telaId = $d->producto->tela->id;
-                    $telaNombre = $d->producto->tela->nombre;
-                    $telaUnidad = $d->producto->tela->unidad_medida;
-                } elseif (is_array($d->tela_snapshot) && !empty($d->tela_snapshot['id'])) {
-                    $telaId = $d->tela_snapshot['id'];
-                    $telaNombre = $d->tela_snapshot['nombre'] ?? 'Tela';
-                    $telaUnidad = $d->tela_snapshot['unidad_medida'] ?? '';
-                }
+                    // Tela de la variante: legacy desde producto->tela; dinámico desde tela_snapshot.
+                    $tela = null;
+                    if ($d->producto && $d->producto->tela) {
+                        $tela = ['id' => $d->producto->tela->id, 'nombre' => $d->producto->tela->nombre, 'unidad' => $d->producto->tela->unidad_medida];
+                    } elseif (is_array($d->tela_snapshot) && ! empty($d->tela_snapshot['id'])) {
+                        $tela = ['id' => $d->tela_snapshot['id'], 'nombre' => $d->tela_snapshot['nombre'] ?? 'Tela', 'unidad' => $d->tela_snapshot['unidad_medida'] ?? ''];
+                    }
+                    // Si el tipo requiere tela y define consumo por unidad, la tela va primero.
+                    if ($tipo && $tipo->requiere_tela && $tipo->consumo_tela_por_unidad > 0 && $tela) {
+                        $insumos->prepend([...$tela, 'por_unidad' => (float) $tipo->consumo_tela_por_unidad]);
+                    }
 
-                // Auto-prefill de la tela: si el tipo requiere tela y define consumo
-                // por unidad, se agrega (también como consumo unitario).
-                if ($tipo && $tipo->requiere_tela && $tipo->consumo_tela_por_unidad > 0 && $telaId) {
-                    $insumosDefault->prepend([
-                        'id'                => $telaId,
-                        'nombre'            => $telaNombre,
-                        'unidad'            => $telaUnidad,
-                        'cantidad_unitaria' => (float) $tipo->consumo_tela_por_unidad,
-                    ]);
-                }
+                    $nombre = $d->producto
+                        ? $d->producto->nombre
+                        : (trim(($tipo->nombre ?? '').' '.($tela['nombre'] ?? '')) ?: ($d->sku_snapshot ?? ('Producto #'.$d->id)));
+                    $asignado = (int) ($asignadoPorDetalle[$d->id] ?? 0);
 
-                // Nombre legible de la línea (legacy o dinámico desde snapshot).
-                $productoNombre = $d->producto
-                    ? $d->producto->nombre
-                    : (trim(($tipo->nombre ?? '') . ' ' . ($telaNombre ?? ''))
-                        ?: ($d->sku_snapshot ?? ('Producto #' . $d->id)));
-
-                $asignado = (int) ($asignadoPorDetalle[$d->id]->asignado ?? 0);
-
-                return [
-                    'detalle_id'         => $d->id,
-                    'producto_id'        => $d->producto_id,
-                    'producto_nombre'    => $productoNombre,
-                    'cantidad'           => $d->cantidad,
-                    'cantidad_asignada'  => min($asignado, $d->cantidad),
-                    'cantidad_pendiente' => max(0, $d->cantidad - $asignado),
-                    'ordenes_activas'    => (int) ($asignadoPorDetalle[$d->id]->ordenes ?? 0),
-                    'color'              => $d->color->nombre ?? null,
-                    'talla'              => $d->talla ? ($d->talla->etiqueta ?: $d->talla->nombre) : null,
-                    'genero'             => $d->genero->nombre ?? null,
-                    'precio_unitario'    => (float) $d->precio_unitario,
-                    'subtotal'           => round($d->cantidad * $d->precio_unitario, 2),
-                    'lleva_bordado'      => (bool) $d->lleva_bordado,
-                    'bordados_count'     => $d->bordados->count(),
-                    'insumos_default'    => $insumosDefault,
-                ];
-            })->values();
+                    return [
+                        'detalle_id' => $d->id,
+                        'producto' => $nombre,
+                        'variante' => collect([$d->talla ? ($d->talla->etiqueta ?: $d->talla->nombre) : null, $d->color?->nombre, $d->genero?->nombre])->filter()->implode(' · ') ?: null,
+                        'bordados' => $d->bordados->count(),
+                        'cantidad' => (int) $d->cantidad,
+                        'pendiente' => max(0, (int) $d->cantidad - $asignado),
+                        'insumos' => $insumos->values()->all(),
+                    ];
+                })->values();
 
             return [
-                'id'                => $pedido->id,
-                'cliente_nombre'    => $pedido->cliente_nombre_completo,
-                'cliente_documento' => $pedido->cliente_documento ?? 'N/A',
-                'fecha_pedido'      => optional($pedido->fecha_pedido)->format('d/m/Y'),
-                'fecha_entrega'     => optional($pedido->fecha_entrega_estimada)->format('Y-m-d'),
-                'estado'            => $pedido->estado,
-                'total_lineas'      => $lineas->count(),
-                'lineas_pendientes' => $lineas->where('cantidad_pendiente', '>', 0)->count(),
-                'progreso'          => $pedido->progreso_produccion,
-                // Abono mínimo (regla de negocio): el front bloquea/avisa si no se cumple.
-                'total'              => (float) $pedido->total,
-                'abono'              => (float) $pedido->abono,
-                'porcentaje_abonado' => $pedido->porcentajeAbonado(),
-                'abono_minimo_pct'   => Pedido::porcentajeAbonoMinimo(),
-                'cumple_abono'       => $pedido->cumpleAbonoMinimo(),
-                'lineas'            => $lineas,
+                'id' => $pedido->id,
+                'cliente' => $pedido->cliente_nombre_completo,
+                'cliente_documento' => $pedido->cliente_documento,
+                'fecha_pedido' => $pedido->fecha_pedido?->toDateString(),
+                'fecha_entrega' => $pedido->fecha_entrega_estimada?->toDateString(),
+                'estado' => $pedido->estado,
+                // Abono mínimo (regla de negocio): sin él no se puede producir.
+                'porcentaje_abonado' => round($pedido->porcentajeAbonado(), 1),
+                'cumple_abono' => $pedido->cumpleAbonoMinimo(),
+                'lineas' => $lineas->all(),
             ];
         })
-        // Ocultar pedidos sin nada que producir (solo productos de reventa).
-        ->filter(fn($p) => $p['total_lineas'] > 0)
-        ->values();
-
-        return response()->json($data);
+            // Ocultar pedidos sin nada que producir (solo productos de reventa).
+            ->filter(fn ($p) => count($p['lineas']) > 0)
+            ->values()->all();
     }
 
-    /**
-     * Órdenes asignadas a un empleado — alimenta el modal "Mis Órdenes".
-     * Solo consulta; las activas se muestran primero para registrar avance.
-     */
-    public function ordenesPorEmpleado($empleadoId)
+    /** Formulario de órdenes nuevas (1..N de un pedido), en su propia página. */
+    public function create(): Response
     {
-        $empleado = Empleado::with('persona')->findOrFail($empleadoId);
-
-        $ordenes = OrdenProduccion::with(['producto', 'detallePedido.tipoProducto', 'detallePedido.genero', 'pedido'])
-            ->where('empleado_id', $empleadoId)
-            ->orderByRaw("FIELD(estado,'En Proceso','Pendiente','Finalizado','Cancelado')")
-            ->orderBy('fecha_fin_estimada')
-            ->get()
-            ->map(fn($o) => [
-                'id'                  => $o->id,
-                'pedido_id'           => $o->pedido_id,
-                'producto'            => $o->nombre_producto,
-                'cantidad_solicitada' => $o->cantidad_solicitada,
-                'cantidad_producida'  => $o->cantidad_producida,
-                'cantidad_defectuosa' => $o->cantidad_defectuosa,
-                'progreso'            => round($o->progreso * 100, 1),
-                'estado'              => $o->estado,
-                'fecha_inicio'        => optional($o->fecha_inicio)->format('d/m/Y'),
-                'fecha_fin_estimada'  => optional($o->fecha_fin_estimada)->format('d/m/Y'),
-            ]);
-
-        return response()->json([
-            'empleado' => optional($empleado->persona)->nombre_completo ?? ('Empleado #' . $empleado->id),
-            'resumen'  => [
-                'total'       => $ordenes->count(),
-                'pendientes'  => $ordenes->where('estado', 'Pendiente')->count(),
-                'en_proceso'  => $ordenes->where('estado', 'En Proceso')->count(),
-                'finalizadas' => $ordenes->where('estado', 'Finalizado')->count(),
+        return Inertia::render('Ordenes/Formulario', [
+            'pedidos' => fn () => $this->pedidosDisponibles(),
+            'empleados' => $this->empleadosProduccion(),
+            'insumos' => Insumo::where('estado', true)->where('is_inventoriable', true)->orderBy('nombre')
+                ->get(['id', 'nombre', 'unidad_medida', 'stock_actual'])
+                ->map(fn ($i) => ['id' => $i->id, 'nombre' => $i->nombre, 'unidad' => $i->unidad_medida, 'stock' => (float) $i->stock_actual])->all(),
+            'abonoMinimo' => Pedido::porcentajeAbonoMinimo(),
+            'urls' => [
+                'index' => route('ordenes.index', absolute: false),
+                'guardar' => route('ordenes.batch', absolute: false),
+                'proyeccion' => route('ordenes.proyeccionInsumos', absolute: false),
+                'crearCompra' => route('compras.create', absolute: false),
             ],
-            'ordenes'  => $ordenes->values(),
         ]);
     }
 
@@ -476,7 +558,15 @@ class OrdenProduccionController extends Controller
         $orden->empleadosAsignados()->sync($syncData);
     }
 
-    public function store(Request $request)
+    /** Al guardar desde Inertia se vuelve al listado con las órdenes del pedido abiertas. */
+    private function alListado(Request $request, ?int $pedidoId, string $mensaje, array $json): JsonResponse|RedirectResponse
+    {
+        return $this->esInertia($request)
+            ? redirect()->route('ordenes.index', ['pedido' => $pedidoId ?? 'manual'])->with('success', $mensaje)
+            : response()->json($json);
+    }
+
+    public function store(Request $request): JsonResponse|RedirectResponse
     {
         $validated = $request->validate([
             'detalle_pedido_id'    => 'required|exists:detalle_pedido,id',
@@ -497,13 +587,13 @@ class OrdenProduccionController extends Controller
         // Regla de negocio: el pedido debe alcanzar el abono mínimo para producir.
         $pedido = Pedido::findOrFail($detalle->pedido_id);
         if ($error = $this->bloqueoPorAbonoMinimo($pedido)) {
-            return response()->json($error, 422);
+            return $this->fallar($request, $error['message']);
         }
 
         try {
             // Crear la orden, asociar insumos y descontar stock en una sola
             // transacción: si falta stock, no se crea nada (rollback total).
-            DB::transaction(function () use ($validated, $detalle, $request) {
+            DB::transaction(function () use ($validated, $detalle) {
                 // Lock sobre la línea: serializa asignaciones concurrentes para que
                 // la suma de órdenes activas nunca supere las unidades de la línea.
                 $detalle = DetallePedido::whereKey($detalle->id)->lockForUpdate()->firstOrFail();
@@ -517,52 +607,59 @@ class OrdenProduccionController extends Controller
                     throw new \InvalidArgumentException("Solo quedan {$disponible} unidades sin asignar en esta línea (se intentó asignar {$cantidad}).");
                 }
 
-                $orden = OrdenProduccion::create([
-                    'pedido_id'           => $detalle->pedido_id,
-                    'detalle_pedido_id'   => $detalle->id,
-                    'producto_id'         => $detalle->producto_id,
-                    'empleado_id'         => $validated['empleados'][0]['id'], // responsable principal
-                    'cantidad_solicitada' => $cantidad,
-                    'cantidad_producida'  => 0,
-                    'fecha_inicio'        => $validated['fecha_inicio'],
-                    'fecha_fin_estimada'  => $validated['fecha_fin_estimada'],
-                    'estado'              => 'Pendiente',
-                    'notas'               => $validated['notas'] ?? null,
-                    'created_by'          => Auth::id(),
-                ]);
-
-                $this->syncEmpleadosConCantidad($orden, $validated['empleados']);
-
-                foreach ($request->insumos as $insumo) {
-                    $orden->insumos()->attach($insumo['id'], [
-                        'cantidad_estimada' => $insumo['cantidad_estimada'],
-                        'cantidad_utilizada' => 0,
-                    ]);
-                }
-
-                $this->inventario->validarYDescontar($orden, Auth::id());
+                $this->crearOrden($detalle, $validated, $cantidad);
             });
         } catch (StockInsuficienteException $e) {
-            // Faltantes estructurados para prellenar la compra (atajo del wizard).
-            return response()->json([
-                'message'   => $e->getMessage(),
-                'faltantes' => $this->faltantesParaCompra([$validated['insumos']]),
-            ], 422);
+            // Faltantes estructurados para prellenar la compra.
+            return $this->fallar($request, $e->getMessage(), 'general', ['faltantes' => $this->faltantesParaCompra([$validated['insumos']])]);
         } catch (\InvalidArgumentException $e) {
-            return response()->json(['message' => $e->getMessage()], 422);
+            return $this->fallar($request, $e->getMessage());
         }
 
-        Pedido::find($detalle->pedido_id)?->recalcularEstado();
+        $pedido->recalcularEstado();
 
-        return response()->json(['message' => 'Orden de producción creada exitosamente.']);
+        return $this->alListado($request, $pedido->id, 'Orden de producción creada exitosamente.', ['message' => 'Orden de producción creada exitosamente.']);
+    }
+
+    /** Crea la orden con su equipo e insumos y descuenta el stock (dentro de la transacción del llamador). */
+    private function crearOrden(DetallePedido $detalle, array $o, int $cantidad): OrdenProduccion
+    {
+        $orden = OrdenProduccion::create([
+            'pedido_id'           => $detalle->pedido_id,
+            'detalle_pedido_id'   => $detalle->id,
+            'producto_id'         => $detalle->producto_id,
+            'empleado_id'         => $o['empleados'][0]['id'], // responsable principal
+            'cantidad_solicitada' => $cantidad,
+            'cantidad_producida'  => 0,
+            'cantidad_defectuosa' => 0,
+            'fecha_inicio'        => $o['fecha_inicio'],
+            'fecha_fin_estimada'  => $o['fecha_fin_estimada'],
+            'estado'              => 'Pendiente',
+            'notas'               => $o['notas'] ?? null,
+            'created_by'          => Auth::id(),
+        ]);
+
+        $this->syncEmpleadosConCantidad($orden, $o['empleados']);
+
+        foreach ($o['insumos'] as $ins) {
+            $orden->insumos()->attach($ins['id'], [
+                'cantidad_estimada' => $ins['cantidad_estimada'],
+                'cantidad_utilizada' => 0,
+            ]);
+        }
+
+        $this->inventario->validarYDescontar($orden, Auth::id());
+
+        return $orden;
     }
 
     /**
-     * Crear varias órdenes del mismo pedido en una sola transacción.
-     * Cada orden trae sus propios empleado/fechas/costo/insumos. Si alguna
-     * línea ya tiene orden activa o falla la validación, no se crea ninguna.
+     * Crear varias órdenes del mismo pedido en una sola transacción (lo que
+     * usa el formulario). Cada orden trae su equipo, fechas e insumos. Una
+     * línea PUEDE aparecer varias veces (su producción se reparte); si alguna
+     * falla, no se crea ninguna.
      */
-    public function storeBatch(Request $request)
+    public function storeBatch(Request $request): JsonResponse|RedirectResponse
     {
         $validated = $request->validate([
             'pedido_id'                           => 'required|exists:pedido,id',
@@ -578,45 +675,38 @@ class OrdenProduccionController extends Controller
             'ordenes.*.insumos'                   => 'required|array|min:1',
             'ordenes.*.insumos.*.id'              => 'required|exists:insumo,id',
             'ordenes.*.insumos.*.cantidad_estimada' => 'required|numeric|min:0.01',
+        ], [
+            'ordenes.*.empleados.required' => 'Asigna al menos un empleado.',
+            'ordenes.*.fecha_fin_estimada.after' => 'El fin estimado debe ser posterior al inicio.',
+            'ordenes.*.insumos.required' => 'La orden necesita al menos un insumo.',
         ]);
 
-        // Una misma línea PUEDE aparecer varias veces: su producción se reparte
-        // entre varias órdenes/empleados. La integridad la da la validación de
-        // suma de cantidades dentro de la transacción (con lock por línea).
         $detalleIds = collect($validated['ordenes'])->pluck('detalle_pedido_id')->unique()->values();
 
         // Todas las líneas deben pertenecer al mismo pedido_id (anti-tampering)
-        $detalles = DetallePedido::whereIn('id', $detalleIds)
-            ->where('pedido_id', $validated['pedido_id'])
-            ->get()->keyBy('id');
-        if ($detalles->count() !== $detalleIds->count()) {
-            return response()->json([
-                'message' => 'Una o más líneas no pertenecen al pedido indicado.'
-            ], 422);
+        $pertenecen = DetallePedido::whereIn('id', $detalleIds)->where('pedido_id', $validated['pedido_id'])->count();
+        if ($pertenecen !== $detalleIds->count()) {
+            return $this->fallar($request, 'Una o más líneas no pertenecen al pedido indicado.');
         }
 
         // Regla de negocio: el pedido debe alcanzar el abono mínimo para producir.
         $pedido = Pedido::findOrFail($validated['pedido_id']);
         if ($error = $this->bloqueoPorAbonoMinimo($pedido)) {
-            return response()->json($error, 422);
+            return $this->fallar($request, $error['message']);
         }
 
         $creadas = [];
         try {
             DB::transaction(function () use ($validated, $detalleIds, &$creadas) {
-                // Lock por línea: la suma de cantidades de órdenes activas (las
-                // previas + las de este batch) no puede superar las unidades de
-                // la línea, incluso con asignaciones concurrentes.
-                $detalles = DetallePedido::whereIn('id', $detalleIds)
-                    ->lockForUpdate()->get()->keyBy('id');
+                // Lock por línea: la suma de órdenes activas (las previas + las de
+                // este lote) no puede superar las unidades de la línea.
+                $detalles = DetallePedido::whereIn('id', $detalleIds)->lockForUpdate()->get()->keyBy('id');
 
                 foreach ($detalles as $detalle) {
-                    $solicitado = collect($validated['ordenes'])
-                        ->where('detalle_pedido_id', $detalle->id)
-                        ->sum('cantidad');
+                    $solicitado = collect($validated['ordenes'])->where('detalle_pedido_id', $detalle->id)->sum('cantidad');
                     $disponible = $detalle->cantidad - $this->cantidadAsignadaActiva($detalle->id);
                     if ($solicitado > $disponible) {
-                        $nombre = $detalle->producto->nombre ?? $detalle->sku_snapshot ?? ('línea #' . $detalle->id);
+                        $nombre = $detalle->producto->nombre ?? $detalle->sku_snapshot ?? ('línea #'.$detalle->id);
                         throw new \InvalidArgumentException(
                             "\"{$nombre}\" solo tiene {$disponible} unidades sin asignar y se intentó asignar {$solicitado}. Recarga e intenta de nuevo."
                         );
@@ -624,83 +714,135 @@ class OrdenProduccionController extends Controller
                 }
 
                 foreach ($validated['ordenes'] as $o) {
-                    $detalle = $detalles[$o['detalle_pedido_id']];
-                    $orden = OrdenProduccion::create([
-                        'pedido_id'           => $detalle->pedido_id,
-                        'detalle_pedido_id'   => $detalle->id,
-                        'producto_id'         => $detalle->producto_id,
-                        'empleado_id'         => $o['empleados'][0]['id'], // responsable principal
-                        'cantidad_solicitada' => (int) $o['cantidad'],
-                        'cantidad_producida'  => 0,
-                        'cantidad_defectuosa' => 0,
-                        'fecha_inicio'        => $o['fecha_inicio'],
-                        'fecha_fin_estimada'  => $o['fecha_fin_estimada'],
-                        'estado'              => 'Pendiente',
-                        'notas'               => $o['notas'] ?? null,
-                        'created_by'          => Auth::id(),
-                    ]);
-
-                    $this->syncEmpleadosConCantidad($orden, $o['empleados']);
-
-                    foreach ($o['insumos'] as $ins) {
-                        $orden->insumos()->attach($ins['id'], [
-                            'cantidad_estimada' => $ins['cantidad_estimada'],
-                            'cantidad_utilizada' => 0,
-                        ]);
-                    }
-
-                    $this->inventario->validarYDescontar($orden, Auth::id());
-
-                    $creadas[] = $orden->id;
+                    $creadas[] = $this->crearOrden($detalles[$o['detalle_pedido_id']], $o, (int) $o['cantidad'])->id;
                 }
             });
         } catch (StockInsuficienteException $e) {
-            // Faltante agregado entre TODAS las órdenes del batch (lo que hay que
-            // comprar de verdad), para prellenar la compra.
-            return response()->json([
-                'message'   => $e->getMessage(),
+            // Faltante agregado entre TODAS las órdenes del lote (lo que hay que comprar de verdad).
+            return $this->fallar($request, $e->getMessage(), 'general', [
                 'faltantes' => $this->faltantesParaCompra(collect($validated['ordenes'])->pluck('insumos')->all()),
-            ], 422);
+            ]);
         } catch (\InvalidArgumentException $e) {
-            return response()->json(['message' => $e->getMessage()], 422);
+            return $this->fallar($request, $e->getMessage());
         }
 
-        Pedido::find($validated['pedido_id'])?->recalcularEstado();
+        $pedido->recalcularEstado();
+        $mensaje = count($creadas).' '.(count($creadas) === 1 ? 'orden creada' : 'órdenes creadas').' correctamente.';
 
-        return response()->json([
-            'message' => count($creadas) . ' ' . (count($creadas) === 1 ? 'orden creada' : 'órdenes creadas') . ' correctamente.',
-            'ordenes' => $creadas,
+        return $this->alListado($request, $pedido->id, $mensaje, ['message' => $mensaje, 'ordenes' => $creadas]);
+    }
+
+    /** Editar una orden en su propia página (equipo, fechas, estado; cantidad solo en Pendiente). */
+    public function edit(OrdenProduccion $ordene): Response|RedirectResponse
+    {
+        $orden = $ordene;
+        if ($orden->estado === 'Cancelado') {
+            return redirect()->route('ordenes.index', ['pedido' => $orden->pedido_id ?? 'manual'])->with('error', 'Una orden cancelada no se puede editar.');
+        }
+        $orden->load(['empleadosAsignados.persona', 'insumos', 'detallePedido.genero', 'detallePedido.color', 'detallePedido.talla', 'detallePedido.tipoProducto', 'producto', 'pedido.cliente.persona']);
+
+        return Inertia::render('Ordenes/Editar', [
+            'orden' => [
+                'id' => $orden->id,
+                'pedido_id' => $orden->pedido_id,
+                'cliente' => $orden->pedido?->cliente_nombre_completo,
+                'producto' => $orden->nombre_producto,
+                'variante' => $this->variante($orden),
+                'estado' => $orden->estado,
+                'cantidad' => $orden->cantidad_solicitada,
+                'cantidad_producida' => $orden->cantidad_producida,
+                // Tope al que puede crecer ESTA orden: sus unidades + las que la línea aún no asignó.
+                'cantidad_maxima' => $orden->detallePedido
+                    ? max(0, $orden->detallePedido->cantidad - $this->cantidadAsignadaActiva($orden->detalle_pedido_id, $orden->id))
+                    : $orden->cantidad_solicitada,
+                'fecha_inicio' => $orden->fecha_inicio?->toDateString(),
+                'fecha_fin_estimada' => $orden->fecha_fin_estimada?->toDateString(),
+                'notas' => $orden->notas,
+                'equipo' => $this->equipo($orden),
+                'insumos' => $orden->insumos->map(fn ($i) => ['id' => $i->id, 'nombre' => $i->nombre, 'unidad' => $i->unidad_medida, 'estimada' => (float) $i->pivot->cantidad_estimada])->values()->all(),
+            ],
+            'empleados' => $this->empleadosProduccion(),
+            'urls' => [
+                'index' => route('ordenes.index', ['pedido' => $orden->pedido_id ?? 'manual'], absolute: false),
+                'guardar' => route('ordenes.update', $orden, absolute: false),
+            ],
         ]);
     }
 
-    public function show($id)
+    /**
+     * Todo en una transacción: si el reparto no cuadra, no queda nada a medias
+     * (antes se guardaban fechas y estado aunque el equipo fallara).
+     */
+    public function update(Request $request, $id): JsonResponse|RedirectResponse
     {
-        $orden = OrdenProduccion::with([
-                'producto.tipoProducto',
-                'empleado.persona',
-                'empleadosAsignados.persona',
-                'detallePedido.tipoProducto', 'detallePedido.genero',
-                'detallePedido.bordados.logo',
-                'detallePedido.color',
-                'detallePedido.talla',
-                'insumos',
-                'creadoPor:id,name,avatar',
-                'pedido.cliente',
-            ])->findOrFail($id);
+        $orden = OrdenProduccion::findOrFail($id);
 
-        $orden->append('nombre_producto');
+        // 'Cancelado' no se setea aquí: la cancelación tiene su propio endpoint
+        // (cancelar) porque define la reposición de stock y exige motivo de merma.
+        $validated = $request->validate([
+            'empleados'            => 'required|array|min:1',
+            'empleados.*.id'       => 'required|exists:empleado,id',
+            'empleados.*.cantidad' => 'required|integer|min:1',
+            'cantidad'             => 'nullable|integer|min:1',
+            'fecha_inicio'         => 'required|date',
+            'fecha_fin_estimada'   => 'required|date|after:fecha_inicio',
+            'estado'               => 'required|in:Pendiente,En Proceso,Finalizado',
+            'notas'                => 'nullable|string',
+        ], [
+            'empleados.required' => 'Asigna al menos un empleado.',
+            'fecha_fin_estimada.after' => 'El fin estimado debe ser posterior al inicio.',
+        ]);
 
-        $data = $orden->toArray();
-        // Creador real para el chip "Creado por" (nombre + avatar con fallback del accessor).
-        $data['creador'] = $orden->creadoPor ? [
-            'name'       => $orden->creadoPor->name,
-            'avatar_url' => $orden->creadoPor->avatar_url,
-        ] : null;
-        // Cliente del pedido ligado, para el chip espejo "Cliente" (gutter izquierdo).
-        $data['cliente_nombre']    = $orden->pedido?->cliente_nombre_completo;
-        $data['cliente_documento'] = $orden->pedido?->cliente_documento;
+        // Cantidad: solo se puede rebalancear con la orden Pendiente (la tela no
+        // se ha cortado y los insumos no se ajustan; en marcha → cancelar+recrear).
+        $nuevaCantidad = (int) ($validated['cantidad'] ?? $orden->cantidad_solicitada);
+        $cambiaCantidad = $nuevaCantidad !== (int) $orden->cantidad_solicitada;
+        if ($cambiaCantidad && $orden->estado !== 'Pendiente') {
+            return $this->fallar($request, 'La cantidad solo puede cambiarse mientras la orden está Pendiente.', 'cantidad');
+        }
+        if ($cambiaCantidad && ! $orden->detalle_pedido_id) {
+            return $this->fallar($request, 'La orden no está ligada a una línea de pedido; su cantidad no puede cambiarse.', 'cantidad');
+        }
 
-        return response()->json($data);
+        try {
+            DB::transaction(function () use ($orden, $validated, $nuevaCantidad, $cambiaCantidad) {
+                if ($cambiaCantidad) {
+                    // El tope es lo que la línea tenga sin asignar en otras órdenes activas.
+                    $detalle = DetallePedido::whereKey($orden->detalle_pedido_id)->lockForUpdate()->firstOrFail();
+                    $maximo = $detalle->cantidad - $this->cantidadAsignadaActiva($detalle->id, $orden->id);
+                    if ($nuevaCantidad > $maximo) {
+                        throw new \InvalidArgumentException("La línea solo admite hasta {$maximo} unidades para esta orden (el resto está asignado a otras órdenes activas).", 1);
+                    }
+                    $orden->cantidad_solicitada = $nuevaCantidad;
+                }
+
+                $fechaFinReal = $orden->fecha_fin_real;
+                if ($validated['estado'] === 'Finalizado' && is_null($fechaFinReal)) {
+                    $fechaFinReal = now()->toDateString();
+                } elseif ($validated['estado'] !== 'Finalizado') {
+                    $fechaFinReal = null;
+                }
+
+                // producto e insumos quedan fijos: el producto está ligado a la línea del
+                // pedido y los insumos ya comprometieron stock al crear la orden.
+                $orden->fill([
+                    'empleado_id'        => $validated['empleados'][0]['id'], // responsable principal
+                    'fecha_inicio'       => $validated['fecha_inicio'],
+                    'fecha_fin_estimada' => $validated['fecha_fin_estimada'],
+                    'estado'             => $validated['estado'],
+                    'fecha_fin_real'     => $fechaFinReal,
+                    'notas'              => $validated['notas'] ?? null,
+                ])->save();
+
+                $this->syncEmpleadosConCantidad($orden, $validated['empleados']);
+            });
+        } catch (\InvalidArgumentException $e) {
+            return $this->fallar($request, $e->getMessage(), $e->getCode() === 1 ? 'cantidad' : 'empleados');
+        }
+
+        Pedido::find($orden->pedido_id)?->recalcularEstado();
+
+        return $this->alListado($request, $orden->pedido_id, 'Orden de producción actualizada exitosamente.', ['message' => 'Orden de producción actualizada exitosamente.']);
     }
 
     /**
@@ -709,24 +851,19 @@ class OrdenProduccionController extends Controller
      * defectuosas NO se registran aquí: son competencia exclusiva de
      * Control de Calidad (inspección post-producción con atribución
      * por empleado y reproceso — ControlCalidadService).
-     * El empleado responsable es el asignado a la orden (empleado_id).
      */
-    public function registrarAvance(Request $request, $id)
+    public function registrarAvance(Request $request, $id): JsonResponse|RedirectResponse
     {
         $orden = OrdenProduccion::with('pedido', 'empleadosAsignados.persona')->findOrFail($id);
 
         // Bloqueo cruzado: si el pedido padre está cancelado, no se admite
         // ningún avance ni movimiento sobre sus órdenes.
         if ($orden->pedido && $orden->pedido->estado === 'Cancelado') {
-            return response()->json([
-                'message' => 'El pedido asociado está cancelado: no se pueden registrar avances en sus órdenes de producción.'
-            ], 422);
+            return $this->fallar($request, 'El pedido asociado está cancelado: no se pueden registrar avances en sus órdenes de producción.', 'cantidad_producida');
         }
 
         if (in_array($orden->estado, ['Finalizado', 'Cancelado'])) {
-            return response()->json([
-                'message' => "La orden ya está en estado \"{$orden->estado}\" y no puede recibir más avances."
-            ], 422);
+            return $this->fallar($request, "La orden ya está en estado \"{$orden->estado}\" y no puede recibir más avances.", 'cantidad_producida');
         }
 
         $equipo = $orden->empleadosAsignados;
@@ -740,7 +877,7 @@ class OrdenProduccionController extends Controller
         if ($equipo->count() > 1) {
             $rules['empleado_id'] = 'required|integer';
         }
-        $validated = $request->validate($rules);
+        $validated = $request->validate($rules, ['empleado_id.required' => 'Indica quién produjo estas unidades.']);
 
         $producida = (int) $validated['cantidad_producida'];
 
@@ -751,24 +888,21 @@ class OrdenProduccionController extends Controller
             $empleadoId = $validated['empleado_id']
                 ?? ($equipo->count() === 1 ? $equipo->first()->id : $orden->empleado_id);
             $miembro = $equipo->firstWhere('id', (int) $empleadoId);
-            if (!$miembro) {
-                return response()->json(['message' => 'El empleado indicado no pertenece al equipo de esta orden.'], 422);
+            if (! $miembro) {
+                return $this->fallar($request, 'El empleado indicado no pertenece al equipo de esta orden.', 'empleado_id');
             }
             // Tope per-cápita: lo asignado a ese empleado menos lo que ya produjo.
             $restanteEmp = (int) $miembro->pivot->cantidad - (int) $miembro->pivot->cantidad_producida;
             if ($producida > $restanteEmp) {
-                $nombre = $miembro->persona->nombre ?? ('empleado #' . $miembro->id);
-                return response()->json([
-                    'message' => "A {$nombre} solo le faltan {$restanteEmp} unidades por producir en esta orden."
-                ], 422);
+                $nombre = $miembro->persona->nombre ?? ('empleado #'.$miembro->id);
+
+                return $this->fallar($request, "A {$nombre} solo le faltan {$restanteEmp} unidades por producir en esta orden.", 'cantidad_producida');
             }
         } else {
             // Sin equipo: tope = restante de la orden.
             $restanteOrden = (int) $orden->cantidad_solicitada - (int) $orden->cantidad_producida;
             if ($producida > $restanteOrden) {
-                return response()->json([
-                    'message' => "Solo quedan {$restanteOrden} unidades por producir en esta orden."
-                ], 422);
+                return $this->fallar($request, "Solo quedan {$restanteOrden} unidades por producir en esta orden.", 'cantidad_producida');
             }
         }
 
@@ -794,131 +928,15 @@ class OrdenProduccionController extends Controller
 
         Pedido::find($orden->pedido_id)?->recalcularEstado();
 
-        return response()->json(['message' => 'Avance registrado correctamente.']);
+        return $this->responder($request, 'Avance registrado correctamente.', ['message' => 'Avance registrado correctamente.']);
     }
 
-    public function edit($id)
-    {
-        $orden = OrdenProduccion::with([
-                'insumos',
-                'producto',
-                'empleado.persona',
-                'empleadosAsignados.persona',
-                'pedido.cliente',
-                'detallePedido.tipoProducto', 'detallePedido.genero',
-                'detallePedido.color',
-                'detallePedido.talla',
-                'detallePedido.bordados',
-                'creadoPor:id,name,avatar',
-            ])->findOrFail($id);
-
-        // Nombre legible (legacy o dinámico desde snapshot) para líneas sin producto.
-        $orden->append('nombre_producto');
-
-        $data = $orden->toArray();
-        // Cliente del pedido y creador real (para el chip "Registrada por").
-        $data['cliente_nombre'] = $orden->pedido?->cliente_nombre_completo;
-        $data['creador'] = $orden->creadoPor ? [
-            'name'       => $orden->creadoPor->name,
-            'avatar_url' => $orden->creadoPor->avatar_url,
-        ] : null;
-
-        // Reparto de la línea: tope al que puede crecer la cantidad de ESTA
-        // orden = sus unidades + las que la línea aún tiene sin asignar.
-        $data['linea_cantidad'] = $orden->detallePedido?->cantidad;
-        $data['cantidad_maxima'] = $orden->detallePedido
-            ? max(0, $orden->detallePedido->cantidad - $this->cantidadAsignadaActiva($orden->detalle_pedido_id, $orden->id))
-            : $orden->cantidad_solicitada;
-
-        return response()->json($data);
-    }
-
-    public function update(Request $request, $id)
-    {
-        $orden = OrdenProduccion::findOrFail($id);
-
-        // 'Cancelado' no se setea aquí: la cancelación tiene su propio endpoint
-        // (cancelar) porque define la reposición de stock y exige motivo de merma.
-        $validated = $request->validate([
-            'empleados'            => 'required|array|min:1',
-            'empleados.*.id'       => 'required|exists:empleado,id',
-            'empleados.*.cantidad' => 'required|integer|min:1',
-            'cantidad'             => 'nullable|integer|min:1',
-            'fecha_inicio'         => 'required|date',
-            'fecha_fin_estimada'   => 'required|date|after:fecha_inicio',
-            'estado'               => 'required|in:Pendiente,En Proceso,Finalizado',
-            'notas'                => 'nullable|string',
-        ]);
-
-        // Cantidad: solo se puede rebalancear con la orden Pendiente (la tela no
-        // se ha cortado y los insumos no se ajustan; en marcha → cancelar+recrear).
-        // El tope es lo que la línea tenga sin asignar en otras órdenes activas.
-        $nuevaCantidad = (int) ($validated['cantidad'] ?? $orden->cantidad_solicitada);
-        if ($nuevaCantidad !== (int) $orden->cantidad_solicitada) {
-            if ($orden->estado !== 'Pendiente') {
-                return response()->json([
-                    'message' => 'La cantidad solo puede cambiarse mientras la orden está Pendiente.'
-                ], 422);
-            }
-            if (!$orden->detalle_pedido_id) {
-                return response()->json([
-                    'message' => 'La orden no está ligada a una línea de pedido; su cantidad no puede cambiarse.'
-                ], 422);
-            }
-            try {
-                DB::transaction(function () use ($orden, $nuevaCantidad) {
-                    $detalle = DetallePedido::whereKey($orden->detalle_pedido_id)->lockForUpdate()->firstOrFail();
-                    $maximo = $detalle->cantidad - $this->cantidadAsignadaActiva($detalle->id, $orden->id);
-                    if ($nuevaCantidad > $maximo) {
-                        throw new \InvalidArgumentException(
-                            "La línea solo admite hasta {$maximo} unidades para esta orden (el resto está asignado a otras órdenes activas)."
-                        );
-                    }
-                    $orden->update(['cantidad_solicitada' => $nuevaCantidad]);
-                });
-            } catch (\InvalidArgumentException $e) {
-                return response()->json(['message' => $e->getMessage()], 422);
-            }
-        }
-
-        $fechaFinReal = $orden->fecha_fin_real;
-        if ($validated['estado'] === 'Finalizado' && is_null($fechaFinReal)) {
-            $fechaFinReal = now()->toDateString();
-        } elseif ($validated['estado'] !== 'Finalizado') {
-            $fechaFinReal = null;
-        }
-
-        // producto e insumos quedan fijos: el producto está ligado a la línea del
-        // pedido y los insumos ya comprometieron stock al crear la orden
-        // (editarlos exigiría reconciliar inventario → cancelar+recrear).
-        $orden->update([
-            'empleado_id'         => $validated['empleados'][0]['id'], // responsable principal
-            'fecha_inicio'        => $validated['fecha_inicio'],
-            'fecha_fin_estimada'  => $validated['fecha_fin_estimada'],
-            'estado'              => $validated['estado'],
-            'fecha_fin_real'      => $fechaFinReal,
-            'notas'               => $validated['notas'] ?? null,
-        ]);
-
-        try {
-            $this->syncEmpleadosConCantidad($orden, $validated['empleados']);
-        } catch (\InvalidArgumentException $e) {
-            return response()->json(['message' => $e->getMessage()], 422);
-        }
-
-        Pedido::find($orden->pedido_id)?->recalcularEstado();
-
-        return response()->json(['message' => 'Orden de producción actualizada exitosamente.']);
-    }
-
-    public function destroy($id)
+    public function destroy(Request $request, $id): JsonResponse|RedirectResponse
     {
         $orden = OrdenProduccion::findOrFail($id);
 
         if ($orden->estado !== 'Pendiente') {
-            return response()->json([
-                'message' => 'No se puede eliminar una orden que no está en estado Pendiente'
-            ], 422);
+            return $this->rechazar($request, 'No se puede eliminar una orden que no está en estado Pendiente');
         }
 
         $pedidoId = $orden->pedido_id;
@@ -931,7 +949,8 @@ class OrdenProduccionController extends Controller
         });
 
         Pedido::find($pedidoId)?->recalcularEstado();
-        return response()->json(['message' => 'Orden de producción eliminada exitosamente.']);
+
+        return $this->responder($request, 'Orden de producción eliminada exitosamente.', ['message' => 'Orden de producción eliminada exitosamente.']);
     }
 
     /**
@@ -943,28 +962,21 @@ class OrdenProduccionController extends Controller
      *  - 'En Proceso' / 'Finalizado': la tela ya se cortó (merma) → NO se repone
      *    y se exige un motivo que justifique la pérdida del material.
      */
-    public function cancelar(Request $request, $id)
+    public function cancelar(Request $request, $id): JsonResponse|RedirectResponse
     {
         $orden = OrdenProduccion::findOrFail($id);
 
         if ($orden->estado === 'Cancelado') {
-            return response()->json(['message' => 'La orden ya está cancelada.'], 422);
+            return $this->fallar($request, 'La orden ya está cancelada.', 'motivo_cancelacion');
         }
 
         // Solo la cancelación temprana (Pendiente) repone stock.
         $reponeStock = $orden->estado === 'Pendiente';
 
         $validated = $request->validate(
-            [
-                'motivo_cancelacion' => ($reponeStock ? 'nullable' : 'required') . '|string|max:500',
-            ],
-            [
-                'motivo_cancelacion.required' =>
-                    'La orden ya está en producción (material cortado): indica el motivo de la cancelación para justificar la merma.',
-            ]
+            ['motivo_cancelacion' => ($reponeStock ? 'nullable' : 'required').'|string|max:500'],
+            ['motivo_cancelacion.required' => 'La orden ya está en producción (material cortado): indica el motivo de la cancelación para justificar la merma.'],
         );
-
-        $pedidoId = $orden->pedido_id;
 
         DB::transaction(function () use ($orden, $validated, $reponeStock) {
             if ($reponeStock) {
@@ -977,57 +989,20 @@ class OrdenProduccionController extends Controller
             ]);
         });
 
-        Pedido::find($pedidoId)?->recalcularEstado();
+        Pedido::find($orden->pedido_id)?->recalcularEstado();
 
-        return response()->json([
-            'message' => $reponeStock
-                ? 'Orden cancelada. Se repuso el stock de los insumos al inventario.'
-                : 'Orden cancelada. El material se registró como merma (sin reposición de stock).',
-        ]);
+        $mensaje = $reponeStock
+            ? 'Orden cancelada. Se repuso el stock de los insumos al inventario.'
+            : 'Orden cancelada. El material se registró como merma (sin reposición de stock).';
+
+        return $this->responder($request, $mensaje, ['message' => $mensaje]);
     }
 
     // ══════════════════════════════════════════════════════════════════════
-    //  SUB-ÓRDENES DE PRODUCCIÓN (etapas con múltiples empleados asignados)
+    //  ETAPAS (sub-órdenes con varios empleados asignados)
     // ══════════════════════════════════════════════════════════════════════
 
-    /**
-     * Sub-órdenes que dependen de la OP principal, con los empleados asignados
-     * a cada una. Alimenta el modal dinámico de la vista de Producción.
-     */
-    public function subordenes($id)
-    {
-        $orden = OrdenProduccion::with([
-                'subordenes.empleados.persona',
-                'pedido',
-            ])->findOrFail($id);
-        $orden->append('nombre_producto');
-
-        return response()->json([
-            'orden' => [
-                'id'        => $orden->id,
-                'producto'  => $orden->nombre_producto,
-                'pedido_id' => $orden->pedido_id,
-                'estado'    => $orden->estado,
-            ],
-            'subordenes' => $orden->subordenes->map(fn($s) => [
-                'id'                => $s->id,
-                'nombre'            => $s->nombre,
-                'cantidad_asignada' => $s->cantidad_asignada,
-                'estado'            => $s->estado,
-                'notas'             => $s->notas,
-                'empleados'         => $s->empleados->map(fn($e) => [
-                    'id'     => $e->id,
-                    'nombre' => $e->persona->nombre_completo ?? ('Empleado #' . $e->id),
-                    'rol'    => $e->pivot->rol,
-                ])->values(),
-            ])->values(),
-        ]);
-    }
-
-    /**
-     * Crear una sub-orden de la OP y asignarle uno o varios empleados.
-     */
-    public function storeSubOrden(Request $request, $id)
+    public function storeSubOrden(Request $request, $id): JsonResponse|RedirectResponse
     {
         $orden = OrdenProduccion::findOrFail($id);
 
@@ -1046,7 +1021,7 @@ class OrdenProduccionController extends Controller
         // Sin empleados duplicados en la misma sub-orden
         $ids = array_column($validated['empleados'], 'id');
         if (count($ids) !== count(array_unique($ids))) {
-            return response()->json(['message' => 'Hay empleados repetidos en la asignación.'], 422);
+            return $this->fallar($request, 'Hay empleados repetidos en la asignación.', 'empleados');
         }
 
         $sub = DB::transaction(function () use ($orden, $validated) {
@@ -1057,37 +1032,23 @@ class OrdenProduccionController extends Controller
                 'notas'             => $validated['notas'] ?? null,
             ]);
 
-            $attach = [];
-            foreach ($validated['empleados'] as $e) {
-                $attach[$e['id']] = ['rol' => $e['rol'] ?? null];
-            }
-            $sub->empleados()->sync($attach);
+            $sub->empleados()->sync(collect($validated['empleados'])->mapWithKeys(fn ($e) => [$e['id'] => ['rol' => $e['rol'] ?? null]])->all());
 
             return $sub;
         });
 
-        return response()->json([
-            'message'      => 'Sub-orden creada y empleados asignados.',
-            'sub_orden_id' => $sub->id,
-        ]);
+        return $this->responder($request, 'Sub-orden creada y empleados asignados.', ['message' => 'Sub-orden creada y empleados asignados.', 'sub_orden_id' => $sub->id]);
     }
 
-    /**
-     * Eliminar una sub-orden (y sus asignaciones por cascade en el pivot).
-     */
-    public function destroySubOrden($id, $subId)
+    public function destroySubOrden(Request $request, $id, $subId): JsonResponse|RedirectResponse
     {
-        $sub = SubOrdenProduccion::where('orden_produccion_id', $id)->findOrFail($subId);
-        $sub->delete();
+        SubOrdenProduccion::where('orden_produccion_id', $id)->findOrFail($subId)->delete();
 
-        return response()->json(['message' => 'Sub-orden eliminada.']);
+        return $this->responder($request, 'Sub-orden eliminada.', ['message' => 'Sub-orden eliminada.']);
     }
 
-    /**
-     * Cambiar el estado de una sub-orden
-     * (Pendiente / En Proceso / Finalizado / Cancelado), validado contra el ENUM.
-     */
-    public function updateSubOrdenEstado(Request $request, $id, $subId)
+    /** Cambiar el estado de una etapa (Pendiente / En Proceso / Finalizado / Cancelado). */
+    public function updateSubOrdenEstado(Request $request, $id, $subId): JsonResponse|RedirectResponse
     {
         $validated = $request->validate([
             'estado' => 'required|in:Pendiente,En Proceso,Finalizado,Cancelado',
@@ -1100,10 +1061,8 @@ class OrdenProduccionController extends Controller
 
         // Regla de integridad: finalizar la ÚLTIMA etapa activa finalizaría la
         // orden completa, y eso solo es válido si la producción registrada
-        // (avances) ya cubre todas las unidades solicitadas. Evita órdenes
-        // "Finalizadas" con 0 piezas registradas (reportes y pedido mentirosos).
-        if ($validated['estado'] === 'Finalizado'
-            && $orden->cantidad_producida < $orden->cantidad_solicitada) {
+        // (avances) ya cubre todas las unidades solicitadas.
+        if ($validated['estado'] === 'Finalizado' && $orden->cantidad_producida < $orden->cantidad_solicitada) {
             $seriaUltima = $orden->subordenes()
                 ->where('id', '!=', $sub->id)
                 ->where('estado', '!=', 'Cancelado')
@@ -1112,27 +1071,17 @@ class OrdenProduccionController extends Controller
 
             if ($seriaUltima) {
                 $faltan = $orden->cantidad_solicitada - $orden->cantidad_producida;
-                return response()->json([
-                    'message' => "No puedes finalizar la última etapa: la orden tiene {$faltan} de {$orden->cantidad_solicitada} unidades sin registrar. Registra el avance de producción primero."
-                ], 422);
+
+                return $this->rechazar($request, "No puedes finalizar la última etapa: la orden tiene {$faltan} de {$orden->cantidad_solicitada} unidades sin registrar. Registra el avance de producción primero.");
             }
         }
 
         $sub->update(['estado' => $validated['estado']]);
-
         $orden->recalcularEstadoDesdeSubordenes();
         $orden->refresh();
 
-        return response()->json([
-            'message'   => 'Estado de la sub-orden actualizado.',
-            'estado'    => $sub->estado,
-            'op_estado' => $orden->estado,
-        ]);
+        return $this->responder($request, 'Estado de la sub-orden actualizado.', ['message' => 'Estado de la sub-orden actualizado.', 'estado' => $sub->estado, 'op_estado' => $orden->estado]);
     }
-
-    // ══════════════════════════════════════════════════════════════════════
-    //  EXPORTACIÓN PDF
-    // ══════════════════════════════════════════════════════════════════════
 
     /**
      * Exportar las órdenes de producción a PDF, con filtros por estado y rango

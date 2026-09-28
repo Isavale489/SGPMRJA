@@ -6,6 +6,7 @@ use App\Models\Atributo;
 use App\Models\Insumo;
 use App\Models\Cliente;
 use App\Models\Cotizacion;
+use App\Models\Departamento;
 use App\Models\Empleado;
 use App\Models\Genero;
 use App\Models\Pedido;
@@ -114,6 +115,21 @@ class E2eSeeder extends Seeder
         // OrdenProduccionObserver fija el estado inicial según el pedido (una orden nace
         // 'Pendiente'); se lleva a 'Finalizado' después, como si ya se hubiera producido.
         OrdenProduccion::whereKey($ordenQc->id)->update(['estado' => 'Finalizado']);
+
+        // Pedido con una línea de 12 por producir y equipo de Producción (tests/e2e/ordenes.spec.ts).
+        // Tipo propio con su consumo por unidad: el formulario precarga los insumos.
+        $produccion = Departamento::create(['nombre' => 'Producción', 'activo' => true]);
+        foreach ([['Rosa Pineda', '17000001', 'EMP-OP1'], ['Pedro Unda', '17000002', 'EMP-OP2']] as [$nombre, $doc, $codigo]) {
+            $p = Persona::create(['nombre' => $nombre, 'tipo_documento' => 'V-', 'documento_identidad' => $doc]);
+            Empleado::forceCreate(['persona_id' => $p->id, 'codigo_empleado' => $codigo, 'fecha_ingreso' => today()->subYear()->toDateString(), 'departamento_id' => $produccion->id]);
+        }
+        $tipoOp = TipoProducto::forceCreate(['nombre' => 'Braga OP', 'prefijo' => 'BOP']);
+        $hiloOp = Insumo::create(['nombre' => 'Hilo OP E2E', 'codigo' => 'HOP', 'tipo' => 'Hilo', 'unidad_medida' => 'Cono', 'is_inventoriable' => 1, 'costo_unitario' => 1, 'stock_actual' => 30, 'stock_minimo' => 0, 'estado' => 1]);
+        $tipoOp->insumosDefault()->attach($hiloOp->id, ['cantidad_estimada' => 0.5]);
+        $personaOp = Persona::create(['nombre' => 'Taller Guanare OP', 'tipo_documento' => 'J-', 'documento_identidad' => '41000777']);
+        $clienteOp = Cliente::forceCreate(['persona_id' => $personaOp->id, 'tipo_cliente' => 'juridico', 'estatus' => 1]);
+        $pedidoOp = Pedido::forceCreate(['cliente_id' => $clienteOp->id, 'fecha_pedido' => today()->toDateString(), 'fecha_entrega_estimada' => today()->addDays(10)->toDateString(), 'total' => 240, 'abono' => 240, 'prioridad' => 'Normal', 'estado' => 'Pendiente', 'user_id' => $admin->id]);
+        DetallePedido::forceCreate(['pedido_id' => $pedidoOp->id, 'tipo_producto_id' => $tipoOp->id, 'cantidad' => 12, 'precio_unitario' => 20, 'genero_id' => Genero::query()->value('id')]);
 
         // Cotización Aprobada lista para convertir: pasa por el service real
         // (snapshots, SKU, totales), no por inserts a mano.

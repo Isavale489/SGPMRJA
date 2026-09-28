@@ -24,6 +24,23 @@ export function avisarCambioStock(motivo: string): void {
     }
 }
 
+/** Escucha los cambios de stock hechos en otras pestañas. Devuelve la función para dejar de escuchar. */
+export function alCambiarStock(cb: () => void): () => void {
+    let canal: BroadcastChannel | undefined;
+    try {
+        canal = new BroadcastChannel(CANAL_STOCK);
+        canal.onmessage = (ev) => { if ((ev.data as { type?: string })?.type === 'stock-change') cb(); };
+    } catch {
+        // sin BroadcastChannel: queda el evento storage
+    }
+    const almacen = (ev: StorageEvent) => { if (ev.key === CLAVE_STOCK) cb(); };
+    window.addEventListener('storage', almacen);
+    return () => {
+        canal?.close();
+        window.removeEventListener('storage', almacen);
+    };
+}
+
 /** Insumo faltante que llega para precargar una compra. */
 export interface FaltanteCompra {
     insumo_id: number;

@@ -202,4 +202,177 @@ class OrdenProduccionFlujoTest extends TestCase
 
         $this->assertNotNull(OrdenProduccion::find($orden->id));
     }
+
+    /** Parte de un lote (storeBatch): una orden de la línea con su equipo. */
+    private function parte(DetallePedido $linea, Insumo $insumo, array $empleados, int $cantidad, float $consumo): array
+    {
+        return [
+            'detalle_pedido_id' => $linea->id,
+            'empleados' => $empleados,
+            'cantidad' => $cantidad,
+            'fecha_inicio' => now()->toDateString(),
+            'fecha_fin_estimada' => now()->addWeek()->toDateString(),
+            'insumos' => [['id' => $insumo->id, 'cantidad_estimada' => $consumo]],
+        ];
+    }
+
+    public function test_un_lote_reparte_una_linea_en_varias_ordenes(): void
+    {
+        $admin = $this->admin();
+        $linea = $this->pedidoConLinea(10);
+        $insumo = $this->insumo(['stock_actual' => 50]);
+        [$ana, $luis] = [$this->empleado('Ana Pérez'), $this->empleado('Luis Rojas')];
+
+        $this->assertExito($this->actingAs($admin)->postJson(route('ordenes.batch'), [
+            'pedido_id' => $linea->pedido_id,
+            'ordenes' => [
+                $this->parte($linea, $insumo, [['id' => $ana->id, 'cantidad' => 6]], 6, 12),
+                $this->parte($linea, $insumo, [['id' => $luis->id, 'cantidad' => 4]], 4, 8),
+            ],
+        ]));
+
+        $this->assertSame([6, 4], OrdenProduccion::orderBy('id')->pluck('cantidad_solicitada')->map(fn ($c) => (int) $c)->all());
+        $this->assertEquals(30, (float) $insumo->fresh()->stock_actual);
+        $this->assertSame(2, MovimientoInsumo::count());
+    }
+
+    public function test_un_lote_que_se_pasa_de_la_linea_no_crea_ninguna(): void
+    {
+        $admin = $this->admin();
+        $linea = $this->pedidoConLinea(10);
+        $insumo = $this->insumo(['stock_actual' => 50]);
+        $emp = $this->empleado();
+
+        $this->actingAs($admin)->postJson(route('ordenes.batch'), [
+            'pedido_id' => $linea->pedido_id,
+            'ordenes' => [
+                $this->parte($linea, $insumo, [['id' => $emp->id, 'cantidad' => 8]], 8, 1),
+                $this->parte($linea, $insumo, [['id' => $emp->id, 'cantidad' => 3]], 3, 1),
+            ],
+        ])->assertStatus(422);
+
+        $this->assertSame(0, OrdenProduccion::count());
+        $this->assertEquals(50, (float) $insumo->fresh()->stock_actual);
+    }
+
+    public function test_un_lote_no_acepta_lineas_de_otro_pedido(): void
+    {
+        $admin = $this->admin();
+        $linea = $this->pedidoConLinea(10);
+        $ajena = $this->pedidoConLinea(5);
+        $insumo = $this->insumo(['stock_actual' => 50]);
+        $emp = $this->empleado();
+
+        $this->actingAs($admin)->postJson(route('ordenes.batch'), [
+            'pedido_id' => $linea->pedido_id,
+            'ordenes' => [$this->parte($ajena, $insumo, [['id' => $emp->id, 'cantidad' => 5]], 5, 1)],
+        ])->assertStatus(422);
+
+        $this->assertSame(0, OrdenProduccion::count());
+    }
+
+    public function test_un_lote_sin_stock_devuelve_lo_que_falta_comprar_en_total(): void
+    {
+        $admin = $this->admin();
+        $linea = $this->pedidoConLinea(10);
+        $insumo = $this->insumo(['stock_actual' => 15]);
+        $emp = $this->empleado();
+
+        $this->actingAs($admin)->postJson(route('ordenes.batch'), [
+            'pedido_id' => $linea->pedido_id,
+            'ordenes' => [
+                $this->parte($linea, $insumo, [['id' => $emp->id, 'cantidad' => 6]], 6, 12),
+                $this->parte($linea, $insumo, [['id' => $emp->id, 'cantidad' => 4]], 4, 8),
+            ],
+        ])->assertStatus(422)
+            ->assertJsonPath('faltantes.0.insumo_id', $insumo->id)
+            ->assertJsonPath('faltantes.0.cantidad', 5); // 20 − 15
+
+        $this->assertSame(0, OrdenProduccion::count());
+        $this->assertEquals(15, (float) $insumo->fresh()->stock_actual);
+    }
+
+    private function edicion(OrdenProduccion $orden, array $empleados, array $extra = []): array
+    {
+        return array_merge([
+            'empleados' => $empleados,
+            'fecha_inicio' => now()->toDateString(),
+            'fecha_fin_estimada' => now()->addDays(10)->toDateString(),
+            'estado' => $orden->estado,
+            'notas' => 'Prioridad alta',
+        ], $extra);
+    }
+
+    public function test_editar_rebalancea_el_equipo_y_la_cantidad_en_pendiente(): void
+    {
+        $admin = $this->admin();
+        [$orden, , , $ana, $luis] = $this->crearOrden($admin); // 10 unidades: 6 / 4
+
+        $this->assertExito($this->actingAs($admin)->putJson(route('ordenes.update', $orden),
+            $this->edicion($orden, [['id' => $ana->id, 'cantidad' => 3], ['id' => $luis->id, 'cantidad' => 5]], ['cantidad' => 8])));
+
+        $orden->refresh();
+        $this->assertSame(8, (int) $orden->cantidad_solicitada);
+        $this->assertSame('Prioridad alta', $orden->notas);
+        $this->assertEquals([$ana->id => 3, $luis->id => 5], $orden->empleadosAsignados()->get()->pluck('pivot.cantidad', 'id')->map(fn ($c) => (int) $c)->all());
+
+        // No más que la línea (10).
+        $this->actingAs($admin)->putJson(route('ordenes.update', $orden),
+            $this->edicion($orden, [['id' => $ana->id, 'cantidad' => 11]], ['cantidad' => 11]))->assertStatus(422);
+        $this->assertSame(8, (int) $orden->fresh()->cantidad_solicitada);
+    }
+
+    public function test_en_proceso_no_cambia_la_cantidad_ni_se_quita_a_quien_produjo(): void
+    {
+        $admin = $this->admin();
+        [$orden, , , $ana, $luis] = $this->crearOrden($admin);
+        $this->actingAs($admin)->postJson(route('ordenes.avance', $orden), ['cantidad_producida' => 2, 'empleado_id' => $ana->id]);
+        $orden->refresh();
+
+        $this->actingAs($admin)->putJson(route('ordenes.update', $orden),
+            $this->edicion($orden, [['id' => $ana->id, 'cantidad' => 4], ['id' => $luis->id, 'cantidad' => 4]], ['cantidad' => 8]))->assertStatus(422);
+        $this->actingAs($admin)->putJson(route('ordenes.update', $orden),
+            $this->edicion($orden, [['id' => $luis->id, 'cantidad' => 10]]))->assertStatus(422);
+
+        $this->assertSame(10, (int) $orden->fresh()->cantidad_solicitada);
+        $this->assertSame(2, $orden->empleadosAsignados()->count());
+    }
+
+    public function test_etapas_con_equipo_y_la_ultima_exige_produccion_completa(): void
+    {
+        $admin = $this->admin();
+        [$orden, , , $ana, $luis] = $this->crearOrden($admin);
+
+        $this->actingAs($admin)->postJson(route('ordenes.subordenes.store', $orden), [
+            'nombre' => 'Corte', 'empleados' => [['id' => $ana->id], ['id' => $ana->id]],
+        ])->assertStatus(422); // empleado repetido
+
+        $this->assertExito($this->actingAs($admin)->postJson(route('ordenes.subordenes.store', $orden), [
+            'nombre' => 'Corte', 'cantidad_asignada' => 10, 'empleados' => [['id' => $ana->id, 'rol' => 'Cortadora'], ['id' => $luis->id]],
+        ]));
+        $etapa = $orden->subordenes()->sole();
+        $this->assertSame(2, $etapa->empleados()->count());
+
+        $this->assertExito($this->actingAs($admin)->patchJson(route('ordenes.subordenes.estado', [$orden, $etapa->id]), ['estado' => 'En Proceso']));
+        $this->assertSame('En Proceso', $orden->fresh()->estado);
+
+        // Única etapa activa y sin producción registrada: no puede finalizar la orden.
+        $this->actingAs($admin)->patchJson(route('ordenes.subordenes.estado', [$orden, $etapa->id]), ['estado' => 'Finalizado'])->assertStatus(422);
+        $this->assertSame('En Proceso', $etapa->fresh()->estado);
+
+        $this->assertExito($this->actingAs($admin)->deleteJson(route('ordenes.subordenes.destroy', [$orden, $etapa->id])));
+        $this->assertSame(0, $orden->subordenes()->count());
+    }
+
+    public function test_los_pdf_se_generan(): void
+    {
+        $admin = $this->admin();
+        [$orden] = $this->crearOrden($admin);
+
+        foreach ([route('ordenes.pdf', $orden), route('ordenes.reporte.pdf', ['estado' => 'Pendiente', 'orden' => 'progreso_desc'])] as $url) {
+            $r = $this->actingAs($admin)->get($url);
+            $r->assertOk();
+            $this->assertStringContainsString('application/pdf', (string) $r->headers->get('Content-Type'));
+        }
+    }
 }

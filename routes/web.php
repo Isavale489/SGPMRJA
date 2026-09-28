@@ -4,7 +4,6 @@ use App\Http\Controllers\CompraController;
 use App\Http\Controllers\ConfiguracionController;
 use App\Http\Controllers\DisponibilidadInsumoController;
 use App\Http\Controllers\ImpuestoController;
-use App\Http\Controllers\DetalleOrdenInsumoController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\InsumoController;
 use App\Http\Controllers\TipoInsumoController;
@@ -238,34 +237,23 @@ Route::middleware(['auth', 'throttle:60,1', 'active.user', 'recovery.questions.r
 
         // Órdenes de Producción
         // (rutas específicas ANTES del resource para que no colisionen con ordenes/{orden})
-        Route::get('ordenes/pedidos-disponibles', [OrdenProduccionController::class, 'pedidosDisponibles'])->name('ordenes.pedidos-disponibles');
         Route::post('ordenes/proyeccion-insumos', [OrdenProduccionController::class, 'proyeccionInsumos'])->name('ordenes.proyeccionInsumos');
-        Route::get('ordenes/por-empleado/{empleado}', [OrdenProduccionController::class, 'ordenesPorEmpleado'])->name('ordenes.por-empleado');
-        Route::get('ordenes-data', [OrdenProduccionController::class, 'getOrdenes'])->name('ordenes.data');
-        Route::get('ordenes-pedidos-data', [OrdenProduccionController::class, 'getPedidosOrdenes'])->name('ordenes.pedidos-data');
+        Route::get('ordenes/crear', [OrdenProduccionController::class, 'create'])->name('ordenes.create');
         Route::post('ordenes/batch', [OrdenProduccionController::class, 'storeBatch'])->name('ordenes.batch');
         Route::post('ordenes/{orden}/avance', [OrdenProduccionController::class, 'registrarAvance'])->name('ordenes.avance');
         Route::patch('ordenes/{orden}/cancelar', [OrdenProduccionController::class, 'cancelar'])->name('ordenes.cancelar');
         // Sub-órdenes de producción (etapas con empleados asignados)
-        Route::get('ordenes/{orden}/subordenes', [OrdenProduccionController::class, 'subordenes'])->name('ordenes.subordenes');
         Route::post('ordenes/{orden}/subordenes', [OrdenProduccionController::class, 'storeSubOrden'])->name('ordenes.subordenes.store');
         Route::delete('ordenes/{orden}/subordenes/{subId}', [OrdenProduccionController::class, 'destroySubOrden'])->name('ordenes.subordenes.destroy');
         Route::patch('ordenes/{orden}/subordenes/{subId}/estado', [OrdenProduccionController::class, 'updateSubOrdenEstado'])->name('ordenes.subordenes.estado');
         Route::get('ordenes/reporte/pdf', [OrdenProduccionController::class, 'reportePdf'])->name('ordenes.reporte.pdf');
         Route::get('ordenes/{orden}/pdf', [OrdenProduccionController::class, 'ordenPdf'])->name('ordenes.pdf');
-        Route::resource('ordenes', OrdenProduccionController::class)->except(['create']);
+        Route::resource('ordenes', OrdenProduccionController::class)->except(['create', 'show']);
 
         // Control de Calidad (FEAT-006) — inspección de órdenes finalizadas
         Route::get('calidad', [ControlCalidadController::class, 'index'])->name('calidad.index');
         Route::get('calidad/reporte/pdf', [ControlCalidadController::class, 'reportePdf'])->name('calidad.reporte.pdf');
         Route::post('calidad/{orden}/inspeccionar', [ControlCalidadController::class, 'inspeccionar'])->name('calidad.inspeccionar');
-
-        // Control de Insumos por Orden
-        Route::get('ordenes/{orden}/insumos', [DetalleOrdenInsumoController::class, 'index'])->name('ordenes.insumos.index');
-        Route::get('ordenes/{orden}/insumos/data', [DetalleOrdenInsumoController::class, 'getInsumos'])->name('ordenes.insumos.data');
-        Route::post('ordenes/{orden}/insumos', [DetalleOrdenInsumoController::class, 'store'])->name('ordenes.insumos.store');
-        Route::put('ordenes/insumos/{id}', [DetalleOrdenInsumoController::class, 'update'])->name('ordenes.insumos.update');
-        Route::delete('ordenes/insumos/{id}', [DetalleOrdenInsumoController::class, 'destroy'])->name('ordenes.insumos.destroy');
 
         // Compras
         Route::get('compras', [CompraController::class, 'index'])->name('compras.index');
