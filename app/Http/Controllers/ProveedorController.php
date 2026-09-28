@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\RespondeSegunCliente;
 use App\Http\Requests\GuardarProveedorRequest;
 use App\Models\Proveedor;
 use App\Models\Persona;
@@ -15,6 +16,8 @@ use Inertia\Response;
 
 class ProveedorController extends Controller
 {
+    use RespondeSegunCliente;
+
     public function __construct(
         private ProveedorService $proveedorService
     ) {
@@ -116,18 +119,6 @@ class ProveedorController extends Controller
         ];
     }
 
-    /**
-     * Respuesta de las mutaciones. La página Inertia recibe un redirect con
-     * mensaje flash; el alta rápida del wizard de Compras (jQuery) sigue
-     * recibiendo el JSON de siempre.
-     */
-    private function responder(Request $request, string $mensaje, array $json = [])
-    {
-        return $request->header('X-Inertia')
-            ? back()->with('success', $mensaje)
-            : response()->json(['success' => $mensaje] + $json);
-    }
-
     public function search(Request $request)
     {
         $q = trim($request->input('q', ''));
@@ -166,6 +157,7 @@ class ProveedorController extends Controller
             : $this->proveedorService->crearJuridico($datos);
 
         return $this->responder($request, 'Proveedor creado exitosamente.', [
+            'success' => 'Proveedor creado exitosamente.', // Compras lo muestra como texto
             'proveedor' => $this->proveedorPayload($proveedor),
         ]);
     }
@@ -266,14 +258,14 @@ class ProveedorController extends Controller
             ? $this->proveedorService->actualizarNatural($proveedor, $datos)
             : $this->proveedorService->actualizarJuridico($proveedor, $datos);
 
-        return $this->responder($request, 'Proveedor actualizado exitosamente.');
+        return $this->responder($request, 'Proveedor actualizado exitosamente.', ['success' => 'Proveedor actualizado exitosamente.']);
     }
 
     public function destroy(Request $request, Proveedor $proveedor)
     {
         $proveedor->delete(); // SoftDelete: pasa al historial (no se borra)
 
-        return $this->responder($request, 'Proveedor inhabilitado exitosamente.');
+        return $this->responder($request, 'Proveedor inhabilitado exitosamente.', ['success' => 'Proveedor inhabilitado exitosamente.']);
     }
 
     /**
@@ -283,7 +275,7 @@ class ProveedorController extends Controller
     {
         Proveedor::onlyTrashed()->findOrFail($id)->restore();
 
-        return $this->responder($request, 'Proveedor restaurado exitosamente.');
+        return $this->responder($request, 'Proveedor restaurado exitosamente.', ['success' => 'Proveedor restaurado exitosamente.']);
     }
 
     public function reportePdf(Request $request)

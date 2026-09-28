@@ -122,8 +122,8 @@ return [
             'gestionar' => 'Crear, editar y eliminar departamentos',
         ],
         'rutas' => [
-            'departamentos.index|departamentos.show' => 'ver',
-            'departamentos.store|departamentos.update|departamentos.destroy|departamentos.restore|departamentos.check-nombre' => 'gestionar',
+            'departamentos.index' => 'ver',
+            'departamentos.store|departamentos.update|departamentos.destroy|departamentos.restore' => 'gestionar',
         ],
     ],
 
@@ -134,8 +134,8 @@ return [
             'gestionar' => 'Crear, editar y eliminar cargos',
         ],
         'rutas' => [
-            'cargos.index|cargos.show' => 'ver',
-            'cargos.store|cargos.update|cargos.destroy|cargos.restore|cargos.check-nombre' => 'gestionar',
+            'cargos.index' => 'ver',
+            'cargos.store|cargos.update|cargos.destroy|cargos.restore' => 'gestionar',
         ],
     ],
 
@@ -237,8 +237,8 @@ return [
             'gestionar' => 'Crear, editar y eliminar colores',
         ],
         'rutas' => [
-            'colores.index|colores.show|colores.data' => 'ver',
-            'colores.store|colores.update|colores.destroy|colores.restore|colores.check-nombre' => 'gestionar',
+            'colores.index|colores.data' => 'ver',
+            'colores.store|colores.update|colores.destroy|colores.restore' => 'gestionar',
         ],
     ],
 
