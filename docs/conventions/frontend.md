@@ -67,17 +67,30 @@ npm run test:e2e     # smoke Playwright (BD propia sistema_atlantico_e2e)
 - El controller arma cada fila con **todo** lo que usan "Ver" y "Editar", así el diálogo no necesita otra petición.
 - **Contrato de las filas:** la interfaz TS de la fila (p. ej. `ProveedorFila` en `pages/Proveedores/tipos.ts`) se compara en un test con las claves que manda el servidor (`hasAll` sin `etc()`). Si difieren, la CI falla. Ver `ProveedorPaginaTest`.
 
+## Catálogos (patrón estándar)
+
+Un catálogo con listado, historial y formulario pequeño **no se escribe desde cero**:
+
+- `<PaginaCatalogo>` (`components/app/pagina-catalogo.tsx`) da el título, historial, búsqueda en la URL, tabla paginada y acciones por fila (Editar, Inhabilitar con confirmación, Restaurar). El módulo aporta `columnas`, `filtrosExtra` opcionales y `formulario`.
+- `<DialogoFormulario>` es la estructura del formulario, con Cancelar/Guardar y el aviso de cambios sin guardar. Se monta con `key={p.apertura}`.
+- Referencia: `pages/Departamentos` (1 campo), `pages/Cargos` (select + filtro extra), `pages/Colores` (selector de color + sugerencias).
+- **Confirmaciones que salen de un menú ⋮:** el ítem del menú solo guarda qué registro se confirma. `<ConfirmarPeligro abierto onCerrar>` va **fuera** del menú. Si vive dentro, el menú queda abierto al confirmar y deja la página inaccesible.
+
 ## Endpoints compartidos con módulos Blade
 
-Si un módulo aún en Blade (jQuery) usa el mismo endpoint, el controller responde según quién llama:
+Si un módulo aún en Blade (jQuery) usa el mismo endpoint, el controller usa el trait `App\Http\Controllers\Concerns\RespondeSegunCliente`:
 
 ```php
-return $request->header('X-Inertia')
-    ? back()->with('success', $mensaje)          // página Inertia
-    : response()->json(['success' => $mensaje] + $datos);  // $.ajax de un módulo Blade
+return $this->responder($request, 'Cargo creado.', ['success' => true, 'message' => 'Cargo creado.', 'cargo' => $cargo]);
+// Inertia → back()->with('success', …) · jQuery → ese JSON tal cual
+return $this->rechazar($request, 'No se puede inhabilitar: tiene empleados.');
+// Inertia → back()->with('error', …) · jQuery → 422 {success:false, message}
 ```
 
-La validación del FormRequest ya distingue sola los dos casos: redirect con errores para Inertia y 422 JSON para jQuery. Un test fija el contrato JSON del cliente viejo (ver `ProveedorFlujoTest::test_el_alta_rapida_desde_compras_recibe_json_con_el_proveedor`).
+- **`$request->ajax()` NO distingue:** Inertia también manda `X-Requested-With`. Si un `index()` devuelve JSON para un cliente jQuery, la condición es `$request->ajax() && ! $this->esInertia($request)`. Si no se hace así, las recargas parciales de Inertia reciben JSON y la página se rompe. Ver `DepartamentoController::index` y su test.
+- La validación del FormRequest ya distingue sola los dos casos: redirect con errores para Inertia y 422 JSON (con `message` = primer error) para jQuery.
+- Un test de caracterización fija el contrato JSON del cliente viejo antes de migrar (ver `tests/Feature/Flujos/CatalogosSimplesFlujoTest.php`).
+- En tests que simulan una petición Inertia, manda también `X-Inertia-Version` (la de `HandleInertiaRequests::version()`). Si falta, Inertia responde 409 y pide recargar, que es lo correcto.
 
 ## Migrar un módulo (checklist)
 
@@ -98,4 +111,6 @@ Herramientas evaluadas y **no** adoptadas. Se revisan si cambian las condiciones
 | spatie/laravel-data + typescript-transformer | Para Laravel 13 no hay combinación estable: laravel-data soporta el transformer v2, que choca con sus propias dependencias, y todavía no soporta la v3. Lo reemplaza el test de contrato de las filas. |
 | Laravel Wayfinder (rutas tipadas) | Sigue en v0.x (beta). Mientras tanto, cada página recibe sus URLs como prop (`urls`). |
 
-**Resultado medido:** el módulo pasó de 1.956 líneas (Blade + jQuery + controller) a 1.195 (−39 %). Se agregaron 374 líneas de piezas reutilizables y 430 de tests; antes el módulo no tenía ninguno. El piloto encontró y corrigió 2 bugs: el RIF duplicado daba 500, y editar un proveedor natural duplicaba el apellido.
+**Resultado medido (Proveedores):** el módulo pasó de 1.956 líneas (Blade + jQuery + controller) a 1.195 (−39 %). Se agregaron 374 líneas de piezas reutilizables y 430 de tests; antes el módulo no tenía ninguno. El piloto encontró y corrigió 2 bugs: el RIF duplicado daba 500, y editar un proveedor natural duplicaba el apellido.
+
+**Catálogos simples (Departamentos, Cargos, Colores):** 1.824 → 666 líneas (−63 %) con `PaginaCatalogo` + `DialogoFormulario`. El costo por módulo baja a medida que se acumulan las piezas.
