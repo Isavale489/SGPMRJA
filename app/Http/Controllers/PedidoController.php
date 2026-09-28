@@ -262,7 +262,11 @@ class PedidoController extends Controller
         // El servicio hace el soft delete y revierte la cotización de origen
         // ('Convertida' → 'Aprobada') liberando su cotizacion_id para poder
         // re-convertirla más adelante.
-        $this->pedidoService->eliminar($pedido);
+        try {
+            $this->pedidoService->eliminar($pedido);
+        } catch (\DomainException $e) {
+            return response()->json(['error' => $e->getMessage()], 403);
+        }
 
         Log::warning('Pedido eliminado', [
             'pedido_id' => $id,
@@ -289,15 +293,24 @@ class PedidoController extends Controller
             return response()->json(['success' => 'El pedido ya estaba cancelado.']);
         }
         // Bloqueo: no se puede cancelar un pedido con producción en curso.
-        // Hay que cancelar primero sus órdenes activas o en proceso.
-        if ($pedido->tieneProduccionEnCurso()) {
+        // Hay que cancelar primero sus órdenes activas o en proceso. Se comprueba
+        // con el pedido bloqueado: crear una orden toma el mismo bloqueo, así que
+        // una orden creada a la vez no queda colgando de un pedido cancelado.
+        $cancelado = DB::transaction(function () use ($pedido) {
+            Pedido::whereKey($pedido->id)->lockForUpdate()->first();
+            if ($pedido->tieneProduccionEnCurso()) {
+                return false;
+            }
+            $pedido->update(['estado' => 'Cancelado']);
+
+            return true;
+        });
+        if (! $cancelado) {
             return response()->json([
                 'error' => 'No se puede cancelar el pedido: tiene órdenes de producción activas o en proceso. '
                     . 'Cancela primero esas órdenes desde el módulo de Producción.',
             ], 422);
         }
-
-        $pedido->update(['estado' => 'Cancelado']);
 
         Log::warning('Pedido cancelado', ['pedido_id' => $id, 'user_id' => auth()->id()]);
 

@@ -364,6 +364,189 @@ class OrdenProduccionFlujoTest extends TestCase
         $this->assertSame(0, $orden->subordenes()->count());
     }
 
+    public function test_una_orden_cancelada_no_se_edita(): void
+    {
+        $admin = $this->admin();
+        [$orden, , $insumo, $ana, $luis] = $this->crearOrden($admin);
+        $this->assertExito($this->actingAs($admin)->patchJson(route('ordenes.cancelar', $orden)));
+        $this->assertEquals(50, (float) $insumo->fresh()->stock_actual);
+
+        // Antes volvía a Pendiente y eliminarla reponía el stock por segunda vez.
+        $this->actingAs($admin)->putJson(route('ordenes.update', $orden),
+            $this->edicion($orden, [['id' => $ana->id, 'cantidad' => 6], ['id' => $luis->id, 'cantidad' => 4]], ['estado' => 'Pendiente']))->assertStatus(422);
+        $this->assertSame('Cancelado', $orden->fresh()->estado);
+    }
+
+    public function test_el_estado_manual_respeta_lo_producido(): void
+    {
+        $admin = $this->admin();
+        [$orden, , , $ana, $luis] = $this->crearOrden($admin);
+        $equipo = [['id' => $ana->id, 'cantidad' => 6], ['id' => $luis->id, 'cantidad' => 4]];
+
+        // Sin producir todo no se finaliza.
+        $this->actingAs($admin)->putJson(route('ordenes.update', $orden), $this->edicion($orden, $equipo, ['estado' => 'Finalizado']))
+            ->assertStatus(422)->assertJsonFragment(['message' => 'No se puede finalizar: faltan 10 de 10 unidades por producir. Registra el avance primero.']);
+
+        // Con producción no vuelve a Pendiente.
+        $this->actingAs($admin)->postJson(route('ordenes.avance', $orden), ['cantidad_producida' => 2, 'empleado_id' => $ana->id]);
+        $this->actingAs($admin)->putJson(route('ordenes.update', $orden), $this->edicion($orden, $equipo, ['estado' => 'Pendiente']))->assertStatus(422);
+        $this->assertSame('En Proceso', $orden->fresh()->estado);
+
+        $this->assertExito($this->actingAs($admin)->putJson(route('ordenes.update', $orden), $this->edicion($orden, $equipo, ['estado' => 'En Proceso'])));
+    }
+
+    public function test_el_reparto_no_baja_de_lo_producido(): void
+    {
+        $admin = $this->admin();
+        [$orden, , , $ana, $luis] = $this->crearOrden($admin);
+        $this->actingAs($admin)->postJson(route('ordenes.avance', $orden), ['cantidad_producida' => 5, 'empleado_id' => $ana->id]);
+
+        // Ana ya hizo 5: su parte no puede quedar en 3 (quedaría con más producido que asignado).
+        $this->actingAs($admin)->putJson(route('ordenes.update', $orden),
+            $this->edicion($orden->fresh(), [['id' => $ana->id, 'cantidad' => 3], ['id' => $luis->id, 'cantidad' => 7]]))->assertStatus(422);
+        $this->assertEquals([$ana->id => 6, $luis->id => 4], $orden->empleadosAsignados()->get()->pluck('pivot.cantidad', 'id')->map(fn ($c) => (int) $c)->all());
+    }
+
+    public function test_el_avance_no_supera_lo_que_le_falta_a_la_orden(): void
+    {
+        $admin = $this->admin();
+        [$orden, , , $ana] = $this->crearOrden($admin);
+        // Orden cuyos totales ya no cuadran con el reparto (datos previos).
+        OrdenProduccion::whereKey($orden->id)->update(['cantidad_producida' => 9, 'estado' => 'En Proceso']);
+
+        $this->actingAs($admin)->postJson(route('ordenes.avance', $orden), ['cantidad_producida' => 2, 'empleado_id' => $ana->id])
+            ->assertStatus(422)->assertJsonFragment(['message' => 'Solo quedan 1 unidades por producir en esta orden.']);
+        $this->assertSame(9, (int) $orden->fresh()->cantidad_producida);
+    }
+
+    public function test_con_produccion_ni_se_elimina_ni_se_repone_al_cancelar(): void
+    {
+        $admin = $this->admin();
+        [$orden, , $insumo] = $this->crearOrden($admin);
+        // Pendiente con unidades producidas (datos previos a la regla de estados).
+        OrdenProduccion::whereKey($orden->id)->update(['cantidad_producida' => 3]);
+
+        $this->actingAs($admin)->deleteJson(route('ordenes.destroy', $orden))->assertStatus(422);
+
+        $this->actingAs($admin)->patchJson(route('ordenes.cancelar', $orden))->assertStatus(422); // exige motivo de merma
+        $this->assertExito($this->actingAs($admin)->patchJson(route('ordenes.cancelar', $orden), ['motivo_cancelacion' => 'Tela manchada']));
+        $this->assertEquals(30, (float) $insumo->fresh()->stock_actual);
+    }
+
+    public function test_las_etapas_no_devuelven_a_pendiente_una_orden_con_produccion(): void
+    {
+        $admin = $this->admin();
+        [$orden, , , $ana] = $this->crearOrden($admin);
+        $this->actingAs($admin)->postJson(route('ordenes.avance', $orden), ['cantidad_producida' => 2, 'empleado_id' => $ana->id]);
+        $this->assertExito($this->actingAs($admin)->postJson(route('ordenes.subordenes.store', $orden), ['nombre' => 'Corte', 'empleados' => [['id' => $ana->id]]]));
+
+        $this->assertExito($this->actingAs($admin)->patchJson(route('ordenes.subordenes.estado', [$orden, $orden->subordenes()->sole()->id]), ['estado' => 'Pendiente']));
+        $this->assertSame('En Proceso', $orden->fresh()->estado);
+    }
+
+    public function test_no_se_producen_reventas_ni_pedidos_cancelados(): void
+    {
+        $admin = $this->admin();
+        $insumo = $this->insumo(['stock_actual' => 50]);
+        $equipo = [['id' => $this->empleado()->id, 'cantidad' => 10]];
+
+        $reventa = $this->pedidoConLinea(10);
+        $reventa->tipoProducto()->update(['requiere_produccion' => false]);
+        $this->actingAs($admin)->postJson(route('ordenes.store'), $this->payload($reventa, $insumo, $equipo))
+            ->assertStatus(422)->assertJsonFragment(['message' => '"línea #'.$reventa->id.'" es un producto de reventa: no se fabrica.']);
+        $reventa->tipoProducto()->update(['requiere_produccion' => true]);
+
+        $cancelado = $this->pedidoConLinea(10);
+        $cancelado->pedido()->update(['estado' => 'Cancelado']);
+        $this->actingAs($admin)->postJson(route('ordenes.store'), $this->payload($cancelado, $insumo, $equipo))
+            ->assertStatus(422)->assertJsonFragment(['message' => 'El pedido está Cancelado: no admite nuevas órdenes de producción.']);
+        $this->actingAs($admin)->postJson(route('ordenes.batch'), [
+            'pedido_id' => $cancelado->pedido_id,
+            'ordenes' => [$this->parte($cancelado, $insumo, $equipo, 10, 20)],
+        ])->assertStatus(422);
+
+        $this->assertSame(0, OrdenProduccion::count());
+        $this->assertEquals(50, (float) $insumo->fresh()->stock_actual);
+    }
+
+    public function test_no_se_repiten_empleados_ni_insumos(): void
+    {
+        $admin = $this->admin();
+        $linea = $this->pedidoConLinea(10);
+        $insumo = $this->insumo(['stock_actual' => 50]);
+        $ana = $this->empleado();
+
+        $this->actingAs($admin)->postJson(route('ordenes.store'), $this->payload($linea, $insumo, [['id' => $ana->id, 'cantidad' => 5], ['id' => $ana->id, 'cantidad' => 5]]))
+            ->assertStatus(422)->assertJsonFragment(['message' => 'Hay empleados repetidos en el reparto.']);
+
+        $payload = $this->payload($linea, $insumo, [['id' => $ana->id, 'cantidad' => 10]]);
+        $payload['insumos'][] = ['id' => $insumo->id, 'cantidad_estimada' => 5];
+        $this->actingAs($admin)->postJson(route('ordenes.store'), $payload)->assertStatus(422)->assertJsonFragment(['message' => 'Hay insumos repetidos en la orden.']);
+
+        $this->assertSame(0, OrdenProduccion::count());
+        $this->assertEquals(50, (float) $insumo->fresh()->stock_actual);
+    }
+
+    /** Regresión (revisión del fix): Calidad resta lo rechazado de producida, pero la tela ya se cortó. */
+    public function test_un_reproceso_total_no_devuelve_la_orden_a_pendiente_ni_repone(): void
+    {
+        $admin = $this->admin();
+        [$orden, , $insumo, $ana, $luis] = $this->crearOrden($admin);
+        $this->actingAs($admin)->postJson(route('ordenes.avance', $orden), ['cantidad_producida' => 6, 'empleado_id' => $ana->id]);
+        $this->actingAs($admin)->postJson(route('ordenes.avance', $orden), ['cantidad_producida' => 4, 'empleado_id' => $luis->id]);
+        $this->assertExito($this->actingAs($admin)->postJson(route('calidad.inspeccionar', $orden), [
+            'cantidad_inspeccionada' => 10, 'cantidad_aprobada' => 0, 'cantidad_rechazada' => 10,
+            'resultado' => 'rechazado', 'observaciones' => 'Talla equivocada',
+            'rechazos' => [['empleado_id' => $ana->id, 'cantidad' => 6], ['empleado_id' => $luis->id, 'cantidad' => 4]],
+        ]));
+        $orden->refresh();
+        $this->assertSame(0, (int) $orden->cantidad_producida);
+        $this->assertTrue($orden->tieneProduccion());
+
+        $equipo = [['id' => $ana->id, 'cantidad' => 6], ['id' => $luis->id, 'cantidad' => 4]];
+        $this->actingAs($admin)->putJson(route('ordenes.update', $orden), $this->edicion($orden, $equipo, ['estado' => 'Pendiente']))
+            ->assertStatus(422)->assertJsonFragment(['message' => 'La orden ya tiene unidades producidas (o rechazadas en Calidad): no puede volver a Pendiente.']);
+        // Sigue exigiendo motivo de merma al cancelar (no repone la tela cortada).
+        $this->actingAs($admin)->patchJson(route('ordenes.cancelar', $orden))->assertStatus(422)->assertJsonValidationErrors('motivo_cancelacion');
+
+        $this->assertSame('En Proceso', $orden->fresh()->estado);
+        $this->assertEquals(30, (float) $insumo->fresh()->stock_actual);
+    }
+
+    public function test_mover_o_quitar_etapas_no_saca_de_finalizado(): void
+    {
+        $admin = $this->admin();
+        [$orden, $linea, , $ana, $luis] = $this->crearOrden($admin);
+        $this->assertExito($this->actingAs($admin)->postJson(route('ordenes.subordenes.store', $orden), ['nombre' => 'Corte', 'empleados' => [['id' => $ana->id]]]));
+        $this->assertExito($this->actingAs($admin)->postJson(route('ordenes.subordenes.store', $orden), ['nombre' => 'Costura', 'empleados' => [['id' => $luis->id]]]));
+        $this->actingAs($admin)->postJson(route('ordenes.avance', $orden), ['cantidad_producida' => 6, 'empleado_id' => $ana->id]);
+        $this->actingAs($admin)->postJson(route('ordenes.avance', $orden), ['cantidad_producida' => 4, 'empleado_id' => $luis->id]);
+        $this->assertSame('Finalizado', $orden->fresh()->estado);
+        [$corte, $costura] = $orden->subordenes()->orderBy('id')->get()->all();
+
+        $this->assertExito($this->actingAs($admin)->patchJson(route('ordenes.subordenes.estado', [$orden, $corte->id]), ['estado' => 'En Proceso']));
+        $this->assertSame('Finalizado', $orden->fresh()->estado);
+
+        $this->assertExito($this->actingAs($admin)->deleteJson(route('ordenes.subordenes.destroy', [$orden, $costura->id])));
+        $this->assertSame('Finalizado', $orden->fresh()->estado);
+        $this->assertSame('Completado', $linea->pedido->fresh()->estado);
+    }
+
+    public function test_quitar_una_etapa_recalcula_la_orden(): void
+    {
+        $admin = $this->admin();
+        [$orden, , , $ana] = $this->crearOrden($admin);
+        $this->assertExito($this->actingAs($admin)->postJson(route('ordenes.subordenes.store', $orden), ['nombre' => 'Corte', 'empleados' => [['id' => $ana->id]]]));
+        $this->assertExito($this->actingAs($admin)->postJson(route('ordenes.subordenes.store', $orden), ['nombre' => 'Costura', 'empleados' => [['id' => $ana->id]]]));
+        [$corte, $costura] = $orden->subordenes()->orderBy('id')->get()->all();
+        $this->assertExito($this->actingAs($admin)->patchJson(route('ordenes.subordenes.estado', [$orden, $costura->id]), ['estado' => 'En Proceso']));
+        $this->assertSame('En Proceso', $orden->fresh()->estado);
+
+        // Sin la etapa en marcha y sin producción, la orden vuelve a Pendiente.
+        $this->assertExito($this->actingAs($admin)->deleteJson(route('ordenes.subordenes.destroy', [$orden, $costura->id])));
+        $this->assertSame('Pendiente', $orden->fresh()->estado);
+    }
+
     public function test_los_pdf_se_generan(): void
     {
         $admin = $this->admin();

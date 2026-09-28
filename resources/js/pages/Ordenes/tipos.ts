@@ -147,7 +147,7 @@ export interface PaginaFormularioOrdenes {
     empleados: Empleado[];
     insumos: InsumoProduccion[];
     abonoMinimo: number;
-    urls: { index: string; guardar: string; proyeccion: string; crearCompra: string };
+    urls: { index: string; guardar: string; proyeccion: string; crearCompra: string | null };
 }
 
 export interface OrdenEditable {
@@ -159,6 +159,8 @@ export interface OrdenEditable {
     estado: EstadoOrden;
     cantidad: number;
     cantidad_producida: number;
+    /** Producido o rechazado en Calidad (la tela ya se cortó). */
+    con_produccion: boolean;
     cantidad_maxima: number;
     fecha_inicio: string | null;
     fecha_fin_estimada: string | null;
