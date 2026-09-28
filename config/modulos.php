@@ -225,8 +225,8 @@ return [
             'gestionar' => 'Crear, editar y eliminar atributos y valores',
         ],
         'rutas' => [
-            'atributos.index|atributos.show|atributos.valores.index' => 'ver',
-            'atributos.store|atributos.update|atributos.destroy|atributos.check-nombre|atributos.check-codigo|atributos.valores.store|atributos.valores.update|atributos.valores.destroy|atributos.valores.reorder' => 'gestionar',
+            'atributos.index' => 'ver',
+            'atributos.store|atributos.update|atributos.destroy|atributos.valores.store|atributos.valores.update|atributos.valores.destroy|atributos.valores.reorder' => 'gestionar',
         ],
     ],
 
