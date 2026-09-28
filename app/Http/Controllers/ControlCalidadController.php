@@ -2,89 +2,59 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\RespondeSegunCliente;
 use App\Http\Requests\StoreControlCalidadRequest;
 use App\Models\ControlCalidad;
 use App\Models\OrdenProduccion;
 use App\Services\ControlCalidadService;
 use App\Support\ReporteFiltros;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
-use Yajra\DataTables\DataTables;
+use Inertia\Inertia;
+use Inertia\Response;
 
 /**
  * FEAT-006 — Control de Calidad: inspección de órdenes de producción finalizadas.
  */
 class ControlCalidadController extends Controller
 {
+    use RespondeSegunCliente;
+
     public function __construct(
         private ControlCalidadService $controlCalidadService
     ) {
     }
 
-    public function index()
+    /**
+     * Órdenes en cola de inspección: finalizadas y sin una inspección que las
+     * apruebe (aprobado/observado). Una orden rechazada vuelve a "En Proceso"
+     * (sale de la cola) hasta que se re-finaliza; ahí reaparece como re-inspección.
+     */
+    private function enCola(): Builder
     {
-        return view('admin.calidad.index');
+        return OrdenProduccion::query()
+            ->where('orden_produccion.estado', 'Finalizado')
+            ->whereDoesntHave('controlesCalidad', fn ($q) => $q->whereIn('resultado', ['aprobado', 'observado']));
     }
 
     /**
-     * DataTable server-side: órdenes en "Finalizado" PENDIENTES de calidad.
-     * Pendiente = finalizada y sin inspección que la apruebe (aprobado/observado).
-     * Una orden rechazada vuelve a "En Proceso" (sale de la lista) hasta que se
-     * re-finalice; ahí reaparece como pendiente de re-inspección.
+     * Página Inertia: una fila por pedido (más una para las órdenes manuales)
+     * con los agregados de su cola. Al abrir un pedido (`?pedido=ID|manual`)
+     * se recarga solo `cola`, con equipo e historial de cada orden: la
+     * inspección no necesita otra petición.
      */
-    /**
-     * Órdenes en cola de inspección de un pedido (o las manuales) para el
-     * DataTable del modal "Ver órdenes". `pedido_id` = id o 'manual'.
-     */
-    public function getOrdenesCalidad(Request $request)
+    public function index(Request $request): Response
     {
-        $ordenes = OrdenProduccion::query()
-            ->with(['producto.tipoProducto', 'detallePedido.tipoProducto', 'detallePedido.genero', 'pedido.cliente.persona'])
-            ->where('estado', 'Finalizado')
-            ->whereDoesntHave('controlesCalidad', function ($q) {
-                $q->whereIn('resultado', ['aprobado', 'observado']);
-            })
-            ->select('orden_produccion.*');
+        $filtros = array_filter($request->only(['buscar', 'estado', 'orden', 'pedido']), fn ($v) => $v !== null && $v !== '');
 
-        if ($request->filled('pedido_id')) {
-            $request->input('pedido_id') === 'manual'
-                ? $ordenes->whereNull('orden_produccion.pedido_id')
-                : $ordenes->where('orden_produccion.pedido_id', $request->input('pedido_id'));
-        }
-
-        $ordenes->orderByDesc('orden_produccion.fecha_fin_real');
-
-        return DataTables::of($ordenes)
-            ->addColumn('producto_info', fn ($orden) => $orden->nombre_producto)
-            ->addColumn('cantidad_producida', fn ($orden) => $orden->cantidad_producida)
-            ->addColumn('cantidad_solicitada', fn ($orden) => $orden->cantidad_solicitada)
-            ->addColumn('reinspeccion', fn ($orden) => $orden->controlesCalidad()->exists())
-            ->addColumn('fecha_fin', fn ($orden) => $orden->fecha_fin_real ? $orden->fecha_fin_real->format('d/m/Y') : '—')
-            ->rawColumns([])
-            ->make(true);
-    }
-
-    /**
-     * Tabla principal de /calidad: una fila por pedido (más una para las
-     * órdenes manuales) con agregados de su cola de inspección. El detalle
-     * por orden vive en el modal "Ver órdenes" (getOrdenesCalidad + pedido_id).
-     *
-     * El filtro de estado de calidad se aplica ANTES de agrupar: el pedido
-     * aparece solo si tiene órdenes que cumplan y los conteos reflejan esas.
-     */
-    public function getPedidosCalidad(Request $request)
-    {
-        $pedidos = OrdenProduccion::query()
+        $pedidos = $this->enCola()
             ->leftJoin('pedido', 'pedido.id', '=', 'orden_produccion.pedido_id')
             ->leftJoin('cliente', 'cliente.id', '=', 'pedido.cliente_id')
             ->leftJoin('persona', 'persona.id', '=', 'cliente.persona_id')
-            ->where('orden_produccion.estado', 'Finalizado')
-            ->whereDoesntHave('controlesCalidad', function ($q) {
-                $q->whereIn('resultado', ['aprobado', 'observado']);
-            })
             ->groupBy('orden_produccion.pedido_id')
             // MAX() sobre persona.nombre: valor único por grupo (1 pedido = 1 cliente),
             // envuelto en agregado para cumplir ONLY_FULL_GROUP_BY de MySQL 8.
-            ->selectRaw("
+            ->selectRaw('
                 orden_produccion.pedido_id,
                 MAX(persona.nombre) as cliente_nombre,
                 COUNT(*) as total_ordenes,
@@ -93,78 +63,82 @@ class ControlCalidadController extends Controller
                     where cc.orden_produccion_id = orden_produccion.id
                       and cc.deleted_at is null
                 )) as reinspecciones,
-                DATE_FORMAT(MAX(orden_produccion.fecha_fin_real), '%d/%m/%Y') as ultima_fin
-            ");
+                MAX(orden_produccion.fecha_fin_real) as ultima_fin
+            ');
 
         // pendiente = nunca inspeccionada · reinspeccion = rechazo previo que volvió
-        $estadoCalidad = $request->input('filter_estado_calidad');
-        if ($estadoCalidad === 'pendiente') {
+        if (($filtros['estado'] ?? null) === 'pendiente') {
             $pedidos->whereDoesntHave('controlesCalidad');
-        } elseif ($estadoCalidad === 'reinspeccion') {
+        } elseif (($filtros['estado'] ?? null) === 'reinspeccion') {
             $pedidos->whereHas('controlesCalidad');
         }
-
-        $request->input('filter_orden') === 'antiguos'
+        if (! empty($filtros['buscar'])) {
+            $kw = trim($filtros['buscar']);
+            $num = preg_replace('/\D/', '', $kw); // dígitos (ej. "Pedido #8" → "8")
+            $pedidos->where(function ($q) use ($kw, $num) {
+                // El nombre del producto se deriva del tipo (línea dinámica o legacy).
+                $q->where('persona.nombre', 'like', "%{$kw}%")
+                    ->orWhereHas('detallePedido.tipoProducto', fn ($t) => $t->where('nombre', 'like', "%{$kw}%"))
+                    ->orWhereHas('producto.tipoProducto', fn ($t) => $t->where('nombre', 'like', "%{$kw}%"));
+                if ($num !== '') {
+                    $q->orWhereRaw('CAST(orden_produccion.pedido_id AS CHAR) LIKE ?', ["%{$num}%"]);
+                }
+            });
+        }
+        ($filtros['orden'] ?? null) === 'antiguos'
             ? $pedidos->orderByRaw('MIN(orden_produccion.fecha_fin_real) asc')
             : $pedidos->orderByRaw('MAX(orden_produccion.fecha_fin_real) desc');
 
-        return DataTables::of($pedidos)
-            ->filter(function ($query) use ($request) {
-                $kw = trim((string) $request->input('search.value', ''));
-                if ($kw === '') {
-                    return;
-                }
-                $num = preg_replace('/\D/', '', $kw); // dígitos (ej. "Pedido #8" → "8")
-                $query->where(function ($q) use ($kw, $num) {
-                    // El nombre del producto se deriva del tipo de producto (línea
-                    // dinámica o legacy), no de una columna 'nombre' en `producto`.
-                    $q->where('persona.nombre', 'like', "%{$kw}%")
-                      ->orWhereHas('detallePedido.tipoProducto', fn ($t) => $t->where('nombre', 'like', "%{$kw}%"))
-                      ->orWhereHas('producto.tipoProducto', fn ($t) => $t->where('nombre', 'like', "%{$kw}%"));
-                    if ($num !== '') {
-                        $q->orWhereRaw('CAST(orden_produccion.pedido_id AS CHAR) LIKE ?', ["%{$num}%"]);
-                    }
-                });
-            })
-            ->make(true);
+        return Inertia::render('Calidad/Index', [
+            'registros' => $pedidos->paginate(15)->withQueryString()->through(fn ($p) => [
+                'pedido_id' => $p->pedido_id,
+                'cliente' => $p->cliente_nombre,
+                'ordenes' => (int) $p->total_ordenes,
+                'reinspecciones' => (int) $p->reinspecciones,
+                'ultima_fin' => $p->ultima_fin ? substr((string) $p->ultima_fin, 0, 10) : null,
+            ]),
+            'filtros' => (object) $filtros,
+            'cola' => fn () => isset($filtros['pedido']) ? $this->cola($filtros['pedido']) : null,
+            'urls' => [
+                'index' => route('calidad.index', absolute: false),
+                'reportePdf' => route('calidad.reporte.pdf', absolute: false),
+            ],
+        ]);
     }
 
-    /**
-     * JSON con los datos de la orden + su historial de inspecciones (para el modal).
-     */
-    public function detalle(OrdenProduccion $orden)
+    /** Órdenes en cola de un pedido (o las manuales), con todo lo que usa la inspección. */
+    private function cola(string $pedido): array
     {
-        $orden->load(['producto.tipoProducto', 'detallePedido.tipoProducto', 'detallePedido.genero', 'pedido', 'empleadosAsignados.persona', 'controlesCalidad.inspector:id,name']);
+        $ordenes = $this->enCola()
+            ->with(['producto.tipoProducto', 'detallePedido.tipoProducto', 'detallePedido.genero', 'empleadosAsignados.persona', 'controlesCalidad.inspector:id,name'])
+            ->when($pedido === 'manual', fn ($q) => $q->whereNull('pedido_id'), fn ($q) => $q->where('pedido_id', (int) $pedido))
+            ->orderByDesc('fecha_fin_real')
+            ->get();
 
-        return response()->json([
-            'id'                 => $orden->id,
-            'producto'           => $orden->nombre_producto,
-            'pedido'             => $orden->pedido_id ? ('Pedido #' . $orden->pedido_id) : 'Orden manual',
-            'estado'             => $orden->estado,
-            'cantidad_solicitada' => $orden->cantidad_solicitada,
-            'cantidad_producida' => $orden->cantidad_producida,
-            'cantidad_defectuosa' => $orden->cantidad_defectuosa,
-            // Equipo con lo producido por cada uno: para atribuir el rechazo cuando
-            // la orden tiene 2+ empleados (el reproceso descuenta a quien corresponde).
-            'equipo'             => $orden->empleadosAsignados->map(function ($e) {
-                return [
-                    'id'        => $e->id,
-                    'nombre'    => $e->persona->nombre ?? ('Empleado #' . $e->id),
-                    'producida' => (int) $e->pivot->cantidad_producida,
-                ];
-            })->values(),
-            'historial'          => $orden->controlesCalidad->sortByDesc('fecha_inspeccion')->values()->map(function ($c) {
-                return [
-                    'fecha'        => optional($c->fecha_inspeccion)->format('d/m/Y H:i'),
-                    'inspector'    => $c->inspector?->name ?? '—',
-                    'inspeccionada' => $c->cantidad_inspeccionada,
-                    'aprobada'     => $c->cantidad_aprobada,
-                    'rechazada'    => $c->cantidad_rechazada,
-                    'resultado'    => $c->resultado,
-                    'observaciones' => $c->observaciones,
-                ];
-            }),
-        ]);
+        return $ordenes->map(fn (OrdenProduccion $o) => [
+            'id' => $o->id,
+            'producto' => $o->nombre_producto,
+            'cantidad_solicitada' => (int) $o->cantidad_solicitada,
+            'cantidad_producida' => (int) $o->cantidad_producida,
+            'cantidad_defectuosa' => (int) $o->cantidad_defectuosa,
+            'fecha_fin' => $o->fecha_fin_real?->toDateString(),
+            // Equipo con lo producido por cada uno: con 2+ empleados el rechazo se
+            // atribuye (el reproceso descuenta a quien corresponde).
+            'equipo' => $o->empleadosAsignados->map(fn ($e) => [
+                'id' => $e->id,
+                'nombre' => $e->persona->nombre ?? ('Empleado #'.$e->id),
+                'producida' => (int) $e->pivot->cantidad_producida,
+            ])->values()->all(),
+            'historial' => $o->controlesCalidad->sortByDesc('fecha_inspeccion')->values()->map(fn ($c) => [
+                'fecha' => $c->fecha_inspeccion?->format('Y-m-d H:i'),
+                'inspector' => $c->inspector?->name,
+                'inspeccionada' => (int) $c->cantidad_inspeccionada,
+                'aprobada' => (int) $c->cantidad_aprobada,
+                'rechazada' => (int) $c->cantidad_rechazada,
+                'resultado' => $c->resultado,
+                'observaciones' => $c->observaciones,
+            ])->all(),
+        ])->all();
     }
 
     /**
@@ -210,12 +184,13 @@ class ControlCalidadController extends Controller
     }
 
     /**
-     * Registra una inspección. Delega la lógica (incluido el reproceso) al service.
+     * Registra una inspección. La lógica (incluido el reproceso y la
+     * atribución por empleado) vive en ControlCalidadService.
      */
     public function inspeccionar(StoreControlCalidadRequest $request, OrdenProduccion $orden)
     {
         $this->controlCalidadService->inspeccionar($orden, $request->validated(), (int) auth()->id());
 
-        return response()->json(['message' => 'Inspección registrada correctamente.']);
+        return $this->responder($request, 'Inspección registrada correctamente.', ['message' => 'Inspección registrada correctamente.']);
     }
 }
