@@ -3,10 +3,11 @@ import { ArrowLeft, PackagePlus, Plus, Save, Trash2 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
+import { Asistente } from '@/components/app/asistente';
 import { Buscador } from '@/components/app/buscador';
 import { Campo } from '@/components/app/campo';
 import { Button } from '@/components/ui/button';
-import { Card, CardAction, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -60,26 +61,30 @@ const redondear = (n: number) => Math.round(n * 100) / 100;
  * dividido por la tasa (redondeado a 2); el IVA grava solo las líneas marcadas.
  */
 function totales(items: Linea[], tasa: number, iva: number) {
-    let subUsd = 0, gravUsd = 0, subBs = 0, gravBs = 0;
+    let subUsd = 0,
+        gravUsd = 0,
+        subBs = 0,
+        gravBs = 0;
     for (const l of items) {
         const cant = num(l.cantidad);
         const bs = num(l.costo_unitario_bs);
         const usd = tasa > 0 ? redondear(bs / tasa) : 0;
         subUsd += cant * usd;
         subBs += cant * bs;
-        if (l.aplica_iva) { gravUsd += cant * usd; gravBs += cant * bs; }
+        if (l.aplica_iva) {
+            gravUsd += cant * usd;
+            gravBs += cant * bs;
+        }
     }
-    const ivaUsd = redondear(gravUsd * iva / 100);
-    const ivaBs = redondear(gravBs * iva / 100);
+    const ivaUsd = redondear((gravUsd * iva) / 100);
+    const ivaBs = redondear((gravBs * iva) / 100);
     return { subUsd: redondear(subUsd), ivaUsd, totalUsd: redondear(subUsd + ivaUsd), subBs: redondear(subBs), ivaBs, totalBs: redondear(subBs + ivaBs) };
 }
 
 export default function FormularioCompra({ compra, insumos, iva, tiposInsumo, unidades, estados, urls }: PaginaFormularioCompra) {
     const { puede } = usePermisos();
     const [proveedor, setProveedor] = useState<ProveedorResumen | null>(compra?.proveedor ?? null);
-    const [tasa, setTasa] = useState<{ estado: 'buscando' | 'bcv' | 'anterior' | 'manual'; fecha?: string; aviso?: string }>(
-        compra ? { estado: 'manual' } : { estado: 'buscando' },
-    );
+    const [tasa, setTasa] = useState<{ estado: 'buscando' | 'bcv' | 'anterior' | 'manual'; fecha?: string; aviso?: string }>(compra ? { estado: 'manual' } : { estado: 'buscando' });
     const [altaInsumo, setAltaInsumo] = useState<{ abierto: boolean; apertura: number; nombre: string }>({ abierto: false, apertura: 0, nombre: '' });
 
     const form = useForm<Datos>({
@@ -121,7 +126,9 @@ export default function FormularioCompra({ compra, insumos, iva, tiposInsumo, un
                 }
             })
             .catch(() => vigente && setTasa({ estado: 'manual', aviso: 'No se pudo consultar la tasa BCV. Ingrésala manualmente.' }));
-        return () => { vigente = false; };
+        return () => {
+            vigente = false;
+        };
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [data.fecha_compra]);
 
@@ -132,10 +139,13 @@ export default function FormularioCompra({ compra, insumos, iva, tiposInsumo, un
         if (compra || new URLSearchParams(window.location.search).get('prefill') !== '1') return;
         const faltantes = tomarFaltantes().filter((f) => porId.has(Number(f.insumo_id)));
         if (!faltantes.length) return;
-        setData('items', faltantes.map((f) => {
-            const i = porId.get(Number(f.insumo_id))!;
-            return { insumo_id: i.id, cantidad: String(Math.ceil(f.cantidad * 100) / 100), costo_unitario_bs: '', aplica_iva: i.aplica_iva };
-        }));
+        setData(
+            'items',
+            faltantes.map((f) => {
+                const i = porId.get(Number(f.insumo_id))!;
+                return { insumo_id: i.id, cantidad: String(Math.ceil(f.cantidad * 100) / 100), costo_unitario_bs: '', aplica_iva: i.aplica_iva };
+            }),
+        );
         toast.info(`Se cargaron ${faltantes.length} ${faltantes.length === 1 ? 'insumo faltante' : 'insumos faltantes'}. Revisa cantidades y costos.`);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
@@ -143,7 +153,10 @@ export default function FormularioCompra({ compra, insumos, iva, tiposInsumo, un
     // Líneas prellenadas sin costo: se sugiere el último costo ($ × tasa) cuando llega la tasa.
     useEffect(() => {
         if (tasaNum <= 0 || !data.items.some((l) => !l.costo_unitario_bs)) return;
-        setData('items', data.items.map((l) => (l.costo_unitario_bs ? l : { ...l, costo_unitario_bs: costoBs(porId.get(l.insumo_id) ?? { costo: 0 } as InsumoComprable) })));
+        setData(
+            'items',
+            data.items.map((l) => (l.costo_unitario_bs ? l : { ...l, costo_unitario_bs: costoBs(porId.get(l.insumo_id) ?? ({ costo: 0 } as InsumoComprable)) })),
+        );
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [tasaNum]);
 
@@ -162,8 +175,15 @@ export default function FormularioCompra({ compra, insumos, iva, tiposInsumo, un
         }
     }, [enfocar, data.items]);
     const cambiarLinea = (indice: number, cambios: Partial<Linea>) =>
-        setData('items', data.items.map((l, n) => (n === indice ? { ...l, ...cambios } : l)));
-    const quitar = (indice: number) => setData('items', data.items.filter((_, n) => n !== indice));
+        setData(
+            'items',
+            data.items.map((l, n) => (n === indice ? { ...l, ...cambios } : l)),
+        );
+    const quitar = (indice: number) =>
+        setData(
+            'items',
+            data.items.filter((_, n) => n !== indice),
+        );
 
     const elegirProveedor = (p: ProveedorResumen | null) => {
         setProveedor(p);
@@ -186,194 +206,322 @@ export default function FormularioCompra({ compra, insumos, iva, tiposInsumo, un
         items: d.items.map((l) => ({ insumo_id: l.insumo_id, cantidad: num(l.cantidad), costo_unitario_bs: num(l.costo_unitario_bs), aplica_iva: l.aplica_iva ? 1 : 0 })),
     }));
 
+    // Errores del servidor → el paso donde está ese campo.
+    const [salto, setSalto] = useState<{ paso: number; n: number }>();
+    const pasoConError = (errores: Record<string, string>) => {
+        const k = Object.keys(errores);
+        if (k.some((c) => ['proveedor_id', 'numero_factura', 'fecha_compra', 'tasa_cambio'].includes(c))) return 0;
+        if (k.some((c) => c.startsWith('items'))) return 1;
+        return 2;
+    };
+
     const guardar = (ev: React.FormEvent) => {
         ev.preventDefault();
-        const opciones = { preserveScroll: true, onError: () => toast.error('Revisa los campos marcados.') };
+        const opciones = {
+            preserveScroll: true,
+            onError: (errores: Record<string, string>) => {
+                toast.error('Revisa los campos marcados.');
+                setSalto((s) => ({ paso: pasoConError(errores), n: (s?.n ?? 0) + 1 }));
+            },
+        };
         if (compra) form.put(urls.guardar, opciones);
         else form.post(urls.guardar, opciones);
     };
 
     const titulo = compra ? `Editar borrador #${compra.id}` : 'Nueva compra';
+    const botonNuevoInsumo = puede('insumos.gestionar') && (
+        <Button type="button" variant="outline" size="sm" className="justify-self-start" onClick={() => setAltaInsumo((a) => ({ abierto: true, apertura: a.apertura + 1, nombre: '' }))}>
+            <PackagePlus /> Nuevo insumo
+        </Button>
+    );
 
     return (
         <AppLayout
             titulo={titulo}
             acciones={
-                <>
-                    <Button variant="ghost" asChild><Link href={urls.index}><ArrowLeft /> Compras</Link></Button>
-                    <Button type="submit" form="form-compra" disabled={form.processing}><Save /> {compra ? 'Guardar cambios' : 'Guardar borrador'}</Button>
-                </>
+                <Button variant="ghost" asChild>
+                    <Link href={urls.index}>
+                        <ArrowLeft /> Compras
+                    </Link>
+                </Button>
             }
         >
-            <p className="text-muted-foreground -mt-3 mb-4 text-sm">
-                Se guarda como borrador: el inventario no cambia hasta que la compra se procese.
-            </p>
-            <form id="form-compra" onSubmit={guardar} noValidate className="grid gap-4 lg:grid-cols-[1fr_20rem] lg:items-start">
-                <div className="grid min-w-0 gap-4">
-                    <Card>
-                        <CardHeader><CardTitle className="text-base">Proveedor y comprobante</CardTitle></CardHeader>
-                        <CardContent className="grid gap-4">
-                            <SelectorProveedor proveedor={proveedor} onCambiar={elegirProveedor} error={e.proveedor_id} urls={urls} estados={estados} />
-                            <div className="grid gap-4 sm:grid-cols-3">
-                                <Campo etiqueta="N° de factura" error={e.numero_factura} ayuda="Dígitos y guiones. Opcional en el borrador.">
-                                    <Input value={data.numero_factura} maxLength={10} inputMode="numeric" placeholder="0001-0456" onChange={(ev) => setData('numero_factura', ev.target.value.replace(/[^0-9-]/g, ''))} className="tabular" />
-                                </Campo>
-                                <Campo etiqueta="Fecha de compra" requerido error={e.fecha_compra}>
-                                    <Input type="date" value={data.fecha_compra} max={hoyLocalIso()} onChange={(ev) => setData('fecha_compra', ev.target.value)} />
-                                </Campo>
-                                <Campo
-                                    etiqueta="Tasa (Bs por $)"
-                                    requerido
-                                    error={e.tasa_cambio ?? (tasa.estado === 'manual' ? tasa.aviso : undefined)}
-                                    ayuda={
-                                        tasa.estado === 'buscando' ? 'Consultando tasa BCV…'
-                                            : tasa.fecha ? `Tasa BCV (${formatoFecha(tasa.fecha)})${tasa.estado === 'anterior' ? ': la última publicada antes de esa fecha' : ''}`
-                                                : 'Tasa de la compra'
-                                    }
-                                >
-                                    <Input type="number" min={0.0001} step="0.0001" inputMode="decimal" value={data.tasa_cambio} onChange={(ev) => { setData('tasa_cambio', ev.target.value); setTasa({ estado: 'manual' }); }} className="tabular" />
-                                </Campo>
-                            </div>
-                        </CardContent>
-                    </Card>
+            <p className="text-muted-foreground -mt-3 mb-4 text-sm">Se guarda como borrador: el inventario no cambia hasta que la compra se procese.</p>
+            <form id="form-compra" onSubmit={guardar} noValidate>
+                <Card>
+                    <CardContent>
+                        <Asistente
+                            salto={salto}
+                            final={
+                                <Button type="submit" disabled={form.processing}>
+                                    <Save /> {compra ? 'Guardar cambios' : 'Guardar borrador'}
+                                </Button>
+                            }
+                            pasos={[
+                                {
+                                    titulo: 'Proveedor',
+                                    descripcion: 'Elige el proveedor y registra los datos del comprobante.',
+                                    validar: () =>
+                                        !data.proveedor_id
+                                            ? 'Elige el proveedor.'
+                                            : !data.fecha_compra
+                                              ? 'Indica la fecha de compra.'
+                                              : tasaNum <= 0
+                                                ? 'Indica la tasa de la compra (Bs por $).'
+                                                : null,
+                                    contenido: (
+                                        <div className="grid gap-4">
+                                            <SelectorProveedor proveedor={proveedor} onCambiar={elegirProveedor} error={e.proveedor_id} urls={urls} estados={estados} />
+                                            <div className="grid gap-4 sm:grid-cols-3">
+                                                <Campo etiqueta="N° de factura" error={e.numero_factura} ayuda="Dígitos y guiones. Opcional en el borrador.">
+                                                    <Input
+                                                        value={data.numero_factura}
+                                                        maxLength={10}
+                                                        inputMode="numeric"
+                                                        placeholder="0001-0456"
+                                                        onChange={(ev) => setData('numero_factura', ev.target.value.replace(/[^0-9-]/g, ''))}
+                                                        className="tabular"
+                                                    />
+                                                </Campo>
+                                                <Campo etiqueta="Fecha de compra" requerido error={e.fecha_compra}>
+                                                    <Input type="date" value={data.fecha_compra} max={hoyLocalIso()} onChange={(ev) => setData('fecha_compra', ev.target.value)} />
+                                                </Campo>
+                                                <Campo
+                                                    etiqueta="Tasa (Bs por $)"
+                                                    requerido
+                                                    error={e.tasa_cambio ?? (tasa.estado === 'manual' ? tasa.aviso : undefined)}
+                                                    ayuda={
+                                                        tasa.estado === 'buscando'
+                                                            ? 'Consultando tasa BCV…'
+                                                            : tasa.fecha
+                                                              ? `Tasa BCV (${formatoFecha(tasa.fecha)})${tasa.estado === 'anterior' ? ': la última publicada antes de esa fecha' : ''}`
+                                                              : 'Tasa de la compra'
+                                                    }
+                                                >
+                                                    <Input
+                                                        type="number"
+                                                        min={0.0001}
+                                                        step="0.0001"
+                                                        inputMode="decimal"
+                                                        value={data.tasa_cambio}
+                                                        onChange={(ev) => {
+                                                            setData('tasa_cambio', ev.target.value);
+                                                            setTasa({ estado: 'manual' });
+                                                        }}
+                                                        className="tabular"
+                                                    />
+                                                </Campo>
+                                            </div>
+                                        </div>
+                                    ),
+                                },
+                                {
+                                    titulo: 'Ítems',
+                                    descripcion: 'Insumos de la factura: cantidad, costo en Bs e IVA de cada uno.',
+                                    validar: () =>
+                                        !data.items.length
+                                            ? 'Agrega al menos un insumo.'
+                                            : data.items.some((l) => num(l.cantidad) <= 0 || num(l.costo_unitario_bs) <= 0)
+                                              ? 'Cada insumo necesita cantidad y costo mayores que cero.'
+                                              : null,
+                                    contenido: (
+                                        <div className="grid gap-3">
+                                            {botonNuevoInsumo}
+                                            <Buscador<InsumoComprable>
+                                                etiqueta="Agregar insumo"
+                                                placeholder="Agregar insumo por nombre o código…"
+                                                buscarVacio
+                                                buscar={disponibles}
+                                                clave={(i) => i.id}
+                                                opcion={(i) => (
+                                                    <span className="flex items-baseline justify-between gap-3">
+                                                        <span className="truncate">
+                                                            <span className="font-medium">{i.nombre}</span>
+                                                            {i.codigo && <code className="text-muted-foreground ml-1.5 font-mono text-xs">{i.codigo}</code>}
+                                                        </span>
+                                                        <span className="text-muted-foreground shrink-0 text-xs tabular">
+                                                            Hay {formatoNumero(i.stock)} {i.unidad}
+                                                        </span>
+                                                    </span>
+                                                )}
+                                                onElegir={agregar}
+                                                vacio={(q) =>
+                                                    puede('insumos.gestionar') && q ? (
+                                                        <Button
+                                                            type="button"
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            onMouseDown={(ev) => ev.preventDefault()}
+                                                            onClick={() => setAltaInsumo((a) => ({ abierto: true, apertura: a.apertura + 1, nombre: q }))}
+                                                        >
+                                                            <Plus /> Crear el insumo «{q}»
+                                                        </Button>
+                                                    ) : (
+                                                        'Ningún insumo inventariable coincide.'
+                                                    )
+                                                }
+                                            />
+                                            {e.items && <p className="text-destructive text-sm">{e.items}</p>}
 
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="text-base">Insumos</CardTitle>
-                            {puede('insumos.gestionar') && (
-                                <CardAction>
-                                    <Button type="button" variant="outline" size="sm" onClick={() => setAltaInsumo((a) => ({ abierto: true, apertura: a.apertura + 1, nombre: '' }))}>
-                                        <PackagePlus /> Nuevo insumo
-                                    </Button>
-                                </CardAction>
-                            )}
-                        </CardHeader>
-                        <CardContent className="grid gap-3">
-                            <Buscador<InsumoComprable>
-                                etiqueta="Agregar insumo"
-                                placeholder="Agregar insumo por nombre o código…"
-                                buscarVacio
-                                buscar={disponibles}
-                                clave={(i) => i.id}
-                                opcion={(i) => (
-                                    <span className="flex items-baseline justify-between gap-3">
-                                        <span className="truncate">
-                                            <span className="font-medium">{i.nombre}</span>
-                                            {i.codigo && <code className="text-muted-foreground ml-1.5 font-mono text-xs">{i.codigo}</code>}
-                                        </span>
-                                        <span className="text-muted-foreground shrink-0 text-xs tabular">Hay {formatoNumero(i.stock)} {i.unidad}</span>
-                                    </span>
-                                )}
-                                onElegir={agregar}
-                                vacio={(q) =>
-                                    puede('insumos.gestionar') && q ? (
-                                        <Button type="button" variant="ghost" size="sm" onMouseDown={(ev) => ev.preventDefault()} onClick={() => setAltaInsumo((a) => ({ abierto: true, apertura: a.apertura + 1, nombre: q }))}>
-                                            <Plus /> Crear el insumo «{q}»
-                                        </Button>
-                                    ) : 'Ningún insumo inventariable coincide.'
-                                }
-                            />
-                            {e.items && <p className="text-destructive text-sm">{e.items}</p>}
-
-                            {data.items.length === 0 ? (
-                                <p className="text-muted-foreground rounded-lg border border-dashed p-6 text-center text-sm">Agrega los insumos de la factura con su cantidad y costo.</p>
-                            ) : (
-                                <div className="overflow-x-auto rounded-lg border">
-                                    <Table>
-                                        <TableHeader>
-                                            <TableRow className="hover:bg-transparent">
-                                                <TableHead>Insumo</TableHead>
-                                                <TableHead className="w-32">Cantidad</TableHead>
-                                                <TableHead className="w-40">Costo unitario (Bs)</TableHead>
-                                                <TableHead className="w-16 text-center">IVA</TableHead>
-                                                <TableHead className="text-right">Subtotal</TableHead>
-                                                <TableHead className="w-10"><span className="sr-only">Quitar</span></TableHead>
-                                            </TableRow>
-                                        </TableHeader>
-                                        <TableBody>
-                                            {data.items.map((l, n) => {
-                                                const i = porId.get(l.insumo_id);
-                                                const nombre = i?.nombre ?? `Insumo #${l.insumo_id}`;
-                                                const errorDe = (c: string) => e[`items.${n}.${c}`];
-                                                const bs = num(l.costo_unitario_bs);
-                                                const subBs = num(l.cantidad) * bs;
-                                                return (
-                                                    <TableRow key={l.insumo_id} className="align-top">
-                                                        <TableCell>
-                                                            <span className="font-medium">{nombre}</span>
-                                                            {i?.codigo && <code className="text-muted-foreground ml-1.5 font-mono text-xs">{i.codigo}</code>}
-                                                            <span className="text-muted-foreground block text-xs">{i ? `Hay ${formatoNumero(i.stock)} ${i.unidad}` : 'No disponible para compras'}</span>
-                                                            {errorDe('insumo_id') && <span className="text-destructive block text-xs">{errorDe('insumo_id')}</span>}
-                                                        </TableCell>
-                                                        <TableCell>
-                                                            <Input
-                                                                id={`linea-${l.insumo_id}-cantidad`}
-                                                                type="number" min={0.01} step="0.01" inputMode="decimal"
-                                                                value={l.cantidad}
-                                                                onChange={(ev) => cambiarLinea(n, { cantidad: ev.target.value })}
-                                                                aria-label={`Cantidad de ${nombre}`}
-                                                                aria-invalid={errorDe('cantidad') ? true : undefined}
-                                                                className="tabular"
-                                                            />
-                                                            {errorDe('cantidad') && <span className="text-destructive mt-1 block text-xs">{errorDe('cantidad')}</span>}
-                                                        </TableCell>
-                                                        <TableCell>
-                                                            <Input
-                                                                type="number" min={0.01} step="0.01" inputMode="decimal"
-                                                                value={l.costo_unitario_bs}
-                                                                onChange={(ev) => cambiarLinea(n, { costo_unitario_bs: ev.target.value })}
-                                                                aria-label={`Costo unitario en bolívares de ${nombre}`}
-                                                                aria-invalid={errorDe('costo_unitario_bs') ? true : undefined}
-                                                                className="tabular"
-                                                            />
-                                                            {errorDe('costo_unitario_bs') ? (
-                                                                <span className="text-destructive mt-1 block text-xs">{errorDe('costo_unitario_bs')}</span>
-                                                            ) : (
-                                                                tasaNum > 0 && bs > 0 && <span className="text-muted-foreground mt-1 block text-xs tabular">{formatoUsd(redondear(bs / tasaNum))}</span>
-                                                            )}
-                                                        </TableCell>
-                                                        <TableCell className="text-center">
-                                                            <Switch checked={l.aplica_iva} onCheckedChange={(v) => cambiarLinea(n, { aplica_iva: v })} aria-label={`${nombre} paga IVA`} className="mt-2" />
-                                                        </TableCell>
-                                                        <TableCell className="text-right tabular">
-                                                            <span className="mt-2 block">{formatoBs(subBs)}</span>
-                                                            {tasaNum > 0 && <span className="text-muted-foreground block text-xs">{formatoUsd(num(l.cantidad) * redondear(bs / tasaNum))}</span>}
-                                                        </TableCell>
-                                                        <TableCell>
-                                                            <Button type="button" variant="ghost" size="icon" onClick={() => quitar(n)} aria-label={`Quitar ${nombre}`}><Trash2 /></Button>
-                                                        </TableCell>
-                                                    </TableRow>
-                                                );
-                                            })}
-                                        </TableBody>
-                                    </Table>
-                                </div>
-                            )}
-                        </CardContent>
-                    </Card>
-
-                    <Card>
-                        <CardHeader><CardTitle className="text-base">Observaciones</CardTitle></CardHeader>
-                        <CardContent>
-                            <Campo etiqueta="Notas de la compra" error={e.observaciones}>
-                                <Textarea rows={3} maxLength={500} value={data.observaciones} onChange={(ev) => setData('observaciones', ev.target.value)} placeholder="Condiciones, entrega, referencias… (opcional)" />
-                            </Campo>
-                        </CardContent>
-                    </Card>
-                </div>
-
-                <Card className="lg:sticky lg:top-4">
-                    <CardHeader><CardTitle className="text-base">Resumen</CardTitle></CardHeader>
-                    <CardContent className="grid gap-3 text-sm">
-                        <Total etiqueta={`Subtotal (${data.items.length} ${data.items.length === 1 ? 'insumo' : 'insumos'})`} bs={t.subBs} usd={tasaNum > 0 ? t.subUsd : null} />
-                        <Total etiqueta={`IVA (${formatoNumero(iva)} %)`} bs={t.ivaBs} usd={tasaNum > 0 ? t.ivaUsd : null} />
-                        <div className="border-t pt-3">
-                            <Total etiqueta="Total" bs={t.totalBs} usd={tasaNum > 0 ? t.totalUsd : null} fuerte />
-                        </div>
-                        <p className="text-muted-foreground text-xs">
-                            El IVA grava solo los insumos marcados. El costo en $ ({tasaNum > 0 ? `Bs ${formatoNumero(tasaNum)} por $` : 'falta la tasa'}) actualiza el costo de cada insumo al procesar.
-                        </p>
-                        <Button type="submit" disabled={form.processing} className="w-full"><Save /> {compra ? 'Guardar cambios' : 'Guardar borrador'}</Button>
+                                            {data.items.length === 0 ? (
+                                                <p className="text-muted-foreground rounded-lg border border-dashed p-6 text-center text-sm">
+                                                    Agrega los insumos de la factura con su cantidad y costo.
+                                                </p>
+                                            ) : (
+                                                <div className="overflow-x-auto rounded-lg border">
+                                                    <Table>
+                                                        <TableHeader>
+                                                            <TableRow className="hover:bg-transparent">
+                                                                <TableHead>Insumo</TableHead>
+                                                                <TableHead className="w-32">Cantidad</TableHead>
+                                                                <TableHead className="w-40">Costo unitario (Bs)</TableHead>
+                                                                <TableHead className="w-16 text-center">IVA</TableHead>
+                                                                <TableHead className="text-right">Subtotal</TableHead>
+                                                                <TableHead className="w-10">
+                                                                    <span className="sr-only">Quitar</span>
+                                                                </TableHead>
+                                                            </TableRow>
+                                                        </TableHeader>
+                                                        <TableBody>
+                                                            {data.items.map((l, n) => {
+                                                                const i = porId.get(l.insumo_id);
+                                                                const nombre = i?.nombre ?? `Insumo #${l.insumo_id}`;
+                                                                const errorDe = (c: string) => e[`items.${n}.${c}`];
+                                                                const bs = num(l.costo_unitario_bs);
+                                                                const subBs = num(l.cantidad) * bs;
+                                                                return (
+                                                                    <TableRow key={l.insumo_id} className="align-top">
+                                                                        <TableCell>
+                                                                            <span className="font-medium">{nombre}</span>
+                                                                            {i?.codigo && <code className="text-muted-foreground ml-1.5 font-mono text-xs">{i.codigo}</code>}
+                                                                            <span className="text-muted-foreground block text-xs">
+                                                                                {i ? `Hay ${formatoNumero(i.stock)} ${i.unidad}` : 'No disponible para compras'}
+                                                                            </span>
+                                                                            {errorDe('insumo_id') && <span className="text-destructive block text-xs">{errorDe('insumo_id')}</span>}
+                                                                        </TableCell>
+                                                                        <TableCell>
+                                                                            <Input
+                                                                                id={`linea-${l.insumo_id}-cantidad`}
+                                                                                type="number"
+                                                                                min={0.01}
+                                                                                step="0.01"
+                                                                                inputMode="decimal"
+                                                                                value={l.cantidad}
+                                                                                onChange={(ev) => cambiarLinea(n, { cantidad: ev.target.value })}
+                                                                                aria-label={`Cantidad de ${nombre}`}
+                                                                                aria-invalid={errorDe('cantidad') ? true : undefined}
+                                                                                className="tabular"
+                                                                            />
+                                                                            {errorDe('cantidad') && <span className="text-destructive mt-1 block text-xs">{errorDe('cantidad')}</span>}
+                                                                        </TableCell>
+                                                                        <TableCell>
+                                                                            <Input
+                                                                                type="number"
+                                                                                min={0.01}
+                                                                                step="0.01"
+                                                                                inputMode="decimal"
+                                                                                value={l.costo_unitario_bs}
+                                                                                onChange={(ev) => cambiarLinea(n, { costo_unitario_bs: ev.target.value })}
+                                                                                aria-label={`Costo unitario en bolívares de ${nombre}`}
+                                                                                aria-invalid={errorDe('costo_unitario_bs') ? true : undefined}
+                                                                                className="tabular"
+                                                                            />
+                                                                            {errorDe('costo_unitario_bs') ? (
+                                                                                <span className="text-destructive mt-1 block text-xs">{errorDe('costo_unitario_bs')}</span>
+                                                                            ) : (
+                                                                                tasaNum > 0 &&
+                                                                                bs > 0 && (
+                                                                                    <span className="text-muted-foreground mt-1 block text-xs tabular">{formatoUsd(redondear(bs / tasaNum))}</span>
+                                                                                )
+                                                                            )}
+                                                                        </TableCell>
+                                                                        <TableCell className="text-center">
+                                                                            <Switch
+                                                                                checked={l.aplica_iva}
+                                                                                onCheckedChange={(v) => cambiarLinea(n, { aplica_iva: v })}
+                                                                                aria-label={`${nombre} paga IVA`}
+                                                                                className="mt-2"
+                                                                            />
+                                                                        </TableCell>
+                                                                        <TableCell className="text-right tabular">
+                                                                            <span className="mt-2 block">{formatoBs(subBs)}</span>
+                                                                            {tasaNum > 0 && (
+                                                                                <span className="text-muted-foreground block text-xs">{formatoUsd(num(l.cantidad) * redondear(bs / tasaNum))}</span>
+                                                                            )}
+                                                                        </TableCell>
+                                                                        <TableCell>
+                                                                            <Button type="button" variant="ghost" size="icon" onClick={() => quitar(n)} aria-label={`Quitar ${nombre}`}>
+                                                                                <Trash2 />
+                                                                            </Button>
+                                                                        </TableCell>
+                                                                    </TableRow>
+                                                                );
+                                                            })}
+                                                        </TableBody>
+                                                    </Table>
+                                                </div>
+                                            )}
+                                        </div>
+                                    ),
+                                },
+                                {
+                                    titulo: 'Resumen',
+                                    descripcion: 'Revisa el desglose y agrega notas antes de guardar.',
+                                    contenido: (
+                                        <div className="grid gap-4 lg:grid-cols-[1fr_20rem] lg:items-start">
+                                            <div className="grid min-w-0 gap-4">
+                                                <div className="grid gap-1 text-sm">
+                                                    <p className="font-medium">
+                                                        {proveedor?.nombre ?? '—'} <span className="text-muted-foreground font-normal tabular">{proveedor?.doc}</span>
+                                                    </p>
+                                                    <p className="text-muted-foreground">
+                                                        Factura {data.numero_factura || 'S/N'} · {data.fecha_compra ? formatoFecha(data.fecha_compra) : '—'} · Bs {formatoNumero(tasaNum)} por $
+                                                    </p>
+                                                </div>
+                                                <ul className="grid gap-1 rounded-lg border p-3 text-sm">
+                                                    {data.items.map((l) => {
+                                                        const i = porId.get(l.insumo_id);
+                                                        return (
+                                                            <li key={l.insumo_id} className="flex flex-wrap justify-between gap-x-3">
+                                                                <span>
+                                                                    {i?.nombre ?? `Insumo #${l.insumo_id}`}{' '}
+                                                                    <span className="text-muted-foreground text-xs">
+                                                                        × {formatoNumero(num(l.cantidad))} {i?.unidad}
+                                                                        {!l.aplica_iva && ' · exento'}
+                                                                    </span>
+                                                                </span>
+                                                                <span className="tabular">{formatoBs(num(l.cantidad) * num(l.costo_unitario_bs))}</span>
+                                                            </li>
+                                                        );
+                                                    })}
+                                                </ul>
+                                                <Campo etiqueta="Observaciones" error={e.observaciones}>
+                                                    <Textarea
+                                                        rows={3}
+                                                        maxLength={500}
+                                                        value={data.observaciones}
+                                                        onChange={(ev) => setData('observaciones', ev.target.value)}
+                                                        placeholder="Condiciones, entrega, referencias… (opcional)"
+                                                    />
+                                                </Campo>
+                                            </div>
+                                            <div className="bg-muted/40 grid gap-3 rounded-lg border p-4 text-sm">
+                                                <Total
+                                                    etiqueta={`Subtotal (${data.items.length} ${data.items.length === 1 ? 'insumo' : 'insumos'})`}
+                                                    bs={t.subBs}
+                                                    usd={tasaNum > 0 ? t.subUsd : null}
+                                                />
+                                                <Total etiqueta={`IVA (${formatoNumero(iva)} %)`} bs={t.ivaBs} usd={tasaNum > 0 ? t.ivaUsd : null} />
+                                                <div className="border-t pt-3">
+                                                    <Total etiqueta="Total" bs={t.totalBs} usd={tasaNum > 0 ? t.totalUsd : null} fuerte />
+                                                </div>
+                                                <p className="text-muted-foreground text-xs">El IVA grava solo los insumos marcados. El costo en $ actualiza el costo de cada insumo al procesar.</p>
+                                            </div>
+                                        </div>
+                                    ),
+                                },
+                            ]}
+                        />
                     </CardContent>
                 </Card>
             </form>
