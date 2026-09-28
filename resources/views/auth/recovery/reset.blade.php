@@ -27,8 +27,7 @@
                     required
                     autocomplete="new-password"
                     minlength="8"
-                    maxlength="72"
-                    placeholder="{{ \App\Rules\ContrasenaSegura::DESCRIPCION }}"
+                    aria-describedby="password-ayuda"
                 >
                 <button type="button" class="btn-show-pass" data-target="password" title="Mostrar/ocultar">
                     <i class="bx bx-show"></i>
@@ -37,6 +36,7 @@
                     <div class="invalid-feedback">{{ $message }}</div>
                 @enderror
             </div>
+            <div id="password-ayuda" class="form-text">{{ \App\Rules\ContrasenaSegura::DESCRIPCION }}</div>
         </div>
 
         <div class="recovery-q-block mb-4">

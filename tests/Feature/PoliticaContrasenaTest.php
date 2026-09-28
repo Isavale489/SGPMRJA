@@ -68,8 +68,8 @@ class PoliticaContrasenaTest extends TestCase
         $valida = fn ($clave) => ! Validator::make(['p' => $clave], ['p' => [new ContrasenaSegura]])->fails();
 
         $this->assertTrue($valida('Ñandú.2026'));     // Ñ es mayúscula
-        $this->assertFalse($valida('ñandúcaña2026'));  // ñ/á/ú son letras, no símbolos
-        $this->assertFalse($valida('ÑANDU2026'));      // sin carácter especial
+        $this->assertFalse($valida('Pandúcaña2026'));  // ñ/ú son letras, no símbolos (antes pasaba)
+        $this->assertTrue($valida('Pandúcaña.2026'));
         $this->assertTrue($valida('A1.'.str_repeat('x', 69)));   // 72 bytes
         $this->assertFalse($valida('A1.'.str_repeat('x', 70)));  // 73 bytes: bcrypt lo truncaría
         $this->assertFalse($valida(['Buena.Clave1']));
@@ -81,13 +81,24 @@ class PoliticaContrasenaTest extends TestCase
         $admin = User::factory()->create();
         $arreglo = ['password' => ['x'], 'password_confirmation' => ['x']];
 
+        $otro = User::factory()->create();
+        $temporal = User::factory()->create(['password' => Hash::make('Temporal.1'), 'password_reset_by_admin' => true]);
+
         $this->actingAs($admin)->postJson(route('users.store'), [...$arreglo, 'name' => 'Nuevo', 'email' => 'n@atlantico.test'])
             ->assertStatus(422)->assertJsonValidationErrors('password');
+        $this->actingAs($admin)->postJson(route('users.reset-password', $otro->id), $arreglo)
+            ->assertStatus(422)->assertJsonValidationErrors('password');
         $this->actingAs($admin)->putJson(route('password.update'), [...$arreglo, 'current_password' => 'password'])
-            ->assertStatus(422);
+            ->assertStatus(422)->assertJsonValidationErrors('password');
+        $this->actingAs($temporal)->postJson(route('auth.force-password-change.process'), [...$arreglo, 'current_password' => 'Temporal.1'])
+            ->assertStatus(422)->assertJsonValidationErrors('password');
+
         $this->flushSession();
         $this->app['auth']->forgetGuards();
-        $this->postJson(route('password.store'), [...$arreglo, 'token' => 't', 'email' => 'n@atlantico.test'])->assertStatus(422);
+        $this->postJson(route('password.store'), [...$arreglo, 'token' => 't', 'email' => 'n@atlantico.test'])
+            ->assertStatus(422)->assertJsonValidationErrors('password');
+        $this->postJson(route('recovery.reset.process'), [...$arreglo, 'token' => 't'])
+            ->assertStatus(422)->assertJsonValidationErrors('password');
     }
 
     public function test_las_dos_recuperaciones_exigen_la_politica(): void

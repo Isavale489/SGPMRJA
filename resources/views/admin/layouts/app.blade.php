@@ -461,7 +461,7 @@
             let errores = [];
             // Espejo de App\Rules\ContrasenaSegura (Unicode: Ñ es mayúscula, ñ no es símbolo).
             if (valor.length < 8)                 errores.push('al menos 8 caracteres');
-            if (new TextEncoder().encode(valor).length > 72) errores.push('como máximo 72 caracteres');
+            if (new TextEncoder().encode(valor).length > 72) errores.push('como máximo 72 caracteres (acentos y ñ cuentan doble)');
             if (!/\p{Lu}/u.test(valor))          errores.push('una letra mayúscula');
             if (!/\p{Nd}/u.test(valor))          errores.push('un número');
             if (!/[^\p{L}\p{N}]/u.test(valor))   errores.push('un carácter especial');

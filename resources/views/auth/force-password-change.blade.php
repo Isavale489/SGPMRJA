@@ -71,9 +71,9 @@
                                     required
                                     autocomplete="new-password"
                                     minlength="8"
-                                    maxlength="72"
-                    placeholder="{{ \App\Rules\ContrasenaSegura::DESCRIPCION }}"
+                                    aria-describedby="password-ayuda"
                                 >
+                                <div id="password-ayuda" class="form-text">{{ \App\Rules\ContrasenaSegura::DESCRIPCION }}</div>
                             </div>
 
                             <div class="mb-4">

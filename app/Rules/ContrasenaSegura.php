@@ -36,7 +36,7 @@ class ContrasenaSegura implements ValidationRule
             return;
         }
         if (strlen($value) > self::MAXIMO_BYTES) {
-            $fail('La contraseña no puede superar los 72 caracteres.');
+            $fail('La contraseña es demasiado larga: máximo 72 caracteres (las letras con acento y la ñ cuentan doble).');
 
             return;
         }
