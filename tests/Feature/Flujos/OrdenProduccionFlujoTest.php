@@ -504,7 +504,9 @@ class OrdenProduccionFlujoTest extends TestCase
         $this->assertTrue($orden->tieneProduccion());
 
         $equipo = [['id' => $ana->id, 'cantidad' => 6], ['id' => $luis->id, 'cantidad' => 4]];
-        $this->actingAs($admin)->putJson(route('ordenes.update', $orden), $this->edicion($orden, $equipo, ['estado' => 'Pendiente']))->assertStatus(422);
+        $this->actingAs($admin)->putJson(route('ordenes.update', $orden), $this->edicion($orden, $equipo, ['estado' => 'Pendiente']))
+            ->assertStatus(422)->assertJsonFragment(['message' => 'La orden ya tiene unidades producidas (o rechazadas en Calidad): no puede volver a Pendiente.']);
+        // Sigue exigiendo motivo de merma al cancelar (no repone la tela cortada).
         $this->actingAs($admin)->patchJson(route('ordenes.cancelar', $orden))->assertStatus(422)->assertJsonValidationErrors('motivo_cancelacion');
 
         $this->assertSame('En Proceso', $orden->fresh()->estado);

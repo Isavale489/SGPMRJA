@@ -154,11 +154,6 @@ class OrdenProduccion extends Model
     }
 
     /**
-     * Recalcula el estado de la OP en función de las sub-órdenes activas
-     * (excluye Canceladas). Solo actúa cuando hay sub-órdenes no canceladas.
-     * No modifica la OP si ella misma está Cancelada.
-     */
-    /**
      * ¿Ya se cortó material? Cuenta lo producido y lo que Control de Calidad
      * rechazó (el reproceso resta de producida pero la tela ya se usó).
      */
@@ -167,6 +162,11 @@ class OrdenProduccion extends Model
         return (int) $this->cantidad_producida > 0 || (int) $this->cantidad_defectuosa > 0;
     }
 
+    /**
+     * Recalcula el estado de la OP en función de las sub-órdenes activas
+     * (excluye Canceladas). Solo actúa cuando hay sub-órdenes no canceladas.
+     * No modifica la OP si ella misma está Cancelada.
+     */
     public function recalcularEstadoDesdeSubordenes(): void
     {
         if ($this->estado === 'Cancelado') {

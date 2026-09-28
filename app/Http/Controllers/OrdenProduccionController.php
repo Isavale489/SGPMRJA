@@ -599,6 +599,9 @@ class OrdenProduccionController extends Controller
     private function bloquearPedidoActivo(?int $pedidoId): void
     {
         $pedido = Pedido::whereKey($pedidoId)->lockForUpdate()->first();
+        if ($pedidoId && ! $pedido) {
+            throw new \InvalidArgumentException('El pedido ya no existe: no admite órdenes de producción.');
+        }
         if ($pedido && in_array($pedido->estado, ['Cancelado', 'Completado'], true)) {
             throw new \InvalidArgumentException("El pedido está {$pedido->estado}: no admite nuevas órdenes de producción.");
         }
