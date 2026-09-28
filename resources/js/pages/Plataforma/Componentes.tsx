@@ -78,8 +78,9 @@ export default function Componentes() {
                             <Input defaultValue="J-12345678" />
                         </Campo>
                         <Campo etiqueta="Tipo" ayuda="Se deriva del prefijo del documento.">
+                            {(control) => (
                             <Select defaultValue="juridico">
-                                <SelectTrigger className="w-full">
+                                <SelectTrigger {...control} className="w-full">
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -88,6 +89,7 @@ export default function Componentes() {
                                     <SelectItem value="gubernamental">Gubernamental</SelectItem>
                                 </SelectContent>
                             </Select>
+                            )}
                         </Campo>
                     </div>
                 </Seccion>
@@ -168,8 +170,9 @@ function DialogoEjemplo() {
                     <DialogDescription>Los diálogos anidados y los menús dentro de ellos no se pisan.</DialogDescription>
                 </DialogHeader>
                 <Campo etiqueta="Banco" ayuda="Este menú antes se recortaba con el footer del modal.">
+                    {(control) => (
                     <Select>
-                        <SelectTrigger className="w-full">
+                        <SelectTrigger {...control} className="w-full">
                             <SelectValue placeholder="Selecciona un banco" />
                         </SelectTrigger>
                         <SelectContent>
@@ -178,6 +181,7 @@ function DialogoEjemplo() {
                             ))}
                         </SelectContent>
                     </Select>
+                    )}
                 </Campo>
                 <DialogFooter>
                     <Button variant="outline" onClick={() => setAbierto(false)}>Cancelar</Button>

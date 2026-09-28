@@ -151,5 +151,12 @@ trait CreaDatosBase
     {
         $status = $response->getStatusCode();
         $this->assertTrue($status >= 200 && $status < 400, "Se esperaba éxito y llegó HTTP {$status}: " . mb_substr((string) $response->getContent(), 0, 400));
+
+        // Una validación fallida en una petición no-JSON también es un 302
+        // (redirect back con errores): no es éxito.
+        if ($status >= 300) {
+            $errores = session('errors')?->getBag('default')->all() ?? [];
+            $this->assertSame([], $errores, 'Redirect con errores de validación: ' . implode(' | ', $errores));
+        }
     }
 }

@@ -39,3 +39,15 @@ export interface DatosCompartidos {
     flash: { success: string | null; error: string | null };
     [key: string]: unknown;
 }
+
+/** LengthAwarePaginator de Laravel tal como lo serializa Inertia. */
+export interface Paginado<T> {
+    data: T[];
+    current_page: number;
+    last_page: number;
+    per_page: number;
+    total: number;
+    from: number | null;
+    to: number | null;
+    links: { url: string | null; label: string; active: boolean }[];
+}

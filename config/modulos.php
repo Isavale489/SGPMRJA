@@ -187,9 +187,9 @@ return [
         ],
         'rutas' => [
             // El PDF va bajo 'ver' (paridad Supervisor, TASK-038): quien puede ver el listado puede exportarlo.
-            'proveedores.index|proveedores.data|proveedores.show|proveedores.reporte.pdf|proveedores.check-rif|proveedores.check-documento|proveedores.check-email' => 'ver',
+            'proveedores.index|proveedores.reporte.pdf|proveedores.check-rif|proveedores.check-documento|proveedores.check-email' => 'ver',
             // solo-admin (escritura): hoy en el grupo role:Administrador
-            'proveedores.store|proveedores.from-persona|proveedores.create|proveedores.update|proveedores.destroy|proveedores.edit|proveedores.restore' => 'gestionar',
+            'proveedores.store|proveedores.from-persona|proveedores.update|proveedores.destroy|proveedores.restore' => 'gestionar',
         ],
     ],
 
