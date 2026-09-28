@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { confirmarDescarte, useGuardCambios } from '@/hooks/use-guard-cambios';
 
-import type { PaginaProveedores, ProveedorFila } from './tipos';
+import type { PaginaProveedores, ProveedorFila, ProveedorResumen } from './tipos';
 
 type Prefijo = 'V-' | 'E-' | 'J-' | 'G-';
 
@@ -56,7 +56,9 @@ interface Props {
     /** Proveedor a editar; sin él, es un alta. */
     proveedor?: ProveedorFila;
     estados: PaginaProveedores['estados'];
-    urls: PaginaProveedores['urls'];
+    urls: Pick<PaginaProveedores['urls'], 'index' | 'checkDocumento' | 'checkRif' | 'checkEmail'>;
+    /** Alta rápida desde otra página (Compras): recibe el proveedor creado y conserva el estado de esa página. */
+    onCreado?: (proveedor: ProveedorResumen) => void;
 }
 
 /**
@@ -64,7 +66,7 @@ interface Props {
  * sus valores iniciales al montarse, y un setDefaults()+reset() en el mismo
  * ciclo no sirve porque setDefaults actualiza el estado de forma asíncrona.
  */
-export function FormularioProveedor({ abierto, onCerrar, proveedor, estados, urls }: Props) {
+export function FormularioProveedor({ abierto, onCerrar, proveedor, estados, urls, onCreado }: Props) {
     const edicion = Boolean(proveedor);
     const form = useForm<Formulario>(inicial(proveedor));
     const { data, setData, errors } = form;
@@ -129,6 +131,18 @@ export function FormularioProveedor({ abierto, onCerrar, proveedor, estados, url
         e.preventDefault();
         const opciones = { preserveScroll: true, onSuccess: () => { form.setDefaults(); onCerrar(); } };
         if (proveedor) form.put(`${urls.index}/${proveedor.id}`, opciones);
+        else if (onCreado)
+            form.post(urls.index, {
+                preserveScroll: true,
+                preserveState: true, // no perder lo cargado en la página que abrió el alta
+                only: ['flash'],
+                onSuccess: (pagina) => {
+                    const creado = (pagina.flash as { proveedor?: ProveedorResumen }).proveedor;
+                    form.setDefaults();
+                    onCerrar();
+                    if (creado) onCreado(creado);
+                },
+            });
         else form.post(urls.index, opciones);
     };
 

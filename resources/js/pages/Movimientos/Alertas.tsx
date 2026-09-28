@@ -1,10 +1,12 @@
-import { Link } from '@inertiajs/react';
+import { Link, router } from '@inertiajs/react';
 import { ArrowLeft, History, ShoppingBag } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { usePermisos } from '@/hooks/use-permisos';
 import AppLayout from '@/layouts/app-layout';
 import { formatoNumero } from '@/lib/formato';
+import { guardarFaltantes } from '@/lib/inventario';
 
 interface Props {
     insumos: { id: number; nombre: string; codigo: string | null; tipo: string; unidad: string; actual: number; minimo: number; maximo: number }[];
@@ -13,14 +15,20 @@ interface Props {
 
 /** Insumos en o bajo su existencia mínima: lo que hay que reponer. */
 export default function Alertas({ insumos, urls }: Props) {
+    const { puede } = usePermisos();
+    // Reponer hasta el máximo (o, si no tiene, hasta el mínimo).
+    const comprar = () => {
+        guardarFaltantes(insumos.map((i) => ({ insumo_id: i.id, nombre: i.nombre, cantidad: Math.max(0, (i.maximo > 0 ? i.maximo : i.minimo) - i.actual) })).filter((f) => f.cantidad > 0), 'alertas');
+        router.visit(`${urls.compras}/crear?prefill=1`);
+    };
+
     return (
         <AppLayout
             titulo="Alertas de existencia"
             acciones={
                 <>
                     <Button variant="ghost" asChild><Link href={urls.index}><ArrowLeft /> Movimientos</Link></Button>
-                    {/* Compras sigue en Blade → enlace normal. */}
-                    <Button asChild><a href={urls.compras}><ShoppingBag /> Ir a Compras</a></Button>
+                    {puede('compras.gestionar') && insumos.length > 0 && <Button onClick={comprar}><ShoppingBag /> Comprar lo que falta</Button>}
                 </>
             }
         >

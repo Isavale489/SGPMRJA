@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 
-import type { InsumoFila, PaginaInsumos } from './tipos';
+import type { InsumoCreado, InsumoFila, PaginaInsumos } from './tipos';
 
 interface Props {
     abierto: boolean;
@@ -17,7 +17,12 @@ interface Props {
     insumo?: InsumoFila;
     tipos: string[];
     unidades: string[];
-    urls: PaginaInsumos['urls'];
+    urls: Pick<PaginaInsumos['urls'], 'index' | 'checkNombre'>;
+    /** Alta rápida desde otra página (Compras): recibe el insumo creado; `recargar` son las props a refrescar allí. */
+    onCreado?: (insumo: InsumoCreado) => void;
+    recargar?: string[];
+    /** Nombre sugerido (lo que se escribió en el buscador). */
+    nombreInicial?: string;
 }
 
 const texto = (n?: number) => (n === undefined ? '' : String(n));
@@ -36,9 +41,9 @@ function Interruptor({ id, etiqueta, ayuda, valor, onCambiar }: { id: string; et
 }
 
 /** Montar con una `key` distinta en cada apertura (ver docs/conventions/frontend.md). */
-export function FormularioInsumo({ abierto, onCerrar, insumo, tipos, unidades, urls }: Props) {
+export function FormularioInsumo({ abierto, onCerrar, insumo, tipos, unidades, urls, onCreado, recargar = [], nombreInicial = '' }: Props) {
     const form = useForm({
-        nombre: insumo?.nombre ?? '',
+        nombre: insumo?.nombre ?? nombreInicial,
         codigo: insumo?.codigo ?? '',
         tipo: insumo?.tipo ?? '',
         unidad_medida: insumo?.unidad_medida ?? '',
@@ -78,7 +83,20 @@ export function FormularioInsumo({ abierto, onCerrar, insumo, tipos, unidades, u
             sucio={form.isDirty}
             procesando={form.processing}
             textoGuardar={insumo ? 'Guardar cambios' : 'Agregar insumo'}
-            onGuardar={() => (insumo ? form.put(`${urls.index}/${insumo.id}`, opciones) : form.post(urls.index, opciones))}
+            onGuardar={() => {
+                if (insumo) return form.put(`${urls.index}/${insumo.id}`, opciones);
+                if (!onCreado) return form.post(urls.index, opciones);
+                form.post(urls.index, {
+                    preserveScroll: true,
+                    preserveState: true,
+                    only: ['flash', ...recargar],
+                    onSuccess: (pagina) => {
+                        const creado = (pagina.flash as { insumo?: InsumoCreado }).insumo;
+                        onCerrar();
+                        if (creado) onCreado(creado);
+                    },
+                });
+            }}
             className="max-h-[92svh] overflow-y-auto sm:max-w-2xl"
         >
             <div className="grid gap-4 sm:grid-cols-[1fr_10rem]">

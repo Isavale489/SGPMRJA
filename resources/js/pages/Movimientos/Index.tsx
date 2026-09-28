@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { Campo } from '@/components/app/campo';
 import { DialogoFormulario } from '@/components/app/dialogo-formulario';
 import { ExportarPdf } from '@/components/app/exportar-pdf';
-import { Monto } from '@/components/app/monto';
+import { columnasExistencias, type ExistenciaFila } from '@/components/app/tabla-existencias';
 import { TablaServidor, type Columna } from '@/components/app/tabla-servidor';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -34,20 +34,6 @@ export interface MovimientoFila {
     motivo: string | null;
     usuario: string | null;
     fecha: string | null;
-}
-
-/** Espejo de MovimientoInsumoController::existencias(). */
-export interface ExistenciaFila {
-    id: number;
-    nombre: string;
-    codigo: string | null;
-    tipo: string;
-    unidad: string;
-    minimo: number;
-    actual: number;
-    maximo: number;
-    costo: number;
-    estado: 'bajo' | 'medio' | 'normal';
 }
 
 type Filtros = {
@@ -83,12 +69,6 @@ interface Props {
 
 const TODOS = 'todos';
 const PROPS = ['movimientos', 'existencias', 'filtros', 'vista'];
-
-const ESTADO: Record<ExistenciaFila['estado'], { etiqueta: string; clase: string }> = {
-    bajo: { etiqueta: 'En o bajo el mínimo', clase: 'bg-destructive/10 text-destructive ring-destructive/25' },
-    medio: { etiqueta: 'Cerca del mínimo', clase: 'bg-warning/12 text-warning ring-warning/25' },
-    normal: { etiqueta: 'Normal', clase: 'bg-success/12 text-success ring-success/25' },
-};
 
 export default function MovimientosIndex({ vista, filtros: iniciales, movimientos, existencias, insumos, tiposInsumo, urls }: Props) {
     const { puede } = usePermisos();
@@ -135,28 +115,7 @@ export default function MovimientosIndex({ vista, filtros: iniciales, movimiento
         },
     ];
 
-    const colExistencias: Columna<ExistenciaFila>[] = [
-        {
-            id: 'insumo',
-            encabezado: 'Insumo',
-            celda: (i) => (
-                <Link href={`${urls.historial}/${i.id}`} className="hover:underline">
-                    <span className="font-medium">{i.nombre}</span>
-                    {i.codigo && <code className="text-muted-foreground ml-1.5 font-mono text-xs">{i.codigo}</code>}
-                    <span className="text-muted-foreground block text-xs">{i.tipo}</span>
-                </Link>
-            ),
-        },
-        { id: 'minimo', encabezado: 'Mínima', className: 'text-right', celda: (i) => <span className="tabular text-muted-foreground">{formatoNumero(i.minimo)}</span> },
-        { id: 'actual', encabezado: 'Actual', className: 'text-right', celda: (i) => <span className="tabular font-medium">{formatoNumero(i.actual)} <span className="text-muted-foreground text-xs font-normal">{i.unidad}</span></span> },
-        { id: 'maximo', encabezado: 'Máxima', className: 'text-right', celda: (i) => <span className="tabular text-muted-foreground">{i.maximo > 0 ? formatoNumero(i.maximo) : '—'}</span> },
-        { id: 'costo', encabezado: 'Costo unitario', celda: (i) => <Monto usd={i.costo} /> },
-        {
-            id: 'estado',
-            encabezado: 'Estado',
-            celda: (i) => <span className={cn('inline-flex rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset', ESTADO[i.estado].clase)}>{ESTADO[i.estado].etiqueta}</span>,
-        },
-    ];
+    const colExistencias = columnasExistencias({ historial: urls.historial });
 
     return (
         <AppLayout

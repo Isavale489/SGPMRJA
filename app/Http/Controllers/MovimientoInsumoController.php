@@ -5,27 +5,17 @@ namespace App\Http\Controllers;
 use App\Http\Controllers\Concerns\RespondeSegunCliente;
 use App\Models\Insumo;
 use App\Models\MovimientoInsumo;
+use App\Support\ExistenciasInsumo;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
-use Yajra\DataTables\Facades\DataTables;
 
 class MovimientoInsumoController extends Controller
 {
     use RespondeSegunCliente;
-
-    /** Estado de la existencia frente a su mínimo (mismo criterio que el panel de Compras). */
-    private static function estadoStock(Insumo $i): string
-    {
-        if ($i->stock_actual <= $i->stock_minimo) {
-            return 'bajo';
-        }
-
-        return $i->stock_actual <= $i->stock_minimo * 1.5 ? 'medio' : 'normal';
-    }
 
     /**
      * Página Inertia con dos vistas (?vista=movimientos|existencias). Solo se
@@ -41,12 +31,12 @@ class MovimientoInsumoController extends Controller
             'vista' => $vista,
             'filtros' => (object) $filtros,
             'movimientos' => fn () => $vista === 'movimientos' ? $this->movimientos($filtros) : null,
-            'existencias' => fn () => $vista === 'existencias' ? $this->existencias($filtros) : null,
+            'existencias' => fn () => $vista === 'existencias' ? ExistenciasInsumo::paginar($filtros) : null,
             // Todos los activos para el filtro (un insumo legacy no inventariable
             // puede tener movimientos históricos); solo inventariables para la salida.
             'insumos' => Insumo::where('estado', true)->orderBy('nombre')->get(['id', 'nombre', 'codigo', 'unidad_medida', 'is_inventoriable', 'stock_actual'])
                 ->map(fn ($i) => ['id' => $i->id, 'nombre' => $i->nombre, 'codigo' => $i->codigo, 'unidad' => $i->unidad_medida, 'inventariable' => (bool) $i->is_inventoriable, 'stock' => (float) $i->stock_actual])->all(),
-            'tiposInsumo' => Insumo::where('estado', true)->where('is_inventoriable', true)->distinct()->orderBy('tipo')->pluck('tipo')->all(),
+            'tiposInsumo' => ExistenciasInsumo::tipos(),
             'urls' => [
                 'index' => route('movimiento-insumo.index', absolute: false),
                 'store' => route('movimiento-insumo.store', absolute: false),
@@ -98,34 +88,6 @@ class MovimientoInsumoController extends Controller
         ]);
     }
 
-    private function existencias(array $f)
-    {
-        $q = Insumo::where('estado', true)->where('is_inventoriable', true)->orderBy('nombre');
-        if (! empty($f['tipo_insumo'])) {
-            $q->where('tipo', $f['tipo_insumo']);
-        }
-        if (! empty($f['alerta'])) {
-            $q->whereColumn('stock_actual', '<=', 'stock_minimo');
-        }
-        if (! empty($f['buscar'])) {
-            $kw = trim($f['buscar']);
-            $q->where(fn ($w) => $w->where('nombre', 'like', "%{$kw}%")->orWhere('codigo', 'like', "{$kw}%"));
-        }
-
-        return $q->paginate(20)->withQueryString()->through(fn (Insumo $i) => [
-            'id' => $i->id,
-            'nombre' => $i->nombre,
-            'codigo' => $i->codigo,
-            'tipo' => $i->tipo,
-            'unidad' => $i->unidad_medida,
-            'minimo' => (float) $i->stock_minimo,
-            'actual' => (float) $i->stock_actual,
-            'maximo' => (float) $i->stock_maximo,
-            'costo' => (float) $i->costo_unitario,
-            'estado' => self::estadoStock($i),
-        ]);
-    }
-
     /**
      * Exportar el historial de movimientos a PDF, con filtros por tipo, insumo
      * y rango de fecha del movimiento (created_at).
@@ -171,38 +133,6 @@ class MovimientoInsumoController extends Controller
         $pdf = \PDF::loadView('admin.movimiento-insumo.movimientos.reporte_pdf', compact('movimientos', 'filtros'))
             ->setPaper('a4', 'landscape');
         return $pdf->stream('movimientos_insumo_' . now()->format('Y-m-d_H-i-s') . '.pdf');
-    }
-
-    /**
-     * Panel de existencias dentro de /movimiento-insumo:
-     * stock mínimo, actual y máximo de cada insumo inventariable,
-     * para consultarlo sin salir a /insumos.
-     */
-    public function getExistencias(Request $request)
-    {
-        $query = Insumo::where('estado', true)
-            ->where('is_inventoriable', true)
-            ->select('id', 'nombre', 'codigo', 'tipo', 'unidad_medida', 'stock_minimo', 'stock_actual', 'stock_maximo', 'costo_unitario')
-            ->orderBy('id', 'desc'); // más reciente primero (estándar del sistema)
-
-        if ($request->filled('filter_tipo')) {
-            $query->where('tipo', $request->input('filter_tipo'));
-        }
-
-        if ($request->input('filter_estado') === 'alerta') {
-            $query->whereRaw('stock_actual <= stock_minimo');
-        }
-
-        return DataTables::of($query)
-            ->addColumn('stock_status', function ($insumo) {
-                if ($insumo->stock_actual <= $insumo->stock_minimo) {
-                    return 'bajo';
-                } elseif ($insumo->stock_actual <= ($insumo->stock_minimo * 1.5)) {
-                    return 'medio';
-                }
-                return 'normal';
-            })
-            ->make(true);
     }
 
     /**

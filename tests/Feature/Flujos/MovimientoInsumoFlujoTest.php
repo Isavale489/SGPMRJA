@@ -10,8 +10,6 @@ use Tests\TestCase;
 /**
  * Movimientos de insumo: solo salidas manuales (las entradas llegan por
  * Compras y Producción). Escritos ANTES de migrar a Inertia.
- *
- * Contrato vivo: Compras (Blade/DataTables) lee `compras.existencias.data`.
  */
 class MovimientoInsumoFlujoTest extends TestCase
 {
@@ -67,23 +65,6 @@ class MovimientoInsumoFlujoTest extends TestCase
         ])->assertStatus(422);
 
         $this->assertSame(0, MovimientoInsumo::count());
-    }
-
-    public function test_compras_lee_las_existencias_en_formato_datatables(): void
-    {
-        $this->insumo(['nombre' => 'Hilo rojo', 'stock_actual' => 2, 'stock_minimo' => 5]);
-        $this->insumo(['nombre' => 'Hilo azul', 'stock_actual' => 50, 'stock_minimo' => 5]);
-        $this->insumo(['nombre' => 'Servicio', 'is_inventoriable' => 0]);
-
-        $this->actingAs($this->admin())->getJson(route('compras.existencias.data', ['draw' => 1, 'start' => 0, 'length' => 10]))
-            ->assertOk()
-            ->assertJsonPath('recordsTotal', 2) // solo inventariables
-            ->assertJsonStructure(['draw', 'recordsTotal', 'recordsFiltered', 'data' => [['id', 'nombre', 'stock_actual', 'stock_minimo', 'stock_status']]]);
-
-        $this->actingAs($this->admin())->getJson(route('compras.existencias.data', ['draw' => 1, 'start' => 0, 'length' => 10, 'filter_estado' => 'alerta']))
-            ->assertJsonPath('recordsFiltered', 1)
-            ->assertJsonPath('data.0.nombre', 'Hilo rojo')
-            ->assertJsonPath('data.0.stock_status', 'bajo');
     }
 
     public function test_el_reporte_pdf_se_genera(): void

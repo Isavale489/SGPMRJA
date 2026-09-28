@@ -2,43 +2,247 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\RespondeSegunCliente;
+use App\Http\Requests\GuardarInsumoRequest;
 use App\Http\Requests\StoreCompraRequest;
 use App\Models\Compra;
+use App\Models\Impuesto;
 use App\Models\Insumo;
 use App\Models\Proveedor;
 use App\Models\TasaCambio;
 use App\Models\TipoInsumo;
 use App\Services\CompraService;
+use App\Support\CatalogoGeografico;
+use App\Support\ExistenciasInsumo;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Inertia\Inertia;
+use Inertia\Response;
 use PDF;
-use Yajra\DataTables\Facades\DataTables;
 
 class CompraController extends Controller
 {
+    use RespondeSegunCliente;
+
     public function __construct(private CompraService $service) {}
 
-    public function index(Request $request)
+    /**
+     * Página Inertia con tres vistas (?vista=activas|anuladas|existencias).
+     * Solo se consulta la vista activa; el detalle de una compra llega por
+     * recarga parcial (?ver=ID).
+     */
+    public function index(Request $request): Response|RedirectResponse
     {
-        // Vista "anuladas": la píldora del header alterna entre el listado de
-        // compras activas (borrador + recibida) y las anuladas.
-        $verAnuladas = $request->boolean('anuladas');
+        // Entrada vieja de «Crear compra con faltantes» (proyeccion-insumos.js).
+        if ($request->query('prefill') === '1') {
+            return redirect()->route('compras.create', ['prefill' => 1]);
+        }
 
-        // Solo para el <select> de filtro del listado; el wizard elige el
-        // proveedor por búsqueda de documento (no precarga el catálogo).
-        $proveedores = Proveedor::with('persona')
-            ->where('estado', 1)
-            ->get();
-        $insumos = Insumo::where('estado', 1)
-            ->where('is_inventoriable', 1)
-            ->orderBy('nombre')
-            ->get(['id', 'nombre', 'codigo', 'tipo', 'unidad_medida', 'costo_unitario', 'aplica_iva']);
+        $filtros = array_filter($request->only(['vista', 'buscar', 'estado', 'proveedor', 'desde', 'hasta', 'tipo_insumo', 'alerta', 'ver']), fn ($v) => $v !== null && $v !== '');
+        if ($request->boolean('anuladas')) {
+            $filtros['vista'] = 'anuladas'; // enlace viejo ?anuladas=1
+        }
+        $vista = in_array($filtros['vista'] ?? null, ['anuladas', 'existencias'], true) ? $filtros['vista'] : 'activas';
 
-        // Catálogo de tipos para el quick-create de insumos (mini-modal del wizard).
-        $tiposInsumo = TipoInsumo::where('activo', true)->orderBy('nombre')->get(['id', 'nombre']);
+        return Inertia::render('Compras/Index', [
+            'vista' => $vista,
+            'filtros' => (object) $filtros,
+            'compras' => fn () => $vista !== 'existencias' ? $this->compras($filtros, $vista) : null,
+            'existencias' => fn () => $vista === 'existencias' ? ExistenciasInsumo::paginar($filtros) : null,
+            'detalle' => fn () => ($c = isset($filtros['ver']) ? Compra::find($filtros['ver']) : null) ? $this->detalle($c) : null,
+            'proveedores' => Proveedor::with('persona')->where('estado', 1)->get()
+                ->map(fn (Proveedor $p) => ['id' => $p->id, 'nombre' => $p->nombre_completo ?? '—'])
+                ->sortBy('nombre', SORT_NATURAL | SORT_FLAG_CASE)->values()->all(),
+            'tiposInsumo' => ExistenciasInsumo::tipos(),
+            'urls' => [
+                'index' => route('compras.index', absolute: false),
+                'crear' => route('compras.create', absolute: false),
+                'reportePdf' => route('compras.reporte.pdf', absolute: false),
+            ],
+        ]);
+    }
 
-        return view('admin.compras.index', compact('proveedores', 'insumos', 'tiposInsumo', 'verAnuladas'));
+    private function compras(array $f, string $vista)
+    {
+        $q = Compra::with(['proveedor.persona', 'registradoPor:id,name', 'anuladoPor:id,name', 'detalles'])
+            ->orderByDesc('fecha_compra')->orderByDesc('id');
+
+        if ($vista === 'anuladas') {
+            $q->where('estado', 'anulada');
+        } elseif (in_array($f['estado'] ?? null, ['borrador', 'recibida'], true)) {
+            $q->where('estado', $f['estado']);
+        } else {
+            $q->whereIn('estado', ['borrador', 'recibida']);
+        }
+        if (! empty($f['proveedor'])) {
+            $q->where('proveedor_id', $f['proveedor']);
+        }
+        if (! empty($f['desde'])) {
+            $q->whereDate('fecha_compra', '>=', $f['desde']);
+        }
+        if (! empty($f['hasta'])) {
+            $q->whereDate('fecha_compra', '<=', $f['hasta']);
+        }
+        // «Contiene» sobre lo que se ve en la fila: factura, número, proveedor (nombre o documento).
+        if (! empty($f['buscar'])) {
+            $kw = trim($f['buscar']);
+            $q->where(fn ($w) => $w->where('numero_factura', 'like', "%{$kw}%")
+                ->orWhere('compra.id', ltrim($kw, '#'))
+                ->orWhereHas('proveedor.persona', fn ($p) => $p->where('nombre', 'like', "%{$kw}%")
+                    ->orWhereRaw('CONCAT(tipo_documento, documento_identidad) like ?', ["%{$kw}%"])));
+        }
+
+        return $q->paginate(15)->withQueryString()->through(fn (Compra $c) => [
+            'id' => $c->id,
+            'numero_factura' => $c->numero_factura,
+            'proveedor' => $c->proveedor?->nombre_completo,
+            'proveedor_doc' => $c->proveedor?->documento,
+            'fecha' => $c->fecha_compra?->toDateString(),
+            'total' => (float) $c->total,
+            'total_bs' => $this->montosBs($c)['total'],
+            'estado' => $c->estado,
+            'clonada' => (bool) $c->clonada,
+            'registrado_por' => $c->registradoPor?->name,
+            'anulado_por' => $c->anuladoPor?->name,
+            'fecha_anulacion' => $c->fecha_anulacion?->format('Y-m-d H:i'),
+        ]);
+    }
+
+    /**
+     * Montos en bolívares (lo efectivamente pagado), del costo en Bs tecleado
+     * por línea. El IVA en Bs se aplica solo a la base gravada.
+     */
+    private function montosBs(Compra $c): array
+    {
+        $subtotal = $c->detalles->sum(fn ($d) => (float) $d->cantidad * (float) $d->costo_unitario_bs);
+        $gravado = $c->detalles->where('aplica_iva', true)->sum(fn ($d) => (float) $d->cantidad * (float) $d->costo_unitario_bs);
+        $iva = round($gravado * (float) $c->iva_porcentaje / 100, 2);
+
+        return ['subtotal' => round($subtotal, 2), 'iva' => $iva, 'total' => round($subtotal + $iva, 2)];
+    }
+
+    private function detalle(Compra $c): array
+    {
+        $c->load(['proveedor.persona', 'detalles.insumo', 'registradoPor', 'anuladoPor:id,name']);
+        $bs = $this->montosBs($c);
+
+        return [
+            'id' => $c->id,
+            'estado' => $c->estado,
+            'clonada' => (bool) $c->clonada,
+            'numero_factura' => $c->numero_factura,
+            'fecha' => $c->fecha_compra?->toDateString(),
+            'observaciones' => $c->observaciones,
+            'subtotal' => (float) $c->subtotal,
+            'iva' => (float) $c->iva,
+            'iva_porcentaje' => (float) $c->iva_porcentaje,
+            'total' => (float) $c->total,
+            'subtotal_bs' => $bs['subtotal'],
+            'iva_bs' => $bs['iva'],
+            'total_bs' => $bs['total'],
+            'tasa' => $c->tasa_cambio ? (float) $c->tasa_cambio : null,
+            // Fecha de la tasa BCV aplicada; null si el valor no coincide (tasa manual).
+            'tasa_fecha' => TasaCambio::fechaParaValor($c->tasa_cambio, $c->fecha_compra?->toDateString())?->toDateString(),
+            'creado' => $c->created_at?->format('Y-m-d H:i'),
+            'proveedor' => $c->proveedor ? $this->proveedorResumen($c->proveedor) : null,
+            'registrado_por' => ['nombre' => $c->registradoPor?->name ?? 'Sistema', 'avatar' => $c->registradoPor?->avatar_url],
+            'anulado_por' => $c->anuladoPor?->name,
+            'fecha_anulacion' => $c->fecha_anulacion?->format('Y-m-d H:i'),
+            'items' => $c->detalles->map(fn ($d) => [
+                'id' => $d->id,
+                'insumo' => $d->insumo?->nombre ?? 'N/A',
+                'codigo' => $d->insumo?->codigo,
+                'unidad' => $d->insumo?->unidad_medida,
+                'cantidad' => (float) $d->cantidad,
+                'costo' => (float) $d->costo_unitario,
+                'costo_bs' => (float) $d->costo_unitario_bs,
+                'subtotal' => (float) $d->subtotal,
+                'subtotal_bs' => round((float) $d->cantidad * (float) $d->costo_unitario_bs, 2),
+                'aplica_iva' => (bool) $d->aplica_iva,
+            ])->all(),
+        ];
+    }
+
+    /** Mismo formato que proveedores.search y el alta rápida de proveedores. */
+    private function proveedorResumen(Proveedor $p): array
+    {
+        return [
+            'id' => $p->id,
+            'nombre' => $p->nombre_completo ?? '—',
+            'doc' => $p->documento ?? '',
+            'tel' => $p->telefono_unificado ?? '',
+            'email' => $p->email_unificado ?? '',
+            'tipo' => $p->tipo_proveedor ?? '',
+        ];
+    }
+
+    public function create(): Response
+    {
+        return $this->formulario(null);
+    }
+
+    public function edit(Compra $compra): Response|RedirectResponse
+    {
+        if ($compra->estado !== 'borrador') {
+            return redirect()->route('compras.index')->with('error', 'Solo se pueden editar borradores.');
+        }
+
+        return $this->formulario($compra->load(['detalles', 'proveedor.persona']));
+    }
+
+    /** Formulario de compra (alta o edición de un borrador), en su propia página. */
+    private function formulario(?Compra $compra): Response
+    {
+        return Inertia::render('Compras/Formulario', [
+            'compra' => $compra ? [
+                'id' => $compra->id,
+                'proveedor' => $compra->proveedor ? $this->proveedorResumen($compra->proveedor) : null,
+                'numero_factura' => $compra->numero_factura,
+                'fecha_compra' => $compra->fecha_compra?->toDateString(),
+                'tasa_cambio' => (float) $compra->tasa_cambio,
+                'observaciones' => $compra->observaciones,
+                'items' => $compra->detalles->map(fn ($d) => [
+                    'insumo_id' => $d->insumo_id,
+                    'cantidad' => (float) $d->cantidad,
+                    'costo_unitario_bs' => (float) $d->costo_unitario_bs,
+                    'aplica_iva' => (bool) $d->aplica_iva,
+                ])->all(),
+            ] : null,
+            'insumos' => fn () => Insumo::where('estado', 1)->where('is_inventoriable', 1)->orderBy('nombre')
+                ->get(['id', 'nombre', 'codigo', 'tipo', 'unidad_medida', 'costo_unitario', 'aplica_iva', 'stock_actual'])
+                ->map(fn (Insumo $i) => [
+                    'id' => $i->id,
+                    'nombre' => $i->nombre,
+                    'codigo' => $i->codigo,
+                    'tipo' => $i->tipo,
+                    'unidad' => $i->unidad_medida,
+                    'costo' => (float) $i->costo_unitario,
+                    'aplica_iva' => (bool) $i->aplica_iva,
+                    'stock' => (float) $i->stock_actual,
+                ])->all(),
+            'iva' => Impuesto::tasaIva(),
+            // Alta rápida de insumos y proveedores sin salir de la compra.
+            'tiposInsumo' => TipoInsumo::where('activo', true)->orderBy('nombre')->pluck('nombre')->all(),
+            'unidades' => GuardarInsumoRequest::UNIDADES,
+            'estados' => CatalogoGeografico::mapa(),
+            'urls' => [
+                'index' => route('compras.index', absolute: false),
+                'guardar' => $compra ? route('compras.update', $compra, absolute: false) : route('compras.store', absolute: false),
+                'tasa' => route('compras.tasa', absolute: false),
+                'buscarProveedor' => route('proveedores.search', absolute: false),
+                'buscarPersona' => route('personas.search', absolute: false),
+                'proveedores' => route('proveedores.index', absolute: false),
+                'desdePersona' => url('/proveedores/from-persona'),
+                'checkDocumento' => route('proveedores.check-documento', absolute: false),
+                'checkRif' => route('proveedores.check-rif', absolute: false),
+                'checkEmail' => route('proveedores.check-email', absolute: false),
+                'insumos' => route('insumos.index', absolute: false),
+                'checkNombre' => route('insumos.check-nombre', absolute: false),
+            ],
+        ]);
     }
 
     /**
@@ -75,331 +279,92 @@ class CompraController extends Controller
         ]);
     }
 
-    public function store(StoreCompraRequest $request)
+    public function store(StoreCompraRequest $request): JsonResponse|RedirectResponse
     {
         try {
             $compra = $this->service->registrar($request->validated(), Auth::id());
-
-            return response()->json([
-                'success'   => true,
-                'message'   => "Borrador de compra #{$compra->id} guardado. Procésalo cuando estés listo.",
-                'compra_id' => $compra->id,
-            ]);
         } catch (\Exception $e) {
-            Log::error('CompraController@store: ' . $e->getMessage(), ['user' => Auth::id()]);
-            return response()->json([
-                'success' => false,
-                'message' => 'Ocurrió un error interno al registrar la compra. Intente nuevamente.',
-            ], 500);
+            Log::error('CompraController@store: '.$e->getMessage(), ['user' => Auth::id()]);
+
+            return $this->rechazar($request, 'Ocurrió un error interno al registrar la compra. Intente nuevamente.', 500);
         }
+
+        $mensaje = "Borrador de compra #{$compra->id} guardado. Procésalo cuando estés listo.";
+
+        return $this->esInertia($request)
+            ? redirect()->route('compras.index')->with('success', $mensaje)
+            : response()->json(['success' => true, 'message' => $mensaje, 'compra_id' => $compra->id]);
     }
 
-    public function update(StoreCompraRequest $request, Compra $compra)
+    public function update(StoreCompraRequest $request, Compra $compra): JsonResponse|RedirectResponse
     {
         try {
             $this->service->actualizar($compra, $request->validated());
-
-            return response()->json([
-                'success' => true,
-                'message' => "Compra #{$compra->id} actualizada correctamente.",
-            ]);
         } catch (\RuntimeException $e) {
-            return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
+            return $this->rechazar($request, $e->getMessage());
         } catch (\Exception $e) {
-            Log::error('CompraController@update: ' . $e->getMessage(), ['user' => Auth::id()]);
-            return response()->json(['success' => false, 'message' => 'Error al actualizar la compra.'], 500);
+            Log::error('CompraController@update: '.$e->getMessage(), ['user' => Auth::id()]);
+
+            return $this->rechazar($request, 'Error al actualizar la compra.', 500);
         }
+
+        $mensaje = "Compra #{$compra->id} actualizada correctamente.";
+
+        return $this->esInertia($request)
+            ? redirect()->route('compras.index')->with('success', $mensaje)
+            : response()->json(['success' => true, 'message' => $mensaje]);
     }
 
-    public function procesar(Compra $compra)
+    public function procesar(Request $request, Compra $compra): JsonResponse|RedirectResponse
     {
-        try {
-            $this->service->procesar($compra, Auth::id());
-
-            return response()->json([
-                'success' => true,
-                'message' => "Compra #{$compra->id} procesada. Stock de insumos actualizado.",
-            ]);
-        } catch (\RuntimeException $e) {
-            return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
-        } catch (\Exception $e) {
-            Log::error('CompraController@procesar: ' . $e->getMessage(), ['user' => Auth::id()]);
-            return response()->json(['success' => false, 'message' => 'Error al procesar la compra.'], 500);
-        }
+        return $this->ejecutar($request, 'procesar', fn () => $this->service->procesar($compra, Auth::id()),
+            "Compra #{$compra->id} procesada. Stock de insumos actualizado.");
     }
 
-    public function anular(Compra $compra)
+    public function anular(Request $request, Compra $compra): JsonResponse|RedirectResponse
     {
-        try {
-            $this->service->anular($compra, Auth::id());
-
-            return response()->json([
-                'success' => true,
-                'message' => "Compra #{$compra->id} anulada. El stock ha sido revertido.",
-            ]);
-        } catch (\RuntimeException $e) {
-            return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
-        } catch (\Exception $e) {
-            return response()->json(['success' => false, 'message' => 'Error al anular la compra.'], 500);
-        }
+        return $this->ejecutar($request, 'anular', fn () => $this->service->anular($compra, Auth::id()),
+            "Compra #{$compra->id} anulada. El stock ha sido revertido.");
     }
 
-    public function clonar(Compra $compra)
+    public function clonar(Request $request, Compra $compra): JsonResponse|RedirectResponse
     {
-        try {
+        $nueva = null;
+
+        return $this->ejecutar($request, 'clonar', function () use ($compra, &$nueva) {
             $nueva = $this->service->clonar($compra, Auth::id());
-
-            return response()->json([
-                'success'   => true,
-                'message'   => "Compra clonada como borrador #{$nueva->id}. Revísala y procésala.",
-                'compra_id' => $nueva->id,
-            ]);
-        } catch (\RuntimeException $e) {
-            return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
-        } catch (\Exception $e) {
-            Log::error('CompraController@clonar: ' . $e->getMessage(), ['user' => Auth::id()]);
-            return response()->json(['success' => false, 'message' => 'Error al clonar la compra.'], 500);
-        }
+        }, function () use (&$nueva) { // por referencia: $nueva existe recién tras clonar
+            return "Compra clonada como borrador #{$nueva->id}. Revísala y procésala.";
+        }, function () use (&$nueva) {
+            return ['compra_id' => $nueva->id];
+        });
     }
 
-    public function destroy(Compra $compra)
+    public function destroy(Request $request, Compra $compra): JsonResponse|RedirectResponse
+    {
+        return $this->ejecutar($request, 'eliminar', fn () => $this->service->eliminar($compra),
+            "Borrador #{$compra->id} eliminado correctamente.");
+    }
+
+    /**
+     * Acción de estado: las reglas del servicio (RuntimeException) llegan como
+     * aviso de error; un fallo inesperado se registra y se informa genérico.
+     */
+    private function ejecutar(Request $request, string $accion, callable $hacer, string|\Closure $mensaje, ?\Closure $extra = null): JsonResponse|RedirectResponse
     {
         try {
-            $this->service->eliminar($compra);
-
-            return response()->json([
-                'success' => true,
-                'message' => "Borrador #{$compra->id} eliminado correctamente.",
-            ]);
+            $hacer();
         } catch (\RuntimeException $e) {
-            return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
+            return $this->rechazar($request, $e->getMessage());
         } catch (\Exception $e) {
-            Log::error('CompraController@destroy: ' . $e->getMessage(), ['user' => Auth::id()]);
-            return response()->json(['success' => false, 'message' => 'Error al eliminar la compra.'], 500);
-        }
-    }
+            Log::error("CompraController@{$accion}: ".$e->getMessage(), ['user' => Auth::id()]);
 
-    public function getParaEditar(Compra $compra)
-    {
-        if ($compra->estado !== 'borrador') {
-            return response()->json(['success' => false, 'message' => 'Solo se pueden editar borradores.'], 422);
+            return $this->rechazar($request, "Error al {$accion} la compra.", 500);
         }
 
-        $compra->load(['detalles.insumo', 'proveedor.persona']);
-        $compra->proveedor?->loadCount('compras')->loadMax('compras', 'fecha_compra');
+        $texto = $mensaje instanceof \Closure ? $mensaje() : $mensaje;
 
-        return response()->json([
-            'id'                => $compra->id,
-            'proveedor_id'      => $compra->proveedor_id,
-            'numero_factura'    => $compra->numero_factura,
-            'fecha_compra'      => $compra->fecha_compra?->format('Y-m-d'),
-            'tasa_cambio'       => (float) $compra->tasa_cambio,
-            'observaciones'     => $compra->observaciones,
-            'proveedor_data'    => [
-                'id'     => $compra->proveedor_id,
-                'nombre' => $compra->proveedor?->nombre_completo ?? '—',
-                'doc'    => $compra->proveedor?->documento ?? '',
-                'tel'    => $compra->proveedor?->telefono_unificado ?? '',
-                'email'  => $compra->proveedor?->email_unificado ?? '',
-                'tipo'   => $compra->proveedor?->tipo_proveedor ?? '',
-                'compras' => $compra->proveedor?->compras_count ?? 0,
-                'ultima'  => $compra->proveedor?->compras_max_fecha_compra,
-            ],
-            'items'             => $compra->detalles->map(fn($d) => [
-                'insumo_id'         => $d->insumo_id,
-                'nombre'            => $d->insumo?->nombre,
-                'cantidad'          => $d->cantidad,
-                'costo_unitario'    => $d->costo_unitario,
-                'costo_unitario_bs' => (float) $d->costo_unitario_bs,
-                'aplica_iva'        => (bool) $d->aplica_iva,
-                'subtotal'          => $d->subtotal,
-            ]),
-        ]);
-    }
-
-    public function getDetalle(Compra $compra)
-    {
-        $compra->load(['proveedor.persona', 'detalles.insumo', 'registradoPor']);
-
-        $provName = $compra->proveedor?->nombre_completo ?? '—';
-        $provIni  = collect(explode(' ', trim($provName)))
-            ->filter()->take(2)
-            ->map(fn($w) => mb_strtoupper(mb_substr($w, 0, 1)))
-            ->implode('') ?: '—';
-
-        // Montos en bolívares (lo efectivamente pagado), derivados del costo en
-        // Bs tecleado por línea. El IVA en Bs se aplica solo a la base gravada.
-        $ivaPct      = (float) $compra->iva_porcentaje;
-        $subtotalBs  = $compra->detalles->sum(fn($d) => (float) $d->cantidad * (float) $d->costo_unitario_bs);
-        $baseGravBs  = $compra->detalles->where('aplica_iva', true)
-            ->sum(fn($d) => (float) $d->cantidad * (float) $d->costo_unitario_bs);
-        $ivaBs       = round($baseGravBs * $ivaPct / 100, 2);
-
-        return response()->json([
-            'id'               => $compra->id,
-            'estado'           => $compra->estado,
-            'numero_factura'   => $compra->numero_factura ?? 'S/N',
-            'fecha_compra'     => $compra->fecha_compra?->format('d/m/Y') ?? '—',
-            'observaciones'    => $compra->observaciones,
-            'subtotal'         => number_format($compra->subtotal, 2, ',', '.'),
-            'iva'              => number_format($compra->iva, 2, ',', '.'),
-            'iva_porcentaje'   => rtrim(rtrim(number_format($compra->iva_porcentaje, 2, '.', ''), '0'), '.'),
-            'total'            => number_format($compra->total, 2, ',', '.'),
-            // Bolívares (formato venezolano: miles con '.', decimales con ',')
-            'tasa_cambio'      => $compra->tasa_cambio ? number_format($compra->tasa_cambio, 4, ',', '.') : null,
-            // Fecha de la tasa BCV aplicada (null si el valor no coincide con
-            // la tasa vigente a la fecha de la compra, p. ej. tasa manual).
-            'tasa_fecha_fmt'   => TasaCambio::fechaParaValor($compra->tasa_cambio, $compra->fecha_compra?->toDateString())?->format('d/m/Y'),
-            'subtotal_bs'      => number_format($subtotalBs, 2, ',', '.'),
-            'iva_bs'           => number_format($ivaBs, 2, ',', '.'),
-            'total_bs'         => number_format($subtotalBs + $ivaBs, 2, ',', '.'),
-            'created_at'       => $compra->created_at?->format('d/m/Y H:i') ?? '—',
-            'proveedor'        => [
-                'nombre' => $provName,
-                'ini'    => $provIni,
-                'tipo'   => match ($compra->proveedor?->tipo_proveedor) {
-                    'natural'  => 'Natural',
-                    'juridico' => 'Jurídico',
-                    default    => 'Proveedor',
-                },
-                'doc'   => $compra->proveedor?->documento ?? '',
-                'tel'   => $compra->proveedor?->telefono_unificado ?? '',
-                'email' => $compra->proveedor?->email_unificado ?? '',
-            ],
-            'registrado_por' => [
-                'name'       => $compra->registradoPor?->name ?? 'Sistema',
-                'avatar_url' => $compra->registradoPor?->avatar_url ?? '',
-            ],
-            'items' => $compra->detalles->map(fn($d) => [
-                'nombre'            => $d->insumo?->nombre ?? 'N/A',
-                'codigo'            => $d->insumo?->codigo,
-                'tipo'              => $d->insumo?->tipo ?? '—',
-                'unidad'            => $d->insumo?->unidad_medida ?? '—',
-                'cantidad'          => number_format($d->cantidad, 2, ',', '.'),
-                'costo_unitario'    => number_format($d->costo_unitario, 2, ',', '.'),
-                'costo_unitario_bs' => number_format($d->costo_unitario_bs, 2, ',', '.'),
-                'subtotal_bs'       => number_format((float) $d->cantidad * (float) $d->costo_unitario_bs, 2, ',', '.'),
-                'aplica_iva'        => (bool) $d->aplica_iva,
-                'subtotal'          => number_format($d->subtotal, 2, ',', '.'),
-            ]),
-        ]);
-    }
-
-    public function getCompras(Request $request)
-    {
-        $query = Compra::with(['proveedor.persona', 'registradoPor', 'anuladoPor'])
-            ->select('compra.*');
-
-        if ($request->filled('filter_proveedor_id')) {
-            $query->where('proveedor_id', $request->filter_proveedor_id);
-        }
-
-        // Vista "anuladas" (píldora del header) vs vista de activas (default).
-        if ($request->boolean('ver_anuladas')) {
-            $query->where('estado', 'anulada');
-        } elseif (in_array($request->filter_estado, ['recibida', 'borrador'], true)) {
-            // Sub-filtro opcional dentro de las activas.
-            $query->where('estado', $request->filter_estado);
-        } else {
-            $query->whereIn('estado', ['borrador', 'recibida']);
-        }
-        if ($request->filled('filter_fecha_desde')) {
-            $query->whereDate('fecha_compra', '>=', $request->filter_fecha_desde);
-        }
-        if ($request->filled('filter_fecha_hasta')) {
-            $query->whereDate('fecha_compra', '<=', $request->filter_fecha_hasta);
-        }
-
-        // El orden lo gobierna DataTables (encabezados clicables). El default
-        // "más reciente primero" se declara en el front (order: [[0,'desc']]).
-        return DataTables::of($query)
-            // Búsqueda "contiene" (LIKE %texto%) sobre TODAS las columnas visibles
-            // del listado: N° de factura, proveedor (nombre/razón social y
-            // documento), fecha (formato d/m/Y como se muestra), total, estado
-            // (texto del badge: recibida/borrador/anulada) e id. Sobrescribe POR
-            // COMPLETO el buscador global de Yajra (sin pasar el 2º arg / false):
-            // si se pasara `true`, Yajra correría además su búsqueda automática
-            // sobre la columna derivada `proveedor_nombre` —que no existe en la
-            // tabla `compra`— y generaría un SQL inválido que rompe el listado.
-            ->filter(function ($query) use ($request) {
-                $keyword = trim((string) $request->input('search.value'));
-                if ($keyword === '') {
-                    return;
-                }
-                $query->where(function ($q) use ($keyword) {
-                    $q->where('compra.numero_factura', 'like', "%{$keyword}%")
-                      ->orWhere('compra.id', 'like', "%{$keyword}%")
-                      ->orWhere('compra.total', 'like', "%{$keyword}%")
-                      ->orWhere('compra.estado', 'like', "%{$keyword}%")
-                      ->orWhereRaw("DATE_FORMAT(compra.fecha_compra, '%d/%m/%Y') like ?", ["%{$keyword}%"])
-                      ->orWhereHas('proveedor.persona', function ($p) use ($keyword) {
-                          $p->where('nombre', 'like', "%{$keyword}%")
-                            ->orWhereRaw("CONCAT(tipo_documento, documento_identidad) like ?", ["%{$keyword}%"]);
-                      });
-                });
-            })
-            ->addColumn('proveedor_nombre', fn($c) => $c->proveedor?->nombre_completo ?? 'N/A')
-            ->addColumn('registrado_por', fn($c) => $c->registradoPor?->name ?? 'Sistema')
-            ->addColumn('fecha_formateada', fn($c) => $c->fecha_compra?->format('d/m/Y') ?? '')
-            ->addColumn('estado_badge', function ($c) {
-                $map   = ['recibida' => 'success', 'borrador' => 'warning', 'anulada' => 'danger'];
-                $icons = ['recibida' => 'ri-checkbox-circle-line', 'borrador' => 'ri-draft-line', 'anulada' => 'ri-close-circle-line'];
-                $color = $map[$c->estado] ?? 'info';
-                $icon  = $icons[$c->estado] ?? 'ri-question-line';
-                $html  = '<span class="badge badge-soft-' . $color . '"><i class="' . $icon . ' me-1"></i>' . ucfirst($c->estado) . '</span>';
-
-                if ($c->estado === 'anulada' && $c->anuladoPor) {
-                    $nombre = e($c->anuladoPor->name);
-                    $fecha  = $c->fecha_anulacion?->format('d/m/Y H:i') ?? '';
-                    $html  .= '<div class="small text-muted mt-1">Anulada por: ' . $nombre;
-                    if ($fecha) {
-                        $html .= '<br><span class="text-muted">' . $fecha . '</span>';
-                    }
-                    $html .= '</div>';
-                }
-
-                return $html;
-            })
-            ->addColumn('actions', function ($c) {
-                // Botón Ver siempre visible
-                $btn = '<div class="d-flex gap-1 justify-content-center align-items-center">';
-                $btn .= '<button class="btn btn-sm btn-soft-info ver-btn" data-id="' . $c->id . '" title="Ver detalle"><i class="ri-eye-fill"></i></button>';
-
-                $items = '';
-
-                // PDF (Ver PDF)
-                $items .= '<li><a href="' . route('compras.pdf', $c->id) . '" target="_blank" class="dropdown-item act-item act-pdf" title="Ver PDF"><span class="act-ic"><i class="ri-file-pdf-fill"></i></span>Ver PDF</a></li>';
-
-                if ($c->estado === 'borrador') {
-                    $items .= '<li><button type="button" class="dropdown-item act-item act-edit editar-btn" data-id="' . $c->id . '" title="Editar borrador"><span class="act-ic"><i class="ri-pencil-fill"></i></span>Editar</button></li>';
-                    $items .= '<li><button type="button" class="dropdown-item act-item act-primary procesar-btn" data-id="' . $c->id . '" title="Procesar — actualiza stock"><span class="act-ic"><i class="ri-check-double-line"></i></span>Procesar</button></li>';
-                    $items .= '<li><button type="button" class="dropdown-item act-item act-del eliminar-compra-btn" data-id="' . $c->id . '" title="Eliminar borrador"><span class="act-ic"><i class="ri-delete-bin-line"></i></span>Eliminar</button></li>';
-                }
-
-                if ($c->estado === 'recibida') {
-                    $items .= '<li><button type="button" class="dropdown-item act-item act-del anular-btn" data-id="' . $c->id . '" title="Anular — revierte stock"><span class="act-ic"><i class="ri-close-circle-line"></i></span>Anular</button></li>';
-                }
-
-                if ($c->estado === 'anulada') {
-                    if ($c->clonada) {
-                        $items .= '<li><button type="button" class="dropdown-item act-item act-primary" disabled title="Esta compra ya fue clonada"><span class="act-ic"><i class="ri-file-copy-line"></i></span>Clonada</button></li>';
-                    } else {
-                        $items .= '<li><button type="button" class="dropdown-item act-item act-primary clonar-btn" data-id="' . $c->id . '" title="Clonar como nuevo borrador"><span class="act-ic"><i class="ri-file-copy-line"></i></span>Clonar</button></li>';
-                    }
-                }
-
-                if (!empty($items)) {
-                    $btn .= '<div class="dropdown d-inline-block">';
-                    $btn .= '<button class="btn btn-sm btn-soft-secondary" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Más acciones"><i class="ri-more-2-fill"></i></button>';
-                    $btn .= '<ul class="dropdown-menu dropdown-menu-end actions-menu">' . $items . '</ul>';
-                    $btn .= '</div>';
-                }
-
-                $btn .= '</div>';
-                return $btn;
-            })
-            ->rawColumns(['estado_badge', 'actions'])
-            ->make(true);
+        return $this->responder($request, $texto, ['success' => true, 'message' => $texto, ...($extra ? $extra() : [])]);
     }
 
     public function reportePdf(Request $request)

@@ -58,6 +58,10 @@ test('pestaña de existencias con filtro de alerta, e historial del insumo', asy
 test('alertas y rotación', async ({ page }) => {
   await page.goto('/movimiento-insumo/alertas');
   await expect(page.getByRole('row', { name: /Hilo Mov E2E/ })).toBeVisible();
+  // Reponer: abre una compra prellenada (mínimo 15 − existencia 10 = 5).
+  await page.getByRole('button', { name: 'Comprar lo que falta' }).click();
+  await expect(page).toHaveURL(/\/compras\/crear\?prefill=1/);
+  await expect(page.getByLabel('Cantidad de Hilo Mov E2E')).toHaveValue('5');
   await page.goto('/movimiento-insumo/rotacion');
   await expect(page.getByRole('row', { name: /Hilo Mov E2E/ })).toContainText('2 Cono');
 });

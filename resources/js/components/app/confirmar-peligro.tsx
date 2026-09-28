@@ -19,10 +19,12 @@ interface Props {
      */
     abierto?: boolean;
     onCerrar?: () => void;
+    /** false: confirmación de una acción que no destruye (p. ej. procesar una compra). */
+    destructiva?: boolean;
 }
 
 /** Confirmación para acciones destructivas (eliminar, anular). Reemplaza al modal danger + SweetAlert. */
-export function ConfirmarPeligro({ children, titulo, descripcion, accion = 'Eliminar', onConfirmar, abierto, onCerrar }: Props) {
+export function ConfirmarPeligro({ children, titulo, descripcion, accion = 'Eliminar', onConfirmar, abierto, onCerrar, destructiva = true }: Props) {
     const controlado = abierto !== undefined;
 
     return (
@@ -37,7 +39,7 @@ export function ConfirmarPeligro({ children, titulo, descripcion, accion = 'Elim
                     <AlertDialogCancel>Cancelar</AlertDialogCancel>
                     <AlertDialogAction
                         onClick={onConfirmar}
-                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        className={destructiva ? 'bg-destructive text-destructive-foreground hover:bg-destructive/90' : undefined}
                     >
                         {accion}
                     </AlertDialogAction>
