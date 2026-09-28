@@ -14,14 +14,14 @@
 |       [
 |           'titulo'      => 'Nombre de la seccion',
 |           'descripcion' => 'Que agrupa',
-|           'icono'       => 'ri-...',            // Remix Icon del grupo
+|           'icono'       => 'Database',          // ícono lucide (ver ICONOS en icono.tsx)
 |           'color'       => 'navy|emerald|sky',  // identidad de la seccion de origen
 |                                                 // (navy=Maestros, emerald=Operativa, sky=Reportes)
 |           'reportes'    => [
 |               [
 |                   'titulo'      => 'Nombre humano del reporte',
 |                   'descripcion' => 'Que contiene / para que sirve',
-|                   'icono'       => 'ri-...',
+|                   'icono'       => 'FileText',
 |                   'ruta'        => 'nombre.de.ruta',  // route() name
 |                   'formato'     => 'pdf' | 'vista',   // pdf abre en pestana nueva
 |               ],
@@ -43,48 +43,48 @@ return [
         [
             'titulo'      => 'Gestión general',
             'descripcion' => 'Maestros y catálogos: personas, productos e insumos registrados.',
-            'icono'       => 'ri-database-2-line',
+            'icono'       => 'Database',
             'color'       => 'navy',
             'reportes'    => [
                 [
                     'titulo'      => 'Usuarios del sistema',
                     'descripcion' => 'Cuentas registradas con su rol y estatus.',
-                    'icono'       => 'ri-shield-user-line',
+                    'icono'       => 'ShieldUser',
                     'ruta'        => 'users.reporte.pdf',
                     'formato'     => 'pdf',
                 ],
                 [
                     'titulo'      => 'Clientes',
                     'descripcion' => 'Listado general de clientes y sus datos de contacto.',
-                    'icono'       => 'ri-user-3-line',
+                    'icono'       => 'UserRound',
                     'ruta'        => 'clientes.reporte.pdf',
                     'formato'     => 'pdf',
                 ],
                 [
                     'titulo'      => 'Empleados',
                     'descripcion' => 'Personal registrado con departamento y cargo.',
-                    'icono'       => 'ri-team-line',
+                    'icono'       => 'Users',
                     'ruta'        => 'empleados.reporte.pdf',
                     'formato'     => 'pdf',
                 ],
                 [
                     'titulo'      => 'Proveedores',
                     'descripcion' => 'Proveedores activos con documento y contacto.',
-                    'icono'       => 'ri-truck-line',
+                    'icono'       => 'Truck',
                     'ruta'        => 'proveedores.reporte.pdf',
                     'formato'     => 'pdf',
                 ],
                 [
                     'titulo'      => 'Catálogo de productos',
                     'descripcion' => 'Tipos de producto ofrecidos y sus precios base.',
-                    'icono'       => 'ri-t-shirt-line',
+                    'icono'       => 'Shirt',
                     'ruta'        => 'productos.reporte.pdf',
                     'formato'     => 'pdf',
                 ],
                 [
                     'titulo'      => 'Insumos',
                     'descripcion' => 'Materia prima registrada con stock y costos.',
-                    'icono'       => 'ri-archive-line',
+                    'icono'       => 'Archive',
                     'ruta'        => 'insumos.reporte.pdf',
                     'formato'     => 'pdf',
                 ],
@@ -94,48 +94,48 @@ return [
         [
             'titulo'      => 'Gestión operativa',
             'descripcion' => 'Transacciones del negocio: ventas, producción, compras e inventario.',
-            'icono'       => 'ri-settings-3-line',
+            'icono'       => 'Settings',
             'color'       => 'emerald',
             'reportes'    => [
                 [
                     'titulo'      => 'Cotizaciones',
                     'descripcion' => 'Cotizaciones emitidas con estado y montos.',
-                    'icono'       => 'ri-file-list-3-line',
+                    'icono'       => 'FileText',
                     'ruta'        => 'cotizaciones.reporte.pdf',
                     'formato'     => 'pdf',
                 ],
                 [
                     'titulo'      => 'Pedidos',
                     'descripcion' => 'Pedidos registrados con avance de pago y entrega.',
-                    'icono'       => 'ri-shopping-bag-3-line',
+                    'icono'       => 'ShoppingBag',
                     'ruta'        => 'pedidos.reporte.pdf',
                     'formato'     => 'pdf',
                 ],
                 [
                     'titulo'      => 'Órdenes de producción',
                     'descripcion' => 'Órdenes con estado, cantidades y responsables.',
-                    'icono'       => 'ri-hammer-line',
+                    'icono'       => 'Hammer',
                     'ruta'        => 'ordenes.reporte.pdf',
                     'formato'     => 'pdf',
                 ],
                 [
                     'titulo'      => 'Control de calidad',
                     'descripcion' => 'Inspecciones realizadas con veredicto y motivos.',
-                    'icono'       => 'ri-checkbox-multiple-line',
+                    'icono'       => 'ShieldCheck',
                     'ruta'        => 'calidad.reporte.pdf',
                     'formato'     => 'pdf',
                 ],
                 [
                     'titulo'      => 'Compras',
                     'descripcion' => 'Compras de insumos con proveedor, estado y montos.',
-                    'icono'       => 'ri-shopping-cart-2-line',
+                    'icono'       => 'ShoppingCart',
                     'ruta'        => 'compras.reporte.pdf',
                     'formato'     => 'pdf',
                 ],
                 [
                     'titulo'      => 'Movimientos de insumos',
                     'descripcion' => 'Entradas y salidas de inventario con existencias.',
-                    'icono'       => 'ri-arrow-left-right-line',
+                    'icono'       => 'ArrowLeftRight',
                     'ruta'        => 'movimiento-insumo.reporte.pdf',
                     'formato'     => 'pdf',
                 ],
@@ -145,34 +145,34 @@ return [
         [
             'titulo'      => 'Análisis y rendimiento',
             'descripcion' => 'Consultas analíticas con gráficos e indicadores.',
-            'icono'       => 'ri-line-chart-line',
+            'icono'       => 'ChartLine',
             'color'       => 'sky',
             'reportes'    => [
                 [
                     'titulo'      => 'Producción',
                     'descripcion' => 'Órdenes por estado y producción mensual.',
-                    'icono'       => 'ri-building-2-line',
+                    'icono'       => 'Factory',
                     'ruta'        => 'reportes.produccion',
                     'formato'     => 'vista',
                 ],
                 [
                     'titulo'      => 'Eficiencia',
                     'descripcion' => 'Pulso de producción por pedido, con detalle por orden.',
-                    'icono'       => 'ri-speed-line',
+                    'icono'       => 'Gauge',
                     'ruta'        => 'reportes.eficiencia',
                     'formato'     => 'vista',
                 ],
                 [
                     'titulo'      => 'Consumo de insumos',
                     'descripcion' => 'Insumos más utilizados y consumo por tipo.',
-                    'icono'       => 'ri-stack-line',
+                    'icono'       => 'Layers',
                     'ruta'        => 'reportes.insumos',
                     'formato'     => 'vista',
                 ],
                 [
                     'titulo'      => 'Rendimiento de empleados',
                     'descripcion' => 'Producción y eficiencia por persona.',
-                    'icono'       => 'ri-team-line',
+                    'icono'       => 'Users',
                     'ruta'        => 'reportes.empleados',
                     'formato'     => 'vista',
                 ],

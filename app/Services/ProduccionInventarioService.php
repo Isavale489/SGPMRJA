@@ -126,6 +126,10 @@ class ProduccionInventarioService
                     'motivo'          => 'Reposición por cancelación OP #' . $orden->id,
                     'created_by'      => $userId,
                 ]);
+
+                // El material volvió al inventario: ya no cuenta como consumido
+                // (lo lee el reporte de Consumo de Insumos).
+                $orden->insumos()->updateExistingPivot($insumo->id, ['cantidad_utilizada' => 0]);
             }
         });
     }

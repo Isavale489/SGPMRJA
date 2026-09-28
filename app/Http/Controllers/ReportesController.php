@@ -9,6 +9,8 @@ use App\Models\OrdenProduccion;
 use App\Models\Pedido;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
+use Inertia\Inertia;
+use Inertia\Response;
 
 class ReportesController extends Controller
 {
@@ -33,7 +35,7 @@ class ReportesController extends Controller
         return $intentos > 0 ? round($producido / $intentos * 100, 2) : null;
     }
 
-    public function produccion()
+    public function produccion(): Response
     {
         $ordenesPorEstado = OrdenProduccion::select('estado', DB::raw('count(*) as total'))
             ->groupBy('estado')
@@ -59,10 +61,21 @@ class ReportesController extends Controller
                 return $fila;
             });
 
-        return view('admin.reportes.produccion', compact('ordenesPorEstado', 'produccionMensual'));
+        return Inertia::render('Reportes/Produccion', [
+            'estados' => $ordenesPorEstado->map(fn ($o) => ['estado' => $o->estado, 'total' => (int) $o->total])->values()->all(),
+            // Del más reciente al más antiguo (la tabla); el gráfico lo invierte.
+            'mensual' => $produccionMensual->map(fn ($f) => [
+                'anio' => (int) $f->anio,
+                'mes' => (int) $f->mes,
+                'mes_nombre' => $f->mes_nombre,
+                'producido' => (int) $f->total_producido,
+                'defectuoso' => (int) $f->total_defectuoso,
+                'eficiencia' => $f->eficiencia,
+            ])->values()->all(),
+        ]);
     }
 
-    public function eficiencia()
+    public function eficiencia(): Response
     {
         // Eficiencia agregada POR PEDIDO (unidad de negocio) con drill-down a
         // sus órdenes. La eficiencia del pedido es PONDERADA por unidades
@@ -83,7 +96,7 @@ class ReportesController extends Controller
                 $defectuoso = (int) $grupo->sum('cantidad_defectuosa');
 
                 return [
-                    'pedido_id'     => $pedidoId,
+                    'pedido_id'     => $pedidoId === '' ? null : (int) $pedidoId, // '' = órdenes manuales
                     'cliente'       => $grupo->first()->pedido?->cliente?->persona?->nombre_completo ?? 'Sin cliente',
                     'total_ordenes' => $grupo->count(),
                     'solicitado'    => (int) $grupo->sum('cantidad_solicitada'),
@@ -115,14 +128,21 @@ class ReportesController extends Controller
             'pedidos_produccion' => $eficienciaPorPedido->whereNotNull('eficiencia')->count(),
         ];
 
-        return view('admin.reportes.eficiencia', compact('eficienciaPorPedido', 'kpis'));
+        return Inertia::render('Reportes/Eficiencia', ['pedidos' => $eficienciaPorPedido->all(), 'kpis' => $kpis]);
     }
 
-    public function insumos()
+    /**
+     * Consumo real: lo que las órdenes descontaron del inventario
+     * (cantidad_utilizada). No cuentan las órdenes eliminadas ni las
+     * canceladas en Pendiente: su material volvió al inventario.
+     */
+    public function insumos(): Response
     {
         $consumoInsumos = DB::table('detalle_orden_insumo')
             ->join('insumo', 'detalle_orden_insumo.insumo_id', '=', 'insumo.id')
             ->join('orden_produccion', 'detalle_orden_insumo.orden_produccion_id', '=', 'orden_produccion.id')
+            ->whereNull('orden_produccion.deleted_at')
+            ->where('detalle_orden_insumo.cantidad_utilizada', '>', 0)
             ->select(
                 'insumo.id',
                 'insumo.nombre',
@@ -135,10 +155,19 @@ class ReportesController extends Controller
             ->orderBy('total_utilizado', 'desc')
             ->get();
 
-        return view('admin.reportes.insumos', compact('consumoInsumos'));
+        return Inertia::render('Reportes/Insumos', [
+            'insumos' => $consumoInsumos->map(fn ($i) => [
+                'id' => $i->id,
+                'nombre' => $i->nombre,
+                'tipo' => $i->tipo,
+                'unidad' => $i->unidad_medida,
+                'total' => round((float) $i->total_utilizado, 2),
+                'ordenes' => (int) $i->total_ordenes,
+            ])->all(),
+        ]);
     }
 
-    public function empleados()
+    public function empleados(): Response
     {
         // Reparto real por persona (Brecha B): el pivot orden_produccion_empleado
         // guarda cantidad asignada/producida/defectuosa POR EMPLEADO. Las órdenes
@@ -197,7 +226,7 @@ class ReportesController extends Controller
             ->sortByDesc('total_producido')
             ->values();
 
-        return view('admin.reportes.empleados', compact('rendimientoEmpleados'));
+        return Inertia::render('Reportes/Empleados', ['empleados' => $rendimientoEmpleados->all()]);
     }
 
     /**
@@ -206,7 +235,7 @@ class ReportesController extends Controller
      * config/modulos.php); aquí solo se filtra por existencia de la ruta y
      * por el permiso que esa ruta exige según el registry de módulos.
      */
-    public function general()
+    public function general(): Response
     {
         $grupos = collect(config('reportes.grupos', []))
             ->map(function ($grupo) {
@@ -241,6 +270,13 @@ class ReportesController extends Controller
                 ->count(),
         ];
 
-        return view('admin.reportes.general', compact('grupos', 'kpis'));
+        // Las vistas de reportes ya son Inertia (enlace sin recarga); los PDF abren en otra pestaña.
+        $grupos = $grupos->map(function ($g) {
+            $g['reportes'] = array_map(fn ($r) => [...$r, 'url' => route($r['ruta'], absolute: false)], $g['reportes']);
+
+            return $g;
+        });
+
+        return Inertia::render('Reportes/General', ['grupos' => $grupos->all(), 'kpis' => $kpis]);
     }
 }
