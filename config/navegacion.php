@@ -79,11 +79,11 @@ return [
         'titulo' => 'Consultas y Reportes',
         'icono' => 'ChartColumn',
         'items' => [
-            ['titulo' => 'Producción', 'icono' => 'Factory', 'ruta' => 'reportes.produccion', 'permiso' => 'reportes.ver'],
-            ['titulo' => 'Eficiencia', 'icono' => 'Gauge', 'ruta' => 'reportes.eficiencia', 'permiso' => 'reportes.ver'],
-            ['titulo' => 'Consumo de Insumos', 'icono' => 'Layers', 'ruta' => 'reportes.insumos', 'permiso' => 'reportes.ver'],
-            ['titulo' => 'Rendimiento de Empleados', 'icono' => 'Users', 'ruta' => 'reportes.empleados', 'permiso' => 'reportes.ver'],
-            ['titulo' => 'Reportes Generales', 'icono' => 'FileChartColumn', 'ruta' => 'reportes.general', 'permiso' => 'reportes.ver'],
+            ['titulo' => 'Producción', 'icono' => 'Factory', 'ruta' => 'reportes.produccion', 'permiso' => 'reportes.ver', 'inertia' => true],
+            ['titulo' => 'Eficiencia', 'icono' => 'Gauge', 'ruta' => 'reportes.eficiencia', 'permiso' => 'reportes.ver', 'inertia' => true],
+            ['titulo' => 'Consumo de Insumos', 'icono' => 'Layers', 'ruta' => 'reportes.insumos', 'permiso' => 'reportes.ver', 'inertia' => true],
+            ['titulo' => 'Rendimiento de Empleados', 'icono' => 'Users', 'ruta' => 'reportes.empleados', 'permiso' => 'reportes.ver', 'inertia' => true],
+            ['titulo' => 'Reportes Generales', 'icono' => 'FileChartColumn', 'ruta' => 'reportes.general', 'permiso' => 'reportes.ver', 'inertia' => true],
         ],
     ],
 
