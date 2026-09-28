@@ -81,8 +81,8 @@ return [
             'pdf'       => 'Exportar PDF',
         ],
         'rutas' => [
-            'users.index|users.show|users.data'  => 'ver',
-            'users.create|users.store|users.edit|users.update|users.destroy|users.restore|users.check-email|users.unlock-recovery|users.reset-password' => 'gestionar',
+            'users.index' => 'ver',
+            'users.store|users.update|users.destroy|users.restore|users.check-email|users.unlock-recovery|users.reset-password' => 'gestionar',
             'users.reporte.pdf' => 'pdf',
         ],
     ],

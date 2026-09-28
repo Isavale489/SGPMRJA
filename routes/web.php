@@ -82,9 +82,8 @@ Route::middleware(['auth', 'throttle:60,1', 'active.user', 'recovery.questions.r
         Route::delete('configuracion-impuestos/{impuesto}', [ImpuestoController::class, 'destroy'])->name('impuestos.destroy');
 
         // Usuarios
-        Route::resource('users', UserController::class)->except(['create']);
+        Route::resource('users', UserController::class)->only(['index', 'store', 'update', 'destroy']);
         Route::post('users/{id}/restore', [UserController::class, 'restore'])->name('users.restore');
-        Route::get('users-data', [UserController::class, 'getUsers'])->name('users.data');
         Route::get('users/reporte/pdf', [UserController::class, 'reportePdf'])->name('users.reporte.pdf');
         Route::get('users-check-email', [UserController::class, 'checkEmail'])->name('users.check-email');
         Route::post('users/{id}/unlock-recovery', [UserController::class, 'unlockRecovery'])->name('users.unlock-recovery');
