@@ -104,14 +104,11 @@ Route::middleware(['auth', 'throttle:60,1', 'active.user', 'recovery.questions.r
 
         // Empleados
         // 'create' excluido: el alta se hace por el modal del index (no hay página aparte)
-        Route::resource('empleados', EmpleadoController::class)->except(['create']);
+        Route::resource('empleados', EmpleadoController::class)->only(['index', 'store', 'update', 'destroy']);
         Route::post('empleados/{id}/restore', [EmpleadoController::class, 'restore'])->name('empleados.restore');
-        Route::get('empleados-data', [EmpleadoController::class, 'getEmpleados'])->name('empleados.data');
         Route::get('empleados-check-documento', [EmpleadoController::class, 'checkDocumento'])->name('empleados.check-documento');
         Route::get('empleados-check-email', [EmpleadoController::class, 'checkEmail'])->name('empleados.check-email');
-        Route::get('empleados-check-codigo', [EmpleadoController::class, 'checkCodigo'])->name('empleados.check-codigo');
         Route::get('/empleados/reporte/pdf', [EmpleadoController::class, 'reportePdf'])->name('empleados.reporte.pdf');
-        Route::get('empleados-get-cargos', [EmpleadoController::class, 'getCargos'])->name('empleados.get-cargos');
 
         // Departamentos (CRUD — maestro)
         Route::get('departamentos', [DepartamentoController::class, 'index'])->name('departamentos.index');

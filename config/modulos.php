@@ -109,8 +109,8 @@ return [
             'pdf'       => 'Exportar PDF',
         ],
         'rutas' => [
-            'empleados.index|empleados.show|empleados.data' => 'ver',
-            'empleados.create|empleados.store|empleados.edit|empleados.update|empleados.destroy|empleados.restore|empleados.check-documento|empleados.check-email|empleados.check-codigo' => 'gestionar',
+            'empleados.index' => 'ver',
+            'empleados.store|empleados.update|empleados.destroy|empleados.restore|empleados.check-documento|empleados.check-email' => 'gestionar',
             'empleados.reporte.pdf' => 'pdf',
         ],
     ],

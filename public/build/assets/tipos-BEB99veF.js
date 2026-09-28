@@ -1,0 +1,1 @@
+var e=[{valor:`natural`,etiqueta:`Natural`},{valor:`juridico`,etiqueta:`Jurídico`},{valor:`gubernamental`,etiqueta:`Gubernamental`}],t={natural:`Natural`,juridico:`Jurídico`,gubernamental:`Gubernamental`};export{e as n,t};
