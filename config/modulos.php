@@ -383,7 +383,7 @@ return [
         'profile.edit',
         'profile.update',
         'profile.recovery-questions.update',
-        'profile.destroy',
+        'profile.avatar.update',
         'logout',
         'personas.search',
         'clientes.search',
