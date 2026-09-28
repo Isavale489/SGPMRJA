@@ -40,11 +40,10 @@ export function MenuUsuario() {
                         </Link>
                     </DropdownMenuItem>
                 )}
-                {/* /profile sigue en Blade → enlace normal. */}
                 <DropdownMenuItem asChild>
-                    <a href="/profile">
+                    <Link href="/profile">
                         <UserRound /> Mi perfil
-                    </a>
+                    </Link>
                 </DropdownMenuItem>
                 {/* Form clásico, no <Link>: /logout redirige a una página Blade y
                     Inertia mostraría ese HTML como error dentro de un modal. */}
