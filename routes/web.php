@@ -270,16 +270,11 @@ Route::middleware(['auth', 'throttle:60,1', 'active.user', 'recovery.questions.r
         // Compras
         Route::get('compras', [CompraController::class, 'index'])->name('compras.index');
         Route::post('compras', [CompraController::class, 'store'])->name('compras.store');
+        Route::get('compras/crear', [CompraController::class, 'create'])->name('compras.create');
+        Route::get('compras/{compra}/editar', [CompraController::class, 'edit'])->name('compras.edit');
         Route::put('compras/{compra}', [CompraController::class, 'update'])->name('compras.update');
-        Route::get('compras/data', [CompraController::class, 'getCompras'])->name('compras.data');
         Route::get('compras/tasa', [CompraController::class, 'getTasa'])->name('compras.tasa');
-        // Panel de existencias dentro de /compras: reusa el data-source de
-        // movimiento-insumo, pero con nombre de ruta propio para que el
-        // permiso 'compras.ver' lo cubra (CheckPermiso mapea por nombre).
-        Route::get('compras/existencias-data', [MovimientoInsumoController::class, 'getExistencias'])->name('compras.existencias.data');
         Route::get('compras/reporte/pdf', [CompraController::class, 'reportePdf'])->name('compras.reporte.pdf');
-        Route::get('compras/{compra}/editar-datos', [CompraController::class, 'getParaEditar'])->name('compras.editar-datos');
-        Route::get('compras/{compra}/detalle', [CompraController::class, 'getDetalle'])->name('compras.detalle');
         Route::get('compras/{compra}/pdf', [CompraController::class, 'compraPdf'])->name('compras.pdf');
         Route::patch('compras/{compra}/procesar', [CompraController::class, 'procesar'])->name('compras.procesar');
         Route::patch('compras/{compra}/anular', [CompraController::class, 'anular'])->name('compras.anular');

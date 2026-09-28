@@ -118,8 +118,10 @@ class InsumoController extends Controller
         // Todo insumo nace habilitado; el estatus se gobierna con Inhabilitar/Habilitar.
         $insumo = Insumo::create([...$request->datos(), 'codigo' => $request->validated('codigo'), 'estado' => true]);
 
-        // Compras y Movimientos (alta rápida, jQuery) leen `insumo`.
-        return $this->responder($request, 'Insumo creado exitosamente.', ['success' => 'Insumo creado exitosamente.', 'insumo' => $insumo]);
+        // Alta rápida desde Compras: el formulario de la compra recibe el insumo nuevo.
+        return $this->responder($request, 'Insumo creado exitosamente.', ['success' => 'Insumo creado exitosamente.', 'insumo' => $insumo], [
+            'insumo' => ['id' => $insumo->id, 'nombre' => $insumo->nombre, 'codigo' => $insumo->codigo, 'tipo' => $insumo->tipo, 'unidad' => $insumo->unidad_medida, 'costo' => (float) $insumo->costo_unitario, 'aplica_iva' => (bool) $insumo->aplica_iva, 'inventariable' => (bool) $insumo->is_inventoriable, 'stock' => (float) $insumo->stock_actual],
+        ]);
     }
 
     public function update(GuardarInsumoRequest $request, $id)

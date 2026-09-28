@@ -321,16 +321,16 @@ return [
     'compras' => [
         'nombre'   => 'Compras',
         'acciones' => [
-            'ver'       => 'Ver listado y detalle',
-            'gestionar' => 'Crear y editar borradores',
+            'ver'       => 'Ver listado, detalle y existencias',
+            'gestionar' => 'Crear, editar y eliminar borradores',
             'procesar'  => 'Procesar (afecta inventario)',
             'anular'    => 'Anular',
             'clonar'    => 'Clonar',
             'pdf'       => 'Exportar PDF',
         ],
         'rutas' => [
-            'compras.index|compras.data|compras.show|compras.detalle|compras.tasa|compras.existencias.data' => 'ver',
-            'compras.store|compras.update|compras.editar-datos|compras.destroy'    => 'gestionar',
+            'compras.index|compras.tasa' => 'ver',
+            'compras.create|compras.store|compras.edit|compras.update|compras.destroy' => 'gestionar',
             'compras.procesar' => 'procesar',
             'compras.anular'   => 'anular',
             'compras.clonar'   => 'clonar',

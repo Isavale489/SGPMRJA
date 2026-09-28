@@ -16,7 +16,7 @@
 (function (window, document) {
     'use strict';
 
-    var COMPRAS_URL = '/compras';
+    var COMPRAS_URL = '/compras/crear';
     var PREFILL_KEY = 'sgpmrja_compra_prefill';
     var STOCK_CHANNEL = 'sgpmrja_stock';
     var STOCK_LS_KEY = 'sgpmrja_stock_change';

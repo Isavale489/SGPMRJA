@@ -12,6 +12,7 @@ use App\Models\Pedido;
 use App\Models\DetallePedido;
 use App\Models\OrdenProduccion;
 use App\Models\Persona;
+use App\Models\Proveedor;
 use App\Models\Rol;
 use App\Models\Talla;
 use App\Models\TasaCambio;
@@ -81,6 +82,11 @@ class E2eSeeder extends Seeder
 
         // Insumo propio de tests/e2e/movimientos.spec.ts: arranca bajo su mínimo (sale en alertas).
         Insumo::create(['nombre' => 'Hilo Mov E2E', 'codigo' => 'HME', 'tipo' => 'Hilo', 'unidad_medida' => 'Cono', 'is_inventoriable' => 1, 'costo_unitario' => 2, 'stock_actual' => 12, 'stock_minimo' => 15, 'estado' => 1]);
+
+        // Proveedor e insumo propios de tests/e2e/compras.spec.ts (costo $2 → Bs 80 con la tasa 40).
+        $personaCompras = Persona::create(['nombre' => 'Hilos Compra E2E C.A.', 'tipo_documento' => 'J-', 'documento_identidad' => '41000555', 'email' => 'ventas@hiloscompra.test']);
+        Proveedor::forceCreate(['persona_id' => $personaCompras->id, 'tipo_proveedor' => 'juridico', 'estado' => 1]);
+        Insumo::create(['nombre' => 'Hilo Compra E2E', 'codigo' => 'HCE', 'tipo' => 'Hilo', 'unidad_medida' => 'Cono', 'is_inventoriable' => 1, 'costo_unitario' => 2, 'aplica_iva' => 1, 'stock_actual' => 20, 'stock_minimo' => 5, 'estado' => 1]);
 
         // Persona que ya es empleado (y aún no cliente): alta de cliente reutilizando la persona.
         $personaEmpleado = Persona::create(['nombre' => 'Ana Pérez', 'tipo_documento' => 'V-', 'documento_identidad' => '15000001', 'email' => 'ana.perez@atlantico.test']);

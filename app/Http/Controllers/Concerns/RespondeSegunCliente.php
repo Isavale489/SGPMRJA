@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Concerns;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 
 /**
  * Respuesta de las mutaciones cuando un mismo endpoint lo usan una página
@@ -23,12 +24,22 @@ trait RespondeSegunCliente
         return (bool) $request->header('X-Inertia');
     }
 
-    /** Éxito. `$json` es el cuerpo completo que espera el cliente jQuery. */
-    protected function responder(Request $request, string $mensaje, array $json = []): JsonResponse|RedirectResponse
+    /**
+     * Éxito. `$json` es el cuerpo completo que espera el cliente jQuery.
+     * `$creado` viaja a Inertia como flash de un solo uso (`page.flash`): lo lee
+     * un alta rápida que necesita el registro nuevo (p. ej. el proveedor recién
+     * creado desde el formulario de Compras).
+     */
+    protected function responder(Request $request, string $mensaje, array $json = [], array $creado = []): JsonResponse|RedirectResponse
     {
-        return $this->esInertia($request)
-            ? back()->with('success', $mensaje)
-            : response()->json($json ?: ['success' => true, 'message' => $mensaje]);
+        if (! $this->esInertia($request)) {
+            return response()->json($json ?: ['success' => true, 'message' => $mensaje]);
+        }
+        if ($creado) {
+            Inertia::flash($creado);
+        }
+
+        return back()->with('success', $mensaje);
     }
 
     /** Regla de negocio que impide la acción (p. ej. inhabilitar con dependientes). */

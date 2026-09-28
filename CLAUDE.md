@@ -155,25 +155,21 @@ El modal de edición de cotizaciones tenía chips interactivos para cambiar el e
 | `resources/views/admin/compras/index.blade.php` | Botones reordenados: Nueva Compra primero, PDF segundo |
 | `resources/views/admin/compras/modals/create.blade.php` | Campo `#c-edit-id` y `id="compraModalTitle"` para modo edición |
 
-#### Rutas de compras (completas)
+#### Rutas de compras (Inertia + React desde sep-2026, ver `docs/conventions/frontend.md`)
 ```
-GET    /compras                    → index
+GET    /compras                    → index (pestañas: compras · ?vista=anuladas · ?vista=existencias; ?ver=ID abre el detalle)
+GET    /compras/crear              → create (formulario en página propia; ?prefill=1 carga faltantes)
 POST   /compras                    → store (crea borrador)
+GET    /compras/{compra}/editar    → edit (solo borradores)
 PUT    /compras/{compra}           → update (edita borrador)
-GET    /compras/data               → getCompras (DataTable)
+DELETE /compras/{compra}           → destroy (solo borradores)
+GET    /compras/tasa               → getTasa (JSON: tasa BCV vigente para una fecha)
 GET    /compras/reporte/pdf        → reportePdf
-GET    /compras/{compra}/editar-datos → getParaEditar (JSON para modal)
 GET    /compras/{compra}/pdf       → compraPdf
-GET    /compras/{compra}           → show
 PATCH  /compras/{compra}/procesar  → procesar
 PATCH  /compras/{compra}/anular    → anular
 POST   /compras/{compra}/clonar    → clonar
 ```
-
-#### Pendiente (Task #4)
-- Handlers JS en `main.blade.php` para los botones: `procesar-btn`, `anular-btn`, `clonar-btn`, `editar-btn`
-- El submit handler del wizard necesita detectar `#c-edit-id` para usar `PUT` en vez de `POST`
-- `resetModal()` debe limpiar `#c-edit-id` y restaurar el título
 
 ---
 

@@ -27,9 +27,9 @@ class MovimientosPaginaTest extends TestCase
         Http::fake();
     }
 
-    private function clavesTs(string $interfaz): array
+    private function clavesTs(string $interfaz, string $archivo = 'js/pages/Movimientos/Index.tsx'): array
     {
-        $ts = file_get_contents(resource_path('js/pages/Movimientos/Index.tsx'));
+        $ts = file_get_contents(resource_path($archivo));
         preg_match("/export interface {$interfaz} \\{(.*?)\\n\\}/s", $ts, $m);
         preg_match_all('/^    (\w+)\??:/m', $m[1] ?? '', $claves);
         $this->assertNotEmpty($claves[1], "No se pudo leer {$interfaz}");
@@ -67,7 +67,7 @@ class MovimientosPaginaTest extends TestCase
         $this->actingAs($admin)->get(route('movimiento-insumo.index', ['vista' => 'existencias']))
             ->assertInertia(fn (Assert $p) => $p
                 ->where('movimientos', null)
-                ->has('existencias.data', 1, fn (Assert $f) => $f->hasAll($this->clavesTs('ExistenciaFila')))
+                ->has('existencias.data', 1, fn (Assert $f) => $f->hasAll($this->clavesTs('ExistenciaFila', 'js/components/app/tabla-existencias.tsx')))
                 ->where('existencias.data.0.estado', 'bajo'));
     }
 

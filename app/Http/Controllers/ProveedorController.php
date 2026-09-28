@@ -10,6 +10,7 @@ use App\Services\ProveedorService;
 use App\Support\CatalogoGeografico;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -156,10 +157,12 @@ class ProveedorController extends Controller
             ? $this->proveedorService->crearNatural($datos)
             : $this->proveedorService->crearJuridico($datos);
 
+        $payload = $this->proveedorPayload($proveedor);
+
         return $this->responder($request, 'Proveedor creado exitosamente.', [
-            'success' => 'Proveedor creado exitosamente.', // Compras lo muestra como texto
-            'proveedor' => $this->proveedorPayload($proveedor),
-        ]);
+            'success' => 'Proveedor creado exitosamente.',
+            'proveedor' => $payload,
+        ], ['proveedor' => $payload]); // alta rápida desde Compras
     }
 
     /**
@@ -168,15 +171,12 @@ class ProveedorController extends Controller
      * proveedor activo lo devuelve; si está inhabilitado lo reactiva.
      * Mismo patrón que ClienteController@createFromPersona.
      */
-    public function createFromPersona(int $personaId): JsonResponse
+    public function createFromPersona(Request $request, int $personaId): JsonResponse|RedirectResponse
     {
         $persona = Persona::find($personaId);
 
         if (!$persona) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Persona no encontrada.',
-            ], 404);
+            return $this->rechazar($request, 'Persona no encontrada.', 404);
         }
 
         // Ya es proveedor activo → devolverlo
@@ -185,12 +185,7 @@ class ProveedorController extends Controller
             ->first();
 
         if ($proveedorExistente) {
-            return response()->json([
-                'success'   => true,
-                'message'   => 'La persona ya estaba registrada como proveedor activo.',
-                'reused'    => true,
-                'proveedor' => $this->proveedorPayload($proveedorExistente),
-            ]);
+            return $this->respuestaDesdePersona($request, 'La persona ya estaba registrada como proveedor activo.', true, $proveedorExistente);
         }
 
         // Existe pero inhabilitado (estado 0 o trashed) → reactivar
@@ -204,12 +199,7 @@ class ProveedorController extends Controller
             }
             $proveedorInactivo->update(['estado' => 1]);
 
-            return response()->json([
-                'success'   => true,
-                'message'   => 'Proveedor reactivado correctamente.',
-                'reused'    => true,
-                'proveedor' => $this->proveedorPayload($proveedorInactivo),
-            ]);
+            return $this->respuestaDesdePersona($request, 'Proveedor reactivado correctamente.', true, $proveedorInactivo);
         }
 
         // Crear nuevo proveedor sobre la persona existente.
@@ -224,12 +214,15 @@ class ProveedorController extends Controller
             'estado'         => 1,
         ]);
 
-        return response()->json([
-            'success'   => true,
-            'message'   => 'Proveedor creado a partir de la persona registrada.',
-            'reused'    => false,
-            'proveedor' => $this->proveedorPayload($proveedor),
-        ]);
+        return $this->respuestaDesdePersona($request, 'Proveedor creado a partir de la persona registrada.', false, $proveedor);
+    }
+
+    /** Compras (Inertia) recibe el proveedor por flash; el JSON se mantiene para clientes jQuery. */
+    private function respuestaDesdePersona(Request $request, string $mensaje, bool $reusado, Proveedor $proveedor): JsonResponse|RedirectResponse
+    {
+        $payload = $this->proveedorPayload($proveedor);
+
+        return $this->responder($request, $mensaje, ['success' => true, 'message' => $mensaje, 'reused' => $reusado, 'proveedor' => $payload], ['proveedor' => $payload]);
     }
 
     /**

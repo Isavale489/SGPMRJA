@@ -50,3 +50,15 @@ export interface PaginaProveedores {
         checkEmail: string;
     };
 }
+
+/** Proveedor tal como lo devuelven proveedores.search y el alta rápida (flash `proveedor`). */
+export interface ProveedorResumen {
+    id: number;
+    nombre: string;
+    doc: string;
+    tel: string;
+    email: string;
+    tipo: string;
+    compras?: number;
+    ultima?: string | null;
+}

@@ -47,3 +47,16 @@ export interface PaginaInsumos {
     unidades: string[];
     urls: { index: string; reportePdf: string; checkNombre: string; tipos: string };
 }
+
+/** Insumo del alta rápida (flash `insumo` de InsumoController::store). */
+export interface InsumoCreado {
+    id: number;
+    nombre: string;
+    codigo: string | null;
+    tipo: string;
+    unidad: string;
+    costo: number;
+    aplica_iva: boolean;
+    inventariable: boolean;
+    stock: number;
+}
