@@ -1,1 +1,0 @@
-import{M as e}from"./button-Bnau23T8.js";var t={name:`arrow-down-right`,size:24,node:[[`path`,{d:`m7 7 10 10`,key:`1fmybs`}],[`path`,{d:`M17 7v10H7`,key:`6fjiku`}]]};t.node;var n=e(t),r={name:`arrow-up-right`,size:24,node:[[`path`,{d:`M7 7h10v10`,key:`1tivn9`}],[`path`,{d:`M7 17 17 7`,key:`1vkiza`}]]};r.node;var i=e(r);export{n,i as t};
