@@ -103,6 +103,17 @@ class SeguridadFlujoTest extends TestCase
         $this->actingAs($vendedor)->get(route('colores.index'))->assertForbidden();
     }
 
+    /** Regresión: un arreglo anidado en `permisos` daba 500 (array_intersect). */
+    public function test_la_matriz_rechaza_claves_que_no_son_texto(): void
+    {
+        $admin = $this->admin();
+        $rol = $this->rol('Taller');
+
+        $this->actingAs($admin)->putJson(route('seguridad.permisos.update', $rol), ['permisos' => [['clientes.ver']]])
+            ->assertStatus(422)->assertJsonValidationErrors('permisos.0');
+        $this->assertSame(0, $rol->permisos()->count());
+    }
+
     public function test_el_administrador_no_se_edita_en_la_matriz(): void
     {
         $admin = $this->admin();
