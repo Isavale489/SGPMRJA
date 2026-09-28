@@ -21,12 +21,14 @@ interface Props {
     recurso: string;
     /** Los parámetros no son iguales en todos los reportes (tipo_proveedor, estatus, stock…). */
     filtros: FiltroPdf[];
+    /** Qué fecha filtra el rango: "Registro" (por defecto), "Ingreso"… */
+    fecha?: string;
 }
 
 const TODOS = 'todos';
 
 /** Reporte PDF (dompdf, sin cambios en el servidor): abre en otra pestaña con los filtros elegidos. */
-export function ExportarPdf({ url, recurso, filtros }: Props) {
+export function ExportarPdf({ url, recurso, filtros, fecha = 'Registro' }: Props) {
     const [abierto, setAbierto] = useState(false);
     const [valores, setValores] = useState<Record<string, string>>({});
     const [desde, setDesde] = useState('');
@@ -72,10 +74,10 @@ export function ExportarPdf({ url, recurso, filtros }: Props) {
                         </Campo>
                     ))}
                     <div className="grid grid-cols-2 gap-3">
-                        <Campo etiqueta="Registro desde">
+                        <Campo etiqueta={`${fecha} desde`}>
                             <Input type="date" value={desde} onChange={(e) => setDesde(e.target.value)} />
                         </Campo>
-                        <Campo etiqueta="Registro hasta">
+                        <Campo etiqueta={`${fecha} hasta`}>
                             <Input type="date" value={hasta} onChange={(e) => setHasta(e.target.value)} />
                         </Campo>
                     </div>

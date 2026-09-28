@@ -48,7 +48,7 @@ return [
                 'titulo' => 'Recursos Humanos',
                 'icono' => 'Users',
                 'items' => [
-                    ['titulo' => 'Empleados', 'icono' => 'UserCog', 'ruta' => 'empleados.index', 'permiso' => 'empleados.ver'],
+                    ['titulo' => 'Empleados', 'icono' => 'UserCog', 'ruta' => 'empleados.index', 'permiso' => 'empleados.ver', 'inertia' => true],
                     ['titulo' => 'Departamentos', 'icono' => 'Building', 'ruta' => 'departamentos.index', 'permiso' => 'departamentos.ver', 'inertia' => true],
                     ['titulo' => 'Cargos', 'icono' => 'Briefcase', 'ruta' => 'cargos.index', 'permiso' => 'cargos.ver', 'inertia' => true],
                 ],
