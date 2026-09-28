@@ -54,6 +54,11 @@ export default function EditarOrden({ orden, empleados, urls }: PaginaEditarOrde
     const [salto, setSalto] = useState<{ paso: number; n: number }>();
     const suma = data.empleados.reduce((a, x) => a + (parseInt(x.cantidad, 10) || 0), 0);
     const nombre = (id: number) => lista.find((x) => x.id === id)?.nombre ?? `#${id}`;
+    // Mismas reglas que el servidor: con producción no se vuelve a Pendiente y
+    // solo se finaliza con todas las unidades producidas.
+    const puedePendiente = orden.cantidad_producida === 0;
+    const puedeFinalizar = orden.cantidad_producida >= total;
+    const bajoLoProducido = data.empleados.find((a) => (parseInt(a.cantidad, 10) || 0) < (orden.equipo.find((m) => m.id === a.id)?.producida ?? 0));
 
     const guardar = (ev: React.FormEvent) => {
         ev.preventDefault();
@@ -130,9 +135,13 @@ export default function EditarOrden({ orden, empleados, urls }: PaginaEditarOrde
                                               ? 'Asigna al menos un empleado.'
                                               : suma !== total
                                                 ? `El reparto del equipo debe sumar ${total}.`
-                                                : !data.fecha_inicio || !data.fecha_fin_estimada || data.fecha_fin_estimada <= data.fecha_inicio
-                                                  ? 'El fin estimado debe ser posterior al inicio.'
-                                                  : null,
+                                                : bajoLoProducido
+                                                  ? `La parte de ${nombre(bajoLoProducido.id)} no puede ser menor que lo que ya produjo.`
+                                                  : (data.estado === 'Pendiente' && !puedePendiente) || (data.estado === 'Finalizado' && !puedeFinalizar)
+                                                    ? 'El estado elegido no corresponde con lo producido.'
+                                                    : !data.fecha_inicio || !data.fecha_fin_estimada || data.fecha_fin_estimada <= data.fecha_inicio
+                                                      ? 'El fin estimado debe ser posterior al inicio.'
+                                                      : null,
                                     contenido: (
                                         <div className="grid gap-4">
                                             {e.general && (
@@ -171,16 +180,25 @@ export default function EditarOrden({ orden, empleados, urls }: PaginaEditarOrde
                                                 <Campo etiqueta="Fin estimado" requerido error={e.fecha_fin_estimada}>
                                                     <Input type="date" value={data.fecha_fin_estimada} min={data.fecha_inicio} onChange={(ev) => setData('fecha_fin_estimada', ev.target.value)} />
                                                 </Campo>
-                                                <Campo etiqueta="Estado" requerido error={e.estado} ayuda="Para cancelar, usa «Cancelar orden».">
+                                                <Campo
+                                                    etiqueta="Estado"
+                                                    requerido
+                                                    error={e.estado}
+                                                    ayuda={!puedeFinalizar ? 'Finalizado se habilita con todas las unidades producidas.' : 'Para cancelar, usa «Cancelar orden».'}
+                                                >
                                                     {(control) => (
                                                         <Select value={data.estado} onValueChange={(v) => setData('estado', v as typeof data.estado)}>
                                                             <SelectTrigger {...control} className="w-full">
                                                                 <SelectValue />
                                                             </SelectTrigger>
                                                             <SelectContent>
-                                                                <SelectItem value="Pendiente">Pendiente</SelectItem>
+                                                                <SelectItem value="Pendiente" disabled={!puedePendiente}>
+                                                                    Pendiente
+                                                                </SelectItem>
                                                                 <SelectItem value="En Proceso">En Proceso</SelectItem>
-                                                                <SelectItem value="Finalizado">Finalizado</SelectItem>
+                                                                <SelectItem value="Finalizado" disabled={!puedeFinalizar}>
+                                                                    Finalizado
+                                                                </SelectItem>
                                                             </SelectContent>
                                                         </Select>
                                                     )}

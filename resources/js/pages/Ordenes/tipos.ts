@@ -147,7 +147,7 @@ export interface PaginaFormularioOrdenes {
     empleados: Empleado[];
     insumos: InsumoProduccion[];
     abonoMinimo: number;
-    urls: { index: string; guardar: string; proyeccion: string; crearCompra: string };
+    urls: { index: string; guardar: string; proyeccion: string; crearCompra: string | null };
 }
 
 export interface OrdenEditable {

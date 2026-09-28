@@ -180,7 +180,8 @@ class OrdenProduccion extends Model
 
         $nuevoEstado = match (true) {
             $todosFinalizados && $produccionCompleta => 'Finalizado',
-            $todosFinalizados || $hayAvance          => 'En Proceso',
+            // Con unidades producidas la orden nunca vuelve a Pendiente.
+            $todosFinalizados || $hayAvance || $this->cantidad_producida > 0 => 'En Proceso',
             default                                  => 'Pendiente',
         };
 

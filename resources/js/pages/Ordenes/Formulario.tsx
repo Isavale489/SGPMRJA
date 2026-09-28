@@ -243,8 +243,8 @@ export default function FormularioOrdenes({ pedidos, empleados, insumos, abonoMi
                     <div className="border-destructive/30 bg-destructive/8 flex flex-wrap items-start gap-3 rounded-md border p-3 text-sm" role="alert">
                         <AlertTriangle className="text-destructive mt-0.5 size-4 shrink-0" />
                         <p className="flex-1">{e.general ?? e.pedido_id}</p>
-                        {faltantes && faltantes.length > 0 && (
-                            <Button type="button" size="sm" variant="outline" onClick={() => comprarFaltantes(faltantes, 'produccion', urls.crearCompra)}>
+                        {faltantes && faltantes.length > 0 && urls.crearCompra && (
+                            <Button type="button" size="sm" variant="outline" onClick={() => comprarFaltantes(faltantes, 'produccion', urls.crearCompra!)}>
                                 <ShoppingBag /> Comprar lo que falta
                             </Button>
                         )}
@@ -617,7 +617,7 @@ export default function FormularioOrdenes({ pedidos, empleados, insumos, abonoMi
                                                     </TableBody>
                                                 </Table>
                                             </div>
-                                            <ProyeccionInsumos url={urls.proyeccion} requeridos={requeridos} urlCrearCompra={urls.crearCompra} origen="produccion" />
+                                            <ProyeccionInsumos url={urls.proyeccion} requeridos={requeridos} urlCrearCompra={urls.crearCompra ?? undefined} origen="produccion" />
                                         </div>
                                     ),
                                 },

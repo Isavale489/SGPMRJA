@@ -12,12 +12,14 @@ import type { OrdenDetalle } from './tipos';
 
 interface Props {
     orden: OrdenDetalle | null;
+    /** Empleado a preseleccionar (si es del equipo y le falta producir). */
+    empleadoId?: number;
     onCerrar: () => void;
     url: string;
 }
 
 /** Registrar unidades producidas. Con equipo, se atribuyen a un empleado (con su tope). */
-export function Avance({ orden, onCerrar, url }: Props) {
+export function Avance({ orden, empleadoId, onCerrar, url }: Props) {
     if (!orden) {
         return (
             <Dialog open onOpenChange={(a) => !a && onCerrar()}>
@@ -28,16 +30,17 @@ export function Avance({ orden, onCerrar, url }: Props) {
             </Dialog>
         );
     }
-    return <FormularioAvance key={orden.id} orden={orden} onCerrar={onCerrar} url={url} />;
+    return <FormularioAvance key={orden.id} orden={orden} empleadoId={empleadoId} onCerrar={onCerrar} url={url} />;
 }
 
-function FormularioAvance({ orden, onCerrar, url }: { orden: OrdenDetalle; onCerrar: () => void; url: string }) {
+function FormularioAvance({ orden, empleadoId, onCerrar, url }: Omit<Props, 'orden'> & { orden: OrdenDetalle }) {
     const conEquipo = orden.equipo.length > 1;
     const restante = (id: number) => {
         const e = orden.equipo.find((m) => m.id === id);
         return e ? e.cantidad - e.producida : 0;
     };
-    const primero = orden.equipo.find((e) => e.cantidad > e.producida) ?? orden.equipo[0];
+    const pendiente = (e: OrdenDetalle['equipo'][number]) => e.cantidad > e.producida;
+    const primero = orden.equipo.find((e) => e.id === empleadoId && pendiente(e)) ?? orden.equipo.find(pendiente) ?? orden.equipo[0];
     const restanteOrden = orden.cantidad_solicitada - orden.cantidad_producida;
     const form = useForm({
         empleado_id: primero ? String(primero.id) : '',

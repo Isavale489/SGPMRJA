@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Exceptions\ReglaOrdenException;
 use App\Exceptions\StockInsuficienteException;
 use App\Http\Controllers\Concerns\RespondeSegunCliente;
 use App\Models\DetallePedido;
@@ -489,7 +490,8 @@ class OrdenProduccionController extends Controller
                 'index' => route('ordenes.index', absolute: false),
                 'guardar' => route('ordenes.batch', absolute: false),
                 'proyeccion' => route('ordenes.proyeccionInsumos', absolute: false),
-                'crearCompra' => route('compras.create', absolute: false),
+                // Sin permiso de compras no se ofrece «Comprar lo que falta».
+                'crearCompra' => tienePermiso('compras.gestionar') ? route('compras.create', absolute: false) : null,
             ],
         ]);
     }
@@ -520,6 +522,11 @@ class OrdenProduccionController extends Controller
      */
     private function syncEmpleadosConCantidad(OrdenProduccion $orden, array $empleados): void
     {
+        $ids = collect($empleados)->pluck('id')->map(fn ($i) => (int) $i);
+        if ($ids->count() !== $ids->unique()->count()) {
+            throw new \InvalidArgumentException('Hay empleados repetidos en el reparto.');
+        }
+
         $suma = collect($empleados)->sum(fn ($e) => (int) $e['cantidad']);
         if ($suma !== (int) $orden->cantidad_solicitada) {
             throw new \InvalidArgumentException(
@@ -528,9 +535,10 @@ class OrdenProduccionController extends Controller
         }
 
         // Pivot actual (para preservar producido/defectuoso de quienes continúan).
-        $previo = $orden->empleadosAsignados()->get()
+        $previo = $orden->empleadosAsignados()->with('persona')->get()
             ->keyBy('id')
             ->map(fn ($e) => [
+                'nombre'     => $e->persona->nombre ?? ('empleado #'.$e->id),
                 'producida'  => (int) $e->pivot->cantidad_producida,
                 'defectuosa' => (int) $e->pivot->cantidad_defectuosa,
             ]);
@@ -549,6 +557,13 @@ class OrdenProduccionController extends Controller
         $syncData = [];
         foreach ($empleados as $e) {
             $id = (int) $e['id'];
+            // La cuota no puede quedar por debajo de lo que el empleado ya produjo.
+            $hecho = $previo[$id]['producida'] ?? 0;
+            if ((int) $e['cantidad'] < $hecho) {
+                throw new \InvalidArgumentException(
+                    "{$previo[$id]['nombre']} ya produjo {$hecho} unidades: su parte del reparto no puede ser menor."
+                );
+            }
             $syncData[$id] = [
                 'cantidad'            => (int) $e['cantidad'],
                 'cantidad_producida'  => $previo[$id]['producida']  ?? 0,
@@ -556,6 +571,25 @@ class OrdenProduccionController extends Controller
             ];
         }
         $orden->empleadosAsignados()->sync($syncData);
+    }
+
+    /**
+     * Lo mismo que filtra el formulario (pedidosDisponibles), validado en el
+     * servidor: solo pedidos activos y solo líneas fabricables (no reventa).
+     */
+    private function bloqueoProduccion(Pedido $pedido, $detalles): ?string
+    {
+        if (in_array($pedido->estado, ['Cancelado', 'Completado'], true)) {
+            return "El pedido está {$pedido->estado}: no admite nuevas órdenes de producción.";
+        }
+        $reventa = $detalles->first(fn (DetallePedido $d) => ! $d->requiereProduccion());
+        if ($reventa) {
+            $nombre = $reventa->producto->nombre ?? $reventa->sku_snapshot ?? ('línea #'.$reventa->id);
+
+            return "\"{$nombre}\" es un producto de reventa: no se fabrica.";
+        }
+
+        return null;
     }
 
     /** Al guardar desde Inertia se vuelve al listado con las órdenes del pedido abiertas. */
@@ -586,6 +620,9 @@ class OrdenProduccionController extends Controller
 
         // Regla de negocio: el pedido debe alcanzar el abono mínimo para producir.
         $pedido = Pedido::findOrFail($detalle->pedido_id);
+        if ($error = $this->bloqueoProduccion($pedido, collect([$detalle]))) {
+            return $this->fallar($request, $error);
+        }
         if ($error = $this->bloqueoPorAbonoMinimo($pedido)) {
             return $this->fallar($request, $error['message']);
         }
@@ -641,6 +678,10 @@ class OrdenProduccionController extends Controller
 
         $this->syncEmpleadosConCantidad($orden, $o['empleados']);
 
+        $insumoIds = collect($o['insumos'])->pluck('id')->map(fn ($i) => (int) $i);
+        if ($insumoIds->count() !== $insumoIds->unique()->count()) {
+            throw new \InvalidArgumentException('Hay insumos repetidos en la orden.');
+        }
         foreach ($o['insumos'] as $ins) {
             $orden->insumos()->attach($ins['id'], [
                 'cantidad_estimada' => $ins['cantidad_estimada'],
@@ -691,6 +732,9 @@ class OrdenProduccionController extends Controller
 
         // Regla de negocio: el pedido debe alcanzar el abono mínimo para producir.
         $pedido = Pedido::findOrFail($validated['pedido_id']);
+        if ($error = $this->bloqueoProduccion($pedido, DetallePedido::whereIn('id', $detalleIds)->get())) {
+            return $this->fallar($request, $error);
+        }
         if ($error = $this->bloqueoPorAbonoMinimo($pedido)) {
             return $this->fallar($request, $error['message']);
         }
@@ -770,12 +814,40 @@ class OrdenProduccionController extends Controller
     }
 
     /**
+     * El estado que se elige a mano debe ser coherente con lo producido:
+     *  - con unidades producidas no se vuelve a Pendiente (Pendiente = tela sin
+     *    cortar: eliminar/cancelar repondría un material que ya se usó);
+     *  - Finalizado exige haber producido todas las unidades solicitadas.
+     */
+    private function errorDeEstado(OrdenProduccion $orden, string $estado, int $solicitada): ?string
+    {
+        $producida = (int) $orden->cantidad_producida;
+
+        if ($estado === 'Pendiente' && $producida > 0) {
+            return "La orden ya tiene {$producida} unidades producidas: no puede volver a Pendiente.";
+        }
+        if ($estado === 'Finalizado' && $producida < $solicitada) {
+            $faltan = $solicitada - $producida;
+
+            return "No se puede finalizar: faltan {$faltan} de {$solicitada} unidades por producir. Registra el avance primero.";
+        }
+
+        return null;
+    }
+
+    /**
      * Todo en una transacción: si el reparto no cuadra, no queda nada a medias
      * (antes se guardaban fechas y estado aunque el equipo fallara).
      */
     public function update(Request $request, $id): JsonResponse|RedirectResponse
     {
         $orden = OrdenProduccion::findOrFail($id);
+
+        // Una cancelada no se edita: volver a un estado activo la "resucitaría"
+        // después de haber repuesto (o dado por merma) su material.
+        if ($orden->estado === 'Cancelado') {
+            return $this->fallar($request, 'Una orden cancelada no se puede editar.', 'estado');
+        }
 
         // 'Cancelado' no se setea aquí: la cancelación tiene su propio endpoint
         // (cancelar) porque define la reposición de stock y exige motivo de merma.
@@ -806,6 +878,17 @@ class OrdenProduccionController extends Controller
 
         try {
             DB::transaction(function () use ($orden, $validated, $nuevaCantidad, $cambiaCantidad) {
+                // Bloqueo de la orden: un avance simultáneo no puede colarse entre
+                // la comprobación del estado y el guardado.
+                OrdenProduccion::whereKey($orden->id)->lockForUpdate()->first();
+                $orden->refresh();
+                if ($orden->estado === 'Cancelado') {
+                    throw new ReglaOrdenException('Una orden cancelada no se puede editar.', 'estado');
+                }
+                if ($error = $this->errorDeEstado($orden, $validated['estado'], $nuevaCantidad)) {
+                    throw new ReglaOrdenException($error, 'estado');
+                }
+
                 if ($cambiaCantidad) {
                     // El tope es lo que la línea tenga sin asignar en otras órdenes activas.
                     $detalle = DetallePedido::whereKey($orden->detalle_pedido_id)->lockForUpdate()->firstOrFail();
@@ -836,6 +919,8 @@ class OrdenProduccionController extends Controller
 
                 $this->syncEmpleadosConCantidad($orden, $validated['empleados']);
             });
+        } catch (ReglaOrdenException $e) {
+            return $this->fallar($request, $e->getMessage(), $e->campo);
         } catch (\InvalidArgumentException $e) {
             return $this->fallar($request, $e->getMessage(), $e->getCode() === 1 ? 'cantidad' : 'empleados');
         }
@@ -881,50 +966,59 @@ class OrdenProduccionController extends Controller
 
         $producida = (int) $validated['cantidad_producida'];
 
-        // Órdenes legacy sin filas de pivot: se trabaja solo con los totales de la
-        // orden (sin desglose per-cápita), preservando el comportamiento previo.
-        $miembro = null;
-        if ($equipo->isNotEmpty()) {
-            $empleadoId = $validated['empleado_id']
-                ?? ($equipo->count() === 1 ? $equipo->first()->id : $orden->empleado_id);
-            $miembro = $equipo->firstWhere('id', (int) $empleadoId);
-            if (! $miembro) {
-                return $this->fallar($request, 'El empleado indicado no pertenece al equipo de esta orden.', 'empleado_id');
-            }
-            // Tope per-cápita: lo asignado a ese empleado menos lo que ya produjo.
-            $restanteEmp = (int) $miembro->pivot->cantidad - (int) $miembro->pivot->cantidad_producida;
-            if ($producida > $restanteEmp) {
-                $nombre = $miembro->persona->nombre ?? ('empleado #'.$miembro->id);
+        try {
+            DB::transaction(function () use ($orden, $validated, $producida) {
+                // Con la orden bloqueada se releen totales y reparto: dos avances
+                // simultáneos no pueden pasar ambos el tope con datos viejos.
+                OrdenProduccion::whereKey($orden->id)->lockForUpdate()->first();
+                $orden->refresh();
+                if (in_array($orden->estado, ['Finalizado', 'Cancelado'])) {
+                    throw new ReglaOrdenException("La orden ya está en estado \"{$orden->estado}\" y no puede recibir más avances.", 'cantidad_producida');
+                }
+                $equipo = $orden->empleadosAsignados()->with('persona')->get();
 
-                return $this->fallar($request, "A {$nombre} solo le faltan {$restanteEmp} unidades por producir en esta orden.", 'cantidad_producida');
-            }
-        } else {
-            // Sin equipo: tope = restante de la orden.
-            $restanteOrden = (int) $orden->cantidad_solicitada - (int) $orden->cantidad_producida;
-            if ($producida > $restanteOrden) {
-                return $this->fallar($request, "Solo quedan {$restanteOrden} unidades por producir en esta orden.", 'cantidad_producida');
-            }
+                // Tope de la orden (vale siempre, también con equipo).
+                $restanteOrden = (int) $orden->cantidad_solicitada - (int) $orden->cantidad_producida;
+                if ($producida > $restanteOrden) {
+                    throw new ReglaOrdenException("Solo quedan {$restanteOrden} unidades por producir en esta orden.", 'cantidad_producida');
+                }
+
+                // Órdenes legacy sin filas de pivot: se trabaja solo con los totales
+                // de la orden (sin desglose per-cápita).
+                if ($equipo->isNotEmpty()) {
+                    $empleadoId = $validated['empleado_id']
+                        ?? ($equipo->count() === 1 ? $equipo->first()->id : $orden->empleado_id);
+                    $miembro = $equipo->firstWhere('id', (int) $empleadoId);
+                    if (! $miembro) {
+                        throw new ReglaOrdenException('El empleado indicado no pertenece al equipo de esta orden.', 'empleado_id');
+                    }
+                    // Tope per-cápita: lo asignado a ese empleado menos lo que ya produjo.
+                    $restanteEmp = (int) $miembro->pivot->cantidad - (int) $miembro->pivot->cantidad_producida;
+                    if ($producida > $restanteEmp) {
+                        $nombre = $miembro->persona->nombre ?? ('empleado #'.$miembro->id);
+                        throw new ReglaOrdenException("A {$nombre} solo le faltan {$restanteEmp} unidades por producir en esta orden.", 'cantidad_producida');
+                    }
+
+                    // Acumula en el pivot del empleado y en los totales de la orden
+                    // (mantiene el invariante orden == suma por empleado).
+                    $orden->empleadosAsignados()->updateExistingPivot($miembro->id, [
+                        'cantidad_producida' => (int) $miembro->pivot->cantidad_producida + $producida,
+                    ]);
+                }
+
+                $orden->cantidad_producida += $producida;
+
+                if ($orden->cantidad_producida >= $orden->cantidad_solicitada) {
+                    $orden->estado = 'Finalizado';
+                    $orden->fecha_fin_real = now()->toDateString();
+                } elseif ($orden->estado === 'Pendiente') {
+                    $orden->estado = 'En Proceso';
+                }
+                $orden->save();
+            });
+        } catch (ReglaOrdenException $e) {
+            return $this->fallar($request, $e->getMessage(), $e->campo);
         }
-
-        DB::transaction(function () use ($orden, $miembro, $producida) {
-            // Acumula en el pivot del empleado (si lo hay) y en los totales de la
-            // orden (mantiene el invariante orden == suma por empleado).
-            if ($miembro) {
-                $orden->empleadosAsignados()->updateExistingPivot($miembro->id, [
-                    'cantidad_producida' => (int) $miembro->pivot->cantidad_producida + $producida,
-                ]);
-            }
-
-            $orden->cantidad_producida += $producida;
-
-            if ($orden->cantidad_producida >= $orden->cantidad_solicitada) {
-                $orden->estado = 'Finalizado';
-                $orden->fecha_fin_real = now()->toDateString();
-            } elseif ($orden->estado === 'Pendiente') {
-                $orden->estado = 'En Proceso';
-            }
-            $orden->save();
-        });
 
         Pedido::find($orden->pedido_id)?->recalcularEstado();
 
@@ -937,6 +1031,11 @@ class OrdenProduccionController extends Controller
 
         if ($orden->estado !== 'Pendiente') {
             return $this->rechazar($request, 'No se puede eliminar una orden que no está en estado Pendiente');
+        }
+        // Eliminar repone todo el material: con producción registrada ese
+        // material ya se usó (datos previos a la regla de estados).
+        if ($orden->cantidad_producida > 0) {
+            return $this->rechazar($request, 'La orden ya tiene unidades producidas: cancélala en lugar de eliminarla.');
         }
 
         $pedidoId = $orden->pedido_id;
@@ -970,8 +1069,8 @@ class OrdenProduccionController extends Controller
             return $this->fallar($request, 'La orden ya está cancelada.', 'motivo_cancelacion');
         }
 
-        // Solo la cancelación temprana (Pendiente) repone stock.
-        $reponeStock = $orden->estado === 'Pendiente';
+        // Solo la cancelación temprana (Pendiente y sin producción) repone stock.
+        $reponeStock = $orden->estado === 'Pendiente' && (int) $orden->cantidad_producida === 0;
 
         $validated = $request->validate(
             ['motivo_cancelacion' => ($reponeStock ? 'nullable' : 'required').'|string|max:500'],
@@ -1044,6 +1143,11 @@ class OrdenProduccionController extends Controller
     {
         SubOrdenProduccion::where('orden_produccion_id', $id)->findOrFail($subId)->delete();
 
+        // Quitar una etapa puede cambiar el estado de la orden (y el del pedido).
+        $orden = OrdenProduccion::findOrFail($id);
+        $orden->recalcularEstadoDesdeSubordenes();
+        Pedido::find($orden->pedido_id)?->recalcularEstado();
+
         return $this->responder($request, 'Sub-orden eliminada.', ['message' => 'Sub-orden eliminada.']);
     }
 
@@ -1079,6 +1183,7 @@ class OrdenProduccionController extends Controller
         $sub->update(['estado' => $validated['estado']]);
         $orden->recalcularEstadoDesdeSubordenes();
         $orden->refresh();
+        Pedido::find($orden->pedido_id)?->recalcularEstado();
 
         return $this->responder($request, 'Estado de la sub-orden actualizado.', ['message' => 'Estado de la sub-orden actualizado.', 'estado' => $sub->estado, 'op_estado' => $orden->estado]);
     }
