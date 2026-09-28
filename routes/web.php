@@ -305,7 +305,6 @@ Route::middleware(['auth', 'throttle:60,1', 'active.user', 'recovery.questions.r
         Route::post('roles', [SeguridadController::class, 'storeRol'])->name('roles.store');
         Route::put('roles/{rol}', [SeguridadController::class, 'updateRol'])->name('roles.update');
         Route::delete('roles/{rol}', [SeguridadController::class, 'destroyRol'])->name('roles.destroy');
-        Route::get('permisos/{rol}', [SeguridadController::class, 'getPermisos'])->name('permisos.get');
         Route::put('permisos/{rol}', [SeguridadController::class, 'guardarMatriz'])->name('permisos.update');
     });
 

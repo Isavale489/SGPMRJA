@@ -90,9 +90,9 @@ export default function ConfiguracionIndex({ modulos, impuestos, urls }: Props) 
                     </button>
                     <p className="text-muted-foreground px-3 pt-3 pb-1 text-xs font-medium uppercase">Otras configuraciones</p>
                     {puede('users.ver') && <Link href={urls.usuarios} className={item(false)}><Users className="size-4" /> Usuarios</Link>}
-                    {/* Perfil y Seguridad siguen en Blade → enlace normal. */}
+                    {/* Perfil sigue en Blade → enlace normal. */}
                     <a href={urls.perfil} className={item(false)}><UserCog className="size-4" /> Mi perfil</a>
-                    {esAdmin && <a href={urls.seguridad} className={item(false)}><ShieldCheck className="size-4" /> Roles y permisos</a>}
+                    {esAdmin && <Link href={urls.seguridad} className={item(false)}><ShieldCheck className="size-4" /> Roles y permisos</Link>}
                 </nav>
                 <div className="min-w-0">
                     {modulo ? (
