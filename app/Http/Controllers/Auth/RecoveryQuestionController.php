@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Auth;
 
+use App\Rules\ContrasenaSegura;
 use App\Http\Controllers\Controller;
 use App\Models\RecoveryAttempt;
 use App\Models\User;
@@ -198,7 +199,7 @@ class RecoveryQuestionController extends Controller
     {
         $request->validate([
             'token'    => ['required', 'string'],
-            'password' => ['required', 'confirmed', 'min:8'],
+            'password' => ['required', 'confirmed', new ContrasenaSegura],
         ]);
 
         if (!$this->isResetTokenValid($request, $request->token)) {

@@ -71,7 +71,7 @@
                                     required
                                     autocomplete="new-password"
                                     minlength="8"
-                                    placeholder="Mínimo 8 caracteres"
+                                    placeholder="Mínimo 8, con mayúscula, número y símbolo"
                                 >
                             </div>
 

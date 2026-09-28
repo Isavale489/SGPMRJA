@@ -172,7 +172,7 @@ export function ResetearClave({ usuario, url, onCerrar }: { usuario: UsuarioFila
             textoGuardar="Resetear contraseña"
             onGuardar={() => form.post(`${url}/${usuario.id}/reset-password`, { preserveScroll: true, onSuccess: onCerrar })}
         >
-            <Campo etiqueta="Contraseña temporal" requerido error={form.errors.password} ayuda="Al menos 8 caracteres.">
+            <Campo etiqueta="Contraseña temporal" requerido error={form.errors.password} ayuda="Mínimo 8 caracteres, con una mayúscula, un número y un carácter especial.">
                 {(control) => <Clave {...control} valor={form.data.password} autoComplete="new-password" onCambiar={(v) => form.setData('password', v)} />}
             </Campo>
             <Campo etiqueta="Confirmar contraseña temporal" requerido>
