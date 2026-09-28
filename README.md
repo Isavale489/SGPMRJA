@@ -105,10 +105,12 @@ Sigue estos pasos para desplegar el proyecto en un entorno local:
         DB_PASSWORD=
         ```
 
-5.  **Generar clave de aplicación**:
+5.  **Generar clave de aplicación y enlazar el almacenamiento público**:
     ```bash
     php artisan key:generate
+    php artisan storage:link
     ```
+    `storage:link` crea `public/storage` (no se versiona). Sin él, las fotos de perfil y demás archivos subidos se guardan pero no se ven.
 
 6.  **Base de Datos**:
     *   Crea una base de datos vacía llamada `sistema_atlantico` en tu gestor MySQL (phpMyAdmin, etc.).
