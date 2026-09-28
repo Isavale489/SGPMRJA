@@ -2,70 +2,74 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\User;
-use App\Models\Rol;
+use App\Http\Controllers\Concerns\RespondeSegunCliente;
+use App\Http\Requests\ResetearClaveUsuarioRequest;
 use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
+use App\Models\Rol;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-use Yajra\DataTables\DataTables;
+use Illuminate\Support\Facades\Storage;
+use Inertia\Inertia;
+use Inertia\Response;
 class UserController extends Controller
 {
-    public function index(Request $request)
+    use RespondeSegunCliente;
+
+    /** Filtros de la tabla (query string): la URL es el estado de la vista. */
+    private const FILTROS = ['buscar', 'rol', 'historial'];
+
+    public function index(Request $request): Response
     {
-        $historial = $request->has('historial');
-        // Roles disponibles para los selects (filtro de tabla y de PDF).
-        $roles = Rol::orderBy('nombre')->get(['id', 'nombre']);
-        return view('admin.users.index', compact('historial', 'roles'));
+        $filtros = array_filter($request->only(self::FILTROS), fn ($v) => $v !== null && $v !== '');
+        // Eager-load del rol: el accessor $user->role lo resuelve sin N+1.
+        $query = User::query()->with('rol')
+            // Activos vs historial: los usuarios nunca se borran; inhabilitado = estado 0.
+            ->where('estado', empty($filtros['historial']) ? 1 : 0)
+            ->when($filtros['rol'] ?? null, fn ($q, $rol) => $q->where('role_id', $rol))
+            ->when($filtros['buscar'] ?? null, function ($q, $buscar) {
+                $buscar = trim($buscar);
+                $q->where(fn ($w) => $w->where('name', 'like', "%{$buscar}%")
+                    ->orWhere('email', 'like', "{$buscar}%")
+                    ->orWhereHas('rol', fn ($r) => $r->where('nombre', 'like', "{$buscar}%")));
+            })
+            ->orderByDesc('created_at')->orderByDesc('id');
+
+        return Inertia::render('Usuarios/Index', [
+            'usuarios' => $query->paginate(15)->withQueryString()->through(fn (User $u) => $this->fila($u, $request)),
+            'filtros' => (object) $filtros,
+            'roles' => fn () => Rol::orderBy('nombre')->get(['id', 'nombre']),
+            'urls' => [
+                'index' => route('users.index', absolute: false),
+                'reportePdf' => route('users.reporte.pdf', absolute: false),
+                'checkEmail' => route('users.check-email', absolute: false),
+            ],
+        ]);
     }
 
-    public function getUsers(Request $request)
+    /**
+     * Fila de la tabla (todo lo que usan Ver y Editar). Espejo de `UsuarioFila`
+     * en resources/js/pages/Usuarios/tipos.ts (lo verifica UsuarioPaginaTest).
+     */
+    private function fila(User $u, Request $request): array
     {
-        // Eager-load del rol: el accessor $user->role lo resuelve sin N+1.
-        $users = User::query()->with('rol');
-
-        if ($request->filled('filter_role')) {
-            $users->where('role_id', $request->input('filter_role'));
-        }
-
-        // Activos vs Historial: lo define la página (no un filtro). La principal
-        // muestra solo usuarios activos; el historial (?historial=true) solo los
-        // inhabilitados (estado=0, sin acceso al sistema).
-        $users->where('estado', $request->boolean('historial') ? 0 : 1);
-
-        $users->orderBy('created_at', 'desc'); // más reciente primero (estándar del sistema)
-
-        return DataTables::of($users)
-            // Búsqueda estricta: solo por nombre, email y rol del usuario. Sobrescribe
-            // el buscador global para no romper sobre las columnas computadas (estado
-            // de recuperación) ni matchear datos no indicados en la barra.
-            ->filter(function ($query) use ($request) {
-                $keyword = trim((string) $request->input('search.value'));
-                if ($keyword === '') {
-                    return;
-                }
-                $query->where(function ($q) use ($keyword) {
-                    $q->where('name', 'like', "{$keyword}%")
-                      ->orWhere('email', 'like', "{$keyword}%")
-                      ->orWhereHas('rol', function ($r) use ($keyword) {
-                          $r->where('nombre', 'like', "{$keyword}%");
-                      });
-                });
-            }, true)
-            ->editColumn('avatar', function ($user) {
-                return $user->avatar ? asset('storage/' . $user->avatar) : null;
-            })
-            // 'role' es accessor (no columna): se expone explícitamente para la tabla.
-            ->addColumn('role', function ($user) {
-                return $user->role;
-            })
-            ->addColumn('recovery_locked', function ($user) {
-                return $user->isRecoveryLocked() || $user->isRecoveryHardLocked();
-            })
-            ->addColumn('recovery_failed_attempts', function ($user) {
-                return (int) $user->recovery_failed_attempts;
-            })
-            ->make(true);
+        return [
+            'id' => $u->id,
+            'nombre' => $u->name,
+            'email' => $u->email,
+            'rol_id' => $u->role_id,
+            'rol' => $u->role,
+            // Solo la foto subida; sin foto, la página muestra las iniciales (sin servicios externos).
+            'avatar' => $u->avatar && Storage::disk('public')->exists($u->avatar) ? asset('storage/'.$u->avatar) : null,
+            'inhabilitado' => ! $u->estado,
+            'recuperacion_bloqueada' => $u->isRecoveryLocked() || $u->isRecoveryHardLocked(),
+            'intentos_fallidos' => (int) $u->recovery_failed_attempts,
+            'debe_cambiar_clave' => (bool) $u->password_reset_by_admin,
+            // La propia cuenta no se inhabilita ni se le resetea la clave desde aquí.
+            'es_propio' => $request->user()?->id === $u->id,
+            'creado' => $u->created_at?->format('Y-m-d H:i'),
+        ];
     }
 
     private function handleFileUpload($file, $oldPath, $directory)
@@ -104,15 +108,7 @@ class UserController extends Controller
 
         $user->save();
 
-        return response()->json(['success' => 'User created successfully.']);
-    }
-
-    public function edit($id)
-    {
-        $user = User::findOrFail($id);
-        $data = $user->toArray();
-        $data['avatar'] = $user->avatar ? asset('storage/' . $user->avatar) : null;
-        return response()->json($data);
+        return $this->responder($request, 'Usuario creado exitosamente.', ['success' => 'User created successfully.']);
     }
 
     public function update(UpdateUserRequest $request, $id)
@@ -136,7 +132,7 @@ class UserController extends Controller
 
         $user->save();
 
-        return response()->json(['success' => 'User updated successfully.']);
+        return $this->responder($request, 'Usuario actualizado exitosamente.', ['success' => 'User updated successfully.']);
     }
 
     /**
@@ -144,12 +140,12 @@ class UserController extends Controller
      * cuenta para preservar referencias (created_by, auditoría). Salvaguardas:
      * no auto-inhabilitarse y no dejar al sistema sin Administrador activo.
      */
-    public function destroy($id)
+    public function destroy(Request $request, $id)
     {
         $user = User::findOrFail($id);
 
         if (auth()->id() === (int) $user->id) {
-            return response()->json(['message' => 'No puedes inhabilitar tu propia cuenta.'], 422);
+            return $this->rechazar($request, 'No puedes inhabilitar tu propia cuenta.');
         }
 
         if ($user->isAdmin() && $user->estado) {
@@ -157,47 +153,24 @@ class UserController extends Controller
                 $q->where('nombre', 'Administrador');
             })->where('estado', 1)->count();
             if ($adminsActivos <= 1) {
-                return response()->json(['message' => 'No puedes inhabilitar al último administrador activo.'], 422);
+                return $this->rechazar($request, 'No puedes inhabilitar al último administrador activo.');
             }
         }
 
         $user->estado = 0;
         $user->save();
-        return response()->json(['success' => 'Usuario inhabilitado exitosamente.']);
+        return $this->responder($request, 'Usuario inhabilitado exitosamente.', ['success' => 'Usuario inhabilitado exitosamente.']);
     }
 
     /**
      * Habilitar (restaurar) un usuario inhabilitado → estado=1.
      */
-    public function restore($id)
+    public function restore(Request $request, $id)
     {
         $user = User::findOrFail($id);
         $user->estado = 1;
         $user->save();
-        return response()->json(['success' => 'Usuario habilitado exitosamente.']);
-    }
-
-    /**
-     * Display the specified user.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function show($id)
-    {
-        $user = User::findOrFail($id);
-
-        return response()->json([
-            'id' => $user->id,
-            'name' => $user->name,
-            'email' => $user->email,
-            'role' => $user->role,
-            'estado' => $user->estado,
-            'avatar' => $user->avatar ? asset('storage/' . $user->avatar) : null,
-
-            'created_at' => $user->created_at->format('d/m/Y'),
-            'updated_at' => $user->updated_at->format('d/m/Y H:i:s')
-        ]);
+        return $this->responder($request, 'Usuario habilitado exitosamente.', ['success' => 'Usuario habilitado exitosamente.']);
     }
 
     public function reportePdf(Request $request)
@@ -264,7 +237,7 @@ class UserController extends Controller
      * Desbloquea la recuperación de contraseña del usuario (admin).
      * Limpia el contador de intentos fallidos y el bloqueo temporal.
      */
-    public function unlockRecovery($id)
+    public function unlockRecovery(Request $request, $id)
     {
         $user = User::findOrFail($id);
 
@@ -273,27 +246,19 @@ class UserController extends Controller
             'recovery_locked_until'    => null,
         ]);
 
-        return response()->json([
-            'message' => 'Recuperación desbloqueada correctamente.',
-        ]);
+        return $this->responder($request, 'Recuperación desbloqueada correctamente.');
     }
 
     /**
      * Reset de contraseña por admin: asigna una contraseña temporal y
      * marca al usuario para que la cambie en su próximo login.
      */
-    public function resetPassword(Request $request, $id)
+    public function resetPassword(ResetearClaveUsuarioRequest $request, $id)
     {
-        $request->validate([
-            'password' => ['required', 'string', 'min:8', 'max:191'],
-        ]);
-
         $user = User::findOrFail($id);
 
         if (auth()->id() === $user->id) {
-            return response()->json([
-                'message' => 'No puedes resetear tu propia contraseña desde este panel.',
-            ], 422);
+            return $this->rechazar($request, 'No puedes resetear tu propia contraseña desde este panel.');
         }
 
         $user->forceFill([
@@ -305,9 +270,7 @@ class UserController extends Controller
             'recovery_locked_until'         => null,
         ])->save();
 
-        return response()->json([
-            'message' => 'Contraseña reseteada. El usuario deberá cambiarla en su próximo inicio de sesión.',
-        ]);
+        return $this->responder($request, 'Contraseña reseteada. El usuario deberá cambiarla en su próximo inicio de sesión.');
     }
 }
 
