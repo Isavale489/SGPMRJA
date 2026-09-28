@@ -71,8 +71,9 @@
                                     required
                                     autocomplete="new-password"
                                     minlength="8"
-                                    placeholder="Mínimo 8, con mayúscula, número y símbolo"
+                                    aria-describedby="password-ayuda"
                                 >
+                                <div id="password-ayuda" class="form-text">{{ \App\Rules\ContrasenaSegura::DESCRIPCION }}</div>
                             </div>
 
                             <div class="mb-4">

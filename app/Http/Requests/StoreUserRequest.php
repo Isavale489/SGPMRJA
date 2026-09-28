@@ -17,7 +17,8 @@ class StoreUserRequest extends FormRequest
         return [
             'name'     => 'required|string|max:255',
             'email'    => 'required|string|email|max:255|unique:user',
-            'password' => ['required', 'string', 'max:191', 'confirmed', new ContrasenaSegura],
+            // Tipo y largo los valida la regla (tope de 72 por bcrypt).
+            'password' => ['required', 'confirmed', new ContrasenaSegura],
             'avatar'   => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             'role_id'  => 'required|exists:rol,id',
         ];
