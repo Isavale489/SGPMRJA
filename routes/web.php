@@ -198,24 +198,18 @@ Route::middleware(['auth', 'throttle:60,1', 'active.user', 'recovery.questions.r
         Route::get('cotizaciones-ubicaciones-bordado-data', [CotizacionController::class, 'getUbicacionesBordado'])->name('cotizaciones.ubicacionesBordado.data');
 
         // Productos
-        Route::resource('productos', ProductoController::class)->except(['create', 'edit']);
-        Route::get('productos-data', [ProductoController::class, 'getProductos'])->name('productos.data');
+        // Catálogo = tipos de producto: la página (Inertia) y lo que consume Cotizaciones.
+        Route::get('productos', [ProductoController::class, 'index'])->name('productos.index');
         Route::get('productos/reporte/pdf', [ProductoController::class, 'reportePdf'])->name('productos.reporte.pdf');
-        Route::post('productos/{id}/restore', [ProductoController::class, 'restore'])->name('productos.restore');
-        Route::get('productos-sugerir-precio', [ProductoController::class, 'sugerirPrecio'])->name('productos.sugerir-precio');
-        Route::get('productos-preview-codigo', [ProductoController::class, 'previewCodigo'])->name('productos.preview-codigo');
         Route::get('productos-resolver-variante', [ProductoController::class, 'resolverVariante'])->name('productos.resolver-variante');
 
         // Tipos de Producto
-        Route::get('tipo-productos', [App\Http\Controllers\TipoProductoController::class, 'index'])->name('tipo-productos.index');
         Route::post('tipo-productos', [App\Http\Controllers\TipoProductoController::class, 'store'])->name('tipo-productos.store');
         Route::post('tipo-productos/{tipoProducto}/telas', [App\Http\Controllers\TipoProductoController::class, 'storeTela'])->name('tipo-productos.telas.store');
         Route::get('tipo-productos/{id}', [App\Http\Controllers\TipoProductoController::class, 'show'])->name('tipo-productos.show');
         Route::put('tipo-productos/{tipoProducto}', [App\Http\Controllers\TipoProductoController::class, 'update'])->name('tipo-productos.update');
         Route::delete('tipo-productos/{tipoProducto}', [App\Http\Controllers\TipoProductoController::class, 'destroy'])->name('tipo-productos.destroy');
         Route::patch('tipo-productos/{id}/restore', [App\Http\Controllers\TipoProductoController::class, 'restore'])->name('tipo-productos.restore');
-        Route::get('tipo-productos-check-nombre', [App\Http\Controllers\TipoProductoController::class, 'checkNombre'])->name('tipo-productos.check-nombre');
-        Route::get('tipo-productos-check-codigo', [App\Http\Controllers\TipoProductoController::class, 'checkCodigoPrefijo'])->name('tipo-productos.check-codigo');
 
         // Atributos de confección (catálogo maestro)
         Route::get('atributos', [App\Http\Controllers\AtributoController::class, 'index'])->name('atributos.index');

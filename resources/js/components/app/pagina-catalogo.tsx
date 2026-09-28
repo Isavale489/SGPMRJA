@@ -32,11 +32,15 @@ interface Props<T extends RegistroCatalogo, F extends Filtros> {
     registros: Paginado<T>;
     filtros: F;
     url: string;
+    /** Base de Inhabilitar/Restaurar si difiere de la página (p. ej. /productos lista tipos de /tipo-productos). */
+    urlMutaciones?: string;
     columnas: Columna<T>[];
     /** Filtros extra junto al buscador (reciben el estado y el setter). */
     filtrosExtra?: (filtros: F, cambiar: <K extends keyof F>(clave: K, valor: F[K]) => void) => ReactNode;
     /** Mensaje del diálogo de inhabilitar (p. ej. qué impide hacerlo). */
     avisoInhabilitar?: string;
+    /** Botones extra del encabezado, antes de «Agregar» (p. ej. Exportar PDF). */
+    accionesExtra?: ReactNode;
     
     /** El formulario (DialogoFormulario), montado con `key={p.apertura}` para reiniciarlo en cada apertura. */
     formulario: (p: { apertura: number; abierto: boolean; registro?: T; onCerrar: () => void }) => ReactNode;
@@ -49,9 +53,10 @@ interface Props<T extends RegistroCatalogo, F extends Filtros> {
  * aporta sus columnas y su formulario.
  */
 export function PaginaCatalogo<T extends RegistroCatalogo, F extends Filtros>({
-    titulo, recurso, permiso, registros, filtros: iniciales, url, columnas, filtrosExtra, avisoInhabilitar, formulario,
+    titulo, recurso, permiso, registros, filtros: iniciales, url, urlMutaciones, columnas, filtrosExtra, avisoInhabilitar, accionesExtra, formulario,
 }: Props<T, F>) {
     const { puede } = usePermisos();
+    const base = urlMutaciones ?? url;
     const gestionar = puede(permiso);
     const historial = Boolean(iniciales.historial);
     const { filtros, cambiar, cargando } = useFiltrosUrl<F>(url, iniciales, ['registros', 'filtros']);
@@ -74,7 +79,7 @@ export function PaginaCatalogo<T extends RegistroCatalogo, F extends Filtros>({
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                         {r.inhabilitado ? (
-                            <DropdownMenuItem onSelect={() => router.patch(`${url}/${r.id}/restore`, {}, { preserveScroll: true })}>
+                            <DropdownMenuItem onSelect={() => router.patch(`${base}/${r.id}/restore`, {}, { preserveScroll: true })}>
                                 <RotateCcw /> Restaurar
                             </DropdownMenuItem>
                         ) : (
@@ -105,6 +110,7 @@ export function PaginaCatalogo<T extends RegistroCatalogo, F extends Filtros>({
                             <Link href={`${url}?historial=1`}><Archive /> Inhabilitados</Link>
                         )}
                     </Button>
+                    {accionesExtra}
                     {gestionar && !historial && (
                         <Button onClick={() => abrir()}>
                             <Plus /> Agregar {recurso}
@@ -143,7 +149,7 @@ export function PaginaCatalogo<T extends RegistroCatalogo, F extends Filtros>({
                 titulo={`¿Inhabilitar ${recurso} «${inhabilitando?.nombre ?? ''}»?`}
                 descripcion={avisoInhabilitar ?? 'Pasa al historial. Se puede restaurar cuando quieras.'}
                 accion="Inhabilitar"
-                onConfirmar={() => inhabilitando && router.delete(`${url}/${inhabilitando.id}`, { preserveScroll: true })}
+                onConfirmar={() => inhabilitando && router.delete(`${base}/${inhabilitando.id}`, { preserveScroll: true })}
             />
             {gestionar && formulario({ apertura: estado.apertura, abierto: estado.abierto, registro: estado.registro, onCerrar: () => setEstado((e) => ({ ...e, abierto: false })) })}
         </AppLayout>

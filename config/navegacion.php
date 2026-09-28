@@ -37,7 +37,7 @@ return [
                 'titulo' => 'Productos',
                 'icono' => 'Shirt',
                 'items' => [
-                    ['titulo' => 'Catálogo', 'icono' => 'ListChecks', 'ruta' => 'productos.index', 'permiso' => 'productos.ver'],
+                    ['titulo' => 'Catálogo', 'icono' => 'ListChecks', 'ruta' => 'productos.index', 'permiso' => 'productos.ver', 'inertia' => true],
                     ['titulo' => 'Atributos', 'icono' => 'SlidersHorizontal', 'ruta' => 'atributos.index', 'permiso' => 'atributos.ver', 'inertia' => true],
                     ['titulo' => 'Colores', 'icono' => 'Palette', 'ruta' => 'colores.index', 'permiso' => 'colores.ver', 'inertia' => true],
                 ],
