@@ -36,7 +36,8 @@ export default function EditarOrden({ orden, empleados, urls }: PaginaEditarOrde
     const e = errors as Record<string, string | undefined>;
     useGuardCambios(form.isDirty && !form.processing);
 
-    const pendiente = orden.estado === 'Pendiente';
+    // Las unidades solo cambian con la orden Pendiente y sin material cortado.
+    const pendiente = orden.estado === 'Pendiente' && !orden.con_produccion;
     const total = parseInt(data.cantidad, 10) || 0;
     const fijos = orden.equipo.filter((m) => m.producida > 0 || m.defectuosa > 0).map((m) => m.id);
     // Empleados que ya no están en Producción pero siguen en el equipo: se muestran igual.
@@ -56,7 +57,7 @@ export default function EditarOrden({ orden, empleados, urls }: PaginaEditarOrde
     const nombre = (id: number) => lista.find((x) => x.id === id)?.nombre ?? `#${id}`;
     // Mismas reglas que el servidor: con producción no se vuelve a Pendiente y
     // solo se finaliza con todas las unidades producidas.
-    const puedePendiente = orden.cantidad_producida === 0;
+    const puedePendiente = !orden.con_produccion;
     const puedeFinalizar = orden.cantidad_producida >= total;
     const bajoLoProducido = data.empleados.find((a) => (parseInt(a.cantidad, 10) || 0) < (orden.equipo.find((m) => m.id === a.id)?.producida ?? 0));
 

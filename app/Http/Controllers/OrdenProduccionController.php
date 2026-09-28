@@ -592,6 +592,18 @@ class OrdenProduccionController extends Controller
         return null;
     }
 
+    /**
+     * Bloquea el pedido y confirma que sigue activo: si se canceló mientras se
+     * llenaba el formulario, no recibe órdenes nuevas.
+     */
+    private function bloquearPedidoActivo(?int $pedidoId): void
+    {
+        $pedido = Pedido::whereKey($pedidoId)->lockForUpdate()->first();
+        if ($pedido && in_array($pedido->estado, ['Cancelado', 'Completado'], true)) {
+            throw new \InvalidArgumentException("El pedido está {$pedido->estado}: no admite nuevas órdenes de producción.");
+        }
+    }
+
     /** Al guardar desde Inertia se vuelve al listado con las órdenes del pedido abiertas. */
     private function alListado(Request $request, ?int $pedidoId, string $mensaje, array $json): JsonResponse|RedirectResponse
     {
@@ -631,6 +643,7 @@ class OrdenProduccionController extends Controller
             // Crear la orden, asociar insumos y descontar stock en una sola
             // transacción: si falta stock, no se crea nada (rollback total).
             DB::transaction(function () use ($validated, $detalle) {
+                $this->bloquearPedidoActivo($detalle->pedido_id);
                 // Lock sobre la línea: serializa asignaciones concurrentes para que
                 // la suma de órdenes activas nunca supere las unidades de la línea.
                 $detalle = DetallePedido::whereKey($detalle->id)->lockForUpdate()->firstOrFail();
@@ -742,6 +755,7 @@ class OrdenProduccionController extends Controller
         $creadas = [];
         try {
             DB::transaction(function () use ($validated, $detalleIds, &$creadas) {
+                $this->bloquearPedidoActivo((int) $validated['pedido_id']);
                 // Lock por línea: la suma de órdenes activas (las previas + las de
                 // este lote) no puede superar las unidades de la línea.
                 $detalles = DetallePedido::whereIn('id', $detalleIds)->lockForUpdate()->get()->keyBy('id');
@@ -795,6 +809,8 @@ class OrdenProduccionController extends Controller
                 'estado' => $orden->estado,
                 'cantidad' => $orden->cantidad_solicitada,
                 'cantidad_producida' => $orden->cantidad_producida,
+                // Producido o rechazado en Calidad: ya no vuelve a Pendiente.
+                'con_produccion' => $orden->tieneProduccion(),
                 // Tope al que puede crecer ESTA orden: sus unidades + las que la línea aún no asignó.
                 'cantidad_maxima' => $orden->detallePedido
                     ? max(0, $orden->detallePedido->cantidad - $this->cantidadAsignadaActiva($orden->detalle_pedido_id, $orden->id))
@@ -815,16 +831,17 @@ class OrdenProduccionController extends Controller
 
     /**
      * El estado que se elige a mano debe ser coherente con lo producido:
-     *  - con unidades producidas no se vuelve a Pendiente (Pendiente = tela sin
-     *    cortar: eliminar/cancelar repondría un material que ya se usó);
+     *  - con producción (incluidas las unidades que Calidad rechazó) no se
+     *    vuelve a Pendiente (Pendiente = tela sin cortar: eliminar/cancelar
+     *    repondría un material que ya se usó);
      *  - Finalizado exige haber producido todas las unidades solicitadas.
      */
     private function errorDeEstado(OrdenProduccion $orden, string $estado, int $solicitada): ?string
     {
         $producida = (int) $orden->cantidad_producida;
 
-        if ($estado === 'Pendiente' && $producida > 0) {
-            return "La orden ya tiene {$producida} unidades producidas: no puede volver a Pendiente.";
+        if ($estado === 'Pendiente' && $orden->tieneProduccion()) {
+            return 'La orden ya tiene unidades producidas (o rechazadas en Calidad): no puede volver a Pendiente.';
         }
         if ($estado === 'Finalizado' && $producida < $solicitada) {
             $faltan = $solicitada - $producida;
@@ -868,22 +885,22 @@ class OrdenProduccionController extends Controller
         // Cantidad: solo se puede rebalancear con la orden Pendiente (la tela no
         // se ha cortado y los insumos no se ajustan; en marcha → cancelar+recrear).
         $nuevaCantidad = (int) ($validated['cantidad'] ?? $orden->cantidad_solicitada);
-        $cambiaCantidad = $nuevaCantidad !== (int) $orden->cantidad_solicitada;
-        if ($cambiaCantidad && $orden->estado !== 'Pendiente') {
-            return $this->fallar($request, 'La cantidad solo puede cambiarse mientras la orden está Pendiente.', 'cantidad');
-        }
-        if ($cambiaCantidad && ! $orden->detalle_pedido_id) {
-            return $this->fallar($request, 'La orden no está ligada a una línea de pedido; su cantidad no puede cambiarse.', 'cantidad');
-        }
 
         try {
-            DB::transaction(function () use ($orden, $validated, $nuevaCantidad, $cambiaCantidad) {
+            DB::transaction(function () use ($orden, $validated, $nuevaCantidad) {
                 // Bloqueo de la orden: un avance simultáneo no puede colarse entre
-                // la comprobación del estado y el guardado.
-                OrdenProduccion::whereKey($orden->id)->lockForUpdate()->first();
-                $orden->refresh();
+                // las comprobaciones y el guardado.
+                $this->bloquear($orden);
                 if ($orden->estado === 'Cancelado') {
                     throw new ReglaOrdenException('Una orden cancelada no se puede editar.', 'estado');
+                }
+
+                $cambiaCantidad = $nuevaCantidad !== (int) $orden->cantidad_solicitada;
+                if ($cambiaCantidad && ($orden->estado !== 'Pendiente' || $orden->tieneProduccion())) {
+                    throw new ReglaOrdenException('La cantidad solo puede cambiarse mientras la orden está Pendiente y sin producción.', 'cantidad');
+                }
+                if ($cambiaCantidad && ! $orden->detalle_pedido_id) {
+                    throw new ReglaOrdenException('La orden no está ligada a una línea de pedido; su cantidad no puede cambiarse.', 'cantidad');
                 }
                 if ($error = $this->errorDeEstado($orden, $validated['estado'], $nuevaCantidad)) {
                     throw new ReglaOrdenException($error, 'estado');
@@ -1029,25 +1046,27 @@ class OrdenProduccionController extends Controller
     {
         $orden = OrdenProduccion::findOrFail($id);
 
-        if ($orden->estado !== 'Pendiente') {
-            return $this->rechazar($request, 'No se puede eliminar una orden que no está en estado Pendiente');
+        try {
+            DB::transaction(function () use ($orden) {
+                // Con la orden bloqueada: un avance o una cancelación simultánea
+                // no pueden colarse entre la comprobación y la reposición.
+                $this->bloquear($orden);
+                if ($orden->estado !== 'Pendiente') {
+                    throw new ReglaOrdenException('No se puede eliminar una orden que no está en estado Pendiente');
+                }
+                // Eliminar repone todo el material: con producción (o unidades
+                // rechazadas por Calidad) ese material ya se usó.
+                if ($orden->tieneProduccion()) {
+                    throw new ReglaOrdenException('La orden ya tiene unidades producidas: cancélala en lugar de eliminarla.');
+                }
+                $this->inventario->reponer($orden, Auth::id());
+                $orden->delete();
+            });
+        } catch (ReglaOrdenException $e) {
+            return $this->rechazar($request, $e->getMessage());
         }
-        // Eliminar repone todo el material: con producción registrada ese
-        // material ya se usó (datos previos a la regla de estados).
-        if ($orden->cantidad_producida > 0) {
-            return $this->rechazar($request, 'La orden ya tiene unidades producidas: cancélala en lugar de eliminarla.');
-        }
 
-        $pedidoId = $orden->pedido_id;
-
-        DB::transaction(function () use ($orden) {
-            // La OP solo se puede eliminar estando 'Pendiente' (tela sin cortar):
-            // se devuelve al inventario el stock comprometido al crearla.
-            $this->inventario->reponer($orden, Auth::id());
-            $orden->delete();
-        });
-
-        Pedido::find($pedidoId)?->recalcularEstado();
+        Pedido::find($orden->pedido_id)?->recalcularEstado();
 
         return $this->responder($request, 'Orden de producción eliminada exitosamente.', ['message' => 'Orden de producción eliminada exitosamente.']);
     }
@@ -1057,36 +1076,41 @@ class OrdenProduccionController extends Controller
      *
      * Reposición de stock condicional al estatus al momento de cancelar (merma
      * en confección textil):
-     *  - 'Pendiente': la tela no se ha cortado → se repone el stock comprometido.
-     *  - 'En Proceso' / 'Finalizado': la tela ya se cortó (merma) → NO se repone
-     *    y se exige un motivo que justifique la pérdida del material.
+     *  - 'Pendiente' sin producción: la tela no se ha cortado → se repone el
+     *    stock comprometido.
+     *  - En cualquier otro caso la tela ya se cortó (merma) → NO se repone y
+     *    se exige un motivo que justifique la pérdida del material.
      */
     public function cancelar(Request $request, $id): JsonResponse|RedirectResponse
     {
         $orden = OrdenProduccion::findOrFail($id);
-
-        if ($orden->estado === 'Cancelado') {
-            return $this->fallar($request, 'La orden ya está cancelada.', 'motivo_cancelacion');
-        }
-
-        // Solo la cancelación temprana (Pendiente y sin producción) repone stock.
-        $reponeStock = $orden->estado === 'Pendiente' && (int) $orden->cantidad_producida === 0;
-
         $validated = $request->validate(
-            ['motivo_cancelacion' => ($reponeStock ? 'nullable' : 'required').'|string|max:500'],
-            ['motivo_cancelacion.required' => 'La orden ya está en producción (material cortado): indica el motivo de la cancelación para justificar la merma.'],
+            ['motivo_cancelacion' => 'nullable|string|max:500'],
         );
+        $motivo = trim((string) ($validated['motivo_cancelacion'] ?? '')) ?: null;
 
-        DB::transaction(function () use ($orden, $validated, $reponeStock) {
-            if ($reponeStock) {
-                $this->inventario->reponer($orden, Auth::id());
-            }
+        try {
+            $reponeStock = DB::transaction(function () use ($orden, $motivo) {
+                $this->bloquear($orden);
+                if ($orden->estado === 'Cancelado') {
+                    throw new ReglaOrdenException('La orden ya está cancelada.', 'motivo_cancelacion');
+                }
+                $repone = $orden->estado === 'Pendiente' && ! $orden->tieneProduccion();
+                if (! $repone && ! $motivo) {
+                    // Error de validación del campo (mismo formato que antes, JSON e Inertia).
+                    throw ValidationException::withMessages(['motivo_cancelacion' => 'La orden ya está en producción (material cortado): indica el motivo de la cancelación para justificar la merma.']);
+                }
 
-            $orden->update([
-                'estado'             => 'Cancelado',
-                'motivo_cancelacion' => $validated['motivo_cancelacion'] ?? null,
-            ]);
-        });
+                if ($repone) {
+                    $this->inventario->reponer($orden, Auth::id());
+                }
+                $orden->update(['estado' => 'Cancelado', 'motivo_cancelacion' => $motivo]);
+
+                return $repone;
+            });
+        } catch (ReglaOrdenException $e) {
+            return $this->fallar($request, $e->getMessage(), $e->campo);
+        }
 
         Pedido::find($orden->pedido_id)?->recalcularEstado();
 
@@ -1095,6 +1119,13 @@ class OrdenProduccionController extends Controller
             : 'Orden cancelada. El material se registró como merma (sin reposición de stock).';
 
         return $this->responder($request, $mensaje, ['message' => $mensaje]);
+    }
+
+    /** Bloquea la fila de la orden (dentro de una transacción) y relee sus datos. */
+    private function bloquear(OrdenProduccion $orden): void
+    {
+        OrdenProduccion::whereKey($orden->id)->lockForUpdate()->first();
+        $orden->refresh();
     }
 
     // ══════════════════════════════════════════════════════════════════════
@@ -1141,11 +1172,16 @@ class OrdenProduccionController extends Controller
 
     public function destroySubOrden(Request $request, $id, $subId): JsonResponse|RedirectResponse
     {
-        SubOrdenProduccion::where('orden_produccion_id', $id)->findOrFail($subId)->delete();
-
-        // Quitar una etapa puede cambiar el estado de la orden (y el del pedido).
         $orden = OrdenProduccion::findOrFail($id);
-        $orden->recalcularEstadoDesdeSubordenes();
+
+        DB::transaction(function () use ($orden, $subId) {
+            // Bloqueo: el recálculo usa lo producido al día (un avance simultáneo
+            // no deja la orden en un estado viejo).
+            $this->bloquear($orden);
+            $orden->subordenes()->findOrFail($subId)->delete();
+            // Quitar una etapa puede cambiar el estado de la orden (y el del pedido).
+            $orden->recalcularEstadoDesdeSubordenes();
+        });
         Pedido::find($orden->pedido_id)?->recalcularEstado();
 
         return $this->responder($request, 'Sub-orden eliminada.', ['message' => 'Sub-orden eliminada.']);
@@ -1160,28 +1196,38 @@ class OrdenProduccionController extends Controller
             'estado.in' => 'Estado de sub-orden no válido.',
         ]);
 
-        $sub = SubOrdenProduccion::where('orden_produccion_id', $id)->findOrFail($subId);
         $orden = OrdenProduccion::findOrFail($id);
 
-        // Regla de integridad: finalizar la ÚLTIMA etapa activa finalizaría la
-        // orden completa, y eso solo es válido si la producción registrada
-        // (avances) ya cubre todas las unidades solicitadas.
-        if ($validated['estado'] === 'Finalizado' && $orden->cantidad_producida < $orden->cantidad_solicitada) {
-            $seriaUltima = $orden->subordenes()
-                ->where('id', '!=', $sub->id)
-                ->where('estado', '!=', 'Cancelado')
-                ->get()
-                ->every(fn ($s) => $s->estado === 'Finalizado');
+        try {
+            $sub = DB::transaction(function () use ($orden, $subId, $validated) {
+                $this->bloquear($orden);
+                $sub = $orden->subordenes()->findOrFail($subId);
 
-            if ($seriaUltima) {
-                $faltan = $orden->cantidad_solicitada - $orden->cantidad_producida;
+                // Regla de integridad: finalizar la ÚLTIMA etapa activa finalizaría la
+                // orden completa, y eso solo es válido si la producción registrada
+                // (avances) ya cubre todas las unidades solicitadas.
+                if ($validated['estado'] === 'Finalizado' && $orden->cantidad_producida < $orden->cantidad_solicitada) {
+                    $seriaUltima = $orden->subordenes()
+                        ->where('id', '!=', $sub->id)
+                        ->where('estado', '!=', 'Cancelado')
+                        ->get()
+                        ->every(fn ($s) => $s->estado === 'Finalizado');
 
-                return $this->rechazar($request, "No puedes finalizar la última etapa: la orden tiene {$faltan} de {$orden->cantidad_solicitada} unidades sin registrar. Registra el avance de producción primero.");
-            }
+                    if ($seriaUltima) {
+                        $faltan = $orden->cantidad_solicitada - $orden->cantidad_producida;
+                        throw new ReglaOrdenException("No puedes finalizar la última etapa: la orden tiene {$faltan} de {$orden->cantidad_solicitada} unidades sin registrar. Registra el avance de producción primero.");
+                    }
+                }
+
+                $sub->update(['estado' => $validated['estado']]);
+                $orden->recalcularEstadoDesdeSubordenes();
+
+                return $sub;
+            });
+        } catch (ReglaOrdenException $e) {
+            return $this->rechazar($request, $e->getMessage());
         }
 
-        $sub->update(['estado' => $validated['estado']]);
-        $orden->recalcularEstadoDesdeSubordenes();
         $orden->refresh();
         Pedido::find($orden->pedido_id)?->recalcularEstado();
 
