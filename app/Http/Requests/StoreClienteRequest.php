@@ -25,7 +25,7 @@ class StoreClienteRequest extends FormRequest
             // por eso el regex admite números y signos comunes de razón social (. , & - ').
             'nombre' => 'required|string|min:2|max:200|regex:/^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s.,&\'\-]+$/',
             'apellido' => 'nullable|string|max:100|regex:/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]*$/',
-            'tipo_cliente' => 'required|in:natural,juridico',
+            'tipo_cliente' => 'required|in:natural,juridico,gubernamental',
             'email' => 'nullable|string|email:rfc|max:255',
             // Multi-teléfono: arreglo telefonos[i][numero|tipo|es_principal]
             'telefonos' => 'required|array|min:1|max:3',
@@ -69,7 +69,7 @@ class StoreClienteRequest extends FormRequest
             'apellido.max' => 'El apellido no puede exceder los 100 caracteres.',
             'apellido.regex' => 'El apellido solo puede contener letras y espacios.',
             'tipo_cliente.required' => 'Debe seleccionar el tipo de cliente.',
-            'tipo_cliente.in' => 'El tipo de cliente debe ser Natural o Jurídico.',
+            'tipo_cliente.in' => 'El tipo de cliente debe ser Natural, Jurídico o Gubernamental.',
             'email.email' => 'El email debe ser una dirección de correo válida.',
             'email.unique' => 'Este email ya está registrado en el sistema.',
             'telefonos.required' => 'Agrega al menos un teléfono.',

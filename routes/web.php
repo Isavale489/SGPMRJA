@@ -91,8 +91,7 @@ Route::middleware(['auth', 'throttle:60,1', 'active.user', 'recovery.questions.r
         Route::post('users/{id}/reset-password', [UserController::class, 'resetPassword'])->name('users.reset-password');
 
         // Clientes
-        Route::resource('clientes', ClienteController::class)->except(['create']);
-        Route::get('clientes-data', [ClienteController::class, 'getClientes'])->name('clientes.data');
+        Route::resource('clientes', ClienteController::class)->only(['index', 'store', 'update', 'destroy']);
         Route::get('clientes-check-documento', [ClienteController::class, 'checkDocumento'])->name('clientes.check-documento');
         Route::get('clientes-check-email', [ClienteController::class, 'checkEmail'])->name('clientes.check-email');
         Route::get('clientes-search', [ClienteController::class, 'searchAjax'])->name('clientes.search');

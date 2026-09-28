@@ -32,7 +32,7 @@ return [
         'titulo' => 'Gestión General',
         'icono' => 'Database',
         'items' => [
-            ['titulo' => 'Clientes', 'icono' => 'UserRound', 'ruta' => 'clientes.index', 'permiso' => 'clientes.ver'],
+            ['titulo' => 'Clientes', 'icono' => 'UserRound', 'ruta' => 'clientes.index', 'permiso' => 'clientes.ver', 'inertia' => true],
             [
                 'titulo' => 'Productos',
                 'icono' => 'Shirt',

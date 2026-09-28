@@ -15,31 +15,31 @@ import { useFiltrosUrl } from '@/hooks/use-filtros-url';
 import { usePermisos } from '@/hooks/use-permisos';
 import AppLayout from '@/layouts/app-layout';
 
-import { DetalleProveedor } from './detalle-proveedor';
-import { FormularioProveedor } from './formulario-proveedor';
-import type { FiltrosProveedores, PaginaProveedores, ProveedorFila } from './tipos';
+import { DetalleCliente } from './detalle-cliente';
+import { FormularioCliente } from './formulario-cliente';
+import { ETIQUETA_TIPO, TIPOS_CLIENTE, type ClienteFila, type FiltrosClientes, type PaginaClientes } from './tipos';
 
 const TODOS = 'todos'; // los Select de Radix no admiten '' como valor
-const TABLA = ['proveedores', 'filtros'];
+const TABLA = ['clientes', 'filtros'];
 
-export default function ProveedoresIndex({ proveedores, filtros: filtrosIniciales, estados, urls }: PaginaProveedores) {
+export default function ClientesIndex({ clientes, filtros: filtrosIniciales, estados, urls }: PaginaClientes) {
     const { puede } = usePermisos();
-    const gestionar = puede('proveedores.gestionar');
+    const gestionar = puede('clientes.gestionar');
     const historial = Boolean(filtrosIniciales.historial);
-    const { filtros, cambiar, limpiar, cargando } = useFiltrosUrl<FiltrosProveedores>(urls.index, filtrosIniciales, TABLA);
+    const { filtros, cambiar, limpiar, cargando } = useFiltrosUrl<FiltrosClientes>(urls.index, filtrosIniciales, TABLA);
 
     // `apertura` cambia en cada apertura → el formulario se monta de nuevo con los datos correctos.
-    const [formulario, setFormulario] = useState<{ abierto: boolean; proveedor?: ProveedorFila; apertura: number }>({ abierto: false, apertura: 0 });
-    const abrirFormulario = (proveedor?: ProveedorFila) => setFormulario((f) => ({ abierto: true, proveedor, apertura: f.apertura + 1 }));
-    const [viendo, setViendo] = useState<ProveedorFila>();
+    const [formulario, setFormulario] = useState<{ abierto: boolean; cliente?: ClienteFila; apertura: number }>({ abierto: false, apertura: 0 });
+    const abrirFormulario = (cliente?: ClienteFila) => setFormulario((f) => ({ abierto: true, cliente, apertura: f.apertura + 1 }));
+    const [viendo, setViendo] = useState<ClienteFila>();
     // Fuera del menú: si la confirmación viviera dentro, el menú quedaría abierto al confirmar.
-    const [inhabilitando, setInhabilitando] = useState<ProveedorFila>();
+    const [inhabilitando, setInhabilitando] = useState<ClienteFila>();
 
     const hayFiltros = Boolean(filtros.buscar || filtros.tipo || filtros.estado || (filtros.orden && filtros.orden !== 'recientes'));
-    const inhabilitar = (p: ProveedorFila) => router.delete(`${urls.index}/${p.id}`, { preserveScroll: true });
-    const restaurar = (p: ProveedorFila) => router.post(`${urls.index}/${p.id}/restore`, {}, { preserveScroll: true });
+    const inhabilitar = (p: ClienteFila) => router.delete(`${urls.index}/${p.id}`, { preserveScroll: true });
+    const restaurar = (p: ClienteFila) => router.post(`${urls.index}/${p.id}/restore`, {}, { preserveScroll: true });
 
-    const columnas: Columna<ProveedorFila>[] = [
+    const columnas: Columna<ClienteFila>[] = [
         { id: 'documento', encabezado: 'Documento', celda: (p) => <span className="font-mono text-xs">{p.documento}</span> },
         {
             id: 'nombre',
@@ -47,7 +47,7 @@ export default function ProveedoresIndex({ proveedores, filtros: filtrosIniciale
             celda: (p) => (
                 <span className="grid">
                     <span className="font-medium">{p.nombre}</span>
-                    <span className="text-muted-foreground text-xs">{p.tipo === 'natural' ? 'Natural' : 'Jurídico'}</span>
+                    <span className="text-muted-foreground text-xs">{ETIQUETA_TIPO[p.tipo]}</span>
                 </span>
             ),
         },
@@ -99,7 +99,7 @@ export default function ProveedoresIndex({ proveedores, filtros: filtrosIniciale
 
     return (
         <AppLayout
-            titulo={historial ? 'Proveedores inhabilitados' : 'Proveedores'}
+            titulo={historial ? 'Clientes inhabilitados' : 'Clientes'}
             acciones={
                 <>
                     {historial ? (
@@ -111,15 +111,12 @@ export default function ProveedoresIndex({ proveedores, filtros: filtrosIniciale
                             <Link href={`${urls.index}?historial=1`}><Archive /> Inhabilitados</Link>
                         </Button>
                     )}
-                    <ExportarPdf
-                        url={urls.reportePdf}
-                        recurso="proveedores"
-                        tipos={[{ valor: 'natural', etiqueta: 'Natural' }, { valor: 'juridico', etiqueta: 'Jurídico' }]}
-                        parametros={{ tipo: 'tipo_proveedor', estatus: 'estatus' }}
-                    />
+                    {puede('clientes.pdf') && (
+                        <ExportarPdf url={urls.reportePdf} recurso="clientes" tipos={TIPOS_CLIENTE} parametros={{ tipo: 'tipo_cliente', estatus: 'estado' }} />
+                    )}
                     {gestionar && !historial && (
                         <Button onClick={() => abrirFormulario()}>
-                            <Plus /> Agregar proveedor
+                            <Plus /> Agregar cliente
                         </Button>
                     )}
                 </>
@@ -134,16 +131,17 @@ export default function ProveedoresIndex({ proveedores, filtros: filtrosIniciale
                             value={filtros.buscar ?? ''}
                             onChange={(e) => cambiar('buscar', e.target.value)}
                             placeholder="Buscar por nombre, documento o correo…"
-                            aria-label="Buscar proveedor"
+                            aria-label="Buscar cliente"
                             className="pl-8"
                         />
                     </div>
-                    <Select value={filtros.tipo ?? TODOS} onValueChange={(v) => cambiar('tipo', v === TODOS ? undefined : (v as FiltrosProveedores['tipo']))}>
+                    <Select value={filtros.tipo ?? TODOS} onValueChange={(v) => cambiar('tipo', v === TODOS ? undefined : (v as FiltrosClientes['tipo']))}>
                         <SelectTrigger className="w-40" aria-label="Filtrar por tipo"><SelectValue /></SelectTrigger>
                         <SelectContent>
                             <SelectItem value={TODOS}>Todos los tipos</SelectItem>
-                            <SelectItem value="natural">Natural</SelectItem>
-                            <SelectItem value="juridico">Jurídico</SelectItem>
+                            {TIPOS_CLIENTE.map((t) => (
+                                <SelectItem key={t.valor} value={t.valor}>{t.etiqueta}</SelectItem>
+                            ))}
                         </SelectContent>
                     </Select>
                     <Select value={filtros.estado ?? TODOS} onValueChange={(v) => cambiar('estado', v === TODOS ? undefined : v)}>
@@ -155,7 +153,7 @@ export default function ProveedoresIndex({ proveedores, filtros: filtrosIniciale
                             ))}
                         </SelectContent>
                     </Select>
-                    <Select value={filtros.orden ?? 'recientes'} onValueChange={(v) => cambiar('orden', v as FiltrosProveedores['orden'])}>
+                    <Select value={filtros.orden ?? 'recientes'} onValueChange={(v) => cambiar('orden', v as FiltrosClientes['orden'])}>
                         <SelectTrigger className="w-52" aria-label="Ordenar"><SelectValue /></SelectTrigger>
                         <SelectContent>
                             <SelectItem value="recientes">Más recientes primero</SelectItem>
@@ -172,12 +170,12 @@ export default function ProveedoresIndex({ proveedores, filtros: filtrosIniciale
                 </div>
 
                 <TablaServidor
-                    pagina={proveedores}
+                    pagina={clientes}
                     columnas={columnas}
                     only={TABLA}
                     cargando={cargando}
                     idFila={(p) => p.id}
-                    vacio={hayFiltros ? 'Ningún proveedor coincide con los filtros.' : historial ? 'No hay proveedores inhabilitados.' : 'Aún no hay proveedores registrados.'}
+                    vacio={hayFiltros ? 'Ningún cliente coincide con los filtros.' : historial ? 'No hay clientes inhabilitados.' : 'Aún no hay clientes registrados.'}
                 />
             </div>
 
@@ -185,16 +183,16 @@ export default function ProveedoresIndex({ proveedores, filtros: filtrosIniciale
                 abierto={Boolean(inhabilitando)}
                 onCerrar={() => setInhabilitando(undefined)}
                 titulo={`¿Inhabilitar a ${inhabilitando?.nombre ?? ''}?`}
-                descripcion="Pasa al historial y deja de aparecer en compras nuevas. Se puede restaurar cuando quieras."
+                descripcion="Pasa al historial y deja de aparecer en cotizaciones nuevas. Sus cotizaciones y pedidos se conservan. Se puede restaurar cuando quieras."
                 accion="Inhabilitar"
                 onConfirmar={() => inhabilitando && inhabilitar(inhabilitando)}
             />
-            <DetalleProveedor proveedor={viendo} onCerrar={() => setViendo(undefined)} />
+            <DetalleCliente cliente={viendo} onCerrar={() => setViendo(undefined)} />
             {gestionar && (
-                <FormularioProveedor
+                <FormularioCliente
                     key={formulario.apertura}
                     abierto={formulario.abierto}
-                    proveedor={formulario.proveedor}
+                    cliente={formulario.cliente}
                     onCerrar={() => setFormulario((f) => ({ ...f, abierto: false }))}
                     estados={estados}
                     urls={urls}

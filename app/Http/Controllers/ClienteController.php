@@ -2,176 +2,137 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\RespondeSegunCliente;
+use App\Http\Requests\StoreClienteRequest;
+use App\Http\Requests\UpdateClienteRequest;
 use App\Models\Cliente;
 use App\Models\Empleado;
 use App\Models\Persona;
-use App\Models\Telefono;
-use App\Models\Direccion;
-use App\Http\Requests\StoreClienteRequest;
-use App\Http\Requests\UpdateClienteRequest;
 use App\Services\ClienteService;
+use App\Support\CatalogoGeografico;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Yajra\DataTables\DataTables;
-use Barryvdh\DomPDF\Facade\Pdf;
-use Illuminate\Support\Facades\DB;
-
+use Inertia\Inertia;
+use Inertia\Response;
 
 class ClienteController extends Controller
 {
+    use RespondeSegunCliente;
+
     public function __construct(
         private ClienteService $clienteService
     ) {
     }
 
-    public function index(Request $request)
+    /** Filtros de la tabla (query string): la URL es el estado de la vista. */
+    private const FILTROS = ['buscar', 'tipo', 'estado', 'orden', 'historial'];
+
+    public function index(Request $request): Response
     {
-        $historial = $request->has('historial');
-        return view('admin.clientes.index', compact('historial'));
+        $filtros = array_filter($request->only(self::FILTROS), fn ($v) => $v !== null && $v !== '');
+
+        return Inertia::render('Clientes/Index', [
+            'clientes' => $this->consulta($filtros)
+                ->paginate(15)
+                ->withQueryString()
+                ->through(fn (Cliente $c) => $this->fila($c)),
+            'filtros' => (object) $filtros,
+            'estados' => CatalogoGeografico::mapa(),
+            'urls' => [
+                'index' => route('clientes.index', absolute: false),
+                'reportePdf' => route('clientes.reporte.pdf', absolute: false),
+                'checkDocumento' => route('clientes.check-documento', absolute: false),
+                'checkEmail' => route('clientes.check-email', absolute: false),
+            ],
+        ]);
     }
 
-    public function getClientes(Request $request)
+    /**
+     * Consulta de la tabla. Mismas reglas que tenía el endpoint DataTables:
+     * búsqueda por nombre/razón social, documento o email; filtros por tipo y
+     * estado territorial; historial = solo inhabilitados.
+     */
+    private function consulta(array $filtros): Builder
     {
-        // ── Base query con relaciones ──
-        $query = Cliente::with(['persona.telefonos', 'persona.direcciones']);
+        $query = Cliente::with(['persona.telefonos', 'persona.direccion', 'persona.empleado:id,persona_id', 'persona.proveedor:id,persona_id']);
 
-        // ══════════════════════════════════════════════════════════
-        // FILTROS AVANZADOS — Server-Side (Patrón Maestro S-07)
-        // Cada filtro se aplica solo si el frontend envía un valor.
-        // Para replicar en otros módulos: copiar este bloque y
-        // ajustar los nombres de columna/accessor según el modelo.
-        // ══════════════════════════════════════════════════════════
-
-        // Filtro: Tipo de Cliente (natural, juridico, gubernamental)
-        if ($request->filled('filter_tipo_cliente')) {
-            $query->where('tipo_cliente', $request->input('filter_tipo_cliente'));
-        }
-
-        // Activos vs Historial: lo define la página (no un filtro). La principal
-        // muestra solo activos; el historial (?historial=true) solo inhabilitados.
-        if ($request->boolean('historial')) {
+        if (! empty($filtros['historial'])) {
             $query->onlyTrashed();
         }
-
-        // Filtro: Estado Territorial
-        if ($request->filled('filter_estado_territorial')) {
-            $estado = $request->input('filter_estado_territorial');
-            $query->whereHas('persona.direcciones', function ($q) use ($estado) {
-                $q->whereHas('estadoRel', fn ($e) => $e->where('nombre', $estado));
+        if (! empty($filtros['tipo'])) {
+            $query->where('tipo_cliente', $filtros['tipo']);
+        }
+        if (! empty($filtros['estado'])) {
+            $estado = $filtros['estado'];
+            $query->whereHas('persona.direcciones', fn ($q) => $q->whereHas('estadoRel', fn ($e) => $e->where('nombre', $estado)));
+        }
+        if (! empty($filtros['buscar'])) {
+            $buscar = trim($filtros['buscar']);
+            $query->whereHas('persona', function ($p) use ($buscar) {
+                // `nombre` ya contiene el nombre completo / razón social.
+                $p->where('nombre', 'like', "%{$buscar}%")
+                    ->orWhere('email', 'like', "{$buscar}%")
+                    ->orWhereRaw('CONCAT(tipo_documento, documento_identidad) like ?', ["{$buscar}%"])
+                    ->orWhere('documento_identidad', 'like', "{$buscar}%");
             });
         }
 
-        // Filtro: Documento (búsqueda parcial por cédula/RIF)
-        if ($request->filled('filter_documento')) {
-            $doc = $request->input('filter_documento');
-            $query->whereHas('persona', function ($q) use ($doc) {
-                $q->where(DB::raw("CONCAT(tipo_documento, documento_identidad)"), 'LIKE', "%{$doc}%");
-            });
-        }
+        return match ($filtros['orden'] ?? 'recientes') {
+            'antiguos' => $query->orderBy('cliente.created_at')->orderBy('cliente.id'),
+            'nombre_asc', 'nombre_desc' => $query
+                ->join('persona', 'cliente.persona_id', '=', 'persona.id')
+                ->orderBy('persona.nombre', $filtros['orden'] === 'nombre_asc' ? 'asc' : 'desc')
+                ->select('cliente.*'),
+            default => $query->orderByDesc('cliente.created_at')->orderByDesc('cliente.id'),
+        };
+    }
 
-        // ══════════════════════════════════════════════════════════
-        // ORDENAMIENTO — Selector "Ordenar por" del frontend
-        // Valores posibles: recientes, antiguos, nombre_asc, nombre_desc
-        // Fallback: más recientes primero (created_at DESC)
-        // ══════════════════════════════════════════════════════════
-        $orden = $request->input('filter_orden', 'recientes');
+    /**
+     * Fila de la tabla: trae todo lo que usan "Ver" y "Editar", así la vista
+     * no necesita otra petición. Espejo de `ClienteFila` en
+     * resources/js/pages/Clientes/tipos.ts (lo verifica ClientePaginaTest).
+     */
+    private function fila(Cliente $c): array
+    {
+        $persona = $c->persona;
+        $direccion = $persona?->direccion;
 
-        switch ($orden) {
-            case 'antiguos':
-                $query->orderBy('cliente.created_at', 'asc');
-                break;
-            case 'nombre_asc':
-                $query->join('persona', 'cliente.persona_id', '=', 'persona.id')
-                      ->orderBy('persona.nombre', 'asc')
-                      ->select('cliente.*');
-                break;
-            case 'nombre_desc':
-                $query->join('persona', 'cliente.persona_id', '=', 'persona.id')
-                      ->orderBy('persona.nombre', 'desc')
-                      ->select('cliente.*');
-                break;
-            case 'recientes':
-            default:
-                $query->orderBy('cliente.created_at', 'desc');
-                break;
-        }
-
-        return DataTables::of($query)
-            // Búsqueda estricta: solo por la identidad del cliente (nombre/apellido,
-            // documento y email de la persona). Sobrescribe el buscador global de
-            // DataTables para no romper sobre columnas derivadas de relaciones.
-            ->filter(function ($query) use ($request) {
-                $keyword = trim((string) $request->input('search.value'));
-                if ($keyword === '') {
-                    return;
-                }
-                $query->whereHas('persona', function ($p) use ($keyword) {
-                    // `nombre` ya contiene el nombre completo / razón social;
-                    // se busca por coincidencia parcial para hallar también por apellido.
-                    $p->where('nombre', 'like', "%{$keyword}%")
-                      ->orWhere('email', 'like', "{$keyword}%")
-                      ->orWhereRaw("CONCAT(tipo_documento, documento_identidad) like ?", ["{$keyword}%"]);
-                });
-            }, true)
-            ->addColumn('nombre', fn($c) => $c->nombre ?? 'N/A')
-            ->addColumn('apellido', fn($c) => '')
-            ->addColumn('tipo_cliente', fn($c) => $c->tipo_cliente)
-            ->addColumn('email', fn($c) => $c->email)
-            ->addColumn('telefono', fn($c) => $c->telefono)
-            ->addColumn('documento', fn($c) => $c->documento)
-            ->addColumn('direccion', fn($c) => $c->direccion)
-            ->addColumn('estado_territorial', fn($c) => $c->estado_territorial)
-            ->addColumn('ciudad', fn($c) => $c->ciudad)
-            ->addColumn('estatus', fn($c) => $c->estatus)
-            ->addColumn('created_at', fn($c) => $c->created_at ? $c->created_at->format('d/m/Y H:i') : null)
-            ->addColumn('trashed', fn($c) => $c->trashed())
-            ->make(true);
+        return [
+            'id' => $c->id,
+            'tipo' => $c->tipo_cliente,
+            'tipo_documento' => $persona?->tipo_documento,
+            'numero_documento' => $persona?->documento_identidad,
+            'documento' => $c->documento,
+            'nombre' => $persona?->nombre,
+            'email' => $persona?->email,
+            'telefonos' => $persona ? $persona->telefonos->map(fn ($t) => [
+                'numero' => $t->numero,
+                'tipo' => $t->tipo,
+                'es_principal' => (bool) $t->es_principal,
+            ])->values()->all() : [],
+            'direccion' => $direccion?->direccion,
+            'estado_territorial' => $direccion?->estado,
+            'ciudad' => $direccion?->ciudad,
+            // La persona es compartida: editar sus datos también cambia estos registros.
+            'otros_roles' => array_values(array_filter([
+                $persona?->empleado ? 'empleado' : null,
+                $persona?->proveedor ? 'proveedor' : null,
+            ])),
+            'inhabilitado' => $c->trashed(),
+            'creado' => $c->created_at?->format('Y-m-d H:i'),
+        ];
     }
 
     public function store(StoreClienteRequest $request)
     {
         $clienteId = $this->clienteService->crear($request->validated());
 
-        return response()->json([
+        // Cotizaciones y Pedidos (alta rápida, jQuery) leen `cliente_id`.
+        return $this->responder($request, 'Cliente creado exitosamente.', [
             'message' => 'Cliente creado exitosamente.',
-            'cliente_id' => $clienteId
-        ]);
-    }
-
-    public function edit($id)
-    {
-        $cliente = Cliente::with(['persona.telefonos', 'persona.direcciones'])->findOrFail($id);
-
-        // Obtener teléfono y dirección principal
-        $telefonoPrincipal = $cliente->telefono;
-        $direccionPrincipal = $cliente->persona ? $cliente->persona->direccion_principal : null;
-
-        // Detectar si la persona también está en otro módulo
-        $otherRole = null;
-        if ($cliente->persona && Empleado::where('persona_id', $cliente->persona_id)->exists()) {
-            $otherRole = 'empleado';
-        }
-
-        // Formatear respuesta para compatibilidad con el frontend existente
-        return response()->json([
-            'id' => $cliente->id,
-            'persona_id' => $cliente->persona_id,
-            'nombre' => $cliente->persona ? $cliente->persona->nombre : '',
-            // `nombre` ya consolida nombre+apellido; el campo apellido del form
-            // queda vacío en edición (la identidad completa vive en `nombre`).
-            'apellido' => '',
-            'tipo_cliente' => $cliente->tipo_cliente,
-            'email' => $cliente->persona ? $cliente->persona->email : '',
-            'telefono' => $telefonoPrincipal ?? '',
-            'documento' => $cliente->persona ? ($cliente->persona->tipo_documento . $cliente->persona->documento_identidad) : '',
-            'direccion' => $direccionPrincipal ? $direccionPrincipal->direccion : '',
-            'estado_territorial' => $direccionPrincipal ? $direccionPrincipal->estado : '',
-            'ciudad' => $direccionPrincipal ? $direccionPrincipal->ciudad : '',
-            'estatus' => $cliente->estatus,
-            'other_role' => $otherRole,
-            // Datos adicionales para UI de múltiples teléfonos/direcciones
-            'telefonos' => $cliente->persona ? $cliente->persona->telefonos : [],
-            'direcciones' => $cliente->persona ? $cliente->persona->direcciones : [],
+            'cliente_id' => $clienteId,
         ]);
     }
 
@@ -181,18 +142,12 @@ class ClienteController extends Controller
 
         $this->clienteService->actualizar($cliente, $request->validated());
 
-        return response()->json(['message' => 'Cliente actualizado exitosamente.']);
+        return $this->responder($request, 'Cliente actualizado exitosamente.', ['message' => 'Cliente actualizado exitosamente.']);
     }
 
-    public function destroy($id)
+    public function destroy(Request $request, $id)
     {
-        $cliente = Cliente::find($id);
-
-        if (!$cliente) {
-            return response()->json(['error' => 'Cliente no encontrado.'], 404);
-        }
-
-        // Verificar si tiene cotizaciones asociadas
+        $cliente = Cliente::findOrFail($id);
         $cotizacionesCount = $cliente->cotizaciones()->count();
 
         $cliente->delete(); // SoftDelete: marca deleted_at
@@ -203,53 +158,29 @@ class ClienteController extends Controller
             'user_id' => auth()->id(),
         ]);
 
-        if ($cotizacionesCount > 0) {
-            return response()->json([
-                'message' => 'Cliente inhabilitado exitosamente.',
-                'warning' => 'Este cliente tenía ' . $cotizacionesCount . ' cotización(es). Los registros históricos se mantienen.'
-            ]);
-        }
+        $aviso = $cotizacionesCount > 0
+            ? 'Este cliente tenía '.$cotizacionesCount.' cotización(es). Los registros históricos se mantienen.'
+            : null;
 
-        return response()->json(['message' => 'Cliente inhabilitado exitosamente.']);
+        return $this->responder($request, trim('Cliente inhabilitado exitosamente. '.$aviso), array_filter([
+            'message' => 'Cliente inhabilitado exitosamente.',
+            'warning' => $aviso,
+        ]));
     }
 
     /**
      * Restaurar un cliente inhabilitado (soft-deleted).
      */
-    public function restore($id)
+    public function restore(Request $request, $id)
     {
-        $cliente = Cliente::onlyTrashed()->findOrFail($id);
-        $cliente->restore();
+        Cliente::onlyTrashed()->findOrFail($id)->restore();
 
         \Log::info('Cliente restaurado', [
             'cliente_id' => $id,
             'user_id' => auth()->id(),
         ]);
 
-        return response()->json(['message' => 'Cliente restaurado exitosamente.']);
-    }
-
-    public function show($id)
-    {
-        // withTrashed: también se ven detalles de clientes inhabilitados (desde el historial)
-        $cliente = Cliente::withTrashed()->with(['persona.telefonos', 'persona.direcciones'])->findOrFail($id);
-        return response()->json([
-            'id' => $cliente->id,
-            'nombre' => $cliente->nombre ?? 'N/A',
-            'apellido' => '',
-            'tipo_cliente' => $cliente->tipo_cliente,
-            'email' => $cliente->email,
-            'telefono' => $cliente->telefono,
-            'telefonos' => $cliente->persona ? $cliente->persona->telefonos : [],
-            'documento' => $cliente->documento,
-            'direccion' => $cliente->direccion,
-            'estado_territorial' => $cliente->estado_territorial,
-            'ciudad' => $cliente->ciudad,
-            'estatus' => $cliente->estatus,
-            'trashed' => $cliente->trashed(),
-            'created_at' => $cliente->created_at ? $cliente->created_at->format('d/m/Y H:i:s') : null,
-            'updated_at' => $cliente->updated_at ? $cliente->updated_at->format('d/m/Y H:i:s') : null
-        ]);
+        return $this->responder($request, 'Cliente restaurado exitosamente.', ['message' => 'Cliente restaurado exitosamente.']);
     }
 
     /**
