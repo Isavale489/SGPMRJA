@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\RespondeSegunCliente;
+use App\Http\Requests\GuardarTipoProductoRequest;
 use App\Models\TipoProducto;
 use App\Models\Insumo;
 use Illuminate\Http\Request;
@@ -9,79 +11,31 @@ use Illuminate\Http\JsonResponse;
 
 class TipoProductoController extends Controller
 {
-    /**
-     * Listar todos los tipos de producto
-     */
-    public function index(Request $request): JsonResponse
-    {
-        $query = TipoProducto::withCount(['productos', 'atributos', 'telas'])->orderBy('nombre');
-
-        if ($request->boolean('historial')) {
-            $query->onlyTrashed();
-        }
-
-        $tipos = $query->get();
-        return response()->json($tipos);
-    }
+    use RespondeSegunCliente;
 
     /**
      * Guardar nuevo tipo de producto
      */
-    public function store(Request $request): JsonResponse
+    public function store(GuardarTipoProductoRequest $request)
     {
-        $request->validate([
-            'nombre' => 'required|string|max:100|unique:tipo_producto,nombre',
-            'prefijo' => 'required|string|max:5|unique:tipo_producto,prefijo|alpha',
-            'descripcion' => 'nullable|string|max:500',
-            'precio_confeccion' => 'nullable|numeric|min:0|max:99999.99',
-            'requiere_tela' => 'nullable|boolean',
-            'requiere_produccion' => 'nullable|boolean',
-            'consumo_tela_por_unidad' => 'nullable|numeric|min:0|max:9999.99',
-            'imagen' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp,bmp,avif|max:10240',
-            'atributos' => 'nullable|array',
-            'atributos.*.id' => 'required_with:atributos|integer|exists:atributo,id',
-            'atributos.*.orden' => 'required_with:atributos|integer|min:1|max:99',
-            'insumos_default' => 'nullable|array',
-            'insumos_default.*.id' => 'required_with:insumos_default|integer|exists:insumo,id',
-            'insumos_default.*.cantidad_estimada' => 'required_with:insumos_default|numeric|min:0.01',
-            'telas' => 'nullable|array',
-            'telas.*' => 'integer|exists:insumo,id',
-        ], [
-            'nombre.required' => 'El nombre es obligatorio',
-            'nombre.unique' => 'Ya existe un tipo con este nombre',
-            'prefijo.required' => 'El prefijo de código es obligatorio',
-            'prefijo.unique' => 'Ya existe un tipo con este prefijo',
-            'prefijo.alpha' => 'El prefijo solo puede contener letras',
-            'prefijo.max' => 'El prefijo no puede tener más de 5 caracteres',
-            'imagen.image' => 'El archivo debe ser una imagen válida.',
-            'imagen.mimes' => 'Formato no permitido. Use JPG, PNG, GIF, WEBP, BMP o AVIF.',
-            'imagen.max' => 'La imagen no puede superar 10MB.',
-        ]);
-
-        $imagenPath = null;
-        if ($request->hasFile('imagen')) {
-            $imagenPath = $this->handleFileUpload($request->file('imagen'), null);
-        }
-
+        $datos = $request->validated();
         $tipo = TipoProducto::create([
-            'nombre' => $request->nombre,
-            'prefijo' => strtoupper($request->prefijo),
-            'descripcion' => $request->descripcion,
-            'imagen' => $imagenPath,
-            'precio_confeccion' => $request->input('precio_confeccion', 0),
+            'nombre' => $datos['nombre'],
+            'prefijo' => $datos['prefijo'],
+            'descripcion' => $datos['descripcion'] ?? null,
+            'imagen' => $request->hasFile('imagen') ? $this->handleFileUpload($request->file('imagen'), null) : null,
+            'precio_confeccion' => $datos['precio_confeccion'] ?? 0,
             'requiere_tela' => $request->boolean('requiere_tela', true),
             'requiere_produccion' => $request->boolean('requiere_produccion', true),
-            'consumo_tela_por_unidad' => $request->input('consumo_tela_por_unidad', 0),
+            'consumo_tela_por_unidad' => $datos['consumo_tela_por_unidad'] ?? 0,
         ]);
 
-        $this->syncAtributos($tipo, $request->input('atributos', []));
-        $this->syncInsumosDefault($tipo, $request->input('insumos_default', []));
-        $this->syncTelas($tipo, $request->input('telas', []));
+        $this->syncAtributos($tipo, $datos['atributos'] ?? []);
+        $this->syncInsumosDefault($tipo, $datos['insumos_default'] ?? []);
+        $this->syncTelas($tipo, $datos['telas'] ?? []);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Tipo de producto creado correctamente',
-            'tipo' => $tipo->load(['atributos', 'insumosDefault', 'telas']),
+        return $this->responder($request, 'Tipo de producto creado correctamente.', [
+            'success' => true, 'message' => 'Tipo de producto creado correctamente.', 'tipo' => $tipo->load(['atributos', 'insumosDefault', 'telas']),
         ]);
     }
 
@@ -107,53 +61,29 @@ class TipoProductoController extends Controller
     /**
      * Actualizar tipo de producto
      */
-    public function update(Request $request, TipoProducto $tipoProducto): JsonResponse
+    public function update(GuardarTipoProductoRequest $request, TipoProducto $tipoProducto)
     {
-        $request->validate([
-            'nombre' => 'required|string|max:100|unique:tipo_producto,nombre,' . $tipoProducto->id,
-            'prefijo' => 'required|string|max:5|unique:tipo_producto,prefijo,' . $tipoProducto->id . '|alpha',
-            'descripcion' => 'nullable|string|max:500',
-            'precio_confeccion' => 'nullable|numeric|min:0|max:99999.99',
-            'requiere_tela' => 'nullable|boolean',
-            'requiere_produccion' => 'nullable|boolean',
-            'consumo_tela_por_unidad' => 'nullable|numeric|min:0|max:9999.99',
-            'imagen' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp,bmp,avif|max:10240',
-            'atributos' => 'nullable|array',
-            'atributos.*.id' => 'required_with:atributos|integer|exists:atributo,id',
-            'atributos.*.orden' => 'required_with:atributos|integer|min:1|max:99',
-            'insumos_default' => 'nullable|array',
-            'insumos_default.*.id' => 'required_with:insumos_default|integer|exists:insumo,id',
-            'insumos_default.*.cantidad_estimada' => 'required_with:insumos_default|numeric|min:0.01',
-        ], [
-            'imagen.image' => 'El archivo debe ser una imagen válida.',
-            'imagen.mimes' => 'Formato no permitido. Use JPG, PNG, GIF, WEBP, BMP o AVIF.',
-            'imagen.max' => 'La imagen no puede superar 10MB.',
-        ]);
-
+        $datos = $request->validated();
+        // Sin 'prefijo': inmutable tras crear el tipo (forma parte del SKU).
         $data = [
-            'nombre' => $request->nombre,
-            'prefijo' => strtoupper($request->prefijo),
-            'descripcion' => $request->descripcion,
-            'precio_confeccion' => $request->input('precio_confeccion', $tipoProducto->precio_confeccion),
+            'nombre' => $datos['nombre'],
+            'descripcion' => $datos['descripcion'] ?? null,
+            'precio_confeccion' => $datos['precio_confeccion'] ?? $tipoProducto->precio_confeccion,
             'requiere_tela' => $request->boolean('requiere_tela', $tipoProducto->requiere_tela),
             'requiere_produccion' => $request->boolean('requiere_produccion', $tipoProducto->requiere_produccion),
-            'consumo_tela_por_unidad' => $request->input('consumo_tela_por_unidad', $tipoProducto->consumo_tela_por_unidad),
+            'consumo_tela_por_unidad' => $datos['consumo_tela_por_unidad'] ?? $tipoProducto->consumo_tela_por_unidad,
         ];
-
         if ($request->hasFile('imagen')) {
             $data['imagen'] = $this->handleFileUpload($request->file('imagen'), $tipoProducto->imagen);
         }
 
         $tipoProducto->update($data);
+        $this->syncAtributos($tipoProducto, $datos['atributos'] ?? []);
+        $this->syncInsumosDefault($tipoProducto, $datos['insumos_default'] ?? []);
+        $this->syncTelas($tipoProducto, $datos['telas'] ?? []);
 
-        $this->syncAtributos($tipoProducto, $request->input('atributos', []));
-        $this->syncInsumosDefault($tipoProducto, $request->input('insumos_default', []));
-        $this->syncTelas($tipoProducto, $request->input('telas', []));
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Tipo de producto actualizado correctamente',
-            'tipo' => $tipoProducto->load(['atributos', 'insumosDefault', 'telas']),
+        return $this->responder($request, 'Tipo de producto actualizado correctamente.', [
+            'success' => true, 'message' => 'Tipo de producto actualizado correctamente.', 'tipo' => $tipoProducto->load(['atributos', 'insumosDefault', 'telas']),
         ]);
     }
 
@@ -267,65 +197,21 @@ class TipoProductoController extends Controller
         ]);
     }
 
-    /**
-     * Eliminar tipo de producto
-     */
-    public function destroy(TipoProducto $tipoProducto): JsonResponse
+    public function destroy(Request $request, TipoProducto $tipoProducto)
     {
-        // Verificar si tiene productos asociados
-        if ($tipoProducto->productos()->count() > 0) {
-            return response()->json([
-                'success' => false,
-                'message' => 'No se puede inhabilitar. Hay productos asociados a este tipo.',
-            ], 422);
+        if ($tipoProducto->productos()->exists()) {
+            return $this->rechazar($request, 'No se puede inhabilitar. Hay productos asociados a este tipo.');
         }
 
         $tipoProducto->delete();
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Tipo de producto inhabilitado correctamente',
-        ]);
+        return $this->responder($request, 'Tipo de producto inhabilitado correctamente.');
     }
 
-    /**
-     * Restaurar tipo de producto inhabilitado
-     */
-    public function restore(int $id): JsonResponse
+    public function restore(Request $request, int $id)
     {
-        $tipoProducto = TipoProducto::onlyTrashed()->find($id);
+        TipoProducto::onlyTrashed()->findOrFail($id)->restore();
 
-        if (!$tipoProducto) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Tipo de producto no encontrado en historial.',
-            ], 404);
-        }
-
-        $tipoProducto->restore();
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Tipo de producto restaurado correctamente',
-            'tipo' => $tipoProducto,
-        ]);
-    }
-
-    public function checkNombre(Request $request)
-    {
-        $nombre = $request->input('nombre');
-        if (!$nombre)
-            return response()->json(['exists' => false]);
-        $exists = TipoProducto::where('nombre', $nombre)->exists();
-        return response()->json(['exists' => $exists]);
-    }
-
-    public function checkCodigoPrefijo(Request $request)
-    {
-        $codigo = $request->input('codigo');
-        if (!$codigo)
-            return response()->json(['exists' => false]);
-        $exists = TipoProducto::where('prefijo', $codigo)->exists();
-        return response()->json(['exists' => $exists]);
+        return $this->responder($request, 'Tipo de producto restaurado correctamente.');
     }
 }

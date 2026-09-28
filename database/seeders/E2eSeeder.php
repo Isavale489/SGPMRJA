@@ -2,6 +2,8 @@
 
 namespace Database\Seeders;
 
+use App\Models\Atributo;
+use App\Models\Insumo;
 use App\Models\Cliente;
 use App\Models\Cotizacion;
 use App\Models\Empleado;
@@ -66,6 +68,13 @@ class E2eSeeder extends Seeder
         ]);
         $cliente = Cliente::forceCreate(['persona_id' => $persona->id, 'tipo_cliente' => 'natural', 'estatus' => 1]);
         $tipo = TipoProducto::forceCreate(['nombre' => 'Chemise', 'prefijo' => 'CHE']);
+
+        // Catálogo para el formulario de tipos (tests/e2e/productos.spec.ts).
+        // Nombres distintos de los que crea tests/e2e/atributos.spec.ts (Manga/MNG).
+        $bolsillo = Atributo::create(['nombre' => 'Bolsillo', 'codigo' => 'BLS']);
+        $bolsillo->valores()->create(['nombre' => 'Con bolsillo', 'codigo' => 'CB', 'orden' => 1]);
+        $bolsillo->valores()->create(['nombre' => 'Sin bolsillo', 'codigo' => 'SB', 'orden' => 2]);
+        Insumo::create(['nombre' => 'Oxford E2E', 'codigo' => 'OXE', 'tipo' => 'Tela', 'unidad_medida' => 'Metro', 'is_inventoriable' => 1, 'costo_unitario' => 4, 'stock_actual' => 100, 'stock_minimo' => 5, 'estado' => 1]);
 
         // Persona que ya es empleado (y aún no cliente): alta de cliente reutilizando la persona.
         $personaEmpleado = Persona::create(['nombre' => 'Ana Pérez', 'tipo_documento' => 'V-', 'documento_identidad' => '15000001', 'email' => 'ana.perez@atlantico.test']);

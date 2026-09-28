@@ -201,9 +201,8 @@ return [
         ],
         'rutas' => [
             // El PDF va bajo 'ver' (paridad Supervisor, TASK-038).
-            'productos.index|productos.show|productos.data|productos.reporte.pdf|productos.sugerir-precio|productos.preview-codigo|productos.resolver-variante' => 'ver',
-            'productos.create|productos.store|productos.edit|productos.update|productos.destroy|productos.restore' => 'gestionar',
-        ],
+            'productos.index|productos.reporte.pdf|productos.resolver-variante' => 'ver',
+                    ],
     ],
 
     'tipo-productos' => [
@@ -213,8 +212,8 @@ return [
             'gestionar' => 'Crear, editar y eliminar tipos de producto',
         ],
         'rutas' => [
-            'tipo-productos.index|tipo-productos.show' => 'ver',
-            'tipo-productos.store|tipo-productos.telas.store|tipo-productos.update|tipo-productos.destroy|tipo-productos.restore|tipo-productos.check-nombre|tipo-productos.check-codigo' => 'gestionar',
+            'tipo-productos.show' => 'ver',
+            'tipo-productos.store|tipo-productos.telas.store|tipo-productos.update|tipo-productos.destroy|tipo-productos.restore' => 'gestionar',
         ],
     ],
 

@@ -86,6 +86,9 @@ Un catálogo con listado, historial y formulario pequeño **no se escribe desde 
 - **Piezas nuevas:** `ExportarPdf` (lista de filtros por reporte, cada módulo con sus parámetros), `Dato` (ficha de Ver), `ui/switch` (booleanos como `is_inventoriable`).
 - **Gotcha de rutas:** una ruta `x/{id}` (show) declarada antes que `x/check-nombre` la captura y responde 404. Al migrar, `show` suele sobrar (la fila trae todo); si queda, declara las rutas fijas primero.
 
+- **Productos** (`pages/Productos`): la página vive en `/productos` pero escribe en `/tipo-productos`. `PaginaCatalogo` recibe `urlMutaciones` (base de Inhabilitar/Restaurar si difiere de la página) y `accionesExtra` (botones del encabezado, p. ej. Exportar PDF).
+- **Fin de línea al editar con scripts:** unos 34 archivos PHP del repo están en CRLF (vienen de Windows). Un script que lee y reescribe un archivo (p. ej. Python con `open()` por defecto) lo pasa entero a LF y el diff muestra **todas** las líneas como cambiadas. Antes de reescribir, mira `git ls-files --eol <archivo>` y conserva su fin de línea.
+
 ## Endpoints compartidos con módulos Blade
 
 Si un módulo aún en Blade (jQuery) usa el mismo endpoint, el controller usa el trait `App\Http\Controllers\Concerns\RespondeSegunCliente`:
@@ -126,3 +129,5 @@ Herramientas evaluadas y **no** adoptadas. Se revisan si cambian las condiciones
 **Catálogos simples (Departamentos, Cargos, Colores):** 1.824 → 666 líneas (−63 %) con `PaginaCatalogo` + `DialogoFormulario`. El costo por módulo baja a medida que se acumulan las piezas.
 
 **Fase 3 (sep-2026):** Atributos 965 → 752 (−22 %), Clientes 1.840 → 987 (−46 %), Insumos 1.799 → 953 (−47 %), Empleados 1.938 → 1.119 (−42 %), Usuarios 1.454 → 763 (−48 %). Los tests de caracterización encontraron 10 bugs de producción (cliente gubernamental imposible, direcciones duplicadas al reutilizar personas, apellido duplicado al editar empleados, insumos de Movimientos creados como no inventariables, `check-nombre` de insumos siempre 404, el último administrador podía perder su rol, entre otros); cada PR los detalla.
+
+**Productos (sep-2026):** 2.398 → 892 líneas (−63 %). Se eliminó el CRUD de productos individuales, que ya no usaba ninguna vista. Bug corregido: editar un tipo sobrescribía su prefijo, que es parte del SKU.
