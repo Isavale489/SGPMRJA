@@ -1,7 +1,7 @@
 import {
     Archive, ArrowLeftRight, Boxes, Briefcase, Building, CalendarCheck, ChartColumn, ChartLine, Circle, Database,
-    Factory, FileChartColumn, FileText, Gauge, Hammer, Layers, LayoutDashboard, ListChecks, Palette, Repeat,
-    Settings, ShieldCheck, ShieldUser, Shirt, ShoppingBag, ShoppingCart, SlidersHorizontal, Truck, UserCog, UserRound, Users,
+    Factory, FileChartColumn, FileText, Gauge, Hammer, Image, Layers, LayoutDashboard, LayoutGrid, ListChecks, Palette, Repeat, Ruler,
+    Settings, Shapes, ShieldCheck, ShieldUser, Shirt, ShoppingBag, ShoppingCart, SlidersHorizontal, Truck, UserCog, UserRound, Users,
     type LucideIcon, type LucideProps,
 } from 'lucide-react';
 
@@ -12,8 +12,8 @@ import {
  */
 export const ICONOS: Record<string, LucideIcon> = {
     Archive, ArrowLeftRight, Boxes, Briefcase, Building, CalendarCheck, ChartColumn, ChartLine, Database, Factory,
-    FileChartColumn, FileText, Gauge, Hammer, Layers, LayoutDashboard, ListChecks, Palette, Repeat, Settings,
-    ShieldCheck, ShieldUser, Shirt, ShoppingBag, ShoppingCart, SlidersHorizontal, Truck, UserCog, UserRound, Users,
+    FileChartColumn, FileText, Gauge, Hammer, Image, Layers, LayoutDashboard, LayoutGrid, ListChecks, Palette, Repeat, Ruler, Settings,
+    Shapes, ShieldCheck, ShieldUser, Shirt, ShoppingBag, ShoppingCart, SlidersHorizontal, Truck, UserCog, UserRound, Users,
 };
 
 export function Icono({ nombre, ...props }: { nombre: string } & LucideProps) {
