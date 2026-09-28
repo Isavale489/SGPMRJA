@@ -1,11 +1,12 @@
-import { usePage } from '@inertiajs/react';
-import { LogOut, UserRound } from 'lucide-react';
+import { Link, usePage } from '@inertiajs/react';
+import { LogOut, Settings, UserRound } from 'lucide-react';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
     DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { usePermisos } from '@/hooks/use-permisos';
 
 const csrf = () => document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content ?? '';
 
@@ -14,6 +15,7 @@ const iniciales = (nombre: string) =>
 
 export function MenuUsuario() {
     const { auth } = usePage().props;
+    const { puede } = usePermisos();
     if (!auth.user) return null;
 
     return (
@@ -31,6 +33,13 @@ export function MenuUsuario() {
             <DropdownMenuContent align="end" className="w-52">
                 <DropdownMenuLabel className="truncate font-normal">{auth.user.email}</DropdownMenuLabel>
                 <DropdownMenuSeparator />
+                {puede('configuracion.ver') && (
+                    <DropdownMenuItem asChild>
+                        <Link href="/configuracion">
+                            <Settings /> Configuración
+                        </Link>
+                    </DropdownMenuItem>
+                )}
                 {/* /profile sigue en Blade → enlace normal. */}
                 <DropdownMenuItem asChild>
                     <a href="/profile">

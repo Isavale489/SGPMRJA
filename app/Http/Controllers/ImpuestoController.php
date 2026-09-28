@@ -2,7 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\RespondeSegunCliente;
 use App\Models\Impuesto;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
@@ -15,7 +18,9 @@ use Illuminate\Validation\Rule;
  */
 class ImpuestoController extends Controller
 {
-    public function store(Request $request)
+    use RespondeSegunCliente;
+
+    public function store(Request $request): JsonResponse|RedirectResponse
     {
         $data = $this->validar($request);
         $data['codigo'] = strtoupper(trim($data['codigo']));
@@ -33,10 +38,10 @@ class ImpuestoController extends Controller
             Impuesto::create($data);
         }
 
-        return response()->json(['success' => true, 'message' => 'Impuesto creado correctamente.']);
+        return $this->responder($request, 'Impuesto creado correctamente.');
     }
 
-    public function update(Request $request, Impuesto $impuesto)
+    public function update(Request $request, Impuesto $impuesto): JsonResponse|RedirectResponse
     {
         $data = $this->validar($request, $impuesto);
 
@@ -51,21 +56,18 @@ class ImpuestoController extends Controller
 
         $impuesto->update($data);
 
-        return response()->json(['success' => true, 'message' => 'Impuesto actualizado correctamente.']);
+        return $this->responder($request, 'Impuesto actualizado correctamente.');
     }
 
-    public function destroy(Impuesto $impuesto)
+    public function destroy(Request $request, Impuesto $impuesto): JsonResponse|RedirectResponse
     {
         if ($impuesto->codigo === Impuesto::CODIGO_IVA) {
-            return response()->json([
-                'success' => false,
-                'message' => 'El IVA no se puede eliminar: es el impuesto base de las compras.',
-            ], 422);
+            return $this->rechazar($request, 'El IVA no se puede eliminar: es el impuesto base de las compras.');
         }
 
         $impuesto->delete();
 
-        return response()->json(['success' => true, 'message' => 'Impuesto eliminado.']);
+        return $this->responder($request, 'Impuesto eliminado.');
     }
 
     private function validar(Request $request, ?Impuesto $impuesto = null): array

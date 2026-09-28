@@ -11,5 +11,5 @@ export function usePermisos() {
     const { auth } = usePage().props;
     const puede = (permiso: string) => auth.esAdmin || auth.permisos.includes(permiso);
 
-    return { puede };
+    return { puede, esAdmin: auth.esAdmin };
 }

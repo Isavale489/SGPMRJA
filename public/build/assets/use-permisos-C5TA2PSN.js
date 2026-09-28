@@ -1,1 +1,0 @@
-import{a as e}from"./inertia-DSCfKPDW.js";function t(){let{auth:t}=e().props;return{puede:e=>t.esAdmin||t.permisos.includes(e)}}export{t};
