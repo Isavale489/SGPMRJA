@@ -6,19 +6,28 @@ import {
 } from '@/components/ui/alert-dialog';
 
 interface Props {
-    /** Elemento que abre la confirmación (normalmente un botón). */
-    children: ReactNode;
     titulo: string;
     descripcion: ReactNode;
     accion?: string;
     onConfirmar: () => void;
+    /** Modo con disparador: el elemento que abre la confirmación (un botón suelto). */
+    children?: ReactNode;
+    /**
+     * Modo controlado: abrir desde fuera. Úsalo cuando la acción sale de un menú
+     * (DropdownMenu): si la confirmación vive DENTRO del menú, el menú queda
+     * abierto al confirmar y deja la página inaccesible.
+     */
+    abierto?: boolean;
+    onCerrar?: () => void;
 }
 
 /** Confirmación para acciones destructivas (eliminar, anular). Reemplaza al modal danger + SweetAlert. */
-export function ConfirmarPeligro({ children, titulo, descripcion, accion = 'Eliminar', onConfirmar }: Props) {
+export function ConfirmarPeligro({ children, titulo, descripcion, accion = 'Eliminar', onConfirmar, abierto, onCerrar }: Props) {
+    const controlado = abierto !== undefined;
+
     return (
-        <AlertDialog>
-            <AlertDialogTrigger asChild>{children}</AlertDialogTrigger>
+        <AlertDialog {...(controlado ? { open: abierto, onOpenChange: (a: boolean) => !a && onCerrar?.() } : {})}>
+            {!controlado && <AlertDialogTrigger asChild>{children}</AlertDialogTrigger>}
             <AlertDialogContent>
                 <AlertDialogHeader>
                     <AlertDialogTitle>{titulo}</AlertDialogTitle>

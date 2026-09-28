@@ -119,6 +119,7 @@ test('inhabilitar lo pasa al historial y se puede restaurar', async ({ page }) =
   await page.getByRole('alertdialog').getByRole('button', { name: 'Inhabilitar' }).click();
 
   await expect(page.getByText('Proveedor inhabilitado exitosamente.')).toBeVisible();
+  await expect(page.getByRole('menu')).toHaveCount(0); // el menú ⋮ se cierra al confirmar
   await expect(page.getByRole('row', { name: new RegExp(RAZON) })).toHaveCount(0);
 
   await page.getByRole('link', { name: 'Inhabilitados' }).click();

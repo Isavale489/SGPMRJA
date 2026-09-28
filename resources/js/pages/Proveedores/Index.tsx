@@ -32,6 +32,8 @@ export default function ProveedoresIndex({ proveedores, filtros: filtrosIniciale
     const [formulario, setFormulario] = useState<{ abierto: boolean; proveedor?: ProveedorFila; apertura: number }>({ abierto: false, apertura: 0 });
     const abrirFormulario = (proveedor?: ProveedorFila) => setFormulario((f) => ({ abierto: true, proveedor, apertura: f.apertura + 1 }));
     const [viendo, setViendo] = useState<ProveedorFila>();
+    // Fuera del menú: si la confirmación viviera dentro, el menú quedaría abierto al confirmar.
+    const [inhabilitando, setInhabilitando] = useState<ProveedorFila>();
 
     const hayFiltros = Boolean(filtros.buscar || filtros.tipo || filtros.estado || (filtros.orden && filtros.orden !== 'recientes'));
     const inhabilitar = (p: ProveedorFila) => router.delete(`${urls.index}/${p.id}`, { preserveScroll: true });
@@ -82,16 +84,9 @@ export default function ProveedoresIndex({ proveedores, filtros: filtrosIniciale
                                             <Pencil /> Editar
                                         </DropdownMenuItem>
                                         <DropdownMenuSeparator />
-                                        <ConfirmarPeligro
-                                            titulo={`¿Inhabilitar a ${p.nombre}?`}
-                                            descripcion="Pasa al historial y deja de aparecer en compras nuevas. Se puede restaurar cuando quieras."
-                                            accion="Inhabilitar"
-                                            onConfirmar={() => inhabilitar(p)}
-                                        >
-                                            <DropdownMenuItem onSelect={(e) => e.preventDefault()} variant="destructive">
-                                                <Trash2 /> Inhabilitar
-                                            </DropdownMenuItem>
-                                        </ConfirmarPeligro>
+                                        <DropdownMenuItem onSelect={() => setInhabilitando(p)} variant="destructive">
+                                            <Trash2 /> Inhabilitar
+                                        </DropdownMenuItem>
                                     </>
                                 )}
                             </DropdownMenuContent>
@@ -181,6 +176,14 @@ export default function ProveedoresIndex({ proveedores, filtros: filtrosIniciale
                 />
             </div>
 
+            <ConfirmarPeligro
+                abierto={Boolean(inhabilitando)}
+                onCerrar={() => setInhabilitando(undefined)}
+                titulo={`¿Inhabilitar a ${inhabilitando?.nombre ?? ''}?`}
+                descripcion="Pasa al historial y deja de aparecer en compras nuevas. Se puede restaurar cuando quieras."
+                accion="Inhabilitar"
+                onConfirmar={() => inhabilitando && inhabilitar(inhabilitando)}
+            />
             <DetalleProveedor proveedor={viendo} onCerrar={() => setViendo(undefined)} />
             {gestionar && (
                 <FormularioProveedor

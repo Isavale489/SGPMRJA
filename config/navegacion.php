@@ -39,7 +39,7 @@ return [
                 'items' => [
                     ['titulo' => 'Catálogo', 'icono' => 'ListChecks', 'ruta' => 'productos.index', 'permiso' => 'productos.ver'],
                     ['titulo' => 'Atributos', 'icono' => 'SlidersHorizontal', 'ruta' => 'atributos.index', 'permiso' => 'atributos.ver'],
-                    ['titulo' => 'Colores', 'icono' => 'Palette', 'ruta' => 'colores.index', 'permiso' => 'colores.ver'],
+                    ['titulo' => 'Colores', 'icono' => 'Palette', 'ruta' => 'colores.index', 'permiso' => 'colores.ver', 'inertia' => true],
                 ],
             ],
             ['titulo' => 'Proveedores', 'icono' => 'Truck', 'ruta' => 'proveedores.index', 'permiso' => 'proveedores.ver', 'inertia' => true],
@@ -49,8 +49,8 @@ return [
                 'icono' => 'Users',
                 'items' => [
                     ['titulo' => 'Empleados', 'icono' => 'UserCog', 'ruta' => 'empleados.index', 'permiso' => 'empleados.ver'],
-                    ['titulo' => 'Departamentos', 'icono' => 'Building', 'ruta' => 'departamentos.index', 'permiso' => 'departamentos.ver'],
-                    ['titulo' => 'Cargos', 'icono' => 'Briefcase', 'ruta' => 'cargos.index', 'permiso' => 'cargos.ver'],
+                    ['titulo' => 'Departamentos', 'icono' => 'Building', 'ruta' => 'departamentos.index', 'permiso' => 'departamentos.ver', 'inertia' => true],
+                    ['titulo' => 'Cargos', 'icono' => 'Briefcase', 'ruta' => 'cargos.index', 'permiso' => 'cargos.ver', 'inertia' => true],
                 ],
             ],
         ],
