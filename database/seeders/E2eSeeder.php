@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\Cliente;
 use App\Models\Cotizacion;
+use App\Models\Empleado;
 use App\Models\Genero;
 use App\Models\Persona;
 use App\Models\Rol;
@@ -65,6 +66,10 @@ class E2eSeeder extends Seeder
         ]);
         $cliente = Cliente::forceCreate(['persona_id' => $persona->id, 'tipo_cliente' => 'natural', 'estatus' => 1]);
         $tipo = TipoProducto::forceCreate(['nombre' => 'Chemise', 'prefijo' => 'CHE']);
+
+        // Persona que ya es empleado (y aún no cliente): alta de cliente reutilizando la persona.
+        $personaEmpleado = Persona::create(['nombre' => 'Ana Pérez', 'tipo_documento' => 'V-', 'documento_identidad' => '15000001', 'email' => 'ana.perez@atlantico.test']);
+        Empleado::forceCreate(['persona_id' => $personaEmpleado->id, 'codigo_empleado' => 'EMP-E2E', 'fecha_ingreso' => today()->subYear()->toDateString()]);
 
         // Cotización Aprobada lista para convertir: pasa por el service real
         // (snapshots, SKU, totales), no por inserts a mano.

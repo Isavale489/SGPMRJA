@@ -95,8 +95,8 @@ return [
             'pdf'       => 'Exportar PDF',
         ],
         'rutas' => [
-            'clientes.index|clientes.show|clientes.data' => 'ver',
-            'clientes.create|clientes.store|clientes.edit|clientes.update|clientes.destroy|clientes.restore|clientes.from-persona|clientes.check-documento|clientes.check-email' => 'gestionar',
+            'clientes.index' => 'ver',
+            'clientes.store|clientes.update|clientes.destroy|clientes.restore|clientes.from-persona|clientes.check-documento|clientes.check-email' => 'gestionar',
             'clientes.reporte.pdf' => 'pdf',
         ],
     ],
