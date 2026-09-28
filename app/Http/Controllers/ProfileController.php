@@ -254,13 +254,16 @@ class ProfileController extends Controller
      */
     public function update(ProfileUpdateRequest $request): RedirectResponse
     {
-        $request->user()->fill($request->datos());
+        $user = $request->user();
+        $correoAnterior = mb_strtolower((string) $user->email);
+        $user->fill($request->datos());
 
-        if ($request->user()->isDirty('email')) {
-            $request->user()->email_verified_at = null;
+        // Pasar un correo viejo a minúsculas no es cambiarlo: no pierde la verificación.
+        if ($user->isDirty('email') && $user->email !== $correoAnterior) {
+            $user->email_verified_at = null;
         }
 
-        $request->user()->save();
+        $user->save();
 
         return Redirect::route('profile.edit')->with('status', 'profile-updated')->with('success', 'Datos actualizados.');
     }

@@ -261,6 +261,9 @@ function FormularioFoto({ actual, nombre, url, onCerrar }: { actual: string | nu
     const elegir = (f?: File | null) => {
         if (!f) return;
         if (!f.type.startsWith('image/')) {
+            // Se descarta también lo elegido antes: no se sube una foto con el error a la vista.
+            form.setData('avatar', null);
+            setVista(actual);
             form.setError('avatar', 'El archivo debe ser una imagen.');
             return;
         }

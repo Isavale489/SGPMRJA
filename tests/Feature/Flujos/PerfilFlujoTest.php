@@ -161,4 +161,14 @@ class PerfilFlujoTest extends TestCase
         $this->actingAs($u)->patch(route('profile.update'), ['name' => 'Ana Rojas', 'email' => ' Otra@Atlantico.test', 'current_password' => 'Clave.Segura1'])->assertSessionHasNoErrors();
         $this->assertSame('otra@atlantico.test', $u->fresh()->email);
     }
+
+    public function test_un_correo_viejo_en_mayusculas_se_normaliza_sin_pedir_contrasena(): void
+    {
+        $u = User::factory()->create(['email' => 'Ana@Atlantico.test']);
+
+        $this->actingAs($u)->patch(route('profile.update'), ['name' => 'Ana', 'email' => 'Ana@Atlantico.test'])->assertSessionHasNoErrors();
+        $u->refresh();
+        $this->assertSame('ana@atlantico.test', $u->email);
+        $this->assertNotNull($u->email_verified_at);
+    }
 }
