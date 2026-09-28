@@ -292,14 +292,14 @@ return [
         'nombre'   => 'Ordenes de produccion',
         'acciones' => [
             'ver'       => 'Ver listado y detalle de ordenes',
-            'gestionar' => 'Crear, editar y eliminar ordenes, sub-ordenes e insumos por orden',
+            'gestionar' => 'Crear, editar y eliminar ordenes y sus etapas',
             'avance'    => 'Registrar avance de produccion',
             'cancelar'  => 'Cancelar ordenes',
             'pdf'       => 'Exportar PDF',
         ],
         'rutas' => [
-            'ordenes.index|ordenes.show|ordenes.data|ordenes.pedidos-data|ordenes.pedidos-disponibles|ordenes.proyeccionInsumos|ordenes.por-empleado|ordenes.subordenes|ordenes.insumos.index|ordenes.insumos.data' => 'ver',
-            'ordenes.create|ordenes.store|ordenes.edit|ordenes.update|ordenes.destroy|ordenes.batch|ordenes.subordenes.store|ordenes.subordenes.destroy|ordenes.subordenes.estado|ordenes.insumos.store|ordenes.insumos.update|ordenes.insumos.destroy' => 'gestionar',
+            'ordenes.index|ordenes.proyeccionInsumos' => 'ver',
+            'ordenes.create|ordenes.store|ordenes.edit|ordenes.update|ordenes.destroy|ordenes.batch|ordenes.subordenes.store|ordenes.subordenes.destroy|ordenes.subordenes.estado' => 'gestionar',
             'ordenes.avance'      => 'avance',
             'ordenes.cancelar'    => 'cancelar',
             'ordenes.reporte.pdf|ordenes.pdf' => 'pdf',

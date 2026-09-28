@@ -69,7 +69,7 @@ trait CreaDatosBase
      */
     protected function payloadCotizacion(int $clienteId, int $cantidad = 12): array
     {
-        $tipo = TipoProducto::forceCreate(['nombre' => 'Chemise', 'prefijo' => 'CHE']);
+        $tipo = TipoProducto::firstOrCreate(['prefijo' => 'CHE'], ['nombre' => 'Chemise']);
         $talla = Talla::forceCreate(['nombre' => 'M']);
 
         return [
@@ -117,7 +117,7 @@ trait CreaDatosBase
             'user_id' => User::query()->value('id') ?? $this->admin()->id,
         ]);
 
-        $tipo = TipoProducto::forceCreate(['nombre' => 'Chemise', 'prefijo' => 'CHE']);
+        $tipo = TipoProducto::firstOrCreate(['prefijo' => 'CHE'], ['nombre' => 'Chemise']);
 
         return DetallePedido::forceCreate([
             'pedido_id' => $pedido->id,

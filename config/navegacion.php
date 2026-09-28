@@ -62,7 +62,7 @@ return [
         'items' => [
             ['titulo' => 'Cotizaciones', 'icono' => 'FileText', 'ruta' => 'cotizaciones.index', 'permiso' => 'cotizaciones.ver'],
             ['titulo' => 'Pedidos', 'icono' => 'ShoppingCart', 'ruta' => 'pedidos.index', 'permiso' => 'pedidos.ver'],
-            ['titulo' => 'Orden de Producción', 'icono' => 'CalendarCheck', 'ruta' => 'ordenes.index', 'permiso' => 'ordenes.ver'],
+            ['titulo' => 'Orden de Producción', 'icono' => 'CalendarCheck', 'ruta' => 'ordenes.index', 'permiso' => 'ordenes.ver', 'inertia' => true],
             ['titulo' => 'Control de Calidad', 'icono' => 'ShieldCheck', 'ruta' => 'calidad.index', 'permiso' => 'calidad.ver', 'inertia' => true],
             [
                 'titulo' => 'Movimientos',
