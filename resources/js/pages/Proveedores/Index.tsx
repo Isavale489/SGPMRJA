@@ -114,8 +114,10 @@ export default function ProveedoresIndex({ proveedores, filtros: filtrosIniciale
                     <ExportarPdf
                         url={urls.reportePdf}
                         recurso="proveedores"
-                        tipos={[{ valor: 'natural', etiqueta: 'Natural' }, { valor: 'juridico', etiqueta: 'Jurídico' }]}
-                        parametros={{ tipo: 'tipo_proveedor', estatus: 'estatus' }}
+                        filtros={[
+                            { parametro: 'tipo_proveedor', etiqueta: 'Tipo', todos: 'Todos los tipos', opciones: [{ valor: 'natural', etiqueta: 'Natural' }, { valor: 'juridico', etiqueta: 'Jurídico' }] },
+                            { parametro: 'estatus', etiqueta: 'Estatus', todos: 'Activos', opciones: [{ valor: '0', etiqueta: 'Inhabilitados' }] },
+                        ]}
                     />
                     {gestionar && !historial && (
                         <Button onClick={() => abrirFormulario()}>

@@ -235,16 +235,13 @@ Route::middleware(['auth', 'throttle:60,1', 'active.user', 'recovery.questions.r
 
         // Insumos
         Route::post('insumos/{id}/restore', [InsumoController::class, 'restore'])->name('insumos.restore');
-        Route::resource('insumos', InsumoController::class)->except(['create', 'edit']);
-        Route::get('insumos-data', [InsumoController::class, 'getInsumos'])->name('insumos.data');
+        Route::resource('insumos', InsumoController::class)->only(['index', 'store', 'update', 'destroy']);
         Route::get('insumos/reporte/pdf', [InsumoController::class, 'reportePdf'])->name('insumos.reporte.pdf');
         Route::get('insumos/check-nombre', [InsumoController::class, 'checkNombre'])->name('insumos.check-nombre');
 
         // Catálogo gestionable de tipos de insumo
         Route::get('tipo-insumos', [TipoInsumoController::class, 'index'])->name('tipo-insumos.index');
         Route::post('tipo-insumos', [TipoInsumoController::class, 'store'])->name('tipo-insumos.store');
-        Route::get('tipo-insumos-check-nombre', [TipoInsumoController::class, 'checkNombre'])->name('tipo-insumos.check-nombre');
-        Route::get('tipo-insumos/{tipoInsumo}', [TipoInsumoController::class, 'show'])->name('tipo-insumos.show');
         Route::put('tipo-insumos/{tipoInsumo}', [TipoInsumoController::class, 'update'])->name('tipo-insumos.update');
         Route::delete('tipo-insumos/{tipoInsumo}', [TipoInsumoController::class, 'destroy'])->name('tipo-insumos.destroy');
         Route::patch('tipo-insumos/{id}/restore', [TipoInsumoController::class, 'restore'])->name('tipo-insumos.restore');

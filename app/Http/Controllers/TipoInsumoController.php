@@ -2,131 +2,77 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\RespondeSegunCliente;
+use App\Models\Insumo;
 use App\Models\TipoInsumo;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
+/**
+ * Catálogo gestionable de tipos de insumo. Se administra desde la página de
+ * Insumos (diálogo "Tipos de insumo"), que recibe el catálogo como prop.
+ */
 class TipoInsumoController extends Controller
 {
-    /**
-     * Listar tipos de insumo (activos o historial) con conteo de insumos. JSON para el modal.
-     */
-    public function index(Request $request): JsonResponse
+    use RespondeSegunCliente;
+
+    /** El catálogo vive en la página de Insumos. */
+    public function index()
     {
-        $query = TipoInsumo::withCount('insumos')->orderBy('nombre');
-
-        if ($request->boolean('historial')) {
-            $query->onlyTrashed();
-        }
-
-        return response()->json($query->get());
+        return to_route('insumos.index');
     }
 
-    public function store(Request $request): JsonResponse
+    private function validar(Request $request, ?TipoInsumo $tipo = null): string
     {
+        $request->merge(['nombre' => trim((string) $request->input('nombre'))]);
         $request->validate([
-            'nombre' => 'required|string|min:2|max:100|unique:tipo_insumo,nombre',
+            'nombre' => ['required', 'string', 'min:2', 'max:100', Rule::unique('tipo_insumo', 'nombre')->ignore($tipo)],
         ], [
             'nombre.required' => 'El nombre es obligatorio.',
-            'nombre.min'      => 'El nombre debe tener al menos 2 caracteres.',
-            'nombre.unique'   => 'Ya existe un tipo de insumo con este nombre.',
+            'nombre.min' => 'El nombre debe tener al menos 2 caracteres.',
+            'nombre.unique' => 'Ya existe un tipo de insumo con este nombre.',
         ]);
 
-        $tipo = TipoInsumo::create([
-            'nombre' => trim($request->nombre),
-            'activo' => true,
-        ]);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Tipo de insumo creado correctamente.',
-            'tipo'    => $tipo,
-        ]);
+        return $request->input('nombre');
     }
 
-    public function show(TipoInsumo $tipoInsumo): JsonResponse
+    public function store(Request $request)
     {
-        return response()->json($tipoInsumo);
+        TipoInsumo::create(['nombre' => $this->validar($request), 'activo' => true]);
+
+        return $this->responder($request, 'Tipo de insumo creado correctamente.');
     }
 
-    public function update(Request $request, TipoInsumo $tipoInsumo): JsonResponse
+    public function update(Request $request, TipoInsumo $tipoInsumo)
     {
-        $request->validate([
-            'nombre' => 'required|string|min:2|max:100|unique:tipo_insumo,nombre,' . $tipoInsumo->id,
-        ], [
-            'nombre.required' => 'El nombre es obligatorio.',
-            'nombre.min'      => 'El nombre debe tener al menos 2 caracteres.',
-            'nombre.unique'   => 'Ya existe un tipo de insumo con este nombre.',
-        ]);
-
         $nombreAnterior = $tipoInsumo->nombre;
-        $nombreNuevo    = trim($request->nombre);
+        $nombreNuevo = $this->validar($request, $tipoInsumo);
 
         $tipoInsumo->update(['nombre' => $nombreNuevo]);
 
         // Propagar el renombrado a los insumos que usan este tipo (tipo es texto).
         if ($nombreAnterior !== $nombreNuevo) {
-            \App\Models\Insumo::where('tipo', $nombreAnterior)->update(['tipo' => $nombreNuevo]);
+            Insumo::withTrashed()->where('tipo', $nombreAnterior)->update(['tipo' => $nombreNuevo]);
         }
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Tipo de insumo actualizado correctamente.',
-            'tipo'    => $tipoInsumo,
-        ]);
+        return $this->responder($request, 'Tipo de insumo actualizado correctamente.');
     }
 
-    public function destroy(TipoInsumo $tipoInsumo): JsonResponse
+    public function destroy(Request $request, TipoInsumo $tipoInsumo)
     {
-        if ($tipoInsumo->insumos()->count() > 0) {
-            return response()->json([
-                'success' => false,
-                'message' => 'No se puede inhabilitar: hay insumos que usan este tipo.',
-            ], 422);
+        if ($tipoInsumo->insumos()->exists()) {
+            return $this->rechazar($request, 'No se puede inhabilitar: hay insumos que usan este tipo.');
         }
 
         $tipoInsumo->delete();
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Tipo de insumo inhabilitado correctamente.',
-        ]);
+        return $this->responder($request, 'Tipo de insumo inhabilitado correctamente.');
     }
 
-    public function restore(int $id): JsonResponse
+    public function restore(Request $request, int $id)
     {
-        $tipoInsumo = TipoInsumo::onlyTrashed()->find($id);
+        TipoInsumo::onlyTrashed()->findOrFail($id)->restore();
 
-        if (!$tipoInsumo) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Tipo de insumo no encontrado en historial.',
-            ], 404);
-        }
-
-        $tipoInsumo->restore();
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Tipo de insumo restaurado correctamente.',
-            'tipo'    => $tipoInsumo,
-        ]);
-    }
-
-    public function checkNombre(Request $request): JsonResponse
-    {
-        $nombre    = trim((string) $request->input('nombre'));
-        $excludeId = $request->input('exclude_id');
-
-        if ($nombre === '') {
-            return response()->json(['exists' => false]);
-        }
-
-        $query = TipoInsumo::whereRaw('LOWER(nombre) = ?', [strtolower($nombre)]);
-        if ($excludeId) {
-            $query->where('id', '!=', $excludeId);
-        }
-
-        return response()->json(['exists' => $query->exists()]);
+        return $this->responder($request, 'Tipo de insumo restaurado correctamente.');
     }
 }

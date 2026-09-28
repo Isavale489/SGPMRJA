@@ -43,7 +43,7 @@ return [
                 ],
             ],
             ['titulo' => 'Proveedores', 'icono' => 'Truck', 'ruta' => 'proveedores.index', 'permiso' => 'proveedores.ver', 'inertia' => true],
-            ['titulo' => 'Insumos', 'icono' => 'Archive', 'ruta' => 'insumos.index', 'permiso' => 'insumos.ver'],
+            ['titulo' => 'Insumos', 'icono' => 'Archive', 'ruta' => 'insumos.index', 'permiso' => 'insumos.ver', 'inertia' => true],
             [
                 'titulo' => 'Recursos Humanos',
                 'icono' => 'Users',
