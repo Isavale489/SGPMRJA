@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Cache;
 use App\Models\TasaCambio;
 use App\Models\OrdenProduccion;
 use App\Observers\OrdenProduccionObserver;
+use App\Support\CatalogoGeografico;
 use App\Support\TasaBcvVigente;
 
 class AppServiceProvider extends ServiceProvider
@@ -39,22 +40,8 @@ class AppServiceProvider extends ServiceProvider
         // Compartir el catálogo geográfico (estados + municipios) con el admin.
         // Fuente de verdad: tablas estado/municipio. Cacheado porque es estático.
         View::composer('admin.*', function ($view) {
-            try {
-                [$estadosVe, $mapaMunicipiosVe] = Cache::remember('catalogo_geografico_ve', now()->addDay(), function () {
-                    $estados = \App\Models\Estado::with('municipios:id,estado_id,nombre')
-                        ->orderBy('nombre')->get();
-                    $mapa = [];
-                    foreach ($estados as $e) {
-                        $mapa[$e->nombre] = $e->municipios->pluck('nombre')->values()->all();
-                    }
-                    return [$estados->pluck('nombre')->values()->all(), $mapa];
-                });
-            } catch (\Exception $e) {
-                $estadosVe = [];
-                $mapaMunicipiosVe = [];
-            }
-
-            $view->with('estadosVe', $estadosVe)->with('mapaMunicipiosVe', $mapaMunicipiosVe);
+            $mapa = CatalogoGeografico::mapa();
+            $view->with('estadosVe', array_keys($mapa))->with('mapaMunicipiosVe', $mapa);
         });
 
         // Compartir el catálogo de género de prenda (Dama/Caballero/Unisex) con

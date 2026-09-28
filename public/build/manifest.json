@@ -1,7 +1,49 @@
 {
+  "_app-layout-B4ZG-zdp.js": {
+    "file": "assets/app-layout-B4ZG-zdp.js",
+    "name": "app-layout",
+    "imports": [
+      "_rolldown-runtime-hePW80VL.js",
+      "resources/js/inertia.tsx",
+      "_dialog-gycPBnU-.js",
+      "_select-DbVxuvb3.js",
+      "_formato-BRJxJgaM.js"
+    ]
+  },
+  "_dialog-gycPBnU-.js": {
+    "file": "assets/dialog-gycPBnU-.js",
+    "name": "dialog",
+    "imports": [
+      "_rolldown-runtime-hePW80VL.js",
+      "resources/js/inertia.tsx"
+    ]
+  },
+  "_formato-BRJxJgaM.js": {
+    "file": "assets/formato-BRJxJgaM.js",
+    "name": "formato",
+    "imports": [
+      "_dialog-gycPBnU-.js"
+    ]
+  },
+  "_plus-CSmeMiZT.js": {
+    "file": "assets/plus-CSmeMiZT.js",
+    "name": "plus",
+    "imports": [
+      "_dialog-gycPBnU-.js"
+    ]
+  },
   "_rolldown-runtime-hePW80VL.js": {
     "file": "assets/rolldown-runtime-hePW80VL.js",
     "name": "rolldown-runtime"
+  },
+  "_select-DbVxuvb3.js": {
+    "file": "assets/select-DbVxuvb3.js",
+    "name": "select",
+    "imports": [
+      "_rolldown-runtime-hePW80VL.js",
+      "resources/js/inertia.tsx",
+      "_dialog-gycPBnU-.js"
+    ]
   },
   "node_modules/@fontsource-variable/inter/files/inter-latin-ext-wght-normal.woff2": {
     "file": "assets/inter-latin-ext-wght-normal-DO1Apj_S.woff2",
@@ -29,7 +71,7 @@
     ]
   },
   "resources/js/inertia.tsx": {
-    "file": "assets/inertia-nKFN71gD.js",
+    "file": "assets/inertia-BuYyTu7i.js",
     "name": "inertia",
     "src": "resources/js/inertia.tsx",
     "isEntry": true,
@@ -37,10 +79,14 @@
       "_rolldown-runtime-hePW80VL.js"
     ],
     "dynamicImports": [
-      "resources/js/pages/Plataforma/Componentes.tsx"
+      "resources/js/pages/Plataforma/Componentes.tsx",
+      "resources/js/pages/Proveedores/Index.tsx",
+      "resources/js/pages/Proveedores/detalle-proveedor.tsx",
+      "resources/js/pages/Proveedores/exportar-pdf.tsx",
+      "resources/js/pages/Proveedores/formulario-proveedor.tsx"
     ],
     "css": [
-      "assets/inertia-DnkBCJKf.css"
+      "assets/inertia-BvShv3n9.css"
     ],
     "assets": [
       "assets/inter-latin-ext-wght-normal-DO1Apj_S.woff2",
@@ -50,13 +96,72 @@
     ]
   },
   "resources/js/pages/Plataforma/Componentes.tsx": {
-    "file": "assets/Componentes-D1C1O84N.js",
+    "file": "assets/Componentes-DC-cTyAz.js",
     "name": "Componentes",
     "src": "resources/js/pages/Plataforma/Componentes.tsx",
     "isDynamicEntry": true,
     "imports": [
       "_rolldown-runtime-hePW80VL.js",
-      "resources/js/inertia.tsx"
+      "resources/js/inertia.tsx",
+      "_dialog-gycPBnU-.js",
+      "_app-layout-B4ZG-zdp.js",
+      "_select-DbVxuvb3.js",
+      "_plus-CSmeMiZT.js",
+      "_formato-BRJxJgaM.js"
+    ]
+  },
+  "resources/js/pages/Proveedores/Index.tsx": {
+    "file": "assets/Index-CEbXskO9.js",
+    "name": "Index",
+    "src": "resources/js/pages/Proveedores/Index.tsx",
+    "isDynamicEntry": true,
+    "imports": [
+      "_rolldown-runtime-hePW80VL.js",
+      "resources/js/inertia.tsx",
+      "_dialog-gycPBnU-.js",
+      "_app-layout-B4ZG-zdp.js",
+      "_select-DbVxuvb3.js",
+      "_plus-CSmeMiZT.js",
+      "_formato-BRJxJgaM.js",
+      "resources/js/pages/Proveedores/detalle-proveedor.tsx",
+      "resources/js/pages/Proveedores/exportar-pdf.tsx",
+      "resources/js/pages/Proveedores/formulario-proveedor.tsx"
+    ]
+  },
+  "resources/js/pages/Proveedores/detalle-proveedor.tsx": {
+    "file": "assets/detalle-proveedor-DoNDKcqr.js",
+    "name": "detalle-proveedor",
+    "src": "resources/js/pages/Proveedores/detalle-proveedor.tsx",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/inertia.tsx",
+      "_dialog-gycPBnU-.js",
+      "_formato-BRJxJgaM.js"
+    ]
+  },
+  "resources/js/pages/Proveedores/exportar-pdf.tsx": {
+    "file": "assets/exportar-pdf-DkYC8YIU.js",
+    "name": "exportar-pdf",
+    "src": "resources/js/pages/Proveedores/exportar-pdf.tsx",
+    "isDynamicEntry": true,
+    "imports": [
+      "_rolldown-runtime-hePW80VL.js",
+      "resources/js/inertia.tsx",
+      "_dialog-gycPBnU-.js",
+      "_select-DbVxuvb3.js"
+    ]
+  },
+  "resources/js/pages/Proveedores/formulario-proveedor.tsx": {
+    "file": "assets/formulario-proveedor-BpQYPw00.js",
+    "name": "formulario-proveedor",
+    "src": "resources/js/pages/Proveedores/formulario-proveedor.tsx",
+    "isDynamicEntry": true,
+    "imports": [
+      "_rolldown-runtime-hePW80VL.js",
+      "resources/js/inertia.tsx",
+      "_dialog-gycPBnU-.js",
+      "_select-DbVxuvb3.js",
+      "_plus-CSmeMiZT.js"
     ]
   }
 }

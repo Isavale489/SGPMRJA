@@ -42,7 +42,7 @@ return [
                     ['titulo' => 'Colores', 'icono' => 'Palette', 'ruta' => 'colores.index', 'permiso' => 'colores.ver'],
                 ],
             ],
-            ['titulo' => 'Proveedores', 'icono' => 'Truck', 'ruta' => 'proveedores.index', 'permiso' => 'proveedores.ver'],
+            ['titulo' => 'Proveedores', 'icono' => 'Truck', 'ruta' => 'proveedores.index', 'permiso' => 'proveedores.ver', 'inertia' => true],
             ['titulo' => 'Insumos', 'icono' => 'Archive', 'ruta' => 'insumos.index', 'permiso' => 'insumos.ver'],
             [
                 'titulo' => 'Recursos Humanos',

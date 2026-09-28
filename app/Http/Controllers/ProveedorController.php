@@ -2,13 +2,16 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\GuardarProveedorRequest;
 use App\Models\Proveedor;
 use App\Models\Persona;
 use App\Services\ProveedorService;
+use App\Support\CatalogoGeografico;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Yajra\DataTables\DataTables;
+use Inertia\Inertia;
+use Inertia\Response;
 
 class ProveedorController extends Controller
 {
@@ -16,10 +19,113 @@ class ProveedorController extends Controller
         private ProveedorService $proveedorService
     ) {
     }
-    public function index(Request $request)
+    /** Filtros de la tabla (query string): la URL es el estado de la vista. */
+    private const FILTROS = ['buscar', 'tipo', 'estado', 'orden', 'historial'];
+
+    public function index(Request $request): Response
     {
-        $historial = $request->has('historial');
-        return view('admin.proveedores.index', compact('historial'));
+        $filtros = array_filter($request->only(self::FILTROS), fn ($v) => $v !== null && $v !== '');
+
+        return Inertia::render('Proveedores/Index', [
+            'proveedores' => $this->consulta($filtros)
+                ->paginate(15)
+                ->withQueryString()
+                ->through(fn (Proveedor $p) => $this->fila($p)),
+            'filtros' => (object) $filtros,
+            'estados' => CatalogoGeografico::mapa(),
+            'urls' => [
+                'index' => route('proveedores.index', absolute: false),
+                'reportePdf' => route('proveedores.reporte.pdf', absolute: false),
+                'checkDocumento' => route('proveedores.check-documento', absolute: false),
+                'checkRif' => route('proveedores.check-rif', absolute: false),
+                'checkEmail' => route('proveedores.check-email', absolute: false),
+            ],
+        ]);
+    }
+
+    /**
+     * Consulta de la tabla. Mismas reglas que tenía el endpoint DataTables:
+     * búsqueda por nombre/razón social, documento o email; filtros por tipo y
+     * estado territorial; historial = solo inhabilitados.
+     */
+    private function consulta(array $filtros): Builder
+    {
+        $query = Proveedor::with(['persona.telefonos', 'persona.direccion']);
+
+        if (! empty($filtros['historial'])) {
+            $query->onlyTrashed();
+        }
+        if (! empty($filtros['tipo'])) {
+            $query->where('tipo_proveedor', $filtros['tipo']);
+        }
+        if (! empty($filtros['estado'])) {
+            $estado = $filtros['estado'];
+            $query->whereHas('persona.direcciones', fn ($q) => $q->whereHas('estadoRel', fn ($e) => $e->where('nombre', $estado)));
+        }
+        if (! empty($filtros['buscar'])) {
+            $buscar = trim($filtros['buscar']);
+            $query->whereHas('persona', function ($p) use ($buscar) {
+                // `nombre` ya contiene el nombre completo / razón social.
+                $p->where('nombre', 'like', "%{$buscar}%")
+                    ->orWhere('email', 'like', "{$buscar}%")
+                    ->orWhereRaw('CONCAT(tipo_documento, documento_identidad) like ?', ["{$buscar}%"])
+                    ->orWhere('documento_identidad', 'like', "{$buscar}%");
+            });
+        }
+
+        return match ($filtros['orden'] ?? 'recientes') {
+            'antiguos' => $query->orderBy('proveedor.created_at')->orderBy('proveedor.id'),
+            'nombre_asc', 'nombre_desc' => $query
+                ->join('persona', 'proveedor.persona_id', '=', 'persona.id')
+                ->orderBy('persona.nombre', $filtros['orden'] === 'nombre_asc' ? 'asc' : 'desc')
+                ->select('proveedor.*'),
+            default => $query->orderByDesc('proveedor.created_at')->orderByDesc('proveedor.id'),
+        };
+    }
+
+    /**
+     * Fila de la tabla: trae todo lo que usan "Ver" y "Editar", así la vista
+     * no necesita otra petición. Espejo de `ProveedorFila` en
+     * resources/js/pages/Proveedores/tipos.ts (lo verifica ProveedorPaginaTest).
+     */
+    private function fila(Proveedor $p): array
+    {
+        $persona = $p->persona;
+        $direccion = $persona?->direccion;
+
+        return [
+            'id' => $p->id,
+            'tipo' => $p->tipo_proveedor === 'natural' ? 'natural' : 'juridico',
+            'tipo_documento' => $persona?->tipo_documento,
+            'numero_documento' => $persona?->documento_identidad,
+            'documento' => $p->documento,
+            'nombre' => $p->nombre_completo,
+            'email' => $persona?->email,
+            'telefonos' => $persona ? $persona->telefonos->map(fn ($t) => [
+                'numero' => $t->numero,
+                'tipo' => $t->tipo,
+                'es_principal' => (bool) $t->es_principal,
+            ])->values()->all() : [],
+            'direccion' => $direccion?->direccion,
+            'estado_territorial' => $direccion?->estado,
+            'ciudad' => $direccion?->ciudad,
+            'contacto' => $p->contacto,
+            'telefono_contacto' => $p->telefono_contacto,
+            'inhabilitado' => $p->trashed(),
+            'creado' => $p->created_at?->format('Y-m-d H:i'),
+        ];
+    }
+
+    /**
+     * Respuesta de las mutaciones. La página Inertia recibe un redirect con
+     * mensaje flash; el alta rápida del wizard de Compras (jQuery) sigue
+     * recibiendo el JSON de siempre.
+     */
+    private function responder(Request $request, string $mensaje, array $json = [])
+    {
+        return $request->header('X-Inertia')
+            ? back()->with('success', $mensaje)
+            : response()->json(['success' => $mensaje] + $json);
     }
 
     public function search(Request $request)
@@ -52,144 +158,16 @@ class ProveedorController extends Controller
         );
     }
 
-    public function getProveedores(Request $request)
+    public function store(GuardarProveedorRequest $request)
     {
-        // ── Base query con relaciones ──
-        $query = Proveedor::with(['persona.telefonos', 'persona.direcciones']);
+        $datos = $request->validated();
+        $proveedor = $datos['tipo_proveedor'] === 'natural'
+            ? $this->proveedorService->crearNatural($datos)
+            : $this->proveedorService->crearJuridico($datos);
 
-        // ══════════════════════════════════════════════════════════
-        // FILTROS AVANZADOS — Server-Side (Patrón Maestro S-07)
-        // Réplica exacta del patrón de ClienteController.
-        // ══════════════════════════════════════════════════════════
-
-        // Filtro: Tipo de Proveedor (natural, juridico)
-        if ($request->filled('filter_tipo_proveedor')) {
-            $query->where('tipo_proveedor', $request->input('filter_tipo_proveedor'));
-        }
-
-        // Activos vs Historial: lo define la página (no un filtro). La principal
-        // muestra solo activos; el historial (?historial=true) solo inhabilitados.
-        if ($request->boolean('historial')) {
-            $query->onlyTrashed();
-        }
-
-        // Filtro: Estado Territorial
-        if ($request->filled('filter_estado_territorial')) {
-            $estado = $request->input('filter_estado_territorial');
-            $query->whereHas('persona.direcciones', function ($q) use ($estado) {
-                $q->whereHas('estadoRel', fn ($e) => $e->where('nombre', $estado));
-            });
-        }
-
-        // Filtro: Documento (búsqueda parcial por cédula/RIF)
-        if ($request->filled('filter_documento')) {
-            $doc = $request->input('filter_documento');
-            $query->whereHas('persona', function ($q) use ($doc) {
-                $q->where(DB::raw("CONCAT(tipo_documento, documento_identidad)"), 'LIKE', "%{$doc}%");
-            });
-        }
-
-        // ══════════════════════════════════════════════════════════
-        // ORDENAMIENTO — Selector "Ordenar por" del frontend
-        // Valores posibles: recientes, antiguos, nombre_asc, nombre_desc
-        // Fallback: más recientes primero (created_at DESC)
-        // ══════════════════════════════════════════════════════════
-        $orden = $request->input('filter_orden', 'recientes');
-
-        switch ($orden) {
-            case 'antiguos':
-                $query->orderBy('proveedor.created_at', 'asc');
-                break;
-            case 'nombre_asc':
-                $query->join('persona', 'proveedor.persona_id', '=', 'persona.id')
-                      ->orderBy('persona.nombre', 'asc')
-                      ->select('proveedor.*');
-                break;
-            case 'nombre_desc':
-                $query->join('persona', 'proveedor.persona_id', '=', 'persona.id')
-                      ->orderBy('persona.nombre', 'desc')
-                      ->select('proveedor.*');
-                break;
-            case 'recientes':
-            default:
-                $query->orderBy('proveedor.created_at', 'desc');
-                break;
-        }
-
-        return DataTables::of($query)
-            // Búsqueda estricta: identidad del proveedor (nombre/razón social,
-            // documento y email de la persona). Sobrescribe el buscador global
-            // para no romper sobre columnas derivadas de relaciones.
-            ->filter(function ($query) use ($request) {
-                $keyword = trim((string) $request->input('search.value'));
-                if ($keyword === '') {
-                    return;
-                }
-                $query->whereHas('persona', function ($p) use ($keyword) {
-                    // `nombre` ya contiene el nombre completo / razón social.
-                    $p->where('nombre', 'like', "%{$keyword}%")
-                      ->orWhere('email', 'like', "{$keyword}%")
-                      ->orWhereRaw("CONCAT(tipo_documento, documento_identidad) like ?", ["{$keyword}%"]);
-                });
-            }, true)
-            ->addColumn('nombre_display', fn($p) => $p->nombre_completo ?? 'N/A')
-            ->addColumn('documento_display', fn($p) => $p->documento ?? 'N/A')
-            ->addColumn('tipo_proveedor', fn($p) => $p->tipo_proveedor ?? 'juridico')
-            ->addColumn('tipo_display', fn($p) => ($p->tipo_proveedor ?? 'juridico') === 'natural' ? 'Natural' : 'Jurídico')
-            ->addColumn('telefono_display', fn($p) => $p->telefono_unificado)
-            ->addColumn('email_display', fn($p) => $p->email_unificado)
-            ->addColumn('estado', fn($p) => $p->estado)
-            ->addColumn('trashed', fn($p) => $p->trashed())
-            ->make(true);
-    }
-
-    public function store(Request $request)
-    {
-        $tipoProveedor = $request->input('tipo_proveedor', 'juridico');
-
-        if ($tipoProveedor === 'natural') {
-            $request->validate([
-                'tipo_proveedor' => 'required|in:natural,juridico',
-                'nombre' => 'required|string|max:100',
-                'apellido' => 'required|string|max:100',
-                'tipo_documento' => 'required|in:V-,E-,J-,G-',
-                'documento_identidad' => 'required|string|max:20|unique:persona,documento_identidad',
-                'telefonos' => 'required|array|min:1|max:3',
-                'telefonos.*.numero' => ['required', 'string', 'regex:/^[0-9]{4}-[0-9]{7}$/'],
-                'telefonos.*.tipo' => 'required|in:movil,casa,trabajo',
-                'telefonos.*.es_principal' => 'required|boolean',
-                'email' => 'required|email|max:255|unique:persona,email',
-                'direccion' => 'required|string|max:255',
-                'ciudad' => 'nullable|string|max:100',
-                'estado_territorial' => 'nullable|string|max:50',
-            ], $this->telefonosMessages());
-
-            $proveedor = $this->proveedorService->crearNatural($request->all());
-            return response()->json([
-                'success'   => 'Proveedor natural creado exitosamente.',
-                'proveedor' => $this->proveedorPayload($proveedor),
-            ]);
-        } else {
-            $request->validate([
-                'tipo_proveedor' => 'required|in:natural,juridico',
-                'razon_social' => 'required|string|max:100',
-                'rif' => 'required|string|max:15|unique:persona,documento_identidad,NULL,id,tipo_documento,' . $this->parseRifPrefix($request->rif),
-                'direccion' => 'required|string|max:200',
-                'telefonos' => 'required|array|min:1|max:3',
-                'telefonos.*.numero' => ['required', 'string', 'regex:/^[0-9]{4}-[0-9]{7}$/'],
-                'telefonos.*.tipo' => 'required|in:movil,casa,trabajo',
-                'telefonos.*.es_principal' => 'required|boolean',
-                'email' => 'required|email|max:100|unique:persona,email',
-                'contacto' => 'nullable|string|max:100',
-                'telefono_contacto' => 'nullable|string|max:20',
-            ], $this->telefonosMessages());
-
-            $proveedor = $this->proveedorService->crearJuridico($request->all());
-            return response()->json([
-                'success'   => 'Proveedor jurídico creado exitosamente.',
-                'proveedor' => $this->proveedorPayload($proveedor),
-            ]);
-        }
+        return $this->responder($request, 'Proveedor creado exitosamente.', [
+            'proveedor' => $this->proveedorPayload($proveedor),
+        ]);
     }
 
     /**
@@ -263,22 +241,6 @@ class ProveedorController extends Controller
     }
 
     /**
-     * Mensajes de validación (ES) para el conjunto de teléfonos. Compartidos por
-     * los validate() de store/update (natural y jurídico).
-     */
-    private function telefonosMessages(): array
-    {
-        return [
-            'telefonos.required' => 'Agrega al menos un teléfono.',
-            'telefonos.min' => 'Agrega al menos un teléfono.',
-            'telefonos.max' => 'Máximo 3 teléfonos por persona.',
-            'telefonos.*.numero.required' => 'El número de teléfono es obligatorio.',
-            'telefonos.*.numero.regex' => 'El teléfono debe tener el formato 0424-1234567.',
-            'telefonos.*.tipo.in' => 'El tipo de teléfono no es válido.',
-        ];
-    }
-
-    /**
      * Serializa un proveedor para el autocomplete/card del wizard de compras.
      */
     private function proveedorPayload(Proveedor $proveedor): array
@@ -297,109 +259,31 @@ class ProveedorController extends Controller
         ];
     }
 
-    public function show($id)
+    public function update(GuardarProveedorRequest $request, Proveedor $proveedor)
     {
-        // withTrashed: también se ven detalles de proveedores inhabilitados (desde el historial)
-        $proveedor = Proveedor::withTrashed()->with('persona.telefonos', 'persona.direcciones')->findOrFail($id);
-        $persona = $proveedor->persona;
-        $telefonoPrincipal = $persona ? $persona->telefonos->where('es_principal', true)->first() : null;
-        $direccionPrincipal = $persona ? $persona->direccion : null;
+        $datos = $request->validated();
+        $datos['tipo_proveedor'] === 'natural'
+            ? $this->proveedorService->actualizarNatural($proveedor, $datos)
+            : $this->proveedorService->actualizarJuridico($proveedor, $datos);
 
-        $data = [
-            'id' => $proveedor->id,
-            'tipo_proveedor' => $proveedor->tipo_proveedor,
-            'persona_id' => $proveedor->persona_id,
-            'telefono' => $telefonoPrincipal ? $telefonoPrincipal->numero : null,
-            'telefonos' => $persona ? $persona->telefonos : [],
-            'email' => $persona ? $persona->email : null,
-            'direccion' => $direccionPrincipal ? $direccionPrincipal->direccion : null,
-            'contacto' => $proveedor->contacto,
-            'telefono_contacto' => $proveedor->telefono_contacto,
-            'nombre_display' => $proveedor->nombre_completo,
-            'documento_display' => $proveedor->documento,
-            'estado' => $proveedor->estado,
-            'trashed' => $proveedor->trashed(),
-            'created_at' => $proveedor->created_at->format('d/m/Y H:i:s'),
-            'updated_at' => $proveedor->updated_at->format('d/m/Y H:i:s'),
-        ];
-
-        if ($proveedor->esNatural() && $persona) {
-            $data['nombre'] = $persona->nombre;
-            // `nombre` ya consolida nombre+apellido; el campo apellido queda vacío en edición.
-            $data['apellido'] = '';
-            $data['tipo_documento'] = $persona->tipo_documento;
-            $data['documento_identidad'] = $persona->documento_identidad;
-            $data['ciudad'] = $direccionPrincipal ? $direccionPrincipal->ciudad : null;
-            $data['estado_territorial'] = $direccionPrincipal ? $direccionPrincipal->estado : null;
-        } else {
-            // Para jurídico: reconstruir campos para compatibilidad con la vista
-            $data['razon_social'] = $persona ? $persona->nombre : null;
-            $data['rif'] = $persona ? $persona->tipo_documento . $persona->documento_identidad : null;
-        }
-
-        return response()->json($data);
+        return $this->responder($request, 'Proveedor actualizado exitosamente.');
     }
 
-    public function update(Request $request, $id)
+    public function destroy(Request $request, Proveedor $proveedor)
     {
-        $proveedor = Proveedor::findOrFail($id);
-        $tipoProveedor = $request->input('tipo_proveedor', $proveedor->tipo_proveedor ?? 'juridico');
+        $proveedor->delete(); // SoftDelete: pasa al historial (no se borra)
 
-        if ($tipoProveedor === 'natural') {
-            $request->validate([
-                'nombre' => 'required|string|max:100',
-                'apellido' => 'required|string|max:100',
-                'tipo_documento' => 'required|in:V-,E-,J-,G-',
-                'documento_identidad' => 'required|string|max:20|unique:persona,documento_identidad,' . ($proveedor->persona_id ?? 0),
-                'telefonos' => 'required|array|min:1|max:3',
-                'telefonos.*.numero' => ['required', 'string', 'regex:/^[0-9]{4}-[0-9]{7}$/'],
-                'telefonos.*.tipo' => 'required|in:movil,casa,trabajo',
-                'telefonos.*.es_principal' => 'required|boolean',
-                'email' => 'required|email|max:255|unique:persona,email,' . ($proveedor->persona_id ?? 0),
-                'direccion' => 'required|string|max:255',
-                'ciudad' => 'nullable|string|max:100',
-                'estado_territorial' => 'nullable|string|max:50',
-            ], $this->telefonosMessages());
-
-            $this->proveedorService->actualizarNatural($proveedor, $request->all());
-            return response()->json(['success' => 'Proveedor actualizado exitosamente.']);
-        } else {
-            $request->validate([
-                'razon_social' => 'required|string|max:100',
-                'rif' => 'required|string|max:15',
-                'direccion' => 'required|string|max:200',
-                'telefonos' => 'required|array|min:1|max:3',
-                'telefonos.*.numero' => ['required', 'string', 'regex:/^[0-9]{4}-[0-9]{7}$/'],
-                'telefonos.*.tipo' => 'required|in:movil,casa,trabajo',
-                'telefonos.*.es_principal' => 'required|boolean',
-                'email' => 'required|email|max:100|unique:persona,email,' . ($proveedor->persona_id ?? 0),
-                'contacto' => 'nullable|string|max:100',
-                'telefono_contacto' => 'nullable|string|max:20',
-                'ciudad' => 'nullable|string|max:100',
-                'estado_territorial' => 'nullable|string|max:50',
-            ], $this->telefonosMessages());
-
-            $this->proveedorService->actualizarJuridico($proveedor, $request->all());
-            return response()->json(['success' => 'Proveedor actualizado exitosamente.']);
-        }
-    }
-
-    public function destroy($id)
-    {
-        $proveedor = Proveedor::findOrFail($id);
-        $proveedor->delete(); // SoftDelete: marca deleted_at
-        return response()->json(['success' => 'Proveedor inhabilitado exitosamente.']);
+        return $this->responder($request, 'Proveedor inhabilitado exitosamente.');
     }
 
     /**
      * Restaurar un proveedor inhabilitado (soft-deleted).
      */
-    public function restore($id)
+    public function restore(Request $request, $id)
     {
-        $proveedor = Proveedor::onlyTrashed()->findOrFail($id);
-        $proveedor->restore();
+        Proveedor::onlyTrashed()->findOrFail($id)->restore();
 
-        return response()->json(['success' => 'Proveedor restaurado exitosamente.']);
+        return $this->responder($request, 'Proveedor restaurado exitosamente.');
     }
 
     public function reportePdf(Request $request)
@@ -482,16 +366,5 @@ class ProveedorController extends Controller
         }
         $exists = $query->exists();
         return response()->json(['exists' => $exists]);
-    }
-
-    /**
-     * Extraer prefijo del RIF para validación unique compuesta.
-     */
-    private function parseRifPrefix(string $rif): string
-    {
-        if (preg_match('/^(V-|J-|E-|G-)/', $rif, $matches)) {
-            return $matches[1];
-        }
-        return 'J-';
     }
 }

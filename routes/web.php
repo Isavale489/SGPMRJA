@@ -182,13 +182,11 @@ Route::middleware(['auth', 'throttle:60,1', 'active.user', 'recovery.questions.r
 
         // Proveedores (lectura)
         Route::get('proveedores', [ProveedorController::class, 'index'])->name('proveedores.index');
-        Route::get('proveedores-data', [ProveedorController::class, 'getProveedores'])->name('proveedores.data');
         Route::get('proveedores-check-rif', [ProveedorController::class, 'checkRif'])->name('proveedores.check-rif');
         Route::get('proveedores-check-documento', [ProveedorController::class, 'checkDocumento'])->name('proveedores.check-documento');
         Route::get('proveedores-check-email', [ProveedorController::class, 'checkEmail'])->name('proveedores.check-email');
         Route::get('proveedores/reporte/pdf', [ProveedorController::class, 'reportePdf'])->name('proveedores.reporte.pdf');
         Route::get('proveedores/search', [ProveedorController::class, 'search'])->name('proveedores.search');
-        Route::get('proveedores/{proveedor}', [ProveedorController::class, 'show'])->name('proveedores.show');
 
         // Logos
         Route::get('logos-data', [LogoController::class, 'getLogos'])->name('logos.data');
