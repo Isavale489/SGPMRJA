@@ -68,7 +68,7 @@ return [
                 'titulo' => 'Movimientos',
                 'icono' => 'Repeat',
                 'items' => [
-                    ['titulo' => 'Movimientos de Insumos', 'icono' => 'Boxes', 'ruta' => 'movimiento-insumo.index', 'permiso' => 'movimiento-insumo.ver'],
+                    ['titulo' => 'Movimientos de Insumos', 'icono' => 'Boxes', 'ruta' => 'movimiento-insumo.index', 'permiso' => 'movimiento-insumo.ver', 'inertia' => true],
                     ['titulo' => 'Compras', 'icono' => 'ShoppingBag', 'ruta' => 'compras.index', 'permiso' => 'compras.ver'],
                 ],
             ],

@@ -79,6 +79,9 @@ class E2eSeeder extends Seeder
         $bolsillo->valores()->create(['nombre' => 'Sin bolsillo', 'codigo' => 'SB', 'orden' => 2]);
         Insumo::create(['nombre' => 'Oxford E2E', 'codigo' => 'OXE', 'tipo' => 'Tela', 'unidad_medida' => 'Metro', 'is_inventoriable' => 1, 'costo_unitario' => 4, 'stock_actual' => 100, 'stock_minimo' => 5, 'estado' => 1]);
 
+        // Insumo propio de tests/e2e/movimientos.spec.ts: arranca bajo su mínimo (sale en alertas).
+        Insumo::create(['nombre' => 'Hilo Mov E2E', 'codigo' => 'HME', 'tipo' => 'Hilo', 'unidad_medida' => 'Cono', 'is_inventoriable' => 1, 'costo_unitario' => 2, 'stock_actual' => 12, 'stock_minimo' => 15, 'estado' => 1]);
+
         // Persona que ya es empleado (y aún no cliente): alta de cliente reutilizando la persona.
         $personaEmpleado = Persona::create(['nombre' => 'Ana Pérez', 'tipo_documento' => 'V-', 'documento_identidad' => '15000001', 'email' => 'ana.perez@atlantico.test']);
         Empleado::forceCreate(['persona_id' => $personaEmpleado->id, 'codigo_empleado' => 'EMP-E2E', 'fecha_ingreso' => today()->subYear()->toDateString()]);
