@@ -76,6 +76,16 @@ Un catálogo con listado, historial y formulario pequeño **no se escribe desde 
 - Referencia: `pages/Departamentos` (1 campo), `pages/Cargos` (select + filtro extra), `pages/Colores` (selector de color + sugerencias).
 - **Confirmaciones que salen de un menú ⋮:** el ítem del menú solo guarda qué registro se confirma. `<ConfirmarPeligro abierto onCerrar>` va **fuera** del menú. Si vive dentro, el menú queda abierto al confirmar y deja la página inaccesible.
 
+## Patrones de la fase 3 (Atributos, Clientes, Insumos, Empleados, Usuarios)
+
+- **Maestro-detalle** (`pages/Atributos`): el registro elegido va en la URL (`?atributo=ID`) y elegir otro hace `router.get(url, {atributo}, { only: ['seleccionado', 'valores'], preserveState: true })`. En el servidor, las props del detalle son closures (`'valores' => fn () => …`) para que la recarga parcial solo calcule lo pedido. En móvil se muestra un panel a la vez.
+- **Recarga parcial + aviso flash:** si una mutación responde con `back()->with('success')` y la visita usa `only`, el flash **no** se envía y queda pendiente en la sesión: aparece en la *siguiente* página. O se incluye `'flash'` en `only` (alta rápida de Empleados) o el endpoint no pone flash para Inertia (reordenar valores de Atributos).
+- **Alta rápida de un catálogo desde otro formulario** (`AltaRapida` en `pages/Empleados/formulario-empleado.tsx`): `router.post(urlDelCatalogo, datos, { only: [catalogo, 'flash'], preserveState: true })` y en `onSuccess` se elige el nuevo por su nombre en `page.props`. El diálogo no se remonta, así que lo escrito se conserva.
+- **Persona compartida con otro rol** (Clientes, Empleados): al salir del documento, el `check-documento` del módulo devuelve `other_role` y los datos; se ofrece «Usar sus datos», se bloquean nombre y correo (el service no los cambia al reutilizar la persona) y no se deja guardar hasta decidir. En edición, la fila trae `otros_roles` para avisar que el cambio también se ve allá.
+- **Archivos con PUT** (foto de Usuarios): PHP no lee multipart en PUT. Se envía `form.post(url, { forceFormData: true })` con `_method: 'put'` (vía `form.transform`).
+- **Piezas nuevas:** `ExportarPdf` (lista de filtros por reporte, cada módulo con sus parámetros), `Dato` (ficha de Ver), `ui/switch` (booleanos como `is_inventoriable`).
+- **Gotcha de rutas:** una ruta `x/{id}` (show) declarada antes que `x/check-nombre` la captura y responde 404. Al migrar, `show` suele sobrar (la fila trae todo); si queda, declara las rutas fijas primero.
+
 ## Endpoints compartidos con módulos Blade
 
 Si un módulo aún en Blade (jQuery) usa el mismo endpoint, el controller usa el trait `App\Http\Controllers\Concerns\RespondeSegunCliente`:
@@ -114,3 +124,5 @@ Herramientas evaluadas y **no** adoptadas. Se revisan si cambian las condiciones
 **Resultado medido (Proveedores):** el módulo pasó de 1.956 líneas (Blade + jQuery + controller) a 1.195 (−39 %). Se agregaron 374 líneas de piezas reutilizables y 430 de tests; antes el módulo no tenía ninguno. El piloto encontró y corrigió 2 bugs: el RIF duplicado daba 500, y editar un proveedor natural duplicaba el apellido.
 
 **Catálogos simples (Departamentos, Cargos, Colores):** 1.824 → 666 líneas (−63 %) con `PaginaCatalogo` + `DialogoFormulario`. El costo por módulo baja a medida que se acumulan las piezas.
+
+**Fase 3 (sep-2026):** Atributos 965 → 752 (−22 %), Clientes 1.840 → 987 (−46 %), Insumos 1.799 → 953 (−47 %), Empleados 1.938 → 1.119 (−42 %), Usuarios 1.454 → 763 (−48 %). Los tests de caracterización encontraron 10 bugs de producción (cliente gubernamental imposible, direcciones duplicadas al reutilizar personas, apellido duplicado al editar empleados, insumos de Movimientos creados como no inventariables, `check-nombre` de insumos siempre 404, el último administrador podía perder su rol, entre otros); cada PR los detalla.
