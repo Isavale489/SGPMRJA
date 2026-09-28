@@ -132,7 +132,7 @@ function FormularioContrasena({ url, onCerrar }: { url: string; onCerrar: () => 
             <Campo etiqueta="Contraseña actual" requerido error={form.errors.current_password}>
                 <Input type="password" autoComplete="current-password" value={form.data.current_password} onChange={(e) => form.setData('current_password', e.target.value)} />
             </Campo>
-            <Campo etiqueta="Contraseña nueva" requerido error={form.errors.password} ayuda="Mínimo 8 caracteres.">
+            <Campo etiqueta="Contraseña nueva" requerido error={form.errors.password} ayuda="Mínimo 8 caracteres, con una mayúscula, un número y un carácter especial.">
                 <Input type="password" autoComplete="new-password" value={form.data.password} onChange={(e) => form.setData('password', e.target.value)} />
             </Campo>
             <Campo etiqueta="Confirmar contraseña nueva" requerido error={form.errors.password_confirmation}>

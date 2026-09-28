@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Auth;
 
+use App\Rules\ContrasenaSegura;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -36,7 +37,7 @@ class ForcePasswordChangeController extends Controller
 
         $request->validate([
             'current_password' => ['required', 'current_password'],
-            'password'         => ['required', 'confirmed', 'min:8', 'different:current_password'],
+            'password'         => ['required', 'confirmed', 'different:current_password', new ContrasenaSegura],
         ], [
             'current_password.current_password' => 'La contraseña temporal no es correcta.',
             'password.different'                => 'La nueva contraseña debe ser distinta a la temporal.',

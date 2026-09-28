@@ -87,7 +87,7 @@ class FormRequestTest extends TestCase
 
         $this->assertArrayHasKey('password', $rules);
         $this->assertContains('confirmed', $rules['password']);
-        $this->assertContains('min:8', $rules['password']);
+        $this->assertTrue(collect($rules['password'])->contains(fn ($r) => $r instanceof \App\Rules\ContrasenaSegura));
         $this->assertStringContainsString('exists:rol,id', $rules['role_id']);
     }
 

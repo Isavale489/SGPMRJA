@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Rules\ContrasenaSegura;
 use Illuminate\Foundation\Http\FormRequest;
 
 /**
@@ -19,7 +20,7 @@ class ResetearClaveUsuarioRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'password' => ['required', 'string', 'min:8', 'max:191', 'confirmed'],
+            'password' => ['required', 'string', 'max:191', 'confirmed', new ContrasenaSegura],
         ];
     }
 
@@ -27,7 +28,6 @@ class ResetearClaveUsuarioRequest extends FormRequest
     {
         return [
             'password.required' => 'La contraseña temporal es obligatoria.',
-            'password.min' => 'La contraseña debe tener al menos 8 caracteres.',
             'password.confirmed' => 'Las contraseñas no coinciden.',
         ];
     }
