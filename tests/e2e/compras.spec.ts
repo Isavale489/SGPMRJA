@@ -29,8 +29,14 @@ test('registrar un borrador: tasa del día, costo sugerido e IVA en vivo', async
   await expect(page.getByRole('heading', { name: 'Nueva compra' })).toBeVisible();
 
   await expect(page.getByLabel('Tasa (Bs por $)')).toHaveValue('40');
+  // Asistente: no se avanza sin proveedor.
+  await page.getByRole('button', { name: 'Siguiente' }).click();
+  await expect(page.getByText('Elige el proveedor.')).toBeVisible();
   await elegirProveedor(page);
   await page.getByLabel('N° de factura').fill('77-001');
+  await page.getByRole('button', { name: 'Siguiente' }).click();
+  await page.getByRole('button', { name: 'Siguiente' }).click();
+  await expect(page.getByText('Agrega al menos un insumo.')).toBeVisible();
 
   await page.getByRole('combobox', { name: 'Agregar insumo' }).fill('Hilo Compra');
   await page.getByRole('option', { name: new RegExp(INSUMO) }).click();
@@ -38,14 +44,18 @@ test('registrar un borrador: tasa del día, costo sugerido e IVA en vivo', async
   await page.getByLabel(`Cantidad de ${INSUMO}`).fill('10');
   await expect(page.getByLabel(`Costo unitario en bolívares de ${INSUMO}`)).toHaveValue('80');
 
-  // 10 × Bs 80 = 800 + IVA 16 % = 928.
-  const resumen = page.locator('form').getByText('Total', { exact: true }).locator('..');
-  await expect(resumen).toContainText('Bs 928,00');
+  // 10 × Bs 80 = 800 + IVA 16 % = 928; exento: 800.
+  const total = () => page.locator('form').getByText('Total', { exact: true }).locator('..');
   await page.getByRole('switch', { name: `${INSUMO} paga IVA` }).click();
-  await expect(resumen).toContainText('Bs 800,00');
+  await page.getByRole('button', { name: 'Siguiente' }).click();
+  await expect(page.getByRole('heading', { name: 'Resumen' })).toBeVisible();
+  await expect(total()).toContainText('Bs 800,00');
+  await page.getByRole('button', { name: 'Anterior' }).click();
   await page.getByRole('switch', { name: `${INSUMO} paga IVA` }).click();
+  await page.getByRole('button', { name: 'Siguiente' }).click();
+  await expect(total()).toContainText('Bs 928,00');
 
-  await page.getByRole('button', { name: 'Guardar borrador' }).first().click();
+  await page.getByRole('button', { name: 'Guardar borrador' }).click();
   await expect(page.getByText(/Borrador de compra #\d+ guardado/)).toBeVisible();
   await expect(page).toHaveURL(/\/compras$/);
   const fila = page.getByRole('row', { name: new RegExp(PROVEEDOR) });
@@ -96,6 +106,7 @@ test('editar el borrador clonado y crear un insumo sin salir de la compra', asyn
   await fila.getByRole('button', { name: /Más acciones/ }).click();
   await page.getByRole('menuitem', { name: 'Editar' }).click();
   await expect(page.getByRole('heading', { name: /Editar borrador #\d+/ })).toBeVisible();
+  await page.getByRole('button', { name: 'Siguiente' }).click();
   await expect(page.getByLabel(`Cantidad de ${INSUMO}`)).toHaveValue('10');
 
   await page.getByRole('combobox', { name: 'Agregar insumo' }).fill('Cinta raso E2E');
@@ -114,7 +125,8 @@ test('editar el borrador clonado y crear un insumo sin salir de la compra', asyn
   await expect(page.getByLabel(`Cantidad de ${INSUMO}`)).toHaveValue('10');
   await expect(page.getByLabel('Costo unitario en bolívares de Cinta raso E2E')).toHaveValue('20');
   await page.getByLabel('Cantidad de Cinta raso E2E').fill('4');
-  await page.getByRole('button', { name: 'Guardar cambios' }).first().click();
+  await page.getByRole('button', { name: 'Siguiente' }).click();
+  await page.getByRole('button', { name: 'Guardar cambios' }).click();
   await expect(page.getByText(/actualizada correctamente/)).toBeVisible();
 });
 
@@ -133,11 +145,15 @@ test('una compra prellenada con faltantes (desde Cotizaciones/Pedidos)', async (
   await page.goto('/compras?prefill=1'); // entrada vieja: redirige al formulario
   await expect(page).toHaveURL(/\/compras\/crear\?prefill=1$/);
   await expect(page.getByText('Se cargaron 1 insumo faltante')).toBeVisible();
+  await elegirProveedor(page);
+  await page.getByRole('button', { name: 'Siguiente' }).click();
   await expect(page.getByLabel(`Cantidad de ${INSUMO}`)).toHaveValue('7');
   await expect(page.getByLabel(`Costo unitario en bolívares de ${INSUMO}`)).toHaveValue('80');
 
   // Recargar no vuelve a aplicar los faltantes.
   await page.reload();
+  await elegirProveedor(page);
+  await page.getByRole('button', { name: 'Siguiente' }).click();
   await expect(page.getByText('Agrega los insumos de la factura con su cantidad y costo.')).toBeVisible();
 });
 

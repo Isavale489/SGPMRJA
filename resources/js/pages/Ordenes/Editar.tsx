@@ -1,16 +1,18 @@
 import { Link, useForm } from '@inertiajs/react';
 import { ArrowLeft, Save } from 'lucide-react';
+import { useState } from 'react';
 import { toast } from 'sonner';
 
+import { Asistente } from '@/components/app/asistente';
 import { Campo } from '@/components/app/campo';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useGuardCambios } from '@/hooks/use-guard-cambios';
 import AppLayout from '@/layouts/app-layout';
-import { formatoNumero } from '@/lib/formato';
+import { formatoFecha, formatoNumero } from '@/lib/formato';
 
 import { EquipoReparto, repartir, type Asignacion } from './equipo-reparto';
 import type { EstadoOrden, PaginaEditarOrden } from './tipos';
@@ -49,91 +51,209 @@ export default function EditarOrden({ orden, empleados, urls }: PaginaEditarOrde
         empleados: d.empleados.map((a) => ({ id: a.id, cantidad: parseInt(a.cantidad, 10) || 0 })),
     }));
 
+    const [salto, setSalto] = useState<{ paso: number; n: number }>();
+    const suma = data.empleados.reduce((a, x) => a + (parseInt(x.cantidad, 10) || 0), 0);
+    const nombre = (id: number) => lista.find((x) => x.id === id)?.nombre ?? `#${id}`;
+
+    const guardar = (ev: React.FormEvent) => {
+        ev.preventDefault();
+        form.put(urls.guardar, {
+            preserveScroll: true,
+            onError: () => {
+                toast.error('Revisa los campos marcados.');
+                setSalto((s) => ({ paso: 1, n: (s?.n ?? 0) + 1 }));
+            },
+        });
+    };
+
     return (
         <AppLayout
             titulo={`Editar orden #${orden.id}`}
             acciones={
-                <>
-                    <Button variant="ghost" asChild><Link href={urls.index}><ArrowLeft /> Órdenes</Link></Button>
-                    <Button type="submit" form="form-orden" disabled={form.processing}><Save /> Guardar cambios</Button>
-                </>
+                <Button variant="ghost" asChild>
+                    <Link href={urls.index}>
+                        <ArrowLeft /> Órdenes
+                    </Link>
+                </Button>
             }
         >
-            <form
-                id="form-orden"
-                noValidate
-                className="grid max-w-3xl gap-4"
-                onSubmit={(ev) => { ev.preventDefault(); form.put(urls.guardar, { preserveScroll: true, onError: () => toast.error('Revisa los campos marcados.') }); }}
-            >
+            <form id="form-orden" noValidate className="max-w-4xl" onSubmit={guardar}>
                 <Card>
-                    <CardHeader>
-                        <CardTitle className="text-base">{orden.producto}</CardTitle>
-                        <CardDescription>
-                            {orden.pedido_id ? `Pedido #${orden.pedido_id}` : 'Orden manual'}
-                            {orden.cliente && ` · ${orden.cliente}`}
-                            {orden.variante && ` · ${orden.variante}`}
-                            {` · ${formatoNumero(orden.cantidad_producida)} de ${formatoNumero(orden.cantidad)} producidas`}
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent className="grid gap-4">
-                        {e.general && <p className="text-destructive text-sm" role="alert">{e.general}</p>}
-                        <div className="grid gap-4 sm:grid-cols-4">
-                            <Campo etiqueta="Unidades" requerido error={e.cantidad} ayuda={pendiente ? `Hasta ${orden.cantidad_maxima}` : 'Solo con la orden Pendiente'}>
-                                <Input
-                                    type="number" min={1} max={orden.cantidad_maxima} inputMode="numeric"
-                                    value={data.cantidad}
-                                    disabled={!pendiente}
-                                    onChange={(ev) => {
-                                        const n = parseInt(ev.target.value, 10) || 0;
-                                        setData({ ...data, cantidad: ev.target.value, empleados: data.repartoManual ? data.empleados : repartir(n, data.empleados.map((a) => a.id)) });
-                                    }}
-                                    className="tabular"
-                                />
-                            </Campo>
-                            <Campo etiqueta="Inicio" requerido error={e.fecha_inicio}>
-                                <Input type="date" value={data.fecha_inicio} onChange={(ev) => setData('fecha_inicio', ev.target.value)} />
-                            </Campo>
-                            <Campo etiqueta="Fin estimado" requerido error={e.fecha_fin_estimada}>
-                                <Input type="date" value={data.fecha_fin_estimada} min={data.fecha_inicio} onChange={(ev) => setData('fecha_fin_estimada', ev.target.value)} />
-                            </Campo>
-                            <Campo etiqueta="Estado" requerido error={e.estado} ayuda="Para cancelar, usa «Cancelar orden».">
-                                {(control) => (
-                                    <Select value={data.estado} onValueChange={(v) => setData('estado', v as typeof data.estado)}>
-                                        <SelectTrigger {...control} className="w-full"><SelectValue /></SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="Pendiente">Pendiente</SelectItem>
-                                            <SelectItem value="En Proceso">En Proceso</SelectItem>
-                                            <SelectItem value="Finalizado">Finalizado</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                )}
-                            </Campo>
-                        </div>
+                    <CardContent>
+                        <Asistente
+                            salto={salto}
+                            final={
+                                <Button type="submit" disabled={form.processing}>
+                                    <Save /> Guardar cambios
+                                </Button>
+                            }
+                            pasos={[
+                                {
+                                    titulo: 'Pedido',
+                                    descripcion: 'La línea del pedido queda fija al editar: para cambiarla, cancela la orden y crea otra.',
+                                    contenido: (
+                                        <dl className="grid gap-3 rounded-lg border p-4 text-sm sm:grid-cols-2">
+                                            <div>
+                                                <dt className="text-muted-foreground text-xs">Producto</dt>
+                                                <dd className="font-medium">
+                                                    {orden.producto}
+                                                    {orden.variante && <span className="text-muted-foreground font-normal"> · {orden.variante}</span>}
+                                                </dd>
+                                            </div>
+                                            <div>
+                                                <dt className="text-muted-foreground text-xs">Pedido</dt>
+                                                <dd>
+                                                    {orden.pedido_id ? `Pedido #${orden.pedido_id}` : 'Orden manual'}
+                                                    {orden.cliente && ` · ${orden.cliente}`}
+                                                </dd>
+                                            </div>
+                                            <div>
+                                                <dt className="text-muted-foreground text-xs">Producción</dt>
+                                                <dd className="tabular">
+                                                    {formatoNumero(orden.cantidad_producida)} de {formatoNumero(orden.cantidad)} producidas
+                                                </dd>
+                                            </div>
+                                            <div>
+                                                <dt className="text-muted-foreground text-xs">Estado actual</dt>
+                                                <dd>{orden.estado}</dd>
+                                            </div>
+                                        </dl>
+                                    ),
+                                },
+                                {
+                                    titulo: 'Asignación',
+                                    descripcion: 'Equipo, cronograma y estado. Las unidades solo cambian con la orden Pendiente.',
+                                    validar: () =>
+                                        total < 1
+                                            ? 'Indica las unidades.'
+                                            : !data.empleados.length
+                                              ? 'Asigna al menos un empleado.'
+                                              : suma !== total
+                                                ? `El reparto del equipo debe sumar ${total}.`
+                                                : !data.fecha_inicio || !data.fecha_fin_estimada || data.fecha_fin_estimada <= data.fecha_inicio
+                                                  ? 'El fin estimado debe ser posterior al inicio.'
+                                                  : null,
+                                    contenido: (
+                                        <div className="grid gap-4">
+                                            {e.general && (
+                                                <p className="text-destructive text-sm" role="alert">
+                                                    {e.general}
+                                                </p>
+                                            )}
+                                            <div className="grid gap-4 sm:grid-cols-4">
+                                                <Campo etiqueta="Unidades" requerido error={e.cantidad} ayuda={pendiente ? `Hasta ${orden.cantidad_maxima}` : 'Solo con la orden Pendiente'}>
+                                                    <Input
+                                                        type="number"
+                                                        min={1}
+                                                        max={orden.cantidad_maxima}
+                                                        inputMode="numeric"
+                                                        value={data.cantidad}
+                                                        disabled={!pendiente}
+                                                        onChange={(ev) => {
+                                                            const n = parseInt(ev.target.value, 10) || 0;
+                                                            setData({
+                                                                ...data,
+                                                                cantidad: ev.target.value,
+                                                                empleados: data.repartoManual
+                                                                    ? data.empleados
+                                                                    : repartir(
+                                                                          n,
+                                                                          data.empleados.map((a) => a.id),
+                                                                      ),
+                                                            });
+                                                        }}
+                                                        className="tabular"
+                                                    />
+                                                </Campo>
+                                                <Campo etiqueta="Inicio" requerido error={e.fecha_inicio}>
+                                                    <Input type="date" value={data.fecha_inicio} onChange={(ev) => setData('fecha_inicio', ev.target.value)} />
+                                                </Campo>
+                                                <Campo etiqueta="Fin estimado" requerido error={e.fecha_fin_estimada}>
+                                                    <Input type="date" value={data.fecha_fin_estimada} min={data.fecha_inicio} onChange={(ev) => setData('fecha_fin_estimada', ev.target.value)} />
+                                                </Campo>
+                                                <Campo etiqueta="Estado" requerido error={e.estado} ayuda="Para cancelar, usa «Cancelar orden».">
+                                                    {(control) => (
+                                                        <Select value={data.estado} onValueChange={(v) => setData('estado', v as typeof data.estado)}>
+                                                            <SelectTrigger {...control} className="w-full">
+                                                                <SelectValue />
+                                                            </SelectTrigger>
+                                                            <SelectContent>
+                                                                <SelectItem value="Pendiente">Pendiente</SelectItem>
+                                                                <SelectItem value="En Proceso">En Proceso</SelectItem>
+                                                                <SelectItem value="Finalizado">Finalizado</SelectItem>
+                                                            </SelectContent>
+                                                        </Select>
+                                                    )}
+                                                </Campo>
+                                            </div>
 
-                        <EquipoReparto
-                            empleados={lista}
-                            total={total}
-                            valor={data.empleados}
-                            fijos={fijos}
-                            error={e.empleados}
-                            onCambiar={(asignacion, manual) => setData({ ...data, empleados: asignacion, repartoManual: manual })}
+                                            <EquipoReparto
+                                                empleados={lista}
+                                                total={total}
+                                                valor={data.empleados}
+                                                fijos={fijos}
+                                                error={e.empleados}
+                                                onCambiar={(asignacion, manual) => setData({ ...data, empleados: asignacion, repartoManual: manual })}
+                                            />
+
+                                            <Campo etiqueta="Notas" error={e.notas}>
+                                                <Textarea rows={2} value={data.notas} onChange={(ev) => setData('notas', ev.target.value)} />
+                                            </Campo>
+                                        </div>
+                                    ),
+                                },
+                                {
+                                    titulo: 'Insumos',
+                                    descripcion: 'No se editan: ya se descontaron del inventario al crear la orden.',
+                                    contenido: orden.insumos.length ? (
+                                        <ul className="grid gap-1 rounded-lg border p-3 text-sm">
+                                            {orden.insumos.map((i) => (
+                                                <li key={i.id} className="flex justify-between gap-3">
+                                                    <span>{i.nombre}</span>
+                                                    <span className="tabular text-muted-foreground">
+                                                        {formatoNumero(i.estimada)} {i.unidad}
+                                                    </span>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    ) : (
+                                        <p className="text-muted-foreground text-sm">Esta orden no tiene insumos.</p>
+                                    ),
+                                },
+                                {
+                                    titulo: 'Resumen',
+                                    descripcion: 'Revisa los cambios antes de guardar.',
+                                    contenido: (
+                                        <dl className="grid gap-3 rounded-lg border p-4 text-sm sm:grid-cols-2">
+                                            <div>
+                                                <dt className="text-muted-foreground text-xs">Unidades</dt>
+                                                <dd className="tabular">{total}</dd>
+                                            </div>
+                                            <div>
+                                                <dt className="text-muted-foreground text-xs">Estado</dt>
+                                                <dd>{data.estado}</dd>
+                                            </div>
+                                            <div>
+                                                <dt className="text-muted-foreground text-xs">Cronograma</dt>
+                                                <dd className="tabular">
+                                                    {data.fecha_inicio ? formatoFecha(data.fecha_inicio) : '—'} → {data.fecha_fin_estimada ? formatoFecha(data.fecha_fin_estimada) : '—'}
+                                                </dd>
+                                            </div>
+                                            <div>
+                                                <dt className="text-muted-foreground text-xs">Equipo</dt>
+                                                <dd>{data.empleados.map((x) => `${nombre(x.id)} (${x.cantidad})`).join(', ') || '—'}</dd>
+                                            </div>
+                                            {data.notas.trim() && (
+                                                <div className="sm:col-span-2">
+                                                    <dt className="text-muted-foreground text-xs">Notas</dt>
+                                                    <dd className="whitespace-pre-line">{data.notas}</dd>
+                                                </div>
+                                            )}
+                                        </dl>
+                                    ),
+                                },
+                            ]}
                         />
-
-                        <Campo etiqueta="Notas" error={e.notas}>
-                            <Textarea rows={2} value={data.notas} onChange={(ev) => setData('notas', ev.target.value)} />
-                        </Campo>
-
-                        {orden.insumos.length > 0 && (
-                            <section className="grid gap-1 text-sm">
-                                <h3 className="font-medium">Insumos comprometidos</h3>
-                                <p className="text-muted-foreground text-xs">No se editan: ya se descontaron del inventario.</p>
-                                <ul className="grid gap-1">
-                                    {orden.insumos.map((i) => (
-                                        <li key={i.id} className="flex justify-between gap-3"><span>{i.nombre}</span><span className="tabular text-muted-foreground">{formatoNumero(i.estimada)} {i.unidad}</span></li>
-                                    ))}
-                                </ul>
-                            </section>
-                        )}
                     </CardContent>
                 </Card>
             </form>

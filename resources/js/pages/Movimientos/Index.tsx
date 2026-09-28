@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { Campo } from '@/components/app/campo';
 import { DialogoFormulario } from '@/components/app/dialogo-formulario';
 import { ExportarPdf } from '@/components/app/exportar-pdf';
+import { Asistente } from '@/components/app/asistente';
 import { columnasExistencias, type ExistenciaFila } from '@/components/app/tabla-existencias';
 import { TablaServidor, type Columna } from '@/components/app/tabla-servidor';
 import { Button } from '@/components/ui/button';
@@ -209,18 +210,39 @@ export default function MovimientosIndex({ vista, filtros: iniciales, movimiento
                                 <DialogTitle>{viendo.tipo} de {viendo.insumo}</DialogTitle>
                                 <DialogDescription>Movimiento #{viendo.id} · {viendo.fecha ? `${formatoFecha(viendo.fecha)} ${viendo.fecha.slice(11)}` : '—'} · {viendo.usuario ?? 'Sistema'}</DialogDescription>
                             </DialogHeader>
-                            <dl className="grid grid-cols-3 gap-3 text-sm">
-                                <div><dt className="text-muted-foreground text-xs">Antes</dt><dd className="tabular">{formatoNumero(viendo.stock_anterior)}</dd></div>
-                                <div><dt className="text-muted-foreground text-xs">{viendo.tipo}</dt><dd className="tabular font-medium">{formatoNumero(viendo.cantidad)} {viendo.unidad}</dd></div>
-                                <div><dt className="text-muted-foreground text-xs">Después</dt><dd className="tabular">{formatoNumero(viendo.stock_nuevo)}</dd></div>
-                            </dl>
-                            <div className="text-sm">
-                                <p className="text-muted-foreground text-xs">Motivo</p>
-                                <p>{viendo.motivo ?? '—'}</p>
-                            </div>
-                            <Button variant="outline" asChild className="justify-self-start">
-                                <Link href={`${urls.historial}/${viendo.insumo_id}`}><History /> Ver historial del insumo</Link>
-                            </Button>
+                            <Asistente
+                                key={viendo.id}
+                                final={
+                                    <Button variant="outline" asChild>
+                                        <Link href={`${urls.historial}/${viendo.insumo_id}`}><History /> Ver historial del insumo</Link>
+                                    </Button>
+                                }
+                                pasos={[
+                                    {
+                                        titulo: 'Insumo',
+                                        contenido: (
+                                            <dl className="grid gap-3 text-sm sm:grid-cols-2">
+                                                <div><dt className="text-muted-foreground text-xs">Insumo</dt><dd className="font-medium">{viendo.insumo}{viendo.codigo && <code className="text-muted-foreground ml-1.5 font-mono text-xs">{viendo.codigo}</code>}</dd></div>
+                                                <div><dt className="text-muted-foreground text-xs">Tipo de movimiento</dt><dd className={viendo.tipo === 'Entrada' ? 'text-success' : 'text-destructive'}>{viendo.tipo}</dd></div>
+                                                <div className="sm:col-span-2"><dt className="text-muted-foreground text-xs">Motivo</dt><dd>{viendo.motivo ?? '—'}</dd></div>
+                                            </dl>
+                                        ),
+                                    },
+                                    {
+                                        titulo: 'Stock y registro',
+                                        contenido: (
+                                            <div className="grid gap-4 text-sm">
+                                                <dl className="grid grid-cols-3 gap-3">
+                                                    <div><dt className="text-muted-foreground text-xs">Antes</dt><dd className="tabular">{formatoNumero(viendo.stock_anterior)}</dd></div>
+                                                    <div><dt className="text-muted-foreground text-xs">{viendo.tipo}</dt><dd className="tabular font-medium">{formatoNumero(viendo.cantidad)} {viendo.unidad}</dd></div>
+                                                    <div><dt className="text-muted-foreground text-xs">Después</dt><dd className="tabular">{formatoNumero(viendo.stock_nuevo)}</dd></div>
+                                                </dl>
+                                                <p className="text-muted-foreground">Registrado por {viendo.usuario ?? 'Sistema'}{viendo.fecha && ` el ${formatoFecha(viendo.fecha)} ${viendo.fecha.slice(11)}`}.</p>
+                                            </div>
+                                        ),
+                                    },
+                                ]}
+                            />
                         </>
                     )}
                 </DialogContent>

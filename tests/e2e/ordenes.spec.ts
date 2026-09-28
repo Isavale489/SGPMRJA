@@ -14,7 +14,8 @@ function vigilarErrores(page: Page): string[] {
   return errores;
 }
 
-const tarjeta = (page: Page, titulo: string) => page.locator('[data-slot="card"]').filter({ hasText: titulo });
+// Tarjetas de cada orden (dentro de la tarjeta del asistente).
+const tarjeta = (page: Page, titulo: string) => page.locator('[data-slot="card"] [data-slot="card"]').filter({ hasText: titulo });
 
 async function accion(page: Page, orden: number, nombre: string) {
   await page.getByRole('button', { name: `Más acciones de la orden #${orden}` }).click();
@@ -28,24 +29,33 @@ test('crear dos órdenes de una línea: reparto, insumos por unidad y existencia
   await page.goto('/ordenes');
   await page.getByRole('link', { name: 'Nueva orden' }).click();
   await page.getByRole('button', { name: /Taller Guanare OP/ }).click();
+  await expect(page.getByText('12 de 12 asignadas')).toBeVisible();
+  await page.getByRole('button', { name: 'Siguiente' }).click();
 
-  // La línea entra entera en una orden, con el insumo escalado (0,5 × 12).
+  // Asignación: la línea entra entera en una orden; «Dividir» la reparte.
   const orden1 = tarjeta(page, 'Orden 1:');
   await expect(orden1.getByLabel('Unidades')).toHaveValue('12');
-  await expect(orden1.getByLabel(/Cantidad de Hilo OP E2E/)).toHaveValue('6');
-
-  // Dividir: la segunda orden se lleva la mitad y el insumo se recalcula en ambas.
   await orden1.getByRole('button', { name: 'Dividir' }).click();
   const orden2 = tarjeta(page, 'Orden 2:');
   await expect(orden1.getByLabel('Unidades')).toHaveValue('6');
   await expect(orden2.getByLabel('Unidades')).toHaveValue('6');
-  await expect(orden2.getByLabel(/Cantidad de Hilo OP E2E/)).toHaveValue('3');
 
+  // Sin equipo no se avanza.
+  await page.getByRole('button', { name: 'Siguiente' }).click();
+  await expect(page.getByText('Orden 1: asigna al menos un empleado.')).toBeVisible();
   await orden1.getByRole('checkbox', { name: 'Rosa Pineda' }).click();
   await orden2.getByRole('checkbox', { name: 'Pedro Unda' }).click();
+  await page.getByRole('button', { name: 'Siguiente' }).click();
+
+  // Insumos escalados por unidad (0,5 × 6).
+  await expect(tarjeta(page, 'Orden 1:').getByLabel(/Cantidad de Hilo OP E2E/)).toHaveValue('3');
+  await expect(tarjeta(page, 'Orden 2:').getByLabel(/Cantidad de Hilo OP E2E/)).toHaveValue('3');
+  await page.getByRole('button', { name: 'Siguiente' }).click();
+
+  await expect(page.getByRole('heading', { name: 'Resumen' })).toBeVisible();
   await expect(page.getByText(/Necesita 6 Cono · hay 30/)).toBeVisible();
 
-  await page.getByRole('button', { name: 'Crear 2 órdenes' }).last().click();
+  await page.getByRole('button', { name: 'Crear 2 órdenes' }).click();
   await expect(page.getByText('2 órdenes creadas correctamente.')).toBeVisible();
   const dialogo = page.getByRole('dialog');
   await expect(dialogo).toContainText('2 órdenes de producción');
@@ -80,8 +90,12 @@ test('avance, etapas, edición y cancelación con merma', async ({ page }) => {
 
   await accion(page, segunda, 'Editar');
   await expect(page.getByRole('heading', { name: `Editar orden #${segunda}` })).toBeVisible();
+  await page.getByRole('button', { name: 'Siguiente' }).click();
   await page.getByLabel('Notas').fill('Costura reforzada');
-  await page.getByRole('button', { name: 'Guardar cambios' }).first().click();
+  await page.getByRole('button', { name: 'Siguiente' }).click();
+  await page.getByRole('button', { name: 'Siguiente' }).click();
+  await expect(page.getByText('Costura reforzada')).toBeVisible();
+  await page.getByRole('button', { name: 'Guardar cambios' }).click();
   await expect(page.getByText('Orden de producción actualizada exitosamente.')).toBeVisible();
 
   // En proceso: el material ya se cortó, la cancelación exige motivo.
@@ -93,6 +107,20 @@ test('avance, etapas, edición y cancelación con merma', async ({ page }) => {
   await cancelar.getByRole('button', { name: 'Cancelar orden' }).click();
   await expect(page.getByText('Orden cancelada. El material se registró como merma (sin reposición de stock).')).toBeVisible();
   expect(errores, errores.join('\n')).toEqual([]);
+});
+
+test('la ficha de una orden se recorre por pasos: orden, insumos y progreso', async ({ page }) => {
+  await page.goto('/ordenes');
+  await page.getByRole('row', { name: /Taller Guanare OP/ }).getByRole('button', { name: /Ver órdenes/ }).click();
+  await page.getByRole('button', { name: `Ver orden #${primera}` }).click();
+  const ficha = page.getByRole('dialog', { name: new RegExp(`Orden #${primera}`) });
+  await expect(ficha.getByRole('heading', { name: 'Orden', exact: true })).toBeVisible();
+  await ficha.getByRole('button', { name: 'Siguiente' }).click();
+  await expect(ficha.getByText('Hilo OP E2E')).toBeVisible();
+  await ficha.getByRole('button', { name: 'Siguiente' }).click();
+  await expect(ficha.getByRole('cell', { name: 'Rosa Pineda' })).toBeVisible();
+  await ficha.getByRole('button', { name: 'Anterior' }).click();
+  await expect(ficha.getByRole('heading', { name: 'Insumos', exact: true })).toBeVisible();
 });
 
 test('órdenes por empleado muestran su parte del reparto', async ({ page }) => {

@@ -61,6 +61,9 @@ test('alertas y rotación', async ({ page }) => {
   // Reponer: abre una compra prellenada (mínimo 15 − existencia 10 = 5).
   await page.getByRole('button', { name: 'Comprar lo que falta' }).click();
   await expect(page).toHaveURL(/\/compras\/crear\?prefill=1/);
+  await page.getByRole('combobox', { name: 'Buscar proveedor' }).fill('Hilos Compra');
+  await page.getByRole('option', { name: /Hilos Compra E2E/ }).click();
+  await page.getByRole('button', { name: 'Siguiente' }).click();
   await expect(page.getByLabel('Cantidad de Hilo Mov E2E')).toHaveValue('5');
   await page.goto('/movimiento-insumo/rotacion');
   await expect(page.getByRole('row', { name: /Hilo Mov E2E/ })).toContainText('2 Cono');
