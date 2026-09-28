@@ -342,11 +342,12 @@ return [
         'nombre'   => 'Movimientos de insumo',
         'acciones' => [
             'ver'       => 'Ver movimientos, existencias, historial y alertas',
-            'gestionar' => 'Registrar movimientos (individual y masivo)',
+            'gestionar' => 'Registrar salidas manuales de insumos',
         ],
         'rutas' => [
-            'movimiento-insumo.index|movimiento-insumo.data|movimiento-insumo.existencias.data|movimiento-insumo.reporte|movimiento-insumo.reporte.pdf|movimiento-insumo.alertas|movimiento-insumo.historial|movimiento-insumo.show' => 'ver',
-            'movimiento-insumo.store|movimiento-insumo.masivo' => 'gestionar',
+            // rotacion no estaba mapeada: el middleware la negaba (403) a todo rol no administrador.
+            'movimiento-insumo.index|movimiento-insumo.reporte|movimiento-insumo.reporte.pdf|movimiento-insumo.alertas|movimiento-insumo.historial|movimiento-insumo.rotacion' => 'ver',
+            'movimiento-insumo.store' => 'gestionar',
         ],
     ],
 
