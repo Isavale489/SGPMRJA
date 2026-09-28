@@ -27,7 +27,8 @@
                     required
                     autocomplete="new-password"
                     minlength="8"
-                    placeholder="Mínimo 8, con mayúscula, número y símbolo"
+                    maxlength="72"
+                    placeholder="{{ \App\Rules\ContrasenaSegura::DESCRIPCION }}"
                 >
                 <button type="button" class="btn-show-pass" data-target="password" title="Mostrar/ocultar">
                     <i class="bx bx-show"></i>

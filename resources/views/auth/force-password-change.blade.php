@@ -71,7 +71,8 @@
                                     required
                                     autocomplete="new-password"
                                     minlength="8"
-                                    placeholder="Mínimo 8, con mayúscula, número y símbolo"
+                                    maxlength="72"
+                    placeholder="{{ \App\Rules\ContrasenaSegura::DESCRIPCION }}"
                                 >
                             </div>
 

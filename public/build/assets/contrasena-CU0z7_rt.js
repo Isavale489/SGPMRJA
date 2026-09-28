@@ -1,0 +1,1 @@
+var e=`Entre 8 y 72 caracteres, con una mayúscula, un número y un carácter especial.`;export{e as t};
