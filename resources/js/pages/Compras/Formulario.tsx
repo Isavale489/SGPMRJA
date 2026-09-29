@@ -90,7 +90,10 @@ function totales(items: Linea[], tasa: number, iva: number) {
 export default function FormularioCompra({ compra, insumos, iva, tiposInsumo, unidades, estados, urls }: PaginaFormularioCompra) {
     const { puede } = usePermisos();
     const [proveedor, setProveedor] = useState<ProveedorResumen | null>(compra?.proveedor ?? null);
-    const tasaGuardada = compra ? ({ estado: compra.tasa_fecha ? 'bcv' : 'manual', fecha: compra.tasa_fecha ?? undefined } as const) : null;
+    // Guardada: «anterior» si la tasa BCV es de un día previo a la compra (fin de semana, feriado).
+    const tasaGuardada = compra
+        ? ({ estado: !compra.tasa_fecha ? 'manual' : compra.tasa_fecha === compra.fecha_compra ? 'bcv' : 'anterior', fecha: compra.tasa_fecha ?? undefined } as const)
+        : null;
     const [tasa, setTasa] = useState<{ estado: 'buscando' | 'bcv' | 'anterior' | 'manual'; fecha?: string; aviso?: string }>(tasaGuardada ?? { estado: 'buscando' });
     const [altaInsumo, setAltaInsumo] = useState<{ abierto: boolean; apertura: number; nombre: string }>({ abierto: false, apertura: 0, nombre: '' });
 

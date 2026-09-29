@@ -1,4 +1,3 @@
-import type { Page } from '@inertiajs/core';
 import { Link, router } from '@inertiajs/react';
 import { Ban, BellRing, CheckCheck, Copy, EllipsisVertical, Eye, FileText, Pencil, Plus, Search, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -46,7 +45,10 @@ export default function ComprasIndex({ vista, filtros: iniciales, compras, exist
     const abrirDetalle = (id: number) => {
         setVer(String(id));
         setPidiendo(true);
-        router.get(urls.index, { ...filtros, ver: id }, { only: ['detalle'], preserveState: true, preserveScroll: true, replace: true, onFinish: () => setPidiendo(false) });
+        router.get(urls.index, { ...filtros, ver: id }, { only: ['detalle'], preserveState: true, preserveScroll: true, replace: true, onFinish: (v) => {
+            // Una visita interrumpida (se abrió otra ficha) no cuenta como «llegó sin ficha».
+            if (!v.interrupted && !v.cancelled) setPidiendo(false);
+        } });
     };
     const noExiste = Boolean(ver) && !pidiendo && detalle?.id !== Number(ver);
     useEffect(() => {
@@ -64,7 +66,7 @@ export default function ComprasIndex({ vista, filtros: iniciales, compras, exist
         const url = `${urls.index}/${id}`;
         const opciones = { preserveScroll: true };
         // Un rechazo del servidor también vuelve con éxito (redirect con flash de error): solo se avisa si cambió el stock.
-        const siCambio = (motivo: 'compra-procesada' | 'compra-anulada') => (p: Page) => {
+        const siCambio = (motivo: 'compra-procesada' | 'compra-anulada') => (p: { props: { flash?: unknown } }) => {
             if (!(p.props.flash as { error?: string | null } | undefined)?.error) avisarCambioStock(motivo);
         };
         if (accion === 'procesar') router.patch(`${url}/procesar`, {}, { ...opciones, onSuccess: siCambio('compra-procesada') });
