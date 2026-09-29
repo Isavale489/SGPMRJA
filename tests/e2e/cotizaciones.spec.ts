@@ -73,6 +73,33 @@ test('crear una cotización por el asistente, con bordado', async ({ page }) => 
   expect(errores, errores.join('\n')).toEqual([]);
 });
 
+/** Regresión: con líneas repetidas (misma talla y género), el editor mostraba solo la última y al guardar se perdía el resto. */
+test('editar un producto con tallas repetidas muestra la suma y no pierde unidades', async ({ page }) => {
+  await page.goto('/cotizaciones', { waitUntil: 'networkidle' });
+  const fila = page.getByRole('row', { name: /Tallas Repetidas/ });
+  await fila.getByRole('button', { name: /Más acciones de la cotización/ }).click();
+  await page.getByRole('menuitem', { name: 'Editar' }).click();
+  const formulario = page.locator('#form-cotizacion');
+  await formulario.getByRole('button', { name: 'Siguiente' }).click();
+  const producto = page.getByRole('row', { name: /Chemise/ });
+  await expect(producto).toContainText('5');
+
+  await page.getByRole('button', { name: 'Editar Chemise' }).click();
+  const dialogo = page.getByRole('dialog', { name: 'Editar producto' });
+  await expect(dialogo.getByLabel(/^Talla M ·/).first()).toHaveValue('5'); // 3 + 2, no solo la última
+  await dialogo.getByRole('radio', { name: 'Azul Marino' }).click(); // la línea sembrada no tiene color
+  await dialogo.getByRole('button', { name: 'Guardar cambios' }).click();
+  await expect(dialogo).toBeHidden();
+  await expect(producto).toContainText('5');
+
+  await formulario.getByRole('button', { name: 'Siguiente' }).click();
+  await page.getByRole('button', { name: 'Guardar cambios' }).click();
+  await expect(page.getByText(/Cotización #\d+ actualizada\./)).toBeVisible();
+  const ver = page.getByRole('dialog', { name: /Cotización #\d+/ });
+  await ver.getByRole('button', { name: 'Siguiente' }).click();
+  await expect(ver).toContainText('$50,00'); // 5 × $10: no se perdió ninguna unidad
+});
+
 /** Regresión: al reabrir un producto con precio negociado, «Precio base» mostraba el negociado y «Restaurar» no volvía al de catálogo. */
 test('editar un producto con precio negociado muestra el precio de catálogo y Restaurar vuelve a él', async ({ page }) => {
   await page.goto('/cotizaciones/crear', { waitUntil: 'networkidle' });

@@ -40,24 +40,4 @@ class GruposCotizacionTest extends TestCase
         $this->assertEquals(20, $materializado['precio_base']);
         $this->assertNull($grupos->firstWhere('producto_id', null)['precio_catalogo']);
     }
-
-    /** Regresión: líneas con la misma talla y género se pisaban al reabrir «Editar producto» (se perdía una cantidad). */
-    public function test_las_tallas_repetidas_se_unen_sumando_y_conservando_las_descripciones(): void
-    {
-        $payload = $this->payloadCotizacion($this->cliente()->id, 3);
-        $linea = $payload['productos'][0];
-        $payload['productos'] = [
-            [...$linea, 'cantidad' => 3, 'descripcion' => 'Con nombre Ana'],
-            [...$linea, 'cantidad' => 2, 'descripcion' => 'Con nombre Luis'],
-            [...$linea, 'cantidad' => 1, 'descripcion' => 'Con nombre Ana'],
-        ];
-        $this->assertExito($this->actingAs($this->admin())->postJson(route('cotizaciones.store'), $payload));
-
-        $grupos = GruposCotizacion::desde(GruposCotizacion::cargar(Cotizacion::latest('id')->firstOrFail())->productos);
-        $this->assertCount(1, $grupos);
-        $this->assertCount(1, $grupos[0]['tallas']);
-        $this->assertSame(6, $grupos[0]['tallas'][0]['cantidad']);
-        $this->assertSame('Con nombre Ana · Con nombre Luis', $grupos[0]['tallas'][0]['descripcion']);
-        $this->assertSame(6, $grupos[0]['unidades']);
-    }
 }
