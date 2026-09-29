@@ -3,23 +3,21 @@
     <head>
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
-        <meta name="description" content="Sistema Atlántico - Tu descripción aquí">
-        <meta name="keywords" content="sistema, atlántico, keywords">
-        <meta name="author" content="" />
+        <meta name="description" content="Manufacturas R.J. Atlántico: confección de prendas textiles y bordados personalizados en Acarigua - Araure, estado Portuguesa.">
+        <meta name="keywords" content="confección, bordados, uniformes, chemises, franelas, Acarigua, Araure, Portuguesa">
+        <meta name="author" content="Manufacturas R.J. Atlántico" />
         <meta name="csrf-token" content="{{ csrf_token() }}">
         
         <!-- SEO Meta Tags -->
         <meta property="og:type" content="website">
         <meta property="og:url" content="{{ url()->current() }}">
         <meta property="og:title" content="@yield('title') - Sistema Atlántico">
-        <meta property="og:description" content="Sistema Atlántico - Tu descripción aquí">
-        <meta property="og:image" content="{{ asset('images/og-image.jpg') }}">
+        <meta property="og:description" content="Manufacturas R.J. Atlántico: confección de prendas textiles y bordados personalizados en Acarigua - Araure, estado Portuguesa.">
         
         <!-- Twitter -->
-        <meta name="twitter:card" content="summary_large_image">
+        <meta name="twitter:card" content="summary">
         <meta name="twitter:title" content="@yield('title') - Sistema Atlántico">
-        <meta name="twitter:description" content="Sistema Atlántico - Tu descripción aquí">
-        <meta name="twitter:image" content="{{ asset('images/og-image.jpg') }}">
+        <meta name="twitter:description" content="Manufacturas R.J. Atlántico: confección de prendas textiles y bordados personalizados en Acarigua - Araure, estado Portuguesa.">
 
         <title>@yield('title') - Sistema Atlántico</title>
         
