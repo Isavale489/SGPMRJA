@@ -29,6 +29,18 @@ class CotizacionPedidoFlujoTest extends TestCase
         return $cot->fresh();
     }
 
+    /** Crear el pedido desde la cotización con el abono completo en efectivo (el asistente). */
+    private function convertir($admin, Cotizacion $cot)
+    {
+        return $this->actingAs($admin)->postJson(route('pedidos.store'), [
+            'cotizacion_id' => $cot->id,
+            'fecha_entrega_estimada' => now()->addDays(20)->toDateString(),
+            'prioridad' => $cot->prioridad ?? 'Normal',
+            // Con total 0 (cotización sin precio) no hay nada que abonar.
+            'pagos' => (float) $cot->total > 0 ? [['metodo' => 'efectivo', 'monto' => (float) $cot->total]] : [],
+        ]);
+    }
+
     public function test_crear_cotizacion_guarda_detalle_y_snapshot(): void
     {
         $cot = $this->cotizacionAprobada($this->admin());
@@ -43,8 +55,7 @@ class CotizacionPedidoFlujoTest extends TestCase
         $admin = $this->admin();
         $this->actingAs($admin)->postJson(route('cotizaciones.store'), $this->payloadCotizacion($this->cliente()->id));
 
-        $this->actingAs($admin)
-            ->postJson(route('cotizaciones.convertirAPedido', Cotizacion::sole()))
+        $this->convertir($admin, Cotizacion::sole())
             ->assertStatus(422);
 
         $this->assertSame(0, Pedido::count());
@@ -55,7 +66,7 @@ class CotizacionPedidoFlujoTest extends TestCase
         $admin = $this->admin();
         $cot = $this->cotizacionAprobada($admin);
 
-        $this->assertExito($this->actingAs($admin)->postJson(route('cotizaciones.convertirAPedido', $cot)));
+        $this->assertExito($this->convertir($admin, $cot));
 
         $this->assertSame('Convertida', $cot->fresh()->estado);
         $pedido = Pedido::sole();
@@ -69,9 +80,9 @@ class CotizacionPedidoFlujoTest extends TestCase
     {
         $admin = $this->admin();
         $cot = $this->cotizacionAprobada($admin);
-        $this->actingAs($admin)->postJson(route('cotizaciones.convertirAPedido', $cot));
+        $this->convertir($admin, $cot);
 
-        $this->actingAs($admin)->postJson(route('cotizaciones.convertirAPedido', $cot))->assertStatus(422);
+        $this->convertir($admin, $cot)->assertStatus(422);
 
         $this->assertSame(1, Pedido::count());
     }
@@ -82,7 +93,7 @@ class CotizacionPedidoFlujoTest extends TestCase
         $cot = $this->cotizacionAprobada($admin);
         $cot->update(['fecha_cotizacion' => now()->subDays(30), 'fecha_validez' => now()->subDay()]);
 
-        $this->actingAs($admin)->postJson(route('cotizaciones.convertirAPedido', $cot))->assertStatus(422);
+        $this->convertir($admin, $cot)->assertStatus(422);
 
         // Regresión: el marcado 'Vencida' se hacía dentro de la transacción y la
         // excepción lo revertía (la cotización quedaba 'Aprobada').
@@ -94,7 +105,7 @@ class CotizacionPedidoFlujoTest extends TestCase
     {
         $admin = $this->admin();
         $cot = $this->cotizacionAprobada($admin);
-        $this->actingAs($admin)->postJson(route('cotizaciones.convertirAPedido', $cot));
+        $this->convertir($admin, $cot);
         $pedido = Pedido::sole();
 
         $this->assertExito($this->actingAs($admin)->deleteJson(route('pedidos.destroy', $pedido)));
@@ -104,7 +115,7 @@ class CotizacionPedidoFlujoTest extends TestCase
         $this->assertNull(Pedido::withTrashed()->find($pedido->id)->cotizacion_id);
 
         // El índice único pedido.cotizacion_id quedó libre: se puede volver a convertir.
-        $this->assertExito($this->actingAs($admin)->postJson(route('cotizaciones.convertirAPedido', $cot)));
+        $this->assertExito($this->convertir($admin, $cot));
         $this->assertSame(1, Pedido::count());
     }
 
@@ -112,7 +123,7 @@ class CotizacionPedidoFlujoTest extends TestCase
     {
         $admin = $this->admin();
         $cot = $this->cotizacionAprobada($admin);
-        $this->actingAs($admin)->postJson(route('cotizaciones.convertirAPedido', $cot));
+        $this->convertir($admin, $cot);
 
         $this->actingAs($admin)->patchJson(route('pedidos.cancelar', Pedido::sole()));
 
@@ -159,8 +170,8 @@ class CotizacionPedidoFlujoTest extends TestCase
         $this->assertSame(0, Cotizacion::count());
     }
 
-    /** Contrato JSON que consume el asistente de Pedidos (Blade): pedidos/scripts/main.blade.php. */
-    public function test_contrato_json_de_datos_para_pedido(): void
+    /** El pedido copia en el servidor las líneas de la cotización, con sus bordados (también sin logo: 8177e91). */
+    public function test_el_pedido_copia_las_lineas_y_los_bordados_de_la_cotizacion(): void
     {
         $this->seed(\Database\Seeders\BordadoUbicacionSeeder::class);
         $admin = $this->admin();
@@ -168,19 +179,14 @@ class CotizacionPedidoFlujoTest extends TestCase
         $cot = Cotizacion::sole();
         $this->actingAs($admin)->putJson(route('cotizaciones.updateEstado', $cot), ['estado' => 'Aprobada']);
 
-        $this->actingAs($admin)->getJson(route('cotizaciones.datosParaPedido', $cot))
-            ->assertOk()
-            ->assertJsonStructure([
-                'cotizacion_id', 'cliente_id', 'total',
-                'cliente' => ['id', 'nombre', 'apellido', 'email', 'telefono', 'documento'],
-                'productos' => [['producto_id', 'tipo_producto_id', 'insumo_tela_id', 'atributo_valor_ids', 'sku', 'imagen_url', 'producto_nombre',
-                    'cantidad', 'descripcion', 'lleva_bordado', 'nombre_logo', 'recargo_bordado_unitario', 'ubicacion_logo', 'cantidad_logo',
-                    'talla_id', 'color_id', 'genero_id', 'precio_unitario',
-                    'bordados' => [['ubicacion_bordado_id', 'logo_id', 'nombre_aplicado', 'nombre_logo', 'nombre_logo_aplicado', 'es_personalizada', 'cantidad', 'precio_aplicado']]]],
-            ])
-            ->assertJsonPath('cotizacion_id', $cot->id)
-            ->assertJsonPath('productos.0.recargo_bordado_unitario', 6)
-            ->assertJsonPath('productos.0.cantidad', 5);
+        $this->assertExito($this->convertir($admin, $cot->fresh()));
+
+        $linea = Pedido::sole()->productos()->with('bordados')->sole();
+        $this->assertSame(5, (int) $linea->cantidad);
+        $this->assertEquals(16, (float) $linea->precio_unitario);
+        $this->assertSame('Logo en el pecho', $linea->descripcion);
+        $this->assertNull($linea->bordados->sole()->logo_id); // bordado sin logo: antes el pedido lo rechazaba
+        $this->assertSame(3, (int) $linea->bordados->sole()->cantidad);
     }
 
     /** Contrato JSON de las mutaciones (clientes jQuery). */

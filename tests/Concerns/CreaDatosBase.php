@@ -70,7 +70,7 @@ trait CreaDatosBase
     protected function payloadCotizacion(int $clienteId, int $cantidad = 12): array
     {
         $tipo = TipoProducto::firstOrCreate(['prefijo' => 'CHE'], ['nombre' => 'Chemise']);
-        $talla = Talla::forceCreate(['nombre' => 'M']);
+        $talla = Talla::firstOrCreate(['nombre' => 'M']);
 
         return [
             'cliente_id' => $clienteId,

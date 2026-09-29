@@ -63,7 +63,7 @@ class CotizacionController extends Controller
                 'crear' => route('cotizaciones.create', absolute: false),
                 'reportePdf' => route('cotizaciones.reporte.pdf', absolute: false),
                 'buscarCliente' => route('clientes.search', absolute: false),
-                'pedidos' => url('/pedidos'),
+                'convertir' => route('pedidos.create', absolute: false),
             ],
         ]);
     }
@@ -509,129 +509,6 @@ class CotizacionController extends Controller
         return $this->responder($request, "Cotización #{$cotizacion->id} {$textos[$request->estado]}.", [
             'success' => 'Estado actualizado a: '.$request->estado,
             'estado' => $request->estado,
-        ]);
-    }
-
-    /**
-     * Obtener datos de cotización para pre-llenar formulario de pedido
-     */
-    public function getDatosParaPedido($id)
-    {
-        $cotizacion = Cotizacion::with([
-            'cliente.persona',
-            'productos.producto.tipoProducto',
-            'productos.tipoProducto.atributos.valores',
-            'productos.bordados.logo:id,name',
-        ])->findOrFail($id);
-
-        // Verificar que esté aprobada
-        if ($cotizacion->estado !== 'Aprobada') {
-            return response()->json([
-                'error' => 'Solo se pueden convertir cotizaciones con estado Aprobada.'
-            ], 422);
-        }
-
-        // Preparar datos para el formulario de pedido
-        $datosParaPedido = [
-            'cotizacion_id' => $cotizacion->id,
-            'cliente_id' => $cotizacion->cliente_id,
-            // Clave nueva (no rompe el contrato): el pedido hereda la prioridad.
-            'prioridad' => $cotizacion->prioridad ?? 'Normal',
-            'cliente' => $cotizacion->cliente ? [
-                'id' => $cotizacion->cliente->id,
-                'nombre' => $cotizacion->cliente->nombre,
-                'apellido' => '',
-                'email' => $cotizacion->cliente->email,
-                'telefono' => $cotizacion->cliente->telefono,
-                'documento' => $cotizacion->cliente->documento,
-            ] : null,
-            'total' => $cotizacion->total,
-            'productos' => $cotizacion->productos->map(function ($detalle) {
-                $recargoUnitario = $detalle->bordados->sum(function ($bordado) {
-                    return ((float) $bordado->precio_aplicado) * ((int) ($bordado->cantidad ?: 1));
-                });
-
-                $ubicacionLegacy = $detalle->bordados->pluck('nombre_aplicado')->implode(', ');
-                $cantidadLegacy = $detalle->bordados->sum(function ($bordado) {
-                    return (int) ($bordado->cantidad ?: 1);
-                });
-
-                // Línea dinámica (sin producto_id): arrastrar la variante (tipo + tela + atributos)
-                // para que el pedido la persista, y construir un nombre legible desde el snapshot.
-                $esDinamica = empty($detalle->producto_id) && !empty($detalle->tipo_producto_id);
-                $telaSnap   = $detalle->tela_snapshot ?? null;
-                $nombreLinea = $detalle->producto
-                    ? $detalle->producto->nombre_completo
-                    : trim(($detalle->tipoProducto?->nombre ?? 'Variante')
-                        . (is_array($telaSnap) && !empty($telaSnap['nombre']) ? ' · ' . $telaSnap['nombre'] : ''));
-
-                return [
-                    'producto_id' => $detalle->producto_id,
-                    'tipo_producto_id' => $detalle->tipo_producto_id,
-                    'insumo_tela_id' => is_array($telaSnap) ? ($telaSnap['id'] ?? null) : null,
-                    'atributo_valor_ids' => $esDinamica && $detalle->tipoProducto
-                        ? $detalle->tipoProducto->valorIdsDesdeSnapshot($detalle->atributos_snapshot)
-                        : [],
-                    'sku' => $detalle->producto ? $detalle->producto->codigo : $detalle->sku_snapshot,
-                    'imagen_url' => ($detalle->producto && $detalle->producto->imagen)
-                        ? asset($detalle->producto->imagen)
-                        : ($detalle->tipoProducto?->imagen_url),
-                    'producto_nombre' => $nombreLinea ?: 'N/A',
-                    'cantidad' => $detalle->cantidad,
-                    'descripcion' => $detalle->descripcion,
-                    'lleva_bordado' => $detalle->lleva_bordado,
-                    'nombre_logo' => $detalle->nombre_logo,
-                    'bordados' => $detalle->bordados->map(function ($bordado) {
-                        return [
-                            'ubicacion_bordado_id' => $bordado->ubicacion_bordado_id,
-                            'logo_id' => $bordado->logo_id,
-                            'nombre_aplicado' => $bordado->nombre_aplicado,
-                            'nombre_logo' => $bordado->logo ? $bordado->logo->name : $bordado->nombre_logo_aplicado,
-                            'nombre_logo_aplicado' => $bordado->nombre_logo_aplicado,
-                            'es_personalizada' => (bool) $bordado->es_personalizada,
-                            'cantidad' => (int) $bordado->cantidad,
-                            'precio_aplicado' => (float) $bordado->precio_aplicado,
-                        ];
-                    })->values(),
-                    'recargo_bordado_unitario' => $recargoUnitario,
-                    'ubicacion_logo' => $ubicacionLegacy ?: null,
-                    'cantidad_logo' => $cantidadLegacy ?: null,
-                    'talla_id' => $detalle->talla_id,
-                    'color_id' => $detalle->color_id,
-                    'genero_id' => $detalle->genero_id,
-                    'precio_unitario' => $detalle->precio_unitario,
-                ];
-            }),
-        ];
-
-        return response()->json($datosParaPedido);
-    }
-
-    /**
-     * Convertir cotización a pedido directamente (endpoint atómico, JSON).
-     */
-    public function convertirAPedido($id)
-    {
-        $cotizacion = Cotizacion::with(['cliente', 'productos'])->findOrFail($id);
-
-        try {
-            $pedido = $this->cotizacionService->convertirAPedido($cotizacion);
-        } catch (\InvalidArgumentException $e) {
-            return response()->json(['error' => $e->getMessage()], 422);
-        } catch (\RuntimeException $e) {
-            return response()->json(['error' => $e->getMessage()], 422);
-        } catch (\Exception $e) {
-            Log::error('Error al convertir cotización a pedido', [
-                'cotizacion_id' => $id,
-                'error' => $e->getMessage(),
-            ]);
-            return response()->json(['error' => 'Error interno al convertir la cotización. Intente de nuevo.'], 500);
-        }
-
-        return response()->json([
-            'success' => 'Cotización convertida a pedido exitosamente.',
-            'pedido_id' => $pedido->id,
-            'message' => 'Se ha creado el pedido #' . $pedido->id . '. Puede editar el pedido para agregar fechas de entrega, abonos y método de pago.'
         ]);
     }
 }

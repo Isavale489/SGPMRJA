@@ -222,7 +222,7 @@ export function TerminosCondiciones({ terminos }: { terminos: Terminos }) {
                         <strong className="text-foreground">Aprobación del diseño:</strong> el cliente aprueba ubicación y tamaño antes de iniciar; una vez comenzado, no hay cambios.
                     </li>
                     <li>
-                        <strong className="text-foreground">Anticipo:</strong> 50 % para programar el trabajo, 50 % a la entrega.
+                        <strong className="text-foreground">Anticipo:</strong> {formatoNumero(terminos.abono)} % para programar el trabajo, {formatoNumero(resto)} % a la entrega.
                     </li>
                     <li>
                         <strong className="text-foreground">Tiempo de entrega:</strong> de 7 a 10 días hábiles según el volumen, desde el anticipo y la aprobación del diseño.

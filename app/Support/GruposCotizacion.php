@@ -20,7 +20,7 @@ use Illuminate\Support\Collection;
  */
 class GruposCotizacion
 {
-    /** @param  Collection<int, DetalleCotizacion>  $detalles */
+    /** @param  Collection<int, DetalleCotizacion|\App\Models\DetallePedido>  $detalles  (las líneas del pedido tienen las mismas relaciones) */
     public static function desde(Collection $detalles): array
     {
         $grupos = [];
@@ -93,10 +93,17 @@ class GruposCotizacion
         return array_values($grupos);
     }
 
-    /** Carga lo que necesita desde() (productos legacy inhabilitados incluidos). */
-    public static function cargar(Cotizacion $cotizacion): Cotizacion
+    /**
+     * Carga lo que necesita desde() (productos legacy inhabilitados incluidos),
+     * en una cotización o en un pedido.
+     *
+     * @template T of Cotizacion|\App\Models\Pedido
+     * @param  T  $documento
+     * @return T
+     */
+    public static function cargar(Cotizacion|\App\Models\Pedido $documento): Cotizacion|\App\Models\Pedido
     {
-        return $cotizacion->load([
+        return $documento->load([
             'productos.producto' => fn ($q) => $q->withTrashed()->with(['tipoProducto', 'tela']),
             'productos.tipoProducto' => fn ($q) => $q->withTrashed()->with('atributos.valores'),
             'productos.color' => fn ($q) => $q->withTrashed(),

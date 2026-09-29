@@ -104,7 +104,7 @@ export default function Dashboard({ kpis, maestros, pedidos, tendencia, alertaRe
                 )}
 
                 <section className="grid gap-4 md:grid-cols-3" aria-label="Pendientes">
-                    <Enlace url={urls.pedidos} blade permitido={puede('pedidos.ver')} className="group">
+                    <Enlace url={urls.pedidos} permitido={puede('pedidos.ver')} className="group">
                         <Kpi titulo="Entregas esta semana" valor={kpis.por_entregar} detalle="pedidos por entregar (7 días)" icono={<Truck />} tono="warning" />
                     </Enlace>
                     <Enlace url={urls.alertas} permitido={puede('movimiento-insumo.ver')} className="group">
