@@ -4,6 +4,9 @@ import { useEffect, type ReactNode } from 'react';
 import { toast } from 'sonner';
 
 import { MenuUsuario } from '@/components/app/menu-usuario';
+import { Notificaciones } from '@/components/app/notificaciones';
+import { PantallaCompleta } from '@/components/app/pantalla-completa';
+import { Reloj } from '@/components/app/reloj';
 import { Sidebar } from '@/components/app/sidebar';
 import { TasaBcv } from '@/components/app/tasa-bcv';
 import { Button } from '@/components/ui/button';
@@ -50,7 +53,7 @@ export default function AppLayout({ titulo, acciones, children }: Props) {
                 </aside>
 
                 <div className="flex min-w-0 flex-1 flex-col">
-                    <header className="bg-background/85 border-border sticky top-0 z-30 flex h-14 items-center gap-2 border-b px-4 backdrop-blur sm:gap-3 sm:px-6">
+                    <header className="bg-background/85 border-border sticky top-0 z-30 flex h-14 items-center gap-1 border-b px-2 backdrop-blur sm:gap-3 sm:px-6">
                         {/* Menú en pantallas chicas: el sidebar fijo solo existe desde lg. */}
                         <Sheet>
                             <SheetTrigger asChild>
@@ -64,7 +67,16 @@ export default function AppLayout({ titulo, acciones, children }: Props) {
                                 <Sidebar />
                             </SheetContent>
                         </Sheet>
-                        <div className="flex-1" />
+                        {/* Empresa y sistema (como el layout anterior); solo si hay espacio. */}
+                        <div className="min-w-0 flex-1 text-center">
+                            <p className="hidden truncate text-sm font-semibold leading-tight 2xl:block">Manufacturas R.J. Atlántico</p>
+                            <p className="text-muted-foreground hidden truncate text-xs leading-tight 2xl:block">
+                                Software para la gestión de pedidos en Manufacturas R.J. Atlántico C.A.
+                            </p>
+                        </div>
+                        <span className="hidden md:inline-flex">
+                            <Reloj />
+                        </span>
                         <TasaBcv />
                         <Button
                             variant="ghost"
@@ -74,6 +86,10 @@ export default function AppLayout({ titulo, acciones, children }: Props) {
                         >
                             {tema === 'dark' ? <Sun /> : <Moon />}
                         </Button>
+                        <span className="hidden sm:contents">
+                            <PantallaCompleta />
+                        </span>
+                        <Notificaciones />
                         <MenuUsuario />
                     </header>
 
@@ -85,6 +101,13 @@ export default function AppLayout({ titulo, acciones, children }: Props) {
                         </div>
                         {children}
                     </main>
+
+                    <footer className="text-muted-foreground border-border border-t px-4 py-3 text-xs sm:px-6">
+                        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-x-4 gap-y-1">
+                            <span>© {new Date().getFullYear()} Grupo Textil 636 Informática</span>
+                            <span>Manufacturas R.J. Atlántico</span>
+                        </div>
+                    </footer>
                 </div>
             </div>
             <Toaster richColors position="top-right" />

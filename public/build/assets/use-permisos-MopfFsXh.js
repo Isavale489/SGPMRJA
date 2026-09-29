@@ -1,1 +1,0 @@
-import{a as e}from"./inertia-DRL9A43H.js";function t(){let{auth:t}=e().props;return{puede:e=>t.esAdmin||t.permisos.includes(e),esAdmin:t.esAdmin}}export{t};
