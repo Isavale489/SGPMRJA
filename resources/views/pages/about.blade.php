@@ -45,6 +45,7 @@
         width: 150px;
         height: 150px;
         border-radius: 50%;
+        display: block;
         margin: 0 auto 20px;
         border: 5px solid #f8f9fa;
         box-shadow: 0 5px 15px rgba(0,0,0,0.1);
@@ -190,7 +191,7 @@
                         <div class="row justify-content-center">
                             <div class="col-md-4">
                                 <div class="team-member-card text-center">
-                                    <img class="team-member-image" src="{{ asset('img/gregorio.jpg') }}" alt="Gregoorio Rodriguez" />
+                                    <img class="team-member-image" src="{{ asset('img/gregorio.jpg') }}" alt="Gregorio Rodríguez" />
                                     <h5 class="team-member-name">Gregorio Rodríguez</h5>
                                     <div class="team-member-position">Presidente</div>
                                 </div>

@@ -4,8 +4,8 @@
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
         <meta name="description" content="Manufacturas R.J. Atlántico: confección de prendas textiles y bordados personalizados en Acarigua - Araure, estado Portuguesa.">
-        <meta name="keywords" content="sistema, atlántico, keywords">
-        <meta name="author" content="" />
+        <meta name="keywords" content="confección, bordados, uniformes, chemises, franelas, Acarigua, Araure, Portuguesa">
+        <meta name="author" content="Manufacturas R.J. Atlántico" />
         <meta name="csrf-token" content="{{ csrf_token() }}">
         
         <!-- SEO Meta Tags -->
