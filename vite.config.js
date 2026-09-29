@@ -7,12 +7,8 @@ import { fileURLToPath, URL } from 'node:url';
 export default defineConfig({
     plugins: [
         laravel({
-            input: [
-                // Páginas públicas y layouts Blade de Breeze (Alpine + axios).
-                'resources/js/app.js',
-                // Plataforma Inertia + React (páginas migradas).
-                'resources/js/inertia.tsx',
-            ],
+            // Plataforma Inertia + React (todo el panel).
+            input: ['resources/js/inertia.tsx'],
             refresh: true,
         }),
         react(),
