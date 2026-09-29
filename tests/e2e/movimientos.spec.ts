@@ -30,13 +30,49 @@ test('registrar una salida: descuenta la existencia y rechaza sacar de más', as
   await d.getByRole('button', { name: 'Registrar salida' }).click();
   await expect(d.getByText(/No hay suficiente existencia: quedan 12/)).toBeVisible();
 
+  // Escucha el aviso a las otras pestañas (Cotizaciones y Pedidos recalculan su proyección).
+  await page.evaluate(() => {
+    const canal = new BroadcastChannel('sgpmrja_stock');
+    canal.onmessage = (ev) => { (window as unknown as { avisoStock?: unknown }).avisoStock = ev.data; };
+  });
   await d.getByLabel('Cantidad').fill('2');
   await d.getByRole('button', { name: 'Registrar salida' }).click();
   await expect(page.getByText('Salida registrada correctamente.')).toBeVisible();
+  await expect.poll(() => page.evaluate(() => (window as unknown as { avisoStock?: { type: string } }).avisoStock?.type)).toBe('stock-change');
 
   const fila = page.getByRole('row', { name: /Hilo Mov E2E/ }).first();
   await expect(fila).toContainText('Salida');
   await expect(fila).toContainText('12 → 10');
+  expect(errores, errores.join('\n')).toEqual([]);
+});
+
+test('filtros: estado de stock y búsqueda amplia (tipo, fecha)', async ({ page }) => {
+  const errores = vigilarErrores(page);
+  await page.goto('/movimiento-insumo', { waitUntil: 'networkidle' });
+
+  // «Hilo Mov E2E» quedó en 10 con mínimo 15: crítico.
+  await page.getByLabel('Filtrar por estado de stock').click();
+  await page.getByRole('option', { name: /Crítico/ }).click();
+  await expect(page).toHaveURL(/stock=critico/);
+  await expect(page.getByRole('row', { name: /Hilo Mov E2E/ }).first()).toBeVisible();
+  await page.getByLabel('Filtrar por estado de stock').click();
+  await page.getByRole('option', { name: /Exceso/ }).click();
+  await expect(page).toHaveURL(/stock=exceso/);
+  await expect(page.getByRole('row', { name: /Hilo Mov E2E/ })).toHaveCount(0);
+  await page.getByRole('button', { name: 'Limpiar' }).click();
+
+  // La fecha se busca como se muestra (dd/mm/aaaa) y el tipo por su nombre.
+  const fecha = (await page.getByRole('row', { name: /Consumo en taller/ }).first().textContent())?.match(/\d{2}\/\d{2}\/\d{4}/)?.[0];
+  expect(fecha).toBeTruthy();
+  await page.getByLabel('Buscar').fill(fecha!);
+  await expect(page).toHaveURL(/buscar=/);
+  await expect(page.getByRole('row', { name: /Consumo en taller/ }).first()).toBeVisible();
+  await page.getByLabel('Buscar').fill('salida');
+  await expect(page.getByRole('row', { name: /Consumo en taller/ }).first()).toBeVisible();
+
+  // Una fecha escrita a mano en la URL no rompe la página.
+  await page.goto('/movimiento-insumo?desde=abc', { waitUntil: 'networkidle' });
+  await expect(page.getByRole('heading', { name: 'Movimientos de insumos' })).toBeVisible();
   expect(errores, errores.join('\n')).toEqual([]);
 });
 

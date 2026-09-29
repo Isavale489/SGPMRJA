@@ -14,6 +14,7 @@ use App\Models\TipoInsumo;
 use App\Services\CompraService;
 use App\Support\CatalogoGeografico;
 use App\Support\ExistenciasInsumo;
+use App\Support\FiltrosUrl;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -41,7 +42,7 @@ class CompraController extends Controller
             return redirect()->route('compras.create', ['prefill' => 1]);
         }
 
-        $filtros = array_filter($request->only(['vista', 'buscar', 'estado', 'proveedor', 'desde', 'hasta', 'tipo_insumo', 'alerta', 'ver']), fn ($v) => $v !== null && $v !== '');
+        $filtros = FiltrosUrl::de($request, ['vista', 'buscar', 'estado', 'proveedor', 'desde', 'hasta', 'tipo_insumo', 'alerta', 'ver'], ['desde', 'hasta']);
         if ($request->boolean('anuladas')) {
             $filtros['vista'] = 'anuladas'; // enlace viejo ?anuladas=1
         }
@@ -89,10 +90,11 @@ class CompraController extends Controller
         // «Contiene» sobre lo que se ve en la fila: factura, número, proveedor (nombre o documento).
         if (! empty($f['buscar'])) {
             $kw = trim($f['buscar']);
-            $q->where(fn ($w) => $w->where('numero_factura', 'like', "%{$kw}%")
+            $like = '%'.FiltrosUrl::like($kw).'%';
+            $q->where(fn ($w) => $w->where('numero_factura', 'like', $like)
                 ->orWhere('compra.id', ltrim($kw, '#'))
-                ->orWhereHas('proveedor.persona', fn ($p) => $p->where('nombre', 'like', "%{$kw}%")
-                    ->orWhereRaw('CONCAT(tipo_documento, documento_identidad) like ?', ["%{$kw}%"])));
+                ->orWhereHas('proveedor.persona', fn ($p) => $p->where('nombre', 'like', $like)
+                    ->orWhereRaw('CONCAT(tipo_documento, documento_identidad) like ?', [$like])));
         }
 
         return $q->paginate(15)->withQueryString()->through(fn (Compra $c) => [
@@ -379,11 +381,14 @@ class CompraController extends Controller
         if ($request->filled('proveedor_id')) {
             $query->where('proveedor_id', $request->proveedor_id);
         }
-        if ($request->filled('fecha_desde')) {
-            $query->whereDate('fecha_compra', '>=', $request->fecha_desde);
+        // Una fecha inválida en la URL se ignora (MySQL 1525).
+        $desde = FiltrosUrl::fecha($request->query('fecha_desde'));
+        $hasta = FiltrosUrl::fecha($request->query('fecha_hasta'));
+        if ($desde) {
+            $query->whereDate('fecha_compra', '>=', $desde);
         }
-        if ($request->filled('fecha_hasta')) {
-            $query->whereDate('fecha_compra', '<=', $request->fecha_hasta);
+        if ($hasta) {
+            $query->whereDate('fecha_compra', '<=', $hasta);
         }
 
         // Orden del reporte.
@@ -411,7 +416,7 @@ class CompraController extends Controller
             $filtros['Proveedor'] = optional(\App\Models\Proveedor::find($request->proveedor_id))->nombre
                 ?? ('#' . $request->proveedor_id);
         }
-        if ($rango = \App\Support\ReporteFiltros::rango($request->fecha_desde, $request->fecha_hasta)) {
+        if ($rango = \App\Support\ReporteFiltros::rango($desde, $hasta)) {
             $filtros['Fecha de compra'] = $rango;
         }
         $filtros['Orden'] = ['recientes' => 'Fecha reciente', 'monto_desc' => 'Mayor monto', 'monto_asc' => 'Menor monto'][$orden];

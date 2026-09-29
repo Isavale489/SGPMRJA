@@ -18,6 +18,7 @@ import { useFiltrosUrl } from '@/hooks/use-filtros-url';
 import { usePermisos } from '@/hooks/use-permisos';
 import AppLayout from '@/layouts/app-layout';
 import { formatoFecha, formatoNumero } from '@/lib/formato';
+import { avisarCambioStock } from '@/lib/inventario';
 import { cn } from '@/lib/utils';
 import type { Paginado } from '@/types';
 
@@ -69,6 +70,12 @@ interface Props {
 }
 
 const TODOS = 'todos';
+/** Estado de stock actual del insumo (MovimientoInsumo::scopeFiltroStock). */
+const ESTADOS_STOCK: Record<NonNullable<Filtros['stock']>, string> = {
+    critico: 'Crítico (en o bajo el mínimo)',
+    optimo: 'Óptimo (dentro del rango)',
+    exceso: 'Exceso (sobre el máximo)',
+};
 const PROPS = ['movimientos', 'existencias', 'filtros', 'vista'];
 
 export default function MovimientosIndex({ vista, filtros: iniciales, movimientos, existencias, insumos, tiposInsumo, urls }: Props) {
@@ -132,7 +139,7 @@ export default function MovimientosIndex({ vista, filtros: iniciales, movimiento
                         filtros={[
                             { parametro: 'tipo_movimiento', etiqueta: 'Tipo', todos: 'Entradas y salidas', opciones: [{ valor: 'Entrada', etiqueta: 'Entradas' }, { valor: 'Salida', etiqueta: 'Salidas' }] },
                             { parametro: 'insumo_id', etiqueta: 'Insumo', todos: 'Todos los insumos', opciones: insumos.map((i) => ({ valor: String(i.id), etiqueta: i.nombre })) },
-                            { parametro: 'estado_stock', etiqueta: 'Estado de stock', todos: 'Cualquiera', opciones: [{ valor: 'critico', etiqueta: 'Crítico' }, { valor: 'optimo', etiqueta: 'Óptimo' }, { valor: 'exceso', etiqueta: 'Exceso' }] },
+                            { parametro: 'estado_stock', etiqueta: 'Estado de stock', todos: 'Cualquiera', opciones: Object.entries(ESTADOS_STOCK).map(([valor, etiqueta]) => ({ valor, etiqueta })) },
                         ]}
                     />
                     {puede('movimiento-insumo.gestionar') && (
@@ -155,7 +162,7 @@ export default function MovimientosIndex({ vista, filtros: iniciales, movimiento
                 <div className="flex flex-wrap items-center gap-2">
                     <div className="relative min-w-56 flex-1">
                         <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2" />
-                        <Input type="search" value={filtros.buscar ?? ''} onChange={(e) => cambiar('buscar', e.target.value)} placeholder={vista === 'movimientos' ? 'Buscar por insumo, código o motivo…' : 'Buscar insumo…'} aria-label="Buscar" className="pl-8" />
+                        <Input type="search" value={filtros.buscar ?? ''} onChange={(e) => cambiar('buscar', e.target.value)} placeholder={vista === 'movimientos' ? 'Buscar por insumo, tipo, cantidad, fecha o motivo…' : 'Buscar por nombre o código…'} aria-label="Buscar" className="pl-8" />
                     </div>
                     {vista === 'movimientos' ? (
                         <>
@@ -172,6 +179,13 @@ export default function MovimientosIndex({ vista, filtros: iniciales, movimiento
                                 <SelectContent>
                                     <SelectItem value={TODOS}>Todos los insumos</SelectItem>
                                     {insumos.map((i) => <SelectItem key={i.id} value={String(i.id)}>{i.nombre}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                            <Select value={filtros.stock ?? TODOS} onValueChange={(v) => cambiar('stock', v === TODOS ? undefined : (v as Filtros['stock']))}>
+                                <SelectTrigger className="w-64" aria-label="Filtrar por estado de stock"><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value={TODOS}>Cualquier estado de stock</SelectItem>
+                                    {Object.entries(ESTADOS_STOCK).map(([valor, etiqueta]) => <SelectItem key={valor} value={valor}>{etiqueta}</SelectItem>)}
                                 </SelectContent>
                             </Select>
                             <Input type="date" value={filtros.desde ?? ''} onChange={(e) => cambiar('desde', e.target.value || undefined)} aria-label="Desde" className="w-40" />
@@ -268,7 +282,16 @@ function FormularioSalida({ abierto, onCerrar, insumos, url }: { abierto: boolea
             sucio={form.isDirty}
             procesando={form.processing}
             textoGuardar="Registrar salida"
-            onGuardar={() => form.post(url, { preserveScroll: true, onSuccess: onCerrar })}
+            onGuardar={() =>
+                form.post(url, {
+                    preserveScroll: true,
+                    onSuccess: () => {
+                        // Cotizaciones y Pedidos (otras pestañas) recalculan su proyección de insumos.
+                        avisarCambioStock('salida-manual');
+                        onCerrar();
+                    },
+                })
+            }
         >
             <Campo etiqueta="Insumo" requerido error={form.errors.insumo_id}>
                 {(control) => (
