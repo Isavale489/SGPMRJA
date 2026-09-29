@@ -237,7 +237,9 @@ export function AgregarProducto({ abierto, onCerrar, bloque, onAgregar, catalogo
             imagen: tipo.imagen,
             color_id: colorId,
             precio: precioNum,
-            precio_catalogo: d.dinamica ? null : d.precio_base,
+            // Si es la variante guardada, su precio de catálogo tal cual (null si no se conoce:
+            // nunca el negociado); si se resolvió otra, el del resolver.
+            precio_catalogo: d.dinamica ? null : bloque?.producto_id === d.id ? (bloque.precio_catalogo ?? null) : d.precio_base,
             bordados: bloque?.bordados ?? [],
             tallas: Object.entries(celdas).map(([k, cantidad]) => {
                 const [talla_id, genero_id] = k.split('-').map(Number) as [number, number];

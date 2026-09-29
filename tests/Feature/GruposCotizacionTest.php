@@ -30,10 +30,14 @@ class GruposCotizacionTest extends TestCase
         $payload['productos'][] = $materializada;
 
         $this->assertExito($this->actingAs($this->admin())->postJson(route('cotizaciones.store'), $payload));
+        // El catálogo cambia después: la línea conserva su precio (20) y el grupo informa el de hoy (30).
+        $producto->update(['precio_base' => 30]);
 
         $grupos = collect(GruposCotizacion::desde(GruposCotizacion::cargar(Cotizacion::latest('id')->firstOrFail())->productos));
         $this->assertCount(2, $grupos);
-        $this->assertSame(20.0, $grupos->firstWhere('producto_id', $producto->id)['precio_catalogo']);
+        $materializado = $grupos->firstWhere('producto_id', $producto->id);
+        $this->assertSame(30.0, $materializado['precio_catalogo']);
+        $this->assertEquals(20, $materializado['precio_base']);
         $this->assertNull($grupos->firstWhere('producto_id', null)['precio_catalogo']);
     }
 }
