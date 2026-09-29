@@ -1,5 +1,5 @@
 import { Link } from '@inertiajs/react';
-import { ArrowDownRight, ArrowLeft, ArrowUpRight } from 'lucide-react';
+import { Archive, ArrowDownRight, ArrowLeft, ArrowUpRight } from 'lucide-react';
 
 import { TablaServidor, type Columna } from '@/components/app/tabla-servidor';
 import { Button } from '@/components/ui/button';
@@ -20,7 +20,7 @@ interface Movimiento {
 }
 
 interface Props {
-    insumo: { id: number; nombre: string; codigo: string | null; unidad: string; actual: number; minimo: number; maximo: number };
+    insumo: { id: number; nombre: string; codigo: string | null; unidad: string; actual: number; minimo: number; maximo: number; inhabilitado: boolean };
     movimientos: Paginado<Movimiento>;
     urls: { index: string };
 }
@@ -50,6 +50,12 @@ export default function Historial({ insumo, movimientos, urls }: Props) {
             acciones={<Button variant="ghost" asChild><Link href={urls.index}><ArrowLeft /> Movimientos</Link></Button>}
         >
             <div className="grid gap-4">
+                {insumo.inhabilitado && (
+                    <p role="status" className="border-warning/30 bg-warning/10 flex items-start gap-2 rounded-lg border p-3 text-sm">
+                        <Archive className="text-warning mt-0.5 size-4 shrink-0" />
+                        Este insumo está inhabilitado: ya no admite movimientos. Su historial se conserva como consulta.
+                    </p>
+                )}
                 <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                     {[
                         ['Código', insumo.codigo ?? '—'],

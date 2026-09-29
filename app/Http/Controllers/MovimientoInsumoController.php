@@ -6,6 +6,7 @@ use App\Http\Controllers\Concerns\RespondeSegunCliente;
 use App\Models\Insumo;
 use App\Models\MovimientoInsumo;
 use App\Support\ExistenciasInsumo;
+use App\Support\FiltrosUrl;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -24,7 +25,7 @@ class MovimientoInsumoController extends Controller
      */
     public function index(Request $request): Response
     {
-        $filtros = array_filter($request->only(['vista', 'buscar', 'tipo', 'insumo', 'stock', 'desde', 'hasta', 'tipo_insumo', 'alerta']), fn ($v) => $v !== null && $v !== '');
+        $filtros = FiltrosUrl::de($request, ['vista', 'buscar', 'tipo', 'insumo', 'stock', 'desde', 'hasta', 'tipo_insumo', 'alerta'], ['desde', 'hasta']);
         $vista = ($filtros['vista'] ?? null) === 'existencias' ? 'existencias' : 'movimientos';
 
         return Inertia::render('Movimientos/Index', [
@@ -50,7 +51,7 @@ class MovimientoInsumoController extends Controller
 
     private function movimientos(array $f)
     {
-        $q = MovimientoInsumo::with(['insumo:id,nombre,codigo,tipo,unidad_medida', 'creadoPor:id,name'])
+        $q = MovimientoInsumo::with(['insumo' => fn ($i) => $i->withTrashed()->select('id', 'nombre', 'codigo', 'tipo', 'unidad_medida'), 'creadoPor:id,name'])
             ->orderByDesc('movimiento_insumo.created_at')->orderByDesc('movimiento_insumo.id');
 
         if (! empty($f['tipo'])) {
@@ -66,10 +67,17 @@ class MovimientoInsumoController extends Controller
         if (! empty($f['hasta'])) {
             $q->where('movimiento_insumo.created_at', '<=', $f['hasta'].' 23:59:59');
         }
+        // Búsqueda amplia, como la de DataTables: insumo (nombre o código),
+        // tipo, cantidad, existencia resultante, fecha tal como se muestra
+        // (dd/mm/aaaa) y motivo.
         if (! empty($f['buscar'])) {
-            $kw = trim($f['buscar']);
-            $q->where(fn ($w) => $w->where('motivo', 'like', "%{$kw}%")
-                ->orWhereHas('insumo', fn ($i) => $i->where('nombre', 'like', "%{$kw}%")->orWhere('codigo', 'like', "%{$kw}%")));
+            $kw = '%'.FiltrosUrl::like($f['buscar']).'%';
+            $q->where(fn ($w) => $w->where('movimiento_insumo.tipo_movimiento', 'like', $kw)
+                ->orWhere('movimiento_insumo.cantidad', 'like', $kw)
+                ->orWhere('movimiento_insumo.stock_nuevo', 'like', $kw)
+                ->orWhere('movimiento_insumo.motivo', 'like', $kw)
+                ->orWhereRaw("DATE_FORMAT(movimiento_insumo.created_at, '%d/%m/%Y') like ?", [$kw])
+                ->orWhereHas('insumo', fn ($i) => $i->withTrashed()->where(fn ($n) => $n->where('nombre', 'like', $kw)->orWhere('codigo', 'like', $kw))));
         }
 
         return $q->paginate(20)->withQueryString()->through(fn (MovimientoInsumo $m) => [
@@ -94,6 +102,7 @@ class MovimientoInsumoController extends Controller
      */
     public function reportePdf(Request $request)
     {
+        $request->query->replace(FiltrosUrl::de($request, ['tipo_movimiento', 'insumo_id', 'estado_stock', 'fecha_desde', 'fecha_hasta'], ['fecha_desde', 'fecha_hasta']));
         $query = MovimientoInsumo::with(['insumo', 'creadoPor'])
             ->orderBy('created_at', 'desc');
 
@@ -186,13 +195,15 @@ class MovimientoInsumoController extends Controller
         return redirect()->route('movimiento-insumo.index', ['vista' => 'existencias']);
     }
 
+    /** Un insumo inhabilitado conserva su historial: se muestra con aviso. */
     public function historialInsumo(int $id): Response
     {
-        $insumo = Insumo::findOrFail($id);
+        $insumo = Insumo::withTrashed()->findOrFail($id);
 
         return Inertia::render('Movimientos/Historial', [
             'insumo' => ['id' => $insumo->id, 'nombre' => $insumo->nombre, 'codigo' => $insumo->codigo, 'unidad' => $insumo->unidad_medida,
-                'actual' => (float) $insumo->stock_actual, 'minimo' => (float) $insumo->stock_minimo, 'maximo' => (float) $insumo->stock_maximo],
+                'actual' => (float) $insumo->stock_actual, 'minimo' => (float) $insumo->stock_minimo, 'maximo' => (float) $insumo->stock_maximo,
+                'inhabilitado' => $insumo->trashed() || ! $insumo->estado],
             'movimientos' => MovimientoInsumo::where('insumo_id', $id)->with('creadoPor:id,name')
                 ->orderByDesc('created_at')->orderByDesc('id')
                 ->paginate(25)->through(fn (MovimientoInsumo $m) => [

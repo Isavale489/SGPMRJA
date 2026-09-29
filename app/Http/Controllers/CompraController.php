@@ -14,6 +14,7 @@ use App\Models\TipoInsumo;
 use App\Services\CompraService;
 use App\Support\CatalogoGeografico;
 use App\Support\ExistenciasInsumo;
+use App\Support\FiltrosUrl;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -41,7 +42,7 @@ class CompraController extends Controller
             return redirect()->route('compras.create', ['prefill' => 1]);
         }
 
-        $filtros = array_filter($request->only(['vista', 'buscar', 'estado', 'proveedor', 'desde', 'hasta', 'tipo_insumo', 'alerta', 'ver']), fn ($v) => $v !== null && $v !== '');
+        $filtros = FiltrosUrl::de($request, ['vista', 'buscar', 'estado', 'proveedor', 'desde', 'hasta', 'tipo_insumo', 'alerta', 'ver'], ['desde', 'hasta']);
         if ($request->boolean('anuladas')) {
             $filtros['vista'] = 'anuladas'; // enlace viejo ?anuladas=1
         }
