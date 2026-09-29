@@ -73,6 +73,31 @@ test('crear una cotización por el asistente, con bordado', async ({ page }) => 
   expect(errores, errores.join('\n')).toEqual([]);
 });
 
+/** Regresión: las altas rápidas del configurador (color, tela, logo) no guardaban con Enter. */
+test('Enter en el alta rápida de color la guarda y la deja elegida, sin salir del configurador', async ({ page }) => {
+  await page.goto('/cotizaciones/crear', { waitUntil: 'networkidle' });
+  await page.getByRole('combobox', { name: 'Buscar cliente' }).fill('Araure');
+  await page.getByRole('option', { name: new RegExp(CLIENTE_COT) }).click();
+  await page.locator('#form-cotizacion').getByRole('button', { name: 'Siguiente' }).click();
+
+  await page.getByRole('button', { name: 'Abrir catálogo' }).click();
+  const dialogo = page.getByRole('dialog', { name: 'Agregar producto' });
+  await dialogo.getByRole('button', { name: /Franela Cot E2E.*atributos/ }).click();
+  await expect(dialogo.getByText('Variante encontrada')).toBeVisible();
+  await dialogo.getByRole('button', { name: 'Siguiente' }).click();
+  await dialogo.getByRole('button', { name: 'Nuevo color' }).click();
+
+  const alta = page.getByRole('dialog', { name: 'Nuevo color' });
+  const nombre = `Verde Enter ${Date.now() % 100000}`;
+  await alta.getByLabel('Nombre').fill(nombre);
+  await alta.getByLabel('Nombre').press('Enter');
+
+  await expect(alta).toBeHidden();
+  await expect(page.getByText(`Color «${nombre}» creado.`)).toBeVisible();
+  await expect(dialogo.getByRole('radio', { name: nombre })).toBeChecked();
+  await expect(dialogo.getByRole('heading', { name: 'Configurar' })).toBeVisible(); // el asistente no se movió
+});
+
 /** Regresión: Enter dentro del alta rápida de cliente (diálogo abierto desde el paso 1) debe guardar el cliente, no mover el asistente. */
 test('dar de alta un cliente con Enter desde el paso Cliente', async ({ page }) => {
   await page.goto('/cotizaciones/crear', { waitUntil: 'networkidle' });
