@@ -67,7 +67,7 @@ export default function CalidadIndex({ registros, filtros: iniciales, cola: cola
     const { puede } = usePermisos();
     const inspeccionar = puede('calidad.inspeccionar');
     const { pedido: pedidoInicial, ...filtrosIniciales } = iniciales;
-    const { filtros, cambiar, limpiar, cargando } = useFiltrosUrl<Filtros>(urls.index, filtrosIniciales, ['registros', 'filtros']);
+    const { filtros, cambiar, limpiar, cargando, descartarPendiente } = useFiltrosUrl<Filtros>(urls.index, filtrosIniciales, ['registros', 'filtros']);
 
     const [pedido, setPedido] = useState<string | undefined>(pedidoInicial);
     const [inspeccion, setInspeccion] = useState<{ orden: OrdenEnCola; apertura: number }>();
@@ -76,8 +76,13 @@ export default function CalidadIndex({ registros, filtros: iniciales, cola: cola
     const cola = pedido !== undefined && colaPedido === pedido ? colaRecibida : null;
 
     // Abrir un pedido recarga solo su cola (con equipo e historial de cada orden).
-    const visitarCola = (clave?: string) =>
-        router.get(urls.index, { ...filtros, page: paginaActual(), pedido: clave }, { only: ['cola', 'colaPedido'], preserveState: true, preserveScroll: true, replace: true });
+    // Si una búsqueda esperaba sus 300 ms, viaja en esta misma visita: si saliera
+    // después, cancelaría la de la cola y el diálogo se quedaría cargando.
+    const visitarCola = (clave?: string) => {
+        const conTabla = descartarPendiente();
+        const params = Object.fromEntries(Object.entries({ ...filtros, page: conTabla ? undefined : paginaActual(), pedido: clave }).filter(([, v]) => v !== undefined && v !== ''));
+        router.get(urls.index, params, { only: conTabla ? ['cola', 'colaPedido', 'registros', 'filtros'] : ['cola', 'colaPedido'], preserveState: true, preserveScroll: true, replace: true });
+    };
     const verPedido = (clave: string) => {
         setPedido(clave);
         visitarCola(clave);

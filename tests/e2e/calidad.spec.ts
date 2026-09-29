@@ -27,7 +27,10 @@ test('abrir y cerrar la inspección sin tocar nada no avisa de cambios sin guard
   const ancho = await form.getByLabel('Defectuosas', { exact: true }).evaluate((el) => el.getBoundingClientRect().width);
   expect(ancho).toBeGreaterThan(80);
   // No se puede escribir más de lo producido.
+  // Al teclear no se recorta (camino de «8» se pasa por «18»); al salir del campo, sí.
   await form.getByLabel('Inspeccionadas').fill('25');
+  await expect(form.getByLabel('Inspeccionadas')).toHaveValue('25');
+  await form.getByLabel('Inspeccionadas').blur();
   await expect(form.getByLabel('Inspeccionadas')).toHaveValue('10');
 
   await form.getByRole('button', { name: 'Cancelar' }).click();

@@ -34,14 +34,28 @@ export function useFiltrosUrl<T extends Filtros>(url: string, iniciales: T, prop
             return;
         }
         clearTimeout(pendiente.current);
-        pendiente.current = setTimeout(() => visitar(filtros), 300);
+        pendiente.current = setTimeout(() => {
+            pendiente.current = undefined;
+            visitar(filtros);
+        }, 300);
         return () => clearTimeout(pendiente.current);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [filtros]);
+
+    /**
+     * Descarta el cambio de texto que espera sus 300 ms (p. ej. porque otra
+     * visita va a llevar los filtros actuales). Devuelve si había uno.
+     */
+    const descartarPendiente = () => {
+        const habia = pendiente.current !== undefined;
+        clearTimeout(pendiente.current);
+        pendiente.current = undefined;
+        return habia;
+    };
 
     const cambiar = <K extends keyof T>(clave: K, valor: T[K]) => setFiltros((f) => ({ ...f, [clave]: valor }));
     const limpiar = (conservar: (keyof T)[] = []) =>
         setFiltros((f) => Object.fromEntries(conservar.map((k) => [k, f[k]])) as unknown as T);
 
-    return { filtros, cambiar, limpiar, cargando };
+    return { filtros, cambiar, limpiar, cargando, descartarPendiente };
 }

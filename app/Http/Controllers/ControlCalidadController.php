@@ -152,7 +152,10 @@ class ControlCalidadController extends Controller
      */
     public function reportePdf(Request $request)
     {
-        $request->query->replace(FiltrosUrl::de($request, ['resultado', 'fecha_desde', 'fecha_hasta'], ['fecha_desde', 'fecha_hasta']));
+        $f = FiltrosUrl::de($request, ['resultado', 'fecha_desde', 'fecha_hasta'], ['fecha_desde', 'fecha_hasta']);
+        if (! array_key_exists($f['resultado'] ?? '', ControlCalidad::RESULTADOS)) {
+            unset($f['resultado']);
+        }
         $query = ControlCalidad::query()
             ->with([
                 'inspector:id,name',
@@ -163,23 +166,23 @@ class ControlCalidadController extends Controller
             ])
             ->orderByDesc('fecha_inspeccion');
 
-        if ($request->filled('resultado')) {
-            $query->where('resultado', $request->resultado);
+        if (isset($f['resultado'])) {
+            $query->where('resultado', $f['resultado']);
         }
-        if ($request->filled('fecha_desde')) {
-            $query->whereDate('fecha_inspeccion', '>=', $request->fecha_desde);
+        if (isset($f['fecha_desde'])) {
+            $query->whereDate('fecha_inspeccion', '>=', $f['fecha_desde']);
         }
-        if ($request->filled('fecha_hasta')) {
-            $query->whereDate('fecha_inspeccion', '<=', $request->fecha_hasta);
+        if (isset($f['fecha_hasta'])) {
+            $query->whereDate('fecha_inspeccion', '<=', $f['fecha_hasta']);
         }
 
         $inspecciones = $query->get();
 
         $filtros = [];
-        if ($request->filled('resultado')) {
-            $filtros['Resultado'] = ControlCalidad::RESULTADOS[$request->resultado] ?? ucfirst($request->resultado);
+        if (isset($f['resultado'])) {
+            $filtros['Resultado'] = ControlCalidad::RESULTADOS[$f['resultado']];
         }
-        if ($rango = ReporteFiltros::rango($request->fecha_desde, $request->fecha_hasta)) {
+        if ($rango = ReporteFiltros::rango($f['fecha_desde'] ?? null, $f['fecha_hasta'] ?? null)) {
             $filtros['Fecha de inspección'] = $rango;
         }
 

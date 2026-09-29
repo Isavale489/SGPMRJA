@@ -66,10 +66,12 @@ export function FormularioInspeccion({ orden, pedido, url, onCerrar }: Props) {
     const sumaAtribucion = Object.values(data.rechazos).reduce((a, n) => a + (n || 0), 0);
 
     // Al cambiar las defectuosas, re-repartir automáticamente entre el equipo.
+    // Depende de lo elegido, no del valor ya topado: un valor a medio escribir en
+    // «Inspeccionadas» no debe pisar el reparto que el usuario ajustó.
     useEffect(() => {
-        if (orden.equipo.length > 1) setData('rechazos', repartir(rechazada, orden.equipo));
+        if (orden.equipo.length > 1) setData('rechazos', repartir(Math.min(data.rechazada, orden.cantidad_producida), orden.equipo));
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [rechazada]);
+    }, [data.rechazada]);
 
     const veredicto = useMemo(
         () =>
@@ -113,8 +115,13 @@ export function FormularioInspeccion({ orden, pedido, url, onCerrar }: Props) {
                         max={orden.cantidad_producida}
                         inputMode="numeric"
                         value={data.inspeccionada}
-                        // No se inspecciona más de lo producido (el servidor también lo valida).
-                        onChange={(ev) => setData('inspeccionada', ev.target.value === '' ? '' : String(Math.min(orden.cantidad_producida, Math.max(0, parseInt(ev.target.value, 10) || 0))))}
+                        onChange={(ev) => setData('inspeccionada', ev.target.value.replace(/\D/g, ''))}
+                        // No se inspecciona más de lo producido (el servidor también lo valida). El
+                        // tope va al salir del campo: al teclear, «18» camino de «8» no debe volverse «10».
+                        onBlur={() => {
+                            if (data.inspeccionada === '') return;
+                            setData((d) => ({ ...d, inspeccionada: String(inspeccionada), rechazada: Math.min(d.rechazada, inspeccionada) }));
+                        }}
                         className="tabular"
                     />
                 </Campo>
@@ -175,7 +182,7 @@ export function FormularioInspeccion({ orden, pedido, url, onCerrar }: Props) {
                     <p className={cn('text-xs', sumaAtribucion === rechazada ? 'text-muted-foreground' : 'text-destructive')}>
                         Atribuidas {formatoNumero(sumaAtribucion)} de {formatoNumero(rechazada)}
                     </p>
-                    {erroresRechazos.map((m) => <p key={m} className="text-destructive text-xs">{m}</p>)}
+                    {erroresRechazos.map((m) => <p key={m} role="alert" className="text-destructive text-xs">{m}</p>)}
                 </fieldset>
             )}
 
