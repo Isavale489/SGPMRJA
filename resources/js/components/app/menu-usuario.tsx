@@ -38,7 +38,7 @@ export function MenuUsuario() {
 
     return (
         <DropdownMenu>
-            <DropdownMenuTrigger className="hover:bg-accent flex items-center gap-2 rounded-md px-1.5 py-1 transition-colors duration-rapido">
+            <DropdownMenuTrigger aria-label={`Menú de ${auth.user.name}`} className="hover:bg-accent flex items-center gap-2 rounded-md px-1.5 py-1 transition-colors duration-rapido">
                 <Avatar className="size-7">
                     {auth.user.avatar_url && <AvatarImage src={auth.user.avatar_url} alt="" />}
                     <AvatarFallback className="text-xs">{iniciales(auth.user.name)}</AvatarFallback>

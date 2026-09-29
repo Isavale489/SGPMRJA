@@ -14,7 +14,7 @@ test('cerrar sesión desde el menú del usuario lleva al login y corta el acceso
   await page.locator('#submitBtn').click();
   await expect(page).not.toHaveURL(/\/login/);
 
-  // Navegar por Inertia antes (el token del <meta> es el de la carga inicial).
+  // Salir desde una página a la que se llegó navegando por Inertia (sin recarga).
   await page.goto('/dashboard');
   await page.getByRole('link', { name: 'Clientes' }).first().click();
   await expect(page).toHaveURL(/\/clientes/);
@@ -22,7 +22,8 @@ test('cerrar sesión desde el menú del usuario lleva al login y corta el acceso
   await page.getByRole('button', { name: /Admin E2E/ }).click();
   await page.getByRole('menuitem', { name: 'Cerrar sesión' }).click();
 
-  await expect(page).not.toHaveURL(/\/clientes/);
+  // destroy() redirige a «/» (la web pública).
+  await expect(page).toHaveURL(/\/$/);
   await page.goto('/dashboard');
   await expect(page).toHaveURL(/\/login/);
 });
