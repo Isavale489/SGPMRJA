@@ -16,7 +16,11 @@ class WebPublicaTest extends TestCase
             $this->get(route($ruta))
                 ->assertOk()
                 ->assertDontSee('css/app.css', false)
-                ->assertDontSee('js/app.js', false);
+                ->assertDontSee('js/app.js', false)
+                // Redes reales de la empresa; nada de enlaces de plantilla.
+                ->assertSee('https://www.facebook.com/rjatlantico', false)
+                ->assertDontSee('tu-negocio', false)
+                ->assertDontSee('twitter.com', false);
         }
     }
 
