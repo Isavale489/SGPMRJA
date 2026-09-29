@@ -81,19 +81,34 @@ class GruposCotizacion
                 ];
             }
 
-            $grupos[$clave]['tallas'][] = [
-                'talla_id' => $d->talla_id,
-                'talla' => $d->talla?->etiqueta ?: ($d->talla?->nombre ?? '—'),
-                'genero_id' => $d->genero_id,
-                'genero' => $d->genero?->etiqueta ?: $d->genero?->nombre,
-                'cantidad' => (int) $d->cantidad,
-                'descripcion' => $d->descripcion,
-            ];
+            // Una celda por talla × género (así las edita el asistente). Líneas repetidas
+            // (datos viejos) se unen: se suman las cantidades y se conservan las descripciones
+            // distintas; si no, al reabrir «Editar producto» se perdía la cantidad de una.
+            $celda = $d->talla_id.'-'.$d->genero_id;
+            $descripcion = trim((string) $d->descripcion) ?: null;
+            if (isset($grupos[$clave]['tallas'][$celda])) {
+                $t = &$grupos[$clave]['tallas'][$celda];
+                $t['cantidad'] += (int) $d->cantidad;
+                $previas = $t['descripcion'] === null ? [] : explode(' · ', $t['descripcion']);
+                if ($descripcion !== null && ! in_array($descripcion, $previas, true)) {
+                    $t['descripcion'] = implode(' · ', [...$previas, $descripcion]);
+                }
+                unset($t);
+            } else {
+                $grupos[$clave]['tallas'][$celda] = [
+                    'talla_id' => $d->talla_id,
+                    'talla' => $d->talla?->etiqueta ?: ($d->talla?->nombre ?? '—'),
+                    'genero_id' => $d->genero_id,
+                    'genero' => $d->genero?->etiqueta ?: $d->genero?->nombre,
+                    'cantidad' => (int) $d->cantidad,
+                    'descripcion' => $descripcion,
+                ];
+            }
             $grupos[$clave]['unidades'] += (int) $d->cantidad;
             $grupos[$clave]['subtotal'] = round($grupos[$clave]['subtotal'] + $precio * (int) $d->cantidad, 2);
         }
 
-        return array_values($grupos);
+        return array_map(fn ($g) => [...$g, 'tallas' => array_values($g['tallas'])], array_values($grupos));
     }
 
     /**
