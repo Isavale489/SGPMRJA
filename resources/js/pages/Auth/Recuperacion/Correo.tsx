@@ -33,12 +33,13 @@ export default function Correo({ urls }: Props) {
                     placeholder="correo@empresa.com"
                     autoFocus
                     aria-invalid={form.errors.email ? true : undefined}
+                    aria-describedby={form.errors.email ? 'correo-aviso' : undefined}
                     value={form.data.email}
                     onChange={(e) => form.setData('email', e.target.value)}
                 />
                 {/* Mensaje genérico a propósito (no revela si la cuenta existe): se muestra como aviso, no como error del campo. */}
                 {form.errors.email && (
-                    <p role="alert" className="border-primary/20 bg-primary/5 flex items-start gap-2 rounded-lg border p-3 text-sm">
+                    <p id="correo-aviso" role="alert" className="border-primary/20 bg-primary/5 flex items-start gap-2 rounded-lg border p-3 text-sm">
                         <Info className="text-primary mt-0.5 size-4 shrink-0" aria-hidden /> {form.errors.email}
                     </p>
                 )}

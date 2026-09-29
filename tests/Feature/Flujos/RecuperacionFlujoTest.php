@@ -187,6 +187,19 @@ class RecuperacionFlujoTest extends TestCase
         $this->assertFalse(Hash::check(self::CLAVE, $u->fresh()->password));
     }
 
+    public function test_una_respuesta_vacia_pide_las_3_sin_nombrar_ids_ni_contar_como_intento(): void
+    {
+        $u = $this->usuarioConPreguntas();
+        $this->post(route('recovery.email.process'), ['email' => $u->email]);
+        $respuestas = $this->respuestas($u, ['Firulais', '', 'Caracas FC']);
+
+        $this->from(route('recovery.questions.show'))->post(route('recovery.questions.validate'), ['respuestas' => $respuestas]);
+        $errores = collect(session('errors')->all());
+        $this->assertTrue($errores->contains('Responde las 3 preguntas.'));
+        $this->assertFalse($errores->contains(fn ($m) => str_contains($m, 'respuestas.')));
+        $this->assertSame(0, (int) $u->fresh()->recovery_failed_attempts);
+    }
+
     public function test_sin_pasar_por_el_correo_no_se_ven_ni_validan_preguntas(): void
     {
         $u = $this->usuarioConPreguntas();

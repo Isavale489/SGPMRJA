@@ -121,6 +121,12 @@ class RecoveryQuestionController extends Controller
         $request->validate([
             'respuestas'   => ['required', 'array', 'size:3'],
             'respuestas.*' => ['required', 'string', 'max:255'],
+        ], [
+            // Sin esto el mensaje nombraría el id interno de la pregunta («respuestas.37»).
+            'respuestas.required'   => 'Responde las 3 preguntas.',
+            'respuestas.size'       => 'Responde las 3 preguntas.',
+            'respuestas.*.required' => 'Responde las 3 preguntas.',
+            'respuestas.*.max'      => 'Cada respuesta puede tener hasta 255 caracteres.',
         ]);
 
         $email = $request->session()->get(self::SESSION_KEY_EMAIL);

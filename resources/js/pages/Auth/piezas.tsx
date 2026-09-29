@@ -23,7 +23,8 @@ export function CampoAcceso({
             {(control) => (
                 <div className="relative">
                     <Icono className="text-primary pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2" aria-hidden />
-                    <Input {...input} {...control} type={clave ? (visible ? 'text' : 'password') : input.type} className={cn('h-11 pl-9', clave && 'pr-10')} />
+                    {/* control primero: sus aria-* en undefined no deben pisar los que pasa la página. */}
+                    <Input {...control} {...input} aria-invalid={input['aria-invalid'] ?? control['aria-invalid']} aria-describedby={input['aria-describedby'] ?? control['aria-describedby']} type={clave ? (visible ? 'text' : 'password') : input.type} className={cn('h-11 pl-9', clave && 'pr-10')} />
                     {clave && (
                         <button
                             type="button"
