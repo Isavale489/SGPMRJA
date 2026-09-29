@@ -36,10 +36,12 @@ test('crear una cotización por el asistente, con bordado', async ({ page }) => 
   await expect(page.getByText('Agrega al menos un producto.')).toBeVisible();
   await page.getByRole('button', { name: 'Abrir catálogo' }).click();
   const dialogo = page.getByRole('dialog', { name: 'Agregar producto' });
+  // Elegir el producto ya pasa al paso Variante; el SKU y el precio se resuelven en el servidor.
   await dialogo.getByRole('button', { name: /Franela Cot E2E.*atributos/ }).click();
+  await expect(dialogo.getByRole('heading', { name: 'Variante' })).toBeVisible();
+  await expect(dialogo.getByText('Variante encontrada')).toBeVisible();
   await dialogo.getByRole('button', { name: 'Siguiente' }).click();
-  await expect(dialogo.getByText('Variante encontrada')).toBeVisible(); // el SKU y el precio se resuelven en el servidor
-  await dialogo.getByRole('button', { name: 'Siguiente' }).click();
+  await expect(dialogo.getByRole('heading', { name: 'Configurar' })).toBeVisible();
   await expect(dialogo.getByText(/^Falta .*el color, al menos una talla con cantidad\.$/)).toBeVisible();
   await dialogo.getByRole('radio', { name: 'Azul Marino' }).click();
   await dialogo.getByLabel(/^Talla M ·/).first().fill('10');
