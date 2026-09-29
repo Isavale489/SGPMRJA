@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Route;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\Concerns\CreaDatosBase;
 use Tests\TestCase;
@@ -38,6 +39,27 @@ class PaginasErrorTest extends TestCase
 
         $this->actingAs($sin)->getJson(route('pedidos.index'))->assertForbidden()->assertJsonMissingPath('component');
         $this->getJson('/no-existe-json')->assertNotFound()->assertJsonMissingPath('component');
+    }
+
+    public function test_la_sesion_vencida_con_usuario_vuelve_atras_con_aviso(): void
+    {
+        Route::middleware('web')->post('/_prueba-419', fn () => abort(419));
+
+        // Con usuario: vuelve a donde estaba, con el aviso.
+        $this->actingAs($this->admin())->from(route('dashboard'))->withHeaders(['X-Inertia' => 'true'])
+            ->post('/_prueba-419')
+            ->assertRedirect(route('dashboard'))
+            ->assertSessionHas('error');
+    }
+
+    public function test_la_sesion_vencida_sin_usuario_muestra_la_pagina_419(): void
+    {
+        // El caso típico: back() llevaría al login y el aviso se perdería.
+        Route::middleware('web')->post('/_prueba-419', fn () => abort(419));
+
+        $this->post('/_prueba-419')
+            ->assertStatus(419)
+            ->assertInertia(fn (Assert $p) => $p->component('Error')->where('status', 419));
     }
 
     public function test_el_cambio_de_contrasena_temporal_es_una_pagina_inertia(): void

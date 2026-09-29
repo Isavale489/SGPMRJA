@@ -49,13 +49,21 @@ class Handler extends ExceptionHandler
         if ($status >= 500 && config('app.debug')) {
             return $respuesta;
         }
-        if ($status === 419 && $request->hasSession()) {
+        // Con sesión viva, volver atrás con el aviso; si ya no hay usuario (el caso
+        // típico), back() llevaría al login y el aviso se perdería: página 419.
+        if ($status === 419 && $request->hasSession() && $request->user()) {
             return back()->with('error', 'La sesión expiró. Vuelve a intentarlo.');
         }
 
         // Una ruta que no existe no pasa por HandleInertiaRequests: fijar la plantilla raíz aquí.
         Inertia::setRootView('inertia');
 
-        return Inertia::render('Error', ['status' => $status])->toResponse($request)->setStatusCode($status);
+        // Si la propia página falla (BD caída en las props compartidas, manifest de
+        // Vite), queda la respuesta estándar de Laravel en vez de un 500 en blanco.
+        try {
+            return Inertia::render('Error', ['status' => $status])->toResponse($request)->setStatusCode($status);
+        } catch (Throwable) {
+            return $respuesta;
+        }
     }
 }

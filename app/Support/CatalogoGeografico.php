@@ -7,8 +7,8 @@ use Illuminate\Support\Facades\Cache;
 
 /**
  * Catálogo geográfico de Venezuela (tablas estado/municipio), cacheado un día
- * porque es estático. Fuente común del layout Blade (view composer 'admin.*')
- * y de las páginas Inertia.
+ * porque es estático. Lo usan las páginas Inertia
+ * (formularios de dirección).
  */
 class CatalogoGeografico
 {
