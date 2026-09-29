@@ -18,7 +18,7 @@ import { NIVEL, nivel, type KpisEficiencia, type Nivel, type PedidoEficiencia } 
 const TODOS = 'todos';
 const titulo = (p: PedidoEficiencia) => (p.pedido_id === null ? 'Órdenes manuales' : `Pedido #${p.pedido_id}`);
 const COLUMNAS = {
-    pedido: (p: PedidoEficiencia) => p.pedido_id ?? Number.MAX_SAFE_INTEGER,
+    pedido: (p: PedidoEficiencia) => p.pedido_id, // las manuales (sin pedido) al final
     conformes: (p: PedidoEficiencia) => p.producido,
     eficiencia: (p: PedidoEficiencia) => p.eficiencia,
     ordenes: (p: PedidoEficiencia) => p.total_ordenes,

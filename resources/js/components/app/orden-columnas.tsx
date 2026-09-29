@@ -34,9 +34,8 @@ export function useOrdenColumnas<T, K extends string>(filas: T[], valores: Recor
         });
     }, [filas, orden, valores]);
 
-    /** Primer clic: ascendente; segundo: descendente; tercero: vuelve al orden original. */
-    const alternar = (clave: K) =>
-        setOrden((o) => (o?.clave !== clave ? { clave, dir: 'asc' } : o.dir === 'asc' ? { clave, dir: 'desc' } : inicial?.clave === clave ? { clave, dir: 'asc' } : undefined));
+    /** Primer clic: ascendente; segundo: descendente; tercero: vuelve al orden por defecto. */
+    const alternar = (clave: K) => setOrden((o) => (o?.clave !== clave ? { clave, dir: 'asc' } : o.dir === 'asc' ? { clave, dir: 'desc' } : inicial));
 
     return { ordenadas, orden, alternar };
 }
