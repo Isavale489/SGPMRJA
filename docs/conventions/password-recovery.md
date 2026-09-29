@@ -114,10 +114,9 @@ Cuando un usuario no tiene preguntas configuradas y se va la luz:
 **Edición sin cambios**: no actualiza nada, redirect con `warning_recovery_no_changes`.
 **Edición con cambios**: requiere contraseña actual + actualiza solo bloques editados.
 
-Vista usa componente Alpine `recoveryBlock(startInEdit)`:
-- View mode: pregunta + `●●●●●●●●` + botón Cambiar.
-- Edit mode: select + input + botón "Cancelar este cambio".
-- `cancel()` resetea select a `data.originalValue` (attr `data-original-value`), limpia input, dispara `change` event para refrescar selects de otros bloques.
+La página de perfil (`resources/js/pages/Perfil/Index.tsx`, Inertia + React) tiene un bloque por pregunta:
+- Modo vista: pregunta + `●●●●●●●●` + botón Cambiar.
+- Modo edición: select + input + botón «Cancelar este cambio», que vuelve a la pregunta original y libera la opción en los otros bloques.
 
 ## Anti-autofill agresivo
 
@@ -158,15 +157,5 @@ Los navegadores ignoran `autocomplete="off"`. Solución combinada:
 
 ### Vistas
 - `resources/views/auth/recovery/{method,email,answers,reset,locked}.blade.php`
-- `resources/views/auth/force-password-change.blade.php`
-- `resources/views/profile/edit.blade.php`
-- `resources/views/profile/partials/update-recovery-questions-form.blade.php`
-
-## Dependencia crítica: Alpine.js
-
-El admin layout `resources/views/admin/layouts/app.blade.php` carga Alpine vía CDN:
-```html
-<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.5/dist/cdn.min.js"></script>
-```
-
-`resources/js/app.js` SÍ importa Alpine, pero el admin layout **no usa `@vite`**. El CDN es la solución de menor impacto. Si Alpine deja de cargar, los `x-data`, `x-show`, `x-init`, `@click` del perfil dejan de funcionar.
+- `resources/js/pages/Auth/CambioClaveObligatorio.tsx` (cambio forzoso, Inertia)
+- `resources/js/pages/Perfil/Index.tsx` (preguntas en el perfil, Inertia)

@@ -38,13 +38,8 @@
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
 
-        <!-- Styles -->
-        <link href="{{ asset('css/app.css') }}" rel="stylesheet">
-        
-        <!-- Scripts -->
         {{-- Bootstrap estático (el mismo que usa el panel), no un duplicado empaquetado por Vite. --}}
         <link href="{{ asset('assets/css/bootstrap.min.css') }}" rel="stylesheet">
-        @vite(['resources/js/app.js'])
     </head>
     <body class="d-flex flex-column h-100 font-sans antialiased">
         <main class="flex-shrink-0">
@@ -61,7 +56,5 @@
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
         <!-- Core theme JS-->
         <script src="{{ asset('js/scripts.js') }}"></script>
-        <!-- Scripts -->
-        <script src="{{ asset('js/app.js') }}" defer></script>
     </body>
 </html> 
