@@ -159,6 +159,9 @@ class SeguridadController extends Controller
             return $this->rechazar($request, 'El Administrador tiene acceso total y no es editable.', 403);
         }
 
+        // Lista plana de claves (un arreglo anidado daba 500 en array_intersect).
+        $request->validate(['permisos' => 'nullable|array', 'permisos.*' => 'string']);
+
         // Solo se aceptan claves que existan en el registry (descarta basura).
         $validos   = $this->permisosValidos();
         $solicitados = (array) $request->input('permisos', []);

@@ -34,6 +34,34 @@ test('crear un rol y asignarle permisos: «ver» se marca solo', async ({ page }
   expect(errores).toEqual([]);
 });
 
+test('las marcas sin guardar sobreviven a cambios en Roles y «Solo ver» respeta la búsqueda', async ({ page }) => {
+  await page.goto('/configuracion/seguridad');
+  await page.getByRole('listitem').filter({ hasText: ROL }).getByRole('button', { name: 'Permisos' }).click();
+  await page.getByRole('checkbox', { name: /^Proveedores: Ver/ }).check();
+  await expect(page.getByText('Cambios sin guardar')).toBeVisible();
+
+  // Editar el rol en la otra pestaña recarga las props: las marcas siguen.
+  await page.getByRole('tab', { name: 'Roles' }).click();
+  await page.getByRole('button', { name: `Editar el rol ${ROL}` }).click();
+  const d = page.getByRole('dialog', { name: 'Editar rol' });
+  await d.getByLabel('Descripción').fill('Rol de prueba E2E');
+  await d.getByRole('button', { name: 'Guardar cambios' }).click();
+  await expect(d).toBeHidden();
+  await page.getByRole('tab', { name: 'Permisos' }).click();
+  await expect(page.getByText('Cambios sin guardar')).toBeVisible();
+  await expect(page.getByRole('checkbox', { name: /^Proveedores: Ver/ })).toBeChecked();
+
+  // «Solo ver» con búsqueda: solo cambia lo visible.
+  await page.getByLabel('Buscar módulo').fill('Clientes');
+  await page.getByRole('button', { name: 'Solo ver' }).click();
+  await expect(page.getByRole('checkbox', { name: /^Clientes: Crear/ })).not.toBeChecked();
+  await expect(page.getByRole('checkbox', { name: /^Clientes: Ver/ })).toBeChecked();
+  await expect(page.getByRole('checkbox', { name: 'Todo el módulo Clientes' })).toBeChecked({ indeterminate: true });
+  await page.getByLabel('Buscar módulo').fill('');
+  await expect(page.getByRole('checkbox', { name: /^Proveedores: Ver/ })).toBeChecked();
+  await page.getByRole('button', { name: 'Descartar' }).click();
+});
+
 test('el Administrador no se configura y un rol sin usuarios se elimina', async ({ page }) => {
   await page.goto('/configuracion/seguridad');
   const admin = page.getByRole('listitem').filter({ hasText: 'Administrador' }).first();
