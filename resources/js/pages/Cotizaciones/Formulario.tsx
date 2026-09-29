@@ -129,6 +129,7 @@ export default function FormularioCotizacion(props: PaginaFormularioCotizacion) 
 
     const guardar = (ev: React.FormEvent) => {
         ev.preventDefault();
+        if (ev.target !== ev.currentTarget) return; // el submit de un diálogo abierto desde un paso
         const opciones = {
             preserveScroll: true,
             onError: (errores: Record<string, string>) => {

@@ -173,6 +173,7 @@ export default function FormularioOrdenes({ pedidos, empleados, insumos, abonoMi
     };
     const guardar = (ev: React.FormEvent) => {
         ev.preventDefault();
+        if (ev.target !== ev.currentTarget) return; // el submit de un diálogo abierto desde un paso
         form.post(urls.guardar, {
             preserveScroll: true,
             onError: (errores) => {

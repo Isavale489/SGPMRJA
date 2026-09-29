@@ -129,6 +129,7 @@ export function FormularioProveedor({ abierto, onCerrar, proveedor, estados, url
 
     const guardar = (e: React.FormEvent) => {
         e.preventDefault();
+        e.stopPropagation(); // abierto desde otra página (alta rápida): su submit no dispara el de la página
         const opciones = { preserveScroll: true, onSuccess: () => { form.setDefaults(); onCerrar(); } };
         if (proveedor) form.put(`${urls.index}/${proveedor.id}`, opciones);
         else if (onCreado)

@@ -153,6 +153,7 @@ export function FormularioCliente({ abierto, onCerrar, cliente, estados, urls, o
 
     const guardar = (e: React.FormEvent) => {
         e.preventDefault();
+        e.stopPropagation(); // abierto desde otra página (alta rápida): su submit no dispara el de la página
         const opciones = { preserveScroll: true, onSuccess: () => { form.setDefaults(); onCerrar(); } };
         if (cliente) form.put(`${urls.index}/${cliente.id}`, opciones);
         else if (onCreado)

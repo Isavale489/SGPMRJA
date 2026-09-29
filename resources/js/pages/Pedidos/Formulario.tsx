@@ -154,6 +154,7 @@ export default function FormularioPedido(props: PaginaFormularioPedido) {
     };
     const guardar = (ev: React.FormEvent) => {
         ev.preventDefault();
+        if (ev.target !== ev.currentTarget) return; // el submit de un diálogo abierto desde un paso
         const opciones = {
             preserveScroll: true,
             onError: (errores: Record<string, string>) => {
@@ -298,7 +299,11 @@ export default function FormularioPedido(props: PaginaFormularioPedido) {
                                             {pedido && (
                                                 <p className="text-muted-foreground flex flex-wrap items-center gap-2 text-sm">
                                                     <EstadoBadge estado={pedido.estado} />
-                                                    {pedido.formalizacion ? `Formalizado el ${formatoFecha(pedido.formalizacion)}: las líneas quedaron fijas.` : 'Aún no alcanza el abono mínimo.'}
+                                                    {pedido.formalizacion
+                                                        ? `Formalizado el ${formatoFecha(pedido.formalizacion)}: las líneas quedaron fijas.`
+                                                        : pedido.porcentaje_abonado + 0.001 < terminos.abono
+                                                          ? 'Aún no alcanza el abono mínimo.'
+                                                          : 'Las líneas quedaron fijas al crearlo.'}
                                                 </p>
                                             )}
                                             {cliente && (
@@ -421,7 +426,15 @@ export default function FormularioPedido(props: PaginaFormularioPedido) {
                                                             <span className="flex items-center gap-2 pt-2 text-sm font-medium">
                                                                 <Icono className="text-muted-foreground size-4" /> {METODO[p.metodo]}
                                                             </span>
-                                                            <Campo etiqueta="Monto ($)" error={errorPago(i, 'monto')} ayuda={t && num(p.monto) > 0 ? formatoBs(num(p.monto) * t.valor) : undefined}>
+                                                            <Campo
+                                                                etiqueta="Monto ($)"
+                                                                error={errorPago(i, 'monto')}
+                                                                ayuda={
+                                                                    t && num(p.monto) > 0
+                                                                        ? `${formatoBs(num(p.monto) * t.valor)} · ${t.fecha ? `Tasa BCV (${formatoFecha(t.fecha)})` : 'tasa guardada'}`
+                                                                        : undefined
+                                                                }
+                                                            >
                                                                 <Input
                                                                     type="number"
                                                                     min={0.01}

@@ -63,6 +63,7 @@ export default function EditarOrden({ orden, empleados, urls }: PaginaEditarOrde
 
     const guardar = (ev: React.FormEvent) => {
         ev.preventDefault();
+        if (ev.target !== ev.currentTarget) return; // el submit de un diálogo abierto desde un paso
         form.put(urls.guardar, {
             preserveScroll: true,
             onError: () => {

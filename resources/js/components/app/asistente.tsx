@@ -69,12 +69,16 @@ export function Asistente({ pasos, final, salto, inicial = 0, className }: Props
     // Enter en un campo de un paso intermedio: avanza (con su validación) en vez de
     // enviar el formulario, que se saltaría los pasos siguientes y el resumen.
     const alPulsar = (ev: React.KeyboardEvent<HTMLDivElement>) => {
-        if (ev.key !== 'Enter' || actual >= pasos.length - 1) return;
+        if (ev.key !== 'Enter' || actual >= pasos.length - 1 || ev.defaultPrevented) return;
         const t = ev.target as HTMLElement;
-        if (t instanceof HTMLTextAreaElement || t instanceof HTMLButtonElement || t.closest('[role="combobox"],[role="listbox"]')) return;
+        // Solo lo que está en este asistente: React sube los eventos a través de los
+        // portales, y un diálogo de alta rápida abierto desde un paso tiene su propio Enter.
+        if (!ev.currentTarget.contains(t)) return;
         if (!(t instanceof HTMLInputElement)) return;
         ev.preventDefault();
         ev.stopPropagation();
+        // En un buscador sin opción elegida, Enter no hace nada (tampoco envía el formulario).
+        if (t.closest('[role="combobox"],[role="listbox"]')) return;
         ir(actual + 1);
     };
 

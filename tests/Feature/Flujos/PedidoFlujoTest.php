@@ -163,7 +163,7 @@ class PedidoFlujoTest extends TestCase
         $this->assertExito($this->actingAs($admin)->putJson(route('pedidos.update', $pedido), ['fecha_entrega_estimada' => now()->addDays(25)->toDateString(), 'prioridad' => 'Urgente', 'pagos' => [$pago]]));
         $this->assertSame('Urgente', $pedido->fresh()->prioridad);
 
-        // Pero un pago NUEVO no puede usar un banco inhabilitado.
+        // Pero un pedido nuevo no puede usar un banco inhabilitado (en el mismo pedido sí: es el banco de su historial).
         $otra = $this->cotizacion($admin);
         $this->actingAs($admin)->postJson(route('pedidos.store'), $this->datos($otra, [$pago]))->assertStatus(422)->assertJsonValidationErrors('pagos.0.banco_id');
     }
