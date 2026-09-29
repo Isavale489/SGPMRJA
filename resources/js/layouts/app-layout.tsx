@@ -69,8 +69,8 @@ export default function AppLayout({ titulo, acciones, children }: Props) {
                         </Sheet>
                         {/* Empresa y sistema (como el layout anterior); solo si hay espacio. */}
                         <div className="min-w-0 flex-1 text-center">
-                            <p className="hidden truncate text-sm font-semibold leading-tight 2xl:block">Manufacturas R.J. Atlántico</p>
-                            <p className="text-muted-foreground hidden truncate text-xs leading-tight 2xl:block">
+                            <p className="hidden truncate text-sm font-semibold leading-tight xl:block">Manufacturas R.J. Atlántico</p>
+                            <p className="text-muted-foreground hidden truncate text-xs leading-tight xl:block">
                                 Software para la gestión de pedidos en Manufacturas R.J. Atlántico C.A.
                             </p>
                         </div>

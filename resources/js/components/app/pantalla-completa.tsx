@@ -18,7 +18,7 @@ export function PantallaCompleta() {
     if (!disponible) return null;
 
     const alternar = () => {
-        if (document.fullscreenElement) void document.exitFullscreen();
+        if (document.fullscreenElement) void document.exitFullscreen().catch(() => undefined);
         else void document.documentElement.requestFullscreen().catch(() => undefined);
     };
 

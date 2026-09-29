@@ -100,7 +100,7 @@ test('las páginas Blade que quedan cargan todos sus archivos', async ({ page, b
 /** Lo que tenía el layout anterior: nombre de la empresa, reloj, notificaciones y pie. */
 test('el header trae notificaciones y reloj, y el pie de página', async ({ page }) => {
   const errores = vigilarErrores(page);
-  await page.setViewportSize({ width: 1600, height: 900 });
+  await page.setViewportSize({ width: 1366, height: 800 }); // laptop común: el nombre de la empresa se ve desde xl
   await page.goto('/dashboard');
 
   const header = page.locator('header').first();
@@ -117,10 +117,12 @@ test('el header trae notificaciones y reloj, y el pie de página', async ({ page
   await expect(menu).toContainText('Hilo Mov E2E');
   await page.screenshot({ path: 'test-results/layout-notificaciones.png' });
 
-  // Ocultar vale para la sesión y se puede deshacer.
-  await menu.getByRole('button', { name: /Ocultar «Stock bajo»/ }).first().click();
+  // Ocultar vale para la sesión y se puede deshacer; los dos son ítems del menú (se llega con las flechas).
+  await menu.getByRole('menuitem', { name: /Ocultar en esta sesión: .*Hilo Mov E2E/ }).click();
   await expect(menu).not.toContainText('Hilo Mov E2E');
-  await menu.getByRole('button', { name: 'Mostrar las notificaciones ocultas' }).click();
+  const restaurar = menu.getByRole('menuitem', { name: 'Mostrar las notificaciones ocultas' });
+  await restaurar.focus();
+  await page.keyboard.press('Enter');
   await expect(menu).toContainText('Hilo Mov E2E');
 
   await menu.getByRole('menuitem', { name: /Ver todas las alertas/ }).click();
