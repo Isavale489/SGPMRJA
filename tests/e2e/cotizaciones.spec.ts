@@ -73,6 +73,46 @@ test('crear una cotización por el asistente, con bordado', async ({ page }) => 
   expect(errores, errores.join('\n')).toEqual([]);
 });
 
+/** Regresión: con líneas repetidas (misma talla y género), el editor mostraba solo la última y al guardar se perdía el resto. */
+test('editar un producto con tallas repetidas muestra la suma y no pierde unidades', async ({ page }) => {
+  const editarProducto = async () => {
+    await page.goto('/cotizaciones', { waitUntil: 'networkidle' });
+    await page.getByRole('row', { name: /Tallas Repetidas/ }).getByRole('button', { name: /Más acciones de la cotización/ }).click();
+    await page.getByRole('menuitem', { name: 'Editar' }).click();
+    await page.locator('#form-cotizacion').getByRole('button', { name: 'Siguiente' }).click();
+    await page.getByRole('button', { name: 'Editar Chemise' }).click();
+    return page.getByRole('dialog', { name: 'Editar producto' });
+  };
+  const guardarYVer = async (dialogo: ReturnType<typeof page.getByRole>) => {
+    await dialogo.getByRole('button', { name: 'Guardar cambios' }).click();
+    await expect(dialogo).toBeHidden();
+    await page.locator('#form-cotizacion').getByRole('button', { name: 'Siguiente' }).click();
+    await page.getByRole('button', { name: 'Guardar cambios' }).click();
+    await expect(page.getByText(/Cotización #\d+ actualizada\./)).toBeVisible();
+    const ver = page.getByRole('dialog', { name: /Cotización #\d+/ });
+    await ver.getByRole('button', { name: 'Siguiente' }).click();
+    return ver;
+  };
+
+  // Sembrada con dos líneas M (3 «Ana» + 2 «Luis»): la celda muestra la suma, no solo la última.
+  let dialogo = await editarProducto();
+  await expect(dialogo.getByLabel(/^Talla M ·/).first()).toHaveValue('5');
+  await dialogo.getByRole('radio', { name: 'Azul Marino' }).click(); // la línea sembrada no tiene color
+  // Sin tocar la cantidad, las dos líneas se conservan tal cual.
+  let ver = await guardarYVer(dialogo);
+  await expect(ver).toContainText('$50,00'); // 5 × $10
+  await expect(ver.getByText(/^M.*×\s*3$/)).toBeVisible();
+  await expect(ver.getByText(/^M.*×\s*2$/)).toBeVisible();
+
+  // Si cambia la cantidad, queda una sola línea.
+  dialogo = await editarProducto();
+  await dialogo.getByLabel(/^Talla M ·/).first().fill('6');
+  ver = await guardarYVer(dialogo);
+  await expect(ver).toContainText('$60,00');
+  await expect(ver.getByText(/^M.*×\s*6$/)).toBeVisible();
+  await expect(ver.getByText(/^M.*×\s*[32]$/)).toHaveCount(0);
+});
+
 /** Regresión: al reabrir un producto con precio negociado, «Precio base» mostraba el negociado y «Restaurar» no volvía al de catálogo. */
 test('editar un producto con precio negociado muestra el precio de catálogo y Restaurar vuelve a él', async ({ page }) => {
   await page.goto('/cotizaciones/crear', { waitUntil: 'networkidle' });

@@ -169,7 +169,16 @@ export function AgregarProducto({ abierto, onCerrar, bloque, onAgregar, catalogo
     // ── Paso 3: color, tallas × género y precio ─────────────────────────────
     const [colorId, setColorId] = useState<number | null>(bloque?.color_id ?? null);
     const [buscarColor, setBuscarColor] = useState('');
-    const [celdas, setCeldas] = useState<Record<string, number>>(() => Object.fromEntries((bloque?.tallas ?? []).map((t) => [claveCelda(t.talla_id, t.genero_id), t.cantidad])));
+    // Una celda por talla × género. Si el producto guardado trae líneas repetidas (misma
+    // talla y género, p. ej. con distinta descripción), la celda muestra su suma.
+    const [celdas, setCeldas] = useState<Record<string, number>>(() => {
+        const inicial: Record<string, number> = {};
+        for (const t of bloque?.tallas ?? []) {
+            const k = claveCelda(t.talla_id, t.genero_id);
+            inicial[k] = (inicial[k] ?? 0) + t.cantidad;
+        }
+        return inicial;
+    });
     const grupos = [...new Set(tallas.map((t) => t.grupo))];
     const [escala, setEscala] = useState<string>(() => {
         const conDatos = bloque?.tallas.map((t) => tallas.find((x) => x.id === t.talla_id)?.grupo).find(Boolean);
@@ -241,10 +250,14 @@ export function AgregarProducto({ abierto, onCerrar, bloque, onAgregar, catalogo
             // nunca el negociado); si se resolvió otra, el del resolver.
             precio_catalogo: d.dinamica ? null : bloque?.producto_id === d.id ? (bloque.precio_catalogo ?? null) : d.precio_base,
             bordados: bloque?.bordados ?? [],
-            tallas: Object.entries(celdas).map(([k, cantidad]) => {
+            tallas: Object.entries(celdas).flatMap(([k, cantidad]) => {
                 const [talla_id, genero_id] = k.split('-').map(Number) as [number, number];
-                const previa = bloque?.tallas.find((t) => t.talla_id === talla_id && t.genero_id === genero_id);
-                return { talla_id, genero_id, cantidad, descripcion: previa?.descripcion ?? null };
+                const previas = bloque?.tallas.filter((t) => t.talla_id === talla_id && t.genero_id === genero_id) ?? [];
+                // Líneas repetidas sin tocar: se conservan tal cual (cada cantidad con su descripción).
+                if (previas.length > 1 && previas.reduce((n, t) => n + t.cantidad, 0) === cantidad) return previas.map((t) => ({ ...t }));
+                // Si cambió la cantidad, queda una sola línea con las descripciones distintas (tope del servidor: 500).
+                const unidas = [...new Set(previas.map((t) => t.descripcion?.trim()).filter(Boolean))].join(' · ');
+                return [{ talla_id, genero_id, cantidad, descripcion: Array.from(unidas).slice(0, 500).join('') || null }];
             }),
         };
     };

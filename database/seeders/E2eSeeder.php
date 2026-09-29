@@ -158,6 +158,21 @@ class E2eSeeder extends Seeder
             ]],
         ]);
         $cotizacion->update(['estado' => 'Aprobada']);
+
+        // Cotización con líneas repetidas (misma talla y género, distinta descripción),
+        // como las de datos viejos: el editor de producto debe mostrar su suma.
+        $personaRep = Persona::create(['nombre' => 'Tallas Repetidas', 'tipo_documento' => 'V-', 'documento_identidad' => '12345680']);
+        $clienteRep = Cliente::forceCreate(['persona_id' => $personaRep->id, 'tipo_cliente' => 'natural', 'estatus' => 1]);
+        $linea = ['tipo_producto_id' => $tipo->id, 'talla_id' => Talla::where('nombre', 'M')->value('id'), 'genero_id' => Genero::query()->value('id'), 'precio_unitario' => 10, 'lleva_bordado' => false];
+        app(CotizacionService::class)->crear([
+            'cliente_id' => $clienteRep->id,
+            'fecha_cotizacion' => today()->toDateString(),
+            'fecha_validez' => today()->addDays(15)->toDateString(),
+            'productos' => [
+                [...$linea, 'cantidad' => 3, 'descripcion' => 'Con nombre Ana'],
+                [...$linea, 'cantidad' => 2, 'descripcion' => 'Con nombre Luis'],
+            ],
+        ]);
         Auth::logout();
     }
 }
