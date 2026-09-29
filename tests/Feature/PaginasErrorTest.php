@@ -67,9 +67,21 @@ class PaginasErrorTest extends TestCase
             ->assertSessionMissing('_old_input.password')
             ->assertSessionMissing('_old_input.respuestas');
 
-        // El layout de acceso muestra el aviso (también en recuperación).
+        // El layout de acceso muestra el aviso.
         $this->withSession(['aviso' => 'La sesión expiró. Vuelve a intentarlo.'])->get(route('login'))
             ->assertOk()->assertSee('La sesión expiró. Vuelve a intentarlo.');
+    }
+
+    public function test_las_preguntas_de_recuperacion_con_la_sesion_vencida_llevan_el_aviso_al_formulario_de_correo(): void
+    {
+        // Con la sesión vencida se pierde el correo en recuperación: showQuestions redirige
+        // al formulario de correo y el aviso no debe consumirse en ese paso intermedio.
+        Route::middleware('web')->post('/_prueba-419', fn () => abort(419));
+
+        $this->from(route('recovery.questions.show'))->post('/_prueba-419')
+            ->assertRedirect(route('recovery.questions.show'));
+        $this->get(route('recovery.questions.show'))->assertRedirect(route('recovery.email.show'));
+        $this->get(route('recovery.email.show'))->assertOk()->assertSee('La sesión expiró. Vuelve a intentarlo.');
     }
 
     public function test_si_la_pagina_de_error_falla_queda_la_respuesta_estandar(): void

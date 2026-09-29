@@ -79,6 +79,9 @@ class RecoveryQuestionController extends Controller
     {
         $email = $request->session()->get(self::SESSION_KEY_EMAIL);
         if (!$email) {
+            // Sesión vencida (419): que el aviso del Handler llegue al formulario de correo.
+            $request->session()->keep(['aviso']);
+
             return redirect()->route('recovery.email.show');
         }
 
@@ -114,6 +117,9 @@ class RecoveryQuestionController extends Controller
 
         $email = $request->session()->get(self::SESSION_KEY_EMAIL);
         if (!$email) {
+            // Sesión vencida (419): que el aviso del Handler llegue al formulario de correo.
+            $request->session()->keep(['aviso']);
+
             return redirect()->route('recovery.email.show');
         }
 
