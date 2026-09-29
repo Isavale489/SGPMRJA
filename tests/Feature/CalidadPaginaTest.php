@@ -134,4 +134,83 @@ class CalidadPaginaTest extends TestCase
 
         $this->assertSame(0, ControlCalidad::count());
     }
+
+    public function test_los_parametros_tipo_arreglo_y_las_fechas_invalidas_no_rompen_la_pagina(): void
+    {
+        $admin = $this->admin();
+        $orden = $this->ordenFinalizada($admin);
+
+        $this->actingAs($admin)->get(route('calidad.index', ['buscar' => ['x'], 'estado' => ['pendiente'], 'orden' => ['antiguos'], 'pedido' => [$orden->pedido_id]]))
+            ->assertOk()
+            ->assertInertia(fn (Assert $p) => $p->has('registros.data', 1)->where('cola', null));
+        $this->actingAs($admin)->get(route('calidad.reporte.pdf', ['fecha_desde' => 'abc', 'fecha_hasta' => '2026-13-01', 'resultado' => ['x']]))->assertOk();
+    }
+
+    public function test_la_busqueda_escapa_los_comodines(): void
+    {
+        $admin = $this->admin();
+        $this->ordenFinalizada($admin);
+
+        $this->actingAs($admin)->get(route('calidad.index', ['buscar' => '%']))
+            ->assertInertia(fn (Assert $p) => $p->has('registros.data', 0));
+    }
+
+    public function test_la_paginacion_conserva_los_filtros_pero_no_el_pedido_abierto(): void
+    {
+        $admin = $this->admin();
+        $orden = $this->ordenFinalizada($admin);
+
+        $this->actingAs($admin)->get(route('calidad.index', ['pedido' => $orden->pedido_id, 'estado' => 'pendiente']))
+            ->assertInertia(fn (Assert $p) => $p
+                ->where('colaPedido', (string) $orden->pedido_id)
+                ->where('registros.first_page_url', fn ($url) => str_contains($url, 'estado=pendiente') && ! str_contains($url, 'pedido='))
+                ->where('registros.links', fn ($links) => collect($links)->pluck('url')->filter()->every(fn ($u) => ! str_contains($u, 'pedido='))));
+        $this->actingAs($admin)->get(route('calidad.index'))
+            ->assertInertia(fn (Assert $p) => $p->where('colaPedido', null));
+    }
+
+    public function test_inspeccionar_mas_de_lo_producido_marca_el_campo(): void
+    {
+        $admin = $this->admin();
+        $orden = $this->ordenFinalizada($admin);
+
+        $this->actingAs($admin)->from(route('calidad.index'))->withHeaders($this->inertia())
+            ->post(route('calidad.inspeccionar', $orden), [
+                'cantidad_inspeccionada' => 11, 'cantidad_aprobada' => 11, 'cantidad_rechazada' => 0, 'resultado' => 'aprobado',
+            ])
+            ->assertRedirect(route('calidad.index'))
+            ->assertSessionHasErrors(['cantidad_inspeccionada' => 'No puedes inspeccionar más unidades de las producidas.']);
+        $this->assertSame(0, ControlCalidad::count());
+    }
+
+    public function test_aprobar_saca_la_orden_de_la_cola_y_una_reinspeccion_se_cuenta(): void
+    {
+        $admin = $this->admin();
+        $orden = $this->ordenFinalizada($admin);
+        [$ana] = $orden->empleadosAsignados()->orderBy('empleado.id')->get()->all();
+
+        // Rechazo de 2 (de Ana), reproceso y vuelve a la cola como re-inspección.
+        $this->actingAs($admin)->withHeaders($this->inertia())->post(route('calidad.inspeccionar', $orden), [
+            'cantidad_inspeccionada' => 10, 'cantidad_aprobada' => 8, 'cantidad_rechazada' => 2, 'resultado' => 'rechazado',
+            'observaciones' => 'Manchas', 'rechazos' => [['empleado_id' => $ana->id, 'cantidad' => 2]],
+        ])->assertSessionHasNoErrors();
+        $this->flushHeaders();
+        $this->actingAs($admin)->postJson(route('ordenes.avance', $orden), ['cantidad_producida' => 2, 'empleado_id' => $ana->id])->assertOk();
+        $this->assertSame('Finalizado', $orden->fresh()->estado);
+
+        $this->actingAs($admin)->get(route('calidad.index', ['estado' => 'reinspeccion']))
+            ->assertInertia(fn (Assert $p) => $p->has('registros.data', 1)->where('registros.data.0.reinspecciones', 1));
+        $this->actingAs($admin)->get(route('calidad.index', ['estado' => 'pendiente']))
+            ->assertInertia(fn (Assert $p) => $p->has('registros.data', 0));
+        $this->actingAs($admin)->get(route('calidad.index', ['pedido' => $orden->pedido_id]))
+            ->assertInertia(fn (Assert $p) => $p->has('cola.0.historial', 1)->where('cola.0.historial.0.fecha', fn ($f) => (bool) preg_match('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/', $f)));
+
+        $this->actingAs($admin)->withHeaders($this->inertia())->post(route('calidad.inspeccionar', $orden), [
+            'cantidad_inspeccionada' => 10, 'cantidad_aprobada' => 10, 'cantidad_rechazada' => 0, 'resultado' => 'aprobado',
+        ])->assertSessionHasNoErrors();
+        $this->flushHeaders();
+        $this->actingAs($admin)->get(route('calidad.index'))
+            ->assertInertia(fn (Assert $p) => $p->has('registros.data', 0));
+        $this->assertSame(['rechazado', 'aprobado'], ControlCalidad::orderBy('id')->pluck('resultado')->all());
+    }
 }

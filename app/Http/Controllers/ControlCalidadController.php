@@ -7,9 +7,11 @@ use App\Http\Requests\StoreControlCalidadRequest;
 use App\Models\ControlCalidad;
 use App\Models\OrdenProduccion;
 use App\Services\ControlCalidadService;
+use App\Support\FiltrosUrl;
 use App\Support\ReporteFiltros;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -45,7 +47,7 @@ class ControlCalidadController extends Controller
      */
     public function index(Request $request): Response
     {
-        $filtros = array_filter($request->only(['buscar', 'estado', 'orden', 'pedido']), fn ($v) => $v !== null && $v !== '');
+        $filtros = FiltrosUrl::de($request, ['buscar', 'estado', 'orden', 'pedido']);
 
         $pedidos = $this->enCola()
             ->leftJoin('pedido', 'pedido.id', '=', 'orden_produccion.pedido_id')
@@ -73,7 +75,7 @@ class ControlCalidadController extends Controller
             $pedidos->whereHas('controlesCalidad');
         }
         if (! empty($filtros['buscar'])) {
-            $kw = trim($filtros['buscar']);
+            $kw = FiltrosUrl::like($filtros['buscar']);
             $num = preg_replace('/\D/', '', $kw); // dígitos (ej. "Pedido #8" → "8")
             $pedidos->where(function ($q) use ($kw, $num) {
                 // El nombre del producto se deriva del tipo (línea dinámica o legacy).
@@ -90,7 +92,9 @@ class ControlCalidadController extends Controller
             : $pedidos->orderByRaw('MAX(orden_produccion.fecha_fin_real) desc');
 
         return Inertia::render('Calidad/Index', [
-            'registros' => $pedidos->paginate(15)->withQueryString()->through(fn ($p) => [
+            // Los enlaces de la paginación llevan los filtros, pero no el pedido
+            // abierto: cambiar de página no debe volver a abrir su diálogo.
+            'registros' => $pedidos->paginate(15)->appends(Arr::except($filtros, ['pedido']))->through(fn ($p) => [
                 'pedido_id' => $p->pedido_id,
                 'cliente' => $p->cliente_nombre,
                 'ordenes' => (int) $p->total_ordenes,
@@ -99,6 +103,7 @@ class ControlCalidadController extends Controller
             ]),
             'filtros' => (object) $filtros,
             'cola' => fn () => isset($filtros['pedido']) ? $this->cola($filtros['pedido']) : null,
+            'colaPedido' => fn () => $filtros['pedido'] ?? null,
             'urls' => [
                 'index' => route('calidad.index', absolute: false),
                 'reportePdf' => route('calidad.reporte.pdf', absolute: false),
@@ -147,6 +152,7 @@ class ControlCalidadController extends Controller
      */
     public function reportePdf(Request $request)
     {
+        $request->query->replace(FiltrosUrl::de($request, ['resultado', 'fecha_desde', 'fecha_hasta'], ['fecha_desde', 'fecha_hasta']));
         $query = ControlCalidad::query()
             ->with([
                 'inspector:id,name',
