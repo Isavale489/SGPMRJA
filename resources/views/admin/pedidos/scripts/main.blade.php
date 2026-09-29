@@ -1953,6 +1953,8 @@ $(document).ready(function () {
             $('#ped-wiz-cotizacion-id-field').val(cotId);
 
             // Paso 1 — cliente
+            // La prioridad se hereda de la cotización.
+            if (data.prioridad) $('#ped-prioridad-field').val(data.prioridad).trigger('change');
             if (data.cliente && typeof window.pedAplicarPersonaAPedido === 'function') {
                 window.pedAplicarPersonaAPedido(data.cliente, data.cliente_id);
             }

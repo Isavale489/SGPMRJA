@@ -38,6 +38,7 @@ class CotizacionService
                 'fecha_validez'       => $data['fecha_validez']
                     ?? \Carbon\Carbon::parse($data['fecha_cotizacion'])->addDays(Cotizacion::diasVigencia())->toDateString(),
                 'estado'              => 'Pendiente',
+                'prioridad'           => $data['prioridad'] ?? 'Normal',
                 'total'               => $total,
                 'tasa_cambio_valor'   => TasaCambio::obtenerValorUsd(),
                 'notas'               => $data['notas'] ?? null,
@@ -76,11 +77,13 @@ class CotizacionService
                 'fecha_cotizacion'     => $data['fecha_cotizacion'],
                 'fecha_validez'        => $data['fecha_validez']
                     ?? \Carbon\Carbon::parse($data['fecha_cotizacion'])->addDays(Cotizacion::diasVigencia())->toDateString(),
-                'estado'               => $data['estado'],
+                // El estado no viene del formulario: cambia solo por sus acciones.
+                'prioridad'            => $data['prioridad'] ?? $cotizacion->prioridad ?? 'Normal',
                 'total'                => $total,
                 'tasa_cambio_valor'    => TasaCambio::obtenerValorUsd(),
                 'notas'                => $data['notas'] ?? null,
-                'condiciones_terminos' => $data['condiciones_terminos'] ?? null,
+                // Si el formulario no las envía, se conservan (antes se borraban al editar).
+                'condiciones_terminos' => array_key_exists('condiciones_terminos', $data) ? $data['condiciones_terminos'] : $cotizacion->condiciones_terminos,
                 // NO se sobrescribe user_id: queda fijo como el creador original.
             ]);
 
@@ -91,6 +94,43 @@ class CotizacionService
             'cotizacion_id' => $cotizacion->id,
             'total' => $cotizacion->total,
             'user_id' => Auth::id(),
+        ]);
+    }
+
+    /**
+     * Cambio de estado manual (aprobar, cancelar, volver a pendiente) según
+     * Cotizacion::TRANSICIONES.
+     *
+     * @throws \InvalidArgumentException si la transición no está permitida
+     */
+    public function cambiarEstado(Cotizacion $cotizacion, string $nuevo): void
+    {
+        DB::transaction(function () use ($cotizacion, $nuevo) {
+            // Con la fila bloqueada: una conversión a pedido simultánea no deja
+            // una cotización Cancelada con pedido.
+            Cotizacion::whereKey($cotizacion->id)->lockForUpdate()->first();
+            $cotizacion->refresh();
+            $this->aplicarCambioEstado($cotizacion, $nuevo);
+        });
+    }
+
+    private function aplicarCambioEstado(Cotizacion $cotizacion, string $nuevo): void
+    {
+        $actual = $cotizacion->estado;
+        if ($actual === 'Convertida') {
+            throw new \InvalidArgumentException('No se puede cambiar el estado de una cotización ya convertida a pedido.');
+        }
+        if ($actual === 'Vencida') {
+            throw new \InvalidArgumentException('La cotización está vencida: usa «Reactivar» para renovar su validez.');
+        }
+        if (! in_array($nuevo, Cotizacion::TRANSICIONES[$actual] ?? [], true)) {
+            throw new \InvalidArgumentException("No se puede pasar una cotización de {$actual} a {$nuevo}.");
+        }
+
+        $cotizacion->update(['estado' => $nuevo]);
+
+        Log::info('Cotización: cambio de estado', [
+            'cotizacion_id' => $cotizacion->id, 'de' => $actual, 'a' => $nuevo, 'user_id' => Auth::id(),
         ]);
     }
 
@@ -260,7 +300,8 @@ class CotizacionService
     private function resolverVarianteLinea(array $item): array
     {
         if (!empty($item['producto_id'])) {
-            $producto = Producto::with('tela')->find($item['producto_id']);
+            // withTrashed: una cotización vieja puede tener un producto que luego se inhabilitó.
+            $producto = Producto::withTrashed()->with('tela')->findOrFail($item['producto_id']);
             $snapshots = $this->productoService->buildSnapshotsParaDetalle($producto);
 
             return [
@@ -273,8 +314,8 @@ class CotizacionService
             ];
         }
 
-        $tipo = TipoProducto::find($item['tipo_producto_id']);
-        $tela = !empty($item['insumo_tela_id']) ? Insumo::find($item['insumo_tela_id']) : null;
+        $tipo = TipoProducto::withTrashed()->findOrFail($item['tipo_producto_id']);
+        $tela = !empty($item['insumo_tela_id']) ? Insumo::withTrashed()->find($item['insumo_tela_id']) : null;
         $snap = $this->productoService->buildSnapshotsDesdeTipo($tipo, $tela, $item['atributo_valor_ids'] ?? []);
 
         return [
@@ -323,7 +364,8 @@ class CotizacionService
                     'ubicacion_bordado_id' => $bordado['ubicacion_bordado_id'] ?? null,
                     'logo_id' => $logoId,
                     'nombre_aplicado' => trim((string) ($bordado['nombre_aplicado'] ?? '')),
-                    'nombre_logo_aplicado' => $this->bordadoPricingService->resolverNombreLogoSnapshot($logoId),
+                    // Sin logo del catálogo se conserva el nombre que ya traía (logos legados en texto).
+                    'nombre_logo_aplicado' => $this->bordadoPricingService->resolverNombreLogoSnapshot($logoId) ?: trim((string) ($bordado['nombre_logo_aplicado'] ?? '')),
                     'es_personalizada' => (bool) ($bordado['es_personalizada'] ?? false),
                     'cantidad' => max(1, (int) ($bordado['cantidad'] ?? 1)),
                     'precio_aplicado' => (float) ($bordado['precio_aplicado'] ?? 0),

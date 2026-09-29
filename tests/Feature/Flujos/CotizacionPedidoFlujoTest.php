@@ -119,4 +119,106 @@ class CotizacionPedidoFlujoTest extends TestCase
         $this->assertSame('Cancelado', Pedido::sole()->estado);
         $this->assertSame('Convertida', $cot->fresh()->estado);
     }
+
+    /** Payload con una línea con bordado: base 10 + (2 × 3) de bordado = 16 por unidad. */
+    private function payloadConBordado(int $clienteId): array
+    {
+        $payload = $this->payloadCotizacion($clienteId, 5);
+        $payload['productos'][0] = array_merge($payload['productos'][0], ['precio_unitario' => 10, 'lleva_bordado' => true, 'descripcion' => 'Logo en el pecho', 'bordados' => [[
+            'ubicacion_bordado_id' => \App\Models\BordadoUbicacion::query()->value('id'),
+            'nombre_aplicado' => 'Pecho izquierdo', 'precio_aplicado' => 2, 'cantidad' => 3, 'es_personalizada' => false,
+        ]]]);
+
+        return $payload;
+    }
+
+    public function test_los_bordados_suman_al_precio_unitario_y_al_total(): void
+    {
+        $this->seed(\Database\Seeders\BordadoUbicacionSeeder::class);
+        $admin = $this->admin();
+        $this->assertExito($this->actingAs($admin)->postJson(route('cotizaciones.store'), $this->payloadConBordado($this->cliente()->id)));
+
+        $cot = Cotizacion::sole();
+        $detalle = $cot->productos()->with('bordados')->sole();
+        $this->assertEquals(16, (float) $detalle->precio_unitario);
+        $this->assertEquals(80, (float) $cot->total);
+        $this->assertTrue((bool) $detalle->lleva_bordado);
+        $this->assertSame('Logo en el pecho', $detalle->descripcion);
+        $this->assertSame(3, (int) $detalle->bordados->sole()->cantidad);
+    }
+
+    public function test_el_maximo_de_bordados_por_producto_se_valida_en_el_servidor(): void
+    {
+        $this->seed(\Database\Seeders\BordadoUbicacionSeeder::class);
+        $admin = $this->admin();
+        $payload = $this->payloadConBordado($this->cliente()->id);
+        $payload['productos'][0]['bordados'][0]['cantidad'] = (int) parametro('cotizaciones.max_bordados_producto') + 1;
+
+        $this->actingAs($admin)->postJson(route('cotizaciones.store'), $payload)
+            ->assertStatus(422)->assertJsonValidationErrors('productos.0.bordados');
+        $this->assertSame(0, Cotizacion::count());
+    }
+
+    /** Contrato JSON que consume el asistente de Pedidos (Blade): pedidos/scripts/main.blade.php. */
+    public function test_contrato_json_de_datos_para_pedido(): void
+    {
+        $this->seed(\Database\Seeders\BordadoUbicacionSeeder::class);
+        $admin = $this->admin();
+        $this->actingAs($admin)->postJson(route('cotizaciones.store'), $this->payloadConBordado($this->cliente()->id));
+        $cot = Cotizacion::sole();
+        $this->actingAs($admin)->putJson(route('cotizaciones.updateEstado', $cot), ['estado' => 'Aprobada']);
+
+        $this->actingAs($admin)->getJson(route('cotizaciones.datosParaPedido', $cot))
+            ->assertOk()
+            ->assertJsonStructure([
+                'cotizacion_id', 'cliente_id', 'total',
+                'cliente' => ['id', 'nombre', 'apellido', 'email', 'telefono', 'documento'],
+                'productos' => [['producto_id', 'tipo_producto_id', 'insumo_tela_id', 'atributo_valor_ids', 'sku', 'imagen_url', 'producto_nombre',
+                    'cantidad', 'descripcion', 'lleva_bordado', 'nombre_logo', 'recargo_bordado_unitario', 'ubicacion_logo', 'cantidad_logo',
+                    'talla_id', 'color_id', 'genero_id', 'precio_unitario',
+                    'bordados' => [['ubicacion_bordado_id', 'logo_id', 'nombre_aplicado', 'nombre_logo', 'nombre_logo_aplicado', 'es_personalizada', 'cantidad', 'precio_aplicado']]]],
+            ])
+            ->assertJsonPath('cotizacion_id', $cot->id)
+            ->assertJsonPath('productos.0.recargo_bordado_unitario', 6)
+            ->assertJsonPath('productos.0.cantidad', 5);
+    }
+
+    /** Contrato JSON de las mutaciones (clientes jQuery). */
+    public function test_contrato_json_de_las_mutaciones(): void
+    {
+        $admin = $this->admin();
+        $payload = $this->payloadCotizacion($this->cliente()->id);
+        $this->actingAs($admin)->postJson(route('cotizaciones.store'), $payload)
+            ->assertOk()->assertExactJson(['success' => 'Cotización creada exitosamente.']);
+        $cot = Cotizacion::sole();
+
+        $payload['productos'][0]['cantidad'] = 20;
+        $this->actingAs($admin)->putJson(route('cotizaciones.update', $cot), $payload + ['estado' => 'Pendiente'])
+            ->assertOk()->assertExactJson(['success' => 'Cotización actualizada exitosamente.']);
+        $this->assertSame(20, (int) $cot->productos()->sole()->cantidad);
+
+        $this->actingAs($admin)->putJson(route('cotizaciones.updateEstado', $cot), ['estado' => 'Aprobada'])
+            ->assertOk()->assertExactJson(['success' => 'Estado actualizado a: Aprobada', 'estado' => 'Aprobada']);
+
+        $this->actingAs($admin)->deleteJson(route('cotizaciones.destroy', $cot))
+            ->assertOk()->assertExactJson(['success' => 'Cotización eliminada exitosamente.']);
+        $this->assertSoftDeleted($cot);
+    }
+
+    public function test_reactivar_una_vencida_renueva_la_validez_y_la_tasa(): void
+    {
+        $admin = $this->admin();
+        \App\Models\TasaCambio::create(['moneda' => 'USD', 'valor' => 50, 'fecha_bcv' => today(), 'fuente' => 'test']);
+        $this->actingAs($admin)->postJson(route('cotizaciones.store'), $this->payloadCotizacion($this->cliente()->id));
+        $cot = Cotizacion::sole();
+        $cot->update(['estado' => 'Vencida', 'fecha_cotizacion' => now()->subDays(40), 'fecha_validez' => now()->subDays(20), 'tasa_cambio_valor' => 30]);
+
+        $this->actingAs($admin)->postJson(route('cotizaciones.reactivar', $cot))
+            ->assertOk()->assertJsonPath('success', 'Cotización reactivada correctamente. Nueva validez: '.Cotizacion::diasVigencia().' días.');
+
+        $cot->refresh();
+        $this->assertSame('Pendiente', $cot->estado);
+        $this->assertSame(now()->addDays(Cotizacion::diasVigencia())->toDateString(), $cot->fecha_validez->toDateString());
+        $this->assertEquals(50, (float) $cot->tasa_cambio_valor);
+    }
 }

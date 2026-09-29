@@ -25,6 +25,7 @@ class BordadoPricingService
                 'nombre_aplicado' => trim((string) ($bordado['nombre_aplicado'] ?? '')),
                 'logo_id' => $logoId ? (int) $logoId : null,
                 'es_personalizada' => (bool) ($bordado['es_personalizada'] ?? false),
+                'nombre_logo_aplicado' => $bordado['nombre_logo_aplicado'] ?? null,
                 'cantidad' => max(1, (int) ($bordado['cantidad'] ?? 1)),
                 'precio_aplicado' => (float) ($bordado['precio_aplicado'] ?? 0),
                 'orden' => (int) $index,
@@ -98,6 +99,7 @@ class BordadoPricingService
             return '';
         }
 
-        return Logo::where('id', $logoId)->value('name') ?? '';
+        // Un logo inhabilitado sigue siendo el nombre que se usó en la cotización.
+        return Logo::withTrashed()->where('id', $logoId)->value('name') ?? '';
     }
 }

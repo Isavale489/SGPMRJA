@@ -11,13 +11,12 @@ test('convertir una cotización aprobada en pedido desde el wizard', async ({ pa
   page.on('pageerror', (e) => errores.push(`JS: ${e.message}`));
   page.on('response', (r) => { if (r.status() >= 500) errores.push(`HTTP ${r.status()} ${r.url()}`); });
 
-  await page.goto('/cotizaciones');
-  const fila = page.locator('#cotizaciones-table tbody tr', { hasText: CLIENTE });
+  await page.goto('/cotizaciones', { waitUntil: 'networkidle' });
+  const fila = page.getByRole('row', { name: new RegExp(CLIENTE) }).filter({ hasText: 'Aprobada' });
   await expect(fila).toBeVisible();
-  await expect(fila).toContainText('Aprobada');
 
-  await fila.locator('button[title="Más acciones"]').click();
-  await fila.locator('.convert-to-pedido-btn').click();
+  await fila.getByRole('button', { name: /Más acciones de la cotización/ }).click();
+  await page.getByRole('menuitem', { name: 'Convertir a pedido' }).click();
   await expect(page).toHaveURL(/\/pedidos\?convertir=\d+/);
 
   // Paso 1 — cliente heredado de la cotización; fechas y prioridad.
@@ -47,8 +46,8 @@ test('convertir una cotización aprobada en pedido desde el wizard', async ({ pa
   await page.goto('/pedidos');
   await expect(page.locator('table.dataTable tbody tr', { hasText: CLIENTE })).toBeVisible();
 
-  await page.goto('/cotizaciones');
-  await expect(page.locator('#cotizaciones-table tbody tr', { hasText: CLIENTE })).toContainText('Convertida');
+  await page.goto('/cotizaciones', { waitUntil: 'networkidle' });
+  await expect(page.getByRole('row', { name: new RegExp(CLIENTE) })).toContainText('Convertida');
 
   expect(errores, errores.join('\n')).toEqual([]);
 });

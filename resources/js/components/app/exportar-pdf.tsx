@@ -1,5 +1,5 @@
 import { FileDown } from 'lucide-react';
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 
 import { Campo } from '@/components/app/campo';
 import { Button } from '@/components/ui/button';
@@ -23,13 +23,19 @@ interface Props {
     filtros: FiltroPdf[];
     /** Qué fecha filtra el rango: "Registro" (por defecto), "Ingreso"… */
     fecha?: string;
+    /**
+     * Campos que no son una lista fija (p. ej. un buscador de cliente). `poner`
+     * guarda el parámetro (sin valor, lo quita); se monta de nuevo en cada apertura.
+     */
+    extra?: (poner: (parametro: string, valor?: string) => void) => ReactNode;
 }
 
 const TODOS = 'todos';
 
 /** Reporte PDF (dompdf, sin cambios en el servidor): abre en otra pestaña con los filtros elegidos. */
-export function ExportarPdf({ url, recurso, filtros, fecha = 'Registro' }: Props) {
+export function ExportarPdf({ url, recurso, filtros, fecha = 'Registro', extra }: Props) {
     const [abierto, setAbierto] = useState(false);
+    const poner = (parametro: string, valor?: string) => setValores((a) => ({ ...a, [parametro]: valor ?? TODOS }));
     const [valores, setValores] = useState<Record<string, string>>({});
     const [desde, setDesde] = useState('');
     const [hasta, setHasta] = useState('');
@@ -46,7 +52,13 @@ export function ExportarPdf({ url, recurso, filtros, fecha = 'Registro' }: Props
     };
 
     return (
-        <Dialog open={abierto} onOpenChange={setAbierto}>
+        <Dialog
+            open={abierto}
+            onOpenChange={(a) => {
+                setAbierto(a);
+                if (a && extra) setValores({});
+            }}
+        >
             <DialogTrigger asChild>
                 <Button variant="outline">
                     <FileDown /> Exportar PDF
@@ -73,6 +85,7 @@ export function ExportarPdf({ url, recurso, filtros, fecha = 'Registro' }: Props
                             )}
                         </Campo>
                     ))}
+                    {abierto && extra?.(poner)}
                     <div className="grid grid-cols-2 gap-3">
                         <Campo etiqueta={`${fecha} desde`}>
                             <Input type="date" value={desde} onChange={(e) => setDesde(e.target.value)} />

@@ -110,7 +110,7 @@ export default function Dashboard({ kpis, maestros, pedidos, tendencia, alertaRe
                     <Enlace url={urls.alertas} permitido={puede('movimiento-insumo.ver')} className="group">
                         <Kpi titulo="Insumos en alerta" valor={kpis.insumos_alerta} detalle="en o bajo su existencia mínima" icono={<AlertTriangle />} tono="destructive" />
                     </Enlace>
-                    <Enlace url={urls.cotizaciones} blade permitido={puede('cotizaciones.ver')} className="group">
+                    <Enlace url={urls.cotizaciones} permitido={puede('cotizaciones.ver')} className="group">
                         <Kpi titulo="Cotizaciones por vencer" valor={kpis.cotizaciones_por_vencer} detalle="validez en 7 días o menos" icono={<FileClock />} tono="sky" />
                     </Enlace>
                 </section>

@@ -2,152 +2,254 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\RespondeSegunCliente;
+use App\Http\Requests\GuardarCotizacionRequest;
+use App\Models\BordadoUbicacion;
+use App\Models\Cliente;
+use App\Models\Color;
 use App\Models\Cotizacion;
-use App\Models\Producto;
-use App\Models\TipoProducto;
+use App\Models\Genero;
+use App\Models\Impuesto;
 use App\Models\Logo;
 use App\Models\Pedido;
-use App\Models\Insumo;
-use App\Models\Banco;
-use App\Models\Cliente;
-use App\Models\BordadoUbicacion;
+use App\Models\Talla;
 use App\Models\TasaCambio;
+use App\Models\TipoProducto;
 use App\Services\CotizacionService;
-use App\Services\BordadoPricingService;
-use Illuminate\Validation\ValidationException;
+use App\Support\CatalogoGeografico;
+use App\Support\FiltrosUrl;
+use App\Support\GruposCotizacion;
 use Illuminate\Http\Request;
-use Yajra\DataTables\DataTables;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Validation\Rule;
-use App\Rules\CiRifFormat;
+use Inertia\Inertia;
+use Inertia\Response;
 use PDF;
 
+/**
+ * Cotizaciones (Inertia). Listado con «Ver» por pasos (?ver=ID) y asistente de
+ * 3 pasos (Cliente → Productos → Resumen) en páginas propias para crear y
+ * editar. Pedidos sigue en Blade: consume datos-para-pedido y convertir-a-pedido
+ * (JSON), cuyos contratos fija CotizacionPedidoFlujoTest.
+ */
 class CotizacionController extends Controller
 {
+    use RespondeSegunCliente;
+
     public function __construct(
         private CotizacionService $cotizacionService
     ) {
     }
-    public function index()
+
+    public function index(Request $request): Response
     {
-        $productos = Producto::with([
-            'tipoProducto',
-            'tela:id,nombre,codigo,costo_unitario,unidad_medida',
-            'atributoValores:id,atributo_id,nombre,codigo',
-            'atributoValores.atributo:id,nombre,codigo',
-        ])->where('estado', true)->get();
-
-        // Catálogo = Tipo de Producto. El grid de la cotización se arma desde los Tipos
-        // (no desde filas producto): el cliente elige tela + variaciones al cotizar.
-        $tiposProducto = TipoProducto::withCount(['telas', 'atributos'])
-            ->orderBy('nombre')
-            ->get(['id', 'nombre', 'prefijo', 'imagen', 'precio_confeccion', 'requiere_tela']);
-
-        $logos = Logo::orderBy('name')->get(['id', 'name', 'original_filename']);
-        $insumos = Insumo::all();
-        $bancos = Banco::all();
-        $maxBordadosProducto = parametro('cotizaciones.max_bordados_producto');
-        return view('admin.cotizaciones.index', compact('productos', 'tiposProducto', 'logos', 'insumos', 'bancos', 'maxBordadosProducto'));
-    }
-
-    public function getCotizaciones(Request $request)
-    {
-        // Actualizar automáticamente cotizaciones vencidas
         Cotizacion::actualizarCotizacionesVencidas();
 
-        // Cargar clientes incluso si están eliminados (soft deleted)
-        $cotizaciones = Cotizacion::with(['user:id,name'])
-            ->with([
-                'cliente' => function ($query) {
-                    $query->withTrashed()->with('persona');
-                }
-            ])
+        $filtros = FiltrosUrl::de($request, ['buscar', 'estado', 'desde', 'hasta', 'orden', 'ver'], ['desde', 'hasta']);
+        if (isset($filtros['estado']) && ! in_array($filtros['estado'], self::ESTADOS, true)) {
+            unset($filtros['estado']);
+        }
+
+        return Inertia::render('Cotizaciones/Index', [
+            'registros' => fn () => $this->listado($filtros),
+            'filtros' => (object) $filtros,
+            'detalle' => fn () => isset($filtros['ver']) && ($c = Cotizacion::find((int) $filtros['ver'])) ? $this->detalle($c) : null,
+            'estados' => self::ESTADOS,
+            'diasVigencia' => Cotizacion::diasVigencia(),
+            'iva' => Impuesto::tasaIva(),
+            'terminos' => $this->terminos(),
+            'urls' => [
+                'index' => route('cotizaciones.index', absolute: false),
+                'crear' => route('cotizaciones.create', absolute: false),
+                'reportePdf' => route('cotizaciones.reporte.pdf', absolute: false),
+                'buscarCliente' => route('clientes.search', absolute: false),
+                'pedidos' => url('/pedidos'),
+            ],
+        ]);
+    }
+
+    public const ESTADOS = ['Pendiente', 'Aprobada', 'Vencida', 'Convertida', 'Cancelada'];
+
+    private function listado(array $f)
+    {
+        $q = Cotizacion::query()
+            ->with(['cliente' => fn ($c) => $c->withTrashed()->with('persona')])
             ->select('cotizacion.*');
 
-        if ($request->filled('filter_estado')) {
-            $cotizaciones->where('cotizacion.estado', $request->input('filter_estado'));
+        if (isset($f['estado'])) {
+            $q->where('cotizacion.estado', $f['estado']);
+        }
+        if (isset($f['desde'])) {
+            $q->whereDate('cotizacion.fecha_cotizacion', '>=', $f['desde']);
+        }
+        if (isset($f['hasta'])) {
+            $q->whereDate('cotizacion.fecha_cotizacion', '<=', $f['hasta']);
+        }
+        // Lo que se ve en la fila: n.º (con o sin #), cliente (nombre o documento) y estado.
+        if (isset($f['buscar'])) {
+            $kw = '%'.FiltrosUrl::like($f['buscar']).'%';
+            $numero = ltrim(trim($f['buscar']), '#');
+            $q->where(fn ($w) => $w->where('cotizacion.estado', 'like', $kw)
+                ->when(ctype_digit($numero), fn ($w) => $w->orWhere('cotizacion.id', (int) $numero))
+                ->orWhereHas('cliente', fn ($c) => $c->withTrashed()->whereHas('persona', fn ($p) => $p
+                    ->where('nombre', 'like', $kw)
+                    ->orWhereRaw('CONCAT(tipo_documento, documento_identidad) like ?', [$kw]))));
         }
 
-        if ($request->filled('filter_fecha')) {
-            $cotizaciones->whereDate('cotizacion.fecha_cotizacion', $request->input('filter_fecha'));
+        match ($f['orden'] ?? 'recientes') {
+            'total_desc' => $q->orderByDesc('cotizacion.total')->orderByDesc('cotizacion.id'),
+            'total_asc' => $q->orderBy('cotizacion.total')->orderByDesc('cotizacion.id'),
+            default => $q->orderByDesc('cotizacion.created_at')->orderByDesc('cotizacion.id'),
+        };
+
+        return $q->paginate(15)->appends(Arr::except($f, ['ver']))->through(fn (Cotizacion $c) => $this->fila($c));
+    }
+
+    /** Espejo de `CotizacionFila` en resources/js/pages/Cotizaciones/tipos.ts (lo verifica CotizacionesPaginaTest). */
+    private function fila(Cotizacion $c): array
+    {
+        return [
+            'id' => $c->id,
+            'cliente' => $c->cliente?->nombre ?? 'Cliente no encontrado',
+            'cliente_doc' => $c->cliente?->documento,
+            'cliente_inhabilitado' => (bool) $c->cliente?->trashed(),
+            'fecha' => $c->fecha_cotizacion?->toDateString(),
+            'validez' => $c->fechaLimiteVigencia()?->toDateString(),
+            'total' => (float) $c->total,
+            'tasa' => $this->tasa($c),
+            'estado' => $c->estado,
+            'prioridad' => $c->prioridad ?? 'Normal',
+        ];
+    }
+
+    /** Tasa guardada en la cotización, con su fecha BCV si el valor coincide (null si no la tiene). */
+    private function tasa(Cotizacion $c): ?array
+    {
+        if ((float) $c->tasa_cambio_valor <= 0) {
+            return null;
+        }
+        $fecha = TasaCambio::fechaParaValor($c->tasa_cambio_valor, ($c->fecha_cotizacion ?? $c->created_at)?->toDateString());
+
+        return ['valor' => (float) $c->tasa_cambio_valor, 'fecha' => $fecha?->toDateString()];
+    }
+
+    /** Espejo de `CotizacionDetalle` (tipos.ts): lo que muestra «Ver», sin otra petición. */
+    private function detalle(Cotizacion $c): array
+    {
+        GruposCotizacion::cargar($c)->load(['cliente' => fn ($q) => $q->withTrashed()->with('persona'), 'user:id,name,avatar']);
+
+        return [
+            ...$this->fila($c),
+            'notas' => $c->notas,
+            'condiciones' => $c->condiciones_terminos,
+            'cliente_datos' => $c->cliente?->resumenParaCotizacion(),
+            'creador' => $this->creador($c),
+            'grupos' => GruposCotizacion::desde($c->productos),
+        ];
+    }
+
+    private function creador(Cotizacion $c): ?array
+    {
+        return $c->user ? [
+            'nombre' => $c->user->name,
+            'avatar' => $c->user->avatar ? $c->user->avatar_url : null,
+            'fecha' => $c->created_at?->format('Y-m-d H:i'),
+        ] : null;
+    }
+
+    /** Términos del PDF: el abono mínimo y los días hábiles vienen de la configuración. */
+    private function terminos(): array
+    {
+        return ['abono' => Pedido::porcentajeAbonoMinimo(), 'dias' => Pedido::diasHabilesEntrega()];
+    }
+
+    public function create(): Response
+    {
+        return Inertia::render('Cotizaciones/Formulario', $this->propsFormulario(null));
+    }
+
+    public function edit(Request $request, Cotizacion $cotizacion)
+    {
+        if (! $cotizacion->esEditable()) {
+            return redirect()->route('cotizaciones.index')->with('error', "La cotización #{$cotizacion->id} está {$cotizacion->estado}: ya no se puede editar.");
         }
 
-        $orden = $request->input('filter_orden', 'recientes');
+        return Inertia::render('Cotizaciones/Formulario', $this->propsFormulario($cotizacion));
+    }
 
-        switch ($orden) {
-            case 'total_desc':
-                $cotizaciones->orderBy('cotizacion.total', 'desc');
-                break;
-            case 'total_asc':
-                $cotizaciones->orderBy('cotizacion.total', 'asc');
-                break;
-            case 'recientes':
-            default:
-                $cotizaciones->orderBy('cotizacion.created_at', 'desc');
-                break;
+    /**
+     * Todo lo que usa el asistente viaja como props: el catálogo (tipos con sus
+     * telas y atributos), colores, tallas, géneros, ubicaciones de bordado y
+     * logos. Antes se pedían por AJAX a endpoints de otros módulos, que exigían
+     * sus propios permisos (Colores, Productos).
+     */
+    private function propsFormulario(?Cotizacion $c): array
+    {
+        if ($c) {
+            GruposCotizacion::cargar($c)->load(['cliente' => fn ($q) => $q->withTrashed()->with('persona'), 'user:id,name,avatar']);
         }
-        return DataTables::of($cotizaciones)
-            ->filterColumn('cliente_nombre', function ($query, $keyword) {
-                $query->whereHas('cliente', function ($clienteQuery) use ($keyword) {
-                    $clienteQuery->withTrashed()->whereHas('persona', function ($personaQuery) use ($keyword) {
-                        $personaQuery->where('nombre', 'like', "%{$keyword}%");
-                    });
-                });
-            })
-            ->addColumn('usuario_creador', function ($cotizacion) {
-                return $cotizacion->user ? $cotizacion->user->name : 'N/A';
-            })
-            ->addColumn('cliente_nombre', function ($cotizacion) {
-                if ($cotizacion->cliente) {
-                    $nombreCompleto = trim((string) ($cotizacion->cliente->nombre ?? '')) ?: 'Sin nombre';
-                    // Indicar si el cliente fue eliminado
-                    if ($cotizacion->cliente->deleted_at) {
-                        return $nombreCompleto . ' <span class="badge bg-danger ms-1" title="Cliente eliminado">Eliminado</span>';
-                    }
-                    return $nombreCompleto;
-                }
-                return '<span class="text-danger">Cliente no encontrado</span>';
-            })
-            ->addColumn('cliente_email', function ($cotizacion) {
-                if ($cotizacion->cliente) {
-                    $email = $cotizacion->cliente->email ?: 'N/A';
-                    return $cotizacion->cliente->deleted_at ? '<span class="text-muted">' . $email . '</span>' : $email;
-                }
-                return 'N/A';
-            })
-            ->addColumn('cliente_telefono', function ($cotizacion) {
-                if ($cotizacion->cliente) {
-                    $telefono = $cotizacion->cliente->telefono ?: 'N/A';
-                    return $cotizacion->cliente->deleted_at ? '<span class="text-muted">' . $telefono . '</span>' : $telefono;
-                }
-                return 'N/A';
-            })
-            ->addColumn('ci_rif', function ($cotizacion) {
-                if ($cotizacion->cliente) {
-                    $documento = $cotizacion->cliente->documento ?: 'N/A';
-                    return $cotizacion->cliente->deleted_at ? '<span class="text-muted">' . $documento . '</span>' : $documento;
-                }
-                return 'N/A';
-            })
-            ->addColumn('fecha_cotizacion', function ($cotizacion) {
-                return $cotizacion->fecha_cotizacion ? $cotizacion->fecha_cotizacion->format('d/m/Y') : 'N/A';
-            })
-            ->addColumn('fecha_validez', function ($cotizacion) {
-                return $cotizacion->fecha_validez ? $cotizacion->fecha_validez->format('d/m/Y') : 'N/A';
-            })
-            ->addColumn('actions', function ($cotizacion) {
-                $actions = '<div class="d-flex gap-2 justify-content-center">';
-                $actions .= '<button type="button" class="btn btn-sm btn-soft-info view-btn" data-id="' . $cotizacion->id . '" title="Ver detalles"><i class="ri-eye-fill"></i></button>';
-                $actions .= '<button type="button" class="btn btn-sm btn-soft-success edit-btn" data-id="' . $cotizacion->id . '" title="Editar cotización"><i class="ri-pencil-fill"></i></button>';
-                $actions .= '<button type="button" class="btn btn-sm btn-soft-danger remove-btn" data-id="' . $cotizacion->id . '" title="Eliminar cotización"><i class="ri-delete-bin-fill"></i></button>';
-                $actions .= '<a href="' . route('cotizaciones.pdf', $cotizacion->id) . '" class="btn btn-sm btn-soft-warning" title="Descargar PDF"><i class="ri-file-pdf-fill"></i></a>';
-                $actions .= '</div>';
-                return $actions;
-            })
-            ->rawColumns(['actions', 'cliente_nombre', 'cliente_email', 'cliente_telefono', 'ci_rif'])
-            ->make(true);
+
+        return [
+            'cotizacion' => $c ? [
+                'id' => $c->id,
+                'estado' => $c->estado,
+                'cliente' => $c->cliente?->resumenParaCotizacion(),
+                'fecha' => $c->fecha_cotizacion?->toDateString(),
+                'validez' => $c->fechaLimiteVigencia()?->toDateString(),
+                'prioridad' => $c->prioridad ?? 'Normal',
+                'notas' => $c->notas,
+                'creador' => $this->creador($c),
+                'grupos' => GruposCotizacion::desde($c->productos),
+            ] : null,
+            'catalogo' => TipoProducto::with([
+                'telas' => fn ($q) => $q->where('estado', true)->orderBy('nombre'),
+                'atributos' => fn ($q) => $q->orderBy('tipo_producto_atributo.orden'),
+                'atributos.valores',
+            ])->orderBy('nombre')->get()->map(fn (TipoProducto $t) => [
+                'id' => $t->id,
+                'nombre' => $t->nombre,
+                'prefijo' => $t->prefijo,
+                'imagen' => $t->imagen_url,
+                'precio' => (float) $t->precio_confeccion,
+                'requiere_tela' => (bool) $t->requiere_tela,
+                'telas' => $t->telas->map(fn ($i) => ['id' => $i->id, 'nombre' => $i->nombre, 'codigo' => $i->codigo])->values()->all(),
+                'atributos' => $t->atributos->map(fn ($a) => [
+                    'id' => $a->id,
+                    'nombre' => $a->nombre,
+                    'valores' => $a->valores->map(fn ($v) => ['id' => $v->id, 'nombre' => $v->nombre, 'codigo' => $v->codigo])->values()->all(),
+                ])->values()->all(),
+            ])->all(),
+            'colores' => Color::activo()->orderBy('grupo')->orderBy('nombre')->get()
+                ->map(fn ($x) => ['id' => $x->id, 'nombre' => $x->nombre, 'grupo' => $x->grupo, 'hex' => $x->hex_referencial])->all(),
+            'tallas' => Talla::activo()->orderBy('orden')->orderBy('nombre')->get()
+                ->map(fn ($x) => ['id' => $x->id, 'nombre' => $x->etiqueta ?: $x->nombre, 'grupo' => $x->grupo ?: 'Otras'])->all(),
+            'generos' => Genero::activo()->orderBy('orden')->get()
+                ->map(fn ($x) => ['id' => $x->id, 'nombre' => $x->etiqueta ?: $x->nombre])->all(),
+            'ubicaciones' => BordadoUbicacion::activo()->orderBy('grupo')->orderBy('orden')->orderBy('nombre')->get()
+                ->map(fn ($x) => ['id' => $x->id, 'nombre' => $x->nombre, 'grupo' => $x->grupo ?: 'General', 'precio' => (float) $x->precio_base])->all(),
+            'logos' => Logo::orderBy('name')->get()->map(fn ($x) => ['id' => $x->id, 'nombre' => $x->name, 'archivo' => $x->original_filename])->all(),
+            'maxBordados' => (int) parametro('cotizaciones.max_bordados_producto'),
+            'diasVigencia' => Cotizacion::diasVigencia(),
+            'iva' => Impuesto::tasaIva(),
+            'terminos' => $this->terminos(),
+            'estadosVe' => CatalogoGeografico::mapa(),
+            'urls' => [
+                'index' => route('cotizaciones.index', absolute: false),
+                'guardar' => $c ? route('cotizaciones.update', $c, absolute: false) : route('cotizaciones.store', absolute: false),
+                'resolverVariante' => route('cotizaciones.resolverVariante', absolute: false),
+                'proyeccion' => route('cotizaciones.proyeccionInsumos', absolute: false),
+                'crearCompra' => route('compras.create', absolute: false),
+                'buscarCliente' => route('clientes.search', absolute: false),
+                'buscarPersona' => route('personas.search', absolute: false),
+                'desdePersona' => url('/clientes/from-persona'),
+                'clientes' => route('clientes.index', absolute: false),
+                'checkDocumento' => route('clientes.check-documento', absolute: false),
+                'checkEmail' => route('clientes.check-email', absolute: false),
+                'colores' => route('colores.store', absolute: false),
+                'logos' => route('logos.store', absolute: false),
+                'telas' => url('/tipo-productos'),
+            ],
+        ];
     }
 
     public function getUbicacionesBordado()
@@ -161,108 +263,20 @@ class CotizacionController extends Controller
         return response()->json($catalogo);
     }
 
-    /**
-     * Lanza ValidationException si algún producto excede el máximo de bordados
-     * por prenda. La unidad es la SUMA de cantidades de cada línea de bordado
-     * (una ubicación con cantidad 10 son 10 bordados), no el número de líneas.
-     */
-    private function assertMaxBordados(Request $request, int $max): void
+    public function store(GuardarCotizacionRequest $request)
     {
-        $indices = BordadoPricingService::indicesQueExcedenMaximo($request->input('productos', []), $max);
+        $cotizacion = $this->cotizacionService->crear($request->validated());
 
-        if (empty($indices)) {
-            return;
+        if ($this->esInertia($request)) {
+            return redirect()->route('cotizaciones.index', ['ver' => $cotizacion->id])->with('success', "Cotización #{$cotizacion->id} creada.");
         }
-
-        $errores = [];
-        foreach ($indices as $i) {
-            $errores["productos.$i.bordados"] = "No se pueden agregar más de {$max} bordados por producto.";
-        }
-
-        throw ValidationException::withMessages($errores);
-    }
-
-    public function store(Request $request)
-    {
-        $maxBordados = parametro('cotizaciones.max_bordados_producto');
-
-        $request->validate([
-            'cliente_id' => 'required|exists:cliente,id',
-            'fecha_cotizacion' => 'required|date',
-            'fecha_validez' => 'required|date|after_or_equal:fecha_cotizacion',
-            'notas' => 'nullable|string|max:2000',
-            'condiciones_terminos' => 'nullable|string',
-            'productos' => 'required|array|min:1',
-            'productos.*.producto_id' => 'nullable|required_without:productos.*.tipo_producto_id|integer|exists:producto,id',
-            'productos.*.tipo_producto_id' => 'nullable|required_without:productos.*.producto_id|integer|exists:tipo_producto,id',
-            'productos.*.insumo_tela_id' => 'nullable|integer|exists:insumo,id',
-            'productos.*.atributo_valor_ids' => 'nullable|array',
-            'productos.*.atributo_valor_ids.*' => 'integer|exists:atributo_valor,id',
-            'productos.*.cantidad' => 'required|integer|min:1',
-            'productos.*.descripcion' => 'nullable|string|max:500',
-            'productos.*.lleva_bordado' => 'nullable|boolean',
-            'productos.*.talla_id' => ['required', 'integer', Rule::exists('talla', 'id')],
-            'productos.*.color_id' => ['nullable', 'integer', Rule::exists('color', 'id')],
-            'productos.*.genero_id' => ['required', 'integer', Rule::exists('genero', 'id')],
-            'productos.*.insumos' => 'nullable|array',
-            'productos.*.insumos.*.id' => 'required|exists:insumo,id',
-            'productos.*.insumos.*.cantidad_estimada' => 'required|numeric|min:0.01',
-            'productos.*.bordados' => 'nullable|array|required_if:productos.*.lleva_bordado,true|min:1',
-            'productos.*.bordados.*.ubicacion_bordado_id' => 'nullable|exists:bordado_ubicacion,id',
-            'productos.*.bordados.*.nombre_aplicado' => 'required|string|max:120',
-            'productos.*.bordados.*.logo_id' => 'nullable|exists:logo,id',
-            'productos.*.bordados.*.es_personalizada' => 'nullable|boolean',
-            'productos.*.bordados.*.precio_aplicado' => 'required|numeric|min:0',
-            'productos.*.bordados.*.cantidad' => 'nullable|integer|min:1',
-        ], [
-            // Mensajes personalizados
-            'cliente_id.required' => 'Debe seleccionar un cliente.',
-            'cliente_id.exists' => 'El cliente seleccionado no existe.',
-            'fecha_cotizacion.required' => 'La fecha de cotización es obligatoria.',
-            'fecha_cotizacion.date' => 'La fecha de cotización debe ser una fecha válida.',
-            'fecha_validez.required' => 'La fecha de validez es obligatoria.',
-            'fecha_validez.date' => 'La fecha de validez debe ser una fecha válida.',
-            'fecha_validez.after_or_equal' => 'La fecha de validez debe ser igual o posterior a la fecha de cotización.',
-            'productos.required' => 'Debe agregar al menos un producto.',
-            'productos.min' => 'Debe agregar al menos un producto.',
-            'productos.*.producto_id.required_without' => 'Debe seleccionar un producto o configurar una variante (tipo).',
-            'productos.*.producto_id.exists' => 'El producto seleccionado no existe.',
-            'productos.*.tipo_producto_id.required_without' => 'Debe seleccionar un producto o configurar una variante (tipo).',
-            'productos.*.tipo_producto_id.exists' => 'El tipo de producto seleccionado no existe.',
-            'productos.*.cantidad.required' => 'La cantidad es obligatoria.',
-            'productos.*.cantidad.integer' => 'La cantidad debe ser un número entero.',
-            'productos.*.cantidad.min' => 'La cantidad debe ser al menos 1.',
-            'productos.*.descripcion.max' => 'La descripción no puede exceder 500 caracteres.',
-            'productos.*.bordados.*.logo_id.exists' => 'El logo seleccionado no existe en el catálogo.',
-            'productos.*.bordados.required_if' => 'Debe seleccionar al menos una ubicación de bordado.',
-            'productos.*.bordados.min' => 'Debe seleccionar al menos una ubicación de bordado.',
-            'productos.*.bordados.*.nombre_aplicado.required' => 'Cada bordado debe tener un nombre de ubicación.',
-            'productos.*.bordados.*.precio_aplicado.required' => 'Cada bordado debe tener un precio aplicado.',
-            'productos.*.bordados.*.precio_aplicado.numeric' => 'El precio aplicado de cada bordado debe ser numérico.',
-            'productos.*.bordados.*.precio_aplicado.min' => 'El precio aplicado de cada bordado no puede ser negativo.',
-            'productos.*.bordados.*.cantidad.min' => 'La cantidad de cada bordado debe ser al menos 1.',
-            'productos.*.talla_id.required' => 'La talla es obligatoria.',
-            'productos.*.talla_id.exists' => 'La talla seleccionada no es válida.',
-            'productos.*.color_id.exists' => 'El color seleccionado no es válido.',
-            'productos.*.genero_id.required' => 'El género es obligatorio.',
-            'productos.*.genero_id.exists' => 'El género seleccionado no es válido.',
-            'productos.*.insumos.*.id.required' => 'Debe seleccionar un insumo.',
-            'productos.*.insumos.*.id.exists' => 'El insumo seleccionado no existe.',
-            'productos.*.insumos.*.cantidad_estimada.required' => 'La cantidad estimada del insumo es obligatoria.',
-            'productos.*.insumos.*.cantidad_estimada.numeric' => 'La cantidad estimada debe ser un número.',
-            'productos.*.insumos.*.cantidad_estimada.min' => 'La cantidad estimada debe ser mayor a 0.',
-        ]);
-
-        $this->assertMaxBordados($request, $maxBordados);
-
-        $this->cotizacionService->crear($request->all());
 
         return response()->json(['success' => 'Cotización creada exitosamente.']);
     }
 
+    /** JSON de la cotización (lo usaba la vista Blade; se conserva para clientes JSON). */
     public function show($id)
     {
-        // Cargar cliente incluso si está eliminado (soft deleted)
         $cotizacion = Cotizacion::with(['user:id,name,avatar', 'productos.producto.tipoProducto', 'productos.bordados.logo:id,name'])
             ->with([
                 'cliente' => function ($query) {
@@ -271,7 +285,6 @@ class CotizacionController extends Controller
             ])
             ->findOrFail($id);
 
-        // Formatear datos del cliente usando los accessors
         $clienteData = null;
         if ($cotizacion->cliente) {
             $clienteData = [
@@ -291,13 +304,10 @@ class CotizacionController extends Controller
 
         $response = $cotizacion->toArray();
         $response['cliente'] = $clienteData;
-        // Fecha de la tasa BCV del snapshot (null si el valor no coincide con
-        // la tasa vigente a la fecha de la cotización, p. ej. tabla corregida).
         $response['tasa_fecha_fmt'] = optional(TasaCambio::fechaParaValor(
             $cotizacion->tasa_cambio_valor,
             optional($cotizacion->fecha_cotizacion)->toDateString() ?? optional($cotizacion->created_at)->toDateString()
         ))->format('d/m/Y');
-        // Creador real (no se sobrescribe al editar) para el chip "Creada por"
         $response['creador'] = $cotizacion->user ? [
             'name' => $cotizacion->user->name,
             'avatar_url' => $cotizacion->user->avatar_url,
@@ -307,141 +317,82 @@ class CotizacionController extends Controller
         return response()->json($response);
     }
 
-    public function update(Request $request, $id)
+    public function update(GuardarCotizacionRequest $request, $id)
     {
-        $maxBordados = parametro('cotizaciones.max_bordados_producto');
-
-        $request->validate([
-            'cliente_id' => 'required|exists:cliente,id',
-            'fecha_cotizacion' => 'required|date',
-            'fecha_validez' => 'required|date|after_or_equal:fecha_cotizacion',
-            'estado' => 'required|in:Pendiente,Aprobada,Cancelada,Convertida,Vencida',
-            'notas' => 'nullable|string|max:2000',
-            'condiciones_terminos' => 'nullable|string',
-            'productos' => 'required|array|min:1',
-            'productos.*.producto_id' => 'nullable|required_without:productos.*.tipo_producto_id|integer|exists:producto,id',
-            'productos.*.tipo_producto_id' => 'nullable|required_without:productos.*.producto_id|integer|exists:tipo_producto,id',
-            'productos.*.insumo_tela_id' => 'nullable|integer|exists:insumo,id',
-            'productos.*.atributo_valor_ids' => 'nullable|array',
-            'productos.*.atributo_valor_ids.*' => 'integer|exists:atributo_valor,id',
-            'productos.*.cantidad' => 'required|integer|min:1',
-            'productos.*.descripcion' => 'nullable|string|max:500',
-            'productos.*.lleva_bordado' => 'nullable|boolean',
-            'productos.*.talla_id' => ['required', 'integer', Rule::exists('talla', 'id')],
-            'productos.*.color_id' => ['nullable', 'integer', Rule::exists('color', 'id')],
-            'productos.*.genero_id' => ['required', 'integer', Rule::exists('genero', 'id')],
-            'productos.*.insumos' => 'nullable|array',
-            'productos.*.insumos.*.id' => 'required|exists:insumo,id',
-            'productos.*.insumos.*.cantidad_estimada' => 'required|numeric|min:0.01',
-            'productos.*.bordados' => 'nullable|array|required_if:productos.*.lleva_bordado,true|min:1',
-            'productos.*.bordados.*.ubicacion_bordado_id' => 'nullable|exists:bordado_ubicacion,id',
-            'productos.*.bordados.*.nombre_aplicado' => 'required|string|max:120',
-            'productos.*.bordados.*.logo_id' => 'nullable|exists:logo,id',
-            'productos.*.bordados.*.es_personalizada' => 'nullable|boolean',
-            'productos.*.bordados.*.precio_aplicado' => 'required|numeric|min:0',
-            'productos.*.bordados.*.cantidad' => 'nullable|integer|min:1',
-        ], [
-            // Mensajes personalizados
-            'cliente_id.required' => 'Debe seleccionar un cliente.',
-            'cliente_id.exists' => 'El cliente seleccionado no existe.',
-            'fecha_cotizacion.required' => 'La fecha de cotización es obligatoria.',
-            'fecha_cotizacion.date' => 'La fecha de cotización debe ser una fecha válida.',
-            'fecha_validez.required' => 'La fecha de validez es obligatoria.',
-            'fecha_validez.date' => 'La fecha de validez debe ser una fecha válida.',
-            'fecha_validez.after_or_equal' => 'La fecha de validez debe ser igual o posterior a la fecha de cotización.',
-            'estado.required' => 'El estado es obligatorio.',
-            'estado.in' => 'El estado seleccionado no es válido.',
-            'productos.required' => 'Debe agregar al menos un producto.',
-            'productos.min' => 'Debe agregar al menos un producto.',
-            'productos.*.producto_id.required_without' => 'Debe seleccionar un producto o configurar una variante (tipo).',
-            'productos.*.producto_id.exists' => 'El producto seleccionado no existe.',
-            'productos.*.tipo_producto_id.required_without' => 'Debe seleccionar un producto o configurar una variante (tipo).',
-            'productos.*.tipo_producto_id.exists' => 'El tipo de producto seleccionado no existe.',
-            'productos.*.cantidad.required' => 'La cantidad es obligatoria.',
-            'productos.*.cantidad.integer' => 'La cantidad debe ser un número entero.',
-            'productos.*.cantidad.min' => 'La cantidad debe ser al menos 1.',
-            'productos.*.descripcion.max' => 'La descripción no puede exceder 500 caracteres.',
-            'productos.*.bordados.*.logo_id.exists' => 'El logo seleccionado no existe en el catálogo.',
-            'productos.*.bordados.required_if' => 'Debe seleccionar al menos una ubicación de bordado.',
-            'productos.*.bordados.min' => 'Debe seleccionar al menos una ubicación de bordado.',
-            'productos.*.bordados.*.nombre_aplicado.required' => 'Cada bordado debe tener un nombre de ubicación.',
-            'productos.*.bordados.*.precio_aplicado.required' => 'Cada bordado debe tener un precio aplicado.',
-            'productos.*.bordados.*.precio_aplicado.numeric' => 'El precio aplicado de cada bordado debe ser numérico.',
-            'productos.*.bordados.*.precio_aplicado.min' => 'El precio aplicado de cada bordado no puede ser negativo.',
-            'productos.*.bordados.*.cantidad.min' => 'La cantidad de cada bordado debe ser al menos 1.',
-            'productos.*.talla_id.required' => 'La talla es obligatoria.',
-            'productos.*.talla_id.exists' => 'La talla seleccionada no es válida.',
-            'productos.*.color_id.exists' => 'El color seleccionado no es válido.',
-            'productos.*.genero_id.required' => 'El género es obligatorio.',
-            'productos.*.genero_id.exists' => 'El género seleccionado no es válido.',
-            'productos.*.insumos.*.id.required' => 'Debe seleccionar un insumo.',
-            'productos.*.insumos.*.id.exists' => 'El insumo seleccionado no existe.',
-            'productos.*.insumos.*.cantidad_estimada.required' => 'La cantidad estimada del insumo es obligatoria.',
-            'productos.*.insumos.*.cantidad_estimada.numeric' => 'La cantidad estimada debe ser un número.',
-            'productos.*.insumos.*.cantidad_estimada.min' => 'La cantidad estimada debe ser mayor a 0.',
-        ]);
-
-        $this->assertMaxBordados($request, $maxBordados);
-
         $cotizacion = Cotizacion::findOrFail($id);
+        if (! $cotizacion->esEditable()) {
+            return $this->rechazar($request, "La cotización está {$cotizacion->estado}: ya no se puede editar.");
+        }
 
-        $this->cotizacionService->actualizar($cotizacion, $request->all());
+        $this->cotizacionService->actualizar($cotizacion, $request->validated());
+
+        if ($this->esInertia($request)) {
+            return redirect()->route('cotizaciones.index', ['ver' => $cotizacion->id])->with('success', "Cotización #{$cotizacion->id} actualizada.");
+        }
 
         return response()->json(['success' => 'Cotización actualizada exitosamente.']);
     }
 
-    public function reactivar($id)
+    public function reactivar(Request $request, $id)
     {
         $cotizacion = Cotizacion::findOrFail($id);
-        $this->cotizacionService->reactivar($cotizacion);
+        try {
+            $this->cotizacionService->reactivar($cotizacion);
+        } catch (\InvalidArgumentException $e) {
+            return $this->rechazar($request, $e->getMessage());
+        }
         $dias = Cotizacion::diasVigencia();
-        return response()->json(['success' => "Cotización reactivada correctamente. Nueva validez: {$dias} días."]);
+        $mensaje = "Cotización reactivada correctamente. Nueva validez: {$dias} días.";
+
+        return $this->responder($request, $mensaje, ['success' => $mensaje]);
     }
 
-    public function destroy($id)
+    public function destroy(Request $request, $id)
     {
         $cotizacion = Cotizacion::findOrFail($id);
+        if (! $cotizacion->esEditable()) {
+            return $this->rechazar($request, "La cotización está {$cotizacion->estado}: no se puede eliminar.");
+        }
         $cotizacion->delete();
 
-        \Log::warning('Cotización eliminada', [
+        Log::warning('Cotización eliminada', [
             'cotizacion_id' => $id,
             'cliente_id' => $cotizacion->cliente_id,
             'total' => $cotizacion->total,
             'user_id' => auth()->id(),
         ]);
 
-        return response()->json(['success' => 'Cotización eliminada exitosamente.']);
+        return $this->responder($request, "Cotización #{$cotizacion->id} eliminada.", ['success' => 'Cotización eliminada exitosamente.']);
     }
 
     public function reportePdf(Request $request)
     {
+        $f = FiltrosUrl::de($request, ['estado', 'cliente_id', 'cliente', 'fecha_desde', 'fecha_hasta', 'orden'], ['fecha_desde', 'fecha_hasta']);
+
         $query = Cotizacion::with(['user:id,name', 'cliente.persona']);
-        if ($request->filled('estado')) {
-            $query->where('estado', $request->estado);
+        if (isset($f['estado'])) {
+            $query->where('estado', $f['estado']);
         }
-        // Cliente: preferimos el id exacto (Select2 del modal); si no viene, se
-        // conserva la búsqueda parcial por nombre/razón social o documento.
-        if ($request->filled('cliente_id')) {
-            $query->where('cliente_id', $request->cliente_id);
-        } elseif ($request->filled('cliente')) {
-            $term = trim($request->cliente);
+        // Cliente: el id exacto (buscador del diálogo); si no viene, búsqueda parcial por nombre o documento.
+        if (isset($f['cliente_id'])) {
+            $query->where('cliente_id', (int) $f['cliente_id']);
+        } elseif (isset($f['cliente'])) {
+            $term = '%'.FiltrosUrl::like($f['cliente']).'%';
             $query->whereHas('cliente', function ($c) use ($term) {
                 $c->withTrashed()->whereHas('persona', function ($p) use ($term) {
-                    $p->where('nombre', 'like', "%{$term}%")
-                      ->orWhere('documento_identidad', 'like', "%{$term}%");
+                    $p->where('nombre', 'like', $term)
+                      ->orWhere('documento_identidad', 'like', $term);
                 });
             });
         }
-        // Fecha de negocio de la cotización (paridad con el listado y la factura).
-        if ($request->filled('fecha_desde')) {
-            $query->whereDate('fecha_cotizacion', '>=', $request->fecha_desde);
+        if (isset($f['fecha_desde'])) {
+            $query->whereDate('fecha_cotizacion', '>=', $f['fecha_desde']);
         }
-        if ($request->filled('fecha_hasta')) {
-            $query->whereDate('fecha_cotizacion', '<=', $request->fecha_hasta);
+        if (isset($f['fecha_hasta'])) {
+            $query->whereDate('fecha_cotizacion', '<=', $f['fecha_hasta']);
         }
 
-        // Orden (paridad con el "Ordenar por" del listado en pantalla).
-        $orden = $request->input('orden', 'recientes');
+        $orden = $f['orden'] ?? 'recientes';
         switch ($orden) {
             case 'total_desc':
                 $query->orderBy('total', 'desc');
@@ -458,34 +409,35 @@ class CotizacionController extends Controller
         $cotizaciones = $query->get();
 
         $filtros = [];
-        if ($request->filled('estado')) {
-            $filtros['Estado'] = $request->estado;
+        if (isset($f['estado'])) {
+            $filtros['Estado'] = $f['estado'];
         }
-        if ($request->filled('cliente_id')) {
-            $cli = Cliente::withTrashed()->with('persona')->find($request->cliente_id);
-            $filtros['Cliente'] = $cli ? ($cli->nombre ?: '#' . $request->cliente_id) : '#' . $request->cliente_id;
-        } elseif ($request->filled('cliente')) {
-            $filtros['Cliente'] = trim($request->cliente);
+        if (isset($f['cliente_id'])) {
+            $cli = Cliente::withTrashed()->with('persona')->find((int) $f['cliente_id']);
+            $filtros['Cliente'] = $cli ? ($cli->nombre ?: '#'.$f['cliente_id']) : '#'.$f['cliente_id'];
+        } elseif (isset($f['cliente'])) {
+            $filtros['Cliente'] = trim($f['cliente']);
         }
-        if ($rango = \App\Support\ReporteFiltros::rango($request->fecha_desde, $request->fecha_hasta)) {
+        if ($rango = \App\Support\ReporteFiltros::rango($f['fecha_desde'] ?? null, $f['fecha_hasta'] ?? null)) {
             $filtros['Fecha de emisión'] = $rango;
         }
         $filtros['Orden'] = ['recientes' => 'Más recientes', 'total_desc' => 'Mayor total', 'total_asc' => 'Menor total'][$orden];
 
         $pdf = PDF::loadView('admin.cotizaciones.reporte_pdf', compact('cotizaciones', 'filtros'))
             ->setPaper('a4', 'portrait');
-        return $pdf->stream('reporte_cotizaciones_' . now()->format('Ymd_His') . '.pdf');
+
+        return $pdf->stream('reporte_cotizaciones_'.now()->format('Ymd_His').'.pdf');
     }
 
     public function reporteGeneral()
     {
         $cotizaciones = Cotizacion::with('user:id,name')->get();
+
         return view('admin.cotizaciones.reporte_general', compact('cotizaciones'));
     }
 
     public function cotizacionPdf(Cotizacion $cotizacion)
     {
-        // Cargar relaciones necesarias (incluyendo clientes eliminados y productos eliminados/tipos)
         $cotizacion->load(['user:id,name']);
 
         $cotizacion->load([
@@ -502,17 +454,17 @@ class CotizacionController extends Controller
             'productos.bordados.logo:id,name',
         ]);
 
-        // Cálculos financieros
-        $ivaTasa = 0.16; // 16 %
+        // IVA del catálogo de impuestos (la misma tasa que muestra la pantalla).
+        $ivaPorcentaje = Impuesto::tasaIva();
         $subtotal = $cotizacion->total;
         $descuento = 0; // Ajustable en el futuro si se implementa
-        $iva = round(($subtotal - $descuento) * $ivaTasa, 2);
+        $iva = round(($subtotal - $descuento) * $ivaPorcentaje / 100, 2);
         $totalPagar = round($subtotal - $descuento + $iva, 2);
 
         // Tasa de cambio aplicada (snapshot de la cotización) + su fecha BCV exacta.
         $tasaValor = $cotizacion->tasa_cambio_valor;
         $tasaFecha = $tasaValor
-            ? optional(\App\Models\TasaCambio::tasaVigente(
+            ? optional(TasaCambio::tasaVigente(
                 \Illuminate\Support\Carbon::parse($cotizacion->fecha_cotizacion ?? $cotizacion->created_at)->toDateString(), 'USD'
             ))->fecha_bcv
             : null;
@@ -522,37 +474,41 @@ class CotizacionController extends Controller
             'subtotal' => $subtotal,
             'descuento' => $descuento,
             'iva' => $iva,
+            'ivaPorcentaje' => $ivaPorcentaje,
             'totalPagar' => $totalPagar,
             'tasaValor' => $tasaValor,
             'tasaFecha' => $tasaFecha,
         ])->setPaper('a4', 'portrait');
 
-        return $pdf->stream('cotizacion_' . $cotizacion->id . '.pdf');
+        return $pdf->stream('cotizacion_'.$cotizacion->id.'.pdf');
     }
 
     /**
-     * Actualizar estado de cotización via AJAX
+     * Cambio de estado manual (menú del listado): solo las transiciones de
+     * Cotizacion::TRANSICIONES. JSON: `{success, estado}` / 422 `{error}` como
+     * siempre.
      */
     public function updateEstado(Request $request, $id)
     {
         $request->validate([
-            'estado' => 'required|in:Pendiente,Aprobada,Cancelada,Convertida,Vencida'
+            'estado' => 'required|in:Pendiente,Aprobada,Cancelada,Convertida,Vencida',
         ]);
 
         $cotizacion = Cotizacion::findOrFail($id);
 
-        // No permitir cambiar estado si ya fue convertida
-        if ($cotizacion->estado === 'Convertida') {
-            return response()->json([
-                'error' => 'No se puede cambiar el estado de una cotización ya convertida a pedido.'
-            ], 422);
+        try {
+            $this->cotizacionService->cambiarEstado($cotizacion, $request->estado);
+        } catch (\InvalidArgumentException $e) {
+            return $this->esInertia($request)
+                ? back()->with('error', $e->getMessage())
+                : response()->json(['error' => $e->getMessage()], 422);
         }
 
-        $cotizacion->update(['estado' => $request->estado]);
+        $textos = ['Aprobada' => 'aprobada', 'Cancelada' => 'cancelada', 'Pendiente' => 'de nuevo en Pendiente'];
 
-        return response()->json([
-            'success' => 'Estado actualizado a: ' . $request->estado,
-            'estado' => $request->estado
+        return $this->responder($request, "Cotización #{$cotizacion->id} {$textos[$request->estado]}.", [
+            'success' => 'Estado actualizado a: '.$request->estado,
+            'estado' => $request->estado,
         ]);
     }
 
@@ -579,6 +535,8 @@ class CotizacionController extends Controller
         $datosParaPedido = [
             'cotizacion_id' => $cotizacion->id,
             'cliente_id' => $cotizacion->cliente_id,
+            // Clave nueva (no rompe el contrato): el pedido hereda la prioridad.
+            'prioridad' => $cotizacion->prioridad ?? 'Normal',
             'cliente' => $cotizacion->cliente ? [
                 'id' => $cotizacion->cliente->id,
                 'nombre' => $cotizacion->cliente->nombre,
@@ -650,7 +608,7 @@ class CotizacionController extends Controller
     }
 
     /**
-     * Convertir cotización a pedido directamente (endpoint atómico).
+     * Convertir cotización a pedido directamente (endpoint atómico, JSON).
      */
     public function convertirAPedido($id)
     {

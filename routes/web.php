@@ -130,6 +130,10 @@ Route::middleware(['auth', 'throttle:60,1', 'active.user', 'recovery.questions.r
         Route::delete('pedidos/{pedido}', [PedidoController::class, 'destroy'])->name('pedidos.destroy');
 
         // Cotizaciones (escritura)
+        // Asistente en página propia (rutas fijas antes del comodín {cotizacion}).
+        Route::get('cotizaciones/crear', [CotizacionController::class, 'create'])->name('cotizaciones.create');
+        Route::get('cotizaciones/resolver-variante', [ProductoController::class, 'resolverVariante'])->name('cotizaciones.resolverVariante');
+        Route::get('cotizaciones/{cotizacion}/editar', [CotizacionController::class, 'edit'])->whereNumber('cotizacion')->name('cotizaciones.edit');
         Route::post('cotizaciones', [CotizacionController::class, 'store'])->name('cotizaciones.store');
         Route::put('cotizaciones/{cotizacion}', [CotizacionController::class, 'update'])->name('cotizaciones.update');
         Route::delete('cotizaciones/{cotizacion}', [CotizacionController::class, 'destroy'])->name('cotizaciones.destroy');
@@ -158,12 +162,11 @@ Route::middleware(['auth', 'throttle:60,1', 'active.user', 'recovery.questions.r
 
         // Cotizaciones (lectura + conversión)
         Route::get('cotizaciones', [CotizacionController::class, 'index'])->name('cotizaciones.index');
-        Route::get('cotizaciones-data', [CotizacionController::class, 'getCotizaciones'])->name('cotizaciones.data');
         // Proyección en vivo de insumos desde el wizard (líneas aún sin guardar).
         Route::post('cotizaciones/proyeccion-insumos', [DisponibilidadInsumoController::class, 'proyectarLineas'])->name('cotizaciones.proyeccionInsumos');
         Route::get('cotizaciones/reporte/pdf', [CotizacionController::class, 'reportePdf'])->name('cotizaciones.reporte.pdf');
         Route::get('cotizaciones/reporte', [CotizacionController::class, 'reporteGeneral'])->name('cotizaciones.reporteGeneral');
-        Route::get('cotizaciones/{cotizacion}', [CotizacionController::class, 'show'])->name('cotizaciones.show');
+        Route::get('cotizaciones/{cotizacion}', [CotizacionController::class, 'show'])->whereNumber('cotizacion')->name('cotizaciones.show');
         Route::get('cotizaciones/{cotizacion}/pdf', [CotizacionController::class, 'cotizacionPdf'])->name('cotizaciones.pdf');
         Route::put('cotizaciones/{cotizacion}/estado', [CotizacionController::class, 'updateEstado'])->name('cotizaciones.updateEstado');
         Route::get('cotizaciones/{cotizacion}/datos-para-pedido', [CotizacionController::class, 'getDatosParaPedido'])->name('cotizaciones.datosParaPedido');

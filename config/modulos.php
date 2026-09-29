@@ -170,12 +170,12 @@ return [
             'gestionar'  => 'Crear, editar y eliminar cotizaciones', // solo-admin
         ],
         'rutas' => [
-            'cotizaciones.index|cotizaciones.data|cotizaciones.reporteGeneral|cotizaciones.show|cotizaciones.ubicacionesBordado.data|cotizaciones.proyeccionInsumos' => 'ver',
+            'cotizaciones.index|cotizaciones.reporteGeneral|cotizaciones.show|cotizaciones.ubicacionesBordado.data|cotizaciones.proyeccionInsumos' => 'ver',
             'cotizaciones.reporte.pdf|cotizaciones.pdf' => 'pdf',
             // conversion a pedido (acceso compartido con Supervisor)
             'cotizaciones.datosParaPedido|cotizaciones.convertirAPedido|cotizaciones.updateEstado|cotizaciones.reactivar' => 'convertir',
             // solo-admin (escritura): hoy en el grupo role:Administrador
-            'cotizaciones.store|cotizaciones.create|cotizaciones.update|cotizaciones.destroy|cotizaciones.edit' => 'gestionar',
+            'cotizaciones.store|cotizaciones.create|cotizaciones.update|cotizaciones.destroy|cotizaciones.edit|cotizaciones.resolverVariante' => 'gestionar',
         ],
     ],
 

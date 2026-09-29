@@ -58,10 +58,10 @@ test('un enlace del menú a un módulo Blade navega con recarga completa', async
   const errores = vigilarErrores(page);
   await page.goto('/plataforma/componentes');
   await page.getByRole('button', { name: 'Gestión Operativa' }).click();
-  await page.getByRole('link', { name: 'Cotizaciones' }).click();
+  await page.getByRole('link', { name: 'Pedidos' }).click();
 
-  await expect(page).toHaveURL(/\/cotizaciones$/);
-  await expect(page.locator('#cotizaciones-table')).toBeVisible(); // página Blade real
+  await expect(page).toHaveURL(/\/pedidos$/);
+  await expect(page.locator('table.dataTable')).toBeVisible(); // página Blade real
   expect(errores, errores.join('\n')).toEqual([]);
 });
 
