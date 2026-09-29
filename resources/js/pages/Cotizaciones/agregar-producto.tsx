@@ -896,59 +896,70 @@ function AltaColor({ colores, url, onCerrar, onCreado }: { colores: ColorCatalog
                     <DialogTitle>Nuevo color</DialogTitle>
                     <DialogDescription>Se agrega al catálogo de colores y queda elegido.</DialogDescription>
                 </DialogHeader>
-                <div className="grid gap-4">
-                    <p className="bg-muted/50 flex items-center gap-2 rounded-md p-3 text-sm font-medium">
-                        <Muestra hex={/^#[0-9a-f]{6}$/i.test(hex) ? hex : null} className="size-6" /> {nombre.trim() || 'Nombre del color'}
-                    </p>
-                    <Campo etiqueta="Nombre" requerido error={errores.nombre}>
-                        <Input value={nombre} maxLength={100} onChange={(e) => setNombre(e.target.value)} placeholder="Ej.: Azul marino" />
-                    </Campo>
-                    <Campo etiqueta="Grupo" error={errores.grupo}>
-                        {(control) => (
-                            <Select value={grupo || SIN} onValueChange={(v) => setGrupo(v === SIN ? '' : v)}>
-                                <SelectTrigger {...control} className="w-full">
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value={SIN}>Sin grupo</SelectItem>
-                                    {grupos.map((g) => (
-                                        <SelectItem key={g} value={g}>
-                                            {g}
-                                        </SelectItem>
-                                    ))}
-                                    <SelectItem value={NUEVO}>Nuevo grupo…</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        )}
-                    </Campo>
-                    {grupo === NUEVO && (
-                        <Campo etiqueta="Nombre del grupo nuevo">
-                            <Input value={grupoNuevo} maxLength={100} onChange={(e) => setGrupoNuevo(e.target.value)} />
+                {/* <form> propio: Enter guarda. stopPropagation: el diálogo vive en un portal y el
+                    submit subiría por el árbol de React hasta el formulario de la página. */}
+                <form
+                    className="grid gap-4"
+                    onSubmit={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        if (!enviando) void guardar();
+                    }}
+                >
+                    <div className="grid gap-4">
+                        <p className="bg-muted/50 flex items-center gap-2 rounded-md p-3 text-sm font-medium">
+                            <Muestra hex={/^#[0-9a-f]{6}$/i.test(hex) ? hex : null} className="size-6" /> {nombre.trim() || 'Nombre del color'}
+                        </p>
+                        <Campo etiqueta="Nombre" requerido error={errores.nombre}>
+                            <Input value={nombre} maxLength={100} onChange={(e) => setNombre(e.target.value)} placeholder="Ej.: Azul marino" />
                         </Campo>
-                    )}
-                    <Campo etiqueta="Color HEX referencial" requerido error={errores.hex_referencial}>
-                        {(control) => (
-                            <div className="flex items-center gap-2">
-                                <input
-                                    type="color"
-                                    value={/^#[0-9a-f]{6}$/i.test(hex) ? hex : '#000000'}
-                                    onChange={(e) => setHex(e.target.value.toUpperCase())}
-                                    aria-label="Elegir el color"
-                                    className="h-9 w-12 cursor-pointer rounded border"
-                                />
-                                <Input {...control} value={hex} maxLength={7} onChange={(e) => setHex(e.target.value.toUpperCase())} className="w-32 font-mono uppercase" />
-                            </div>
+                        <Campo etiqueta="Grupo" error={errores.grupo}>
+                            {(control) => (
+                                <Select value={grupo || SIN} onValueChange={(v) => setGrupo(v === SIN ? '' : v)}>
+                                    <SelectTrigger {...control} className="w-full">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value={SIN}>Sin grupo</SelectItem>
+                                        {grupos.map((g) => (
+                                            <SelectItem key={g} value={g}>
+                                                {g}
+                                            </SelectItem>
+                                        ))}
+                                        <SelectItem value={NUEVO}>Nuevo grupo…</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            )}
+                        </Campo>
+                        {grupo === NUEVO && (
+                            <Campo etiqueta="Nombre del grupo nuevo">
+                                <Input value={grupoNuevo} maxLength={100} onChange={(e) => setGrupoNuevo(e.target.value)} />
+                            </Campo>
                         )}
-                    </Campo>
-                </div>
-                <DialogFooter>
-                    <Button variant="outline" onClick={onCerrar}>
-                        Cancelar
-                    </Button>
-                    <Button onClick={guardar} disabled={enviando}>
-                        {enviando ? 'Guardando…' : 'Guardar y elegir'}
-                    </Button>
-                </DialogFooter>
+                        <Campo etiqueta="Color HEX referencial" requerido error={errores.hex_referencial}>
+                            {(control) => (
+                                <div className="flex items-center gap-2">
+                                    <input
+                                        type="color"
+                                        value={/^#[0-9a-f]{6}$/i.test(hex) ? hex : '#000000'}
+                                        onChange={(e) => setHex(e.target.value.toUpperCase())}
+                                        aria-label="Elegir el color"
+                                        className="h-9 w-12 cursor-pointer rounded border"
+                                    />
+                                    <Input {...control} value={hex} maxLength={7} onChange={(e) => setHex(e.target.value.toUpperCase())} className="w-32 font-mono uppercase" />
+                                </div>
+                            )}
+                        </Campo>
+                    </div>
+                    <DialogFooter>
+                        <Button type="button" variant="outline" onClick={onCerrar}>
+                            Cancelar
+                        </Button>
+                        <Button type="submit" disabled={enviando}>
+                            {enviando ? 'Guardando…' : 'Guardar y elegir'}
+                        </Button>
+                    </DialogFooter>
+                </form>
             </DialogContent>
         </Dialog>
     );
@@ -988,60 +999,71 @@ function AltaTela({ url, onCerrar, onCreada }: { url: string; onCerrar: () => vo
                     <DialogTitle>Nueva tela</DialogTitle>
                     <DialogDescription>Se registra como insumo de tipo Tela, se asigna a este producto y queda elegida.</DialogDescription>
                 </DialogHeader>
-                <div className="grid gap-4 sm:grid-cols-2">
-                    <Campo etiqueta="Nombre" requerido error={errores.nombre} className="sm:col-span-2">
-                        <Input value={d.nombre} maxLength={100} onChange={(e) => poner({ nombre: e.target.value })} />
-                    </Campo>
-                    <Campo etiqueta="Código" error={errores.codigo} ayuda="2 a 8 letras mayúsculas o números. Forma parte del SKU.">
-                        <Input value={d.codigo} maxLength={8} onChange={(e) => poner({ codigo: e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '') })} className="font-mono uppercase" />
-                    </Campo>
-                    <Campo etiqueta="Unidad de medida" requerido error={errores.unidad_medida}>
-                        {(control) => (
-                            <Select value={d.unidad} onValueChange={(v) => poner({ unidad: v })}>
-                                <SelectTrigger {...control} className="w-full">
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {UNIDADES_TELA.map((u) => (
-                                        <SelectItem key={u} value={u}>
-                                            {u}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                {/* <form> propio: Enter guarda. stopPropagation: el diálogo vive en un portal y el
+                    submit subiría por el árbol de React hasta el formulario de la página. */}
+                <form
+                    className="grid gap-4"
+                    onSubmit={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        if (!enviando) void guardar();
+                    }}
+                >
+                    <div className="grid gap-4 sm:grid-cols-2">
+                        <Campo etiqueta="Nombre" requerido error={errores.nombre} className="sm:col-span-2">
+                            <Input value={d.nombre} maxLength={100} onChange={(e) => poner({ nombre: e.target.value })} />
+                        </Campo>
+                        <Campo etiqueta="Código" error={errores.codigo} ayuda="2 a 8 letras mayúsculas o números. Forma parte del SKU.">
+                            <Input value={d.codigo} maxLength={8} onChange={(e) => poner({ codigo: e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '') })} className="font-mono uppercase" />
+                        </Campo>
+                        <Campo etiqueta="Unidad de medida" requerido error={errores.unidad_medida}>
+                            {(control) => (
+                                <Select value={d.unidad} onValueChange={(v) => poner({ unidad: v })}>
+                                    <SelectTrigger {...control} className="w-full">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {UNIDADES_TELA.map((u) => (
+                                            <SelectItem key={u} value={u}>
+                                                {u}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            )}
+                        </Campo>
+                        <label className="flex items-center gap-2 text-sm sm:col-span-2">
+                            <Switch checked={d.inventariable} onCheckedChange={(v) => poner({ inventariable: v })} /> Inventariable (gestiona existencias)
+                        </label>
+                        {d.inventariable && (
+                            <div className="grid grid-cols-3 gap-2 sm:col-span-2">
+                                <Campo etiqueta="Existencia mínima" error={errores.stock_minimo}>
+                                    <Input type="number" min={0} step="0.01" value={d.minimo} onChange={(e) => poner({ minimo: e.target.value })} className="tabular" />
+                                </Campo>
+                                <Campo etiqueta="Existencia actual" error={errores.stock_actual}>
+                                    <Input type="number" min={0} step="0.01" value={d.actual} onChange={(e) => poner({ actual: e.target.value })} className="tabular" />
+                                </Campo>
+                                <Campo etiqueta="Existencia máxima" error={errores.stock_maximo}>
+                                    <Input type="number" min={0} step="0.01" value={d.maximo} onChange={(e) => poner({ maximo: e.target.value })} className="tabular" />
+                                </Campo>
+                            </div>
                         )}
-                    </Campo>
-                    <label className="flex items-center gap-2 text-sm sm:col-span-2">
-                        <Switch checked={d.inventariable} onCheckedChange={(v) => poner({ inventariable: v })} /> Inventariable (gestiona existencias)
-                    </label>
-                    {d.inventariable && (
-                        <div className="grid grid-cols-3 gap-2 sm:col-span-2">
-                            <Campo etiqueta="Existencia mínima" error={errores.stock_minimo}>
-                                <Input type="number" min={0} step="0.01" value={d.minimo} onChange={(e) => poner({ minimo: e.target.value })} className="tabular" />
-                            </Campo>
-                            <Campo etiqueta="Existencia actual" error={errores.stock_actual}>
-                                <Input type="number" min={0} step="0.01" value={d.actual} onChange={(e) => poner({ actual: e.target.value })} className="tabular" />
-                            </Campo>
-                            <Campo etiqueta="Existencia máxima" error={errores.stock_maximo}>
-                                <Input type="number" min={0} step="0.01" value={d.maximo} onChange={(e) => poner({ maximo: e.target.value })} className="tabular" />
-                            </Campo>
-                        </div>
-                    )}
-                    <Campo etiqueta="Costo unitario ($)" requerido error={errores.costo_unitario}>
-                        <Input type="number" min={0.01} step="0.01" inputMode="decimal" value={d.costo} onChange={(e) => poner({ costo: e.target.value })} className="tabular" />
-                    </Campo>
-                    <label className="flex items-center gap-2 self-end pb-2 text-sm">
-                        <Switch checked={d.activo} onCheckedChange={(v) => poner({ activo: v })} /> Activa
-                    </label>
-                </div>
-                <DialogFooter>
-                    <Button variant="outline" onClick={onCerrar}>
-                        Cancelar
-                    </Button>
-                    <Button onClick={guardar} disabled={enviando}>
-                        {enviando ? 'Guardando…' : 'Guardar y elegir'}
-                    </Button>
-                </DialogFooter>
+                        <Campo etiqueta="Costo unitario ($)" requerido error={errores.costo_unitario}>
+                            <Input type="number" min={0.01} step="0.01" inputMode="decimal" value={d.costo} onChange={(e) => poner({ costo: e.target.value })} className="tabular" />
+                        </Campo>
+                        <label className="flex items-center gap-2 self-end pb-2 text-sm">
+                            <Switch checked={d.activo} onCheckedChange={(v) => poner({ activo: v })} /> Activa
+                        </label>
+                    </div>
+                    <DialogFooter>
+                        <Button type="button" variant="outline" onClick={onCerrar}>
+                            Cancelar
+                        </Button>
+                        <Button type="submit" disabled={enviando}>
+                            {enviando ? 'Guardando…' : 'Guardar y elegir'}
+                        </Button>
+                    </DialogFooter>
+                </form>
             </DialogContent>
         </Dialog>
     );

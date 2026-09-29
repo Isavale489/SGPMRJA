@@ -448,20 +448,31 @@ function AltaLogo({ nombreInicial, url, onCerrar, onCreado }: { nombreInicial: s
                     <DialogTitle>Registrar logo</DialogTitle>
                     <DialogDescription>Queda elegido para esta ubicación.</DialogDescription>
                 </DialogHeader>
-                <Campo etiqueta="Nombre" requerido error={errores.name}>
-                    <Input value={nombre} maxLength={120} onChange={(e) => setNombre(e.target.value)} autoFocus />
-                </Campo>
-                <Campo etiqueta="Archivo" error={errores.original_filename} ayuda="Si lo dejas vacío: «<nombre>.emb».">
-                    <Input value={archivo} maxLength={150} placeholder="logo.emb" onChange={(e) => setArchivo(e.target.value)} />
-                </Campo>
-                <DialogFooter>
-                    <Button type="button" variant="ghost" onClick={onCerrar}>
-                        Cancelar
-                    </Button>
-                    <Button type="button" onClick={guardar} disabled={!nombre.trim() || enviando}>
-                        Registrar logo
-                    </Button>
-                </DialogFooter>
+                {/* <form> propio: Enter guarda. stopPropagation: el diálogo vive en un portal y el
+                    submit subiría por el árbol de React hasta el formulario de la página. */}
+                <form
+                    className="grid gap-4"
+                    onSubmit={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        if (nombre.trim() && !enviando) void guardar();
+                    }}
+                >
+                    <Campo etiqueta="Nombre" requerido error={errores.name}>
+                        <Input value={nombre} maxLength={120} onChange={(e) => setNombre(e.target.value)} autoFocus />
+                    </Campo>
+                    <Campo etiqueta="Archivo" error={errores.original_filename} ayuda="Si lo dejas vacío: «<nombre>.emb».">
+                        <Input value={archivo} maxLength={150} placeholder="logo.emb" onChange={(e) => setArchivo(e.target.value)} />
+                    </Campo>
+                    <DialogFooter>
+                        <Button type="button" variant="ghost" onClick={onCerrar}>
+                            Cancelar
+                        </Button>
+                        <Button type="submit" disabled={!nombre.trim() || enviando}>
+                            Registrar logo
+                        </Button>
+                    </DialogFooter>
+                </form>
             </DialogContent>
         </Dialog>
     );
