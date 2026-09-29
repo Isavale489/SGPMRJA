@@ -11,6 +11,11 @@ class NotificacionController extends Controller
     {
         $items = [];
 
+        // Nombres, códigos y existencias de insumos: solo para quien puede verlos.
+        if (! tienePermiso('insumos.ver') && ! tienePermiso('movimiento-insumo.ver')) {
+            return response()->json(['count' => 0, 'items' => []]);
+        }
+
         $insumos = Insumo::where('estado', true)
             ->where('is_inventoriable', true)
             ->whereRaw('stock_actual <= stock_minimo')

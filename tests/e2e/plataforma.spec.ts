@@ -96,3 +96,36 @@ test('las páginas Blade que quedan cargan todos sus archivos', async ({ page, b
 
   expect(faltantes, faltantes.join('\n')).toEqual([]);
 });
+
+/** Lo que tenía el layout anterior: nombre de la empresa, reloj, notificaciones y pie. */
+test('el header trae notificaciones y reloj, y el pie de página', async ({ page }) => {
+  const errores = vigilarErrores(page);
+  await page.setViewportSize({ width: 1366, height: 800 }); // laptop común: el nombre de la empresa se ve desde xl
+  await page.goto('/dashboard');
+
+  const header = page.locator('header').first();
+  await expect(header).toContainText('Manufacturas R.J. Atlántico');
+  await expect(header.locator('time')).toContainText(/\d{2}\/\d{2}\/\d{4}/);
+  await expect(page.locator('footer')).toContainText('Grupo Textil 636 Informática');
+
+  // Hilo Mov E2E está bajo su mínimo (E2eSeeder).
+  const campana = page.getByRole('button', { name: /^Notificaciones/ });
+  await expect(campana).toHaveAccessibleName(/sin revisar/);
+  await page.screenshot({ path: 'test-results/layout-header.png' });
+  await campana.click();
+  const menu = page.getByRole('menu');
+  await expect(menu).toContainText('Hilo Mov E2E');
+  await page.screenshot({ path: 'test-results/layout-notificaciones.png' });
+
+  // Ocultar vale para la sesión y se puede deshacer; los dos son ítems del menú (se llega con las flechas).
+  await menu.getByRole('menuitem', { name: /Ocultar en esta sesión: .*Hilo Mov E2E/ }).click();
+  await expect(menu).not.toContainText('Hilo Mov E2E');
+  const restaurar = menu.getByRole('menuitem', { name: 'Mostrar las notificaciones ocultas' });
+  await restaurar.focus();
+  await page.keyboard.press('Enter');
+  await expect(menu).toContainText('Hilo Mov E2E');
+
+  await menu.getByRole('menuitem', { name: /Ver todas las alertas/ }).click();
+  await expect(page).toHaveURL(/\/movimiento-insumo\/alertas/);
+  expect(errores, errores.join('\n')).toEqual([]);
+});
