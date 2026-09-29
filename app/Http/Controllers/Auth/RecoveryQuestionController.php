@@ -11,7 +11,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
-use Illuminate\View\View;
+use Inertia\Inertia;
+use Inertia\Response;
 
 class RecoveryQuestionController extends Controller
 {
@@ -22,17 +23,21 @@ class RecoveryQuestionController extends Controller
     /**
      * Pantalla de selección de método (email vs preguntas).
      */
-    public function showMethodSelection(): View
+    public function showMethodSelection(): Response
     {
-        return view('auth.recovery.method');
+        return Inertia::render('Auth/Recuperacion/Metodo', [
+            'urls' => ['correo' => route('password.request', absolute: false), 'preguntas' => route('recovery.email.show', absolute: false), 'login' => route('login', absolute: false)],
+        ]);
     }
 
     /**
      * Formulario para ingresar email (flujo de preguntas).
      */
-    public function showEmailForm(): View
+    public function showEmailForm(): Response
     {
-        return view('auth.recovery.email');
+        return Inertia::render('Auth/Recuperacion/Correo', [
+            'urls' => ['continuar' => route('recovery.email.process', absolute: false), 'volver' => route('recovery.method', absolute: false)],
+        ]);
     }
 
     /**
@@ -75,7 +80,7 @@ class RecoveryQuestionController extends Controller
     /**
      * Muestra las 3 preguntas del usuario.
      */
-    public function showQuestions(Request $request): View|RedirectResponse
+    public function showQuestions(Request $request): Response|RedirectResponse
     {
         $email = $request->session()->get(self::SESSION_KEY_EMAIL);
         if (!$email) {
@@ -102,7 +107,10 @@ class RecoveryQuestionController extends Controller
             ];
         });
 
-        return view('auth.recovery.answers', compact('questions'));
+        return Inertia::render('Auth/Recuperacion/Preguntas', [
+            'questions' => $questions->values()->all(),
+            'urls' => ['validar' => route('recovery.questions.validate', absolute: false), 'cancelar' => route('recovery.method', absolute: false)],
+        ]);
     }
 
     /**
@@ -113,6 +121,12 @@ class RecoveryQuestionController extends Controller
         $request->validate([
             'respuestas'   => ['required', 'array', 'size:3'],
             'respuestas.*' => ['required', 'string', 'max:255'],
+        ], [
+            // Sin esto el mensaje nombraría el id interno de la pregunta («respuestas.37»).
+            'respuestas.required'   => 'Responde las 3 preguntas.',
+            'respuestas.size'       => 'Responde las 3 preguntas.',
+            'respuestas.*.required' => 'Responde las 3 preguntas.',
+            'respuestas.*.max'      => 'Cada respuesta puede tener hasta 255 caracteres.',
         ]);
 
         $email = $request->session()->get(self::SESSION_KEY_EMAIL);
@@ -187,14 +201,17 @@ class RecoveryQuestionController extends Controller
     /**
      * Formulario para establecer nueva contraseña (requiere token válido).
      */
-    public function showResetForm(Request $request, string $token): View|RedirectResponse
+    public function showResetForm(Request $request, string $token): Response|RedirectResponse
     {
         if (!$this->isResetTokenValid($request, $token)) {
             return redirect()->route('recovery.email.show')
                 ->withErrors(['email' => 'La sesión de recuperación expiró. Inténtalo de nuevo.']);
         }
 
-        return view('auth.recovery.reset', ['token' => $token]);
+        return Inertia::render('Auth/Recuperacion/NuevaClave', [
+            'token' => $token,
+            'urls' => ['guardar' => route('recovery.reset.process', absolute: false)],
+        ]);
     }
 
     /**
@@ -245,9 +262,18 @@ class RecoveryQuestionController extends Controller
     /**
      * Pantalla informativa cuando el usuario está bloqueado.
      */
-    public function showLocked(): View
+    public function showLocked(Request $request): Response
     {
-        return view('auth.recovery.locked');
+        $tipo = $request->session()->get('lock_type', 'soft') === 'hard' ? 'hard' : 'soft';
+        // El bloqueo total no vence: lo quita un administrador.
+        $hasta = $tipo === 'soft' ? $request->session()->get('until') : null;
+
+        return Inertia::render('Auth/Recuperacion/Bloqueo', [
+            'tipo' => $tipo,
+            // Hora de Venezuela ya formateada: el navegador podría estar en otra zona.
+            'hasta' => $hasta ? \Carbon\Carbon::parse($hasta)->timezone(config('app.timezone'))->format('H:i') : null,
+            'urls' => ['login' => route('login', absolute: false)],
+        ]);
     }
 
     /**

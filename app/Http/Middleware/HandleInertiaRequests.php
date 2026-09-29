@@ -58,7 +58,11 @@ class HandleInertiaRequests extends Middleware
                     : [],
             ],
             'navegacion' => fn () => $user ? $this->navegacion(config('navegacion', [])) : [],
-            'tasaBcv' => function () {
+            // Sin usuario (pantallas de acceso) no se muestra: tampoco se consulta al BCV.
+            'tasaBcv' => function () use ($user) {
+                if (! $user) {
+                    return null;
+                }
                 $tasa = TasaBcvVigente::obtener();
 
                 return $tasa ? [
@@ -69,6 +73,9 @@ class HandleInertiaRequests extends Middleware
             'flash' => [
                 'success' => fn () => $request->session()->get('success'),
                 'error' => fn () => $request->session()->get('error'),
+                // Pantallas de acceso: éxito (p. ej. «contraseña actualizada») y sesión vencida (Handler).
+                'status' => fn () => $request->session()->get('status'),
+                'aviso' => fn () => $request->session()->get('aviso'),
             ],
         ];
     }

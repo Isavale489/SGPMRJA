@@ -156,6 +156,6 @@ Los navegadores ignoran `autocomplete="off"`. Solución combinada:
 - `config/recovery_questions.php`.
 
 ### Vistas
-- `resources/views/auth/recovery/{method,email,answers,reset,locked}.blade.php`
+- `resources/js/pages/Auth/Recuperacion/{Metodo,Correo,Preguntas,NuevaClave,Bloqueo}.tsx` (Inertia, layout `auth-layout.tsx`)
 - `resources/js/pages/Auth/CambioClaveObligatorio.tsx` (cambio forzoso, Inertia)
 - `resources/js/pages/Perfil/Index.tsx` (preguntas en el perfil, Inertia)

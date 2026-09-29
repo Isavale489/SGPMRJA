@@ -69,7 +69,19 @@ class PaginasErrorTest extends TestCase
 
         // El layout de acceso muestra el aviso.
         $this->withSession(['aviso' => 'La sesión expiró. Vuelve a intentarlo.'])->get(route('login'))
-            ->assertOk()->assertSee('La sesión expiró. Vuelve a intentarlo.');
+            ->assertOk()->assertInertia(fn (Assert $p) => $p->component('Auth/Login')->where('flash.aviso', 'La sesión expiró. Vuelve a intentarlo.'));
+    }
+
+    public function test_desde_una_pantalla_de_acceso_inertia_la_sesion_vencida_vuelve_con_aviso(): void
+    {
+        // El login (ya Inertia) abierto mucho rato: vuelve a sí mismo con el aviso, no a la página 419.
+        Route::middleware('web')->post('/_prueba-419', fn () => abort(419));
+
+        $this->from(route('login'))->withHeaders(['X-Inertia' => 'true'])->post('/_prueba-419', ['email' => 'ana@example.com', 'password' => 'secreta'])
+            ->assertStatus(303)
+            ->assertRedirect(route('login'))
+            ->assertSessionHas('aviso')
+            ->assertSessionMissing('_old_input.password');
     }
 
     public function test_las_preguntas_de_recuperacion_con_la_sesion_vencida_llevan_el_aviso_al_formulario_de_correo(): void
@@ -81,7 +93,8 @@ class PaginasErrorTest extends TestCase
         $this->from(route('recovery.questions.show'))->post('/_prueba-419')
             ->assertRedirect(route('recovery.questions.show'));
         $this->get(route('recovery.questions.show'))->assertRedirect(route('recovery.email.show'));
-        $this->get(route('recovery.email.show'))->assertOk()->assertSee('La sesión expiró. Vuelve a intentarlo.');
+        $this->get(route('recovery.email.show'))->assertOk()
+            ->assertInertia(fn (Assert $p) => $p->component('Auth/Recuperacion/Correo')->where('flash.aviso', 'La sesión expiró. Vuelve a intentarlo.'));
     }
 
     public function test_si_la_pagina_de_error_falla_queda_la_respuesta_estandar(): void
