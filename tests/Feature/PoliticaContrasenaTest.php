@@ -90,6 +90,7 @@ class PoliticaContrasenaTest extends TestCase
             ->assertStatus(422)->assertJsonValidationErrors('password');
         $this->actingAs($admin)->putJson(route('password.update'), [...$arreglo, 'current_password' => 'password'])
             ->assertStatus(422)->assertJsonValidationErrors('password');
+        $this->flushSession(); // otro usuario: otra sesión (la de antes guarda la huella de la clave del admin)
         $this->actingAs($temporal)->postJson(route('auth.force-password-change.process'), [...$arreglo, 'current_password' => 'Temporal.1'])
             ->assertStatus(422)->assertJsonValidationErrors('password');
 

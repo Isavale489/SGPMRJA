@@ -30,6 +30,8 @@ const cache: { items: Notificacion[] | null; en: number; enCurso: Promise<Notifi
 function pedir(): Promise<Notificacion[]> {
     cache.enCurso ??= fetch(ENDPOINT, { headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin' })
         .then((r) => {
+            // Sin sesión (vencida, o cerrada porque la clave cambió en otro equipo): al login.
+            if (r.status === 401) window.location.href = '/login';
             if (!r.ok) throw new Error(String(r.status));
             return r.json() as Promise<{ items?: Notificacion[] }>;
         })
