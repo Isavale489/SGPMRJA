@@ -370,6 +370,13 @@
 
             <!-- Card body -->
             <div class="login-card-body">
+                {{-- Sesión vencida (419) en cualquier pantalla de acceso: lo pone el Handler. --}}
+                @if (session('aviso'))
+                    <div class="alert alert-warning d-flex align-items-center gap-2 mb-4" role="alert">
+                        <i class="bx bx-time-five fs-5"></i>
+                        {{ session('aviso') }}
+                    </div>
+                @endif
                 {{ $slot }}
             </div>
         </div>

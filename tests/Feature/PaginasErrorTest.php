@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Exceptions;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Route;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -58,22 +59,32 @@ class PaginasErrorTest extends TestCase
         // El formulario Blade de login abierto mucho rato: back() lo recarga con un token nuevo.
         Route::middleware('web')->post('/_prueba-419', fn () => abort(419));
 
-        $this->from(route('login'))->post('/_prueba-419')
+        $this->from(route('login'))->post('/_prueba-419', ['email' => 'ana@example.com', 'password' => 'secreta', 'respuestas' => [1 => 'Firulais']])
+            ->assertStatus(303)
             ->assertRedirect(route('login'))
-            ->assertSessionHas('status', 'La sesión expiró. Vuelve a intentarlo.');
+            ->assertSessionHas('aviso', 'La sesión expiró. Vuelve a intentarlo.')
+            ->assertSessionHasInput('email', 'ana@example.com')
+            ->assertSessionMissing('_old_input.password')
+            ->assertSessionMissing('_old_input.respuestas');
+
+        // El layout de acceso muestra el aviso (también en recuperación).
+        $this->withSession(['aviso' => 'La sesión expiró. Vuelve a intentarlo.'])->get(route('login'))
+            ->assertOk()->assertSee('La sesión expiró. Vuelve a intentarlo.');
     }
 
     public function test_si_la_pagina_de_error_falla_queda_la_respuesta_estandar(): void
     {
-        // Una prop compartida que revienta (p. ej. BD caída) no deja un 500 en blanco.
+        // Una prop compartida que revienta (p. ej. BD caída) no deja un 500 en blanco, y queda registrada.
+        Exceptions::fake();
         \Inertia\Inertia::share('rota', fn () => throw new \RuntimeException('BD caída'));
 
-        $this->get('/no-existe-tampoco')->assertNotFound();
+        $this->get('/no-existe-tampoco')->assertNotFound()->assertDontSee('data-page', false);
+        Exceptions::assertReported(\RuntimeException::class);
     }
 
-    public function test_la_sesion_vencida_sin_usuario_muestra_la_pagina_419(): void
+    public function test_la_visita_inertia_sin_usuario_con_la_sesion_vencida_muestra_la_pagina_419(): void
     {
-        // El caso típico: back() llevaría al login y el aviso se perdería.
+        // back() llevaría al login y el aviso se perdería.
         Route::middleware('web')->post('/_prueba-419', fn () => abort(419));
 
         $this->withHeaders(['X-Inertia' => 'true'])->post('/_prueba-419')

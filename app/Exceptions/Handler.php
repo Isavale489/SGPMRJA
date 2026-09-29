@@ -51,16 +51,18 @@ class Handler extends ExceptionHandler
         }
         // Sesión vencida. 303 para que un PUT/PATCH/DELETE vuelva como GET (el 419 del
         // CSRF salta antes de HandleInertiaRequests, que haría esa conversión).
-        //  - Con usuario: vuelve atrás con el aviso (lo muestra el panel).
-        //  - Formulario Blade sin usuario (login abierto mucho rato): vuelve con un
-        //    token nuevo y el aviso en `status`, que el login sí muestra.
+        //  - Con usuario: vuelve atrás con el aviso (el panel lo muestra como aviso).
+        //  - Formulario Blade sin usuario (login o recuperación abiertos mucho rato):
+        //    vuelve con un token nuevo, el correo escrito (lista blanca: nunca
+        //    contraseñas ni respuestas de seguridad) y el aviso en `aviso`, que
+        //    muestra el layout de acceso.
         //  - Visita Inertia sin usuario: back() llevaría al login y el aviso se perdería.
         if ($status === 419 && $request->hasSession()) {
             if ($request->user()) {
                 return back(303)->with('error', 'La sesión expiró. Vuelve a intentarlo.');
             }
             if (! $request->header('X-Inertia')) {
-                return back(303)->with('status', 'La sesión expiró. Vuelve a intentarlo.');
+                return back(303)->withInput($request->only(['email', 'name', 'remember']))->with('aviso', 'La sesión expiró. Vuelve a intentarlo.');
             }
         }
 
