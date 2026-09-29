@@ -80,7 +80,8 @@ class UserController extends Controller
         }
 
         // Upload new file via Storage (stored in storage/app/public/)
-        $filename = uniqid() . '.' . $file->getClientOriginalExtension();
+        // La extensión sale del contenido, no del nombre: un «x.html» no se sirve como página.
+        $filename = uniqid() . '.' . ($file->guessExtension() ?: 'jpg');
         $path = $file->storeAs($directory, $filename, 'public');
         return $path;
     }

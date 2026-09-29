@@ -9,8 +9,8 @@ use Illuminate\Support\Facades\Cache;
 
 /**
  * Tasa BCV (USD) vigente hoy, intentando capturar la publicación reciente si
- * la guardada quedó en un día anterior. Compartida por el layout Blade
- * (view composer 'admin.*') y por la plataforma Inertia (HandleInertiaRequests).
+ * la guardada quedó en un día anterior. La comparte la plataforma Inertia
+ * (HandleInertiaRequests).
  */
 class TasaBcvVigente
 {

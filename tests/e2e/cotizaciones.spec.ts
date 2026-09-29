@@ -79,11 +79,13 @@ test('dar de alta un cliente con Enter desde el paso Cliente', async ({ page }) 
   await page.getByRole('combobox', { name: 'Buscar cliente' }).fill('Textiles Enter');
   await page.getByRole('button', { name: 'Nuevo cliente' }).click();
   const alta = page.getByRole('dialog');
-  await alta.getByRole('textbox', { name: 'Cédula' }).fill('19876543');
+  // Cédula única por corrida (el test se puede repetir sin chocar con la anterior).
+  await alta.getByRole('textbox', { name: 'Cédula' }).fill(String(19_000_000 + (Date.now() % 900_000)));
   await alta.getByLabel('Nombre y apellido').fill('Textiles Enter');
   await alta.getByLabel('Número del teléfono 1').fill('5559876');
   await alta.getByRole('combobox', { name: 'Estado' }).click();
   await page.getByRole('option', { name: 'Portuguesa', exact: true }).click();
+  await expect(alta.getByRole('combobox', { name: 'Municipio' })).toBeEnabled();
   await alta.getByRole('combobox', { name: 'Municipio' }).click();
   await page.getByRole('option', { name: 'Páez', exact: true }).click();
   await alta.getByLabel('Nombre y apellido').press('Enter');

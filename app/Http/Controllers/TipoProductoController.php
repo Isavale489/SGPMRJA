@@ -139,7 +139,9 @@ class TipoProductoController extends Controller
             @unlink(public_path($oldPath));
         }
         $directory = 'productoimg/tipos';
-        $filename = uniqid() . '.' . $file->getClientOriginalExtension();
+        // Extensión según el CONTENIDO real del archivo (no la del nombre del cliente):
+        // un .html disfrazado no queda servido como página desde /public.
+        $filename = uniqid() . '.' . ($file->guessExtension() ?: 'jpg');
         $file->move(public_path($directory), $filename);
         return $directory . '/' . $filename;
     }

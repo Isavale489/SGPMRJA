@@ -4,13 +4,8 @@ namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Schema;
-use Illuminate\Support\Facades\View;
-use Illuminate\Support\Facades\Cache;
-use App\Models\TasaCambio;
 use App\Models\OrdenProduccion;
 use App\Observers\OrdenProduccionObserver;
-use App\Support\CatalogoGeografico;
-use App\Support\TasaBcvVigente;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -31,35 +26,5 @@ class AppServiceProvider extends ServiceProvider
 
         // Herencia de estatus Pedido → OP y bloqueo de OP bajo pedido cancelado.
         OrdenProduccion::observe(OrdenProduccionObserver::class);
-
-        // Compartir tasa BCV con todas las vistas del admin
-        View::composer('admin.*', function ($view) {
-            $view->with('tasaBcv', TasaBcvVigente::obtener());
-        });
-
-        // Compartir el catálogo geográfico (estados + municipios) con el admin.
-        // Fuente de verdad: tablas estado/municipio. Cacheado porque es estático.
-        View::composer('admin.*', function ($view) {
-            $mapa = CatalogoGeografico::mapa();
-            $view->with('estadosVe', array_keys($mapa))->with('mapaMunicipiosVe', $mapa);
-        });
-
-        // Compartir el catálogo de género de prenda (Dama/Caballero/Unisex) con
-        // el admin. Set estable → cacheado. Lo consumen los wizards de
-        // cotización/pedido para el cruce talla × género del configurador.
-        View::composer('admin.*', function ($view) {
-            try {
-                $generosCatalogo = Cache::remember('catalogo_genero', now()->addDay(), function () {
-                    return \App\Models\Genero::activo()
-                        ->orderBy('orden')
-                        ->get(['id', 'nombre', 'etiqueta', 'icono'])
-                        ->toArray();
-                });
-            } catch (\Exception $e) {
-                $generosCatalogo = [];
-            }
-
-            $view->with('generosCatalogo', $generosCatalogo);
-        });
     }
 }

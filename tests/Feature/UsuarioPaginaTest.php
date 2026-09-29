@@ -97,6 +97,22 @@ class UsuarioPaginaTest extends TestCase
         Storage::disk('public')->assertExists($u->fresh()->avatar);
     }
 
+    /** Regresión: el avatar se guardaba con la extensión del nombre del cliente (un .html quedaba servido desde /storage). */
+    public function test_el_avatar_se_guarda_con_la_extension_de_su_contenido(): void
+    {
+        $u = User::factory()->supervisor()->create();
+        $png = UploadedFile::fake()->image('foto.png', 40, 40);
+        $disfrazado = new UploadedFile($png->getRealPath(), 'pagina.html', 'text/html', null, true);
+
+        $this->actingAs($this->admin())->from(route('users.index'))->withHeaders(['X-Inertia' => 'true'])
+            ->post(route('users.update', $u->id), [
+                '_method' => 'put', 'name' => $u->name, 'email' => $u->email, 'role_id' => $u->role_id, 'avatar' => $disfrazado,
+            ])
+            ->assertRedirect(route('users.index'));
+
+        $this->assertStringEndsWith('.png', (string) $u->fresh()->avatar);
+    }
+
     public function test_las_reglas_llegan_a_inertia_como_avisos(): void
     {
         $admin = $this->admin();
