@@ -182,7 +182,7 @@ export default function MovimientosIndex({ vista, filtros: iniciales, movimiento
                                 </SelectContent>
                             </Select>
                             <Select value={filtros.stock ?? TODOS} onValueChange={(v) => cambiar('stock', v === TODOS ? undefined : (v as Filtros['stock']))}>
-                                <SelectTrigger className="w-52" aria-label="Filtrar por estado de stock"><SelectValue /></SelectTrigger>
+                                <SelectTrigger className="w-64" aria-label="Filtrar por estado de stock"><SelectValue /></SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value={TODOS}>Cualquier estado de stock</SelectItem>
                                     {Object.entries(ESTADOS_STOCK).map(([valor, etiqueta]) => <SelectItem key={valor} value={valor}>{etiqueta}</SelectItem>)}

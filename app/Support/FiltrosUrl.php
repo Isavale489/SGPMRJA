@@ -21,9 +21,6 @@ class FiltrosUrl
         $filtros = [];
         foreach ($claves as $clave) {
             $valor = $request->query($clave);
-            if (is_int($valor) || is_float($valor)) {
-                $valor = (string) $valor;
-            }
             if (! is_string($valor) || trim($valor) === '') {
                 continue;
             }

@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Http\Middleware\HandleInertiaRequests;
+use App\Models\Insumo;
 use App\Models\MovimientoInsumo;
 use App\Models\PermisoRol;
 use App\Models\Rol;
@@ -42,7 +43,7 @@ class MovimientosPaginaTest extends TestCase
         return ['X-Inertia' => 'true', 'X-Inertia-Version' => (string) app(HandleInertiaRequests::class)->version(request()), 'X-Requested-With' => 'XMLHttpRequest'];
     }
 
-    private function conSalida(User $admin): \App\Models\Insumo
+    private function conSalida(User $admin): Insumo
     {
         $insumo = $this->insumo(['nombre' => 'Hilo rojo', 'stock_actual' => 20, 'stock_minimo' => 25]);
         $this->actingAs($admin)->post(route('movimiento-insumo.store'), ['insumo_id' => $insumo->id, 'tipo_movimiento' => 'Salida', 'cantidad' => 5, 'motivo' => 'Consumo en taller']);
@@ -143,7 +144,7 @@ class MovimientosPaginaTest extends TestCase
     }
 
     /** Movimiento con fecha y saldos fijos (sin pasar por el store). */
-    private function movimiento(\App\Models\Insumo $insumo, array $attrs = []): MovimientoInsumo
+    private function movimiento(Insumo $insumo, array $attrs = []): MovimientoInsumo
     {
         $m = MovimientoInsumo::create(array_merge([
             'insumo_id' => $insumo->id, 'tipo_movimiento' => 'Salida', 'cantidad' => 1,
@@ -277,5 +278,50 @@ class MovimientosPaginaTest extends TestCase
             ->assertInertia(fn (Assert $p) => $p
                 ->where('existencias.data.0.id', $nuevo->id)
                 ->where('existencias.data.1.id', $viejo->id));
+    }
+
+    public function test_los_movimientos_de_un_insumo_inhabilitado_siguen_en_el_listado(): void
+    {
+        $admin = $this->admin();
+        $insumo = $this->insumo(['nombre' => 'Hilo descontinuado', 'codigo' => 'HDESC', 'stock_actual' => 0, 'stock_minimo' => 5]);
+        $m = $this->movimiento($insumo);
+        $insumo->delete();
+
+        $this->actingAs($admin)->get(route('movimiento-insumo.index'))
+            ->assertInertia(fn (Assert $p) => $p->where('movimientos.data.0.insumo', 'Hilo descontinuado')->where('movimientos.data.0.codigo', 'HDESC'));
+        $this->assertSame([$m->id], $this->idsListado($admin, ['buscar' => 'descontinuado']));
+        $this->assertSame([$m->id], $this->idsListado($admin, ['stock' => 'critico']));
+        $this->actingAs($admin)->get(route('movimiento-insumo.reporte.pdf', ['insumo_id' => $insumo->id]))->assertOk();
+    }
+
+    public function test_no_se_registra_una_salida_de_un_insumo_inhabilitado(): void
+    {
+        $admin = $this->admin();
+        $borrado = $this->insumo(['stock_actual' => 10]);
+        $borrado->delete();
+        $legado = $this->insumo(['stock_actual' => 10, 'estado' => 0]);
+
+        foreach ([$borrado, $legado] as $insumo) {
+            $this->actingAs($admin)->from(route('movimiento-insumo.index'))->withHeaders($this->inertia())
+                ->post(route('movimiento-insumo.store'), ['insumo_id' => $insumo->id, 'tipo_movimiento' => 'Salida', 'cantidad' => 1, 'motivo' => 'Merma'])
+                ->assertRedirect(route('movimiento-insumo.index'))
+                ->assertSessionHasErrors(['insumo_id' => 'El insumo no existe o está inhabilitado.']);
+            $this->assertEquals(10, (float) Insumo::withTrashed()->find($insumo->id)->stock_actual);
+        }
+        $this->assertSame(0, MovimientoInsumo::count());
+    }
+
+    public function test_un_tipo_o_estado_de_stock_desconocido_no_llega_a_los_filtros(): void
+    {
+        $this->actingAs($this->admin())->get(route('movimiento-insumo.index', ['tipo' => 'Otro', 'stock' => 'otro', 'buscar' => 'x']))
+            ->assertInertia(fn (Assert $p) => $p->missing('filtros.tipo')->missing('filtros.stock')->where('filtros.buscar', 'x'));
+    }
+
+    public function test_compras_escapa_los_comodines_e_ignora_fechas_invalidas_del_pdf(): void
+    {
+        $admin = $this->admin();
+        $this->actingAs($admin)->get(route('compras.index', ['buscar' => '%', 'desde' => 'abc']))->assertOk()
+            ->assertInertia(fn (Assert $p) => $p->missing('filtros.desde'));
+        $this->actingAs($admin)->get(route('compras.reporte.pdf', ['fecha_desde' => 'abc', 'fecha_hasta' => '2026-02-31']))->assertOk();
     }
 }
