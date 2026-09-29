@@ -354,11 +354,11 @@ function Matriz({ roles, permisos, secciones, rolId, onRol, url, onSucio }: Prop
     );
 }
 
-/** Casilla «Todo» del módulo: indeterminada (y anunciada como «mixta») cuando hay acciones sueltas. */
+/** Casilla «Todo» del módulo: indeterminada cuando hay acciones sueltas (el lector de pantalla la anuncia como «mixta»). */
 function CasillaTodo({ checked, parcial, onChange, etiqueta }: { checked: boolean; parcial: boolean; onChange: (v: boolean) => void; etiqueta: string }) {
     const ref = useRef<HTMLInputElement>(null);
     useEffect(() => {
         if (ref.current) ref.current.indeterminate = parcial;
     }, [parcial]);
-    return <input ref={ref} type="checkbox" className="accent-primary size-4" checked={checked} aria-checked={parcial ? 'mixed' : checked} onChange={(e) => onChange(e.target.checked)} aria-label={etiqueta} />;
+    return <input ref={ref} type="checkbox" className="accent-primary size-4" checked={checked} onChange={(e) => onChange(e.target.checked)} aria-label={etiqueta} />;
 }

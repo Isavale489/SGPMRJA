@@ -56,7 +56,7 @@ test('las marcas sin guardar sobreviven a cambios en Roles y «Solo ver» respet
   await page.getByRole('button', { name: 'Solo ver' }).click();
   await expect(page.getByRole('checkbox', { name: /^Clientes: Crear/ })).not.toBeChecked();
   await expect(page.getByRole('checkbox', { name: /^Clientes: Ver/ })).toBeChecked();
-  await expect(page.getByRole('checkbox', { name: 'Todo el módulo Clientes' })).toHaveAttribute('aria-checked', 'mixed');
+  await expect(page.getByRole('checkbox', { name: 'Todo el módulo Clientes' })).toBeChecked({ indeterminate: true });
   await page.getByLabel('Buscar módulo').fill('');
   await expect(page.getByRole('checkbox', { name: /^Proveedores: Ver/ })).toBeChecked();
   await page.getByRole('button', { name: 'Descartar' }).click();
