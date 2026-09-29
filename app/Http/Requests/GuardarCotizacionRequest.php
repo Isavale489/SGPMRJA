@@ -29,9 +29,9 @@ class GuardarCotizacionRequest extends FormRequest
             'notas' => 'nullable|string|max:2000',
             'condiciones_terminos' => 'nullable|string',
             'productos' => 'required|array|min:1',
-            'productos.*.producto_id' => 'nullable|required_without:productos.*.tipo_producto_id|integer|exists:producto,id',
-            'productos.*.tipo_producto_id' => 'nullable|required_without:productos.*.producto_id|integer|exists:tipo_producto,id',
-            'productos.*.insumo_tela_id' => 'nullable|integer|exists:insumo,id',
+            'productos.*.producto_id' => ['nullable', 'required_without:productos.*.tipo_producto_id', 'integer', $this->existeVigente('producto', 'producto_id')],
+            'productos.*.tipo_producto_id' => ['nullable', 'required_without:productos.*.producto_id', 'integer', $this->existeVigente('tipo_producto', 'tipo_producto_id')],
+            'productos.*.insumo_tela_id' => ['nullable', 'integer', $this->existeVigente('insumo', 'insumo_tela_id')],
             'productos.*.atributo_valor_ids' => 'nullable|array',
             'productos.*.atributo_valor_ids.*' => 'integer|exists:atributo_valor,id',
             'productos.*.cantidad' => 'required|integer|min:1',
@@ -55,6 +55,27 @@ class GuardarCotizacionRequest extends FormRequest
             'productos.*.bordados.*.precio_aplicado' => 'required|numeric|min:0',
             'productos.*.bordados.*.cantidad' => 'nullable|integer|min:1',
         ];
+    }
+
+    /**
+     * `exists` de Laravel no mira `deleted_at`: un producto, tipo o tela
+     * inhabilitado pasaría. Solo se acepta si ya estaba en la cotización que se
+     * edita (para poder guardarla sin cambios); una cotización nueva, nunca.
+     */
+    private function existeVigente(string $tabla, string $columnaDetalle): \Illuminate\Validation\Rules\Exists
+    {
+        $ruta = $this->route('cotizacion');
+        $cotizacion = $ruta instanceof \App\Models\Cotizacion ? $ruta : (is_numeric($ruta) ? \App\Models\Cotizacion::find($ruta) : null);
+        $previos = [];
+        if ($cotizacion) {
+            $lineas = $cotizacion->productos()->get(['producto_id', 'tipo_producto_id', 'tela_snapshot']);
+            // La tela no tiene columna propia: vive en el snapshot.
+            $previos = ($columnaDetalle === 'insumo_tela_id'
+                ? $lineas->map(fn ($l) => $l->tela_snapshot['id'] ?? null)
+                : $lineas->pluck($columnaDetalle))->filter()->unique()->values()->all();
+        }
+
+        return Rule::exists($tabla, 'id')->where(fn ($q) => $q->where(fn ($w) => $w->whereNull('deleted_at')->orWhereIn('id', $previos)));
     }
 
     /**

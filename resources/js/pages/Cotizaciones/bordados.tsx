@@ -27,6 +27,8 @@ interface FilaCatalogo {
     precio: string;
     cantidad: string;
     logo_id: number | null;
+    /** Nombre guardado del logo de ESTA fila (logo inhabilitado o legado en texto); se pierde al cambiar el logo. */
+    logo_texto: string | null;
 }
 interface FilaPropia {
     id: number;
@@ -37,10 +39,11 @@ interface FilaPropia {
     precio: string;
     cantidad: string;
     logo_id: number | null;
+    logo_texto: string | null;
 }
 
 let secuencia = 0;
-const filaBase = (u: UbicacionCatalogo): FilaCatalogo => ({ marcada: false, precio: String(u.precio), cantidad: '1', logo_id: null });
+const filaBase = (u: UbicacionCatalogo): FilaCatalogo => ({ marcada: false, precio: String(u.precio), cantidad: '1', logo_id: null, logo_texto: null });
 
 interface Props {
     bloque: Bloque;
@@ -67,7 +70,7 @@ export function ConfigurarBordados({ bloque, ubicaciones, logos, onLogoCreado, m
         for (const u of ubicaciones) inicial[u.id] = filaBase(u);
         for (const b of bloque.bordados) {
             if (!b.es_personalizada && b.ubicacion_bordado_id && b.ubicacion_bordado_id in inicial) {
-                inicial[b.ubicacion_bordado_id] = { marcada: true, precio: String(b.precio_aplicado), cantidad: String(Math.max(1, b.cantidad)), logo_id: b.logo_id };
+                inicial[b.ubicacion_bordado_id] = { marcada: true, precio: String(b.precio_aplicado), cantidad: String(Math.max(1, b.cantidad)), logo_id: b.logo_id, logo_texto: b.logo };
             }
         }
         return inicial;
@@ -83,6 +86,7 @@ export function ConfigurarBordados({ bloque, ubicaciones, logos, onLogoCreado, m
                 precio: String(b.precio_aplicado),
                 cantidad: String(Math.max(1, b.cantidad)),
                 logo_id: b.logo_id,
+                logo_texto: b.logo,
             })),
     );
     const [intento, setIntento] = useState(false);
@@ -111,9 +115,8 @@ export function ConfigurarBordados({ bloque, ubicaciones, logos, onLogoCreado, m
     const fila = (u: UbicacionCatalogo) => catalogo[u.id] ?? filaBase(u);
     const cambiarCatalogo = (u: UbicacionCatalogo, cambios: Partial<FilaCatalogo>) => setCatalogo((c) => ({ ...c, [u.id]: { ...(c[u.id] ?? filaBase(u)), ...cambios } }));
     const cambiarPropia = (id: number, cambios: Partial<FilaPropia>) => setPropias((p) => p.map((f) => (f.id === id ? { ...f, ...cambios } : f)));
-    // Si el logo ya no está en el catálogo (inhabilitado o legado en texto), se conserva el nombre guardado.
-    const logoGuardado = (id: number | null) => bloque.bordados.find((b) => b.logo_id === id)?.logo ?? null;
-    const nombreLogo = (id: number | null) => logos.find((l) => l.id === id)?.nombre ?? logoGuardado(id);
+    // El catálogo manda; si el logo no está (inhabilitado o legado en texto), el nombre guardado de esa misma fila.
+    const nombreLogo = (f: { logo_id: number | null; logo_texto: string | null }) => logos.find((l) => l.id === f.logo_id)?.nombre ?? f.logo_texto;
 
     const guardar = () => {
         setIntento(true);
@@ -128,7 +131,7 @@ export function ConfigurarBordados({ bloque, ubicaciones, logos, onLogoCreado, m
                         ubicacion_bordado_id: u.id,
                         nombre_aplicado: u.nombre,
                         logo_id: f.logo_id,
-                        logo: nombreLogo(f.logo_id),
+                        logo: nombreLogo(f),
                         es_personalizada: false,
                         precio_aplicado: num(f.precio),
                         cantidad: entero(f.cantidad),
@@ -138,7 +141,7 @@ export function ConfigurarBordados({ bloque, ubicaciones, logos, onLogoCreado, m
                 ubicacion_bordado_id: f.ubicacion_bordado_id,
                 nombre_aplicado: f.nombre.trim(),
                 logo_id: f.logo_id,
-                logo: nombreLogo(f.logo_id),
+                logo: nombreLogo(f),
                 es_personalizada: f.es_personalizada,
                 precio_aplicado: num(f.precio),
                 cantidad: entero(f.cantidad),
@@ -199,7 +202,7 @@ export function ConfigurarBordados({ bloque, ubicaciones, logos, onLogoCreado, m
                                                 }}
                                             />
                                             <span className="flex-1">{u.nombre}</span>
-                                            <EstadoFila marcada={f.marcada} logo={f.logo_id} />
+                                            <EstadoFila marcada={f.marcada} logo={f.logo_id ?? (f.logo_texto ? -1 : null)} />
                                         </label>
                                         {f.marcada && (
                                             <>
@@ -229,7 +232,8 @@ export function ConfigurarBordados({ bloque, ubicaciones, logos, onLogoCreado, m
                                                 <SelectorLogo
                                                     valor={f.logo_id}
                                                     logos={logos}
-                                                    onCambiar={(id) => cambiarCatalogo(u, { logo_id: id })}
+                                                    texto={f.logo_texto}
+                                                    onCambiar={(id) => cambiarCatalogo(u, { logo_id: id, logo_texto: null })}
                                                     onLogoCreado={onLogoCreado}
                                                     url={urls.logos}
                                                     ubicacion={u.nombre}
@@ -286,7 +290,8 @@ export function ConfigurarBordados({ bloque, ubicaciones, logos, onLogoCreado, m
                             <SelectorLogo
                                 valor={f.logo_id}
                                 logos={logos}
-                                onCambiar={(id) => cambiarPropia(f.id, { logo_id: id })}
+                                texto={f.logo_texto}
+                                onCambiar={(id) => cambiarPropia(f.id, { logo_id: id, logo_texto: null })}
                                 onLogoCreado={onLogoCreado}
                                 url={urls.logos}
                                 ubicacion={f.nombre || 'la ubicación personalizada'}
@@ -309,7 +314,11 @@ export function ConfigurarBordados({ bloque, ubicaciones, logos, onLogoCreado, m
                         size="sm"
                         className="justify-self-start"
                         onClick={() => {
-                            if (cabe(1)) setPropias((p) => [...p, { id: ++secuencia, ubicacion_bordado_id: null, es_personalizada: true, nombre: '', precio: '0', cantidad: '1', logo_id: null }]);
+                            if (cabe(1))
+                                setPropias((p) => [
+                                    ...p,
+                                    { id: ++secuencia, ubicacion_bordado_id: null, es_personalizada: true, nombre: '', precio: '0', cantidad: '1', logo_id: null, logo_texto: null },
+                                ]);
                         }}
                     >
                         <Plus /> Ubicación personalizada
@@ -337,6 +346,7 @@ function EstadoFila({ marcada, logo }: { marcada: boolean; logo: number | null }
 /** Logo de una ubicación: buscador por nombre o archivo; «Registrar logo» si no está (permiso logos.crear). */
 function SelectorLogo({
     valor,
+    texto,
     logos,
     onCambiar,
     onLogoCreado,
@@ -344,6 +354,8 @@ function SelectorLogo({
     ubicacion,
 }: {
     valor: number | null;
+    /** Nombre guardado cuando el logo no está en el catálogo activo. */
+    texto?: string | null;
     logos: LogoCatalogo[];
     onCambiar: (id: number | null) => void;
     onLogoCreado: (l: LogoCatalogo) => void;
@@ -352,7 +364,8 @@ function SelectorLogo({
 }) {
     const { puede } = usePermisos();
     const [alta, setAlta] = useState<string>();
-    const elegido = logos.find((l) => l.id === valor);
+    const catalogado = logos.find((l) => l.id === valor);
+    const elegido = catalogado ?? (texto ? { id: valor ?? 0, nombre: texto, archivo: valor ? 'Logo inhabilitado' : 'Logo registrado solo en texto' } : undefined);
 
     if (elegido) {
         return (

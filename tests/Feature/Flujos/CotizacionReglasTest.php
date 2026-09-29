@@ -148,6 +148,10 @@ class CotizacionReglasTest extends TestCase
 
         $this->assertExito($this->actingAs($admin)->putJson(route('cotizaciones.update', $cot), $payload));
         $this->assertSame(1, $cot->fresh()->productos()->count());
+
+        // Pero una cotización NUEVA no puede usar un tipo inhabilitado.
+        $this->actingAs($admin)->postJson(route('cotizaciones.store'), $payload)
+            ->assertStatus(422)->assertJsonValidationErrors('productos.0.tipo_producto_id');
     }
 
     /** Revisión: guardar sin cambios borraba condiciones y el nombre de un logo inhabilitado. */
