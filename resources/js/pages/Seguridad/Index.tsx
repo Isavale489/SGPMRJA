@@ -1,6 +1,6 @@
 import { Link, router, useForm } from '@inertiajs/react';
 import { ArrowLeft, Copy, Eye, Lock, Pencil, Plus, Save, Search, ShieldCheck, Trash2, Undo2, Users } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { Campo } from '@/components/app/campo';
 import { ConfirmarPeligro } from '@/components/app/confirmar-peligro';
@@ -62,7 +62,9 @@ const etiqueta = (a: string) => ACCION[a] ?? a.charAt(0).toUpperCase() + a.slice
 export default function SeguridadIndex({ roles, permisos, secciones, urls }: Props) {
     const editables = roles.filter((r) => !r.es_admin);
     const [pestana, setPestana] = useState<'roles' | 'permisos'>('roles');
-    const [rolId, setRolId] = useState<number | undefined>(editables[0]?.id);
+    const [elegido, setRolId] = useState<number | undefined>(editables[0]?.id);
+    // Si el rol elegido se eliminó, se pasa al primero que quede.
+    const rolId = editables.some((r) => r.id === elegido) ? elegido : editables[0]?.id;
     const [sucio, setSucio] = useState(false);
 
     const irAPermisos = (id: number) => {
@@ -83,7 +85,7 @@ export default function SeguridadIndex({ roles, permisos, secciones, urls }: Pro
                     <PestanaRoles roles={roles} url={urls.roles} onPermisos={irAPermisos} />
                 </TabsContent>
                 <TabsContent value="permisos" className="mt-4" forceMount hidden={pestana !== 'permisos'}>
-                    <Matriz roles={roles} permisos={permisos} secciones={secciones} rolId={rolId} onRol={(id) => { if (confirmarDescarte(sucio)) setRolId(id); }} url={urls.permisos} onSucio={setSucio} />
+                    <Matriz key={rolId} roles={roles} permisos={permisos} secciones={secciones} rolId={rolId} onRol={(id) => { if (confirmarDescarte(sucio)) setRolId(id); }} url={urls.permisos} onSucio={setSucio} />
                 </TabsContent>
             </Tabs>
         </AppLayout>
@@ -194,7 +196,10 @@ interface PropsMatriz {
  */
 function Matriz({ roles, permisos, secciones, rolId, onRol, url, onSucio }: PropsMatriz) {
     const rol = roles.find((r) => r.id === rolId);
-    const guardados = useMemo(() => new Set(rolId ? (permisos[rolId] ?? []) : []), [permisos, rolId]);
+    // Firma por contenido: recargar las props (p. ej. al editar otro rol en la
+    // pestaña Roles) no borra las marcas sin guardar; guardar este rol sí las alinea.
+    const firma = [...(rolId ? (permisos[rolId] ?? []) : [])].sort().join('|');
+    const guardados = useMemo(() => new Set(firma ? firma.split('|') : []), [firma]);
     const [marcados, setMarcados] = useState<Set<string>>(guardados);
     const [buscar, setBuscar] = useState('');
     const [guardando, setGuardando] = useState(false);
@@ -218,6 +223,16 @@ function Matriz({ roles, permisos, secciones, rolId, onRol, url, onSucio }: Prop
         else s.delete(`${m.slug}.${accion}`);
     });
     const fijar = (lista: string[], activo: boolean) => cambiar((s) => lista.forEach((c) => (activo ? s.add(c) : s.delete(c))));
+    // Solo toca los módulos visibles: los que oculta la búsqueda conservan sus marcas.
+    const soloVer = () =>
+        cambiar((s) =>
+            visibles.forEach((sec) =>
+                sec.modulos.forEach((m) => {
+                    claves(m).forEach((c) => s.delete(c));
+                    if (m.acciones.some((a) => a.accion === 'ver')) s.add(`${m.slug}.ver`);
+                }),
+            ),
+        );
 
     const guardar = () => {
         if (!rol) return;
@@ -250,7 +265,7 @@ function Matriz({ roles, permisos, secciones, rolId, onRol, url, onSucio }: Prop
                                 <SelectTrigger className="w-44" aria-label="Copiar los permisos de otro rol"><Copy className="size-4" /><SelectValue placeholder="Copiar de…" /></SelectTrigger>
                                 <SelectContent>{editables.filter((r) => r.id !== rol.id).map((r) => <SelectItem key={r.id} value={String(r.id)}>{r.nombre}</SelectItem>)}</SelectContent>
                             </Select>
-                            <Button variant="outline" onClick={() => setMarcados(new Set(visibles.flatMap((s) => s.modulos.filter((m) => m.acciones.some((a) => a.accion === 'ver')).map((m) => `${m.slug}.ver`))))} title="Solo «Ver» en los módulos visibles (rol de consulta)"><Eye /> Solo ver</Button>
+                            <Button variant="outline" onClick={soloVer} title="Solo «Ver» en los módulos visibles (rol de consulta)"><Eye /> Solo ver</Button>
                             <Button variant="outline" onClick={() => fijar(todas, true)}>Marcar todo</Button>
                             <Button variant="outline" onClick={() => fijar(todas, false)}>Limpiar</Button>
                         </>
@@ -266,7 +281,7 @@ function Matriz({ roles, permisos, secciones, rolId, onRol, url, onSucio }: Prop
 
             {rol && (
                 <>
-                    <div className="bg-background/95 sticky top-0 z-10 flex flex-wrap items-center justify-between gap-2 rounded-lg border p-3 backdrop-blur">
+                    <div className="bg-background/95 sticky top-14 z-10 flex flex-wrap items-center justify-between gap-2 rounded-lg border p-3 backdrop-blur">
                         <p className="text-sm">
                             <span className="font-medium">{rol.nombre}</span> tiene <span className="tabular font-medium">{marcados.size}</span> permisos
                             {sucio && <span className="bg-warning/15 text-warning ml-2 rounded-full px-2 py-0.5 text-xs">Cambios sin guardar</span>}
@@ -290,8 +305,8 @@ function Matriz({ roles, permisos, secciones, rolId, onRol, url, onSucio }: Prop
                                             <span className="text-muted-foreground text-sm font-normal tabular">{otorgadas}/{deSeccion.length}</span>
                                         </CardTitle>
                                         <div className="flex flex-wrap gap-1">
-                                            <Button variant="ghost" size="sm" onClick={() => fijar(deSeccion, true)}>Marcar sección</Button>
-                                            <Button variant="ghost" size="sm" onClick={() => fijar(deSeccion, false)}>Limpiar sección</Button>
+                                            <Button variant="ghost" size="sm" onClick={() => fijar(deSeccion, true)} aria-label={`Marcar toda la sección ${s.nombre}`}>Marcar sección</Button>
+                                            <Button variant="ghost" size="sm" onClick={() => fijar(deSeccion, false)} aria-label={`Limpiar la sección ${s.nombre}`}>Limpiar sección</Button>
                                         </div>
                                     </div>
                                 </CardHeader>
@@ -299,13 +314,14 @@ function Matriz({ roles, permisos, secciones, rolId, onRol, url, onSucio }: Prop
                                     {s.modulos.map((m) => {
                                         const cs = claves(m);
                                         const todo = cs.every((c) => marcados.has(c));
+                                        const parcial = !todo && cs.some((c) => marcados.has(c));
                                         return (
                                             <fieldset key={m.slug} className="grid content-start gap-2 rounded-lg border p-3">
                                                 <legend className="sr-only">{m.nombre}</legend>
                                                 <div className="flex items-center justify-between gap-2">
                                                     <span className="flex items-center gap-2 text-sm font-medium"><Icono nombre={m.icono} className="text-muted-foreground size-4" /> {m.nombre}</span>
                                                     <label className="text-muted-foreground flex items-center gap-1.5 text-xs">
-                                                        <input type="checkbox" className="accent-primary size-4" checked={todo} onChange={(e) => fijar(cs, e.target.checked)} aria-label={`Todo el módulo ${m.nombre}`} />
+                                                        <CasillaTodo checked={todo} parcial={parcial} onChange={(v) => fijar(cs, v)} etiqueta={`Todo el módulo ${m.nombre}`} />
                                                         Todo
                                                     </label>
                                                 </div>
@@ -336,4 +352,13 @@ function Matriz({ roles, permisos, secciones, rolId, onRol, url, onSucio }: Prop
             {!rol && <p className="text-muted-foreground rounded-lg border border-dashed p-8 text-center text-sm">Crea un rol en la pestaña Roles para asignarle permisos.</p>}
         </div>
     );
+}
+
+/** Casilla «Todo» del módulo: indeterminada cuando hay acciones sueltas (el lector de pantalla la anuncia como «mixta»). */
+function CasillaTodo({ checked, parcial, onChange, etiqueta }: { checked: boolean; parcial: boolean; onChange: (v: boolean) => void; etiqueta: string }) {
+    const ref = useRef<HTMLInputElement>(null);
+    useEffect(() => {
+        if (ref.current) ref.current.indeterminate = parcial;
+    }, [parcial]);
+    return <input ref={ref} type="checkbox" className="accent-primary size-4" checked={checked} onChange={(e) => onChange(e.target.checked)} aria-label={etiqueta} />;
 }
