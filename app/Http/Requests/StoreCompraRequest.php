@@ -22,10 +22,12 @@ class StoreCompraRequest extends FormRequest
                 // Solo dígitos y guiones (ej. 0001-0456).
                 'regex:/^[0-9\-]+$/',
                 // Una misma factura no puede repetirse para el mismo proveedor.
-                // Ignora la compra en edición y los borradores con factura vacía (null).
+                // Ignora la compra en edición, los borradores con factura vacía
+                // (null) y las anuladas (su clon corregido reutiliza el número).
                 Rule::unique('compra', 'numero_factura')
                     ->where(fn($q) => $q
                         ->where('proveedor_id', $this->input('proveedor_id'))
+                        ->where('estado', '!=', 'anulada')
                         ->whereNull('deleted_at'))
                     ->ignore($this->route('compra')),
             ],

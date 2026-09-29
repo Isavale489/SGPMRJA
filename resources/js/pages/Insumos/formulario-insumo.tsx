@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
+import { cn } from '@/lib/utils';
 
 import type { InsumoCreado, InsumoFila, PaginaInsumos } from './tipos';
 
@@ -23,6 +24,11 @@ interface Props {
     recargar?: string[];
     /** Nombre sugerido (lo que se escribió en el buscador). */
     nombreInicial?: string;
+    /**
+     * Alta desde una compra: el insumo es inventariable por fuerza (se compra
+     * para el inventario) y su existencia entra con la compra, no a mano.
+     */
+    paraCompra?: boolean;
 }
 
 const texto = (n?: number) => (n === undefined ? '' : String(n));
@@ -41,7 +47,7 @@ function Interruptor({ id, etiqueta, ayuda, valor, onCambiar }: { id: string; et
 }
 
 /** Montar con una `key` distinta en cada apertura (ver docs/conventions/frontend.md). */
-export function FormularioInsumo({ abierto, onCerrar, insumo, tipos, unidades, urls, onCreado, recargar = [], nombreInicial = '' }: Props) {
+export function FormularioInsumo({ abierto, onCerrar, insumo, tipos, unidades, urls, onCreado, recargar = [], nombreInicial = '', paraCompra = false }: Props) {
     const form = useForm({
         nombre: insumo?.nombre ?? nombreInicial,
         codigo: insumo?.codigo ?? '',
@@ -155,21 +161,27 @@ export function FormularioInsumo({ abierto, onCerrar, insumo, tipos, unidades, u
                     valor={data.aplica_iva}
                     onCambiar={(v) => setData('aplica_iva', v)}
                 />
-                <Interruptor
-                    id="inventariable"
-                    etiqueta="Inventariable"
-                    ayuda="Lleva existencias y movimientos. Si no lo es, no se descuenta del inventario."
-                    valor={data.is_inventoriable}
-                    onCambiar={(v) => setData('is_inventoriable', v)}
-                />
+                {paraCompra ? (
+                    <p className="text-muted-foreground text-xs">Inventariable: su existencia entra con esta compra al procesarla.</p>
+                ) : (
+                    <Interruptor
+                        id="inventariable"
+                        etiqueta="Inventariable"
+                        ayuda="Lleva existencias y movimientos. Si no lo es, no se descuenta del inventario."
+                        valor={data.is_inventoriable}
+                        onCambiar={(v) => setData('is_inventoriable', v)}
+                    />
+                )}
                 {data.is_inventoriable && (
-                    <div className="grid gap-4 sm:grid-cols-3">
+                    <div className={cn('grid gap-4', paraCompra ? 'sm:grid-cols-2' : 'sm:grid-cols-3')}>
                         <Campo etiqueta="Existencia mínima" error={errors.stock_minimo}>
                             <Input type="number" inputMode="decimal" min={0} step="0.01" value={data.stock_minimo} onChange={(e) => setData('stock_minimo', e.target.value)} className="tabular" />
                         </Campo>
-                        <Campo etiqueta="Existencia actual" error={errors.stock_actual} ayuda={insumo ? 'Las entradas llegan por Compras y Producción.' : undefined}>
-                            <Input type="number" inputMode="decimal" min={0} step="0.01" value={data.stock_actual} onChange={(e) => setData('stock_actual', e.target.value)} className="tabular" />
-                        </Campo>
+                        {!paraCompra && (
+                            <Campo etiqueta="Existencia actual" error={errors.stock_actual} ayuda={insumo ? 'Las entradas llegan por Compras y Producción.' : undefined}>
+                                <Input type="number" inputMode="decimal" min={0} step="0.01" value={data.stock_actual} onChange={(e) => setData('stock_actual', e.target.value)} className="tabular" />
+                            </Campo>
+                        )}
                         <Campo etiqueta="Existencia máxima" error={errors.stock_maximo}>
                             <Input type="number" inputMode="decimal" min={0} step="0.01" value={data.stock_maximo} onChange={(e) => setData('stock_maximo', e.target.value)} className="tabular" />
                         </Campo>

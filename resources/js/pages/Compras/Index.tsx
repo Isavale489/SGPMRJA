@@ -1,6 +1,7 @@
 import { Link, router } from '@inertiajs/react';
 import { Ban, BellRing, CheckCheck, Copy, EllipsisVertical, Eye, FileText, Pencil, Plus, Search, Trash2 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 
 import { ConfirmarPeligro } from '@/components/app/confirmar-peligro';
 import { EstadoBadge } from '@/components/app/estado-badge';
@@ -38,10 +39,24 @@ export default function ComprasIndex({ vista, filtros: iniciales, compras, exist
     const hayFiltros = Object.entries(filtros).some(([k, v]) => k !== 'vista' && v);
     const nombreProveedor = (id?: string) => proveedores.find((p) => String(p.id) === id)?.nombre;
 
+    // Mientras se pide la ficha se muestra «cargando»; si al volver no llegó,
+    // la compra no existe (enlace viejo o ID a mano) y se cierra con aviso.
+    const [pidiendo, setPidiendo] = useState(false);
     const abrirDetalle = (id: number) => {
         setVer(String(id));
-        router.get(urls.index, { ...filtros, ver: id }, { only: ['detalle'], preserveState: true, preserveScroll: true, replace: true });
+        setPidiendo(true);
+        router.get(urls.index, { ...filtros, ver: id }, { only: ['detalle'], preserveState: true, preserveScroll: true, replace: true, onFinish: (v) => {
+            // Una visita interrumpida (se abrió otra ficha) no cuenta como «llegó sin ficha».
+            if (!v.interrupted && !v.cancelled) setPidiendo(false);
+        } });
     };
+    const noExiste = Boolean(ver) && !pidiendo && detalle?.id !== Number(ver);
+    useEffect(() => {
+        if (!noExiste) return;
+        toast.error(`La compra #${ver} no existe o fue eliminada.`);
+        cerrarDetalle();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [noExiste]);
     const cerrarDetalle = () => {
         setVer(undefined);
         router.get(urls.index, { ...filtros }, { only: ['detalle'], preserveState: true, preserveScroll: true, replace: true });
@@ -50,8 +65,12 @@ export default function ComprasIndex({ vista, filtros: iniciales, compras, exist
     const ejecutar = (accion: Accion | 'clonar', id: number) => {
         const url = `${urls.index}/${id}`;
         const opciones = { preserveScroll: true };
-        if (accion === 'procesar') router.patch(`${url}/procesar`, {}, { ...opciones, onSuccess: () => avisarCambioStock('compra-procesada') });
-        if (accion === 'anular') router.patch(`${url}/anular`, {}, { ...opciones, onSuccess: () => avisarCambioStock('compra-anulada') });
+        // Un rechazo del servidor también vuelve con éxito (redirect con flash de error): solo se avisa si cambió el stock.
+        const siCambio = (motivo: 'compra-procesada' | 'compra-anulada') => (p: { props: { flash?: unknown } }) => {
+            if (!(p.props.flash as { error?: string | null } | undefined)?.error) avisarCambioStock(motivo);
+        };
+        if (accion === 'procesar') router.patch(`${url}/procesar`, {}, { ...opciones, onSuccess: siCambio('compra-procesada') });
+        if (accion === 'anular') router.patch(`${url}/anular`, {}, { ...opciones, onSuccess: siCambio('compra-anulada') });
         if (accion === 'clonar') router.post(`${url}/clonar`, {}, opciones);
         if (accion === 'eliminar') {
             if (String(id) === ver) setVer(undefined);
@@ -272,7 +291,7 @@ export default function ComprasIndex({ vista, filtros: iniciales, compras, exist
 
             <DetalleCompra
                 compra={ver && detalle?.id === Number(ver) ? detalle : null}
-                cargando={Boolean(ver) && detalle?.id !== Number(ver)}
+                cargando={Boolean(ver) && pidiendo}
                 onCerrar={cerrarDetalle}
                 urls={urls}
                 onAccion={(accion, c) => (accion === 'clonar' ? ejecutar('clonar', c.id) : setConfirmando({ accion, compra: c }))}

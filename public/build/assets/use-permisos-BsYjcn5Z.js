@@ -1,1 +1,0 @@
-import{a as e}from"./inertia-DEW0Gv7v.js";function t(){let{auth:t}=e().props;return{puede:e=>t.esAdmin||t.permisos.includes(e),esAdmin:t.esAdmin}}export{t};
