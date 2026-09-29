@@ -71,6 +71,8 @@ export interface GrupoCotizacion {
     imagen: string | null;
     color: { id: number; nombre: string; hex: string | null } | null;
     precio_base: number;
+    /** Precio de catálogo de la variante materializada; null en las dinámicas. */
+    precio_catalogo: number | null;
     recargo: number;
     precio_unitario: number;
     bordados: BordadoLinea[];
@@ -213,6 +215,8 @@ export interface Bloque {
     color_id: number | null;
     /** Precio base por unidad (sin el recargo del bordado). */
     precio: number;
+    /** Precio de catálogo de la variante materializada (no se envía); las dinámicas lo resuelven al editar. */
+    precio_catalogo?: number | null;
     bordados: BordadoLinea[];
     tallas: { talla_id: number; genero_id: number; cantidad: number; descripcion: string | null }[];
 }

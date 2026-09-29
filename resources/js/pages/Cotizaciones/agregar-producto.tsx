@@ -99,7 +99,7 @@ export function AgregarProducto({ abierto, onCerrar, bloque, onAgregar, catalogo
                   datos: {
                       id: bloque.producto_id,
                       codigo: bloque.codigo ?? '',
-                      precio_base: bloque.precio,
+                      precio_base: bloque.precio_catalogo ?? bloque.precio,
                       imagen: bloque.imagen,
                       tipo_nombre: bloque.nombre,
                       tela_nombre: null,
@@ -121,10 +121,11 @@ export function AgregarProducto({ abierto, onCerrar, bloque, onAgregar, catalogo
     useEffect(() => {
         const alEditar = claveGuardada.current === claveVariante;
         if (!alEditar) claveGuardada.current = null; // cambió la combinación: ya es una variante nueva
-        // Al editar, la variante guardada ya está resuelta (SKU y precio negociado): solo se
-        // consulta el precio de catálogo para mostrarlo como «Precio base» y que «Restaurar»
-        // vuelva a él. Si la combinación ya no existe, se queda la guardada.
-        if (alEditar && (!tipo || !completa)) return;
+        // Al editar, la variante guardada ya está resuelta (SKU y precio negociado). Una
+        // materializada trae su precio de catálogo; de una dinámica solo se consulta el precio
+        // de catálogo para mostrarlo como «Precio base» y que «Restaurar» vuelva a él. Si la
+        // combinación ya no existe, se queda la guardada.
+        if (alEditar && (bloque?.producto_id || !tipo || !completa)) return;
         if (!tipo || !completa) {
             setResuelta({ estado: 'nada' });
             return;
@@ -236,6 +237,7 @@ export function AgregarProducto({ abierto, onCerrar, bloque, onAgregar, catalogo
             imagen: tipo.imagen,
             color_id: colorId,
             precio: precioNum,
+            precio_catalogo: d.dinamica ? null : d.precio_base,
             bordados: bloque?.bordados ?? [],
             tallas: Object.entries(celdas).map(([k, cantidad]) => {
                 const [talla_id, genero_id] = k.split('-').map(Number) as [number, number];
