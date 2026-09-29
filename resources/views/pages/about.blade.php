@@ -50,6 +50,16 @@
         box-shadow: 0 5px 15px rgba(0,0,0,0.1);
     }
 
+    .team-member-iniciales {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #1B3A5C;
+        color: #fff;
+        font-size: 2.75rem;
+        font-weight: 600;
+    }
+
     .team-member-name {
         color: #212529;
         font-size: 1.25rem;
@@ -229,7 +239,8 @@
                             </div>
                             <div class="col-md-3">
                                 <div class="team-member-card text-center">
-                                    <img class="team-member-image" src="{{ asset('img/yaneth-de-santis.jpg') }}" alt="Yaneth de Santis" />
+                                    {{-- Sin foto: iniciales en el mismo círculo que las demás. --}}
+                                    <div class="team-member-image team-member-iniciales" role="img" aria-label="Yaneth de Santis">YS</div>
                                     <h5 class="team-member-name">Yaneth de Santis</h5>
                                     <div class="team-member-position">Costurera</div>
                                 </div>
