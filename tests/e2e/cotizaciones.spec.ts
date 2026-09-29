@@ -73,6 +73,27 @@ test('crear una cotización por el asistente, con bordado', async ({ page }) => 
   expect(errores, errores.join('\n')).toEqual([]);
 });
 
+/** Regresión: Enter dentro del alta rápida de cliente (diálogo abierto desde el paso 1) debe guardar el cliente, no mover el asistente. */
+test('dar de alta un cliente con Enter desde el paso Cliente', async ({ page }) => {
+  await page.goto('/cotizaciones/crear', { waitUntil: 'networkidle' });
+  await page.getByRole('combobox', { name: 'Buscar cliente' }).fill('Textiles Enter');
+  await page.getByRole('button', { name: 'Nuevo cliente' }).click();
+  const alta = page.getByRole('dialog');
+  await alta.getByRole('textbox', { name: 'Cédula' }).fill('19876543');
+  await alta.getByLabel('Nombre y apellido').fill('Textiles Enter');
+  await alta.getByLabel('Número del teléfono 1').fill('5559876');
+  await alta.getByRole('combobox', { name: 'Estado' }).click();
+  await page.getByRole('option', { name: 'Portuguesa', exact: true }).click();
+  await alta.getByRole('combobox', { name: 'Municipio' }).click();
+  await page.getByRole('option', { name: 'Páez', exact: true }).click();
+  await alta.getByLabel('Nombre y apellido').press('Enter');
+
+  await expect(alta).toBeHidden();
+  await expect(page.getByText('Textiles Enter').first()).toBeVisible();
+  await expect(page.getByText('Elige el cliente.')).toHaveCount(0); // el asistente no intentó avanzar
+  await expect(page.getByRole('heading', { name: 'Nueva cotización' })).toBeVisible(); // ni se envió la cotización
+});
+
 test('editar conserva los productos y aprobar cambia el estado', async ({ page }) => {
   await page.goto('/cotizaciones', { waitUntil: 'networkidle' });
   const fila = page.getByRole('row', { name: new RegExp(CLIENTE_COT) }).first();

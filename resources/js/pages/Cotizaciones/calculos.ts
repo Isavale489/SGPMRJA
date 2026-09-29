@@ -94,6 +94,7 @@ export function accionesDe(c: Pick<CotizacionFila, 'estado'>, puede: (permiso: s
         pendiente: convertir && (c.estado === 'Aprobada' || c.estado === 'Cancelada'),
         cancelar: convertir && editable,
         reactivar: convertir && c.estado === 'Vencida',
-        convertirPedido: convertir && c.estado === 'Aprobada',
+        // Crear el pedido pide además gestionar pedidos (pedidos.create).
+        convertirPedido: convertir && puede('pedidos.gestionar') && c.estado === 'Aprobada',
     };
 }

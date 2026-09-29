@@ -122,7 +122,9 @@ Route::middleware(['auth', 'throttle:60,1', 'active.user', 'recovery.questions.r
         Route::delete('cargos/{cargo}', [CargoController::class, 'destroy'])->name('cargos.destroy');
         Route::patch('cargos/{id}/restore', [CargoController::class, 'restore'])->name('cargos.restore');
 
-        // Pedidos (escritura)
+        // Pedidos (escritura). Asistente en página propia (rutas fijas antes del comodín {pedido}).
+        Route::get('pedidos/crear', [PedidoController::class, 'create'])->name('pedidos.create');
+        Route::get('pedidos/{pedido}/editar', [PedidoController::class, 'edit'])->whereNumber('pedido')->name('pedidos.edit');
         Route::post('pedidos', [PedidoController::class, 'store'])->name('pedidos.store');
         Route::put('pedidos/{pedido}', [PedidoController::class, 'update'])->name('pedidos.update');
         Route::patch('pedidos/{pedido}/cancelar', [PedidoController::class, 'cancelar'])->name('pedidos.cancelar');
@@ -151,14 +153,12 @@ Route::middleware(['auth', 'throttle:60,1', 'active.user', 'recovery.questions.r
     // ============================================
         // Pedidos (lectura)
         Route::get('pedidos', [PedidoController::class, 'index'])->name('pedidos.index');
-        Route::get('pedidos-data', [PedidoController::class, 'getPedidos'])->name('pedidos.data');
-        Route::get('pedidos/cotizaciones-disponibles', [PedidoController::class, 'getCotizacionesDisponibles'])->name('pedidos.cotizacionesDisponibles');
         Route::get('pedidos/reporte/pdf', [PedidoController::class, 'reportePdf'])->name('pedidos.reporte.pdf');
-        Route::get('pedidos/reporte', [PedidoController::class, 'reporteGeneral'])->name('pedidos.reporteGeneral');
         // Proyección de insumos para producción (aviso NO bloqueante de stock).
         Route::post('pedidos/proyeccion-insumos', [DisponibilidadInsumoController::class, 'proyectarLineas'])->name('pedidos.proyeccionInsumos');
-        Route::get('pedidos/{pedido}', [PedidoController::class, 'show'])->name('pedidos.show');
         Route::get('pedidos/{pedido}/pdf', [PedidoController::class, 'pedidoPdf'])->name('pedidos.pdf');
+        // Enlace viejo a la ficha (antes JSON): abre el «Ver» del listado.
+        Route::get('pedidos/{pedido}', [PedidoController::class, 'show'])->whereNumber('pedido')->name('pedidos.show');
 
         // Cotizaciones (lectura + conversión)
         Route::get('cotizaciones', [CotizacionController::class, 'index'])->name('cotizaciones.index');
@@ -169,8 +169,6 @@ Route::middleware(['auth', 'throttle:60,1', 'active.user', 'recovery.questions.r
         Route::get('cotizaciones/{cotizacion}', [CotizacionController::class, 'show'])->whereNumber('cotizacion')->name('cotizaciones.show');
         Route::get('cotizaciones/{cotizacion}/pdf', [CotizacionController::class, 'cotizacionPdf'])->name('cotizaciones.pdf');
         Route::put('cotizaciones/{cotizacion}/estado', [CotizacionController::class, 'updateEstado'])->name('cotizaciones.updateEstado');
-        Route::get('cotizaciones/{cotizacion}/datos-para-pedido', [CotizacionController::class, 'getDatosParaPedido'])->name('cotizaciones.datosParaPedido');
-        Route::post('cotizaciones/{cotizacion}/convertir-a-pedido', [CotizacionController::class, 'convertirAPedido'])->name('cotizaciones.convertirAPedido');
         Route::post('cotizaciones/{cotizacion}/reactivar', [CotizacionController::class, 'reactivar'])->name('cotizaciones.reactivar');
 
         // Proveedores (lectura)

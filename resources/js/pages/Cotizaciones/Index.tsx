@@ -135,10 +135,9 @@ export default function CotizacionesIndex({ registros, filtros: iniciales, detal
                             <DropdownMenuContent align="end">
                                 {a.convertirPedido && (
                                     <DropdownMenuItem asChild>
-                                        {/* Pedidos sigue en Blade: navegación completa, no <Link>. */}
-                                        <a href={`${urls.pedidos}?convertir=${c.id}`}>
+                                        <Link href={`${urls.convertir}?cotizacion=${c.id}`}>
                                             <ArrowRightLeft /> Convertir a pedido
-                                        </a>
+                                        </Link>
                                     </DropdownMenuItem>
                                 )}
                                 {a.reactivar && (

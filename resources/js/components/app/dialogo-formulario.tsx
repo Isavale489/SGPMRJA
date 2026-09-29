@@ -33,6 +33,7 @@ export function DialogoFormulario({ abierto, onCerrar, titulo, descripcion, suci
     };
     const enviar = (e: FormEvent) => {
         e.preventDefault();
+        e.stopPropagation(); // abierto desde una página con su propio formulario: no disparar el de la página
         onGuardar();
     };
 

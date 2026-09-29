@@ -215,6 +215,7 @@ export function FormularioEmpleado({ abierto, onCerrar, empleado, departamentos,
 
     const guardar = (e: React.FormEvent) => {
         e.preventDefault();
+        e.stopPropagation(); // abierto desde otra página (alta rápida): su submit no dispara el de la página
         const opciones = { preserveScroll: true, onSuccess: () => { form.setDefaults(); onCerrar(); } };
         if (empleado) form.put(`${urls.index}/${empleado.id}`, opciones);
         else form.post(urls.index, opciones);

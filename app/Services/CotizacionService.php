@@ -5,10 +5,7 @@ namespace App\Services;
 use App\Models\Cotizacion;
 use App\Models\DetalleCotizacion;
 use App\Models\DetalleCotizacionBordado;
-use App\Models\DetallePedido;
-use App\Models\DetallePedidoBordado;
 use App\Models\Insumo;
-use App\Models\Pedido;
 use App\Models\Producto;
 use App\Models\TasaCambio;
 use App\Models\TipoProducto;
@@ -155,117 +152,6 @@ class CotizacionService
             'nueva_fecha_validez' => $cotizacion->fecha_validez,
             'user_id'          => Auth::id(),
         ]);
-    }
-
-    /**
-     * Convertir una cotización aprobada a pedido.
-     *
-     * @return Pedido El pedido creado
-     * @throws \Exception Si la cotización no puede ser convertida
-     */
-    public function convertirAPedido(Cotizacion $cotizacion): Pedido
-    {
-        // Si la cotización está vencida, la transacción se CONFIRMA con el estado
-        // 'Vencida' y la excepción se lanza después: lanzarla dentro del closure
-        // haría rollback y el marcado se perdería.
-        $venceEl = null;
-
-        $pedido = DB::transaction(function () use ($cotizacion, &$venceEl) {
-            // 1. Re-obtener la cotización con bloqueo pesimista (SELECT ... FOR UPDATE)
-            $cotizacion = Cotizacion::lockForUpdate()->findOrFail($cotizacion->id);
-
-            // 2. Validar estado DENTRO del bloqueo (previene race conditions)
-            if ($cotizacion->estado !== 'Aprobada') {
-                throw new \InvalidArgumentException('Solo se pueden convertir cotizaciones con estado Aprobada.');
-            }
-
-            // 2.b Vigencia de precios: bloquear si la fecha de validez pactada en la
-            //     cotización ya pasó. La marca como 'Vencida' para reflejarlo en el listado.
-            if ($cotizacion->estaVencidaPorVigencia()) {
-                $cotizacion->update(['estado' => 'Vencida']);
-                $venceEl = $cotizacion->fechaLimiteVigencia();
-                return null;
-            }
-
-            // 3. Verificar que no exista ya un pedido asociado (doble protección + índice único en BD)
-            if ($cotizacion->yaFueConvertida()) {
-                throw new \InvalidArgumentException('Esta cotización ya fue convertida a pedido anteriormente.');
-            }
-
-            // 4. Eager-load detalles y validar que no estén vacíos
-            $cotizacion->load('productos.bordados');
-            if ($cotizacion->productos->isEmpty()) {
-                throw new \RuntimeException('La cotización no tiene productos. No se puede crear un pedido vacío.');
-            }
-
-            // 5. Crear el Pedido con datos de la cotización
-            $pedido = Pedido::create([
-                'cotizacion_id' => $cotizacion->id,
-                'cliente_id' => $cotizacion->cliente_id,
-                'fecha_pedido' => now(),
-                'total' => $cotizacion->total,
-                'abono' => 0,
-                'prioridad' => $cotizacion->prioridad ?? 'Normal',
-                'estado' => 'Pendiente',
-                'user_id' => Auth::id(),
-            ]);
-
-            // 6. Transferir TODOS los detalles (incluyendo color, talla, precio cotizado)
-            foreach ($cotizacion->productos as $detalle) {
-                $detallePedido = DetallePedido::create([
-                    'pedido_id' => $pedido->id,
-                    'producto_id' => $detalle->producto_id,
-                    'tipo_producto_id' => $detalle->tipo_producto_id,
-                    'tela_snapshot' => $detalle->tela_snapshot,
-                    'atributos_snapshot' => $detalle->atributos_snapshot,
-                    'sku_snapshot' => $detalle->sku_snapshot,
-                    'cantidad' => $detalle->cantidad,
-                    'precio_unitario' => $detalle->precio_unitario,
-                    'descripcion' => $detalle->descripcion,
-                    'lleva_bordado' => $detalle->lleva_bordado ?? false,
-                    'color_id' => $detalle->color_id,
-                    'talla_id' => $detalle->talla_id,
-                    'genero_id' => $detalle->genero_id,
-                ]);
-
-                foreach ($detalle->bordados as $index => $bordado) {
-                    DetallePedidoBordado::create([
-                        'detalle_pedido_id' => $detallePedido->id,
-                        'ubicacion_bordado_id' => $bordado->ubicacion_bordado_id,
-                        'logo_id' => $bordado->logo_id,
-                        'nombre_aplicado' => $bordado->nombre_aplicado,
-                        'nombre_logo_aplicado' => $bordado->nombre_logo_aplicado,
-                        'es_personalizada' => (bool) $bordado->es_personalizada,
-                        'cantidad' => (int) ($bordado->cantidad ?: 1),
-                        'precio_aplicado' => (float) $bordado->precio_aplicado,
-                        'orden' => (int) $index,
-                    ]);
-                }
-            }
-
-            // 7. Marcar como convertida (dentro de la misma transacción)
-            $cotizacion->update(['estado' => 'Convertida']);
-
-            Log::info('Cotización convertida a pedido', [
-                'cotizacion_id' => $cotizacion->id,
-                'pedido_id' => $pedido->id,
-                'total' => $pedido->total,
-                'productos' => $cotizacion->productos->count(),
-                'user_id' => Auth::id(),
-            ]);
-
-            return $pedido;
-        });
-
-        if ($venceEl !== null) {
-            throw new \InvalidArgumentException(
-                'La cotización venció: su validez expiró el ' .
-                $venceEl->format('d/m/Y') .
-                '. Reactívala para actualizar los precios antes de convertirla a pedido.'
-            );
-        }
-
-        return $pedido;
     }
 
     /**

@@ -109,7 +109,7 @@ export interface PaginaCotizaciones {
     diasVigencia: number;
     iva: number;
     terminos: Terminos;
-    urls: { index: string; crear: string; reportePdf: string; buscarCliente: string; pedidos: string };
+    urls: { index: string; crear: string; reportePdf: string; buscarCliente: string; convertir: string };
 }
 
 /* ── Asistente (crear / editar) ─────────────────────────────────────────── */

@@ -3,12 +3,14 @@
 namespace Database\Seeders;
 
 use App\Models\Atributo;
+use App\Models\Banco;
 use App\Models\Insumo;
 use App\Models\Cliente;
 use App\Models\Cotizacion;
 use App\Models\Departamento;
 use App\Models\Empleado;
 use App\Models\Genero;
+use App\Models\PagoPedido;
 use App\Models\Pedido;
 use App\Models\DetallePedido;
 use App\Models\OrdenProduccion;
@@ -63,6 +65,8 @@ class E2eSeeder extends Seeder
             ]);
         }
 
+        Banco::create(['nombre' => 'Banco de Venezuela']);
+
         // Tasa del día: evita que el layout consulte la API del BCV.
         TasaCambio::create(['moneda' => 'USD', 'valor' => 40, 'fecha_bcv' => today(), 'fuente' => 'e2e']);
 
@@ -101,6 +105,8 @@ class E2eSeeder extends Seeder
         $personaQc = Persona::create(['nombre' => 'Uniformes Araure QC', 'tipo_documento' => 'J-', 'documento_identidad' => '41000001']);
         $clienteQc = Cliente::forceCreate(['persona_id' => $personaQc->id, 'tipo_cliente' => 'juridico', 'estatus' => 1]);
         $pedidoQc = Pedido::forceCreate(['cliente_id' => $clienteQc->id, 'fecha_pedido' => today()->toDateString(), 'total' => 150, 'abono' => 150, 'prioridad' => 'Normal', 'estado' => 'Procesando', 'user_id' => $admin->id]);
+        // El abono sale de sus pagos (como en producción: nunca un abono sin pagos).
+        PagoPedido::create(['pedido_id' => $pedidoQc->id, 'metodo' => 'efectivo', 'monto' => 150]);
         $lineaQc = DetallePedido::forceCreate(['pedido_id' => $pedidoQc->id, 'tipo_producto_id' => $tipo->id, 'cantidad' => 10, 'precio_unitario' => 15, 'genero_id' => Genero::query()->value('id')]);
         $equipoQc = collect([['Marta Colmenares', '16000001', 'EMP-QC1', 6], ['Julio Arráiz', '16000002', 'EMP-QC2', 4]])->map(function ($e) {
             $p = Persona::create(['nombre' => $e[0], 'tipo_documento' => 'V-', 'documento_identidad' => $e[1]]);
@@ -132,6 +138,7 @@ class E2eSeeder extends Seeder
         $personaOp = Persona::create(['nombre' => 'Taller Guanare OP', 'tipo_documento' => 'J-', 'documento_identidad' => '41000777']);
         $clienteOp = Cliente::forceCreate(['persona_id' => $personaOp->id, 'tipo_cliente' => 'juridico', 'estatus' => 1]);
         $pedidoOp = Pedido::forceCreate(['cliente_id' => $clienteOp->id, 'fecha_pedido' => today()->toDateString(), 'fecha_entrega_estimada' => today()->addDays(10)->toDateString(), 'total' => 240, 'abono' => 240, 'prioridad' => 'Normal', 'estado' => 'Pendiente', 'user_id' => $admin->id]);
+        PagoPedido::create(['pedido_id' => $pedidoOp->id, 'metodo' => 'efectivo', 'monto' => 240]);
         DetallePedido::forceCreate(['pedido_id' => $pedidoOp->id, 'tipo_producto_id' => $tipoOp->id, 'cantidad' => 12, 'precio_unitario' => 20, 'genero_id' => Genero::query()->value('id')]);
 
         // Cotización Aprobada lista para convertir: pasa por el service real

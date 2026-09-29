@@ -154,7 +154,7 @@ return [
             'gestionar' => 'Crear, editar, cancelar y reactivar pedidos', // solo-admin
         ],
         'rutas' => [
-            'pedidos.index|pedidos.data|pedidos.cotizacionesDisponibles|pedidos.reporteGeneral|pedidos.show|pedidos.proyeccionInsumos' => 'ver',
+            'pedidos.index|pedidos.show|pedidos.proyeccionInsumos' => 'ver',
             'pedidos.reporte.pdf|pedidos.pdf' => 'pdf',
             // solo-admin (escritura): hoy en el grupo role:Administrador
             'pedidos.store|pedidos.create|pedidos.update|pedidos.cancelar|pedidos.reactivar|pedidos.destroy|pedidos.edit' => 'gestionar',
@@ -166,14 +166,14 @@ return [
         'acciones' => [
             'ver'        => 'Ver listado y detalle de cotizaciones', // Supervisor
             'pdf'        => 'Exportar PDF',                           // Supervisor
-            'convertir'  => 'Convertir cotizacion a pedido',         // Supervisor
+            'convertir'  => 'Aprobar, cancelar y reactivar cotizaciones', // convertir a pedido pide además pedidos.gestionar         // Supervisor
             'gestionar'  => 'Crear, editar y eliminar cotizaciones', // solo-admin
         ],
         'rutas' => [
             'cotizaciones.index|cotizaciones.reporteGeneral|cotizaciones.show|cotizaciones.ubicacionesBordado.data|cotizaciones.proyeccionInsumos' => 'ver',
             'cotizaciones.reporte.pdf|cotizaciones.pdf' => 'pdf',
             // conversion a pedido (acceso compartido con Supervisor)
-            'cotizaciones.datosParaPedido|cotizaciones.convertirAPedido|cotizaciones.updateEstado|cotizaciones.reactivar' => 'convertir',
+            'cotizaciones.updateEstado|cotizaciones.reactivar' => 'convertir',
             // solo-admin (escritura): hoy en el grupo role:Administrador
             'cotizaciones.store|cotizaciones.create|cotizaciones.update|cotizaciones.destroy|cotizaciones.edit|cotizaciones.resolverVariante' => 'gestionar',
         ],

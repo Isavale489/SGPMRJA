@@ -81,8 +81,9 @@ no ignora filas soft-deleted, así que la fila borrada seguía ocupando el
   existiendo (estado `Cancelado`), la cotización permanece `Convertida` a propósito.
 - Sin migración (el desligue por `NULL` resuelve el índice único) ni cambios de
   frontend (el botón "Convertir a pedido" reaparece solo, es data-driven).
-- La conversión sigue por `CotizacionService::convertirAPedido` (re-chequea
-  vigencia); `yaFueConvertida()` = `pedido()->exists()` ya excluye trashed.
+- La conversión va por el asistente de Pedidos → `PedidoService::crearDesdeCotizacion`
+  (re-chequea vigencia, exige abono mínimo y entrega; copia las líneas en el servidor);
+  `yaFueConvertida()` = `pedido()->exists()` ya excluye trashed. (sep-2026)
 
 ---
 

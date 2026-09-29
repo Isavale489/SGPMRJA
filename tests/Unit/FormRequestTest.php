@@ -4,8 +4,7 @@ namespace Tests\Unit;
 
 use App\Http\Requests\StoreClienteRequest;
 use App\Http\Requests\UpdateClienteRequest;
-use App\Http\Requests\StorePedidoRequest;
-use App\Http\Requests\UpdatePedidoRequest;
+use App\Http\Requests\GuardarPedidoRequest;
 use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -55,31 +54,6 @@ class FormRequestTest extends TestCase
     }
 
     #[Test]
-    public function store_pedido_request_valida_productos_como_array()
-    {
-        $request = new StorePedidoRequest();
-        $rules = $request->rules();
-
-        $this->assertArrayHasKey('productos', $rules);
-        $this->assertStringContainsString('required', $rules['productos']);
-        $this->assertStringContainsString('array', $rules['productos']);
-        $this->assertStringContainsString('min:1', $rules['productos']);
-        $this->assertArrayHasKey('productos.*.producto_id', $rules);
-        $this->assertArrayHasKey('productos.*.cantidad', $rules);
-    }
-
-    #[Test]
-    public function update_pedido_request_incluye_campo_estado()
-    {
-        $request = new UpdatePedidoRequest();
-        $rules = $request->rules();
-
-        $this->assertArrayHasKey('estado', $rules);
-        $this->assertStringContainsString('Pendiente', $rules['estado']);
-        $this->assertStringContainsString('Cancelado', $rules['estado']);
-    }
-
-    #[Test]
     public function store_user_request_requiere_password_confirmado()
     {
         $request = new StoreUserRequest();
@@ -101,14 +75,16 @@ class FormRequestTest extends TestCase
     }
 
     #[Test]
-    public function store_pedido_request_valida_talla_y_genero_contra_catalogo()
+    public function el_pedido_no_recibe_lineas_y_valida_los_pagos()
     {
-        $rules = (new StorePedidoRequest())->rules();
+        $rules = (new GuardarPedidoRequest())->rules();
 
-        // Talla es catálogo (tabla talla), no una lista fija de strings.
-        $this->assertArrayHasKey('productos.*.talla_id', $rules);
-        $this->assertArrayHasKey('productos.*.genero_id', $rules);
-        $this->assertContains('required', $rules['productos.*.genero_id']);
+        // Las líneas se copian de la cotización en el servidor: el navegador no las envía.
+        $this->assertArrayNotHasKey('productos', $rules);
+        $this->assertArrayHasKey('cotizacion_id', $rules);
+        $this->assertContains('min:0.01', $rules['pagos.*.monto']);
+        $this->assertContains('required_unless:pagos.*.metodo,efectivo', $rules['pagos.*.banco_id']);
+        $this->assertContains('required_unless:pagos.*.metodo,efectivo', $rules['pagos.*.referencia']);
     }
 
     #[Test]
@@ -117,8 +93,7 @@ class FormRequestTest extends TestCase
         $requests = [
             new StoreClienteRequest(),
             new UpdateClienteRequest(),
-            new StorePedidoRequest(),
-            new UpdatePedidoRequest(),
+            new GuardarPedidoRequest(),
             new StoreUserRequest(),
             new UpdateUserRequest(),
         ];

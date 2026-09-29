@@ -51,7 +51,7 @@
 
 ```
 COTIZACIÓN (Aprobada)
-    │ convertirAPedido()
+    │ PedidoService::crearDesdeCotizacion() — asistente de Pedidos: abono mínimo + entrega
     ▼
 PEDIDO ──── PAGOS (abono acumulado)
     │

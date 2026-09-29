@@ -33,7 +33,10 @@ class CotizacionReglasTest extends TestCase
         $this->assertSame('Urgente', $cot->prioridad);
 
         $this->actingAs($admin)->putJson(route('cotizaciones.updateEstado', $cot), ['estado' => 'Aprobada']);
-        $this->assertExito($this->actingAs($admin)->postJson(route('cotizaciones.convertirAPedido', $cot)));
+        $this->assertExito($this->actingAs($admin)->postJson(route('pedidos.store'), [
+            'cotizacion_id' => $cot->id, 'fecha_entrega_estimada' => now()->addDays(20)->toDateString(), 'prioridad' => 'Urgente',
+            'pagos' => (float) $cot->fresh()->total > 0 ? [['metodo' => 'efectivo', 'monto' => (float) $cot->fresh()->total]] : [],
+        ]));
         $this->assertSame('Urgente', Pedido::sole()->prioridad);
     }
 
@@ -126,15 +129,15 @@ class CotizacionReglasTest extends TestCase
             ->assertStatus(422)->assertJsonValidationErrors('productos.0.bordados');
     }
 
-    /** Revisión: el flujo real (Pedidos en Blade) lee `datos-para-pedido`, que no traía la prioridad. */
-    public function test_datos_para_pedido_trae_la_prioridad(): void
+    /** Revisión: al convertir, el asistente de Pedidos propone la prioridad de la cotización. */
+    public function test_el_asistente_de_pedidos_propone_la_prioridad_de_la_cotizacion(): void
     {
         $admin = $this->admin();
         $cot = $this->crear($admin, ['prioridad' => 'Urgente']);
         $cot->update(['estado' => 'Aprobada']);
 
-        $this->actingAs($admin)->getJson(route('cotizaciones.datosParaPedido', $cot))
-            ->assertOk()->assertJsonPath('prioridad', 'Urgente');
+        $this->actingAs($admin)->get(route('pedidos.create', ['cotizacion' => $cot->id]))
+            ->assertInertia(fn ($p) => $p->where('cotizaciones.0.prioridad', 'Urgente')->where('cotizacion.prioridad', 'Urgente'));
     }
 
     /** Revisión: editar una cotización cuyo tipo de producto se inhabilitó daba 500 al guardar. */

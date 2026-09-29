@@ -54,14 +54,16 @@ test('el tema se guarda con la misma clave que las páginas Blade', async ({ pag
   await expect(html).toHaveClass(oscuroAntes ? /^(?!.*dark)/ : /dark/);
 });
 
-test('un enlace del menú a un módulo Blade navega con recarga completa', async ({ page }) => {
+test('un enlace del menú navega sin recargar la página (Inertia)', async ({ page }) => {
   const errores = vigilarErrores(page);
   await page.goto('/plataforma/componentes');
+  await page.evaluate(() => { (window as unknown as { __sinRecarga: boolean }).__sinRecarga = true; });
   await page.getByRole('button', { name: 'Gestión Operativa' }).click();
   await page.getByRole('link', { name: 'Pedidos' }).click();
 
   await expect(page).toHaveURL(/\/pedidos$/);
-  await expect(page.locator('table.dataTable')).toBeVisible(); // página Blade real
+  await expect(page.getByRole('heading', { name: 'Pedidos' })).toBeVisible();
+  expect(await page.evaluate(() => (window as unknown as { __sinRecarga?: boolean }).__sinRecarga)).toBe(true);
   expect(errores, errores.join('\n')).toEqual([]);
 });
 
