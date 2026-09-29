@@ -189,6 +189,23 @@ class PedidoFlujoTest extends TestCase
             ->assertStatus(422)->assertJsonValidationErrors('pagos.1.monto');
     }
 
+    /** Decisión de producto (29-sep): sin cliente no hay proceso; uno inhabilitado no recibe pedidos. */
+    public function test_una_cotizacion_con_cliente_inhabilitado_no_se_convierte(): void
+    {
+        $admin = $this->admin();
+        foreach (['estatus', 'borrado'] as $forma) {
+            $cot = $this->cotizacion($admin);
+            $forma === 'estatus' ? $cot->cliente->update(['estatus' => 0]) : $cot->cliente->delete();
+
+            $this->actingAs($admin)->get(route('pedidos.create'))
+                ->assertInertia(fn ($p) => $p->where('cotizaciones', fn ($c) => collect($c)->doesntContain('id', $cot->id)));
+            $this->actingAs($admin)->postJson(route('pedidos.store'), $this->datos($cot, [['metodo' => 'efectivo', 'monto' => 60]]))
+                ->assertStatus(422)->assertJsonFragment(['error' => 'El cliente de esta cotización está inhabilitado: rehabilítalo antes de crear el pedido.']);
+            $this->assertSame('Aprobada', $cot->fresh()->estado);
+        }
+        $this->assertSame(0, Pedido::count());
+    }
+
     /** Decisión de producto: el endpoint viejo que creaba pedidos sin abono ni entrega ya no existe. */
     public function test_el_endpoint_viejo_de_conversion_no_existe(): void
     {

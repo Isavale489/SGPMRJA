@@ -178,6 +178,8 @@ class PedidoController extends Controller
             ->withCount('productos')
             ->where('estado', 'Aprobada')
             ->doesntHave('pedido')
+            // Solo clientes activos (sin cliente no hay proceso).
+            ->whereHas('cliente', fn ($q) => $q->where('estatus', 1))
             ->orderByDesc('fecha_cotizacion')->orderByDesc('id')
             ->get()
             ->map(fn (Cotizacion $c) => [

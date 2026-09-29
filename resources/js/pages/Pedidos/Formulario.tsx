@@ -85,7 +85,7 @@ export default function FormularioPedido(props: PaginaFormularioPedido) {
     // Lo que se muestra: el pedido (edición) o la cotización elegida (alta).
     const disponible = cotizaciones.find((c) => c.id === elegidaId);
     const elegida = !edicion && cotizacion && cotizacion.id === elegidaId ? cotizacion : null;
-    const noConvertible = !edicion && elegidaId !== null && !pidiendo && (!disponible || (cotizacion && cotizacion.id === elegidaId && cotizacion.estado !== 'Aprobada'));
+    const noConvertible = !edicion && elegidaId !== null && !pidiendo && (!disponible || (cotizacion && cotizacion.id === elegidaId && (cotizacion.estado !== 'Aprobada' || Boolean(cotizacion.cliente?.inhabilitado))));
     const cliente: ClienteCotizacion | null = pedido?.cliente_datos ?? elegida?.cliente ?? null;
     const grupos: GrupoCotizacion[] = pedido?.grupos ?? elegida?.grupos ?? [];
     const total = pedido?.total ?? elegida?.total ?? 0;
@@ -278,8 +278,10 @@ export default function FormularioPedido(props: PaginaFormularioPedido) {
                                                             ) : noConvertible ? (
                                                                 <span className="text-destructive">
                                                                     {cotizacion && cotizacion.id === elegidaId
-                                                                        ? `Está ${cotizacion.estado.toLowerCase()}: no se puede convertir.`
-                                                                        : 'Ya tiene pedido, venció o no está aprobada.'}
+                                                                        ? cotizacion.cliente?.inhabilitado
+                                                                            ? 'Su cliente está inhabilitado: rehabilítalo en Clientes antes de crear el pedido.'
+                                                                            : `Está ${cotizacion.estado.toLowerCase()}: no se puede convertir.`
+                                                                        : 'Ya tiene pedido, venció, no está aprobada o su cliente está inhabilitado.'}
                                                                 </span>
                                                             ) : (
                                                                 elegida && (
