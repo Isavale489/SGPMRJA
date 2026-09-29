@@ -104,6 +104,17 @@ class CotizacionesPaginaTest extends TestCase
         $this->actingAs($admin)->get(route('cotizaciones.edit', $c))->assertRedirect();
     }
 
+    /** Un cliente con estatus 0 (no solo borrado) se marca inhabilitado: así la tabla no ofrece convertir. */
+    public function test_el_cliente_inhabilitado_por_estatus_se_marca_en_la_tabla(): void
+    {
+        $admin = $this->admin();
+        $c = $this->cotizacion($admin);
+        $c->cliente->update(['estatus' => 0]);
+
+        $this->actingAs($admin)->get(route('cotizaciones.index'))
+            ->assertInertia(fn (Assert $p) => $p->where('registros.data.0.cliente_inhabilitado', true));
+    }
+
     public function test_sin_permiso_no_se_entra(): void
     {
         $sin = $this->usuarioSinPermisos();
