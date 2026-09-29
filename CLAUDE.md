@@ -11,7 +11,7 @@
 - **BD**: MySQL 8 (igual que producción; ver «Dump SQL» abajo). Tests: `sistema_atlantico_test` (PHPUnit) y `sistema_atlantico_e2e` (Playwright)
 - **Servidor local**: `php artisan serve` (o Laragon/XAMPP); assets con Vite (`npm run build`, `public/build` se commitea)
 - **Pruebas**: `php artisan test` (PHPUnit) y `npx playwright test` (E2E); la CI corre ambas
-- **Blade que queda**: PDF (`layouts.pdf`), login y recuperación (`<x-guest-layout>`), páginas de error y cambio forzoso de contraseña (`admin.layouts.app`, con los assets del tema en `public/assets/`)
+- **Blade que queda**: PDF (`layouts.pdf`) y login/recuperación (`<x-guest-layout>`, con Bootstrap e iconos en `public/assets/`). Errores y cambio forzoso de contraseña ya son páginas Inertia (`Error`, `Auth/CambioClaveObligatorio`)
 
 ---
 
@@ -28,7 +28,7 @@
 | Respuestas | Trait `RespondeSegunCliente`: Inertia → redirect con flash; JSON → el de siempre |
 | Montos | Todo $ con su equivalente en Bs y la tasa **con su fecha** |
 | Build | `public/build` se commitea; la CI verifica que esté al día |
-| Blade | Solo quedan los PDF (`layouts.pdf`), login/recuperación (`<x-guest-layout>`), errores y cambio forzoso de contraseña (`admin.layouts.app`) |
+| Blade | Solo quedan los PDF (`layouts.pdf`) y login/recuperación (`<x-guest-layout>`). El layout del tema (jQuery/Velzon) se eliminó |
 
 
 ---

@@ -101,6 +101,22 @@ class ProductosPaginaTest extends TestCase
         @unlink(public_path($t->imagen)); // no dejar archivos en public/ del repo
     }
 
+    /** Regresión: la imagen se guardaba con la extensión del nombre del cliente (un .html quedaba servido desde /public). */
+    public function test_la_imagen_del_tipo_se_guarda_con_la_extension_de_su_contenido(): void
+    {
+        $t = TipoProducto::forceCreate(['nombre' => 'Gorra', 'prefijo' => 'GOR']);
+        $png = UploadedFile::fake()->image('gorra.png', 40, 40);
+        $disfrazado = new UploadedFile($png->getRealPath(), 'pagina.html', 'text/html', null, true);
+
+        $this->actingAs($this->admin())->from(route('productos.index'))->withHeaders($this->inertia())
+            ->post(url("/tipo-productos/{$t->id}"), ['_method' => 'put', 'nombre' => 'Gorra', 'prefijo' => 'GOR', 'precio_confeccion' => 3, 'requiere_tela' => '0', 'requiere_produccion' => '1', 'imagen' => $disfrazado])
+            ->assertRedirect(route('productos.index'));
+
+        $t->refresh();
+        $this->assertStringEndsWith('.png', (string) $t->imagen);
+        @unlink(public_path($t->imagen));
+    }
+
     public function test_solo_se_permiten_telas_como_telas_del_tipo(): void
     {
         $t = TipoProducto::forceCreate(['nombre' => 'Camisa', 'prefijo' => 'CAM']);
