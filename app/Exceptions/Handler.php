@@ -64,16 +64,16 @@ class Handler extends ExceptionHandler
         // Sesión vencida. 303 para que un PUT/PATCH/DELETE vuelva como GET (el 419 del
         // CSRF salta antes de HandleInertiaRequests, que haría esa conversión).
         //  - Con usuario: vuelve atrás con el aviso (el panel lo muestra como aviso).
-        //  - Formulario Blade sin usuario (login o recuperación abiertos mucho rato):
-        //    vuelve con un token nuevo, el correo escrito (lista blanca: nunca
-        //    contraseñas ni respuestas de seguridad) y el aviso en `aviso`, que
-        //    muestra el layout de acceso.
-        //  - Visita Inertia sin usuario: back() llevaría al login y el aviso se perdería.
+        //  - Sin usuario, desde una pantalla de acceso (login o recuperación abiertos mucho
+        //    rato) o un formulario clásico: vuelve con un token nuevo, el correo escrito
+        //    (lista blanca: nunca contraseñas ni respuestas de seguridad) y el aviso en
+        //    `aviso`, que muestra el layout de acceso.
+        //  - Otra visita Inertia sin usuario: back() llevaría al login y el aviso se perdería.
         if ($status === 419 && $request->hasSession()) {
             if ($request->user()) {
                 return back(303)->with('error', 'La sesión expiró. Vuelve a intentarlo.');
             }
-            if (! $request->header('X-Inertia')) {
+            if (! $request->header('X-Inertia') || $this->vieneDeUnaPantallaDeAcceso($request)) {
                 return back(303)->withInput($request->only(['email', 'name', 'remember']))->with('aviso', 'La sesión expiró. Vuelve a intentarlo.');
             }
         }
@@ -90,5 +90,13 @@ class Handler extends ExceptionHandler
 
             return $respuesta;
         }
+    }
+
+    /** ¿La visita salió del login o de la recuperación de contraseña? (a donde vuelve back()) */
+    private function vieneDeUnaPantallaDeAcceso($request): bool
+    {
+        $anterior = ltrim((string) parse_url(url()->previous(), PHP_URL_PATH), '/');
+
+        return (bool) preg_match('#^(login|forgot-password|reset-password|recovery)(/|$)#', $anterior);
     }
 }

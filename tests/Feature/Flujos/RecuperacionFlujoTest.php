@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Models\UserRecoveryQuestion;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
+use Inertia\Testing\AssertableInertia as Assert;
 use Tests\Concerns\CreaDatosBase;
 use Tests\TestCase;
 
@@ -15,7 +16,8 @@ use Tests\TestCase;
  * Recuperación de contraseña por preguntas de seguridad: mensaje genérico,
  * normalización de respuestas, bloqueo temporal y total, token de un solo uso
  * con vencimiento y cierre del resto de sesiones. Escritos ANTES de migrar las
- * pantallas de acceso a Inertia: verifican BD y redirecciones, no el HTML.
+ * pantallas de acceso a Inertia (y mantenidos en verde al migrarlas): verifican BD,
+ * sesión y redirecciones, no el HTML.
  */
 class RecuperacionFlujoTest extends TestCase
 {
@@ -65,11 +67,13 @@ class RecuperacionFlujoTest extends TestCase
         $rememberAntes = $u->remember_token;
 
         $this->post(route('recovery.email.process'), ['email' => $u->email])->assertRedirect(route('recovery.questions.show'));
-        // Los datos que entrega el controlador (no el HTML: la pantalla se va a migrar).
+        // Los datos que entrega el controlador (no el HTML).
         $this->get(route('recovery.questions.show'))->assertOk()
-            ->assertViewHas('questions', fn ($q) => collect($q)->pluck('pregunta')->all() === [
-                '¿Cuál es el nombre de tu primera mascota?', '¿En qué ciudad naciste?', '¿Cuál es tu equipo deportivo favorito?',
-            ]);
+            ->assertInertia(fn (Assert $p) => $p->component('Auth/Recuperacion/Preguntas')
+                ->where('questions.0.pregunta', '¿Cuál es el nombre de tu primera mascota?')
+                ->where('questions.1.pregunta', '¿En qué ciudad naciste?')
+                ->where('questions.2.pregunta', '¿Cuál es tu equipo deportivo favorito?')
+                ->missing('questions.0.respuesta')); // el hash de la respuesta nunca sale
 
         // Mayúsculas, espacios de más y espacios internos repetidos no importan.
         $r = $this->post(route('recovery.questions.validate'), ['respuestas' => $this->respuestas($u, ['  FIRULAIS ', 'acarigua', 'caracas    fc'])]);

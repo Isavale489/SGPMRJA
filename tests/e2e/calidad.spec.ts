@@ -60,8 +60,9 @@ test('rechazar parte de una orden: se reparte entre el equipo y vuelve a producc
   // Reparto automático entre el equipo, sin pasar lo que produjo cada uno.
   const marta = form.getByLabel('Defectuosas de Marta Colmenares');
   const julio = form.getByLabel('Defectuosas de Julio Arráiz');
-  expect(Number(await marta.inputValue()) + Number(await julio.inputValue())).toBe(3);
+  // Primero lo que espera solo; leer los valores al instante era intermitente (el reparto aún no llegaba).
   await expect(form.getByText('Atribuidas 3 de 3')).toBeVisible();
+  expect(Number(await marta.inputValue()) + Number(await julio.inputValue())).toBe(3);
 
   // Sin motivo, el servidor lo exige.
   await form.getByRole('button', { name: 'Registrar rechazo' }).click();

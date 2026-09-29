@@ -37,7 +37,8 @@ export interface DatosCompartidos {
     };
     navegacion: ItemNavegacion[];
     tasaBcv: { valor: number; fecha: string } | null;
-    flash: { success: string | null; error: string | null };
+    /** status y aviso: pantallas de acceso (éxito y sesión vencida). */
+    flash: { success: string | null; error: string | null; status: string | null; aviso: string | null };
     [key: string]: unknown;
 }
 
