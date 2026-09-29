@@ -99,7 +99,7 @@ export function AgregarProducto({ abierto, onCerrar, bloque, onAgregar, catalogo
                   datos: {
                       id: bloque.producto_id,
                       codigo: bloque.codigo ?? '',
-                      precio_base: bloque.precio,
+                      precio_base: bloque.precio_catalogo ?? bloque.precio,
                       imagen: bloque.imagen,
                       tipo_nombre: bloque.nombre,
                       tela_nombre: null,
@@ -113,20 +113,25 @@ export function AgregarProducto({ abierto, onCerrar, bloque, onAgregar, catalogo
     const elegidos = (tipo && tipo.telas.length ? (telaId ? 1 : 0) : 0) + atributosConValores.filter((a) => valores[a.id]).length;
     const porElegir = (tipo && tipo.telas.length ? 1 : 0) + atributosConValores.length;
     const completa = (!requierenTela || Boolean(telaId)) && atributosConValores.every((a) => valores[a.id]);
-    const primeraVez = useRef(Boolean(bloque));
+    // La combinación guardada del producto que se edita (a prueba del doble efecto de StrictMode).
+    const claveVariante = JSON.stringify([tipoId, telaId, valores, completa]);
+    const claveGuardada = useRef(bloque ? claveVariante : null);
 
     // Resolver la variante (SKU + precio base) cuando la combinación está completa.
     useEffect(() => {
-        if (primeraVez.current) {
-            primeraVez.current = false; // al editar, la guardada ya está resuelta
-            return;
-        }
+        const alEditar = claveGuardada.current === claveVariante;
+        if (!alEditar) claveGuardada.current = null; // cambió la combinación: ya es una variante nueva
+        // Al editar, la variante guardada ya está resuelta (SKU y precio negociado). Una
+        // materializada trae su precio de catálogo; de una dinámica solo se consulta el precio
+        // de catálogo para mostrarlo como «Precio base» y que «Restaurar» vuelva a él. Si la
+        // combinación ya no existe, se queda la guardada.
+        if (alEditar && (bloque?.producto_id || !tipo || !completa)) return;
         if (!tipo || !completa) {
             setResuelta({ estado: 'nada' });
             return;
         }
         let vigente = true;
-        setResuelta({ estado: 'buscando' });
+        if (!alEditar) setResuelta({ estado: 'buscando' });
         const p = new URLSearchParams({ tipo_producto_id: String(tipo.id) });
         if (telaId) p.set('insumo_tela_id', String(telaId));
         Object.values(valores).forEach((v) => p.append('atributo_valor_ids[]', String(v)));
@@ -134,24 +139,29 @@ export function AgregarProducto({ abierto, onCerrar, bloque, onAgregar, catalogo
             .then((r) => r.json() as Promise<VarianteResuelta>)
             .then((r) => {
                 if (!vigente) return;
+                if (alEditar) {
+                    const base = r.found && r.producto ? r.producto.precio_base : null;
+                    if (base !== null) setResuelta((x) => (x.datos ? { ...x, datos: { ...x.datos, precio_base: base } } : x));
+                    return;
+                }
                 if (r.found && r.producto) {
                     setResuelta({ estado: 'lista', datos: { ...r.producto, dinamica: Boolean(r.dynamic) } });
                     if (!precioTocado.current) setPrecio(String(r.producto.precio_base));
                 } else setResuelta({ estado: 'falta', mensaje: r.message ?? 'Esta combinación no existe en el catálogo.' });
             })
-            .catch(() => vigente && setResuelta({ estado: 'falta', mensaje: 'No se pudo resolver la variante. Intenta de nuevo.' }));
+            .catch(() => vigente && !alEditar && setResuelta({ estado: 'falta', mensaje: 'No se pudo resolver la variante. Intenta de nuevo.' }));
         return () => {
             vigente = false;
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [tipoId, telaId, JSON.stringify(valores), completa]);
+    }, [claveVariante]);
 
     const elegirTipo = (t: TipoCatalogo) => {
         if (t.id !== tipoId) {
             setTipoId(t.id);
             setTelaId(null);
             setValores({});
-            primeraVez.current = false;
+            claveGuardada.current = null;
         }
         saltar(1);
     };
@@ -227,6 +237,9 @@ export function AgregarProducto({ abierto, onCerrar, bloque, onAgregar, catalogo
             imagen: tipo.imagen,
             color_id: colorId,
             precio: precioNum,
+            // Si es la variante guardada, su precio de catálogo tal cual (null si no se conoce:
+            // nunca el negociado); si se resolvió otra, el del resolver.
+            precio_catalogo: d.dinamica ? null : bloque?.producto_id === d.id ? (bloque.precio_catalogo ?? null) : d.precio_base,
             bordados: bloque?.bordados ?? [],
             tallas: Object.entries(celdas).map(([k, cantidad]) => {
                 const [talla_id, genero_id] = k.split('-').map(Number) as [number, number];

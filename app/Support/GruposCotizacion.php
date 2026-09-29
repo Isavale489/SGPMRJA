@@ -69,6 +69,9 @@ class GruposCotizacion
                     'imagen' => $producto?->imagen ? asset($producto->imagen) : $tipo?->imagen_url,
                     'color' => $d->color ? ['id' => $d->color->id, 'nombre' => $d->color->nombre, 'hex' => $d->color->hex_referencial] : null,
                     'precio_base' => round(max(0, $precio - $recargo), 2),
+                    // Precio de catálogo de la variante materializada (el del resolver); en las
+                    // dinámicas lo calcula el resolver con la tela y los atributos (null aquí).
+                    'precio_catalogo' => $producto ? round((float) $producto->precio_base, 2) : null,
                     'recargo' => $recargo,
                     'precio_unitario' => $precio,
                     'bordados' => $bordados,

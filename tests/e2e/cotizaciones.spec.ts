@@ -73,6 +73,33 @@ test('crear una cotización por el asistente, con bordado', async ({ page }) => 
   expect(errores, errores.join('\n')).toEqual([]);
 });
 
+/** Regresión: al reabrir un producto con precio negociado, «Precio base» mostraba el negociado y «Restaurar» no volvía al de catálogo. */
+test('editar un producto con precio negociado muestra el precio de catálogo y Restaurar vuelve a él', async ({ page }) => {
+  await page.goto('/cotizaciones/crear', { waitUntil: 'networkidle' });
+  await page.getByRole('combobox', { name: 'Buscar cliente' }).fill('Araure');
+  await page.getByRole('option', { name: new RegExp(CLIENTE_COT) }).click();
+  await page.locator('#form-cotizacion').getByRole('button', { name: 'Siguiente' }).click();
+
+  await page.getByRole('button', { name: 'Abrir catálogo' }).click();
+  let dialogo = page.getByRole('dialog', { name: 'Agregar producto' });
+  await dialogo.getByRole('button', { name: /Franela Cot E2E.*atributos/ }).click();
+  await expect(dialogo.getByText('Variante encontrada')).toBeVisible();
+  await dialogo.getByRole('button', { name: 'Siguiente' }).click();
+  await dialogo.getByRole('radio', { name: 'Azul Marino' }).click();
+  await dialogo.getByLabel(/^Talla M ·/).first().fill('4');
+  await dialogo.getByLabel('Precio unitario ($)').fill('12'); // negociado con el cliente
+  await dialogo.getByRole('button', { name: 'Agregar a la cotización' }).click();
+  await expect(page.getByRole('row', { name: /Franela Cot E2E/ })).toContainText('$12,00');
+
+  await page.getByRole('button', { name: 'Editar Franela Cot E2E' }).click();
+  dialogo = page.getByRole('dialog', { name: 'Editar producto' });
+  await expect(dialogo.getByRole('heading', { name: 'Configurar' })).toBeVisible(); // editar abre en Configurar
+  await expect(dialogo.getByLabel('Precio unitario ($)')).toHaveValue('12'); // el negociado se conserva
+  await expect(dialogo.getByText('Precio base: $15,00', { exact: false })).toBeVisible(); // el de catálogo
+  await dialogo.getByRole('button', { name: 'Restaurar' }).click();
+  await expect(dialogo.getByLabel('Precio unitario ($)')).toHaveValue('15');
+});
+
 /** Regresión: las altas rápidas del configurador (color, tela, logo) no guardaban con Enter. */
 test('Enter en el alta rápida de color la guarda y la deja elegida, sin salir del configurador', async ({ page }) => {
   await page.goto('/cotizaciones/crear', { waitUntil: 'networkidle' });

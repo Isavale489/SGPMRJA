@@ -42,6 +42,7 @@ export function bloqueDesdeGrupo(g: GrupoCotizacion): Bloque {
         imagen: g.imagen,
         color_id: g.color?.id ?? null,
         precio: g.precio_base,
+        precio_catalogo: g.precio_catalogo,
         bordados: g.bordados,
         tallas: g.tallas.map((t) => ({ talla_id: t.talla_id, genero_id: t.genero_id, cantidad: t.cantidad, descripcion: t.descripcion })),
     };
