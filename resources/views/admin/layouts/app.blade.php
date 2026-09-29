@@ -459,10 +459,12 @@
         function validarContrasena(valor) {
             if (valor.length === 0) return null;
             let errores = [];
-            if (valor.length < 8)              errores.push('al menos 8 caracteres');
-            if (!/[A-Z]/.test(valor))          errores.push('una letra mayúscula');
-            if (!/[0-9]/.test(valor))          errores.push('un número');
-            if (!/[^a-zA-Z0-9]/.test(valor))   errores.push('un carácter especial');
+            // Espejo de App\Rules\ContrasenaSegura (Unicode: Ñ es mayúscula, ñ no es símbolo).
+            if (valor.length < 8)                 errores.push('al menos 8 caracteres');
+            if (new TextEncoder().encode(valor).length > 72) errores.push('como máximo 72 caracteres (acentos y ñ cuentan doble)');
+            if (!/\p{Lu}/u.test(valor))          errores.push('una letra mayúscula');
+            if (!/\p{Nd}/u.test(valor))          errores.push('un número');
+            if (!/[^\p{L}\p{N}]/u.test(valor))   errores.push('un carácter especial');
             if (errores.length === 0) return null;
             return 'La contraseña debe contener ' + errores.join(', ') + '.';
         }

@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import AppLayout from '@/layouts/app-layout';
 import { formatoFecha } from '@/lib/formato';
+import { POLITICA_CONTRASENA } from '@/lib/contrasena';
 import { cn } from '@/lib/utils';
 
 /** Espejo de ProfileController::edit() (lo verifica PerfilPaginaTest). */
@@ -140,7 +141,7 @@ function FormularioContrasena({ url, onCerrar }: { url: string; onCerrar: () => 
             <Campo etiqueta="Contraseña actual" requerido error={form.errors.current_password}>
                 <Input type="password" autoComplete="current-password" value={form.data.current_password} onChange={(e) => form.setData('current_password', e.target.value)} />
             </Campo>
-            <Campo etiqueta="Contraseña nueva" requerido error={form.errors.password} ayuda="Mínimo 8 caracteres, con una mayúscula, un número y un carácter especial.">
+            <Campo etiqueta="Contraseña nueva" requerido error={form.errors.password} ayuda={POLITICA_CONTRASENA}>
                 <Input type="password" autoComplete="new-password" value={form.data.password} onChange={(e) => form.setData('password', e.target.value)} />
             </Campo>
             <Campo etiqueta="Confirmar contraseña nueva" requerido error={form.errors.password_confirmation}>

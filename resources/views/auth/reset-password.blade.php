@@ -45,6 +45,7 @@
                         required
                         autocomplete="new-password"
                         placeholder="••••••••"
+                        aria-describedby="password-ayuda"
                     >
                     <button class="btn-show-pass" type="button" id="togglePassword" tabindex="-1" aria-label="Mostrar contraseña">
                         <i class="bx bx-hide" id="toggleIcon"></i>
@@ -54,6 +55,7 @@
                     @enderror
                 </div>
             </div>
+            <div id="password-ayuda" class="form-text">{{ \App\Rules\ContrasenaSegura::DESCRIPCION }}</div>
         </div>
 
         <!-- Confirmar contraseña -->

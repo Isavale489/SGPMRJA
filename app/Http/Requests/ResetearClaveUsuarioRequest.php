@@ -20,7 +20,8 @@ class ResetearClaveUsuarioRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'password' => ['required', 'string', 'max:191', 'confirmed', new ContrasenaSegura],
+            // Tipo y largo los valida la regla (tope de 72 por bcrypt).
+            'password' => ['required', 'confirmed', new ContrasenaSegura],
         ];
     }
 

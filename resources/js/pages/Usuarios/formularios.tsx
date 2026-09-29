@@ -8,6 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { POLITICA_CONTRASENA } from '@/lib/contrasena';
 
 import { iniciales, type PaginaUsuarios, type UsuarioFila } from './tipos';
 
@@ -146,7 +147,7 @@ export function FormularioUsuario({ abierto, onCerrar, usuario, roles, urls }: {
             </Campo>
             {!usuario && (
                 <div className="grid gap-4 sm:grid-cols-2">
-                    <Campo etiqueta="Contraseña" requerido error={errors.password} ayuda="8+ caracteres, una mayúscula, un número y un símbolo.">
+                    <Campo etiqueta="Contraseña" requerido error={errors.password} ayuda={POLITICA_CONTRASENA}>
                         {(control) => <Clave {...control} valor={data.password} autoComplete="new-password" onCambiar={(v) => setData('password', v)} />}
                     </Campo>
                     <Campo etiqueta="Confirmar contraseña" requerido>
@@ -172,7 +173,7 @@ export function ResetearClave({ usuario, url, onCerrar }: { usuario: UsuarioFila
             textoGuardar="Resetear contraseña"
             onGuardar={() => form.post(`${url}/${usuario.id}/reset-password`, { preserveScroll: true, onSuccess: onCerrar })}
         >
-            <Campo etiqueta="Contraseña temporal" requerido error={form.errors.password} ayuda="Mínimo 8 caracteres, con una mayúscula, un número y un carácter especial.">
+            <Campo etiqueta="Contraseña temporal" requerido error={form.errors.password} ayuda={POLITICA_CONTRASENA}>
                 {(control) => <Clave {...control} valor={form.data.password} autoComplete="new-password" onCambiar={(v) => form.setData('password', v)} />}
             </Campo>
             <Campo etiqueta="Confirmar contraseña temporal" requerido>
