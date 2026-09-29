@@ -92,26 +92,27 @@ class ProduccionInventarioService
     }
 
     /**
-     * Repone el stock comprometido por una OP (cancelación temprana). Genera un
-     * MovimientoInsumo de 'Entrada' por cada insumo inventariable, devolviendo la
-     * cantidad que se había descontado al crear la orden.
+     * Repone el stock comprometido por una OP (cancelación temprana). Devuelve
+     * exactamente lo que se descontó al crearla (`cantidad_utilizada` del pivot),
+     * con un MovimientoInsumo de 'Entrada' por insumo:
+     *  - no se mira el `is_inventoriable` ni el estimado de hoy: si el insumo
+     *    cambió de configuración, igual vuelve lo que salió (y nada más);
+     *  - incluye insumos inhabilitados (soft delete): su material también salió;
+     *  - órdenes anteriores al descuento de inventario (utilizada = 0) no
+     *    reponen nada, porque nunca descontaron.
      */
     public function reponer(OrdenProduccion $orden, int $userId): void
     {
         DB::transaction(function () use ($orden, $userId) {
-            $orden->load('insumos');
+            $insumos = $orden->insumos()->withTrashed()->get();
 
-            foreach ($orden->insumos as $insumo) {
-                if (!$insumo->is_inventoriable) {
-                    continue;
-                }
-
-                $cantidad = (float) $insumo->pivot->cantidad_estimada;
+            foreach ($insumos as $insumo) {
+                $cantidad = (float) $insumo->pivot->cantidad_utilizada;
                 if ($cantidad <= 0) {
                     continue;
                 }
 
-                $bloqueado     = Insumo::lockForUpdate()->findOrFail($insumo->id);
+                $bloqueado     = Insumo::withTrashed()->lockForUpdate()->findOrFail($insumo->id);
                 $stockAnterior = (float) $bloqueado->stock_actual;
                 $stockNuevo    = $stockAnterior + $cantidad;
 

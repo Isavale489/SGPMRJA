@@ -4,14 +4,26 @@ import { useMemo, useState } from 'react';
 
 import { PanelOrdenable } from '@/components/app/panel-ordenable';
 import { COLOR_CONFORME, COLOR_DEFECTO, TarjetaGrafico, colorEficiencia, partirEtiqueta } from '@/components/app/grafico';
+import { CabeceraOrdenable, useOrdenColumnas } from '@/components/app/orden-columnas';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Table, TableBody, TableCell, TableHeader, TableRow } from '@/components/ui/table';
 import AppLayout from '@/layouts/app-layout';
 import { formatoNumero } from '@/lib/formato';
 
 import { EficienciaChip } from './eficiencia-chip';
 import type { RendimientoEmpleado } from './tipos';
+
+const promedio = (e: RendimientoEmpleado) => (e.total_ordenes ? e.total_producido / e.total_ordenes : 0);
+const COLUMNAS = {
+    nombre: (e: RendimientoEmpleado) => e.nombre,
+    ordenes: (e: RendimientoEmpleado) => e.total_ordenes,
+    asignado: (e: RendimientoEmpleado) => e.total_asignado,
+    producido: (e: RendimientoEmpleado) => e.total_producido,
+    defectuoso: (e: RendimientoEmpleado) => e.total_defectuoso,
+    eficiencia: (e: RendimientoEmpleado) => e.eficiencia,
+    promedio,
+};
 
 /**
  * Rendimiento por persona desde el reparto real de cada orden (lo asignado,
@@ -19,42 +31,57 @@ import type { RendimientoEmpleado } from './tipos';
  */
 export default function ReporteEmpleados({ empleados }: { empleados: RendimientoEmpleado[] }) {
     const [buscar, setBuscar] = useState('');
-    const [elegido, setElegido] = useState<string>();
+    const [elegido, setElegido] = useState<number>();
     const alto = Math.max(340, empleados.length * 52 + 64); // la leyenda roba ~64 px
 
+    // La categoría del eje es el id (dos personas con el mismo nombre son dos barras); se muestra el nombre.
+    const eje = useMemo(() => {
+        const nombres = new Map(empleados.map((e) => [String(e.empleado_id), e.nombre]));
+        return { type: 'category' as const, position: 'left' as const, label: { formatter: ({ value }: { value: string | number }) => partirEtiqueta(nombres.get(String(value)) ?? String(value)) } };
+    }, [empleados]);
+    const tooltipUnidades = {
+        renderer: ({ datum, yKey, yName }: { datum: Record<string, number | string>; yKey: string; yName?: string }) => ({ heading: '', title: String(datum.nombre), data: [{ label: yName ?? yKey, value: formatoNumero(Number(datum[yKey])) }] }),
+    };
+
     const alHacerClic = useMemo(() => ({
-        seriesNodeClick: (e: { datum?: { nombre?: string } }) => {
-            const n = e.datum?.nombre;
-            if (n) setElegido((actual) => (actual === n ? undefined : n));
+        seriesNodeClick: (e: { datum?: { id?: number } }) => {
+            const id = e.datum?.id;
+            if (id) setElegido((actual) => (actual === id ? undefined : id));
         },
     }), []);
 
     const produccion = useMemo<Omit<AgChartOptions, 'theme'>>(() => ({
-        data: empleados.map((e) => ({ nombre: e.nombre, producido: e.total_producido, defectuoso: e.total_defectuoso })),
+        data: empleados.map((e) => ({ id: e.empleado_id, nombre: e.nombre, producido: e.total_producido, defectuoso: e.total_defectuoso })),
         series: [
-            { type: 'bar', direction: 'horizontal', xKey: 'nombre', yKey: 'producido', yName: 'Conformes', stacked: true, fill: COLOR_CONFORME },
-            { type: 'bar', direction: 'horizontal', xKey: 'nombre', yKey: 'defectuoso', yName: 'Defectuosas', stacked: true, fill: COLOR_DEFECTO },
+            { type: 'bar', direction: 'horizontal', xKey: 'id', yKey: 'producido', yName: 'Conformes', stacked: true, fill: COLOR_CONFORME, tooltip: tooltipUnidades },
+            { type: 'bar', direction: 'horizontal', xKey: 'id', yKey: 'defectuoso', yName: 'Defectuosas', stacked: true, fill: COLOR_DEFECTO, tooltip: tooltipUnidades },
         ],
-        axes: { x: { type: 'category', position: 'left', label: { formatter: ({ value }: { value: string }) => partirEtiqueta(String(value)) } }, y: { type: 'number', position: 'bottom', title: { text: 'Unidades' } } },
+        axes: { x: eje, y: { type: 'number', position: 'bottom', title: { text: 'Unidades' } } },
         legend: { position: 'bottom' },
         listeners: alHacerClic,
-    }) as Omit<AgChartOptions, 'theme'>, [empleados, alHacerClic]);
+    }) as Omit<AgChartOptions, 'theme'>, [empleados, alHacerClic, eje]);
 
     const eficiencia = useMemo<Omit<AgChartOptions, 'theme'>>(() => {
-        const datos = empleados.filter((e) => e.eficiencia !== null).map((e) => ({ nombre: e.nombre, eficiencia: e.eficiencia }));
+        const datos = empleados.filter((e) => e.eficiencia !== null).map((e) => ({ id: e.empleado_id, nombre: e.nombre, eficiencia: e.eficiencia }));
         return {
             data: datos,
             series: [{
-                type: 'bar', direction: 'horizontal', xKey: 'nombre', yKey: 'eficiencia', yName: 'Eficiencia', cornerRadius: 4,
+                type: 'bar', direction: 'horizontal', xKey: 'id', yKey: 'eficiencia', yName: 'Eficiencia', cornerRadius: 4,
                 itemStyler: ({ datum }: { datum: { eficiencia: number } }) => ({ fill: colorEficiencia(datum.eficiencia) }),
                 label: { placement: 'inside-end', color: '#ffffff', fontWeight: 'bold', formatter: ({ value }: { value: number }) => `${formatoNumero(value)} %` },
+                tooltip: { renderer: ({ datum }: { datum: { nombre: string; eficiencia: number } }) => ({ heading: '', title: datum.nombre, data: [{ label: 'Eficiencia', value: `${formatoNumero(datum.eficiencia)} %` }] }) },
             }],
-            axes: { x: { type: 'category', position: 'left', label: { formatter: ({ value }: { value: string }) => partirEtiqueta(String(value)) } }, y: { type: 'number', position: 'bottom', min: 0, max: 100, title: { text: '%' } } },
+            axes: { x: eje, y: { type: 'number', position: 'bottom', min: 0, max: 100, title: { text: '%' } } },
             listeners: alHacerClic,
         } as Omit<AgChartOptions, 'theme'>;
-    }, [empleados, alHacerClic]);
+    }, [empleados, alHacerClic, eje]);
 
-    const filas = empleados.filter((e) => (!elegido || e.nombre === elegido) && (!buscar.trim() || e.nombre.toLowerCase().includes(buscar.trim().toLowerCase())));
+    const filtradas = useMemo(
+        () => empleados.filter((e) => (!elegido || e.empleado_id === elegido) && (!buscar.trim() || e.nombre.toLowerCase().includes(buscar.trim().toLowerCase()))),
+        [empleados, elegido, buscar],
+    );
+    const { ordenadas: filas, orden, alternar } = useOrdenColumnas(filtradas, COLUMNAS);
+    const nombreElegido = empleados.find((e) => e.empleado_id === elegido)?.nombre;
 
     return (
         <AppLayout titulo="Rendimiento de empleados">
@@ -72,20 +99,20 @@ export default function ReporteEmpleados({ empleados }: { empleados: Rendimiento
                         <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2" />
                         <Input type="search" value={buscar} onChange={(e) => setBuscar(e.target.value)} placeholder="Buscar empleado…" aria-label="Buscar empleado" className="pl-8" />
                     </div>
-                    {elegido && <Button variant="secondary" onClick={() => setElegido(undefined)}><X /> {elegido}</Button>}
+                    {elegido && <Button variant="secondary" onClick={() => setElegido(undefined)} aria-label={`Quitar el filtro de ${nombreElegido}`}><X /> {nombreElegido}</Button>}
                 </div>
 
                 <div className="bg-card overflow-x-auto rounded-lg border">
                     <Table>
                         <TableHeader>
                             <TableRow className="hover:bg-transparent">
-                                <TableHead>Empleado</TableHead>
-                                <TableHead className="text-right">Órdenes</TableHead>
-                                <TableHead className="text-right">Asignado</TableHead>
-                                <TableHead className="text-right">Producido</TableHead>
-                                <TableHead className="text-right">Defectuoso</TableHead>
-                                <TableHead>Eficiencia</TableHead>
-                                <TableHead className="text-right">Promedio por orden</TableHead>
+                                <CabeceraOrdenable clave="nombre" orden={orden} onOrdenar={alternar}>Empleado</CabeceraOrdenable>
+                                <CabeceraOrdenable clave="ordenes" orden={orden} onOrdenar={alternar} className="text-right">Órdenes</CabeceraOrdenable>
+                                <CabeceraOrdenable clave="asignado" orden={orden} onOrdenar={alternar} className="text-right">Asignado</CabeceraOrdenable>
+                                <CabeceraOrdenable clave="producido" orden={orden} onOrdenar={alternar} className="text-right">Producido</CabeceraOrdenable>
+                                <CabeceraOrdenable clave="defectuoso" orden={orden} onOrdenar={alternar} className="text-right">Defectuoso</CabeceraOrdenable>
+                                <CabeceraOrdenable clave="eficiencia" orden={orden} onOrdenar={alternar}>Eficiencia</CabeceraOrdenable>
+                                <CabeceraOrdenable clave="promedio" orden={orden} onOrdenar={alternar} className="text-right">Promedio por orden</CabeceraOrdenable>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -97,7 +124,7 @@ export default function ReporteEmpleados({ empleados }: { empleados: Rendimiento
                                     <TableCell className="text-right tabular">{formatoNumero(e.total_producido)}</TableCell>
                                     <TableCell className="text-right tabular">{formatoNumero(e.total_defectuoso)}</TableCell>
                                     <TableCell><EficienciaChip valor={e.eficiencia} /></TableCell>
-                                    <TableCell className="text-right tabular">{formatoNumero(e.total_ordenes ? e.total_producido / e.total_ordenes : 0)}</TableCell>
+                                    <TableCell className="text-right tabular">{formatoNumero(promedio(e))}</TableCell>
                                 </TableRow>
                             ))}
                             {!filas.length && <TableRow className="hover:bg-transparent"><TableCell colSpan={7} className="text-muted-foreground h-24 text-center">{empleados.length ? 'Ningún empleado coincide.' : 'Aún no hay producción registrada.'}</TableCell></TableRow>}

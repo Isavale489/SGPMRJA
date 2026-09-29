@@ -1,5 +1,5 @@
 import { ArrowDown, ArrowUp, GripVertical } from 'lucide-react';
-import { useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -23,9 +23,10 @@ function leerOrden(clave: string): string[] {
 }
 
 /**
- * Tarjetas que el usuario reordena arrastrando el agarre (o con las flechas,
- * desde el teclado). El orden se guarda en este navegador con la misma clave
- * que usaba la vista anterior, así que se conserva.
+ * Tarjetas que el usuario reordena arrastrando el agarre, o con las flechas:
+ * con el teclado aparecen al enfocarlas y en pantallas táctiles (donde el
+ * arrastre de HTML no funciona) están siempre a la vista. El orden se guarda en
+ * este navegador con la misma clave que usaba la vista anterior.
  */
 export function PanelOrdenable({ clave, widgets }: { clave: string; widgets: Widget[] }) {
     const [orden, setOrden] = useState<string[]>(() => {
@@ -33,6 +34,15 @@ export function PanelOrdenable({ clave, widgets }: { clave: string; widgets: Wid
         return [...guardado, ...widgets.map((w) => w.id).filter((id) => !guardado.includes(id))];
     });
     const [arrastrando, setArrastrando] = useState<string>();
+    // Tras mover con una flecha, el foco sigue a la tarjeta (y pasa a la otra flecha si esa quedó deshabilitada).
+    const foco = useRef<{ id: string; sentido: 'Subir' | 'Bajar' }>(null);
+    useEffect(() => {
+        const f = foco.current;
+        if (!f) return;
+        foco.current = null;
+        const botones = [...document.querySelectorAll<HTMLButtonElement>(`[data-widget="${f.id}"] [data-mover]`)];
+        (botones.find((b) => b.dataset.mover === f.sentido && !b.disabled) ?? botones.find((b) => !b.disabled))?.focus();
+    }, [orden]);
 
     const guardar = (nuevo: string[]) => {
         setOrden(nuevo);
@@ -57,17 +67,18 @@ export function PanelOrdenable({ clave, widgets }: { clave: string; widgets: Wid
                     <span className="-ml-1 flex items-center">
                         <span
                             draggable
+                            data-agarre
                             onDragStart={(e) => { setArrastrando(id); e.dataTransfer.effectAllowed = 'move'; }}
                             onDragEnd={() => setArrastrando(undefined)}
-                            className="text-muted-foreground hover:text-foreground cursor-grab p-1 active:cursor-grabbing"
+                            className="text-muted-foreground hover:text-foreground pointer-coarse:hidden cursor-grab p-1 active:cursor-grabbing"
                             title="Arrastra para reordenar"
                             aria-hidden
                         >
                             <GripVertical className="size-4" />
                         </span>
-                        <span className="sr-only focus-within:not-sr-only focus-within:flex">
-                            <Button variant="ghost" size="icon" className="size-6" disabled={i === 0} onClick={() => mover(id, i - 1)} aria-label={`Subir «${w.titulo}»`}><ArrowUp /></Button>
-                            <Button variant="ghost" size="icon" className="size-6" disabled={i === orden.length - 1} onClick={() => mover(id, i + 1)} aria-label={`Bajar «${w.titulo}»`}><ArrowDown /></Button>
+                        <span className="pointer-coarse:not-sr-only pointer-coarse:flex sr-only focus-within:not-sr-only focus-within:flex">
+                            <Button variant="ghost" size="icon" className="size-6" data-mover="Subir" disabled={i === 0} onClick={() => { foco.current = { id, sentido: 'Subir' }; mover(id, i - 1); }} aria-label={`Subir «${w.titulo}»`}><ArrowUp /></Button>
+                            <Button variant="ghost" size="icon" className="size-6" data-mover="Bajar" disabled={i === orden.length - 1} onClick={() => { foco.current = { id, sentido: 'Bajar' }; mover(id, i + 1); }} aria-label={`Bajar «${w.titulo}»`}><ArrowDown /></Button>
                         </span>
                     </span>
                 );

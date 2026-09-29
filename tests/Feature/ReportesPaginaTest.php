@@ -122,6 +122,21 @@ class ReportesPaginaTest extends TestCase
                 ->where('insumos.0.ordenes', 1));
     }
 
+    /** Merma: cancelar con la tela ya cortada sigue contando como consumo (y cancelar dos veces no cambia nada). */
+    public function test_la_merma_sigue_contando_como_consumo(): void
+    {
+        $admin = $this->admin();
+        $insumo = $this->insumo(['stock_actual' => 100]);
+        $orden = $this->orden($admin, $insumo, 10, 20);
+        $this->actingAs($admin)->postJson(route('ordenes.avance', $orden), ['cantidad_producida' => 3])->assertOk();
+        $this->actingAs($admin)->patchJson(route('ordenes.cancelar', $orden), ['motivo_cancelacion' => 'Tela manchada'])->assertOk();
+        $this->actingAs($admin)->patchJson(route('ordenes.cancelar', $orden), ['motivo_cancelacion' => 'Otra vez'])->assertStatus(422);
+
+        $this->assertEquals(80, (float) $insumo->fresh()->stock_actual);
+        $this->actingAs($admin)->get(route('reportes.insumos'))
+            ->assertInertia(fn (Assert $p) => $p->where('insumos.0.total', 20)->where('insumos.0.ordenes', 1));
+    }
+
     public function test_la_migracion_repara_el_consumo_historico_de_ordenes_repuestas(): void
     {
         $admin = $this->admin();
