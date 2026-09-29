@@ -149,6 +149,46 @@ class PedidoFlujoTest extends TestCase
         $this->actingAs($admin)->get(route('pedidos.edit', $pedido))->assertRedirect();
     }
 
+    /** Revisión: un banco que se inhabilitó después bloqueaba editar el pedido (había que falsear el pago). */
+    public function test_un_banco_inhabilitado_no_bloquea_editar_sus_pagos(): void
+    {
+        $admin = $this->admin();
+        $cot = $this->cotizacion($admin);
+        $banco = Banco::create(['nombre' => 'Banco Cerrado']);
+        $pago = ['metodo' => 'transferencia', 'monto' => 60, 'banco_id' => $banco->id, 'referencia' => '123'];
+        $this->assertExito($this->actingAs($admin)->postJson(route('pedidos.store'), $this->datos($cot, [$pago])));
+        $pedido = Pedido::sole();
+        $banco->delete();
+
+        $this->assertExito($this->actingAs($admin)->putJson(route('pedidos.update', $pedido), ['fecha_entrega_estimada' => now()->addDays(25)->toDateString(), 'prioridad' => 'Urgente', 'pagos' => [$pago]]));
+        $this->assertSame('Urgente', $pedido->fresh()->prioridad);
+
+        // Pero un pago NUEVO no puede usar un banco inhabilitado.
+        $otra = $this->cotizacion($admin);
+        $this->actingAs($admin)->postJson(route('pedidos.store'), $this->datos($otra, [$pago]))->assertStatus(422)->assertJsonValidationErrors('pagos.0.banco_id');
+    }
+
+    /** Revisión: un completado con entrega legada anterior a la fecha del pedido no podía registrar el saldo. */
+    public function test_completado_con_entrega_legada_registra_el_saldo(): void
+    {
+        $admin = $this->admin();
+        $cot = $this->cotizacion($admin);
+        $this->actingAs($admin)->postJson(route('pedidos.store'), $this->datos($cot, [['metodo' => 'efectivo', 'monto' => 60]]));
+        $pedido = Pedido::sole();
+        $pedido->update(['estado' => 'Completado', 'fecha_entrega_estimada' => now()->subDays(5)->toDateString()]);
+
+        $this->assertExito($this->actingAs($admin)->putJson(route('pedidos.update', $pedido), ['pagos' => [['metodo' => 'efectivo', 'monto' => 120]]]));
+        $this->assertEquals(120, (float) $pedido->fresh()->abono);
+    }
+
+    public function test_un_monto_de_centesimas_no_se_guarda_como_cero(): void
+    {
+        $admin = $this->admin();
+        $cot = $this->cotizacion($admin);
+        $this->actingAs($admin)->postJson(route('pedidos.store'), $this->datos($cot, [['metodo' => 'efectivo', 'monto' => 60], ['metodo' => 'transferencia', 'monto' => 0.001, 'banco_id' => Banco::create(['nombre' => 'Mercantil'])->id, 'referencia' => '9']]))
+            ->assertStatus(422)->assertJsonValidationErrors('pagos.1.monto');
+    }
+
     /** Decisión de producto: el endpoint viejo que creaba pedidos sin abono ni entrega ya no existe. */
     public function test_el_endpoint_viejo_de_conversion_no_existe(): void
     {

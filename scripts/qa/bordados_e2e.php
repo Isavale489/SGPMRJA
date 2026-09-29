@@ -129,7 +129,14 @@ try {
         fail('Total de actualización no coincide. got=' . $cot->total . ' expected=' . $expectedUpdateTotal);
     }
 
-    $pedido = $service->convertirAPedido($cot);
+    // La conversión va por el asistente de Pedidos (abono mínimo + entrega).
+    $cot->update(['estado' => 'Aprobada']);
+    $pedido = app(\App\Services\PedidoService::class)->crearDesdeCotizacion([
+        'cotizacion_id' => $cot->id,
+        'fecha_entrega_estimada' => now()->addWeekdays(30)->toDateString(),
+        'prioridad' => 'Normal',
+        'pagos' => [['metodo' => 'efectivo', 'monto' => (float) $cot->total]],
+    ]);
     $pedido->load('productos.bordados');
 
     if ((float) $pedido->total !== (float) $cot->total) {

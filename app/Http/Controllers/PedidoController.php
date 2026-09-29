@@ -187,6 +187,7 @@ class PedidoController extends Controller
                 'fecha' => $c->fecha_cotizacion?->toDateString(),
                 'validez' => $c->fechaLimiteVigencia()?->toDateString(),
                 'total' => (float) $c->total,
+                'tasa' => (float) $c->tasa_cambio_valor > 0 ? (float) $c->tasa_cambio_valor : null,
                 'prioridad' => $c->prioridad ?? 'Normal',
                 'lineas' => (int) $c->productos_count,
             ])->all();
@@ -221,10 +222,14 @@ class PedidoController extends Controller
                 // Lo mínimo que puede quedar abonado al editar (pedidos legacy con abono bajo).
                 'abono_minimo' => min(round((float) $pedido->total * Pedido::porcentajeAbonoMinimo() / 100, 2), (float) $pedido->abono),
             ] : null,
-            'cotizaciones' => $pedido ? [] : $this->cotizacionesDisponibles(),
+            'cotizaciones' => fn () => $pedido ? [] : $this->cotizacionesDisponibles(),
             'cotizacion' => fn () => ! $pedido && $cotizacionId && ($c = Cotizacion::find($cotizacionId)) ? $this->cotizacionElegida($c) : null,
             'cotizacionPedida' => $pedido ? null : $cotizacionId,
-            'bancos' => Banco::orderBy('nombre')->get(['id', 'nombre'])->map(fn ($b) => ['id' => $b->id, 'nombre' => $b->nombre])->all(),
+            // Activos, más los inhabilitados que ya usan los pagos de este pedido.
+            'bancos' => Banco::withTrashed()
+                ->where(fn ($q) => $q->whereNull('deleted_at')->when($pedido, fn ($w) => $w->orWhereIn('id', $pedido->pagos()->whereNotNull('banco_id')->pluck('banco_id'))))
+                ->orderBy('nombre')->get(['id', 'nombre', 'deleted_at'])
+                ->map(fn ($b) => ['id' => $b->id, 'nombre' => $b->nombre.($b->deleted_at ? ' (inhabilitado)' : '')])->all(),
             'metodos' => PagoPedido::METODOS,
             'terminos' => $this->terminos(),
             'hoy' => now()->toDateString(),
@@ -238,6 +243,12 @@ class PedidoController extends Controller
                 'cotizaciones' => route('cotizaciones.index', absolute: false),
             ],
         ];
+    }
+
+    /** Enlace viejo a la ficha (antes devolvía JSON): abre el «Ver» del listado. */
+    public function show(int $pedido): RedirectResponse
+    {
+        return redirect()->route('pedidos.index', ['ver' => $pedido]);
     }
 
     public function create(Request $request): Response

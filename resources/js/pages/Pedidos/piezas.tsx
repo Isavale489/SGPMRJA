@@ -23,9 +23,25 @@ export function Doble({ usd, tasa, className, fuerte }: { usd: number; tasa: { v
 }
 
 /** Total, abonado, mínimo para formalizar y saldo, con su equivalente en Bs y la tasa con su fecha. */
-export function ResumenPago({ total, abono, minimoPorcentaje, tasa, className }: { total: number; abono: number; minimoPorcentaje: number; tasa: TasaGuardada | undefined; className?: string }) {
+export function ResumenPago({
+    total,
+    abono,
+    minimoPorcentaje,
+    minimo: minimoFijo,
+    tasa,
+    className,
+}: {
+    total: number;
+    abono: number;
+    minimoPorcentaje: number;
+    minimo?: number;
+    tasa: TasaGuardada | undefined;
+    className?: string;
+}) {
     const t = useTasaPedido(tasa);
-    const minimo = Math.round(total * minimoPorcentaje) / 100;
+    // `minimo`: el piso real (en pedidos legacy puede ser menor que el % configurado).
+    const minimo = minimoFijo ?? Math.round(total * minimoPorcentaje) / 100;
+    const legacy = minimoFijo !== undefined && minimoFijo + 0.001 < Math.round(total * minimoPorcentaje) / 100;
     const saldo = Math.max(0, Math.round((total - abono) * 100) / 100);
     const porcentaje = total > 0 ? (abono / total) * 100 : 0;
     return (
@@ -47,7 +63,7 @@ export function ResumenPago({ total, abono, minimoPorcentaje, tasa, className }:
                 </dd>
             </div>
             <div className="flex justify-between gap-3">
-                <dt className="text-muted-foreground">Abono mínimo ({formatoNumero(minimoPorcentaje)} %)</dt>
+                <dt className="text-muted-foreground">{legacy ? 'Abono mínimo (lo ya registrado)' : `Abono mínimo (${formatoNumero(minimoPorcentaje)} %)`}</dt>
                 <dd className={cn('tabular', abono + 0.001 < minimo ? 'text-warning' : 'text-success')}>{formatoUsd(minimo)}</dd>
             </div>
             <div className="flex justify-between gap-3 border-t pt-2 font-semibold">

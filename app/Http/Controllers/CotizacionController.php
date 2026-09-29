@@ -29,8 +29,8 @@ use PDF;
 /**
  * Cotizaciones (Inertia). Listado con «Ver» por pasos (?ver=ID) y asistente de
  * 3 pasos (Cliente → Productos → Resumen) en páginas propias para crear y
- * editar. Pedidos sigue en Blade: consume datos-para-pedido y convertir-a-pedido
- * (JSON), cuyos contratos fija CotizacionPedidoFlujoTest.
+ * editar. «Convertir a pedido» lleva al asistente de Pedidos (pedidos.create),
+ * que copia las líneas en el servidor.
  */
 class CotizacionController extends Controller
 {

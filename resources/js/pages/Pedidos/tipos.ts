@@ -69,6 +69,8 @@ export interface CotizacionDisponible {
     fecha: string | null;
     validez: string | null;
     total: number;
+    /** Tasa guardada en la cotización (para el equivalente en Bs). */
+    tasa: number | null;
     prioridad: Prioridad;
     lineas: number;
 }

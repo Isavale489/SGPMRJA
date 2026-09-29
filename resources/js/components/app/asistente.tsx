@@ -66,8 +66,20 @@ export function Asistente({ pasos, final, salto, inicial = 0, className }: Props
     const paso = pasos[actual]!;
     const ultimo = actual === pasos.length - 1;
 
+    // Enter en un campo de un paso intermedio: avanza (con su validación) en vez de
+    // enviar el formulario, que se saltaría los pasos siguientes y el resumen.
+    const alPulsar = (ev: React.KeyboardEvent<HTMLDivElement>) => {
+        if (ev.key !== 'Enter' || actual >= pasos.length - 1) return;
+        const t = ev.target as HTMLElement;
+        if (t instanceof HTMLTextAreaElement || t instanceof HTMLButtonElement || t.closest('[role="combobox"],[role="listbox"]')) return;
+        if (!(t instanceof HTMLInputElement)) return;
+        ev.preventDefault();
+        ev.stopPropagation();
+        ir(actual + 1);
+    };
+
     return (
-        <div className={cn('grid gap-4', className)}>
+        <div className={cn('grid gap-4', className)} onKeyDown={alPulsar}>
             <nav aria-label="Pasos">
                 <ol className="flex items-center gap-1 overflow-x-auto pb-1">
                     {pasos.map((p, i) => {
@@ -80,9 +92,17 @@ export function Asistente({ pasos, final, salto, inicial = 0, className }: Props
                                     onClick={() => ir(i)}
                                     disabled={!disponible}
                                     aria-current={i === actual ? 'step' : undefined}
-                                    className={cn('flex shrink-0 items-center gap-2 rounded-md px-1.5 py-1 text-sm transition-colors disabled:cursor-not-allowed', i === actual ? 'text-foreground font-medium' : 'text-muted-foreground hover:text-foreground')}
+                                    className={cn(
+                                        'flex shrink-0 items-center gap-2 rounded-md px-1.5 py-1 text-sm transition-colors disabled:cursor-not-allowed',
+                                        i === actual ? 'text-foreground font-medium' : 'text-muted-foreground hover:text-foreground',
+                                    )}
                                 >
-                                    <span className={cn('grid size-7 place-items-center rounded-full border text-xs font-semibold tabular transition-colors', i === actual ? 'bg-primary border-primary text-primary-foreground' : hecho ? 'bg-primary/10 border-primary/30 text-primary' : 'bg-background')}>
+                                    <span
+                                        className={cn(
+                                            'grid size-7 place-items-center rounded-full border text-xs font-semibold tabular transition-colors',
+                                            i === actual ? 'bg-primary border-primary text-primary-foreground' : hecho ? 'bg-primary/10 border-primary/30 text-primary' : 'bg-background',
+                                        )}
+                                    >
                                         {hecho ? <Check className="size-3.5" /> : i + 1}
                                     </span>
                                     <span className="hidden sm:inline">{p.titulo}</span>
@@ -98,17 +118,32 @@ export function Asistente({ pasos, final, salto, inicial = 0, className }: Props
             <div ref={cuerpo} className="grid gap-4">
                 <header>
                     <h2 data-titulo-paso tabIndex={-1} className="text-base font-semibold outline-none">
-                        <span className="text-muted-foreground font-normal sm:hidden">Paso {actual + 1} de {pasos.length}: </span>{paso.titulo}
+                        <span className="text-muted-foreground font-normal sm:hidden">
+                            Paso {actual + 1} de {pasos.length}:{' '}
+                        </span>
+                        {paso.titulo}
                     </h2>
                     {paso.descripcion && <p className="text-muted-foreground text-sm">{paso.descripcion}</p>}
                 </header>
                 {paso.contenido}
-                {aviso && <p role="alert" className="text-destructive text-sm">{aviso}</p>}
+                {aviso && (
+                    <p role="alert" className="text-destructive text-sm">
+                        {aviso}
+                    </p>
+                )}
             </div>
 
             <div className="flex flex-wrap items-center justify-between gap-2 border-t pt-4">
-                <Button type="button" variant="outline" onClick={() => ir(actual - 1)} disabled={actual === 0}><ChevronLeft /> Anterior</Button>
-                {ultimo ? <div className="flex flex-wrap gap-2">{final}</div> : <Button type="button" onClick={() => ir(actual + 1)}>Siguiente <ChevronRight /></Button>}
+                <Button type="button" variant="outline" onClick={() => ir(actual - 1)} disabled={actual === 0}>
+                    <ChevronLeft /> Anterior
+                </Button>
+                {ultimo ? (
+                    <div className="flex flex-wrap gap-2">{final}</div>
+                ) : (
+                    <Button type="button" onClick={() => ir(actual + 1)}>
+                        Siguiente <ChevronRight />
+                    </Button>
+                )}
             </div>
         </div>
     );

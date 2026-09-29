@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { Asistente } from '@/components/app/asistente';
 import { Buscador } from '@/components/app/buscador';
 import { Campo } from '@/components/app/campo';
+import { EstadoBadge } from '@/components/app/estado-badge';
 import { Monto } from '@/components/app/monto';
 import { ProyeccionInsumos } from '@/components/app/proyeccion-insumos';
 import { TasaBcv } from '@/components/app/tasa-bcv';
@@ -125,14 +126,17 @@ export default function FormularioPedido(props: PaginaFormularioPedido) {
         if (data.pagos.some((p) => p.metodo !== 'efectivo' && (!p.banco_id || !p.referencia.trim()))) return 'Las transferencias y los pagos móviles necesitan banco y referencia.';
         if (efectivos > 1) return 'Registra el efectivo en un solo pago.';
         if (abono > total + 0.001) return `Los pagos (${formatoUsd(abono)}) superan el total del pedido (${formatoUsd(total)}).`;
-        if (abono + 0.001 < minimo) return `El abono (${formatoUsd(abono)}) no alcanza el mínimo de ${formatoUsd(minimo)} (${formatoNumero(terminos.abono)} % del total).`;
+        if (abono + 0.001 < minimo)
+            return pedido && minimo + 0.001 < r2((total * terminos.abono) / 100)
+                ? `El abono (${formatoUsd(abono)}) no puede quedar por debajo de lo ya registrado (${formatoUsd(minimo)}).`
+                : `El abono (${formatoUsd(abono)}) no alcanza el mínimo de ${formatoUsd(minimo)} (${formatoNumero(terminos.abono)} % del total).`;
         return null;
     };
 
     form.transform((d) => ({
         ...(edicion ? {} : { cotizacion_id: d.cotizacion_id }),
-        fecha_entrega_estimada: d.fecha_entrega_estimada,
-        prioridad: d.prioridad,
+        // Completado: solo pagos (entrega y prioridad no cambian).
+        ...(soloPagos ? {} : { fecha_entrega_estimada: d.fecha_entrega_estimada, prioridad: d.prioridad }),
         pagos: d.pagos.map((p) => ({
             metodo: p.metodo,
             monto: num(p.monto),
@@ -202,7 +206,7 @@ export default function FormularioPedido(props: PaginaFormularioPedido) {
                                             ? 'Elige la cotización aprobada de la que sale el pedido.'
                                             : noConvertible
                                               ? 'Esa cotización ya no se puede convertir.'
-                                              : !data.fecha_entrega_estimada || data.fecha_entrega_estimada < minimoEntrega
+                                              : !soloPagos && (!data.fecha_entrega_estimada || data.fecha_entrega_estimada < minimoEntrega)
                                                 ? edicion
                                                     ? 'La entrega no puede ser antes de la fecha del pedido.'
                                                     : 'La entrega no puede ser antes de hoy.'
@@ -239,7 +243,10 @@ export default function FormularioPedido(props: PaginaFormularioPedido) {
                                                                                 {c.lineas} {c.lineas === 1 ? 'línea' : 'líneas'} · válida hasta {c.validez ? formatoFecha(c.validez) : '—'}
                                                                             </span>
                                                                         </span>
-                                                                        <span className="shrink-0 tabular">{formatoUsd(c.total)}</span>
+                                                                        <span className="shrink-0 text-right tabular">
+                                                                            {formatoUsd(c.total)}
+                                                                            {c.tasa && <span className="text-muted-foreground block text-xs">{formatoBs(c.total * c.tasa)}</span>}
+                                                                        </span>
                                                                     </span>
                                                                 )}
                                                                 onElegir={(c) => elegir(c.id)}
@@ -288,6 +295,12 @@ export default function FormularioPedido(props: PaginaFormularioPedido) {
                                                     </div>
                                                 ))}
 
+                                            {pedido && (
+                                                <p className="text-muted-foreground flex flex-wrap items-center gap-2 text-sm">
+                                                    <EstadoBadge estado={pedido.estado} />
+                                                    {pedido.formalizacion ? `Formalizado el ${formatoFecha(pedido.formalizacion)}: las líneas quedaron fijas.` : 'Aún no alcanza el abono mínimo.'}
+                                                </p>
+                                            )}
                                             {cliente && (
                                                 <div className="grid gap-1 rounded-lg border p-3 text-sm">
                                                     <p className="font-medium">
@@ -486,7 +499,7 @@ export default function FormularioPedido(props: PaginaFormularioPedido) {
                                                     })}
                                                 </div>
                                             </div>
-                                            <ResumenPago total={total} abono={abono} minimoPorcentaje={terminos.abono} tasa={tasa} />
+                                            <ResumenPago total={total} abono={abono} minimoPorcentaje={terminos.abono} minimo={minimo} tasa={tasa} />
                                         </div>
                                     ),
                                 },
@@ -523,7 +536,7 @@ export default function FormularioPedido(props: PaginaFormularioPedido) {
                                                 )}
                                                 <TerminosCondiciones terminos={terminos} />
                                             </div>
-                                            <ResumenPago total={total} abono={abono} minimoPorcentaje={terminos.abono} tasa={tasa} />
+                                            <ResumenPago total={total} abono={abono} minimoPorcentaje={terminos.abono} minimo={minimo} tasa={tasa} />
                                         </div>
                                     ),
                                 },

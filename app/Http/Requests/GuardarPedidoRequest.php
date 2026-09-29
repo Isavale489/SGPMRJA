@@ -35,14 +35,19 @@ class GuardarPedidoRequest extends FormRequest
         // Al crear, la entrega no puede ser antes de hoy; al editar, no antes de la fecha del pedido.
         $minimoEntrega = $pedido?->fecha_pedido?->toDateString() ?? 'today';
 
+        // Un banco inhabilitado sigue valiendo en los pagos que YA lo usaban (no se falsea el historial).
+        $bancosPrevios = $pedido ? $pedido->pagos()->whereNotNull('banco_id')->pluck('banco_id')->all() : [];
+        // Completado: solo pagos (entrega y prioridad no cambian; una entrega legada no bloquea el saldo).
+        $soloPagos = $pedido?->estado === 'Completado';
+
         return [
             ...($pedido ? [] : ['cotizacion_id' => ['required', 'integer', 'exists:cotizacion,id']]),
-            'fecha_entrega_estimada' => ['required', 'date', 'after_or_equal:'.$minimoEntrega],
-            'prioridad' => ['required', Rule::in(['Normal', 'Alta', 'Urgente'])],
+            'fecha_entrega_estimada' => $soloPagos ? ['exclude'] : ['required', 'date', 'after_or_equal:'.$minimoEntrega],
+            'prioridad' => $soloPagos ? ['exclude'] : ['required', Rule::in(['Normal', 'Alta', 'Urgente'])],
             'pagos' => ['present', 'array'],
             'pagos.*.metodo' => ['required', Rule::in(PagoPedido::METODOS)],
-            'pagos.*.monto' => ['required', 'numeric', 'gt:0'],
-            'pagos.*.banco_id' => ['nullable', 'required_unless:pagos.*.metodo,efectivo', 'integer', Rule::exists('banco', 'id')->whereNull('deleted_at')],
+            'pagos.*.monto' => ['required', 'numeric', 'min:0.01'],
+            'pagos.*.banco_id' => ['nullable', 'required_unless:pagos.*.metodo,efectivo', 'integer', Rule::exists('banco', 'id')->where(fn ($q) => $q->where(fn ($w) => $w->whereNull('deleted_at')->orWhereIn('id', $bancosPrevios)))],
             'pagos.*.referencia' => ['nullable', 'required_unless:pagos.*.metodo,efectivo', 'string', 'max:255'],
         ];
     }
@@ -66,7 +71,7 @@ class GuardarPedidoRequest extends FormRequest
             'prioridad.in' => 'La prioridad no es válida.',
             'pagos.present' => 'Registra al menos el abono mínimo.',
             'pagos.*.metodo.in' => 'El método de pago no es válido.',
-            'pagos.*.monto.gt' => 'El monto debe ser mayor a cero.',
+            'pagos.*.monto.min' => 'El monto debe ser de al menos $0,01.',
             'pagos.*.banco_id.required_unless' => 'Elige el banco.',
             'pagos.*.banco_id.exists' => 'El banco no es válido.',
             'pagos.*.referencia.required_unless' => 'Indica la referencia.',

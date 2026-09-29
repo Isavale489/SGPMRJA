@@ -82,7 +82,7 @@ class FormRequestTest extends TestCase
         // Las líneas se copian de la cotización en el servidor: el navegador no las envía.
         $this->assertArrayNotHasKey('productos', $rules);
         $this->assertArrayHasKey('cotizacion_id', $rules);
-        $this->assertContains('gt:0', $rules['pagos.*.monto']);
+        $this->assertContains('min:0.01', $rules['pagos.*.monto']);
         $this->assertContains('required_unless:pagos.*.metodo,efectivo', $rules['pagos.*.banco_id']);
         $this->assertContains('required_unless:pagos.*.metodo,efectivo', $rules['pagos.*.referencia']);
     }

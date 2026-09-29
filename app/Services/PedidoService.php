@@ -111,7 +111,7 @@ class PedidoService
 
             $this->validarPagos((float) $pedido->total, $data['pagos'] ?? [], $pedido);
 
-            if ($pedido->estado !== 'Completado') {
+            if ($pedido->estado !== 'Completado' && isset($data['fecha_entrega_estimada'], $data['prioridad'])) {
                 $pedido->update([
                     'fecha_entrega_estimada' => $data['fecha_entrega_estimada'],
                     'prioridad' => $data['prioridad'],

@@ -157,6 +157,8 @@ Route::middleware(['auth', 'throttle:60,1', 'active.user', 'recovery.questions.r
         // Proyección de insumos para producción (aviso NO bloqueante de stock).
         Route::post('pedidos/proyeccion-insumos', [DisponibilidadInsumoController::class, 'proyectarLineas'])->name('pedidos.proyeccionInsumos');
         Route::get('pedidos/{pedido}/pdf', [PedidoController::class, 'pedidoPdf'])->name('pedidos.pdf');
+        // Enlace viejo a la ficha (antes JSON): abre el «Ver» del listado.
+        Route::get('pedidos/{pedido}', [PedidoController::class, 'show'])->whereNumber('pedido')->name('pedidos.show');
 
         // Cotizaciones (lectura + conversión)
         Route::get('cotizaciones', [CotizacionController::class, 'index'])->name('cotizaciones.index');

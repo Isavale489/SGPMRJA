@@ -33,8 +33,14 @@ test('editar la prioridad y los pagos de un pedido; las líneas no se tocan', as
   await expect(formulario.getByText(/quedaron fijas al crearlo/)).toBeVisible();
   await formulario.getByRole('button', { name: 'Siguiente' }).click();
 
-  // Una transferencia sin banco ni referencia no pasa.
+  // Enter en un paso intermedio avanza (con validación) y no guarda.
   await formulario.getByLabel('Monto del pago 1 en dólares').fill('200');
+  await formulario.getByLabel('Monto del pago 1 en dólares').press('Enter');
+  await expect(formulario.getByText('Saldo por cobrar').first()).toBeVisible();
+  await expect(page.getByText(/Pedido #\d+ actualizado\./)).toHaveCount(0);
+  await formulario.getByRole('button', { name: 'Anterior' }).click();
+
+  // Una transferencia sin banco ni referencia no pasa.
   await formulario.getByRole('button', { name: /Transferencia/ }).click();
   await formulario.getByLabel('Monto del pago 2 en dólares').fill('40');
   await formulario.getByRole('button', { name: 'Siguiente' }).click();
