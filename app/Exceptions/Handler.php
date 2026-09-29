@@ -49,10 +49,19 @@ class Handler extends ExceptionHandler
         if ($status >= 500 && config('app.debug')) {
             return $respuesta;
         }
-        // Con sesión viva, volver atrás con el aviso; si ya no hay usuario (el caso
-        // típico), back() llevaría al login y el aviso se perdería: página 419.
-        if ($status === 419 && $request->hasSession() && $request->user()) {
-            return back()->with('error', 'La sesión expiró. Vuelve a intentarlo.');
+        // Sesión vencida. 303 para que un PUT/PATCH/DELETE vuelva como GET (el 419 del
+        // CSRF salta antes de HandleInertiaRequests, que haría esa conversión).
+        //  - Con usuario: vuelve atrás con el aviso (lo muestra el panel).
+        //  - Formulario Blade sin usuario (login abierto mucho rato): vuelve con un
+        //    token nuevo y el aviso en `status`, que el login sí muestra.
+        //  - Visita Inertia sin usuario: back() llevaría al login y el aviso se perdería.
+        if ($status === 419 && $request->hasSession()) {
+            if ($request->user()) {
+                return back(303)->with('error', 'La sesión expiró. Vuelve a intentarlo.');
+            }
+            if (! $request->header('X-Inertia')) {
+                return back(303)->with('status', 'La sesión expiró. Vuelve a intentarlo.');
+            }
         }
 
         // Una ruta que no existe no pasa por HandleInertiaRequests: fijar la plantilla raíz aquí.
@@ -62,7 +71,9 @@ class Handler extends ExceptionHandler
         // Vite), queda la respuesta estándar de Laravel en vez de un 500 en blanco.
         try {
             return Inertia::render('Error', ['status' => $status])->toResponse($request)->setStatusCode($status);
-        } catch (Throwable) {
+        } catch (Throwable $fallo) {
+            report($fallo);
+
             return $respuesta;
         }
     }

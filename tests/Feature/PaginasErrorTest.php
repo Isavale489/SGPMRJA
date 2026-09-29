@@ -48,8 +48,27 @@ class PaginasErrorTest extends TestCase
         // Con usuario: vuelve a donde estaba, con el aviso.
         $this->actingAs($this->admin())->from(route('dashboard'))->withHeaders(['X-Inertia' => 'true'])
             ->post('/_prueba-419')
+            ->assertStatus(303)
             ->assertRedirect(route('dashboard'))
             ->assertSessionHas('error');
+    }
+
+    public function test_el_login_con_la_sesion_vencida_vuelve_con_token_nuevo_y_aviso(): void
+    {
+        // El formulario Blade de login abierto mucho rato: back() lo recarga con un token nuevo.
+        Route::middleware('web')->post('/_prueba-419', fn () => abort(419));
+
+        $this->from(route('login'))->post('/_prueba-419')
+            ->assertRedirect(route('login'))
+            ->assertSessionHas('status', 'La sesión expiró. Vuelve a intentarlo.');
+    }
+
+    public function test_si_la_pagina_de_error_falla_queda_la_respuesta_estandar(): void
+    {
+        // Una prop compartida que revienta (p. ej. BD caída) no deja un 500 en blanco.
+        \Inertia\Inertia::share('rota', fn () => throw new \RuntimeException('BD caída'));
+
+        $this->get('/no-existe-tampoco')->assertNotFound();
     }
 
     public function test_la_sesion_vencida_sin_usuario_muestra_la_pagina_419(): void
@@ -57,9 +76,10 @@ class PaginasErrorTest extends TestCase
         // El caso típico: back() llevaría al login y el aviso se perdería.
         Route::middleware('web')->post('/_prueba-419', fn () => abort(419));
 
-        $this->post('/_prueba-419')
+        $this->withHeaders(['X-Inertia' => 'true'])->post('/_prueba-419')
             ->assertStatus(419)
-            ->assertInertia(fn (Assert $p) => $p->component('Error')->where('status', 419));
+            ->assertJsonPath('component', 'Error')
+            ->assertJsonPath('props.status', 419);
     }
 
     public function test_el_cambio_de_contrasena_temporal_es_una_pagina_inertia(): void
