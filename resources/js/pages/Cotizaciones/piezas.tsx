@@ -30,7 +30,18 @@ export function Muestra({ hex, className }: { hex: string | null | undefined; cl
 }
 
 /** Tabla agrupada por producto + color + bordados (Ver y paso Productos). */
-export function TablaProductos({ filas, tasa, acciones }: { filas: FilaProductos[]; tasa: TasaGuardada | { valor: number; fecha: string } | null; acciones?: (f: FilaProductos) => ReactNode }) {
+/** `tasa`: la guardada del documento; sin ella (asistente), la vigente del día. */
+export function TablaProductos({
+    filas,
+    tasa: guardada,
+    acciones,
+}: {
+    filas: FilaProductos[];
+    tasa?: TasaGuardada | { valor: number; fecha: string } | null;
+    acciones?: (f: FilaProductos) => ReactNode;
+}) {
+    const { tasaBcv } = usePage().props;
+    const tasa = guardada === undefined ? tasaBcv : guardada;
     return (
         <div className="overflow-x-auto rounded-lg border">
             <Table>
@@ -90,7 +101,10 @@ export function TablaProductos({ filas, tasa, acciones }: { filas: FilaProductos
                                     </span>
                                 )}
                             </TableCell>
-                            <TableCell className="text-right font-semibold tabular whitespace-nowrap">{formatoUsd(f.subtotal)}</TableCell>
+                            <TableCell className="text-right font-semibold tabular whitespace-nowrap">
+                                {formatoUsd(f.subtotal)}
+                                {tasa && <span className="text-muted-foreground block text-xs font-normal">{formatoBs(f.subtotal * tasa.valor)}</span>}
+                            </TableCell>
                             {acciones && <TableCell className="text-right">{acciones(f)}</TableCell>}
                         </TableRow>
                     ))}

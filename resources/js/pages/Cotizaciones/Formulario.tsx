@@ -315,7 +315,7 @@ export default function FormularioCotizacion(props: PaginaFormularioCotizacion) 
                                             {data.bloques.length ? (
                                                 <TablaProductos
                                                     filas={filas}
-                                                    tasa={null}
+
                                                     acciones={(f) => {
                                                         const b = porClave(f.clave);
                                                         if (!b) return null;
@@ -364,7 +364,7 @@ export default function FormularioCotizacion(props: PaginaFormularioCotizacion) 
                                     contenido: (
                                         <div className="grid gap-4 lg:grid-cols-[1fr_22rem] lg:items-start">
                                             <div className="grid min-w-0 gap-4">
-                                                <TablaProductos filas={filas} tasa={null} />
+                                                <TablaProductos filas={filas} />
                                                 <ProyeccionInsumos url={urls.proyeccion} lineas={lineasProyeccion} urlCrearCompra={urls.crearCompra} origen="cotizacion" />
                                                 <Campo etiqueta="Notas internas" error={e.notas} ayuda="No salen en el PDF.">
                                                     <Textarea rows={3} maxLength={2000} value={data.notas} onChange={(ev) => setData('notas', ev.target.value)} />

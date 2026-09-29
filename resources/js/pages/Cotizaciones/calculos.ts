@@ -70,6 +70,7 @@ export function lineasDe(bloques: Bloque[]) {
                               ubicacion_bordado_id: x.ubicacion_bordado_id,
                               nombre_aplicado: x.nombre_aplicado,
                               logo_id: x.logo_id,
+                              nombre_logo_aplicado: x.logo,
                               es_personalizada: x.es_personalizada ? 1 : 0,
                               precio_aplicado: x.precio_aplicado,
                               cantidad: Math.max(1, x.cantidad),

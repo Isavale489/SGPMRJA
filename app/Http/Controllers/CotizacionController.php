@@ -535,6 +535,8 @@ class CotizacionController extends Controller
         $datosParaPedido = [
             'cotizacion_id' => $cotizacion->id,
             'cliente_id' => $cotizacion->cliente_id,
+            // Clave nueva (no rompe el contrato): el pedido hereda la prioridad.
+            'prioridad' => $cotizacion->prioridad ?? 'Normal',
             'cliente' => $cotizacion->cliente ? [
                 'id' => $cotizacion->cliente->id,
                 'nombre' => $cotizacion->cliente->nombre,

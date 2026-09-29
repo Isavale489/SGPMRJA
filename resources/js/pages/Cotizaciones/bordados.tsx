@@ -30,6 +30,9 @@ interface FilaCatalogo {
 }
 interface FilaPropia {
     id: number;
+    /** Ubicación que salió del catálogo activo: conserva su id y su tipo al guardar. */
+    ubicacion_bordado_id: number | null;
+    es_personalizada: boolean;
     nombre: string;
     precio: string;
     cantidad: string;
@@ -72,7 +75,15 @@ export function ConfigurarBordados({ bloque, ubicaciones, logos, onLogoCreado, m
     const [propias, setPropias] = useState<FilaPropia[]>(() =>
         bloque.bordados
             .filter((b) => b.es_personalizada || !b.ubicacion_bordado_id || !ubicaciones.some((u) => u.id === b.ubicacion_bordado_id))
-            .map((b) => ({ id: ++secuencia, nombre: b.nombre_aplicado, precio: String(b.precio_aplicado), cantidad: String(Math.max(1, b.cantidad)), logo_id: b.logo_id })),
+            .map((b) => ({
+                id: ++secuencia,
+                ubicacion_bordado_id: b.ubicacion_bordado_id,
+                es_personalizada: b.es_personalizada,
+                nombre: b.nombre_aplicado,
+                precio: String(b.precio_aplicado),
+                cantidad: String(Math.max(1, b.cantidad)),
+                logo_id: b.logo_id,
+            })),
     );
     const [intento, setIntento] = useState(false);
 
@@ -100,7 +111,9 @@ export function ConfigurarBordados({ bloque, ubicaciones, logos, onLogoCreado, m
     const fila = (u: UbicacionCatalogo) => catalogo[u.id] ?? filaBase(u);
     const cambiarCatalogo = (u: UbicacionCatalogo, cambios: Partial<FilaCatalogo>) => setCatalogo((c) => ({ ...c, [u.id]: { ...(c[u.id] ?? filaBase(u)), ...cambios } }));
     const cambiarPropia = (id: number, cambios: Partial<FilaPropia>) => setPropias((p) => p.map((f) => (f.id === id ? { ...f, ...cambios } : f)));
-    const nombreLogo = (id: number | null) => logos.find((l) => l.id === id)?.nombre ?? null;
+    // Si el logo ya no está en el catálogo (inhabilitado o legado en texto), se conserva el nombre guardado.
+    const logoGuardado = (id: number | null) => bloque.bordados.find((b) => b.logo_id === id)?.logo ?? null;
+    const nombreLogo = (id: number | null) => logos.find((l) => l.id === id)?.nombre ?? logoGuardado(id);
 
     const guardar = () => {
         setIntento(true);
@@ -122,11 +135,11 @@ export function ConfigurarBordados({ bloque, ubicaciones, logos, onLogoCreado, m
                     };
                 }),
             ...propias.map((f) => ({
-                ubicacion_bordado_id: null,
+                ubicacion_bordado_id: f.ubicacion_bordado_id,
                 nombre_aplicado: f.nombre.trim(),
                 logo_id: f.logo_id,
                 logo: nombreLogo(f.logo_id),
-                es_personalizada: true,
+                es_personalizada: f.es_personalizada,
                 precio_aplicado: num(f.precio),
                 cantidad: entero(f.cantidad),
             })),
@@ -296,7 +309,7 @@ export function ConfigurarBordados({ bloque, ubicaciones, logos, onLogoCreado, m
                         size="sm"
                         className="justify-self-start"
                         onClick={() => {
-                            if (cabe(1)) setPropias((p) => [...p, { id: ++secuencia, nombre: '', precio: '0', cantidad: '1', logo_id: null }]);
+                            if (cabe(1)) setPropias((p) => [...p, { id: ++secuencia, ubicacion_bordado_id: null, es_personalizada: true, nombre: '', precio: '0', cantidad: '1', logo_id: null }]);
                         }}
                     >
                         <Plus /> Ubicación personalizada

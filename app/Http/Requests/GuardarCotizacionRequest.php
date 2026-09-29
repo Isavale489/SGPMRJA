@@ -51,6 +51,7 @@ class GuardarCotizacionRequest extends FormRequest
             'productos.*.bordados.*.nombre_aplicado' => 'required|string|max:120',
             'productos.*.bordados.*.logo_id' => 'nullable|exists:logo,id',
             'productos.*.bordados.*.es_personalizada' => 'nullable|boolean',
+            'productos.*.bordados.*.nombre_logo_aplicado' => 'nullable|string|max:150',
             'productos.*.bordados.*.precio_aplicado' => 'required|numeric|min:0',
             'productos.*.bordados.*.cantidad' => 'nullable|integer|min:1',
         ];
@@ -70,6 +71,13 @@ class GuardarCotizacionRequest extends FormRequest
             $max = (int) parametro('cotizaciones.max_bordados_producto');
             foreach (BordadoPricingService::indicesQueExcedenMaximo($productos, $max) as $i) {
                 $v->errors()->add("productos.$i.bordados", "No se pueden agregar más de {$max} bordados por producto.");
+            }
+            // Una línea sin bordado necesita precio (el asistente ya lo exigía; la API no).
+            foreach ($productos as $i => $p) {
+                $conBordado = ! empty($p['lleva_bordado']) && ! empty($p['bordados']);
+                if (is_array($p) && array_key_exists('precio_unitario', $p) && is_numeric($p['precio_unitario']) && (float) $p['precio_unitario'] <= 0 && ! $conBordado) {
+                    $v->errors()->add("productos.$i.precio_unitario", 'El precio debe ser mayor a cero.');
+                }
             }
         });
     }

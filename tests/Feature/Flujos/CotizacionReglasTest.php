@@ -3,7 +3,9 @@
 namespace Tests\Feature\Flujos;
 
 use App\Models\Cotizacion;
+use App\Models\Logo;
 use App\Models\Pedido;
+use App\Models\TipoProducto;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Concerns\CreaDatosBase;
 use Tests\TestCase;
@@ -122,5 +124,61 @@ class CotizacionReglasTest extends TestCase
         $payload['productos'][0]['lleva_bordado'] = 1;
         $this->actingAs($admin)->putJson(route('cotizaciones.update', $cot), $payload)
             ->assertStatus(422)->assertJsonValidationErrors('productos.0.bordados');
+    }
+
+    /** Revisión: el flujo real (Pedidos en Blade) lee `datos-para-pedido`, que no traía la prioridad. */
+    public function test_datos_para_pedido_trae_la_prioridad(): void
+    {
+        $admin = $this->admin();
+        $cot = $this->crear($admin, ['prioridad' => 'Urgente']);
+        $cot->update(['estado' => 'Aprobada']);
+
+        $this->actingAs($admin)->getJson(route('cotizaciones.datosParaPedido', $cot))
+            ->assertOk()->assertJsonPath('prioridad', 'Urgente');
+    }
+
+    /** Revisión: editar una cotización cuyo tipo de producto se inhabilitó daba 500 al guardar. */
+    public function test_se_guarda_aunque_el_tipo_de_producto_se_haya_inhabilitado(): void
+    {
+        $admin = $this->admin();
+        $payload = $this->payloadCotizacion($this->cliente()->id);
+        $this->assertExito($this->actingAs($admin)->postJson(route('cotizaciones.store'), $payload));
+        $cot = Cotizacion::sole();
+        TipoProducto::find($payload['productos'][0]['tipo_producto_id'])->delete();
+
+        $this->assertExito($this->actingAs($admin)->putJson(route('cotizaciones.update', $cot), $payload));
+        $this->assertSame(1, $cot->fresh()->productos()->count());
+    }
+
+    /** Revisión: guardar sin cambios borraba condiciones y el nombre de un logo inhabilitado. */
+    public function test_editar_conserva_condiciones_y_el_nombre_del_logo(): void
+    {
+        $admin = $this->admin();
+        $logo = Logo::create(['name' => 'Escudo viejo', 'original_filename' => 'escudo.emb']);
+        $payload = $this->payloadCotizacion($this->cliente()->id);
+        $payload['condiciones_terminos'] = 'Entrega en Acarigua';
+        $payload['productos'][0] = [...$payload['productos'][0], 'lleva_bordado' => 1, 'bordados' => [
+            ['nombre_aplicado' => 'Pecho', 'logo_id' => $logo->id, 'precio_aplicado' => 2, 'cantidad' => 1],
+        ]];
+        $this->assertExito($this->actingAs($admin)->postJson(route('cotizaciones.store'), $payload));
+        $cot = Cotizacion::sole();
+        $logo->delete();
+
+        unset($payload['condiciones_terminos']); // el asistente no las envía
+        $this->assertExito($this->actingAs($admin)->putJson(route('cotizaciones.update', $cot), $payload));
+        $cot->refresh();
+        $this->assertSame('Entrega en Acarigua', $cot->condiciones_terminos);
+        $this->assertSame('Escudo viejo', $cot->productos()->first()->bordados()->first()->nombre_logo_aplicado);
+    }
+
+    /** Revisión: el asistente exigía precio > 0 en una línea sin bordado; la API aceptaba 0. */
+    public function test_una_linea_sin_bordado_necesita_precio(): void
+    {
+        $admin = $this->admin();
+        $payload = $this->payloadCotizacion($this->cliente()->id);
+        $payload['productos'][0]['precio_unitario'] = 0;
+        $this->actingAs($admin)->postJson(route('cotizaciones.store'), $payload)
+            ->assertStatus(422)->assertJsonValidationErrors('productos.0.precio_unitario');
+        $this->assertSame(0, Cotizacion::count());
     }
 }
