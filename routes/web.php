@@ -165,8 +165,6 @@ Route::middleware(['auth', 'throttle:60,1', 'active.user', 'recovery.questions.r
         // Proyección en vivo de insumos desde el wizard (líneas aún sin guardar).
         Route::post('cotizaciones/proyeccion-insumos', [DisponibilidadInsumoController::class, 'proyectarLineas'])->name('cotizaciones.proyeccionInsumos');
         Route::get('cotizaciones/reporte/pdf', [CotizacionController::class, 'reportePdf'])->name('cotizaciones.reporte.pdf');
-        Route::get('cotizaciones/reporte', [CotizacionController::class, 'reporteGeneral'])->name('cotizaciones.reporteGeneral');
-        Route::get('cotizaciones/{cotizacion}', [CotizacionController::class, 'show'])->whereNumber('cotizacion')->name('cotizaciones.show');
         Route::get('cotizaciones/{cotizacion}/pdf', [CotizacionController::class, 'cotizacionPdf'])->name('cotizaciones.pdf');
         Route::put('cotizaciones/{cotizacion}/estado', [CotizacionController::class, 'updateEstado'])->name('cotizaciones.updateEstado');
         Route::post('cotizaciones/{cotizacion}/reactivar', [CotizacionController::class, 'reactivar'])->name('cotizaciones.reactivar');
@@ -195,7 +193,6 @@ Route::middleware(['auth', 'throttle:60,1', 'active.user', 'recovery.questions.r
         Route::get('tallas-data', [TallaController::class, 'getTallas'])->name('tallas.data');
 
         // Ubicaciones de bordado (catálogo)
-        Route::get('cotizaciones-ubicaciones-bordado-data', [CotizacionController::class, 'getUbicacionesBordado'])->name('cotizaciones.ubicacionesBordado.data');
 
         // Productos
         // Catálogo = tipos de producto: la página (Inertia) y lo que consume Cotizaciones.

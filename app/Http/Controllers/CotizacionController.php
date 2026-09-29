@@ -252,17 +252,6 @@ class CotizacionController extends Controller
         ];
     }
 
-    public function getUbicacionesBordado()
-    {
-        $catalogo = BordadoUbicacion::activo()
-            ->orderBy('grupo')
-            ->orderBy('orden')
-            ->orderBy('nombre')
-            ->get(['id', 'nombre', 'grupo', 'precio_base', 'orden']);
-
-        return response()->json($catalogo);
-    }
-
     public function store(GuardarCotizacionRequest $request)
     {
         $cotizacion = $this->cotizacionService->crear($request->validated());
@@ -272,49 +261,6 @@ class CotizacionController extends Controller
         }
 
         return response()->json(['success' => 'Cotización creada exitosamente.']);
-    }
-
-    /** JSON de la cotización (lo usaba la vista Blade; se conserva para clientes JSON). */
-    public function show($id)
-    {
-        $cotizacion = Cotizacion::with(['user:id,name,avatar', 'productos.producto.tipoProducto', 'productos.bordados.logo:id,name'])
-            ->with([
-                'cliente' => function ($query) {
-                    $query->withTrashed()->with('persona');
-                }
-            ])
-            ->findOrFail($id);
-
-        $clienteData = null;
-        if ($cotizacion->cliente) {
-            $clienteData = [
-                'id' => $cotizacion->cliente->id,
-                'nombre' => $cotizacion->cliente->nombre,
-                'apellido' => '',
-                'email' => $cotizacion->cliente->email,
-                'telefono' => $cotizacion->cliente->telefono,
-                'documento' => $cotizacion->cliente->documento,
-                'tipo_documento' => optional($cotizacion->cliente->persona)->tipo_documento,
-                'razon_social' => optional($cotizacion->cliente->persona)->razon_social,
-                'direccion' => $cotizacion->cliente->direccion,
-                'ciudad' => $cotizacion->cliente->ciudad,
-                'eliminado' => $cotizacion->cliente->deleted_at ? true : false,
-            ];
-        }
-
-        $response = $cotizacion->toArray();
-        $response['cliente'] = $clienteData;
-        $response['tasa_fecha_fmt'] = optional(TasaCambio::fechaParaValor(
-            $cotizacion->tasa_cambio_valor,
-            optional($cotizacion->fecha_cotizacion)->toDateString() ?? optional($cotizacion->created_at)->toDateString()
-        ))->format('d/m/Y');
-        $response['creador'] = $cotizacion->user ? [
-            'name' => $cotizacion->user->name,
-            'avatar_url' => $cotizacion->user->avatar_url,
-            'fecha' => optional($cotizacion->created_at)->format('d/m/Y H:i'),
-        ] : null;
-
-        return response()->json($response);
     }
 
     public function update(GuardarCotizacionRequest $request, $id)
@@ -427,13 +373,6 @@ class CotizacionController extends Controller
             ->setPaper('a4', 'portrait');
 
         return $pdf->stream('reporte_cotizaciones_'.now()->format('Ymd_His').'.pdf');
-    }
-
-    public function reporteGeneral()
-    {
-        $cotizaciones = Cotizacion::with('user:id,name')->get();
-
-        return view('admin.cotizaciones.reporte_general', compact('cotizaciones'));
     }
 
     public function cotizacionPdf(Cotizacion $cotizacion)

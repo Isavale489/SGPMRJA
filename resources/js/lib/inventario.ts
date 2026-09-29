@@ -1,7 +1,8 @@
 /**
- * Contratos del inventario con los módulos Blade que siguen vivos (Cotizaciones,
- * Pedidos, Órdenes → public/assets/js/proyeccion-insumos.js). Mismas claves:
- * al migrar el último módulo, se pueden simplificar.
+ * Contratos del inventario entre páginas (y entre pestañas): la compra
+ * prellenada con los faltantes (localStorage) y el aviso de cambio de stock
+ * (BroadcastChannel + evento storage). Cotizaciones, Pedidos, Órdenes,
+ * Movimientos y Compras los comparten.
  */
 
 const CANAL_STOCK = 'sgpmrja_stock';

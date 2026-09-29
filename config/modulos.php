@@ -170,7 +170,7 @@ return [
             'gestionar'  => 'Crear, editar y eliminar cotizaciones', // solo-admin
         ],
         'rutas' => [
-            'cotizaciones.index|cotizaciones.reporteGeneral|cotizaciones.show|cotizaciones.ubicacionesBordado.data|cotizaciones.proyeccionInsumos' => 'ver',
+            'cotizaciones.index|cotizaciones.proyeccionInsumos' => 'ver',
             'cotizaciones.reporte.pdf|cotizaciones.pdf' => 'pdf',
             // conversion a pedido (acceso compartido con Supervisor)
             'cotizaciones.updateEstado|cotizaciones.reactivar' => 'convertir',
