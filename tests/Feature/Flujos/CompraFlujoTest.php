@@ -252,6 +252,22 @@ class CompraFlujoTest extends TestCase
         $this->assertSame(2, Compra::count());
     }
 
+    /** Decisión de producto: la factura de una compra anulada se puede volver a usar (el clon corregido la reutiliza). */
+    public function test_la_factura_de_una_anulada_se_puede_reusar(): void
+    {
+        $admin = $this->admin();
+        $proveedor = $this->proveedor();
+        $insumo = $this->insumo();
+        $c = $this->borradorDosLineas($admin, $proveedor, $this->insumo(), $this->insumo()); // factura 0001-0456
+        $this->assertExito($this->actingAs($admin)->patchJson(route('compras.procesar', $c)));
+        $this->assertExito($this->actingAs($admin)->patchJson(route('compras.anular', $c)));
+
+        $this->assertExito($this->actingAs($admin)->postJson(route('compras.store'), [...$this->payload($proveedor->id, $insumo->id), 'numero_factura' => '0001-0456']));
+        // Pero no dos veces entre compras vigentes.
+        $this->actingAs($admin)->postJson(route('compras.store'), [...$this->payload($proveedor->id, $this->insumo()->id), 'numero_factura' => '0001-0456'])
+            ->assertStatus(422)->assertJsonValidationErrors('numero_factura');
+    }
+
     public function test_los_pdf_se_generan(): void
     {
         $admin = $this->admin();

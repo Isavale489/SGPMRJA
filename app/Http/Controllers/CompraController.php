@@ -203,6 +203,8 @@ class CompraController extends Controller
                 'numero_factura' => $compra->numero_factura,
                 'fecha_compra' => $compra->fecha_compra?->toDateString(),
                 'tasa_cambio' => (float) $compra->tasa_cambio,
+                // Fecha BCV de esa tasa (solo si coincide con la publicada): la tasa siempre va con su fecha.
+                'tasa_fecha' => TasaCambio::fechaParaValor($compra->tasa_cambio, $compra->fecha_compra?->toDateString())?->toDateString(),
                 'observaciones' => $compra->observaciones,
                 'items' => $compra->detalles->map(fn ($d) => [
                     'insumo_id' => $d->insumo_id,

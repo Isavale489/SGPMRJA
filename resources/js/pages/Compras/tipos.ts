@@ -99,6 +99,8 @@ export interface CompraEditable {
     numero_factura: string | null;
     fecha_compra: string | null;
     tasa_cambio: number;
+    /** Fecha BCV de la tasa guardada (null si se escribió a mano). */
+    tasa_fecha: string | null;
     observaciones: string | null;
     items: { insumo_id: number; cantidad: number; costo_unitario_bs: number; aplica_iva: boolean }[];
 }
