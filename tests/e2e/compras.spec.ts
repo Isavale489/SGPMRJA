@@ -113,6 +113,9 @@ test('editar el borrador clonado y crear un insumo sin salir de la compra', asyn
   await page.getByRole('button', { name: 'Crear el insumo «Cinta raso E2E»' }).click();
   const alta = page.getByRole('dialog', { name: 'Agregar insumo' });
   await expect(alta.getByLabel('Nombre')).toHaveValue('Cinta raso E2E');
+  // Desde una compra: inventariable por fuerza y sin existencia inicial (entra con la compra).
+  await expect(alta.getByLabel('Existencia actual')).toHaveCount(0);
+  await expect(alta.getByRole('switch', { name: 'Inventariable' })).toHaveCount(0);
   await alta.getByRole('combobox', { name: 'Tipo' }).click();
   await page.getByRole('option', { name: 'Etiqueta', exact: true }).click();
   await alta.getByRole('combobox', { name: 'Unidad de medida' }).click();
@@ -139,22 +142,38 @@ test('una compra prellenada con faltantes (desde Cotizaciones/Pedidos)', async (
   }, INSUMO);
   expect(insumoId).toBeTruthy();
   await page.evaluate((id) => {
-    localStorage.setItem('sgpmrja_compra_prefill', JSON.stringify({ origen: 'pedido', ts: Date.now(), insumos: [{ insumo_id: id, nombre: 'Hilo Compra E2E', cantidad: 7 }] }));
+    localStorage.setItem('sgpmrja_compra_prefill', JSON.stringify({ origen: 'pedido', ts: Date.now(), insumos: [{ insumo_id: id, nombre: 'Hilo Compra E2E', cantidad: 7 }, { insumo_id: 999999, nombre: 'Insumo retirado', cantidad: 2 }] }));
   }, insumoId);
 
   await page.goto('/compras?prefill=1'); // entrada vieja: redirige al formulario
   await expect(page).toHaveURL(/\/compras\/crear\?prefill=1$/);
   await expect(page.getByText('Se cargaron 1 insumo faltante')).toBeVisible();
+  await expect(page.getByText(/No se agregaron .*Insumo retirado/)).toBeVisible();
   await elegirProveedor(page);
   await page.getByRole('button', { name: 'Siguiente' }).click();
   await expect(page.getByLabel(`Cantidad de ${INSUMO}`)).toHaveValue('7');
   await expect(page.getByLabel(`Costo unitario en bolívares de ${INSUMO}`)).toHaveValue('80');
+
+  // Una tasa escrita a mano (tecla por tecla) no congela el costo sugerido: sigue a la tasa final.
+  await page.getByRole('button', { name: 'Anterior' }).click();
+  await page.getByLabel('Tasa (Bs por $)').fill('');
+  await page.getByLabel('Tasa (Bs por $)').pressSequentially('45');
+  await expect(page.getByText('Tasa escrita a mano (sin fecha BCV)')).toBeVisible();
+  await page.getByRole('button', { name: 'Siguiente' }).click();
+  await expect(page.getByLabel(`Costo unitario en bolívares de ${INSUMO}`)).toHaveValue('90');
 
   // Recargar no vuelve a aplicar los faltantes.
   await page.reload();
   await elegirProveedor(page);
   await page.getByRole('button', { name: 'Siguiente' }).click();
   await expect(page.getByText('Agrega los insumos de la factura con su cantidad y costo.')).toBeVisible();
+});
+
+test('una ficha que no existe se cierra con aviso', async ({ page }) => {
+  await page.goto('/compras?ver=999999');
+  await expect(page.getByText('La compra #999999 no existe o fue eliminada.')).toBeVisible();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await expect(page).toHaveURL(/\/compras$/);
 });
 
 test('en móvil las páginas no se desbordan', async ({ page }) => {

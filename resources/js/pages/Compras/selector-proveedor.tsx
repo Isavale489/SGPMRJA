@@ -1,6 +1,7 @@
 import { router } from '@inertiajs/react';
 import { Building2, Mail, Phone, Plus, UserRound, X } from 'lucide-react';
 import { useState } from 'react';
+import { toast } from 'sonner';
 
 import { Buscador } from '@/components/app/buscador';
 import { ConfirmarPeligro } from '@/components/app/confirmar-peligro';
@@ -43,11 +44,13 @@ export function SelectorProveedor({ proveedor, onCambiar, error, urls, estados }
     const [alta, setAlta] = useState<{ abierto: boolean; apertura: number }>({ abierto: false, apertura: 0 });
     const [convertir, setConvertir] = useState<PersonaSinProveedor>();
 
-    // Proveedores por nombre o documento; con un documento, también personas que aún no son proveedores.
+    // Proveedores por nombre o documento; con un documento (y permiso para dar de
+    // alta proveedores), también personas que aún no lo son.
+    const puedeRegistrar = puede('proveedores.gestionar');
     const buscar = async (q: string): Promise<Resultado[]> => {
         const proveedores = await json<ProveedorResumen[]>(`${urls.buscarProveedor}?${new URLSearchParams({ q })}`);
         const resultados: Resultado[] = proveedores.map((p) => ({ tipo: 'proveedor', p }));
-        if (/^\d{6,}$/.test(q)) {
+        if (puedeRegistrar && /^\d{6,}$/.test(q)) {
             const personas = await json<PersonaSinProveedor[]>(`${urls.buscarPersona}?${new URLSearchParams({ q })}`).catch(() => []);
             resultados.push(...personas.filter((p) => !p.proveedor_id).map((p) => ({ tipo: 'persona' as const, p })));
         }
@@ -63,6 +66,7 @@ export function SelectorProveedor({ proveedor, onCambiar, error, urls, estados }
                 const creado = (pagina.flash as { proveedor?: ProveedorResumen }).proveedor;
                 if (creado) onCambiar(creado);
             },
+            onError: (errores) => toast.error(Object.values(errores)[0] ?? 'No se pudo registrar como proveedor.'),
         });
 
     if (proveedor) {

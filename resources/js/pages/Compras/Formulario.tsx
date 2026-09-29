@@ -30,6 +30,8 @@ interface Linea {
     cantidad: string;
     costo_unitario_bs: string;
     aplica_iva: boolean;
+    /** El costo lo sugirió el sistema ($ × tasa): se recalcula si cambia la tasa, hasta que el usuario lo edite. */
+    sugerido?: boolean;
 }
 
 interface Datos {
@@ -54,7 +56,11 @@ const num = (v: string) => {
     const n = parseFloat(v);
     return Number.isFinite(n) ? n : 0;
 };
-const redondear = (n: number) => Math.round(n * 100) / 100;
+/** Redondeo a 2 decimales como PHP round(): la mitad se aleja del cero y 1.005 da 1.01 (no 1.00 por el binario). */
+const redondear = (n: number) => {
+    const x = Math.abs(n) * 100;
+    return (Math.sign(n) * Math.round(x + x * Number.EPSILON * 4)) / 100;
+};
 
 /**
  * Mismo cálculo que CompraService: el costo en $ de cada línea es el de Bs
@@ -84,7 +90,8 @@ function totales(items: Linea[], tasa: number, iva: number) {
 export default function FormularioCompra({ compra, insumos, iva, tiposInsumo, unidades, estados, urls }: PaginaFormularioCompra) {
     const { puede } = usePermisos();
     const [proveedor, setProveedor] = useState<ProveedorResumen | null>(compra?.proveedor ?? null);
-    const [tasa, setTasa] = useState<{ estado: 'buscando' | 'bcv' | 'anterior' | 'manual'; fecha?: string; aviso?: string }>(compra ? { estado: 'manual' } : { estado: 'buscando' });
+    const tasaGuardada = compra ? ({ estado: compra.tasa_fecha ? 'bcv' : 'manual', fecha: compra.tasa_fecha ?? undefined } as const) : null;
+    const [tasa, setTasa] = useState<{ estado: 'buscando' | 'bcv' | 'anterior' | 'manual'; fecha?: string; aviso?: string }>(tasaGuardada ?? { estado: 'buscando' });
     const [altaInsumo, setAltaInsumo] = useState<{ abierto: boolean; apertura: number; nombre: string }>({ abierto: false, apertura: 0, nombre: '' });
 
     const form = useForm<Datos>({
@@ -103,21 +110,25 @@ export default function FormularioCompra({ compra, insumos, iva, tiposInsumo, un
     const tasaNum = num(data.tasa_cambio);
     const t = totales(data.items, tasaNum, iva);
 
-    // Tasa BCV vigente para la fecha de compra. Al editar, se respeta la guardada hasta que cambie la fecha.
-    const primeraFecha = useRef(true);
+    // Tasa BCV vigente para la fecha de compra. Al editar, con la fecha guardada
+    // se usa la tasa guardada (comparar la fecha, y no «primera vez», aguanta el
+    // doble montaje de StrictMode). Si el usuario escribe la tasa mientras se
+    // consulta, lo que escribió manda.
+    const tecleada = useRef(false);
     useEffect(() => {
-        if (compra && primeraFecha.current) {
-            primeraFecha.current = false;
+        tecleada.current = false;
+        if (compra && data.fecha_compra === compra.fecha_compra) {
+            setData('tasa_cambio', String(compra.tasa_cambio));
+            setTasa(tasaGuardada!);
             return;
         }
-        primeraFecha.current = false;
         if (!data.fecha_compra) return;
         let vigente = true;
         setTasa({ estado: 'buscando' });
         fetch(`${urls.tasa}?${new URLSearchParams({ fecha: data.fecha_compra })}`, { headers: { Accept: 'application/json' } })
             .then((r) => r.json() as Promise<RespuestaTasa>)
             .then((r) => {
-                if (!vigente) return;
+                if (!vigente || tecleada.current) return;
                 if (r.encontrada && r.valor) {
                     setData('tasa_cambio', String(r.valor));
                     setTasa({ estado: r.exacta ? 'bcv' : 'anterior', fecha: r.fecha_bcv });
@@ -125,7 +136,7 @@ export default function FormularioCompra({ compra, insumos, iva, tiposInsumo, un
                     setTasa({ estado: 'manual', aviso: r.message });
                 }
             })
-            .catch(() => vigente && setTasa({ estado: 'manual', aviso: 'No se pudo consultar la tasa BCV. Ingrésala manualmente.' }));
+            .catch(() => vigente && !tecleada.current && setTasa({ estado: 'manual', aviso: 'No se pudo consultar la tasa BCV. Ingrésala manualmente.' }));
         return () => {
             vigente = false;
         };
@@ -137,32 +148,40 @@ export default function FormularioCompra({ compra, insumos, iva, tiposInsumo, un
     const costoBs = (i: InsumoComprable | InsumoCreado, tasaActual = tasaNum) => (tasaActual > 0 && i.costo > 0 ? String(redondear(i.costo * tasaActual)) : '');
     useEffect(() => {
         if (compra || new URLSearchParams(window.location.search).get('prefill') !== '1') return;
-        const faltantes = tomarFaltantes().filter((f) => porId.has(Number(f.insumo_id)));
-        if (!faltantes.length) return;
+        const todos = tomarFaltantes();
+        const faltantes = todos.filter((f) => porId.has(Number(f.insumo_id)));
+        const fuera = todos.filter((f) => !porId.has(Number(f.insumo_id)));
+        if (!faltantes.length) {
+            if (fuera.length) toast.warning(`No se agregaron (inhabilitados o no inventariables): ${fuera.map((f) => f.nombre).join(', ')}.`, { duration: 10000 });
+            return;
+        }
         setData(
             'items',
             faltantes.map((f) => {
                 const i = porId.get(Number(f.insumo_id))!;
-                return { insumo_id: i.id, cantidad: String(Math.ceil(f.cantidad * 100) / 100), costo_unitario_bs: '', aplica_iva: i.aplica_iva };
+                // Hacia arriba a 2 decimales, sin que el binario sume 0,01 de más (1,1 → 1,10, no 1,11).
+                return { insumo_id: i.id, cantidad: String(Math.ceil(f.cantidad * 100 - 1e-9) / 100), costo_unitario_bs: '', aplica_iva: i.aplica_iva, sugerido: true };
             }),
         );
         toast.info(`Se cargaron ${faltantes.length} ${faltantes.length === 1 ? 'insumo faltante' : 'insumos faltantes'}. Revisa cantidades y costos.`);
+        if (fuera.length) toast.warning(`No se agregaron (inhabilitados o no inventariables): ${fuera.map((f) => f.nombre).join(', ')}.`, { duration: 10000 });
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    // Líneas prellenadas sin costo: se sugiere el último costo ($ × tasa) cuando llega la tasa.
+    // Costos sugeridos (último costo $ × tasa): siguen a la tasa mientras el usuario
+    // no los toque, así una tasa escrita a medias no deja costos congelados.
     useEffect(() => {
-        if (tasaNum <= 0 || !data.items.some((l) => !l.costo_unitario_bs)) return;
+        if (tasaNum <= 0 || !data.items.some((l) => l.sugerido || !l.costo_unitario_bs)) return;
         setData(
             'items',
-            data.items.map((l) => (l.costo_unitario_bs ? l : { ...l, costo_unitario_bs: costoBs(porId.get(l.insumo_id) ?? ({ costo: 0 } as InsumoComprable)) })),
+            data.items.map((l) => (l.sugerido || !l.costo_unitario_bs ? { ...l, costo_unitario_bs: costoBs(porId.get(l.insumo_id) ?? ({ costo: 0 } as InsumoComprable)), sugerido: true } : l)),
         );
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [tasaNum]);
 
     const agregar = (i: InsumoComprable | InsumoCreado) => {
         if (data.items.some((l) => l.insumo_id === i.id)) return toast.info(`${i.nombre} ya está en la compra.`);
-        setData('items', [...data.items, { insumo_id: i.id, cantidad: '', costo_unitario_bs: costoBs(i), aplica_iva: i.aplica_iva }]);
+        setData('items', [...data.items, { insumo_id: i.id, cantidad: '', costo_unitario_bs: costoBs(i), aplica_iva: i.aplica_iva, sugerido: true }]);
         setEnfocar(i.id);
     };
     // Foco en la cantidad de la línea nueva, cuando ya está en pantalla.
@@ -295,7 +314,7 @@ export default function FormularioCompra({ compra, insumos, iva, tiposInsumo, un
                                                             ? 'Consultando tasa BCV…'
                                                             : tasa.fecha
                                                               ? `Tasa BCV (${formatoFecha(tasa.fecha)})${tasa.estado === 'anterior' ? ': la última publicada antes de esa fecha' : ''}`
-                                                              : 'Tasa de la compra'
+                                                              : 'Tasa escrita a mano (sin fecha BCV)'
                                                     }
                                                 >
                                                     <Input
@@ -305,6 +324,7 @@ export default function FormularioCompra({ compra, insumos, iva, tiposInsumo, un
                                                         inputMode="decimal"
                                                         value={data.tasa_cambio}
                                                         onChange={(ev) => {
+                                                            tecleada.current = true;
                                                             setData('tasa_cambio', ev.target.value);
                                                             setTasa({ estado: 'manual' });
                                                         }}
@@ -421,7 +441,7 @@ export default function FormularioCompra({ compra, insumos, iva, tiposInsumo, un
                                                                                 step="0.01"
                                                                                 inputMode="decimal"
                                                                                 value={l.costo_unitario_bs}
-                                                                                onChange={(ev) => cambiarLinea(n, { costo_unitario_bs: ev.target.value })}
+                                                                                onChange={(ev) => cambiarLinea(n, { costo_unitario_bs: ev.target.value, sugerido: false })}
                                                                                 aria-label={`Costo unitario en bolívares de ${nombre}`}
                                                                                 aria-invalid={errorDe('costo_unitario_bs') ? true : undefined}
                                                                                 className="tabular"
@@ -475,7 +495,7 @@ export default function FormularioCompra({ compra, insumos, iva, tiposInsumo, un
                                                         {proveedor?.nombre ?? '—'} <span className="text-muted-foreground font-normal tabular">{proveedor?.doc}</span>
                                                     </p>
                                                     <p className="text-muted-foreground">
-                                                        Factura {data.numero_factura || 'S/N'} · {data.fecha_compra ? formatoFecha(data.fecha_compra) : '—'} · Bs {formatoNumero(tasaNum)} por $
+                                                        Factura {data.numero_factura || 'S/N'} · {data.fecha_compra ? formatoFecha(data.fecha_compra) : '—'} · {tasa.fecha ? `Tasa BCV (${formatoFecha(tasa.fecha)})` : 'Tasa manual'}: Bs {formatoNumero(tasaNum)}
                                                     </p>
                                                 </div>
                                                 <ul className="grid gap-1 rounded-lg border p-3 text-sm">
@@ -536,6 +556,7 @@ export default function FormularioCompra({ compra, insumos, iva, tiposInsumo, un
                     urls={{ index: urls.insumos, checkNombre: urls.checkNombre }}
                     nombreInicial={altaInsumo.nombre}
                     recargar={['insumos']}
+                    paraCompra
                     onCreado={(i) => (i.inventariable ? agregar(i) : toast.warning(`${i.nombre} no es inventariable: no se puede comprar.`))}
                 />
             )}

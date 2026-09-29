@@ -42,13 +42,17 @@ export function Buscador<T>({ etiqueta, placeholder, buscar, remoto, clave, opci
     const contenedor = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
+        // Cada cambio abre un turno nuevo: la respuesta de una búsqueda anterior
+        // (aún en vuelo) ya no se aplica ni deja el indicador girando.
+        const mio = ++turno.current;
         if (!abierto || (!texto.trim() && !buscarVacio)) {
             setItems([]);
+            setCargando(false);
             return;
         }
-        const mio = ++turno.current;
         const aplicar = (r: T[]) => { if (mio === turno.current) { setItems(r); setActivo(0); } };
         if (!remoto) {
+            setCargando(false);
             aplicar(buscar(texto.trim()) as T[]);
             return;
         }
