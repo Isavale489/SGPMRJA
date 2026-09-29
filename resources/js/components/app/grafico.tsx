@@ -62,6 +62,7 @@ interface Props {
 export function TarjetaGrafico({ titulo, archivo, opciones, alto = 340, vacio, agarre, className }: Props) {
     const { tema } = useTema();
     const chart = useRef<AgChartInstance>(null);
+    const caja = useRef<HTMLDivElement>(null);
     const oscuro = tema === 'dark';
 
     const completas = useMemo(
@@ -73,7 +74,10 @@ export function TarjetaGrafico({ titulo, archivo, opciones, alto = 340, vacio, a
         const c = chart.current;
         if (!c) return;
         try {
-            await c.updateDelta({ background: { visible: true, fill: oscuro ? '#1b1f2a' : '#ffffff' } } as Partial<AgChartOptions>);
+            // El fondo real de la tarjeta (sigue al tema); si no se puede leer, uno fijo por tema.
+            const tarjeta = caja.current?.closest<HTMLElement>('[data-slot="card"]');
+            const fondo = (tarjeta && getComputedStyle(tarjeta).backgroundColor) || (oscuro ? '#1b1f2a' : '#ffffff');
+            await c.updateDelta({ background: { visible: true, fill: fondo } } as Partial<AgChartOptions>);
             await c.download({ fileName: archivo });
         } finally {
             await c.updateDelta({ background: { visible: false } } as Partial<AgChartOptions>);
@@ -90,7 +94,7 @@ export function TarjetaGrafico({ titulo, archivo, opciones, alto = 340, vacio, a
                     </Button>
                 </CardAction>
             </CardHeader>
-            <CardContent>
+            <CardContent ref={caja}>
                 {vacio ? (
                     <p className="text-muted-foreground grid place-items-center text-sm" style={{ height: Math.min(alto, 200) }}>Aún no hay datos para este gráfico.</p>
                 ) : (

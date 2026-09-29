@@ -45,14 +45,29 @@ test('el orden de las tarjetas se guarda', async ({ page }) => {
   await page.getByRole('button', { name: 'Bajar «Órdenes por estado»' }).focus();
   await page.keyboard.press('Enter');
   await expect(primera()).toHaveAttribute('data-widget', 'mensual');
+  // El foco sigue a la tarjeta movida (su «Bajar» quedó deshabilitado: pasa a «Subir»).
+  await expect(page.getByRole('button', { name: 'Subir «Órdenes por estado»' })).toBeFocused();
   await page.reload();
   await expect(primera()).toHaveAttribute('data-widget', 'mensual');
+});
+
+test('las tablas se ordenan por columna', async ({ page }) => {
+  await page.goto('/reportes/empleados');
+  const producido = page.getByRole('columnheader', { name: /Producido/ });
+  await expect(producido).toHaveAttribute('aria-sort', 'none');
+  await producido.getByRole('button').click();
+  await expect(producido).toHaveAttribute('aria-sort', 'ascending');
+  await producido.getByRole('button').click();
+  await expect(producido).toHaveAttribute('aria-sort', 'descending');
+
+  await page.goto('/reportes/eficiencia');
+  await expect(page.getByRole('columnheader', { name: /Eficiencia/ })).toHaveAttribute('aria-sort', 'ascending');
 });
 
 test('eficiencia: el detalle del pedido muestra sus órdenes', async ({ page }) => {
   await page.goto('/reportes/eficiencia');
   await page.getByRole('button', { name: /Ver órdenes de Pedido #/ }).first().click();
-  await expect(page.getByRole('dialog')).toContainText(/Orden(es)? de producción/);
+  await expect(page.getByRole('dialog')).toContainText(/(Orden|Órdenes) de producción/);
 });
 
 test('el cambio de tema redibuja sin errores', async ({ page }) => {

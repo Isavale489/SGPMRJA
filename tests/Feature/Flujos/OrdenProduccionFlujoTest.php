@@ -547,6 +547,32 @@ class OrdenProduccionFlujoTest extends TestCase
         $this->assertSame('Pendiente', $orden->fresh()->estado);
     }
 
+    /** Regresión: la reposición devolvía el estimado de hoy; ahora devuelve lo que se descontó. */
+    public function test_cancelar_repone_lo_descontado_aunque_el_insumo_cambie_o_se_inhabilite(): void
+    {
+        $admin = $this->admin();
+        [$orden, , $insumo] = $this->crearOrden($admin); // 50 → 30
+        $insumo->update(['is_inventoriable' => false]);
+        $insumo->delete(); // inhabilitado
+
+        $this->assertExito($this->actingAs($admin)->patchJson(route('ordenes.cancelar', $orden)));
+        $this->assertEquals(50, (float) Insumo::withTrashed()->find($insumo->id)->stock_actual);
+        $this->assertSame(0.0, (float) $orden->insumos()->withTrashed()->first()->pivot->cantidad_utilizada);
+    }
+
+    /** Órdenes anteriores al descuento de inventario (nunca descontaron): cancelarlas no crea stock. */
+    public function test_una_orden_que_nunca_desconto_no_repone_al_cancelar(): void
+    {
+        $admin = $this->admin();
+        [$orden, , $insumo] = $this->crearOrden($admin);
+        $orden->insumos()->updateExistingPivot($insumo->id, ['cantidad_utilizada' => 0]);
+        $insumo->update(['stock_actual' => 30]);
+
+        $this->assertExito($this->actingAs($admin)->patchJson(route('ordenes.cancelar', $orden)));
+        $this->assertEquals(30, (float) $insumo->fresh()->stock_actual);
+        $this->assertSame(1, MovimientoInsumo::count()); // solo la salida original
+    }
+
     public function test_los_pdf_se_generan(): void
     {
         $admin = $this->admin();

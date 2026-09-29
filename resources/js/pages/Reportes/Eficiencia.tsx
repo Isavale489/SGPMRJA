@@ -1,6 +1,7 @@
 import { Search } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
+import { CabeceraOrdenable, useOrdenColumnas } from '@/components/app/orden-columnas';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -16,6 +17,12 @@ import { NIVEL, nivel, type KpisEficiencia, type Nivel, type PedidoEficiencia } 
 
 const TODOS = 'todos';
 const titulo = (p: PedidoEficiencia) => (p.pedido_id === null ? 'Órdenes manuales' : `Pedido #${p.pedido_id}`);
+const COLUMNAS = {
+    pedido: (p: PedidoEficiencia) => p.pedido_id ?? Number.MAX_SAFE_INTEGER,
+    conformes: (p: PedidoEficiencia) => p.producido,
+    eficiencia: (p: PedidoEficiencia) => p.eficiencia,
+    ordenes: (p: PedidoEficiencia) => p.total_ordenes,
+};
 
 /**
  * Eficiencia (first-pass yield) = conformes / (conformes + defectuosas),
@@ -26,12 +33,12 @@ export default function ReporteEficiencia({ pedidos, kpis }: { pedidos: PedidoEf
     const [filtro, setFiltro] = useState<Nivel | typeof TODOS>(TODOS);
     const [abierto, setAbierto] = useState<PedidoEficiencia>();
 
-    const filas = useMemo(() => {
+    const filtradas = useMemo(() => {
         const k = buscar.trim().toLowerCase();
-        return pedidos
-            .filter((p) => (filtro === TODOS || nivel(p.eficiencia) === filtro) && (!k || titulo(p).toLowerCase().includes(k) || p.cliente.toLowerCase().includes(k)))
-            .sort((a, b) => (a.eficiencia ?? 101) - (b.eficiencia ?? 101));
+        return pedidos.filter((p) => (filtro === TODOS || nivel(p.eficiencia) === filtro) && (!k || titulo(p).toLowerCase().includes(k) || p.cliente.toLowerCase().includes(k)));
     }, [pedidos, buscar, filtro]);
+    // Por defecto, los más críticos primero (menor eficiencia; sin producción al final).
+    const { ordenadas: filas, orden, alternar } = useOrdenColumnas(filtradas, COLUMNAS, { clave: 'eficiencia', dir: 'asc' });
 
     const g = kpis.eficiencia_global;
 
@@ -79,10 +86,10 @@ export default function ReporteEficiencia({ pedidos, kpis }: { pedidos: PedidoEf
                     <Table>
                         <TableHeader>
                             <TableRow className="hover:bg-transparent">
-                                <TableHead>Pedido</TableHead>
-                                <TableHead className="w-2/5">Conformes / defectuosas</TableHead>
-                                <TableHead>Eficiencia</TableHead>
-                                <TableHead className="text-right">Órdenes</TableHead>
+                                <CabeceraOrdenable clave="pedido" orden={orden} onOrdenar={alternar}>Pedido</CabeceraOrdenable>
+                                <CabeceraOrdenable clave="conformes" orden={orden} onOrdenar={alternar} className="w-2/5">Conformes / defectuosas</CabeceraOrdenable>
+                                <CabeceraOrdenable clave="eficiencia" orden={orden} onOrdenar={alternar}>Eficiencia</CabeceraOrdenable>
+                                <CabeceraOrdenable clave="ordenes" orden={orden} onOrdenar={alternar} className="text-right">Órdenes</CabeceraOrdenable>
                                 <TableHead><span className="sr-only">Detalle</span></TableHead>
                             </TableRow>
                         </TableHeader>
