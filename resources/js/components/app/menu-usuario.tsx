@@ -10,6 +10,24 @@ import { usePermisos } from '@/hooks/use-permisos';
 
 const csrf = () => document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content ?? '';
 
+/**
+ * POST clásico a /logout (no Inertia: redirige a una página Blade). El form se
+ * crea en <body>, fuera del menú: un <form> dentro del DropdownMenuContent se
+ * desmonta al elegir el ítem, antes de que el navegador lo envíe.
+ */
+function cerrarSesion() {
+    const form = document.createElement('form');
+    form.method = 'post';
+    form.action = '/logout';
+    const token = document.createElement('input');
+    token.type = 'hidden';
+    token.name = '_token';
+    token.value = csrf();
+    form.append(token);
+    document.body.append(form);
+    form.submit();
+}
+
 const iniciales = (nombre: string) =>
     nombre.split(/\s+/).slice(0, 2).map((p) => p[0]?.toUpperCase() ?? '').join('');
 
@@ -45,16 +63,9 @@ export function MenuUsuario() {
                         <UserRound /> Mi perfil
                     </Link>
                 </DropdownMenuItem>
-                {/* Form clásico, no <Link>: /logout redirige a una página Blade y
-                    Inertia mostraría ese HTML como error dentro de un modal. */}
-                <form method="post" action="/logout">
-                    <input type="hidden" name="_token" value={csrf()} />
-                    <DropdownMenuItem asChild>
-                        <button type="submit" className="w-full">
-                            <LogOut /> Cerrar sesión
-                        </button>
-                    </DropdownMenuItem>
-                </form>
+                <DropdownMenuItem onSelect={cerrarSesion}>
+                    <LogOut /> Cerrar sesión
+                </DropdownMenuItem>
             </DropdownMenuContent>
         </DropdownMenu>
     );
