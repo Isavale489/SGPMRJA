@@ -32,6 +32,29 @@ class Cliente extends Model
         return $this->hasMany(Cotizacion::class);
     }
 
+    /**
+     * Tarjeta del cliente en el asistente de Cotizaciones (y lo que devuelve
+     * el alta rápida de cliente): datos de contacto y sus cotizaciones previas.
+     * Espejo de `ClienteCotizacion` en resources/js/pages/Cotizaciones/tipos.ts.
+     */
+    public function resumenParaCotizacion(): array
+    {
+        $this->loadMissing('persona');
+        $previas = $this->cotizaciones()->selectRaw('COUNT(*) as n, MAX(fecha_cotizacion) as ultima')->first();
+
+        return [
+            'id' => $this->id,
+            'nombre' => $this->nombre ?? 'Sin nombre',
+            'documento' => $this->documento,
+            'juridico' => in_array($this->persona?->tipo_documento, ['J-', 'G-'], true),
+            'telefono' => $this->telefono ?: null,
+            'email' => $this->email ?: null,
+            'inhabilitado' => $this->trashed() || ! $this->estatus,
+            'cotizaciones' => (int) ($previas->n ?? 0),
+            'ultima' => $previas?->ultima ? substr((string) $previas->ultima, 0, 10) : null,
+        ];
+    }
+
     // Accessors para mantener compatibilidad con el código existente
     public function getNombreAttribute()
     {

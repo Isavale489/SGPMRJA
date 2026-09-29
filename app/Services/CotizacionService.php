@@ -38,6 +38,7 @@ class CotizacionService
                 'fecha_validez'       => $data['fecha_validez']
                     ?? \Carbon\Carbon::parse($data['fecha_cotizacion'])->addDays(Cotizacion::diasVigencia())->toDateString(),
                 'estado'              => 'Pendiente',
+                'prioridad'           => $data['prioridad'] ?? 'Normal',
                 'total'               => $total,
                 'tasa_cambio_valor'   => TasaCambio::obtenerValorUsd(),
                 'notas'               => $data['notas'] ?? null,
@@ -76,7 +77,8 @@ class CotizacionService
                 'fecha_cotizacion'     => $data['fecha_cotizacion'],
                 'fecha_validez'        => $data['fecha_validez']
                     ?? \Carbon\Carbon::parse($data['fecha_cotizacion'])->addDays(Cotizacion::diasVigencia())->toDateString(),
-                'estado'               => $data['estado'],
+                // El estado no viene del formulario: cambia solo por sus acciones.
+                'prioridad'            => $data['prioridad'] ?? $cotizacion->prioridad ?? 'Normal',
                 'total'                => $total,
                 'tasa_cambio_valor'    => TasaCambio::obtenerValorUsd(),
                 'notas'                => $data['notas'] ?? null,
@@ -91,6 +93,32 @@ class CotizacionService
             'cotizacion_id' => $cotizacion->id,
             'total' => $cotizacion->total,
             'user_id' => Auth::id(),
+        ]);
+    }
+
+    /**
+     * Cambio de estado manual (aprobar, cancelar, volver a pendiente) según
+     * Cotizacion::TRANSICIONES.
+     *
+     * @throws \InvalidArgumentException si la transición no está permitida
+     */
+    public function cambiarEstado(Cotizacion $cotizacion, string $nuevo): void
+    {
+        $actual = $cotizacion->estado;
+        if ($actual === 'Convertida') {
+            throw new \InvalidArgumentException('No se puede cambiar el estado de una cotización ya convertida a pedido.');
+        }
+        if ($actual === 'Vencida') {
+            throw new \InvalidArgumentException('La cotización está vencida: usa «Reactivar» para renovar su validez.');
+        }
+        if (! in_array($nuevo, Cotizacion::TRANSICIONES[$actual] ?? [], true)) {
+            throw new \InvalidArgumentException("No se puede pasar una cotización de {$actual} a {$nuevo}.");
+        }
+
+        $cotizacion->update(['estado' => $nuevo]);
+
+        Log::info('Cotización: cambio de estado', [
+            'cotizacion_id' => $cotizacion->id, 'de' => $actual, 'a' => $nuevo, 'user_id' => Auth::id(),
         ]);
     }
 

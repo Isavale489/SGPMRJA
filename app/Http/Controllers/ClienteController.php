@@ -129,11 +129,12 @@ class ClienteController extends Controller
     {
         $clienteId = $this->clienteService->crear($request->validated());
 
-        // Cotizaciones y Pedidos (alta rápida, jQuery) leen `cliente_id`.
+        // Pedidos (alta rápida, jQuery) lee `cliente_id`; el asistente de
+        // Cotizaciones (Inertia) recibe la tarjeta del cliente como flash.
         return $this->responder($request, 'Cliente creado exitosamente.', [
             'message' => 'Cliente creado exitosamente.',
             'cliente_id' => $clienteId,
-        ]);
+        ], ['cliente' => Cliente::find($clienteId)?->resumenParaCotizacion()]);
     }
 
     public function update(UpdateClienteRequest $request, $id)
@@ -192,6 +193,7 @@ class ClienteController extends Controller
         $escaped = str_replace(['%', '_'], ['\\%', '\\_'], $query);
 
         $clientes = Cliente::with(['persona.telefonos', 'persona.direcciones'])
+            ->withCount('cotizaciones')->withMax('cotizaciones', 'fecha_cotizacion')
             ->when($query !== '', function ($q) use ($escaped) {
                 $q->whereHas('persona', function ($sub) use ($escaped) {
                     $sub->where('documento_identidad', 'LIKE', "{$escaped}%")
@@ -212,6 +214,10 @@ class ClienteController extends Controller
                 'email' => $cliente->email,
                 'telefono' => $cliente->telefono, // Usa accessor
                 'documento' => $cliente->documento,
+                // Tarjeta del asistente de Cotizaciones (ClienteCotizacion en tipos.ts).
+                'juridico' => in_array($cliente->persona?->tipo_documento, ['J-', 'G-'], true),
+                'cotizaciones' => (int) $cliente->cotizaciones_count,
+                'ultima' => $cliente->cotizaciones_max_fecha_cotizacion ? substr((string) $cliente->cotizaciones_max_fecha_cotizacion, 0, 10) : null,
             ];
         });
 
