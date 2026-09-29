@@ -26,7 +26,7 @@ interface Props {
 
 /**
  * Hasta 3 teléfonos "PREFIJO-NÚMERO" (0424-1234567), con tipo y uno principal.
- * Equivalente React de public/assets/js/telefonos-repeater.js; el servidor
+ * El servidor
  * normaliza y valida (Telefono::sincronizar, GuardarProveedorRequest).
  */
 export function CampoTelefonos({ valor, onChange, errores }: Props) {

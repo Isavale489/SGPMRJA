@@ -1,33 +1,40 @@
 # CLAUDE.md — Contexto de proyecto para Claude Code
 
 > Leído automáticamente por Claude Code al iniciar sesión.
-> Última actualización: 2026-07-08 (QoL cotizaciones/dashboard + reversión cotización + dropdown banco · commit `6a4a5cc`) · Rama activa: `dev`
+> Última actualización: 2026-09-29 (migración a Inertia + React completa: #22..#53) · Rama activa: `dev`
 
 ---
 
 ## Stack y arranque
 
-- **Framework**: Laravel 13 (PHP 8.3+) + Blade + jQuery + Bootstrap 5
-- **BD**: MariaDB 10.4 (puerto 3308, usuario `root`, sin contraseña, DB `sistema_atlantico`)
-- **Servidor local**: `php artisan serve` (o Laragon/XAMPP)
-- **Assets**: archivos estáticos en `public/assets/` (sin Vite en el admin)
-- **Layout admin**: `resources/views/admin/layouts/app.blade.php`
+- **Framework**: Laravel 13 (PHP 8.3+) + **Inertia 3 + React 19 + TypeScript** (Tailwind 4, shadcn/Radix, AG Charts por npm)
+- **BD**: MySQL 8 (igual que producción; ver «Dump SQL» abajo). Tests: `sistema_atlantico_test` (PHPUnit) y `sistema_atlantico_e2e` (Playwright)
+- **Servidor local**: `php artisan serve` (o Laragon/XAMPP); assets con Vite (`npm run build`, `public/build` se commitea)
+- **Pruebas**: `php artisan test` (PHPUnit) y `npx playwright test` (E2E); la CI corre ambas
+- **Blade que queda**: PDF (`layouts.pdf`), login y recuperación (`<x-guest-layout>`), páginas de error y cambio forzoso de contraseña (`admin.layouts.app`, con los assets del tema en `public/assets/`)
 
 ---
 
 ## Convenciones clave (leer antes de tocar código)
 
+> Desde sep-2026 **todo el panel está en Inertia 3 + React 19 + TypeScript** (Tailwind 4 + shadcn).
+> La guía completa es `docs/conventions/frontend.md`; lo de abajo es el resumen.
+
 | Tema | Regla |
 |---|---|
-| CSS | Todo CSS personalizado va en `public/assets/css/custom.css` |
-| JS | IIFEs por módulo; scripts en `@push('scripts')` al final de cada vista |
-| Modales | Clase `atlantico-modal` obligatoria; `data-bs-backdrop="static"` |
-| IDs de form | Campo oculto `#id-field` para el ID del registro (convención universal) |
-| DataTables | Siempre server-side; método `getX()` en el controller |
-| Modelos | Soft deletes en la mayoría; `estado` como ENUM en lugar de booleano |
-| Páginas Inertia/React | Ver `docs/conventions/frontend.md` — nunca mezclar Bootstrap y Tailwind; `public/build` se commitea |
+| Páginas | `resources/js/pages/<Módulo>/`; tipos en `tipos.ts` espejo de lo que manda el controller (lo verifica un `*PaginaTest` con `clavesTs`) |
+| Tablas | `TablaServidor` + `paginate()` en el servidor + `useFiltrosUrl` (filtros en la URL). **Ya no hay DataTables** (yajra se desinstaló) |
+| Asistentes | Todo lo que era wizard sigue siéndolo: componente `Asistente` (`resources/js/components/app/asistente.tsx`) |
+| Respuestas | Trait `RespondeSegunCliente`: Inertia → redirect con flash; JSON → el de siempre |
+| Montos | Todo $ con su equivalente en Bs y la tasa **con su fecha** |
+| Build | `public/build` se commitea; la CI verifica que esté al día |
+| Blade | Solo quedan los PDF (`layouts.pdf`), login/recuperación (`<x-guest-layout>`), errores y cambio forzoso de contraseña (`admin.layouts.app`) |
+
 
 ---
+
+> **Histórico.** Las secciones «Trabajo realizado en sesión …» describen el sistema ANTES de la migración a
+> Inertia (sep-2026): citan vistas y scripts Blade que ya no existen. Sirven como bitácora de decisiones de negocio.
 
 ## Trabajo realizado en sesión 2026-07-07/08
 

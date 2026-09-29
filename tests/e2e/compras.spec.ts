@@ -134,7 +134,7 @@ test('editar el borrador clonado y crear un insumo sin salir de la compra', asyn
 });
 
 test('una compra prellenada con faltantes (desde Cotizaciones/Pedidos)', async ({ page }) => {
-  // Lo que deja proyeccion-insumos.js al pulsar «Crear compra con faltantes».
+  // Lo que deja «Comprar lo que falta» (lib/inventario.ts) al pulsarlo en Cotizaciones/Pedidos/Órdenes.
   await page.goto('/compras/crear');
   const insumoId = await page.evaluate((nombre) => {
     const props = (window.history.state?.page?.props ?? {}) as { insumos?: { id: number; nombre: string }[] };

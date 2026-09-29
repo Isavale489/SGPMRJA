@@ -37,7 +37,7 @@ class CompraController extends Controller
      */
     public function index(Request $request): Response|RedirectResponse
     {
-        // Entrada vieja de «Crear compra con faltantes» (proyeccion-insumos.js).
+        // Enlace viejo de «Crear compra con faltantes» (antes de migrar): lleva al formulario.
         if ($request->query('prefill') === '1') {
             return redirect()->route('compras.create', ['prefill' => 1]);
         }

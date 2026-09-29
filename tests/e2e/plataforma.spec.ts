@@ -77,3 +77,22 @@ test('en móvil no hay desborde horizontal y el menú abre en un panel', async (
   await page.getByRole('button', { name: 'Abrir menú' }).click();
   await expect(page.getByRole('dialog').getByRole('navigation', { name: 'Principal' })).toBeVisible();
 });
+
+/** Tras quitar las librerías sin uso de public/assets: las vistas Blade que quedan no piden archivos borrados. */
+test('las páginas Blade que quedan cargan todos sus archivos', async ({ page, browser }) => {
+  const faltantes: string[] = [];
+  const vigilar = (p: typeof page) => p.on('response', (r) => { if (r.status() >= 400 && /\/assets\//.test(r.url())) faltantes.push(`${r.status()} ${r.url()}`); });
+  vigilar(page);
+  await page.goto('/esta-pagina-no-existe', { waitUntil: 'networkidle' });
+  await expect(page.getByText(/404|no existe|no encontrada/i).first()).toBeVisible();
+
+  // Login, sin sesión.
+  const anonimo = await browser.newContext({ storageState: { cookies: [], origins: [] } });
+  const login = await anonimo.newPage();
+  vigilar(login);
+  await login.goto('/login', { waitUntil: 'networkidle' });
+  await expect(login.getByRole('button', { name: /iniciar sesión|entrar|ingresar/i })).toBeVisible();
+  await anonimo.close();
+
+  expect(faltantes, faltantes.join('\n')).toEqual([]);
+});

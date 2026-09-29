@@ -3,7 +3,7 @@ import { execFileSync } from 'node:child_process';
 
 /**
  * Cada módulo del registry (config/modulos.php) carga sin 5xx, sin errores
- * de JavaScript y con su tabla (DataTables server-side) respondiendo.
+ * de JavaScript y con su tabla (TablaServidor) terminada de cargar.
  * Es la red que detecta una página rota al migrar un módulo a Inertia.
  */
 type Pagina = { modulo: string; path: string };
@@ -35,11 +35,8 @@ for (const { modulo, path } of paginas) {
     expect(resp?.status(), `HTTP de ${path}`).toBeLessThan(400);
     await expect(page).not.toHaveURL(/\/login|\/profile/);
 
-    // Si la página tiene una tabla server-side, su petición de datos debe cerrar.
-    const tablas = page.locator('table.dataTable');
-    if (await tablas.count()) {
-      await expect(page.locator('.dataTables_processing:visible')).toHaveCount(0, { timeout: 15_000 });
-    }
+    // Si la página tiene una tabla del servidor, no debe quedar «cargando».
+    await expect(page.locator('[aria-busy="true"]')).toHaveCount(0, { timeout: 15_000 });
 
     expect(errores, errores.join('\n')).toEqual([]);
   });

@@ -35,7 +35,7 @@ class OrdenProduccionController extends Controller
     /**
      * Aviso de stock proyectado (NO bloqueante) para el wizard de Órdenes:
      * agrega los insumos REALES de las órdenes que se están armando y los compara
-     * contra el stock. Devuelve el mismo shape que consume proyeccion-insumos.js.
+     * contra el stock. Devuelve el mismo shape que consume ProyeccionInsumos (React).
      */
     public function proyeccionInsumos(Request $request)
     {
