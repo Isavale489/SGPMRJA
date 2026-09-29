@@ -34,7 +34,12 @@ export function comprarFaltantes(faltantes: FaltanteCompra[], origen: string, ur
 interface Props {
     url: string;
     /** Insumo → cantidad total requerida (se agregan los repetidos). */
-    requeridos: { insumo_id: number; cantidad: number }[];
+    requeridos?: { insumo_id: number; cantidad: number }[];
+    /**
+     * O bien líneas a fabricar (Cotizaciones/Pedidos): el servidor calcula los
+     * insumos desde el tipo de producto y la tela (DisponibilidadInsumoService::proyectar).
+     */
+    lineas?: { producto_id?: number | null; tipo_producto_id?: number | null; tela_id?: number | null; cantidad: number }[];
     urlCrearCompra?: string;
     origen: string;
 }
@@ -44,18 +49,20 @@ interface Props {
  * recalcula al cambiar lo requerido (400 ms de pausa) o el stock en otra pestaña,
  * y ofrece comprar lo que falta.
  */
-export function ProyeccionInsumos({ url, requeridos, urlCrearCompra, origen }: Props) {
+export function ProyeccionInsumos({ url, requeridos, lineas, urlCrearCompra, origen }: Props) {
     const [datos, setDatos] = useState<Proyeccion>();
     const [cargando, setCargando] = useState(false);
     const [version, setVersion] = useState(0);
     const turno = useRef(0);
-    const clave = JSON.stringify(requeridos);
+    const cuerpo = lineas ? { lineas } : { insumos: requeridos ?? [] };
+    const vacio = lineas ? !lineas.length : !requeridos?.length;
+    const clave = JSON.stringify(cuerpo);
 
     // Una compra procesada en otra pestaña cambia el stock: recalcular.
     useEffect(() => alCambiarStock(() => setVersion((v) => v + 1)), []);
 
     useEffect(() => {
-        if (!requeridos.length) {
+        if (vacio) {
             setDatos(undefined);
             return;
         }
@@ -65,7 +72,7 @@ export function ProyeccionInsumos({ url, requeridos, urlCrearCompra, origen }: P
             fetch(url, {
                 method: 'POST',
                 headers: { Accept: 'application/json', 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf() },
-                body: JSON.stringify({ insumos: requeridos }),
+                body: clave,
             })
                 .then((r) => (r.ok ? (r.json() as Promise<Proyeccion>) : Promise.reject(new Error(String(r.status)))))
                 .then((d) => mio === turno.current && setDatos(d))
@@ -76,7 +83,7 @@ export function ProyeccionInsumos({ url, requeridos, urlCrearCompra, origen }: P
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [clave, url, version]);
 
-    if (!requeridos.length) return null;
+    if (vacio) return null;
     const faltantes = datos?.items.filter((i) => i.estado === 'falta') ?? [];
 
     return (

@@ -44,7 +44,9 @@ class GuardarCotizacionRequest extends FormRequest
             'productos.*.insumos' => 'nullable|array',
             'productos.*.insumos.*.id' => 'required|exists:insumo,id',
             'productos.*.insumos.*.cantidad_estimada' => 'required|numeric|min:0.01',
-            'productos.*.bordados' => 'nullable|array|required_if:productos.*.lleva_bordado,true|min:1',
+            // Con lleva_bordado, required_if ya rechaza la lista vacía; sin bordado, [] es válido
+            // (antes `min:1` rechazaba guardar un producto sin bordado que enviara la lista vacía).
+            'productos.*.bordados' => 'nullable|array|required_if:productos.*.lleva_bordado,true',
             'productos.*.bordados.*.ubicacion_bordado_id' => 'nullable|exists:bordado_ubicacion,id',
             'productos.*.bordados.*.nombre_aplicado' => 'required|string|max:120',
             'productos.*.bordados.*.logo_id' => 'nullable|exists:logo,id',

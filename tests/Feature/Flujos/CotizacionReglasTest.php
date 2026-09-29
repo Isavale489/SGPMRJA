@@ -107,4 +107,20 @@ class CotizacionReglasTest extends TestCase
         $this->actingAs($admin)->postJson(route('cotizaciones.reactivar', $cot))->assertStatus(422);
         $this->assertSame('Pendiente', $cot->fresh()->estado);
     }
+
+    /** Regresión: un producto sin bordado que enviaba `bordados: []` no se podía guardar (regla min:1). */
+    public function test_un_producto_sin_bordado_se_guarda_aunque_llegue_la_lista_vacia(): void
+    {
+        $admin = $this->admin();
+        $payload = $this->payloadCotizacion($this->cliente()->id);
+        $payload['productos'][0] = [...$payload['productos'][0], 'lleva_bordado' => 0, 'bordados' => []];
+        $this->assertExito($this->actingAs($admin)->postJson(route('cotizaciones.store'), $payload));
+        $cot = Cotizacion::sole();
+        $this->assertExito($this->actingAs($admin)->putJson(route('cotizaciones.update', $cot), $payload));
+
+        // Con bordado pedido, la lista vacía sigue siendo un error.
+        $payload['productos'][0]['lleva_bordado'] = 1;
+        $this->actingAs($admin)->putJson(route('cotizaciones.update', $cot), $payload)
+            ->assertStatus(422)->assertJsonValidationErrors('productos.0.bordados');
+    }
 }

@@ -10,6 +10,8 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { confirmarDescarte, useGuardCambios } from '@/hooks/use-guard-cambios';
 
+import type { ClienteCotizacion } from '@/pages/Cotizaciones/tipos';
+
 import { ETIQUETA_TIPO, type ClienteFila, type PaginaClientes, type TipoCliente } from './tipos';
 
 type Prefijo = 'V-' | 'E-' | 'J-' | 'G-';
@@ -61,11 +63,16 @@ interface Props {
     /** Cliente a editar; sin él, es un alta. */
     cliente?: ClienteFila;
     estados: PaginaClientes['estados'];
-    urls: PaginaClientes['urls'];
+    urls: Pick<PaginaClientes['urls'], 'index' | 'checkDocumento' | 'checkEmail'>;
+    /**
+     * Alta rápida desde otro módulo (el asistente de Cotizaciones): recibe la
+     * tarjeta del cliente creado (flash `cliente`) sin remontar la página.
+     */
+    onCreado?: (cliente: ClienteCotizacion) => void;
 }
 
 /** Montar con una `key` distinta en cada apertura (ver docs/conventions/frontend.md). */
-export function FormularioCliente({ abierto, onCerrar, cliente, estados, urls }: Props) {
+export function FormularioCliente({ abierto, onCerrar, cliente, estados, urls, onCreado }: Props) {
     const edicion = Boolean(cliente);
     const form = useForm<Formulario>(inicial(cliente));
     const { data, setData, errors } = form;
@@ -148,6 +155,18 @@ export function FormularioCliente({ abierto, onCerrar, cliente, estados, urls }:
         e.preventDefault();
         const opciones = { preserveScroll: true, onSuccess: () => { form.setDefaults(); onCerrar(); } };
         if (cliente) form.put(`${urls.index}/${cliente.id}`, opciones);
+        else if (onCreado)
+            form.post(urls.index, {
+                preserveScroll: true,
+                preserveState: true, // no perder lo cargado en la página que abrió el alta
+                only: ['flash'],
+                onSuccess: (pagina) => {
+                    const creado = (pagina.flash as { cliente?: ClienteCotizacion }).cliente;
+                    form.setDefaults();
+                    onCerrar();
+                    if (creado) onCreado(creado);
+                },
+            });
         else form.post(urls.index, opciones);
     };
 
