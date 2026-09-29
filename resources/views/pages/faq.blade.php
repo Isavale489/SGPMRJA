@@ -108,7 +108,7 @@
                                     <a href="mailto:rjatlantico@gmail.com">rjatlantico@gmail.com</a>
                                 </p>
                                 <div class="h6 fw-bolder">Síguenos en Instagram @uniformes_rjatlantico</div>
-                                <a class="fs-5 px-2 link-dark" href="https://www.instagram.com/uniformes_rjatlantico/" target="_blank"><i class="bi-instagram"></i></a>
+                                <a class="fs-5 px-2 link-dark" href="https://www.instagram.com/uniformes_rjatlantico/" target="_blank" rel="noopener" aria-label="Instagram"><i class="bi-instagram"></i></a>
                             </div>
                         </div>
                     </div>

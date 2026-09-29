@@ -20,7 +20,9 @@ class WebPublicaTest extends TestCase
                 // Redes reales de la empresa; nada de enlaces de plantilla.
                 ->assertSee('https://www.facebook.com/rjatlantico', false)
                 ->assertDontSee('tu-negocio', false)
-                ->assertDontSee('twitter.com', false);
+                ->assertDontSee('twitter.com', false)
+                // Ningún botón de plantilla que no lleve a nada.
+                ->assertDontSee('href="#" class="btn', false);
         }
     }
 
