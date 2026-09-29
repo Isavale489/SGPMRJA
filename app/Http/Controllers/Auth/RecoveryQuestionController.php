@@ -199,7 +199,9 @@ class RecoveryQuestionController extends Controller
 
     /**
      * Procesa el reset de contraseña.
-     * Cierra todas las sesiones (mejora #6) y marca must_reset_questions (mejora #8).
+     * Las demás sesiones abiertas se cierran en su siguiente petición (mejora #6:
+     * CerrarSesionesAlCambiarClave compara la huella de la clave) y rota el
+     * remember_token; marca must_reset_questions (mejora #8).
      */
     public function resetPassword(Request $request): RedirectResponse
     {
