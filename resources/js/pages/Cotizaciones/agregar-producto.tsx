@@ -256,8 +256,8 @@ export function AgregarProducto({ abierto, onCerrar, bloque, onAgregar, catalogo
                 // Líneas repetidas sin tocar: se conservan tal cual (cada cantidad con su descripción).
                 if (previas.length > 1 && previas.reduce((n, t) => n + t.cantidad, 0) === cantidad) return previas.map((t) => ({ ...t }));
                 // Si cambió la cantidad, queda una sola línea con las descripciones distintas (tope del servidor: 500).
-                const descripcion = [...new Set(previas.map((t) => t.descripcion?.trim()).filter(Boolean))].join(' · ').slice(0, 500) || null;
-                return [{ talla_id, genero_id, cantidad, descripcion }];
+                const unidas = [...new Set(previas.map((t) => t.descripcion?.trim()).filter(Boolean))].join(' · ');
+                return [{ talla_id, genero_id, cantidad, descripcion: Array.from(unidas).slice(0, 500).join('') || null }];
             }),
         };
     };
