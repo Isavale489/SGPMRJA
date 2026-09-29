@@ -59,13 +59,17 @@ class RecuperacionFlujoTest extends TestCase
         $this->assertSame(2, RecoveryAttempt::where('resultado', 'fallo')->count());
     }
 
-    public function test_flujo_completo_normaliza_respuestas_cambia_la_clave_y_cierra_las_sesiones(): void
+    public function test_flujo_completo_normaliza_respuestas_cambia_la_clave_e_invalida_el_recuerdame(): void
     {
         $u = $this->usuarioConPreguntas();
         $rememberAntes = $u->remember_token;
 
         $this->post(route('recovery.email.process'), ['email' => $u->email])->assertRedirect(route('recovery.questions.show'));
-        $this->get(route('recovery.questions.show'))->assertOk()->assertSee('¿Cuál es el nombre de tu primera mascota?');
+        // Los datos que entrega el controlador (no el HTML: la pantalla se va a migrar).
+        $this->get(route('recovery.questions.show'))->assertOk()
+            ->assertViewHas('questions', fn ($q) => collect($q)->pluck('pregunta')->all() === [
+                '¿Cuál es el nombre de tu primera mascota?', '¿En qué ciudad naciste?', '¿Cuál es tu equipo deportivo favorito?',
+            ]);
 
         // Mayúsculas, espacios de más y espacios internos repetidos no importan.
         $r = $this->post(route('recovery.questions.validate'), ['respuestas' => $this->respuestas($u, ['  FIRULAIS ', 'acarigua', 'caracas    fc'])]);
@@ -87,6 +91,25 @@ class RecuperacionFlujoTest extends TestCase
 
         // El token es de un solo uso: la sesión de recuperación se limpió.
         $this->get(route('recovery.reset.show', ['token' => $token]))->assertRedirect(route('recovery.email.show'));
+
+        // Con la clave nueva entra, pero antes de todo debe reconfigurar sus preguntas.
+        $this->post(route('login'), ['email' => $u->email, 'password' => self::CLAVE])->assertRedirect();
+        $this->assertAuthenticatedAs($u);
+        $this->get(route('dashboard'))->assertRedirect(route('profile.edit'));
+    }
+
+    public function test_la_nueva_clave_de_la_recuperacion_cumple_la_politica(): void
+    {
+        $u = $this->usuarioConPreguntas();
+        $this->post(route('recovery.email.process'), ['email' => $u->email]);
+        $r = $this->post(route('recovery.questions.validate'), ['respuestas' => $this->respuestas($u)]);
+        $token = basename(parse_url($r->headers->get('Location'), PHP_URL_PATH));
+        $antes = $u->password;
+
+        $this->from(route('recovery.reset.show', ['token' => $token]))
+            ->post(route('recovery.reset.process'), ['token' => $token, 'password' => '123', 'password_confirmation' => '123'])
+            ->assertSessionHasErrors('password');
+        $this->assertSame($antes, $u->fresh()->password);
     }
 
     public function test_respuestas_incorrectas_bloquean_temporalmente_al_quinto_intento(): void
@@ -109,8 +132,24 @@ class RecuperacionFlujoTest extends TestCase
         $this->post(route('recovery.questions.validate'), ['respuestas' => $this->respuestas($u)])->assertRedirect(route('recovery.locked'));
         $this->post(route('recovery.email.process'), ['email' => $u->email])
             ->assertRedirect(route('recovery.locked'))
-            ->assertSessionHas('lock_type', 'soft');
+            ->assertSessionHas('lock_type', 'soft')
+            // La pantalla de bloqueo dice hasta cuándo: 15 minutos (config) desde el quinto error.
+            ->assertSessionHas('until', fn ($hasta) => abs($hasta->diffInSeconds(now()->addMinutes((int) config('recovery_questions.soft_lock_minutes', 15)))) < 60);
         $this->get(route('recovery.locked'))->assertOk();
+    }
+
+    public function test_el_decimo_fallo_bloquea_del_todo_incluso_a_mitad_del_flujo(): void
+    {
+        $u = $this->usuarioConPreguntas(['recovery_failed_attempts' => 9]);
+        $this->post(route('recovery.email.process'), ['email' => $u->email])->assertRedirect(route('recovery.questions.show'));
+
+        $this->from(route('recovery.questions.show'))
+            ->post(route('recovery.questions.validate'), ['respuestas' => $this->respuestas($u, ['x', 'y', 'z'])]);
+        $this->assertTrue($u->fresh()->isRecoveryHardLocked());
+
+        // Con el correo aún en la sesión, ni ver ni validar preguntas.
+        $this->get(route('recovery.questions.show'))->assertRedirect(route('recovery.locked'));
+        $this->post(route('recovery.questions.validate'), ['respuestas' => $this->respuestas($u)])->assertRedirect(route('recovery.locked'));
     }
 
     public function test_al_decimo_intento_el_bloqueo_es_total_aunque_venza_el_temporal(): void
@@ -135,6 +174,9 @@ class RecuperacionFlujoTest extends TestCase
             ->assertSessionHasErrors('email');
 
         $this->travel((int) config('recovery_questions.reset_token_ttl', 300) + 1)->seconds();
+        $this->get(route('recovery.reset.show', ['token' => $token]))
+            ->assertRedirect(route('recovery.email.show'))
+            ->assertSessionHasErrors('email');
         $this->post(route('recovery.reset.process'), ['token' => $token, 'password' => self::CLAVE, 'password_confirmation' => self::CLAVE])
             ->assertRedirect(route('recovery.email.show'))
             ->assertSessionHasErrors('email');
@@ -162,6 +204,13 @@ class RecuperacionFlujoTest extends TestCase
         }
         // Al sexto, bloqueado aunque la clave sea la correcta.
         $this->post(route('login'), ['email' => $u->email, 'password' => self::CLAVE])->assertSessionHasErrors('email');
+        $this->assertStringStartsWith('Demasiados intentos de acceso', session('errors')->first('email'));
         $this->assertGuest();
+    }
+
+    public function test_la_pantalla_de_metodo_ofrece_correo_y_preguntas(): void
+    {
+        $this->get(route('recovery.method'))->assertOk();
+        $this->get(route('recovery.email.show'))->assertOk();
     }
 }
