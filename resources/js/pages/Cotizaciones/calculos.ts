@@ -83,7 +83,7 @@ export function lineasDe(bloques: Bloque[]) {
 }
 
 /** Qué acciones ofrece cada fila (el servidor vuelve a validar cada una). */
-export function accionesDe(c: Pick<CotizacionFila, 'estado'>, puede: (permiso: string) => boolean) {
+export function accionesDe(c: Pick<CotizacionFila, 'estado'> & Partial<Pick<CotizacionFila, 'cliente_inhabilitado'>>, puede: (permiso: string) => boolean) {
     const editable = c.estado === 'Pendiente' || c.estado === 'Aprobada';
     const convertir = puede('cotizaciones.convertir');
     return {
@@ -95,6 +95,7 @@ export function accionesDe(c: Pick<CotizacionFila, 'estado'>, puede: (permiso: s
         cancelar: convertir && editable,
         reactivar: convertir && c.estado === 'Vencida',
         // Crear el pedido pide además gestionar pedidos (pedidos.create).
-        convertirPedido: convertir && puede('pedidos.gestionar') && c.estado === 'Aprobada',
+        // Sin cliente activo no hay pedido.
+        convertirPedido: convertir && puede('pedidos.gestionar') && c.estado === 'Aprobada' && !c.cliente_inhabilitado,
     };
 }

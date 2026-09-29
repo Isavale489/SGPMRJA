@@ -48,6 +48,11 @@ class PedidoService
             if ($cotizacion->yaFueConvertida()) {
                 throw new \InvalidArgumentException('Esta cotización ya tiene un pedido asociado.');
             }
+            // Sin cliente no hay proceso: uno inhabilitado no recibe pedidos (decisión de producto).
+            $cliente = $cotizacion->cliente()->withTrashed()->first();
+            if (! $cliente || $cliente->trashed() || ! $cliente->estatus) {
+                throw new \InvalidArgumentException('El cliente de esta cotización está inhabilitado: rehabilítalo antes de crear el pedido.');
+            }
             $cotizacion->load('productos.bordados');
             if ($cotizacion->productos->isEmpty()) {
                 throw new \InvalidArgumentException('La cotización no tiene productos: no se puede crear un pedido vacío.');

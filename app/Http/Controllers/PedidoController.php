@@ -112,7 +112,7 @@ class PedidoController extends Controller
             'cotizacion_id' => $p->cotizacion_id,
             'cliente' => $p->cliente?->nombre ?? 'Cliente no encontrado',
             'cliente_doc' => $p->cliente?->documento,
-            'cliente_inhabilitado' => (bool) $p->cliente?->trashed(),
+            'cliente_inhabilitado' => ! $p->cliente || $p->cliente->trashed() || ! $p->cliente->estatus,
             'fecha' => $p->fecha_pedido?->toDateString(),
             'entrega' => $p->fecha_entrega_estimada?->toDateString(),
             'total' => (float) $p->total,
@@ -178,6 +178,8 @@ class PedidoController extends Controller
             ->withCount('productos')
             ->where('estado', 'Aprobada')
             ->doesntHave('pedido')
+            // Solo clientes activos (sin cliente no hay proceso).
+            ->whereHas('cliente', fn ($q) => $q->where('estatus', 1))
             ->orderByDesc('fecha_cotizacion')->orderByDesc('id')
             ->get()
             ->map(fn (Cotizacion $c) => [

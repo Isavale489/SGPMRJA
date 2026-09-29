@@ -112,7 +112,7 @@ class CotizacionController extends Controller
             'id' => $c->id,
             'cliente' => $c->cliente?->nombre ?? 'Cliente no encontrado',
             'cliente_doc' => $c->cliente?->documento,
-            'cliente_inhabilitado' => (bool) $c->cliente?->trashed(),
+            'cliente_inhabilitado' => ! $c->cliente || $c->cliente->trashed() || ! $c->cliente->estatus,
             'fecha' => $c->fecha_cotizacion?->toDateString(),
             'validez' => $c->fechaLimiteVigencia()?->toDateString(),
             'total' => (float) $c->total,
