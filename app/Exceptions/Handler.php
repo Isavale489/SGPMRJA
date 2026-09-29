@@ -2,6 +2,7 @@
 
 namespace App\Exceptions;
 
+use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
 use Inertia\Inertia;
 use Symfony\Component\HttpFoundation\Response;
@@ -40,6 +41,17 @@ class Handler extends ExceptionHandler
      */
     public function render($request, Throwable $e): Response
     {
+        // Sin sesión (vencida, o cerrada porque la clave cambió en otro equipo) en una visita
+        // Inertia: recarga completa al login (409 + X-Inertia-Location). Con un redirect, un
+        // PUT/PATCH/DELETE se repetiría contra /login (405) y el login se vería en un diálogo.
+        if ($e instanceof AuthenticationException && $request->header('X-Inertia')) {
+            if ($request->isMethod('GET') && $request->hasSession()) {
+                $request->session()->put('url.intended', $request->fullUrl());
+            }
+
+            return Inertia::location(route('login'));
+        }
+
         $respuesta = parent::render($request, $e);
         $status = $respuesta->getStatusCode();
 

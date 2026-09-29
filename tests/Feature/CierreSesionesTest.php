@@ -50,11 +50,29 @@ class CierreSesionesTest extends TestCase
         $this->assertAuthenticatedAs($u);
     }
 
-    public function test_una_sesion_sin_huella_previa_no_se_cierra(): void
+    public function test_en_una_visita_inertia_recarga_completa_al_login_incluso_en_un_put(): void
     {
-        // Sesiones abiertas antes de activar esto: la huella se guarda en su primera petición.
         $u = User::factory()->create();
-        $this->actingAs($u)->withSession([])->get(route('dashboard'))->assertOk();
+        $this->actingAs($u)->get(route('dashboard'))->assertOk();
+        $u->forceFill(['password' => Hash::make('Otra.Clave1')])->save();
+
+        // Un redirect haría que el navegador repitiera el PUT contra /login (405).
+        $this->withHeaders(['X-Inertia' => 'true'])->put(route('pedidos.update', 1), [])
+            ->assertStatus(409)
+            ->assertHeader('X-Inertia-Location', route('login'));
+        $this->assertGuest();
+    }
+
+    public function test_el_cambio_forzoso_deja_dentro_a_quien_lo_hace(): void
+    {
+        $u = User::factory()->create(['password' => Hash::make('Temporal.1'), 'password_reset_by_admin' => true]);
+        $this->actingAs($u)->get(route('auth.force-password-change.show'))->assertOk();
+
+        $this->post(route('auth.force-password-change.process'), [
+            'current_password' => 'Temporal.1', 'password' => 'Nueva.Clave1', 'password_confirmation' => 'Nueva.Clave1',
+        ])->assertRedirect(route('profile.edit'));
+
+        $this->get(route('profile.edit'))->assertOk();
         $this->assertAuthenticatedAs($u);
     }
 }
