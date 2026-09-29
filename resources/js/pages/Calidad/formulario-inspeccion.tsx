@@ -42,27 +42,36 @@ interface Props {
     onCerrar: () => void;
 }
 
+/** Errores que el formulario muestra en su propio campo; el resto va arriba. */
+const EN_SU_CAMPO = ['cantidad_inspeccionada', 'cantidad_rechazada', 'observaciones', 'rechazos'];
+
 export function FormularioInspeccion({ orden, pedido, url, onCerrar }: Props) {
     const form = useForm({
         inspeccionada: String(orden.cantidad_producida),
         rechazada: 0,
         observaciones: '',
-        rechazos: {} as Record<number, number>,
+        // El reparto inicial (todo en 0) ya forma parte del estado de partida:
+        // si lo pusiera el efecto de abajo, el formulario nacería «con cambios».
+        rechazos: (orden.equipo.length > 1 ? repartir(0, orden.equipo) : {}) as Record<number, number>,
     });
     const { data, setData } = form;
     const e = form.errors as Record<string, string | undefined>;
+    const erroresRechazos = Object.entries(e).filter(([k, v]) => v && (k === 'rechazos' || k.startsWith('rechazos.'))).map(([, v]) => v as string);
+    const erroresGenerales = Object.entries(e).filter(([k, v]) => v && !EN_SU_CAMPO.includes(k) && !k.startsWith('rechazos.')).map(([, v]) => v as string);
 
-    const inspeccionada = Math.max(0, parseInt(data.inspeccionada, 10) || 0);
+    const inspeccionada = Math.min(orden.cantidad_producida, Math.max(0, parseInt(data.inspeccionada, 10) || 0));
     const rechazada = Math.min(data.rechazada, inspeccionada);
     const conformes = inspeccionada - rechazada;
     const conEquipo = orden.equipo.length > 1 && rechazada > 0;
     const sumaAtribucion = Object.values(data.rechazos).reduce((a, n) => a + (n || 0), 0);
 
     // Al cambiar las defectuosas, re-repartir automáticamente entre el equipo.
+    // Depende de lo elegido, no del valor ya topado: un valor a medio escribir en
+    // «Inspeccionadas» no debe pisar el reparto que el usuario ajustó.
     useEffect(() => {
-        if (orden.equipo.length > 1) setData('rechazos', repartir(rechazada, orden.equipo));
+        if (orden.equipo.length > 1) setData('rechazos', repartir(Math.min(data.rechazada, orden.cantidad_producida), orden.equipo));
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [rechazada]);
+    }, [data.rechazada]);
 
     const veredicto = useMemo(
         () =>
@@ -95,13 +104,28 @@ export function FormularioInspeccion({ orden, pedido, url, onCerrar }: Props) {
             onGuardar={() => form.post(`${url}/${orden.id}/inspeccionar`, { preserveScroll: true, onSuccess: onCerrar })}
             className="max-h-[92svh] overflow-y-auto sm:max-w-lg"
         >
-            {e.orden && <p className="text-destructive text-sm">{e.orden}</p>}
+            {erroresGenerales.map((m) => <p key={m} role="alert" className="text-destructive text-sm">{m}</p>)}
 
-            <section className="grid grid-cols-3 gap-3">
+            {/* En móvil, un campo por fila: con tres columnas el de Defectuosas (− número +) no se lee. */}
+            <section className="grid gap-3 sm:grid-cols-3">
                 <Campo etiqueta="Inspeccionadas" error={e.cantidad_inspeccionada} ayuda={`De ${formatoNumero(orden.cantidad_producida)} producidas`}>
-                    <Input type="number" min={1} max={orden.cantidad_producida} inputMode="numeric" value={data.inspeccionada} onChange={(ev) => setData('inspeccionada', ev.target.value)} className="tabular" />
+                    <Input
+                        type="number"
+                        min={1}
+                        max={orden.cantidad_producida}
+                        inputMode="numeric"
+                        value={data.inspeccionada}
+                        onChange={(ev) => setData('inspeccionada', ev.target.value.replace(/\D/g, ''))}
+                        // No se inspecciona más de lo producido (el servidor también lo valida). El
+                        // tope va al salir del campo: al teclear, «18» camino de «8» no debe volverse «10».
+                        onBlur={() => {
+                            if (data.inspeccionada === '') return;
+                            setData((d) => ({ ...d, inspeccionada: String(inspeccionada), rechazada: Math.min(d.rechazada, inspeccionada) }));
+                        }}
+                        className="tabular"
+                    />
                 </Campo>
-                <Campo etiqueta="Defectuosas">
+                <Campo etiqueta="Defectuosas" error={e.cantidad_rechazada}>
                     {(control) => (
                         <div className="flex items-center gap-1">
                             <Button type="button" variant="outline" size="icon" onClick={() => setData('rechazada', Math.max(0, rechazada - 1))} aria-label="Quitar una defectuosa"><Minus /></Button>
@@ -158,7 +182,7 @@ export function FormularioInspeccion({ orden, pedido, url, onCerrar }: Props) {
                     <p className={cn('text-xs', sumaAtribucion === rechazada ? 'text-muted-foreground' : 'text-destructive')}>
                         Atribuidas {formatoNumero(sumaAtribucion)} de {formatoNumero(rechazada)}
                     </p>
-                    {e.rechazos && <p className="text-destructive text-xs">{e.rechazos}</p>}
+                    {erroresRechazos.map((m) => <p key={m} role="alert" className="text-destructive text-xs">{m}</p>)}
                 </fieldset>
             )}
 
@@ -175,7 +199,7 @@ export function FormularioInspeccion({ orden, pedido, url, onCerrar }: Props) {
                         {orden.historial.map((h, i) => (
                             <li key={i} className="bg-muted/50 rounded-md p-2 text-xs">
                                 <span className="font-medium">{RESULTADO[h.resultado]}</span>
-                                <span className="text-muted-foreground"> · {h.fecha ? formatoFecha(h.fecha) : '—'} · {h.inspector ?? '—'} · {h.aprobada} conformes, {h.rechazada} defectuosas</span>
+                                <span className="text-muted-foreground"> · {h.fecha ? `${formatoFecha(h.fecha)} ${h.fecha.slice(11)}` : '—'} · {h.inspector ?? '—'} · {formatoNumero(h.aprobada)} conformes, {formatoNumero(h.rechazada)} defectuosas</span>
                                 {h.observaciones && <p className="text-muted-foreground mt-0.5">{h.observaciones}</p>}
                             </li>
                         ))}

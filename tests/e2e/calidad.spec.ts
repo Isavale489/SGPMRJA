@@ -13,6 +13,31 @@ function vigilarErrores(page: Page): string[] {
   return errores;
 }
 
+test('abrir y cerrar la inspección sin tocar nada no avisa de cambios sin guardar; en móvil se lee', async ({ page }) => {
+  const avisos: string[] = [];
+  page.on('dialog', (d) => { avisos.push(d.message()); void d.dismiss(); });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/calidad', { waitUntil: 'networkidle' });
+  await page.getByRole('row', { name: /Uniformes Araure QC/ }).getByRole('button', { name: /Ver órdenes/ }).click();
+  await page.getByRole('dialog').getByRole('button', { name: /Inspeccionar orden/ }).click();
+
+  const form = page.getByRole('dialog', { name: 'Registrar inspección' });
+  await expect(form.getByLabel('Defectuosas de Marta Colmenares')).toBeHidden(); // sin defectuosas no se reparte
+  // El campo Defectuosas (− número +) tiene espacio para leerse en un teléfono.
+  const ancho = await form.getByLabel('Defectuosas', { exact: true }).evaluate((el) => el.getBoundingClientRect().width);
+  expect(ancho).toBeGreaterThan(80);
+  // No se puede escribir más de lo producido.
+  // Al teclear no se recorta (camino de «8» se pasa por «18»); al salir del campo, sí.
+  await form.getByLabel('Inspeccionadas').fill('25');
+  await expect(form.getByLabel('Inspeccionadas')).toHaveValue('25');
+  await form.getByLabel('Inspeccionadas').blur();
+  await expect(form.getByLabel('Inspeccionadas')).toHaveValue('10');
+
+  await form.getByRole('button', { name: 'Cancelar' }).click();
+  await expect(form).toBeHidden();
+  expect(avisos).toEqual([]);
+});
+
 test('rechazar parte de una orden: se reparte entre el equipo y vuelve a producción', async ({ page }) => {
   const errores = vigilarErrores(page);
   await page.goto('/calidad');
@@ -40,7 +65,7 @@ test('rechazar parte de una orden: se reparte entre el equipo y vuelve a producc
 
   // Sin motivo, el servidor lo exige.
   await form.getByRole('button', { name: 'Registrar rechazo' }).click();
-  await expect(form.getByText(/observaciones es obligatorio|motivo/i)).toBeVisible();
+  await expect(form.getByText('El motivo es obligatorio cuando hay unidades rechazadas u observadas.')).toBeVisible();
 
   await form.getByLabel('Motivo del rechazo').fill('Costura torcida en el hombro');
   await form.getByRole('button', { name: 'Registrar rechazo' }).click();

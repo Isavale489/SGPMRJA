@@ -51,6 +51,8 @@ interface Props {
     registros: Paginado<PedidoEnCola>;
     filtros: Filtros & { pedido?: string };
     cola: OrdenEnCola[] | null;
+    /** De qué pedido es `cola` (evita mostrar la de otro mientras llega la nueva). */
+    colaPedido: string | null;
     urls: { index: string; reportePdf: string };
 }
 
@@ -58,24 +60,36 @@ const TODOS = 'todos';
 const clavePedido = (p: PedidoEnCola) => (p.pedido_id === null ? 'manual' : String(p.pedido_id));
 const tituloPedido = (clave: string) => (clave === 'manual' ? 'Órdenes manuales' : `Pedido #${clave}`);
 
-export default function CalidadIndex({ registros, filtros: iniciales, cola, urls }: Props) {
+/** La página de la tabla que está en la URL: abrir o cerrar un pedido no la pierde. */
+const paginaActual = () => new URLSearchParams(window.location.search).get('page') ?? undefined;
+
+export default function CalidadIndex({ registros, filtros: iniciales, cola: colaRecibida, colaPedido, urls }: Props) {
     const { puede } = usePermisos();
     const inspeccionar = puede('calidad.inspeccionar');
     const { pedido: pedidoInicial, ...filtrosIniciales } = iniciales;
-    const { filtros, cambiar, limpiar, cargando } = useFiltrosUrl<Filtros>(urls.index, filtrosIniciales, ['registros', 'filtros']);
+    const { filtros, cambiar, limpiar, cargando, descartarPendiente } = useFiltrosUrl<Filtros>(urls.index, filtrosIniciales, ['registros', 'filtros']);
 
     const [pedido, setPedido] = useState<string | undefined>(pedidoInicial);
     const [inspeccion, setInspeccion] = useState<{ orden: OrdenEnCola; apertura: number }>();
     const hayFiltros = Boolean(filtros.buscar || filtros.estado || (filtros.orden && filtros.orden !== 'recientes'));
 
+    const cola = pedido !== undefined && colaPedido === pedido ? colaRecibida : null;
+
     // Abrir un pedido recarga solo su cola (con equipo e historial de cada orden).
+    // Si una búsqueda esperaba sus 300 ms, viaja en esta misma visita: si saliera
+    // después, cancelaría la de la cola y el diálogo se quedaría cargando.
+    const visitarCola = (clave?: string) => {
+        const conTabla = descartarPendiente();
+        const params = Object.fromEntries(Object.entries({ ...filtros, page: conTabla ? undefined : paginaActual(), pedido: clave }).filter(([, v]) => v !== undefined && v !== ''));
+        router.get(urls.index, params, { only: conTabla ? ['cola', 'colaPedido', 'registros', 'filtros'] : ['cola', 'colaPedido'], preserveState: true, preserveScroll: true, replace: true });
+    };
     const verPedido = (clave: string) => {
         setPedido(clave);
-        router.get(urls.index, { ...filtros, pedido: clave }, { only: ['cola'], preserveState: true, preserveScroll: true, replace: true });
+        visitarCola(clave);
     };
     const cerrarPedido = () => {
         setPedido(undefined);
-        router.get(urls.index, { ...filtros }, { only: ['cola'], preserveState: true, preserveScroll: true, replace: true });
+        visitarCola();
     };
 
     const columnas: Columna<PedidoEnCola>[] = [
@@ -94,7 +108,7 @@ export default function CalidadIndex({ registros, filtros: iniciales, cola, urls
                     {formatoNumero(p.ordenes)} {p.ordenes === 1 ? 'orden' : 'órdenes'}
                     {p.reinspecciones > 0 && (
                         <span className="text-warning ml-2 inline-flex items-center gap-1 text-xs">
-                            <RotateCcw className="size-3" /> {p.reinspecciones} re-inspección
+                            <RotateCcw className="size-3" /> {p.reinspecciones} {p.reinspecciones === 1 ? 're-inspección' : 're-inspecciones'}
                         </span>
                     )}
                 </span>
@@ -106,7 +120,7 @@ export default function CalidadIndex({ registros, filtros: iniciales, cola, urls
             encabezado: <span className="sr-only">Acciones</span>,
             className: 'text-right',
             celda: (p) => (
-                <Button variant="outline" size="sm" onClick={() => verPedido(clavePedido(p))}>
+                <Button variant="outline" size="sm" onClick={() => verPedido(clavePedido(p))} aria-label={`Ver órdenes: ${tituloPedido(clavePedido(p))}`}>
                     <ClipboardCheck /> Ver órdenes
                 </Button>
             ),
@@ -193,7 +207,7 @@ export default function CalidadIndex({ registros, filtros: iniciales, cola, urls
                                         </p>
                                     </div>
                                     {inspeccionar && (
-                                        <Button size="sm" onClick={() => setInspeccion((i) => ({ orden: o, apertura: (i?.apertura ?? 0) + 1 }))}>
+                                        <Button size="sm" onClick={() => setInspeccion((i) => ({ orden: o, apertura: (i?.apertura ?? 0) + 1 }))} aria-label={`Inspeccionar orden #${o.id}`}>
                                             Inspeccionar
                                         </Button>
                                     )}
