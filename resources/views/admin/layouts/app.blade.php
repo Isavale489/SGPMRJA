@@ -19,8 +19,6 @@
     <!--Swiper slider css-->
     <link href="{{ asset('assets/libs/swiper/swiper-bundle.min.css') }}" rel="stylesheet" type="text/css" />
 
-    <!-- DataTables css se carga en cada vista individual -->
-
     <!-- FOUC Prevention: Apply saved theme BEFORE layout.js reads sessionStorage -->
     <script>
         (function () {
@@ -236,8 +234,6 @@
     <script src="{{ asset('assets/js/plugins.js') }}"></script>
     {{-- Charts: AG Charts se carga POR VISTA (dashboard y reportes) — ApexCharts y el
          init demo de Velzon (dashboard-ecommerce) se retiraron al estandarizar (2026-07-05) --}}
-
-    <!-- datatables se cargan en cada vista individual -->
 
     <!-- Vector map-->
     <script src="{{ asset('assets/libs/jsvectormap/jsvectormap.min.js') }}"></script>

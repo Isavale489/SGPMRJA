@@ -11538,7 +11538,7 @@ select.js-readonly:not(.afs-native) {
 
 /* ============================================================================
    Proyección de insumos para producción — aviso NO bloqueante de stock.
-   Compartido por Cotizaciones y Pedidos (renderer: proyeccion-insumos.js).
+   Legado: lo usaban las vistas Blade de Cotizaciones y Pedidos (hoy en React).
    Estados por insumo: falta (rojo) / ajustado (ámbar) / ok (verde).
    ========================================================================== */
 .proy-state {
