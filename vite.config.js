@@ -21,9 +21,9 @@ export default defineConfig({
         alias: { '@': fileURLToPath(new URL('./resources/js', import.meta.url)) },
     },
     build: {
-        // AG Charts (~1,25 MB, ~380 KB comprimido; lo mismo que la versión que
-        // cargaban las vistas Blade) va en su propio chunk y solo lo piden las
-        // páginas con gráficos. El aviso por defecto (500 kB) sería ruido fijo.
+        // AG Charts (~1,25 MB, ~380 KB comprimido) va en su propio chunk
+        // (lienzo-grafico) y se pide con lazy() desde TarjetaGrafico: las páginas
+        // con gráficos se pintan sin esperarlo. El aviso por defecto (500 kB) sería ruido fijo.
         chunkSizeWarningLimit: 1400,
     },
 });
