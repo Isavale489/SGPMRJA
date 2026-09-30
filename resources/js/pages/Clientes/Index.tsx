@@ -1,7 +1,8 @@
 import { Link, router } from '@inertiajs/react';
-import { Archive, ArrowLeft, Eye, MoreVertical, Pencil, Plus, RotateCcw, Search, Trash2, X } from 'lucide-react';
+import { Archive, ArrowLeft, Eye, MoreVertical, Pencil, Plus, RotateCcw, Search, X } from 'lucide-react';
 import { useState } from 'react';
 
+import { BarraFiltros } from '@/components/app/barra-filtros';
 import { ConfirmarPeligro } from '@/components/app/confirmar-peligro';
 import { ExportarPdf } from '@/components/app/exportar-pdf';
 import { TablaServidor, type Columna } from '@/components/app/tabla-servidor';
@@ -75,17 +76,17 @@ export default function ClientesIndex({ clientes, filtros: filtrosIniciales, est
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                                 {p.inhabilitado ? (
-                                    <DropdownMenuItem onSelect={() => restaurar(p)}>
+                                    <DropdownMenuItem tono="restaurar" onSelect={() => restaurar(p)}>
                                         <RotateCcw /> Restaurar
                                     </DropdownMenuItem>
                                 ) : (
                                     <>
-                                        <DropdownMenuItem onSelect={() => abrirFormulario(p)}>
+                                        <DropdownMenuItem tono="editar" onSelect={() => abrirFormulario(p)}>
                                             <Pencil /> Editar
                                         </DropdownMenuItem>
                                         <DropdownMenuSeparator />
-                                        <DropdownMenuItem onSelect={() => setInhabilitando(p)} variant="destructive">
-                                            <Trash2 /> Inhabilitar
+                                        <DropdownMenuItem tono="aviso" onSelect={() => setInhabilitando(p)}>
+                                            <Archive /> Inhabilitar
                                         </DropdownMenuItem>
                                     </>
                                 )}
@@ -130,7 +131,7 @@ export default function ClientesIndex({ clientes, filtros: filtrosIniciales, est
             }
         >
             <div className="grid gap-4">
-                <div className="flex flex-wrap items-center gap-2">
+                <BarraFiltros>
                     <div className="relative min-w-56 flex-1">
                         <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2" />
                         <Input
@@ -174,7 +175,7 @@ export default function ClientesIndex({ clientes, filtros: filtrosIniciales, est
                             <X /> Limpiar
                         </Button>
                     )}
-                </div>
+                </BarraFiltros>
 
                 <TablaServidor
                     pagina={clientes}

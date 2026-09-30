@@ -62,21 +62,21 @@ export function DialogoPedido({ clave, ordenes, onCerrar, onAbrir, onCancelar, o
                                                 </DropdownMenuTrigger>
                                                 <DropdownMenuContent align="end">
                                                     {activa && puede('ordenes.avance') && (
-                                                        <DropdownMenuItem onSelect={() => onAbrir(o.id, 'avance')}><Plus /> Registrar avance</DropdownMenuItem>
+                                                        <DropdownMenuItem tono="principal" onSelect={() => onAbrir(o.id, 'avance')}><Plus /> Registrar avance</DropdownMenuItem>
                                                     )}
-                                                    <DropdownMenuItem onSelect={() => onAbrir(o.id, 'etapas')}><Layers /> Etapas</DropdownMenuItem>
+                                                    <DropdownMenuItem tono="principal" onSelect={() => onAbrir(o.id, 'etapas')}><Layers /> Etapas</DropdownMenuItem>
                                                     {o.estado !== 'Cancelado' && puede('ordenes.gestionar') && (
-                                                        <DropdownMenuItem asChild><Link href={`${urls.index}/${o.id}/edit`}><Pencil /> Editar</Link></DropdownMenuItem>
+                                                        <DropdownMenuItem tono="editar" asChild><Link href={`${urls.index}/${o.id}/edit`}><Pencil /> Editar</Link></DropdownMenuItem>
                                                     )}
                                                     {puede('ordenes.pdf') && (
-                                                        <DropdownMenuItem asChild><a href={`${urls.index}/${o.id}/pdf`} target="_blank" rel="noopener"><FileText /> Ver PDF</a></DropdownMenuItem>
+                                                        <DropdownMenuItem tono="documento" asChild><a href={`${urls.index}/${o.id}/pdf`} target="_blank" rel="noopener"><FileText /> Ver PDF</a></DropdownMenuItem>
                                                     )}
                                                     {((o.estado !== 'Cancelado' && puede('ordenes.cancelar')) || (o.estado === 'Pendiente' && puede('ordenes.gestionar'))) && <DropdownMenuSeparator />}
                                                     {o.estado !== 'Cancelado' && puede('ordenes.cancelar') && (
-                                                        <DropdownMenuItem variant="destructive" onSelect={() => onCancelar(o)}><Ban /> Cancelar orden</DropdownMenuItem>
+                                                        <DropdownMenuItem tono="aviso" onSelect={() => onCancelar(o)}><Ban /> Cancelar orden</DropdownMenuItem>
                                                     )}
                                                     {o.estado === 'Pendiente' && puede('ordenes.gestionar') && (
-                                                        <DropdownMenuItem variant="destructive" onSelect={() => onEliminar(o)}><Trash2 /> Eliminar</DropdownMenuItem>
+                                                        <DropdownMenuItem tono="peligro" onSelect={() => onEliminar(o)}><Trash2 /> Eliminar</DropdownMenuItem>
                                                     )}
                                                 </DropdownMenuContent>
                                             </DropdownMenu>

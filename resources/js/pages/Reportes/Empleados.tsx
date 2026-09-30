@@ -2,6 +2,7 @@ import type { AgChartOptions } from 'ag-charts-community';
 import { Search, X } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
+import { BarraFiltros } from '@/components/app/barra-filtros';
 import { PanelOrdenable } from '@/components/app/panel-ordenable';
 import { TarjetaGrafico, colorEficiencia, partirEtiqueta, usePaleta } from '@/components/app/grafico';
 import { CabeceraOrdenable, useOrdenColumnas } from '@/components/app/orden-columnas';
@@ -96,13 +97,13 @@ export default function ReporteEmpleados({ empleados }: { empleados: Rendimiento
                     ]}
                 />
 
-                <div className="flex flex-wrap items-center gap-2">
+                <BarraFiltros>
                     <div className="relative min-w-56 flex-1">
                         <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2" />
                         <Input type="search" value={buscar} onChange={(e) => setBuscar(e.target.value)} placeholder="Buscar empleado…" aria-label="Buscar empleado" className="pl-8" />
                     </div>
                     {elegido && <Button variant="secondary" onClick={() => setElegido(undefined)} aria-label={`Quitar el filtro de ${nombreElegido}`}><X /> {nombreElegido}</Button>}
-                </div>
+                </BarraFiltros>
 
                 <div className="bg-card overflow-x-auto rounded-lg border">
                     <Table>

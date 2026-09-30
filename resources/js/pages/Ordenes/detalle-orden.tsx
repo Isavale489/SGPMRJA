@@ -63,6 +63,27 @@ export function DetalleOrden({ abierto, orden, onCerrar, onModo, urls }: Props) 
                             <p className="border-warning/30 bg-warning/10 rounded-md border p-3 text-sm">El pedido está cancelado: la orden no admite avances.</p>
                         )}
 
+                        {/* Hero (el del panel anterior): qué se fabrica y cuánto va, visible en todos los pasos. */}
+                        <section className="bg-card flex items-center gap-4 rounded-xl border p-3" aria-label="Resumen de la orden">
+                            {orden.imagen ? (
+                                <img src={orden.imagen} alt="" className="size-14 shrink-0 rounded-xl border bg-white object-contain p-1" />
+                            ) : (
+                                <span className="bg-seccion-degradado grid size-14 shrink-0 place-items-center rounded-xl text-white shadow-[0_6px_16px_-6px_var(--seccion-acento)]" aria-hidden>
+                                    <Shirt className="size-6" />
+                                </span>
+                            )}
+                            <div className="grid min-w-0 flex-1 gap-2">
+                                <div className="min-w-0">
+                                    <p className="truncate font-semibold leading-tight">{orden.producto}</p>
+                                    {orden.variante && <p className="text-muted-foreground truncate text-xs">{orden.variante}</p>}
+                                </div>
+                                <Barra
+                                    valor={progreso(orden.cantidad_producida, orden.cantidad_solicitada)}
+                                    texto={`${formatoNumero(orden.cantidad_producida)} de ${formatoNumero(orden.cantidad_solicitada)} unidades`}
+                                />
+                            </div>
+                        </section>
+
                         <Asistente
                             key={orden.id}
                             final={<span />}

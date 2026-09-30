@@ -56,20 +56,29 @@ function DropdownMenuGroup({
   )
 }
 
+/**
+ * Tono de una acción del menú ⋮ (el «actions-menu» del panel anterior): el ícono va en una
+ * cajita teñida con el color de la acción. Los estilos están en plataforma.css ([data-tono]).
+ */
+type TonoAccion = "editar" | "peligro" | "aviso" | "restaurar" | "documento" | "principal"
+
 function DropdownMenuItem({
   className,
   inset,
   variant = "default",
+  tono,
   ...props
 }: React.ComponentProps<typeof DropdownMenuPrimitive.Item> & {
   inset?: boolean
   variant?: "default" | "destructive"
+  tono?: TonoAccion
 }) {
   return (
     <DropdownMenuPrimitive.Item
       data-slot="dropdown-menu-item"
       data-inset={inset}
       data-variant={variant}
+      data-tono={tono}
       className={cn(
         "relative flex cursor-default items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-hidden select-none focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 data-[inset]:pl-8 data-[variant=destructive]:text-destructive data-[variant=destructive]:focus:bg-destructive/10 data-[variant=destructive]:focus:text-destructive dark:data-[variant=destructive]:focus:bg-destructive/20 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 [&_svg:not([class*='text-'])]:text-muted-foreground data-[variant=destructive]:*:[svg]:text-destructive!",
         className

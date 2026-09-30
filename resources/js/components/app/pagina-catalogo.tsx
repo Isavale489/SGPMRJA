@@ -1,7 +1,8 @@
 import { Link, router } from '@inertiajs/react';
-import { Archive, ArrowLeft, MoreVertical, Pencil, Plus, RotateCcw, Search, Trash2 } from 'lucide-react';
+import { Archive, ArrowLeft, MoreVertical, Pencil, Plus, RotateCcw, Search } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
 
+import { BarraFiltros } from '@/components/app/barra-filtros';
 import { ConfirmarPeligro } from '@/components/app/confirmar-peligro';
 import { TablaServidor, type Columna } from '@/components/app/tabla-servidor';
 import { Button } from '@/components/ui/button';
@@ -79,17 +80,17 @@ export function PaginaCatalogo<T extends RegistroCatalogo, F extends Filtros>({
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                         {r.inhabilitado ? (
-                            <DropdownMenuItem onSelect={() => router.patch(`${base}/${r.id}/restore`, {}, { preserveScroll: true })}>
+                            <DropdownMenuItem tono="restaurar" onSelect={() => router.patch(`${base}/${r.id}/restore`, {}, { preserveScroll: true })}>
                                 <RotateCcw /> Restaurar
                             </DropdownMenuItem>
                         ) : (
                             <>
-                                <DropdownMenuItem onSelect={() => abrir(r)}>
+                                <DropdownMenuItem tono="editar" onSelect={() => abrir(r)}>
                                     <Pencil /> Editar
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
-                                <DropdownMenuItem onSelect={() => setInhabilitando(r)} variant="destructive">
-                                    <Trash2 /> Inhabilitar
+                                <DropdownMenuItem tono="aviso" onSelect={() => setInhabilitando(r)}>
+                                    <Archive /> Inhabilitar
                                 </DropdownMenuItem>
                             </>
                         )}
@@ -120,7 +121,7 @@ export function PaginaCatalogo<T extends RegistroCatalogo, F extends Filtros>({
             }
         >
             <div className="grid gap-4">
-                <div className="flex flex-wrap items-center gap-2">
+                <BarraFiltros>
                     <div className="relative min-w-56 flex-1">
                         <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2" />
                         <Input
@@ -133,7 +134,7 @@ export function PaginaCatalogo<T extends RegistroCatalogo, F extends Filtros>({
                         />
                     </div>
                     {filtrosExtra?.(filtros, cambiar)}
-                </div>
+                </BarraFiltros>
                 <TablaServidor
                     pagina={registros}
                     columnas={[...columnas, acciones]}

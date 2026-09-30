@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { Asistente } from '@/components/app/asistente';
 import { Buscador } from '@/components/app/buscador';
 import { Campo } from '@/components/app/campo';
+import { ChipPersona } from '@/components/app/chip-persona';
 import { EstadoBadge } from '@/components/app/estado-badge';
 import { Monto } from '@/components/app/monto';
 import { ProyeccionInsumos } from '@/components/app/proyeccion-insumos';
@@ -186,6 +187,18 @@ export default function FormularioPedido(props: PaginaFormularioPedido) {
             <form id="form-pedido" noValidate className="max-w-6xl" onSubmit={guardar}>
                 <Card>
                     <CardContent className="grid gap-4">
+                        {(cliente || pedido?.creador) && (
+                            <div className="flex flex-wrap items-center gap-2">
+                                {cliente && <ChipPersona rol="Cliente" nombre={cliente.nombre} detalle={cliente.documento} />}
+                                {pedido?.creador && (
+                                    <ChipPersona
+                                        rol={pedido.creador.fecha ? `Creado por · ${formatoFecha(pedido.creador.fecha)}` : 'Creado por'}
+                                        nombre={pedido.creador.nombre}
+                                        avatar={pedido.creador.avatar}
+                                    />
+                                )}
+                            </div>
+                        )}
                         {e.general && (
                             <p className="border-destructive/30 bg-destructive/8 text-destructive flex items-start gap-2 rounded-md border p-3 text-sm" role="alert">
                                 <AlertTriangle className="mt-0.5 size-4 shrink-0" /> {e.general}

@@ -2,6 +2,7 @@ import { Link, router } from '@inertiajs/react';
 import { ListChecks, Plus, Search, UserRoundCheck } from 'lucide-react';
 import { useState } from 'react';
 
+import { BarraFiltros } from '@/components/app/barra-filtros';
 import { ConfirmarPeligro } from '@/components/app/confirmar-peligro';
 import { ExportarPdf } from '@/components/app/exportar-pdf';
 import { TablaServidor, type Columna } from '@/components/app/tabla-servidor';
@@ -127,7 +128,7 @@ export default function OrdenesIndex({ filtros: iniciales, registros, ordenes, o
         >
             <div className="grid gap-4">
                 <p className="text-muted-foreground -mt-3 text-sm">Una fila por pedido. Cada línea del pedido puede repartirse en varias órdenes, cada una con su equipo.</p>
-                <div className="flex flex-wrap items-center gap-2">
+                <BarraFiltros>
                     <div className="relative min-w-56 flex-1">
                         <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2" />
                         <Input type="search" value={filtros.buscar ?? ''} onChange={(e) => cambiar('buscar', e.target.value)} placeholder="Buscar por pedido o cliente…" aria-label="Buscar" className="pl-8" />
@@ -150,7 +151,7 @@ export default function OrdenesIndex({ filtros: iniciales, registros, ordenes, o
                         </SelectContent>
                     </Select>
                     {hayFiltros && <Button variant="ghost" onClick={() => limpiar()}>Limpiar</Button>}
-                </div>
+                </BarraFiltros>
 
                 <TablaServidor
                     pagina={registros}

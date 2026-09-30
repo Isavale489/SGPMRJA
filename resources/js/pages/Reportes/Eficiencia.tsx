@@ -1,6 +1,7 @@
 import { Search } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
+import { BarraFiltros } from '@/components/app/barra-filtros';
 import { CabeceraOrdenable, useOrdenColumnas } from '@/components/app/orden-columnas';
 import { CabeceraSeccion, CuerpoRayado } from '@/components/app/tabla-seccion';
 import { Button } from '@/components/ui/button';
@@ -66,7 +67,7 @@ export default function ReporteEficiencia({ pedidos, kpis }: { pedidos: PedidoEf
                     </CardContent>
                 </Card>
 
-                <div className="flex flex-wrap items-center gap-2">
+                <BarraFiltros>
                     <div className="relative min-w-56 flex-1">
                         <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2" />
                         <Input type="search" value={buscar} onChange={(e) => setBuscar(e.target.value)} placeholder="Buscar por pedido o cliente…" aria-label="Buscar" className="pl-8" />
@@ -81,7 +82,7 @@ export default function ReporteEficiencia({ pedidos, kpis }: { pedidos: PedidoEf
                             <SelectItem value="na">Sin producción</SelectItem>
                         </SelectContent>
                     </Select>
-                </div>
+                </BarraFiltros>
 
                 <div className="bg-card overflow-x-auto rounded-lg border">
                     <Table>

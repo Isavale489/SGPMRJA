@@ -136,9 +136,9 @@ export default function AtributosIndex({ atributos, seleccionado, valores, tipos
                                                                 <Button variant="ghost" size="icon" aria-label={`Acciones para ${a.nombre}`}><MoreVertical /></Button>
                                                             </DropdownMenuTrigger>
                                                             <DropdownMenuContent align="end">
-                                                                <DropdownMenuItem onSelect={() => abrirAtributo(a)}><Pencil /> Editar</DropdownMenuItem>
+                                                                <DropdownMenuItem tono="editar" onSelect={() => abrirAtributo(a)}><Pencil /> Editar</DropdownMenuItem>
                                                                 <DropdownMenuSeparator />
-                                                                <DropdownMenuItem variant="destructive" onSelect={() => setBorrando({ tipo: 'atributo', registro: a })}>
+                                                                <DropdownMenuItem tono="peligro" onSelect={() => setBorrando({ tipo: 'atributo', registro: a })}>
                                                                     <Trash2 /> Eliminar
                                                                 </DropdownMenuItem>
                                                             </DropdownMenuContent>
@@ -209,9 +209,9 @@ export default function AtributosIndex({ atributos, seleccionado, valores, tipos
                                                                 <Button variant="ghost" size="icon" aria-label={`Acciones para ${v.nombre}`}><MoreVertical /></Button>
                                                             </DropdownMenuTrigger>
                                                             <DropdownMenuContent align="end">
-                                                                <DropdownMenuItem onSelect={() => abrirValor(v)}><Pencil /> Editar</DropdownMenuItem>
+                                                                <DropdownMenuItem tono="editar" onSelect={() => abrirValor(v)}><Pencil /> Editar</DropdownMenuItem>
                                                                 <DropdownMenuSeparator />
-                                                                <DropdownMenuItem variant="destructive" onSelect={() => setBorrando({ tipo: 'valor', registro: v })}>
+                                                                <DropdownMenuItem tono="peligro" onSelect={() => setBorrando({ tipo: 'valor', registro: v })}>
                                                                     <Trash2 /> Eliminar
                                                                 </DropdownMenuItem>
                                                             </DropdownMenuContent>

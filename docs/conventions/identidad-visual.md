@@ -56,6 +56,11 @@ Los colores que llevan texto blanco encima cumplen contraste AA (≥ 4.5:1). Por
 | Tablas de listado | Cabecera en `--seccion-fondo`, texto blanco, borde de acento; filas rayadas | `CabeceraSeccion` y `CuerpoRayado` (`components/app/tabla-seccion.tsx`); ya las usa `TablaServidor` |
 | Diálogos | Todo `DialogHeader` que abre un `DialogContent` se vuelve franja en degradado. Un `EstadoBadge` dentro de la franja pasa a fondo blanco con el color del estado para fondo claro (`data-tono`) | CSS en `plataforma.css` (selectores `data-slot`) |
 | Botones, enlaces, foco, pasos del asistente | `--primary` y `--ring` de la sección | tokens |
+| Barra de filtros de un listado | Tinte en degradado y riel izquierdo de la sección; controles en color de tarjeta | `BarraFiltros` (`components/app/barra-filtros.tsx`) |
+| Menú ⋮ de acciones | Ícono en cajita teñida con el color de la acción (`tono` en `DropdownMenuItem`) | `data-tono` en `plataforma.css` |
+| Cliente y creador en asistentes | Píldora con avatar o iniciales en degradado, rótulo y nombre con documento | `ChipPersona` (`components/app/chip-persona.tsx`) |
+| Detalle de Compra | Vista de documento: membrete, datos con línea punteada, barra de totales con «Total a pagar» destacado | `pages/Compras/detalle-compra.tsx` |
+| Detalle de Orden | Hero: foto del producto (o ícono en degradado), nombre, variante y avance | `pages/Ordenes/detalle-orden.tsx` |
 
 ## Reglas
 
@@ -66,7 +71,8 @@ Los colores que llevan texto blanco encima cumplen contraste AA (≥ 4.5:1). Por
 5. **Las tablas de detalle** (dentro de diálogos o formularios) llevan la cabecera clara normal. `CabeceraSeccion` es solo para listados.
 6. **Dentro de la franja de un diálogo**, lo que no sea título, descripción o `EstadoBadge` va en blanco (`text-white`, `bg-white/20`): los tintes de `primary` o de estado no se leen sobre el degradado.
 7. **Las confirmaciones** (`AlertDialog`: `ConfirmarPeligro`, `confirmar()`) no llevan franja: su foco es la pregunta.
-8. **Nada de clases de paleta de Tailwind** para identidad (`text-emerald-600`, `bg-sky-500/10`…). Usa `data-seccion` + los tokens.
+8. **Toda acción de un menú ⋮ lleva `tono`:** `editar` (verde), `peligro` (rojo: eliminar), `aviso` (ámbar: anular, cancelar, inhabilitar), `restaurar` (celeste: restaurar, reactivar, habilitar), `documento` (gris: PDF) o `principal` (color de la sección: convertir, aprobar, procesar). Es un color por acción, no por sección: «Editar» es verde en todo el sistema.
+9. **Nada de clases de paleta de Tailwind** para identidad (`text-emerald-600`, `bg-sky-500/10`…). Usa `data-seccion` + los tokens.
 
 ## Verificación
 

@@ -1,7 +1,8 @@
 import { Link, router } from '@inertiajs/react';
-import { Archive, ArrowLeft, Barcode, Boxes, Eye, MoreVertical, Pencil, Plus, Receipt, RotateCcw, Search, Tag, Trash2, X } from 'lucide-react';
+import { Archive, ArrowLeft, Barcode, Boxes, Eye, MoreVertical, Pencil, Plus, Receipt, RotateCcw, Search, Tag, X } from 'lucide-react';
 import { useState } from 'react';
 
+import { BarraFiltros } from '@/components/app/barra-filtros';
 import { ConfirmarPeligro } from '@/components/app/confirmar-peligro';
 import { Dato } from '@/components/app/dato';
 import { ExportarPdf } from '@/components/app/exportar-pdf';
@@ -93,14 +94,14 @@ export default function InsumosIndex({ insumos, filtros: filtrosIniciales, tipos
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                                 {i.inhabilitado ? (
-                                    <DropdownMenuItem onSelect={() => router.post(`${urls.index}/${i.id}/restore`, {}, { preserveScroll: true })}>
+                                    <DropdownMenuItem tono="restaurar" onSelect={() => router.post(`${urls.index}/${i.id}/restore`, {}, { preserveScroll: true })}>
                                         <RotateCcw /> Habilitar
                                     </DropdownMenuItem>
                                 ) : (
                                     <>
-                                        <DropdownMenuItem onSelect={() => abrirFormulario(i)}><Pencil /> Editar</DropdownMenuItem>
+                                        <DropdownMenuItem tono="editar" onSelect={() => abrirFormulario(i)}><Pencil /> Editar</DropdownMenuItem>
                                         <DropdownMenuSeparator />
-                                        <DropdownMenuItem onSelect={() => setInhabilitando(i)} variant="destructive"><Trash2 /> Inhabilitar</DropdownMenuItem>
+                                        <DropdownMenuItem tono="aviso" onSelect={() => setInhabilitando(i)}><Archive /> Inhabilitar</DropdownMenuItem>
                                     </>
                                 )}
                             </DropdownMenuContent>
@@ -135,7 +136,7 @@ export default function InsumosIndex({ insumos, filtros: filtrosIniciales, tipos
             }
         >
             <div className="grid gap-4">
-                <div className="flex flex-wrap items-center gap-2">
+                <BarraFiltros>
                     <div className="relative min-w-56 flex-1">
                         <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2" />
                         <Input
@@ -179,7 +180,7 @@ export default function InsumosIndex({ insumos, filtros: filtrosIniciales, tipos
                     {hayFiltros && (
                         <Button variant="ghost" onClick={() => limpiar(['historial'])}><X /> Limpiar</Button>
                     )}
-                </div>
+                </BarraFiltros>
 
                 <TablaServidor
                     pagina={insumos}

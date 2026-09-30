@@ -2,6 +2,7 @@ import { Link, useForm } from '@inertiajs/react';
 import { ArrowDownRight, ArrowUpRight, BellRing, Eye, History, Minus, Search, TrendingUp } from 'lucide-react';
 import { useState } from 'react';
 
+import { BarraFiltros } from '@/components/app/barra-filtros';
 import { Campo } from '@/components/app/campo';
 import { DialogoFormulario } from '@/components/app/dialogo-formulario';
 import { ExportarPdf } from '@/components/app/exportar-pdf';
@@ -159,7 +160,7 @@ export default function MovimientosIndex({ vista, filtros: iniciales, movimiento
                     </TabsList>
                 </Tabs>
 
-                <div className="flex flex-wrap items-center gap-2">
+                <BarraFiltros>
                     <div className="relative min-w-56 flex-1">
                         <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2" />
                         <Input type="search" value={filtros.buscar ?? ''} onChange={(e) => cambiar('buscar', e.target.value)} placeholder={vista === 'movimientos' ? 'Buscar por insumo, tipo, cantidad, fecha o motivo…' : 'Buscar por nombre o código…'} aria-label="Buscar" className="pl-8" />
@@ -206,7 +207,7 @@ export default function MovimientosIndex({ vista, filtros: iniciales, movimiento
                         </>
                     )}
                     {hayFiltros && <Button variant="ghost" onClick={() => limpiar(['vista'])}>Limpiar</Button>}
-                </div>
+                </BarraFiltros>
 
                 {vista === 'movimientos' && movimientos && (
                     <TablaServidor pagina={movimientos} columnas={colMovimientos} only={PROPS} cargando={cargando} idFila={(m) => m.id} vacio={hayFiltros ? 'Ningún movimiento coincide con los filtros.' : 'Aún no hay movimientos.'} />

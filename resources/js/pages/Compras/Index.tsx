@@ -3,6 +3,7 @@ import { Ban, BellRing, CheckCheck, Copy, EllipsisVertical, Eye, FileText, Penci
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
+import { BarraFiltros } from '@/components/app/barra-filtros';
 import { ConfirmarPeligro } from '@/components/app/confirmar-peligro';
 import { EstadoBadge } from '@/components/app/estado-badge';
 import { ExportarPdf } from '@/components/app/exportar-pdf';
@@ -139,38 +140,38 @@ export default function ComprasIndex({ vista, filtros: iniciales, compras, exist
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
                                     {a.pdf && (
-                                        <DropdownMenuItem asChild>
+                                        <DropdownMenuItem tono="documento" asChild>
                                             <a href={`${urls.index}/${c.id}/pdf`} target="_blank" rel="noopener"><FileText /> Ver PDF</a>
                                         </DropdownMenuItem>
                                     )}
                                     {a.editar && (
-                                        <DropdownMenuItem asChild>
+                                        <DropdownMenuItem tono="editar" asChild>
                                             <Link href={`${urls.index}/${c.id}/editar`}><Pencil /> Editar</Link>
                                         </DropdownMenuItem>
                                     )}
                                     {a.procesar && (
-                                        <DropdownMenuItem onSelect={() => setConfirmando({ accion: 'procesar', compra: c })}>
+                                        <DropdownMenuItem tono="principal" onSelect={() => setConfirmando({ accion: 'procesar', compra: c })}>
                                             <CheckCheck /> Procesar
                                         </DropdownMenuItem>
                                     )}
                                     {a.clonar && (
-                                        <DropdownMenuItem onSelect={() => ejecutar('clonar', c.id)}>
+                                        <DropdownMenuItem tono="principal" onSelect={() => ejecutar('clonar', c.id)}>
                                             <Copy /> Clonar como borrador
                                         </DropdownMenuItem>
                                     )}
                                     {c.estado === 'anulada' && c.clonada && (
-                                        <DropdownMenuItem disabled>
+                                        <DropdownMenuItem tono="principal" disabled>
                                             <Copy /> Ya fue clonada
                                         </DropdownMenuItem>
                                     )}
                                     {(a.eliminar || a.anular) && <DropdownMenuSeparator />}
                                     {a.eliminar && (
-                                        <DropdownMenuItem variant="destructive" onSelect={() => setConfirmando({ accion: 'eliminar', compra: c })}>
+                                        <DropdownMenuItem tono="peligro" onSelect={() => setConfirmando({ accion: 'eliminar', compra: c })}>
                                             <Trash2 /> Eliminar borrador
                                         </DropdownMenuItem>
                                     )}
                                     {a.anular && (
-                                        <DropdownMenuItem variant="destructive" onSelect={() => setConfirmando({ accion: 'anular', compra: c })}>
+                                        <DropdownMenuItem tono="aviso" onSelect={() => setConfirmando({ accion: 'anular', compra: c })}>
                                             <Ban /> Anular
                                         </DropdownMenuItem>
                                     )}
@@ -219,7 +220,7 @@ export default function ComprasIndex({ vista, filtros: iniciales, compras, exist
                     </TabsList>
                 </Tabs>
 
-                <div className="flex flex-wrap items-center gap-2">
+                <BarraFiltros>
                     <div className="relative min-w-56 flex-1">
                         <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2" />
                         <Input
@@ -268,7 +269,7 @@ export default function ComprasIndex({ vista, filtros: iniciales, compras, exist
                         </>
                     )}
                     {hayFiltros && <Button variant="ghost" onClick={() => limpiar(['vista'])}>Limpiar</Button>}
-                </div>
+                </BarraFiltros>
 
                 {vistaActual === 'existencias' && (
                     <p className="text-muted-foreground -mt-1 text-sm">El costo es el de la última compra procesada de cada insumo.</p>
