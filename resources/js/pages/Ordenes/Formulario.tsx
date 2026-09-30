@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 
 import { Campo } from '@/components/app/campo';
 import { Asistente } from '@/components/app/asistente';
+import { confirmar } from '@/components/app/confirmador';
 import { ProyeccionInsumos, comprarFaltantes } from '@/components/app/proyeccion-insumos';
 import { Button } from '@/components/ui/button';
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -336,9 +337,10 @@ export default function FormularioOrdenes({ pedidos, empleados, insumos, abonoMi
                                                     type="button"
                                                     variant="ghost"
                                                     size="sm"
-                                                    onClick={() =>
-                                                        (data.ordenes.length === 0 || window.confirm('¿Cambiar de pedido? Se pierde lo cargado.')) && setData({ pedido_id: '', ordenes: [] })
-                                                    }
+                                                    onClick={async () => {
+                                                        const seguir = data.ordenes.length === 0 || (await confirmar({ titulo: 'Cambiar de pedido', descripcion: 'Se pierde lo que cargaste para este pedido.', accion: 'Cambiar pedido', cancelar: 'Seguir editando' }));
+                                                        if (seguir) setData({ pedido_id: '', ordenes: [] });
+                                                    }}
                                                 >
                                                     Cambiar pedido
                                                 </Button>

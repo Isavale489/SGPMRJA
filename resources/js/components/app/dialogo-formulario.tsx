@@ -29,7 +29,7 @@ export function DialogoFormulario({ abierto, onCerrar, titulo, descripcion, suci
     useGuardCambios(abierto && sucio);
 
     const cerrar = (abrir: boolean) => {
-        if (!abrir && confirmarDescarte(sucio)) onCerrar();
+        if (!abrir) void confirmarDescarte(sucio).then((si) => si && onCerrar());
     };
     const enviar = (e: FormEvent) => {
         e.preventDefault();

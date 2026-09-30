@@ -67,8 +67,8 @@ export default function SeguridadIndex({ roles, permisos, secciones, urls }: Pro
     const rolId = editables.some((r) => r.id === elegido) ? elegido : editables[0]?.id;
     const [sucio, setSucio] = useState(false);
 
-    const irAPermisos = (id: number) => {
-        if (id !== rolId && !confirmarDescarte(sucio)) return;
+    const irAPermisos = async (id: number) => {
+        if (id !== rolId && !(await confirmarDescarte(sucio))) return;
         setRolId(id);
         setPestana('permisos');
     };
@@ -85,7 +85,7 @@ export default function SeguridadIndex({ roles, permisos, secciones, urls }: Pro
                     <PestanaRoles roles={roles} url={urls.roles} onPermisos={irAPermisos} />
                 </TabsContent>
                 <TabsContent value="permisos" className="mt-4" forceMount hidden={pestana !== 'permisos'}>
-                    <Matriz key={rolId} roles={roles} permisos={permisos} secciones={secciones} rolId={rolId} onRol={(id) => { if (confirmarDescarte(sucio)) setRolId(id); }} url={urls.permisos} onSucio={setSucio} />
+                    <Matriz key={rolId} roles={roles} permisos={permisos} secciones={secciones} rolId={rolId} onRol={(id) => void confirmarDescarte(sucio).then((si) => si && setRolId(id))} url={urls.permisos} onSucio={setSucio} />
                 </TabsContent>
             </Tabs>
         </AppLayout>

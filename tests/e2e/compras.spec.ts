@@ -22,6 +22,28 @@ async function elegirProveedor(page: Page) {
   await expect(page.getByText('J-41000555')).toBeVisible();
 }
 
+test('salir con cambios sin guardar pregunta con el diálogo del sistema, no con el del navegador', async ({ page }) => {
+  const nativos: string[] = [];
+  page.on('dialog', (d) => { nativos.push(d.message()); void d.dismiss(); });
+  await page.goto('/compras/crear');
+  await elegirProveedor(page);
+  const aviso = page.getByRole('alertdialog', { name: 'Cambios sin guardar' });
+
+  // «Seguir editando»: no se sale y el proveedor sigue elegido.
+  await page.getByRole('main').getByRole('link', { name: 'Compras', exact: true }).click();
+  await aviso.getByRole('button', { name: 'Seguir editando' }).click();
+  await expect(aviso).toBeHidden();
+  await expect(page).toHaveURL(/\/compras\/crear$/);
+  await expect(page.getByText('J-41000555')).toBeVisible();
+
+  // «Descartar»: se va a donde se pidió, sin volver a preguntar.
+  await page.getByRole('main').getByRole('link', { name: 'Compras', exact: true }).click();
+  await aviso.getByRole('button', { name: 'Descartar' }).click();
+  await expect(page).toHaveURL(/\/compras$/);
+  await expect(aviso).toBeHidden();
+  expect(nativos).toEqual([]);
+});
+
 test('registrar un borrador: tasa del día, costo sugerido e IVA en vivo', async ({ page }) => {
   const errores = vigilarErrores(page);
   await page.goto('/compras');
