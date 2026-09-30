@@ -67,6 +67,34 @@ test('un enlace del menú navega sin recargar la página (Inertia)', async ({ pa
   expect(errores, errores.join('\n')).toEqual([]);
 });
 
+test('la barra superior no se desborda en ningún ancho (teléfono, tableta, escritorio)', async ({ page }) => {
+  for (const ancho of [360, 640, 768, 900, 1024, 1280]) {
+    await page.setViewportSize({ width: ancho, height: 800 });
+    await page.goto('/clientes');
+    const desborde = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    expect(desborde, `a ${ancho} px la página es más ancha que la pantalla`).toBeLessThanOrEqual(0);
+    await expect(page.getByRole('button', { name: /^Menú de / })).toBeInViewport();
+  }
+});
+
+test('un grupo abierto desde el menú colapsado conserva el foco y no se reabre solo', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/clientes');
+  await page.getByRole('button', { name: 'Contraer el menú' }).click();
+  const principal = page.getByRole('navigation', { name: 'Principal' });
+  await principal.getByRole('button', { name: 'Gestión Operativa' }).focus();
+  await page.keyboard.press('Enter');
+  const grupo = principal.getByRole('button', { name: 'Gestión Operativa' });
+  await expect(grupo).toBeFocused();
+  await expect(grupo).toHaveAttribute('aria-expanded', 'true');
+  // Lo cierra, contrae y expande con la barra: el grupo sigue cerrado.
+  await grupo.click();
+  await page.getByRole('button', { name: 'Contraer el menú' }).click();
+  await page.getByRole('button', { name: 'Expandir el menú' }).click();
+  await expect(principal.getByRole('button', { name: 'Gestión Operativa' })).toHaveAttribute('aria-expanded', 'false');
+  await page.evaluate(() => localStorage.removeItem('sgpmrja-sidebar-size'));
+});
+
 test('en móvil no hay desborde horizontal y el menú abre en un panel', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/plataforma/componentes');
@@ -136,7 +164,8 @@ test('la barra superior va de lado a lado y el menú lateral queda debajo', asyn
   const barra = await page.locator('header').boundingBox();
   const menu = await page.locator('#menu-lateral').boundingBox();
   expect(barra?.x).toBe(0);
-  expect(barra?.width).toBe(1440);
+  // clientWidth: el ancho sin la barra de desplazamiento (en modo headed o en otro navegador ocupa ~15 px).
+  expect(barra?.width).toBe(await page.evaluate(() => document.documentElement.clientWidth));
   expect(menu!.y).toBeGreaterThanOrEqual(barra!.y + barra!.height - 1);
   await expect(page.locator('header a[href="/dashboard"] img')).toBeVisible();
 });

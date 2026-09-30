@@ -1,6 +1,6 @@
 import { Link, usePage } from '@inertiajs/react';
 import { ChevronRight } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { Icono } from '@/components/app/icono';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -43,11 +43,18 @@ function Grupo({ grupo, nivel, abrirAlInicio }: { grupo: GrupoNavegacion; nivel:
     const { url } = usePage();
     const [abierto, setAbierto] = useState(() => abrirAlInicio || contieneActivo(grupo, url));
     const conActivo = contieneActivo(grupo, url);
+    const boton = useRef<HTMLButtonElement>(null);
+    // Elegido desde el menú colapsado: el foco sigue en el grupo (el botón de antes se desmontó).
+    useEffect(() => {
+        if (abrirAlInicio) boton.current?.focus();
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- solo al montarse
+    }, []);
 
     return (
         // Cada sección se pinta con su color (config/secciones.php), sea cual sea la página abierta.
         <div data-seccion={grupo.seccion ?? undefined}>
             <button
+                ref={boton}
                 type="button"
                 onClick={() => setAbierto((a) => !a)}
                 aria-expanded={abierto}
@@ -102,7 +109,7 @@ function MenuColapsado({ onExpandir }: { onExpandir: (grupo: string) => void }) 
                         <Tooltip>
                             <TooltipTrigger asChild>
                                 {esGrupo(item) ? (
-                                    <button type="button" className={clases(activo)} aria-label={item.titulo} onClick={() => onExpandir(item.titulo)}>
+                                    <button type="button" className={clases(activo)} aria-label={item.titulo} aria-expanded={false} aria-controls="menu-lateral" onClick={() => onExpandir(item.titulo)}>
                                         <Icono nombre={item.icono} className="size-5" />
                                     </button>
                                 ) : item.inertia ? (

@@ -33,8 +33,8 @@ interface Props {
  */
 function Logo({ nombre }: { nombre: string }) {
     return (
-        // En el teléfono no cabe junto a las utilidades: allí va dentro del menú desplegable.
-        <a href="/dashboard" className="hidden h-14 shrink-0 items-center px-1 sm:flex">
+        // Por debajo de lg (teléfono y tableta) no cabe junto a las utilidades: va dentro del menú desplegable.
+        <a href="/dashboard" className="hidden h-14 shrink-0 items-center px-1 lg:flex">
             <img src="/atlantico-logo-wide.png" alt={nombre} className="h-14 w-auto object-contain" />
         </a>
     );
@@ -51,6 +51,11 @@ export default function AppLayout({ titulo, acciones, children }: Props) {
     const expandirEn = (grupo: string) => {
         setGrupoAbierto(grupo);
         menu.setColapsado(false);
+    };
+    // El botón de la barra no abre ningún grupo: el elegido antes no debe volver a abrirse.
+    const alternarMenu = () => {
+        setGrupoAbierto(null);
+        menu.alternar();
     };
     // Ícono de la página: el de su enlace en el menú; si no tiene (Configuración), el de la sección.
     const icono = enlaceActivo(navegacion, url)?.icono ?? seccion?.icono;
@@ -81,7 +86,7 @@ export default function AppLayout({ titulo, acciones, children }: Props) {
               * y utilidades. `dark` la vuelve una isla oscura en ambos temas: botones, textos y
               * píldoras toman los tokens oscuros sin estilos propios.
               */}
-            <header className="dark bg-topbar text-foreground sticky top-0 z-30 flex h-16 items-center gap-1 px-2 shadow-[0_2px_10px_rgb(15_26_49/0.28)] sm:gap-3 sm:px-4 [&_[data-pildora]]:border-white/20 [&_[data-pildora]]:bg-white/10 [&_[data-pildora]]:backdrop-blur-sm">
+            <header className="dark bg-topbar text-foreground sticky top-0 z-30 flex h-16 items-center gap-0.5 px-1.5 shadow-[0_2px_10px_rgb(15_26_49/0.28)] sm:gap-3 sm:px-4 [&_[data-pildora]]:border-white/20 [&_[data-pildora]]:bg-white/10 [&_[data-pildora]]:backdrop-blur-sm">
                 {/* Menú en pantallas chicas: el sidebar fijo solo existe desde lg. */}
                 <Sheet>
                     <SheetTrigger asChild>
@@ -106,7 +111,7 @@ export default function AppLayout({ titulo, acciones, children }: Props) {
                     variant="ghost"
                     size="icon"
                     className="hidden lg:inline-flex"
-                    onClick={menu.alternar}
+                    onClick={alternarMenu}
                     aria-label={menu.colapsado ? 'Expandir el menú' : 'Contraer el menú'}
                     aria-expanded={!menu.colapsado}
                     aria-controls="menu-lateral"
@@ -120,7 +125,8 @@ export default function AppLayout({ titulo, acciones, children }: Props) {
                         Software para la gestión de pedidos en Manufacturas R.J. Atlántico C.A.
                     </p>
                 </div>
-                <span className="hidden md:inline-flex">
+                {/* Desde xl: entre 640 y 1279 px la barra no tiene espacio para el reloj. */}
+                <span className="hidden xl:inline-flex">
                     <Reloj />
                 </span>
                 <TasaBcv />
