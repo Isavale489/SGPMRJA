@@ -114,6 +114,7 @@ test('cerrar con cambios sin guardar pide confirmación', async ({ page }) => {
 
   // Escape en el aviso también es seguir editando.
   await dialogo.getByRole('button', { name: 'Cancelar' }).click();
+  await expect(aviso).toBeVisible();
   await page.keyboard.press('Escape');
   await expect(aviso).toBeHidden();
   await expect(dialogo).toBeVisible();

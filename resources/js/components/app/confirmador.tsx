@@ -1,4 +1,4 @@
-import { useSyncExternalStore, type ReactNode } from 'react';
+import { useRef, useSyncExternalStore, type ReactNode } from 'react';
 
 import {
     AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
@@ -29,7 +29,8 @@ const avisar = () => oyentes.forEach((o) => o());
 
 /**
  * Reemplazo de `window.confirm` con el diálogo del sistema. Resuelve true si
- * el usuario confirma; false si desiste, pulsa Escape o hace clic fuera.
+ * el usuario confirma; false si desiste o pulsa Escape (el AlertDialog no se
+ * cierra con un clic fuera).
  */
 export function confirmar(opciones: OpcionesConfirmar): Promise<boolean> {
     // Sin <Confirmador /> montado (no debería pasar fuera de AppLayout) se cae al del navegador.
@@ -64,22 +65,26 @@ function suscribir(oyente: () => void) {
 /** Se monta una vez en AppLayout; muestra lo que pida `confirmar()`. */
 export function Confirmador() {
     const actual = useSyncExternalStore(suscribir, () => pendiente);
+    // La última solicitud sigue pintada mientras el diálogo se cierra (animación de salida).
+    const ultima = useRef<Pendiente | null>(null);
+    if (actual) ultima.current = actual;
+    const visible = actual ?? ultima.current;
 
     return (
         <AlertDialog open={actual !== null} onOpenChange={(abierto) => !abierto && actual?.responder(false)}>
-            {actual && (
+            {visible && (
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>{actual.titulo}</AlertDialogTitle>
-                        <AlertDialogDescription>{actual.descripcion}</AlertDialogDescription>
+                        <AlertDialogTitle>{visible.titulo}</AlertDialogTitle>
+                        <AlertDialogDescription>{visible.descripcion}</AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel>{actual.cancelar ?? 'Cancelar'}</AlertDialogCancel>
+                        <AlertDialogCancel>{visible.cancelar ?? 'Cancelar'}</AlertDialogCancel>
                         <AlertDialogAction
-                            onClick={() => actual.responder(true)}
-                            className={actual.destructiva === false ? undefined : 'bg-destructive text-destructive-foreground hover:bg-destructive/90'}
+                            onClick={() => visible.responder(true)}
+                            className={visible.destructiva === false ? undefined : 'bg-destructive text-destructive-foreground hover:bg-destructive/90'}
                         >
-                            {actual.accion ?? 'Aceptar'}
+                            {visible.accion ?? 'Aceptar'}
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>

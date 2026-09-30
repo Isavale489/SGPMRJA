@@ -44,6 +44,21 @@ test('salir con cambios sin guardar pregunta con el diálogo del sistema, no con
   expect(nativos).toEqual([]);
 });
 
+test('el aviso lanzado desde un menú desplegable deja la página usable', async ({ page }) => {
+  await page.goto('/compras/crear');
+  await elegirProveedor(page);
+  const aviso = page.getByRole('alertdialog', { name: 'Cambios sin guardar' });
+
+  await page.getByRole('button', { name: /^Menú de / }).click();
+  await page.getByRole('menuitem', { name: 'Mi perfil' }).click();
+  await aviso.getByRole('button', { name: 'Seguir editando' }).click();
+  await expect(aviso).toBeHidden();
+  await expect(page).toHaveURL(/\/compras\/crear$/);
+  // Radix no dejó el body bloqueado (pointer-events) ni el foco atrapado: el asistente responde.
+  await page.getByRole('button', { name: 'Siguiente' }).click();
+  await expect(page.getByRole('combobox', { name: 'Agregar insumo' })).toBeVisible();
+});
+
 test('registrar un borrador: tasa del día, costo sugerido e IVA en vivo', async ({ page }) => {
   const errores = vigilarErrores(page);
   await page.goto('/compras');

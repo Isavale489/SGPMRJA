@@ -27,16 +27,22 @@ function instalar() {
     // El evento no espera una promesa: se cancela y, si el usuario descarta, se repite la visita.
     const quitar = router.on('before', (evento) => {
         const visita = evento.detail.visit;
-        if (visita.only.length > 0 || visita.method !== 'get') return;
-        if (visitaAceptada) {
-            visitaAceptada = false;
-            return;
-        }
+        // Recargas parciales (only/except/reset), prefetch y envíos no salen de la página.
+        if (visita.only.length || visita.except.length || visita.reset.length || visita.prefetch || visita.method !== 'get') return;
+        if (visitaAceptada) return;
         evento.preventDefault();
         void preguntarDescarte().then((descartar) => {
             if (!descartar) return;
+            // `url` ya trae la query (data fusionada) y el hash. Los callbacks del
+            // original (onSuccess, onFinish…) no viajan en la visita: no se repiten.
+            const { url, replace, preserveScroll, preserveState, headers, async, preserveUrl, fresh, viewTransition, showProgress } = visita;
+            // fireBeforeEvent es síncrono dentro de router.visit: la marca solo vale para esta visita.
             visitaAceptada = true;
-            router.visit(visita.url, { replace: visita.replace, preserveScroll: visita.preserveScroll });
+            try {
+                router.visit(url, { replace, preserveScroll, preserveState, headers, async, preserveUrl, fresh, viewTransition, showProgress });
+            } finally {
+                visitaAceptada = false;
+            }
         });
     });
 
@@ -53,6 +59,8 @@ function instalar() {
  *
  * Cerrar la pestaña, recargar o escribir otra URL sigue mostrando el aviso
  * propio del navegador: por seguridad, ninguna página puede reemplazarlo.
+ * Atrás/adelante del navegador NO se protege: Inertia restaura el historial
+ * sin disparar `before` (ni el guard Blade anterior lo cubría).
  */
 export function useGuardCambios(sucio: boolean) {
     useEffect(() => {
@@ -63,7 +71,6 @@ export function useGuardCambios(sucio: boolean) {
             if (--activos === 0) {
                 quitarListeners?.();
                 quitarListeners = null;
-                visitaAceptada = false;
             }
         };
     }, [sucio]);
