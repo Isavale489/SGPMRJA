@@ -73,9 +73,32 @@
     --destructive-foreground: #ffffff;
     --success: #1f7a4d;
     --warning: #b25e09;
+    /* «En proceso» y la franja media del semáforo de eficiencia (celeste, decisión del equipo). */
+    --info: #026596;
+    /* Estados fuera del flujo principal (cotización «Convertida»). */
+    --especial: #6d3fd1;
     --border: #e1e6ee;
     --input: #d3dae5;
     --ring: #2a5298;
+
+    /* Azul de marca fijo (no cambia con la sección): series de gráficos que no son un estado. */
+    --marca: #2a5298;
+
+    /* Barra superior: navy sólido, como el panel anterior. Isla oscura (ver app-layout). */
+    --topbar: #1b2a4e;
+
+    /*
+     * Identidad de la sección (config/secciones.php). Estos valores son los de marca,
+     * para las páginas sin sección (inicio, perfil); [data-seccion] los redefine abajo.
+     *   --seccion            texto e íconos del grupo
+     *   --seccion-acento     bordes, rieles, tintes de fondo
+     *   --seccion-fondo      superficies oscuras con texto blanco (cabecera de tabla)
+     *   --seccion-degradado  encabezado de diálogos, ícono del título
+     */
+    --seccion: #1e3c72;
+    --seccion-acento: #2a5298;
+    --seccion-fondo: #1e3c72;
+    --seccion-degradado: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
 
     --sidebar: #ffffff;
     --sidebar-foreground: #334155;
@@ -107,9 +130,16 @@
     --destructive-foreground: #0b1120;
     --success: #4cc38a;
     --warning: #f0a44b;
+    --info: #38bdf8;
+    --especial: #a78bfa;
+    --marca: #7d9be0;
     --border: #22304b;
     --input: #2b3a58;
     --ring: #7d9be0;
+
+    --seccion: #7d9be0;
+    --seccion-acento: #4e7ac7;
+    --seccion-fondo: #1e3c72;
 
     --sidebar: #0e1627;
     --sidebar-foreground: #b8c3d6;
@@ -118,6 +148,71 @@
     --sidebar-accent: #1a2540;
     --sidebar-accent-foreground: #e5e9f0;
     --sidebar-border: #1c2842;
+}
+
+/* Solo en <html>: la barra superior lleva .dark también en tema claro y no debe heredar este valor. */
+:root.dark {
+    --topbar: #0f1a31;
+}
+
+/*
+ * Una identidad por sección. Se aplica en <html> (lo pone AppLayout, así la heredan
+ * los diálogos, que Radix monta fuera del layout) y en cualquier elemento que
+ * quiera pintarse con otra (p. ej. cada grupo del menú; 'marca' = azul de marca para
+ * lo que no es de ninguna sección, como «Inicio»). Cada sección redefine
+ * --primary y --ring: botones, enlaces y foco toman su color sin tocar componentes.
+ * Colores con texto blanco encima: contraste AA (≥ 4.5:1).
+ */
+[data-seccion='maestros'],
+[data-seccion='admin'],
+[data-seccion='marca'] {
+    --seccion: #1e3c72;
+    --seccion-acento: #2a5298;
+    --seccion-fondo: #1e3c72;
+    --seccion-degradado: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+    --primary: #1e3c72;
+    --ring: #2a5298;
+}
+[data-seccion='operativa'] {
+    --seccion: #047857;
+    --seccion-acento: #10b981;
+    --seccion-fondo: #064e3b;
+    --seccion-degradado: linear-gradient(135deg, #065f46 0%, #047857 55%, #0f766e 100%);
+    --primary: #047857;
+    --ring: #059669;
+}
+[data-seccion='reportes'] {
+    --seccion: #0369a1;
+    --seccion-acento: #0ea5e9;
+    --seccion-fondo: #0c4a6e;
+    --seccion-degradado: linear-gradient(135deg, #0c4a6e 0%, #075985 50%, #0369a1 100%);
+    --primary: #0369a1;
+    --ring: #0284c7;
+}
+
+/* Oscuro: acentos más claros para leerse sobre fondo oscuro; los degradados no cambian. */
+.dark[data-seccion='maestros'], .dark [data-seccion='maestros'],
+.dark[data-seccion='admin'], .dark [data-seccion='admin'],
+.dark [data-seccion='marca'] {
+    --seccion: #7d9be0;
+    --seccion-acento: #4e7ac7;
+    --seccion-fondo: #1e3c72;
+    --primary: #7d9be0;
+    --ring: #7d9be0;
+}
+.dark[data-seccion='operativa'], .dark [data-seccion='operativa'] {
+    --seccion: #34d399;
+    --seccion-acento: #10b981;
+    --seccion-fondo: #065f46;
+    --primary: #34d399;
+    --ring: #34d399;
+}
+.dark[data-seccion='reportes'], .dark [data-seccion='reportes'] {
+    --seccion: #38bdf8;
+    --seccion-acento: #0ea5e9;
+    --seccion-fondo: #0369a1;
+    --primary: #38bdf8;
+    --ring: #38bdf8;
 }
 
 @theme inline {
@@ -142,6 +237,13 @@
     --color-destructive-foreground: var(--destructive-foreground);
     --color-success: var(--success);
     --color-warning: var(--warning);
+    --color-info: var(--info);
+    --color-especial: var(--especial);
+    --color-marca: var(--marca);
+    --color-topbar: var(--topbar);
+    --color-seccion: var(--seccion);
+    --color-seccion-acento: var(--seccion-acento);
+    --color-seccion-fondo: var(--seccion-fondo);
     --color-border: var(--border);
     --color-input: var(--input);
     --color-ring: var(--ring);
@@ -171,6 +273,60 @@
     --ease-salida: cubic-bezier(0.16, 1, 0.3, 1);
     --ease-entrada: cubic-bezier(0.7, 0, 0.84, 0);
     --ease-suave: cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+/* bg-seccion-degradado: el degradado de la sección vigente (encabezados, ícono del título). */
+@utility bg-seccion-degradado {
+    background-image: var(--seccion-degradado);
+}
+
+/*
+ * Encabezado de diálogo con el degradado de la sección (el «modal Atlántico» del
+ * panel anterior). Sin tocar las páginas: todo DialogHeader que abre un DialogContent
+ * se vuelve franja. Fuera de @layer a propósito: debe ganarle a las utilidades del
+ * botón de cerrar (data-[state=open]:text-muted-foreground). Las confirmaciones
+ * (AlertDialog) no llevan franja: su foco es la pregunta.
+ */
+[data-slot='dialog-content'] > [data-slot='dialog-header']:first-child {
+    margin: -1.5rem -1.5rem 0;
+    padding: 1rem 3.25rem 1rem 1.5rem;
+    background-image: var(--seccion-degradado);
+    border-radius: calc(var(--radius-lg) - 1px) calc(var(--radius-lg) - 1px) 0 0;
+    color: #fff;
+    text-align: left;
+}
+[data-slot='dialog-content'] > [data-slot='dialog-header']:first-child [data-slot='dialog-title'] {
+    color: #fff;
+}
+[data-slot='dialog-content'] > [data-slot='dialog-header']:first-child [data-slot='dialog-description'] {
+    color: rgb(255 255 255 / 0.92);
+}
+/*
+ * Badge de estado sobre la franja: fondo blanco sólido y el color del estado para
+ * fondo claro, en ambos temas (la franja no cambia con el tema). Contraste ≥ 4.5:1.
+ */
+[data-slot='dialog-content'] > [data-slot='dialog-header']:first-child [data-slot='estado-badge'] {
+    background: #fff;
+    --tw-ring-color: transparent;
+}
+[data-slot='dialog-header']:first-child [data-slot='estado-badge'][data-tono='warning'] { color: #9a4f06; }
+[data-slot='dialog-header']:first-child [data-slot='estado-badge'][data-tono='info'] { color: #026596; }
+[data-slot='dialog-header']:first-child [data-slot='estado-badge'][data-tono='success'] { color: #1f7a4d; }
+[data-slot='dialog-header']:first-child [data-slot='estado-badge'][data-tono='destructive'] { color: #c62f3b; }
+[data-slot='dialog-header']:first-child [data-slot='estado-badge'][data-tono='especial'] { color: #6d3fd1; }
+[data-slot='dialog-header']:first-child [data-slot='estado-badge'][data-tono='neutro'] { color: #475569; }
+[data-slot='dialog-content']:has(> [data-slot='dialog-header']:first-child) > [data-slot='dialog-close'] {
+    top: 1.05rem;
+    background: transparent;
+    color: #fff;
+    opacity: 0.85;
+}
+[data-slot='dialog-content']:has(> [data-slot='dialog-header']:first-child) > [data-slot='dialog-close']:hover {
+    opacity: 1;
+}
+[data-slot='dialog-content']:has(> [data-slot='dialog-header']:first-child) > [data-slot='dialog-close']:focus {
+    --tw-ring-color: rgb(255 255 255 / 0.7);
+    --tw-ring-offset-color: transparent;
 }
 
 @layer base {

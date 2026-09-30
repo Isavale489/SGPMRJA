@@ -36,7 +36,7 @@ export function BarraAbono({ porcentaje, minimo, className }: { porcentaje: numb
     const p = Math.max(0, Math.min(100, porcentaje));
     return (
         <span className={cn('bg-muted relative block h-1.5 w-full overflow-hidden rounded-full', className)} role="img" aria-label={`Abonado ${formatoNumero(p)} %`}>
-            <span className={cn('absolute inset-y-0 left-0 rounded-full', p >= 100 ? 'bg-success' : p >= minimo ? 'bg-primary' : 'bg-warning')} style={{ width: `${p}%` }} />
+            <span className={cn('absolute inset-y-0 left-0 rounded-full', p >= 100 ? 'bg-success' : p >= minimo ? 'bg-info' : 'bg-warning')} style={{ width: `${p}%` }} />
             <span className="bg-foreground/40 absolute inset-y-0 w-px" style={{ left: `${Math.min(100, minimo)}%` }} aria-hidden />
         </span>
     );

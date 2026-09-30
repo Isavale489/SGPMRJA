@@ -14,7 +14,8 @@
 | ambos layouts convivan. Si agregas un módulo, agrégalo en los dos.
 |
 | FORMA
-|   Sección:  ['titulo' => ..., 'icono' => ..., 'items' => [...]]
+|   Sección:  ['titulo' => ..., 'icono' => ..., 'seccion' => 'clave', 'items' => [...]]
+|             'seccion' es una clave de config/secciones.php (color del grupo en el menú)
 |   Grupo:    ['titulo' => ..., 'icono' => ..., 'items' => [...]]   (anidado en una sección)
 |   Enlace:   ['titulo' => ..., 'icono' => ..., 'ruta' => 'nombre.ruta', 'permiso' => 'modulo.accion',
 |              'inertia' => true]   ← SOLO cuando el módulo ya está migrado a Inertia
@@ -31,6 +32,7 @@ return [
     [
         'titulo' => 'Gestión General',
         'icono' => 'Database',
+        'seccion' => 'maestros',
         'items' => [
             ['titulo' => 'Clientes', 'icono' => 'UserRound', 'ruta' => 'clientes.index', 'permiso' => 'clientes.ver', 'inertia' => true],
             [
@@ -59,6 +61,7 @@ return [
     [
         'titulo' => 'Gestión Operativa',
         'icono' => 'ArrowLeftRight',
+        'seccion' => 'operativa',
         'items' => [
             ['titulo' => 'Cotizaciones', 'icono' => 'FileText', 'ruta' => 'cotizaciones.index', 'permiso' => 'cotizaciones.ver', 'inertia' => true],
             ['titulo' => 'Pedidos', 'icono' => 'ShoppingCart', 'ruta' => 'pedidos.index', 'permiso' => 'pedidos.ver', 'inertia' => true],
@@ -78,6 +81,7 @@ return [
     [
         'titulo' => 'Consultas y Reportes',
         'icono' => 'ChartColumn',
+        'seccion' => 'reportes',
         'items' => [
             ['titulo' => 'Producción', 'icono' => 'Factory', 'ruta' => 'reportes.produccion', 'permiso' => 'reportes.ver', 'inertia' => true],
             ['titulo' => 'Eficiencia', 'icono' => 'Gauge', 'ruta' => 'reportes.eficiencia', 'permiso' => 'reportes.ver', 'inertia' => true],

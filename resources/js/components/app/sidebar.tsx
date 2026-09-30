@@ -3,19 +3,9 @@ import { ChevronRight } from 'lucide-react';
 import { useState } from 'react';
 
 import { Icono } from '@/components/app/icono';
+import { contieneActivo, esGrupo, estaActivo } from '@/lib/navegacion';
 import { cn } from '@/lib/utils';
 import type { EnlaceNavegacion, GrupoNavegacion, ItemNavegacion } from '@/types';
-
-const esGrupo = (i: ItemNavegacion): i is GrupoNavegacion => 'items' in i;
-
-function contieneActivo(item: ItemNavegacion, url: string): boolean {
-    return esGrupo(item) ? item.items.some((h) => contieneActivo(h, url)) : estaActivo(item, url);
-}
-
-function estaActivo(enlace: EnlaceNavegacion, url: string): boolean {
-    const ruta = url.split('?')[0] ?? '';
-    return enlace.url === '/' ? ruta === '/' : ruta === enlace.url || ruta.startsWith(`${enlace.url}/`);
-}
 
 function Enlace({ enlace, nivel }: { enlace: EnlaceNavegacion; nivel: number }) {
     const { url } = usePage();
@@ -23,13 +13,15 @@ function Enlace({ enlace, nivel }: { enlace: EnlaceNavegacion; nivel: number }) 
     const clases = cn(
         'group flex items-center gap-2.5 rounded-md px-2.5 py-1.5 text-sm transition-colors duration-rapido',
         nivel > 0 && 'pl-9',
+        // Riel izquierdo siempre presente (transparente) para que el texto no salte al activarse.
+        'border-l-[3px] border-transparent',
         activo
-            ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium'
-            : 'text-sidebar-foreground hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground',
+            ? 'bg-seccion-acento/12 text-seccion border-seccion-acento font-semibold'
+            : 'text-sidebar-foreground hover:bg-seccion-acento/8 hover:text-seccion',
     );
     const contenido = (
         <>
-            {nivel === 0 && <Icono nombre={enlace.icono} className="size-4 shrink-0 opacity-80" />}
+            {nivel === 0 && <Icono nombre={enlace.icono} className={cn('size-4 shrink-0', activo ? 'text-seccion' : 'opacity-80')} />}
             <span className="truncate">{enlace.titulo}</span>
         </>
     );
@@ -49,19 +41,22 @@ function Enlace({ enlace, nivel }: { enlace: EnlaceNavegacion; nivel: number }) 
 function Grupo({ grupo, nivel }: { grupo: GrupoNavegacion; nivel: number }) {
     const { url } = usePage();
     const [abierto, setAbierto] = useState(() => contieneActivo(grupo, url));
+    const conActivo = contieneActivo(grupo, url);
 
     return (
-        <div>
+        // Cada sección se pinta con su color (config/secciones.php), sea cual sea la página abierta.
+        <div data-seccion={grupo.seccion ?? undefined}>
             <button
                 type="button"
                 onClick={() => setAbierto((a) => !a)}
                 aria-expanded={abierto}
                 className={cn(
-                    'text-sidebar-foreground hover:bg-sidebar-accent/60 flex w-full items-center gap-2.5 rounded-md px-2.5 py-1.5 text-sm transition-colors duration-rapido',
+                    'hover:bg-seccion-acento/8 flex w-full items-center gap-2.5 rounded-md px-2.5 py-1.5 text-sm transition-colors duration-rapido',
                     nivel > 0 && 'pl-9',
+                    conActivo ? 'text-seccion font-medium' : 'text-sidebar-foreground',
                 )}
             >
-                {nivel === 0 && <Icono nombre={grupo.icono} className="size-4 shrink-0 opacity-80" />}
+                {nivel === 0 && <Icono nombre={grupo.icono} className="text-seccion size-4 shrink-0" />}
                 <span className="flex-1 truncate text-left">{grupo.titulo}</span>
                 <ChevronRight
                     className={cn('size-3.5 opacity-60 transition-transform duration-medio ease-salida', abierto && 'rotate-90')}
@@ -88,9 +83,16 @@ export function Sidebar() {
 
     return (
         <nav aria-label="Principal" className="grid gap-0.5 p-3">
-            {navegacion.map((item) => (
-                <Item key={item.titulo} item={item} nivel={0} />
-            ))}
+            {navegacion.map((item) =>
+                esGrupo(item) ? (
+                    <Item key={item.titulo} item={item} nivel={0} />
+                ) : (
+                    // Enlace suelto (Inicio): azul de marca, no el color de la página abierta.
+                    <div key={item.titulo} data-seccion="marca">
+                        <Item item={item} nivel={0} />
+                    </div>
+                ),
+            )}
         </nav>
     );
 }

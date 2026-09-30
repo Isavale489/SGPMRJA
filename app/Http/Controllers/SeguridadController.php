@@ -200,22 +200,7 @@ class SeguridadController extends Controller
     // Helpers
     // ===================================================================
 
-    /**
-     * Metadatos de PRESENTACIÓN de la matriz (no de autorización): sección,
-     * ícono y color por módulo, espejo de la organización del sidebar. Un módulo
-     * nuevo del registry sin entrada aquí cae en "Otros módulos" con ícono
-     * genérico. 'tema' = clase de color de la sección (CSS .seg-sec-*): los
-     * mismos de identidad del sidebar/cards (maestros navy, operativa emerald,
-     * reportes sky); 'admin' (azul vivo #3b82f6) es propio de este panel:
-     * Administración no existe como sección del sidebar.
-     */
-    private const SECCIONES_MATRIZ = [
-        'Gestión General'      => ['tema' => 'maestros',  'icono' => 'Database',  'modulos' => ['clientes', 'empleados', 'departamentos', 'cargos', 'proveedores', 'productos', 'tipo-productos', 'atributos', 'colores', 'tallas', 'logos', 'insumos', 'tipo-insumos']],
-        'Gestión Operativa'    => ['tema' => 'operativa', 'icono' => 'ArrowLeftRight',   'modulos' => ['cotizaciones', 'pedidos', 'ordenes', 'calidad', 'compras', 'movimiento-insumo']],
-        'Consultas y Reportes' => ['tema' => 'reportes',  'icono' => 'ChartColumn',   'modulos' => ['reportes']],
-        'Administración'       => ['tema' => 'admin',     'icono' => 'ShieldCheck', 'modulos' => ['configuracion', 'users']],
-    ];
-
+    /** Ícono de cada módulo en la matriz (nombres de lucide); las secciones salen de config/secciones.php. */
     private const ICONOS_MATRIZ = [
         'configuracion'     => 'Settings',
         'users'             => 'ShieldUser',
@@ -261,8 +246,10 @@ class SeguridadController extends Controller
             ];
         }
 
+        // Secciones de config/secciones.php, en su orden; 'tema' es la clave de sección
+        // (misma identidad de color que el resto del panel: [data-seccion] en plataforma.css).
         $secciones = [];
-        foreach (self::SECCIONES_MATRIZ as $nombre => $def) {
+        foreach (config('secciones', []) as $clave => $def) {
             $modulos = [];
             foreach ($def['modulos'] as $slug) {
                 if (isset($disponibles[$slug])) {
@@ -271,7 +258,7 @@ class SeguridadController extends Controller
                 }
             }
             if ($modulos) {
-                $secciones[$nombre] = ['tema' => $def['tema'], 'icono' => $def['icono'], 'modulos' => $modulos];
+                $secciones[$def['titulo']] = ['tema' => $clave, 'icono' => $def['icono'], 'modulos' => $modulos];
             }
         }
 

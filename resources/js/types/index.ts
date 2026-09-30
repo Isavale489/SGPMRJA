@@ -11,6 +11,16 @@ export interface UsuarioAutenticado {
     rol: string | null;
 }
 
+/** Claves de config/secciones.php: cada una es una identidad de color ([data-seccion] en plataforma.css). */
+export type Seccion = 'maestros' | 'operativa' | 'reportes' | 'admin';
+
+/** Sección de la página actual (null en el dashboard, el perfil y demás rutas comunes). */
+export interface SeccionActual {
+    clave: Seccion;
+    titulo: string;
+    icono: string;
+}
+
 export interface EnlaceNavegacion {
     titulo: string;
     icono: string;
@@ -23,6 +33,8 @@ export interface EnlaceNavegacion {
 export interface GrupoNavegacion {
     titulo: string;
     icono: string;
+    /** Solo en las secciones de primer nivel; los subgrupos (Productos, Movimientos…) llevan null. */
+    seccion: Seccion | null;
     items: ItemNavegacion[];
 }
 
@@ -36,6 +48,7 @@ export interface DatosCompartidos {
         permisos: string[];
     };
     navegacion: ItemNavegacion[];
+    seccion: SeccionActual | null;
     tasaBcv: { valor: number; fecha: string } | null;
     /** status y aviso: pantallas de acceso (éxito y sesión vencida). */
     flash: { success: string | null; error: string | null; status: string | null; aviso: string | null };

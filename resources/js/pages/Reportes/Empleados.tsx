@@ -3,11 +3,12 @@ import { Search, X } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
 import { PanelOrdenable } from '@/components/app/panel-ordenable';
-import { COLOR_CONFORME, COLOR_DEFECTO, TarjetaGrafico, colorEficiencia, partirEtiqueta } from '@/components/app/grafico';
+import { TarjetaGrafico, colorEficiencia, partirEtiqueta, usePaleta } from '@/components/app/grafico';
 import { CabeceraOrdenable, useOrdenColumnas } from '@/components/app/orden-columnas';
+import { CabeceraSeccion, CuerpoRayado } from '@/components/app/tabla-seccion';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Table, TableBody, TableCell, TableHeader, TableRow } from '@/components/ui/table';
+import { Table, TableCell, TableRow } from '@/components/ui/table';
 import AppLayout from '@/layouts/app-layout';
 import { formatoNumero } from '@/lib/formato';
 
@@ -35,6 +36,7 @@ export default function ReporteEmpleados({ empleados }: { empleados: Rendimiento
     const alto = Math.max(340, empleados.length * 52 + 64); // la leyenda roba ~64 px
 
     // La categoría del eje es el id (dos personas con el mismo nombre son dos barras); se muestra el nombre.
+    const paleta = usePaleta();
     const eje = useMemo(() => {
         const nombres = new Map(empleados.map((e) => [String(e.empleado_id), e.nombre]));
         return { type: 'category' as const, position: 'left' as const, label: { formatter: ({ value }: { value: string | number }) => partirEtiqueta(nombres.get(String(value)) ?? String(value)) } };
@@ -53,13 +55,13 @@ export default function ReporteEmpleados({ empleados }: { empleados: Rendimiento
     const produccion = useMemo<Omit<AgChartOptions, 'theme'>>(() => ({
         data: empleados.map((e) => ({ id: e.empleado_id, nombre: e.nombre, producido: e.total_producido, defectuoso: e.total_defectuoso })),
         series: [
-            { type: 'bar', direction: 'horizontal', xKey: 'id', yKey: 'producido', yName: 'Conformes', stacked: true, fill: COLOR_CONFORME, tooltip: tooltipUnidades },
-            { type: 'bar', direction: 'horizontal', xKey: 'id', yKey: 'defectuoso', yName: 'Defectuosas', stacked: true, fill: COLOR_DEFECTO, tooltip: tooltipUnidades },
+            { type: 'bar', direction: 'horizontal', xKey: 'id', yKey: 'producido', yName: 'Conformes', stacked: true, fill: paleta.finalizado, tooltip: tooltipUnidades },
+            { type: 'bar', direction: 'horizontal', xKey: 'id', yKey: 'defectuoso', yName: 'Defectuosas', stacked: true, fill: paleta.cancelado, tooltip: tooltipUnidades },
         ],
         axes: { x: eje, y: { type: 'number', position: 'bottom', title: { text: 'Unidades' } } },
         legend: { position: 'bottom' },
         listeners: alHacerClic,
-    }) as Omit<AgChartOptions, 'theme'>, [empleados, alHacerClic, eje]);
+    }) as Omit<AgChartOptions, 'theme'>, [empleados, alHacerClic, eje, paleta]);
 
     const eficiencia = useMemo<Omit<AgChartOptions, 'theme'>>(() => {
         const datos = empleados.filter((e) => e.eficiencia !== null).map((e) => ({ id: e.empleado_id, nombre: e.nombre, eficiencia: e.eficiencia }));
@@ -67,14 +69,14 @@ export default function ReporteEmpleados({ empleados }: { empleados: Rendimiento
             data: datos,
             series: [{
                 type: 'bar', direction: 'horizontal', xKey: 'id', yKey: 'eficiencia', yName: 'Eficiencia', cornerRadius: 4,
-                itemStyler: ({ datum }: { datum: { eficiencia: number } }) => ({ fill: colorEficiencia(datum.eficiencia) }),
-                label: { placement: 'inside-end', color: '#ffffff', fontWeight: 'bold', formatter: ({ value }: { value: number }) => `${formatoNumero(value)} %` },
+                itemStyler: ({ datum }: { datum: { eficiencia: number } }) => ({ fill: colorEficiencia(paleta, datum.eficiencia) }),
+                label: { placement: 'inside-end', color: paleta.sobreColor, fontWeight: 'bold', formatter: ({ value }: { value: number }) => `${formatoNumero(value)} %` },
                 tooltip: { renderer: ({ datum }: { datum: { nombre: string; eficiencia: number } }) => ({ heading: '', title: datum.nombre, data: [{ label: 'Eficiencia', value: `${formatoNumero(datum.eficiencia)} %` }] }) },
             }],
             axes: { x: eje, y: { type: 'number', position: 'bottom', min: 0, max: 100, title: { text: '%' } } },
             listeners: alHacerClic,
         } as Omit<AgChartOptions, 'theme'>;
-    }, [empleados, alHacerClic, eje]);
+    }, [empleados, alHacerClic, eje, paleta]);
 
     const filtradas = useMemo(
         () => empleados.filter((e) => (!elegido || e.empleado_id === elegido) && (!buscar.trim() || e.nombre.toLowerCase().includes(buscar.trim().toLowerCase()))),
@@ -104,7 +106,7 @@ export default function ReporteEmpleados({ empleados }: { empleados: Rendimiento
 
                 <div className="bg-card overflow-x-auto rounded-lg border">
                     <Table>
-                        <TableHeader>
+                        <CabeceraSeccion>
                             <TableRow className="hover:bg-transparent">
                                 <CabeceraOrdenable clave="nombre" orden={orden} onOrdenar={alternar}>Empleado</CabeceraOrdenable>
                                 <CabeceraOrdenable clave="ordenes" orden={orden} onOrdenar={alternar} className="text-right">Órdenes</CabeceraOrdenable>
@@ -114,8 +116,8 @@ export default function ReporteEmpleados({ empleados }: { empleados: Rendimiento
                                 <CabeceraOrdenable clave="eficiencia" orden={orden} onOrdenar={alternar}>Eficiencia</CabeceraOrdenable>
                                 <CabeceraOrdenable clave="promedio" orden={orden} onOrdenar={alternar} className="text-right">Promedio por orden</CabeceraOrdenable>
                             </TableRow>
-                        </TableHeader>
-                        <TableBody>
+                        </CabeceraSeccion>
+                        <CuerpoRayado>
                             {filas.map((e) => (
                                 <TableRow key={e.empleado_id}>
                                     <TableCell className="font-medium">{e.nombre}</TableCell>
@@ -128,7 +130,7 @@ export default function ReporteEmpleados({ empleados }: { empleados: Rendimiento
                                 </TableRow>
                             ))}
                             {!filas.length && <TableRow className="hover:bg-transparent"><TableCell colSpan={7} className="text-muted-foreground h-24 text-center">{empleados.length ? 'Ningún empleado coincide.' : 'Aún no hay producción registrada.'}</TableCell></TableRow>}
-                        </TableBody>
+                        </CuerpoRayado>
                     </Table>
                 </div>
             </div>

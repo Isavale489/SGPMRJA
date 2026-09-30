@@ -15,10 +15,11 @@
 
 | Doc | Cuándo leerlo |
 |---|---|
-| [`modal-system.md`](modal-system.md) | Cualquier modal nuevo o modificación de uno existente |
+| [`identidad-visual.md`](identidad-visual.md) | **Colores del panel React**: sección de un módulo nuevo, tablas, diálogos, estados, gráficos |
+| [`modal-system.md`](modal-system.md) | Histórico (Blade): clases `.atlantico-modal` del panel anterior |
 | [`nested-modals.md`](nested-modals.md) | Cuando vayas a abrir un modal dentro de otro |
 | [`wizard-pattern.md`](wizard-pattern.md) | Formulario complejo multi-paso (stepper `.wiz-*`) |
-| [`sidebar-colors.md`](sidebar-colors.md) | Añadir ítem al sidebar o nueva sección |
+| [`sidebar-colors.md`](sidebar-colors.md) | Histórico (Blade): colores del sidebar anterior. Hoy: `identidad-visual.md` |
 | [`ux-search-filters.md`](ux-search-filters.md) | Implementar búsqueda + filtros en una vista listado |
 
 ### Frontend / JS

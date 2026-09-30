@@ -1,5 +1,7 @@
 # Colores del Sidebar por Sección
 
+> **Histórico (panel Blade).** Desde sep-2026 el menú del panel React toma sus colores de [`identidad-visual.md`](identidad-visual.md) (`data-seccion` + tokens). Esta página documenta las clases del panel anterior, que sirvieron de referencia.
+
 > El sidebar refleja el color estándar de cada sección (Maestros / Operativa / Reportes) tanto en el ítem activo como en el header del grupo cuando un subítem está activo.
 
 ## Estructura Blade

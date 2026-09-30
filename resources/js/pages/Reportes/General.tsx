@@ -9,18 +9,14 @@ import { cn } from '@/lib/utils';
 
 import type { GrupoHub, KpisHub } from './tipos';
 
-// Identidad por grupo (la sección de origen): navy = maestros, emerald = operativa, sky = reportes.
-const COLOR: Record<GrupoHub['color'], string> = {
-    navy: 'text-primary bg-primary/10',
-    emerald: 'text-emerald-600 bg-emerald-500/10 dark:text-emerald-400',
-    sky: 'text-sky-600 bg-sky-500/10 dark:text-sky-300',
-};
+// Ícono con el color de la sección vigente (la de la página o la del grupo que lo envuelve).
+const ICONO_SECCION = 'bg-seccion-acento/12 text-seccion';
 
 function Kpi({ valor, etiqueta, icono, alerta }: { valor: number; etiqueta: string; icono: React.ReactNode; alerta?: boolean }) {
     return (
         <Card className="py-4">
             <CardContent className="flex items-center gap-3">
-                <span className={cn('grid size-10 place-items-center rounded-lg [&_svg]:size-5', alerta === undefined ? COLOR.emerald : alerta ? 'bg-destructive/10 text-destructive' : 'bg-success/12 text-success')}>{icono}</span>
+                <span className={cn('grid size-10 place-items-center rounded-lg [&_svg]:size-5', alerta === undefined ? ICONO_SECCION : alerta ? 'bg-destructive/10 text-destructive' : 'bg-success/12 text-success')}>{icono}</span>
                 <div>
                     <p className="text-2xl font-semibold tabular">{formatoNumero(valor)}</p>
                     <p className="text-muted-foreground text-xs">{etiqueta}</p>
@@ -45,10 +41,11 @@ export default function ReportesGeneral({ grupos, kpis }: { grupos: GrupoHub[]; 
                 {grupos.length === 0 && <p className="text-muted-foreground rounded-lg border border-dashed p-8 text-center text-sm">No tienes acceso a ningún reporte.</p>}
 
                 {grupos.map((g) => (
-                    <Card key={g.titulo}>
+                    // Cada grupo con el color de la sección de origen de sus reportes.
+                    <Card key={g.titulo} data-seccion={g.seccion}>
                         <CardHeader>
                             <div className="flex items-center gap-3">
-                                <span className={cn('grid size-9 shrink-0 place-items-center rounded-lg', COLOR[g.color])}><Icono nombre={g.icono} className="size-5" /></span>
+                                <span className={cn('grid size-9 shrink-0 place-items-center rounded-lg', ICONO_SECCION)}><Icono nombre={g.icono} className="size-5" /></span>
                                 <div className="grid gap-1">
                                     <CardTitle className="text-base">{g.titulo}</CardTitle>
                                     <CardDescription>{g.descripcion}</CardDescription>
@@ -60,7 +57,7 @@ export default function ReportesGeneral({ grupos, kpis }: { grupos: GrupoHub[]; 
                                 {g.reportes.map((r) => {
                                     const contenido = (
                                         <>
-                                            <span className={cn('grid size-9 shrink-0 place-items-center rounded-md', COLOR[g.color])}><Icono nombre={r.icono} className="size-4" /></span>
+                                            <span className={cn('grid size-9 shrink-0 place-items-center rounded-md', ICONO_SECCION)}><Icono nombre={r.icono} className="size-4" /></span>
                                             <span className="grid min-w-0 flex-1 gap-0.5">
                                                 <span className="font-medium">{r.titulo}</span>
                                                 <span className="text-muted-foreground text-xs">{r.descripcion}</span>

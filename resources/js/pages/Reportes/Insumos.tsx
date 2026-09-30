@@ -3,11 +3,12 @@ import { Search } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
 import { PanelOrdenable } from '@/components/app/panel-ordenable';
-import { TarjetaGrafico, partirEtiqueta } from '@/components/app/grafico';
+import { TarjetaGrafico, partirEtiqueta, usePaleta } from '@/components/app/grafico';
 import { CabeceraOrdenable, useOrdenColumnas } from '@/components/app/orden-columnas';
+import { CabeceraSeccion, CuerpoRayado } from '@/components/app/tabla-seccion';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Table, TableBody, TableCell, TableHeader, TableRow } from '@/components/ui/table';
+import { Table, TableCell, TableRow } from '@/components/ui/table';
 import AppLayout from '@/layouts/app-layout';
 import { formatoNumero } from '@/lib/formato';
 
@@ -42,15 +43,16 @@ export default function ReporteInsumos({ insumos }: { insumos: ConsumoInsumo[] }
         };
     }, [insumos]);
 
+    const paleta = usePaleta();
     const top = useMemo(() => insumos.slice(0, 10), [insumos]);
     const barras = useMemo<Omit<AgChartOptions, 'theme'>>(() => ({
         data: top.map((i) => ({ nombre: i.nombre, total: i.total, unidad: i.unidad })),
         series: [{
-            type: 'bar', direction: 'horizontal', xKey: 'nombre', yKey: 'total', yName: 'Utilizado', fill: '#0ea5e9', cornerRadius: 4, label: { placement: 'outside-end' },
+            type: 'bar', direction: 'horizontal', xKey: 'nombre', yKey: 'total', yName: 'Utilizado', fill: paleta.info, cornerRadius: 4, label: { placement: 'outside-end' },
             tooltip: { renderer: ({ datum }: { datum: { nombre: string; total: number; unidad: string } }) => ({ heading: '', title: datum.nombre, data: [{ label: 'Utilizado', value: `${formatoNumero(datum.total)} ${datum.unidad}` }] }) },
         }],
         axes: { x: { type: 'category', position: 'left', label: { formatter: ({ value }: { value: string }) => partirEtiqueta(String(value)) } }, y: { type: 'number', position: 'bottom' } },
-    }) as Omit<AgChartOptions, 'theme'>, [top]);
+    }) as Omit<AgChartOptions, 'theme'>, [top, paleta]);
 
     const filtradas = useMemo(
         () => insumos.filter((i) => (tipo === TODOS || i.tipo === tipo) && (!buscar.trim() || i.nombre.toLowerCase().includes(buscar.trim().toLowerCase()))),
@@ -85,7 +87,7 @@ export default function ReporteInsumos({ insumos }: { insumos: ConsumoInsumo[] }
 
                 <div className="bg-card overflow-x-auto rounded-lg border">
                     <Table>
-                        <TableHeader>
+                        <CabeceraSeccion>
                             <TableRow className="hover:bg-transparent">
                                 <CabeceraOrdenable clave="nombre" orden={orden} onOrdenar={alternar}>Insumo</CabeceraOrdenable>
                                 <CabeceraOrdenable clave="tipo" orden={orden} onOrdenar={alternar}>Tipo</CabeceraOrdenable>
@@ -93,8 +95,8 @@ export default function ReporteInsumos({ insumos }: { insumos: ConsumoInsumo[] }
                                 <CabeceraOrdenable clave="ordenes" orden={orden} onOrdenar={alternar} className="text-right">Órdenes</CabeceraOrdenable>
                                 <CabeceraOrdenable clave="promedio" orden={orden} onOrdenar={alternar} className="text-right">Promedio por orden</CabeceraOrdenable>
                             </TableRow>
-                        </TableHeader>
-                        <TableBody>
+                        </CabeceraSeccion>
+                        <CuerpoRayado>
                             {filas.map((i) => (
                                 <TableRow key={i.id}>
                                     <TableCell className="font-medium">{i.nombre}</TableCell>
@@ -105,7 +107,7 @@ export default function ReporteInsumos({ insumos }: { insumos: ConsumoInsumo[] }
                                 </TableRow>
                             ))}
                             {!filas.length && <TableRow className="hover:bg-transparent"><TableCell colSpan={5} className="text-muted-foreground h-24 text-center">{insumos.length ? 'Ningún insumo coincide.' : 'Aún no hay consumo registrado.'}</TableCell></TableRow>}
-                        </TableBody>
+                        </CuerpoRayado>
                     </Table>
                 </div>
             </div>

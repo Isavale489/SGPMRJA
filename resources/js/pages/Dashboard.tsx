@@ -4,7 +4,7 @@ import { AlertTriangle, ArrowRight, FileClock, Shirt, ShieldAlert, ShieldCheck, 
 import { useMemo, useState, type ReactNode } from 'react';
 
 import { PanelOrdenable } from '@/components/app/panel-ordenable';
-import { TarjetaGrafico } from '@/components/app/grafico';
+import { TarjetaGrafico, colorEstado, usePaleta } from '@/components/app/grafico';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { usePermisos } from '@/hooks/use-permisos';
@@ -22,16 +22,14 @@ export interface PaginaDashboard {
     urls: Record<'pedidos' | 'cotizaciones' | 'alertas' | 'clientes' | 'productos' | 'empleados' | 'proveedores', string>;
 }
 
-const COLOR_PEDIDO: Record<string, string> = { Pendiente: '#f7b84b', Procesando: '#299cdb', Completado: '#0ab39c', Cancelado: '#f06548' };
-
 /** Enlace a un módulo: Inertia si ya migró; recarga completa si sigue en Blade; texto si no hay permiso. */
 function Enlace({ url, blade, permitido, className, children }: { url: string; blade?: boolean; permitido: boolean; className?: string; children: ReactNode }) {
     if (!permitido) return <div className={className}>{children}</div>;
     return blade ? <a href={url} className={className}>{children}</a> : <Link href={url} className={className}>{children}</Link>;
 }
 
-function Kpi({ titulo, valor, detalle, icono, tono }: { titulo: string; valor: number; detalle: string; icono: ReactNode; tono: 'warning' | 'destructive' | 'sky' }) {
-    const colores = { warning: 'bg-warning/12 text-warning', destructive: 'bg-destructive/10 text-destructive', sky: 'bg-sky-500/12 text-sky-600 dark:text-sky-300' };
+function Kpi({ titulo, valor, detalle, icono, tono }: { titulo: string; valor: number; detalle: string; icono: ReactNode; tono: 'warning' | 'destructive' | 'info' }) {
+    const colores = { warning: 'bg-warning/12 text-warning', destructive: 'bg-destructive/10 text-destructive', info: 'bg-info/12 text-info' };
     return (
         <Card className="h-full py-5 transition-shadow group-hover:shadow-md">
             <CardContent className="flex items-center gap-4">
@@ -51,6 +49,7 @@ export default function Dashboard({ kpis, maestros, pedidos, tendencia, alertaRe
     const { tasaBcv } = usePage().props;
     const [alertaVisible, setAlertaVisible] = useState(Boolean(alertaRecuperacion));
     const totalPedidos = pedidos.reduce((s, p) => s + p.total, 0);
+    const paleta = usePaleta();
 
     const donut = useMemo<Omit<AgChartOptions, 'theme'>>(() => {
         const datos = pedidos.filter((p) => p.total > 0);
@@ -58,17 +57,17 @@ export default function Dashboard({ kpis, maestros, pedidos, tendencia, alertaRe
             data: datos,
             series: [{
                 type: 'donut', angleKey: 'total', calloutLabelKey: 'estado', sectorLabelKey: 'total', innerRadiusRatio: 0.62, cornerRadius: 4,
-                fills: datos.map((d) => COLOR_PEDIDO[d.estado] ?? '#74788d'),
+                fills: datos.map((d) => colorEstado(paleta, d.estado)),
                 innerLabels: [{ text: String(totalPedidos), fontSize: 26, fontWeight: 'bold' }, { text: 'pedidos', fontSize: 12, spacing: 4 }],
             }],
             legend: { position: 'bottom' },
         };
-    }, [pedidos, totalPedidos]);
+    }, [pedidos, totalPedidos, paleta]);
 
     const area = useMemo<Omit<AgChartOptions, 'theme'>>(() => ({
         data: tendencia,
         series: [{
-            type: 'area', xKey: 'mes', yKey: 'pedidos', yName: 'Pedidos', fill: '#405189', fillOpacity: 0.25, stroke: '#405189', strokeWidth: 2, marker: { enabled: true },
+            type: 'area', xKey: 'mes', yKey: 'pedidos', yName: 'Pedidos', fill: paleta.marca, fillOpacity: 0.25, stroke: paleta.marca, strokeWidth: 2, marker: { enabled: true },
             tooltip: {
                 renderer: ({ datum }: { datum: { mes: string; pedidos: number; monto: number } }) => ({
                     heading: '',
@@ -81,7 +80,7 @@ export default function Dashboard({ kpis, maestros, pedidos, tendencia, alertaRe
             },
         }],
         axes: { x: { type: 'category', position: 'bottom' }, y: { type: 'number', position: 'left', title: { text: 'Pedidos' } } },
-    }) as Omit<AgChartOptions, 'theme'>, [tendencia, tasaBcv]);
+    }) as Omit<AgChartOptions, 'theme'>, [tendencia, tasaBcv, paleta]);
 
     const r = alertaRecuperacion;
     const exito = r?.resultado === 'exito';
@@ -111,7 +110,7 @@ export default function Dashboard({ kpis, maestros, pedidos, tendencia, alertaRe
                         <Kpi titulo="Insumos en alerta" valor={kpis.insumos_alerta} detalle="en o bajo su existencia mínima" icono={<AlertTriangle />} tono="destructive" />
                     </Enlace>
                     <Enlace url={urls.cotizaciones} permitido={puede('cotizaciones.ver')} className="group">
-                        <Kpi titulo="Cotizaciones por vencer" valor={kpis.cotizaciones_por_vencer} detalle="validez en 7 días o menos" icono={<FileClock />} tono="sky" />
+                        <Kpi titulo="Cotizaciones por vencer" valor={kpis.cotizaciones_por_vencer} detalle="validez en 7 días o menos" icono={<FileClock />} tono="info" />
                     </Enlace>
                 </section>
 

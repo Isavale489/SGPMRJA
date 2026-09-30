@@ -1,3 +1,5 @@
+import type { Seccion } from '@/types';
+
 /** Espejos de ReportesController (los verifica ReportesPaginaTest). */
 
 export interface ReporteHub {
@@ -13,7 +15,8 @@ export interface GrupoHub {
     titulo: string;
     descripcion: string;
     icono: string;
-    color: 'navy' | 'emerald' | 'sky';
+    /** Sección de origen (config/secciones.php): da el color del grupo. */
+    seccion: Seccion;
     reportes: ReporteHub[];
 }
 
@@ -85,7 +88,7 @@ export type Nivel = 'ok' | 'warn' | 'bad' | 'na';
 export const nivel = (v: number | null): Nivel => (v === null ? 'na' : v >= 90 ? 'ok' : v >= 70 ? 'warn' : 'bad');
 export const NIVEL: Record<Nivel, { etiqueta: string; clase: string }> = {
     ok: { etiqueta: 'Alta', clase: 'bg-success/12 text-success ring-success/25' },
-    warn: { etiqueta: 'Media', clase: 'bg-sky-500/12 text-sky-600 ring-sky-500/25 dark:text-sky-300' },
+    warn: { etiqueta: 'Media', clase: 'bg-info/12 text-info ring-info/25' },
     bad: { etiqueta: 'Baja', clase: 'bg-destructive/10 text-destructive ring-destructive/25' },
     na: { etiqueta: 'Sin producción', clase: 'bg-muted text-muted-foreground ring-border' },
 };

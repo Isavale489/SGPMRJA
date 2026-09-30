@@ -56,7 +56,7 @@ export function DetallePedido({ pedido: p, cargando, onCerrar, terminos, urls }:
                                         {p.creador.avatar ? (
                                             <img src={p.creador.avatar} alt="" className="size-5 rounded-full object-cover" />
                                         ) : (
-                                            <span className="bg-primary/10 text-primary grid size-5 place-items-center rounded-full text-[0.6rem] font-semibold">{iniciales(p.creador.nombre)}</span>
+                                            <span className="grid size-5 place-items-center rounded-full bg-white/20 text-[0.6rem] font-semibold text-white">{iniciales(p.creador.nombre)}</span>
                                         )}
                                         Creado por {p.creador.nombre}
                                         {p.creador.fecha && ` el ${formatoFecha(p.creador.fecha)} ${p.creador.fecha.slice(11)}`}

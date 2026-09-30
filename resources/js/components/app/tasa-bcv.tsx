@@ -14,6 +14,7 @@ export function TasaBcv() {
     return (
         <span
             data-bcv-pill
+            data-pildora
             className="border-border bg-card text-muted-foreground inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border px-2.5 py-1 text-xs"
         >
             <Landmark className="hidden size-3.5 sm:block" aria-hidden />

@@ -46,7 +46,7 @@ export function CabeceraOrdenable<K extends string>({ clave, orden, onOrdenar, c
     const Icono = !activo ? ArrowUpDown : orden.dir === 'asc' ? ArrowUp : ArrowDown;
     return (
         <TableHead className={className} aria-sort={activo ? (orden.dir === 'asc' ? 'ascending' : 'descending') : 'none'}>
-            <button type="button" onClick={() => onOrdenar(clave)} className={cn('hover:text-foreground inline-flex items-center gap-1 rounded-sm', activo && 'text-foreground')}>
+            <button type="button" onClick={() => onOrdenar(clave)} className={cn('inline-flex items-center gap-1 rounded-sm opacity-85 transition-opacity hover:opacity-100', activo && 'opacity-100')}>
                 {children}
                 <Icono className={cn('size-3.5', !activo && 'opacity-50')} aria-hidden />
                 <span className="sr-only">(ordenar)</span>

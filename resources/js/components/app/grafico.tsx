@@ -34,20 +34,77 @@ class LimiteGrafico extends Component<{ alto: number; children: ReactNode }, { f
     }
 }
 
-/** Colores de estado de las órdenes (los mismos en todo el sistema). */
-export const COLOR_ESTADO: Record<string, string> = {
-    Pendiente: '#f7b84b',
-    'En Proceso': '#299cdb',
-    Finalizado: '#0ab39c',
-    Cancelado: '#f06548',
-};
-export const COLOR_CONFORME = '#0ab39c';
-export const COLOR_DEFECTO = '#f06548';
+/**
+ * Colores para AG Charts, leídos de los tokens de plataforma.css: el mismo estado se ve
+ * igual en un badge y en un gráfico, y cada tema tiene los suyos. Solo tokens que NO
+ * cambian con la sección (el gráfico se arma antes de que el layout la aplique).
+ */
+export interface Paleta {
+    pendiente: string;
+    enProceso: string;
+    finalizado: string;
+    cancelado: string;
+    especial: string;
+    neutro: string;
+    /** Serie que no es un estado (p. ej. pedidos por mes). */
+    marca: string;
+    /** Barras de cantidades (consumo, uso). */
+    info: string;
+    /** Etiqueta dentro de una barra de color (blanco en claro, oscuro en oscuro). */
+    sobreColor: string;
+}
+
+function leerPaleta(): Paleta {
+    const css = getComputedStyle(document.documentElement);
+    const token = (nombre: string) => css.getPropertyValue(`--${nombre}`).trim();
+    return {
+        pendiente: token('warning'),
+        enProceso: token('info'),
+        finalizado: token('success'),
+        cancelado: token('destructive'),
+        especial: token('especial'),
+        neutro: token('muted-foreground'),
+        marca: token('marca'),
+        info: token('info'),
+        sobreColor: token('primary-foreground'),
+    };
+}
+
+/** Paleta del tema vigente; se vuelve a leer al cambiarlo (la clase .dark ya está puesta). */
+export function usePaleta(): Paleta {
+    const { tema } = useTema();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- el tema cambia los valores de los tokens
+    return useMemo(leerPaleta, [tema]);
+}
+
+/** Color de un estado de pedido u orden (mismos grupos que EstadoBadge). */
+export function colorEstado(p: Paleta, estado: string): string {
+    switch (estado) {
+        case 'Pendiente':
+            return p.pendiente;
+        case 'En Proceso':
+        case 'Procesando':
+            return p.enProceso;
+        case 'Finalizado':
+        case 'Completado':
+        case 'Aprobada':
+        case 'recibida':
+            return p.finalizado;
+        case 'Cancelado':
+        case 'Cancelada':
+        case 'anulada':
+            return p.cancelado;
+        case 'Convertida':
+            return p.especial;
+        default:
+            return p.neutro;
+    }
+}
 
 /** Semáforo de eficiencia (decisión del equipo): verde ≥ 90, celeste 70–89, rojo < 70. */
-export function colorEficiencia(v: number | null): string {
-    if (v === null) return '#878a99';
-    return v >= 90 ? '#0ab39c' : v >= 70 ? '#0ea5e9' : '#f06548';
+export function colorEficiencia(p: Paleta, v: number | null): string {
+    if (v === null) return p.neutro;
+    return v >= 90 ? p.finalizado : v >= 70 ? p.enProceso : p.cancelado;
 }
 
 /** Parte un nombre largo en líneas de hasta 18 caracteres (el eje de categorías respeta los \n). */

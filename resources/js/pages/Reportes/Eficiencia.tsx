@@ -2,12 +2,13 @@ import { Search } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
 import { CabeceraOrdenable, useOrdenColumnas } from '@/components/app/orden-columnas';
+import { CabeceraSeccion, CuerpoRayado } from '@/components/app/tabla-seccion';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Table, TableCell, TableHead, TableRow } from '@/components/ui/table';
 import AppLayout from '@/layouts/app-layout';
 import { formatoNumero } from '@/lib/formato';
 import { cn } from '@/lib/utils';
@@ -49,7 +50,7 @@ export default function ReporteEficiencia({ pedidos, kpis }: { pedidos: PedidoEf
                     <CardContent className="grid gap-4 md:grid-cols-[auto_1fr] md:items-center">
                         <div>
                             <p className="text-muted-foreground text-xs">Eficiencia global</p>
-                            <p className={cn('text-5xl font-semibold tabular', g === null ? 'text-muted-foreground' : nivel(g) === 'ok' ? 'text-success' : nivel(g) === 'warn' ? 'text-sky-600 dark:text-sky-300' : 'text-destructive')}>
+                            <p className={cn('text-5xl font-semibold tabular', g === null ? 'text-muted-foreground' : nivel(g) === 'ok' ? 'text-success' : nivel(g) === 'warn' ? 'text-info' : 'text-destructive')}>
                                 {g === null ? '—' : `${formatoNumero(g)} %`}
                             </p>
                         </div>
@@ -84,7 +85,7 @@ export default function ReporteEficiencia({ pedidos, kpis }: { pedidos: PedidoEf
 
                 <div className="bg-card overflow-x-auto rounded-lg border">
                     <Table>
-                        <TableHeader>
+                        <CabeceraSeccion>
                             <TableRow className="hover:bg-transparent">
                                 <CabeceraOrdenable clave="pedido" orden={orden} onOrdenar={alternar}>Pedido</CabeceraOrdenable>
                                 <CabeceraOrdenable clave="conformes" orden={orden} onOrdenar={alternar} className="w-2/5">Conformes / defectuosas</CabeceraOrdenable>
@@ -92,8 +93,8 @@ export default function ReporteEficiencia({ pedidos, kpis }: { pedidos: PedidoEf
                                 <CabeceraOrdenable clave="ordenes" orden={orden} onOrdenar={alternar} className="text-right">Órdenes</CabeceraOrdenable>
                                 <TableHead><span className="sr-only">Detalle</span></TableHead>
                             </TableRow>
-                        </TableHeader>
-                        <TableBody>
+                        </CabeceraSeccion>
+                        <CuerpoRayado>
                             {filas.map((p) => (
                                 <TableRow key={p.pedido_id ?? 'manual'}>
                                     <TableCell><span className="font-medium">{titulo(p)}</span><span className="text-muted-foreground block text-xs">{p.cliente}</span></TableCell>
@@ -107,7 +108,7 @@ export default function ReporteEficiencia({ pedidos, kpis }: { pedidos: PedidoEf
                                 </TableRow>
                             ))}
                             {!filas.length && <TableRow className="hover:bg-transparent"><TableCell colSpan={5} className="text-muted-foreground h-24 text-center">{pedidos.length ? 'Ningún pedido coincide.' : 'Aún no hay órdenes de producción.'}</TableCell></TableRow>}
-                        </TableBody>
+                        </CuerpoRayado>
                     </Table>
                 </div>
             </div>

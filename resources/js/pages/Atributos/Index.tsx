@@ -3,11 +3,12 @@ import { ArrowDown, ArrowLeft, ArrowUp, MoreVertical, Pencil, Plus, Trash2 } fro
 import { useState, type ReactNode } from 'react';
 
 import { ConfirmarPeligro } from '@/components/app/confirmar-peligro';
+import { CabeceraSeccion, CuerpoRayado } from '@/components/app/tabla-seccion';
 import { Button } from '@/components/ui/button';
 import {
     DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Table, TableCell, TableHead, TableRow } from '@/components/ui/table';
 import { usePermisos } from '@/hooks/use-permisos';
 import AppLayout from '@/layouts/app-layout';
 import { formatoNumero } from '@/lib/formato';
@@ -34,8 +35,6 @@ function Encabezado({ id, titulo, children }: { id: string; titulo: ReactNode; c
         </div>
     );
 }
-
-const th = 'text-muted-foreground h-10 text-xs font-medium uppercase tracking-wide';
 
 export default function AtributosIndex({ atributos, seleccionado, valores, tiposProducto, urls }: PaginaAtributos) {
     const { puede } = usePermisos();
@@ -95,16 +94,16 @@ export default function AtributosIndex({ atributos, seleccionado, valores, tipos
                     ) : (
                         <div className="overflow-x-auto">
                             <Table>
-                                <TableHeader>
+                                <CabeceraSeccion>
                                     <TableRow className="hover:bg-transparent">
-                                        <TableHead className={th}>Atributo</TableHead>
-                                        <TableHead className={th}>Código</TableHead>
-                                        <TableHead className={cn(th, 'text-right')}>Valores</TableHead>
-                                        <TableHead className={cn(th, 'text-right')}>Tipos</TableHead>
-                                        {gestionar && <TableHead className={cn(th, 'w-12')}><span className="sr-only">Acciones</span></TableHead>}
+                                        <TableHead>Atributo</TableHead>
+                                        <TableHead>Código</TableHead>
+                                        <TableHead className='text-right'>Valores</TableHead>
+                                        <TableHead className='text-right'>Tipos</TableHead>
+                                        {gestionar && <TableHead className='w-12'><span className="sr-only">Acciones</span></TableHead>}
                                     </TableRow>
-                                </TableHeader>
-                                <TableBody>
+                                </CabeceraSeccion>
+                                <CuerpoRayado>
                                     {atributos.map((a) => {
                                         const activo = a.id === seleccionado;
                                         return (
@@ -149,7 +148,7 @@ export default function AtributosIndex({ atributos, seleccionado, valores, tipos
                                             </TableRow>
                                         );
                                     })}
-                                </TableBody>
+                                </CuerpoRayado>
                             </Table>
                         </div>
                     )}
@@ -180,16 +179,16 @@ export default function AtributosIndex({ atributos, seleccionado, valores, tipos
                     ) : (
                         <div className="overflow-x-auto">
                             <Table>
-                                <TableHeader>
+                                <CabeceraSeccion>
                                     <TableRow className="hover:bg-transparent">
-                                        <TableHead className={cn(th, 'w-10 text-right')}>#</TableHead>
-                                        <TableHead className={th}>Valor</TableHead>
-                                        <TableHead className={th}>Código</TableHead>
-                                        <TableHead className={cn(th, 'text-right')}>Productos</TableHead>
-                                        {gestionar && <TableHead className={cn(th, 'w-32')}><span className="sr-only">Acciones</span></TableHead>}
+                                        <TableHead className='w-10 text-right'>#</TableHead>
+                                        <TableHead>Valor</TableHead>
+                                        <TableHead>Código</TableHead>
+                                        <TableHead className='text-right'>Productos</TableHead>
+                                        {gestionar && <TableHead className='w-32'><span className="sr-only">Acciones</span></TableHead>}
                                     </TableRow>
-                                </TableHeader>
-                                <TableBody>
+                                </CabeceraSeccion>
+                                <CuerpoRayado>
                                     {valores.map((v, i) => (
                                         <TableRow key={v.id}>
                                             <TableCell className="text-muted-foreground tabular text-right">{i + 1}</TableCell>
@@ -222,7 +221,7 @@ export default function AtributosIndex({ atributos, seleccionado, valores, tipos
                                             )}
                                         </TableRow>
                                     ))}
-                                </TableBody>
+                                </CuerpoRayado>
                             </Table>
                         </div>
                     )}

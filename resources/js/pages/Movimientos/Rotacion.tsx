@@ -2,7 +2,8 @@ import { Link } from '@inertiajs/react';
 import { ArrowLeft } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { CabeceraSeccion, CuerpoRayado } from '@/components/app/tabla-seccion';
+import { Table, TableCell, TableHead, TableRow } from '@/components/ui/table';
 import AppLayout from '@/layouts/app-layout';
 import { formatoNumero } from '@/lib/formato';
 
@@ -20,15 +21,15 @@ export default function Rotacion({ insumos, urls }: Props) {
             <p className="text-muted-foreground -mt-3 mb-4 text-sm">Salidas acumuladas por insumo (histórico). Los de mayor rotación, primero.</p>
             <div className="bg-card overflow-x-auto rounded-lg border">
                 <Table>
-                    <TableHeader>
+                    <CabeceraSeccion>
                         <TableRow className="hover:bg-transparent">
                             <TableHead className="w-10">#</TableHead>
                             <TableHead>Insumo</TableHead>
                             <TableHead className="w-2/5">Salidas acumuladas</TableHead>
                             <TableHead className="text-right">Existencia actual</TableHead>
                         </TableRow>
-                    </TableHeader>
-                    <TableBody>
+                    </CabeceraSeccion>
+                    <CuerpoRayado>
                         {insumos.length === 0 && (
                             <TableRow className="hover:bg-transparent"><TableCell colSpan={4} className="text-muted-foreground h-24 text-center">No hay insumos inventariables.</TableCell></TableRow>
                         )}
@@ -50,7 +51,7 @@ export default function Rotacion({ insumos, urls }: Props) {
                                 <TableCell className={`text-right tabular ${i.actual <= i.minimo ? 'text-destructive font-medium' : ''}`}>{formatoNumero(i.actual)}</TableCell>
                             </TableRow>
                         ))}
-                    </TableBody>
+                    </CuerpoRayado>
                 </Table>
             </div>
         </AppLayout>
