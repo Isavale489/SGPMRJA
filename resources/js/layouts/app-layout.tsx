@@ -24,8 +24,9 @@ interface Props {
 
 function Logo({ nombre }: { nombre: string }) {
     return (
-        <a href="/dashboard" className="flex h-14 items-center gap-2 px-5">
-            <img src="/atlantico-logo-wide.png" alt={nombre} className="h-7 w-auto dark:brightness-0 dark:invert" />
+        // El logo es ancho (≈2:1): a 80 px de alto ocupa ~166 px del sidebar de 256.
+        <a href="/dashboard" className="flex h-24 items-center justify-center px-5">
+            <img src="/atlantico-logo-wide.png" alt={nombre} className="h-20 w-auto max-w-full object-contain dark:brightness-0 dark:invert" />
         </a>
     );
 }
