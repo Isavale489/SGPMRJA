@@ -24,7 +24,7 @@
 resources/js/
   inertia.tsx              entrada (createInertiaApp)
   pages/<Modulo>/<Vista>.tsx   una página por componente Inertia (Inertia::render('Modulo/Vista'))
-  layouts/app-layout.tsx   sidebar + barra superior + título + avisos
+  layouts/app-layout.tsx   barra superior de lado a lado (logo) + menú lateral colapsable debajo + título + avisos
   components/ui/           primitivas de shadcn/ui (código nuestro; se puede editar)
   components/app/          componentes de dominio (Monto, EstadoBadge, Campo, TasaBcv, ConfirmarPeligro…)
   hooks/                   use-permisos, use-tema
@@ -102,6 +102,7 @@ Un catálogo con listado, historial y formulario pequeño **no se escribe desde 
 - **Errores de negocio en formularios** (`OrdenProduccionController::fallar`): para Inertia se lanzan como `ValidationException` en un campo (`general`, `cantidad`, `empleados`…) y el formulario los muestra donde corresponden; los datos extra (p. ej. los faltantes para comprar) viajan por `Inertia::flash`. Para JSON se mantiene el 422 `{message, …}` de siempre. Las acciones de un botón (eliminar, cambiar estado) usan `rechazar()`: aviso flotante.
 - **Varios diálogos sobre el mismo registro** (Órdenes: ver, avance, etapas): comparten una sola recarga parcial (`?ver=ID` → prop `orden`); el diálogo abierto se guarda en estado local y las mutaciones usan `preserveState: true` para no perderlo al recargar.
 - **Gráficos** (`components/app/grafico.tsx`): `TarjetaGrafico` envuelve `ag-charts-react` (AG Charts Community 14, el mismo motor de las vistas Blade): tema claro/oscuro del sistema, fondo transparente y descarga en PNG con fondo sólido. AG Charts (~1,3 MB) se importa **solo** en `components/app/lienzo-grafico.tsx`, que `TarjetaGrafico` carga con `lazy()` (esqueleto mientras llega, aviso en la tarjeta si el chunk falla); en el resto del código va únicamente `import type`, para no volver a meterlo en la carga de las páginas. Ahí se registran solo los módulos usados (`ModuleRegistry`). Los colores salen de `usePaleta()` (los mismos tokens de `EstadoBadge`), nunca de hex en las opciones. Las opciones inválidas de AG Charts solo avisan en la consola y se ignoran en silencio: el E2E de reportes falla si aparece un aviso de AG Charts. Gotchas de su API (ejes como diccionario, `listeners.seriesNodeClick` a nivel de gráfico, `\n` para partir etiquetas largas) están comentados en el código.
+- **Layout «detached»** (como el panel anterior): la barra superior va de lado a lado con el logo y el botón que colapsa el menú lateral a solo íconos (tooltip con el nombre; un grupo colapsado, al hacer clic, expande el menú con ese grupo abierto). La preferencia se guarda en `localStorage['sgpmrja-sidebar-size']` (`lg`/`sm`, misma clave que el Blade) con `useMenuColapsado()`. En el teléfono el menú es un `Sheet` y el logo va dentro de él.
 - **`PanelOrdenable`**: tarjetas que se reordenan arrastrando el agarre o con flechas desde el teclado; el orden se guarda en `localStorage` con la misma clave que usaba la vista Blade. En móvil la grilla lleva `grid-cols-1`: sin eso, la columna crece al ancho del canvas y la página se desborda.
 - **`ConfirmarPeligro` con `destructiva={false}`** para confirmar acciones que no destruyen (procesar una compra, registrar una persona como proveedor).
 

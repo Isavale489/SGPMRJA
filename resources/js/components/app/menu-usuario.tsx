@@ -43,7 +43,7 @@ export function MenuUsuario() {
                     {auth.user.avatar_url && <AvatarImage src={auth.user.avatar_url} alt="" />}
                     <AvatarFallback className="text-xs">{iniciales(auth.user.name)}</AvatarFallback>
                 </Avatar>
-                <span className="hidden text-left leading-tight sm:block">
+                <span className="hidden text-left leading-tight lg:block">
                     <span className="block text-sm font-medium">{auth.user.name}</span>
                     <span className="text-muted-foreground block text-xs">{auth.user.rol}</span>
                 </span>

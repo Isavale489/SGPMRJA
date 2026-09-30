@@ -275,7 +275,7 @@ function Matriz({ roles, permisos, secciones, rolId, onRol, url, onSucio }: Prop
 
             {rol && (
                 <>
-                    <div className="bg-background/95 sticky top-14 z-10 flex flex-wrap items-center justify-between gap-2 rounded-lg border p-3 backdrop-blur">
+                    <div className="bg-background/95 sticky top-16 z-10 flex flex-wrap items-center justify-between gap-2 rounded-lg border p-3 backdrop-blur">
                         <p className="text-sm">
                             <span className="font-medium">{rol.nombre}</span> tiene <span className="tabular font-medium">{marcados.size}</span> permisos
                             {sucio && <span className="bg-warning/15 text-warning ml-2 rounded-full px-2 py-0.5 text-xs">Cambios sin guardar</span>}
