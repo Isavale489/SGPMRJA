@@ -59,6 +59,36 @@ test('el aviso lanzado desde un menú desplegable deja la página usable', async
   await expect(page.getByRole('combobox', { name: 'Agregar insumo' })).toBeVisible();
 });
 
+test('Atrás del navegador con cambios también pregunta; sin cambios sale de una', async ({ page }) => {
+  const nativos: string[] = [];
+  page.on('dialog', (d) => { nativos.push(d.message()); void d.dismiss(); });
+  await page.goto('/compras');
+  await page.getByRole('link', { name: 'Nueva compra' }).click();
+  await expect(page).toHaveURL(/\/compras\/crear$/);
+  const aviso = page.getByRole('alertdialog', { name: 'Cambios sin guardar' });
+
+  // Sin cambios, Atrás sale de una (retirar la centinela al limpiar se prueba en seguridad.spec.ts).
+  await page.goBack();
+  await expect(page).toHaveURL(/\/compras$/);
+  await expect(aviso).toBeHidden();
+
+  // Con cambios: «Seguir editando» se queda con lo cargado.
+  await page.getByRole('link', { name: 'Nueva compra' }).click();
+  await elegirProveedor(page);
+  await page.goBack();
+  await aviso.getByRole('button', { name: 'Seguir editando' }).click();
+  await expect(aviso).toBeHidden();
+  await expect(page).toHaveURL(/\/compras\/crear$/);
+  await expect(page.getByText('J-41000555')).toBeVisible();
+
+  // Se puede volver a preguntar, y «Descartar» retrocede de verdad.
+  await page.goBack();
+  await aviso.getByRole('button', { name: 'Descartar' }).click();
+  await expect(page).toHaveURL(/\/compras$/);
+  await expect(page.getByRole('link', { name: 'Nueva compra' })).toBeVisible();
+  expect(nativos).toEqual([]);
+});
+
 test('registrar un borrador: tasa del día, costo sugerido e IVA en vivo', async ({ page }) => {
   const errores = vigilarErrores(page);
   await page.goto('/compras');

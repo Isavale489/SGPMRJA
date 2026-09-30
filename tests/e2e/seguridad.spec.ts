@@ -62,6 +62,20 @@ test('las marcas sin guardar sobreviven a cambios en Roles y «Solo ver» respet
   await page.getByRole('button', { name: 'Descartar' }).click();
 });
 
+test('descartar en la página no deja una entrada repetida: Atrás vuelve a Configuración', async ({ page }) => {
+  await page.goto('/configuracion');
+  await page.getByRole('link', { name: 'Roles y permisos' }).click();
+  await page.getByRole('listitem').filter({ hasText: ROL }).getByRole('button', { name: 'Permisos' }).click();
+  await page.getByRole('checkbox', { name: /^Clientes: Crear/ }).click(); // clic: cambia sea cual sea su estado guardado
+  await expect(page.getByText('Cambios sin guardar')).toBeVisible();
+  await page.getByRole('button', { name: 'Descartar' }).click();
+  await expect(page.getByText('Cambios sin guardar')).toHaveCount(0);
+
+  await page.goBack();
+  await expect(page).toHaveURL(/\/configuracion$/);
+  await expect(page.getByRole('alertdialog')).toHaveCount(0);
+});
+
 test('el Administrador no se configura y un rol sin usuarios se elimina', async ({ page }) => {
   await page.goto('/configuracion/seguridad');
   const admin = page.getByRole('listitem').filter({ hasText: 'Administrador' }).first();

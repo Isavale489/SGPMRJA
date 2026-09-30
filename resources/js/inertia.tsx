@@ -4,7 +4,12 @@ import { createInertiaApp } from '@inertiajs/react';
 import { createRoot } from 'react-dom/client';
 import { StrictMode } from 'react';
 
+import { vigilarHistorial } from '@/hooks/use-guard-cambios';
+
 const nombreApp = import.meta.env.VITE_APP_NAME || 'SGPMRJA';
+
+// Antes de que Inertia registre su propio popstate (Atrás con cambios sin guardar).
+vigilarHistorial();
 
 createInertiaApp({
     title: (titulo) => (titulo ? `${titulo} · ${nombreApp}` : nombreApp),
