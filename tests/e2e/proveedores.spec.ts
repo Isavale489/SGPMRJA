@@ -101,15 +101,29 @@ test('cerrar con cambios sin guardar pide confirmación', async ({ page }) => {
   const dialogo = page.getByRole('dialog');
   await dialogo.getByLabel('Dirección').fill('Cambio que no se guarda');
 
-  // Primero "Cancelar" en la confirmación: el diálogo sigue abierto con el cambio.
-  page.once('dialog', (d) => d.dismiss());
+  // Diálogo del sistema, no el confirm del navegador.
+  const nativos: string[] = [];
+  page.on('dialog', (d) => { nativos.push(d.message()); void d.dismiss(); });
+  const aviso = page.getByRole('alertdialog', { name: 'Cambios sin guardar' });
+
+  // Primero «Seguir editando»: el diálogo sigue abierto con el cambio.
   await dialogo.getByRole('button', { name: 'Cancelar' }).click();
+  await aviso.getByRole('button', { name: 'Seguir editando' }).click();
+  await expect(aviso).toBeHidden();
   await expect(dialogo.getByLabel('Dirección')).toHaveValue('Cambio que no se guarda');
 
-  // Luego "Aceptar": se descarta y se cierra.
-  page.once('dialog', (d) => d.accept());
+  // Escape en el aviso también es seguir editando.
   await dialogo.getByRole('button', { name: 'Cancelar' }).click();
+  await expect(aviso).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(aviso).toBeHidden();
+  await expect(dialogo).toBeVisible();
+
+  // Luego «Descartar»: se cierra.
+  await dialogo.getByRole('button', { name: 'Cancelar' }).click();
+  await aviso.getByRole('button', { name: 'Descartar' }).click();
   await expect(dialogo).toBeHidden();
+  expect(nativos).toEqual([]);
 });
 
 test('inhabilitar lo pasa al historial y se puede restaurar', async ({ page }) => {

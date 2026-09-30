@@ -3,6 +3,7 @@ import { Plus, Trash2, X } from 'lucide-react';
 import { useState } from 'react';
 
 import { Campo } from '@/components/app/campo';
+import { confirmar } from '@/components/app/confirmador';
 import { EstadoBadge } from '@/components/app/estado-badge';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -61,7 +62,7 @@ export function Etapas({ orden, empleados, onCerrar, url }: Props) {
                                             </Select>
                                         ) : <EstadoBadge estado={e.estado} />}
                                         {gestionar && (
-                                            <Button variant="ghost" size="icon" aria-label={`Eliminar la etapa ${e.nombre}`} onClick={() => window.confirm(`¿Eliminar la etapa «${e.nombre}»?`) && router.delete(`${base}/${e.id}`, mutar)}>
+                                            <Button variant="ghost" size="icon" aria-label={`Eliminar la etapa ${e.nombre}`} onClick={() => void confirmar({ titulo: 'Eliminar etapa', descripcion: `¿Eliminar la etapa «${e.nombre}»?`, accion: 'Eliminar' }).then((si) => si && router.delete(`${base}/${e.id}`, mutar))}>
                                                 <Trash2 />
                                             </Button>
                                         )}

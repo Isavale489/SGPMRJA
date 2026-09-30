@@ -3,6 +3,7 @@ import { Menu, Moon, Sun } from 'lucide-react';
 import { useEffect, type ReactNode } from 'react';
 import { toast } from 'sonner';
 
+import { Confirmador } from '@/components/app/confirmador';
 import { MenuUsuario } from '@/components/app/menu-usuario';
 import { Notificaciones } from '@/components/app/notificaciones';
 import { PantallaCompleta } from '@/components/app/pantalla-completa';
@@ -115,6 +116,7 @@ export default function AppLayout({ titulo, acciones, children }: Props) {
                 </div>
             </div>
             <Toaster richColors position="top-right" />
+            <Confirmador />
         </TooltipProvider>
     );
 }

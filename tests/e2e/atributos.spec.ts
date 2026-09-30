@@ -56,8 +56,8 @@ test('agregar valores, rechazar un código repetido y reordenar con las flechas'
   await dialogo.getByLabel('Código').fill('l');
   await dialogo.getByRole('button', { name: 'Agregar valor' }).click();
   await expect(dialogo.getByText('Ya existe un valor con este código en el atributo.')).toBeVisible();
-  page.once('dialog', (d) => d.accept()); // aviso de cambios sin guardar (confirm nativo)
   await dialogo.getByRole('button', { name: 'Cancelar' }).click();
+  await page.getByRole('alertdialog', { name: 'Cambios sin guardar' }).getByRole('button', { name: 'Descartar' }).click();
   await expect(dialogo).toBeHidden();
 
   await expect(valores(page).nth(1)).toContainText('Larga');

@@ -222,7 +222,7 @@ export function FormularioEmpleado({ abierto, onCerrar, empleado, departamentos,
     };
 
     const cerrar = (abrir: boolean) => {
-        if (!abrir && confirmarDescarte(form.isDirty)) onCerrar();
+        if (!abrir) void confirmarDescarte(form.isDirty).then((si) => si && onCerrar());
     };
 
     const municipios = estados[data.estado_geografico] ?? [];
