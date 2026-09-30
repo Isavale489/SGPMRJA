@@ -26,7 +26,8 @@ export function CuerpoRayado({ className, ...props }: ComponentProps<typeof Tabl
     return (
         <TableBody
             className={cn(
-                '[&_tr:nth-child(even):not([data-state=selected])]:bg-seccion-acento/[0.045]',
+                // :where() deja el rayado sin peso: el hover y la selección le ganan también en las filas pares.
+                '[&_tr:where(:nth-child(even):not([data-state=selected]))]:bg-seccion-acento/[0.045]',
                 '[&_tr:hover]:bg-seccion-acento/10 [&_tr[data-state=selected]]:bg-seccion-acento/15',
                 className,
             )}

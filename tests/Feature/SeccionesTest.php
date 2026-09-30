@@ -122,14 +122,18 @@ class SeccionesTest extends TestCase
 
     public function test_el_menu_compartido_lleva_la_seccion_de_cada_grupo(): void
     {
+        $menu = collect();
         $this->actingAs($this->admin())->get(route('dashboard'))->assertOk()
-            ->assertInertia(fn (Assert $page) => $page
-                ->where('navegacion.1.titulo', 'Gestión General')
-                ->where('navegacion.1.seccion', 'maestros')
-                ->where('navegacion.2.seccion', 'operativa')
-                ->where('navegacion.3.seccion', 'reportes')
-                // Los subgrupos (Productos dentro de Gestión General) heredan: no declaran la suya.
-                ->where('navegacion.1.items.1.titulo', 'Productos')
-                ->where('navegacion.1.items.1.seccion', null));
+            ->assertInertia(function (Assert $page) use (&$menu) {
+                $menu = collect($page->toArray()['props']['navegacion'])->keyBy('titulo');
+            });
+
+        // Por título, no por posición: agregar un enlace al menú no rompe el test.
+        $this->assertSame('maestros', $menu['Gestión General']['seccion']);
+        $this->assertSame('operativa', $menu['Gestión Operativa']['seccion']);
+        $this->assertSame('reportes', $menu['Consultas y Reportes']['seccion']);
+        // Los subgrupos (Productos dentro de Gestión General) heredan: no declaran la suya.
+        $productos = collect($menu['Gestión General']['items'])->firstWhere('titulo', 'Productos');
+        $this->assertNull($productos['seccion']);
     }
 }

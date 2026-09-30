@@ -48,6 +48,10 @@ export default function AppLayout({ titulo, acciones, children }: Props) {
         const raiz = document.documentElement;
         if (seccion) raiz.dataset.seccion = seccion.clave;
         else delete raiz.dataset.seccion;
+        // Al salir hacia una página sin AppLayout (Error) no debe quedar la sección anterior.
+        return () => {
+            delete raiz.dataset.seccion;
+        };
     }, [seccion]);
 
     // Mensajes flash del servidor (redirect()->with('success', ...)) → aviso.

@@ -1,6 +1,6 @@
 # Sistema de Modales
 
-> **Histórico (panel Blade).** Desde sep-2026 los diálogos del panel React toma sus colores de [`identidad-visual.md`](identidad-visual.md) (`data-seccion` + tokens). Esta página documenta las clases del panel anterior, que sirvieron de referencia.
+> **Histórico (panel Blade).** Desde sep-2026 los diálogos del panel React toman sus colores de [`identidad-visual.md`](identidad-visual.md) (`data-seccion` + tokens). Esta página documenta las clases del panel anterior, que sirvieron de referencia.
 
 > Convención visual del proyecto para todos los modales del panel admin.
 

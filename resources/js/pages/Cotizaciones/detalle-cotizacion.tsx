@@ -55,7 +55,7 @@ export function DetalleCotizacion({ cotizacion: c, cargando, onCerrar, iva, term
                                         {c.creador.avatar ? (
                                             <img src={c.creador.avatar} alt="" className="size-5 rounded-full object-cover" />
                                         ) : (
-                                            <span className="bg-primary/10 text-primary grid size-5 place-items-center rounded-full text-[0.6rem] font-semibold">{iniciales(c.creador.nombre)}</span>
+                                            <span className="grid size-5 place-items-center rounded-full bg-white/20 text-[0.6rem] font-semibold text-white">{iniciales(c.creador.nombre)}</span>
                                         )}
                                         Creada por {c.creador.nombre}
                                         {c.creador.fecha && ` el ${formatoFecha(c.creador.fecha)} ${c.creador.fecha.slice(11)}`}

@@ -74,7 +74,7 @@
     --success: #1f7a4d;
     --warning: #b25e09;
     /* «En proceso» y la franja media del semáforo de eficiencia (celeste, decisión del equipo). */
-    --info: #0277b5;
+    --info: #026596;
     /* Estados fuera del flujo principal (cotización «Convertida»). */
     --especial: #6d3fd1;
     --border: #e1e6ee;
@@ -158,12 +158,14 @@
 /*
  * Una identidad por sección. Se aplica en <html> (lo pone AppLayout, así la heredan
  * los diálogos, que Radix monta fuera del layout) y en cualquier elemento que
- * quiera pintarse con otra (p. ej. cada grupo del menú). Cada sección redefine
+ * quiera pintarse con otra (p. ej. cada grupo del menú; 'marca' = azul de marca para
+ * lo que no es de ninguna sección, como «Inicio»). Cada sección redefine
  * --primary y --ring: botones, enlaces y foco toman su color sin tocar componentes.
  * Colores con texto blanco encima: contraste AA (≥ 4.5:1).
  */
 [data-seccion='maestros'],
-[data-seccion='admin'] {
+[data-seccion='admin'],
+[data-seccion='marca'] {
     --seccion: #1e3c72;
     --seccion-acento: #2a5298;
     --seccion-fondo: #1e3c72;
@@ -190,7 +192,8 @@
 
 /* Oscuro: acentos más claros para leerse sobre fondo oscuro; los degradados no cambian. */
 .dark[data-seccion='maestros'], .dark [data-seccion='maestros'],
-.dark[data-seccion='admin'], .dark [data-seccion='admin'] {
+.dark[data-seccion='admin'], .dark [data-seccion='admin'],
+.dark [data-seccion='marca'] {
     --seccion: #7d9be0;
     --seccion-acento: #4e7ac7;
     --seccion-fondo: #1e3c72;
@@ -296,8 +299,22 @@
     color: #fff;
 }
 [data-slot='dialog-content'] > [data-slot='dialog-header']:first-child [data-slot='dialog-description'] {
-    color: rgb(255 255 255 / 0.82);
+    color: rgb(255 255 255 / 0.92);
 }
+/*
+ * Badge de estado sobre la franja: fondo blanco sólido y el color del estado para
+ * fondo claro, en ambos temas (la franja no cambia con el tema). Contraste ≥ 4.5:1.
+ */
+[data-slot='dialog-content'] > [data-slot='dialog-header']:first-child [data-slot='estado-badge'] {
+    background: #fff;
+    --tw-ring-color: transparent;
+}
+[data-slot='dialog-header']:first-child [data-slot='estado-badge'][data-tono='warning'] { color: #9a4f06; }
+[data-slot='dialog-header']:first-child [data-slot='estado-badge'][data-tono='info'] { color: #026596; }
+[data-slot='dialog-header']:first-child [data-slot='estado-badge'][data-tono='success'] { color: #1f7a4d; }
+[data-slot='dialog-header']:first-child [data-slot='estado-badge'][data-tono='destructive'] { color: #c62f3b; }
+[data-slot='dialog-header']:first-child [data-slot='estado-badge'][data-tono='especial'] { color: #6d3fd1; }
+[data-slot='dialog-header']:first-child [data-slot='estado-badge'][data-tono='neutro'] { color: #475569; }
 [data-slot='dialog-content']:has(> [data-slot='dialog-header']:first-child) > [data-slot='dialog-close'] {
     top: 1.05rem;
     background: transparent;
@@ -307,8 +324,9 @@
 [data-slot='dialog-content']:has(> [data-slot='dialog-header']:first-child) > [data-slot='dialog-close']:hover {
     opacity: 1;
 }
-[data-slot='dialog-content']:has(> [data-slot='dialog-header']:first-child) > [data-slot='dialog-close']:focus-visible {
+[data-slot='dialog-content']:has(> [data-slot='dialog-header']:first-child) > [data-slot='dialog-close']:focus {
     --tw-ring-color: rgb(255 255 255 / 0.7);
+    --tw-ring-offset-color: transparent;
 }
 
 @layer base {

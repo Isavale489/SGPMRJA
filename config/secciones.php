@@ -11,7 +11,7 @@
 |     `seccion`) y el layout la pone en <html data-seccion>; los colores salen
 |     de los tokens [data-seccion] de resources/css/plataforma.css.
 |   - config/navegacion.php: cada sección del menú declara su clave (lo
-|     verifica PlataformaInertiaTest).
+|     verifica SeccionesTest).
 |   - La matriz de Roles y permisos (SeguridadController), en este orden.
 |
 | La clave es también la identidad de color:

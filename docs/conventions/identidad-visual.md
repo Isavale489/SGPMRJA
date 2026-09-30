@@ -20,7 +20,7 @@ componentes                     bg-seccion-fondo, text-seccion, bg-primary… si
 
 - **La sección va en `<html>`**, no en el layout: los diálogos, menús y tooltips que Radix monta fuera del árbol también la heredan.
 - **Rutas sin sección** (dashboard, perfil y demás rutas `comunes`): no hay `data-seccion` y se usan los valores de marca, que son navy.
-- **Cualquier elemento puede pintarse con otra sección** poniendo su propio `data-seccion`. Así se hace en cada grupo del menú, en las tarjetas de la matriz de Seguridad y en los grupos del hub de reportes.
+- **Cualquier elemento puede pintarse con otra sección** poniendo su propio `data-seccion`. Así se hace en cada grupo del menú, en las tarjetas de la matriz de Seguridad y en los grupos del hub de reportes. `data-seccion="marca"` fija el azul de marca en lo que no es de ninguna sección (el enlace «Inicio» del menú).
 
 ## Secciones
 
@@ -54,7 +54,7 @@ Los colores que llevan texto blanco encima cumplen contraste AA (≥ 4.5:1). Por
 | Título de página | Ícono en degradado (el del enlace del menú) + ceja con el nombre de la sección | `layouts/app-layout.tsx` |
 | Menú | Ícono de cada sección en su color; el enlace activo con tinte y riel izquierdo | `components/app/sidebar.tsx` |
 | Tablas de listado | Cabecera en `--seccion-fondo`, texto blanco, borde de acento; filas rayadas | `CabeceraSeccion` y `CuerpoRayado` (`components/app/tabla-seccion.tsx`); ya las usa `TablaServidor` |
-| Diálogos | Todo `DialogHeader` que abre un `DialogContent` se vuelve franja en degradado | CSS en `plataforma.css` (selectores `data-slot`) |
+| Diálogos | Todo `DialogHeader` que abre un `DialogContent` se vuelve franja en degradado. Un `EstadoBadge` dentro de la franja pasa a fondo blanco con el color del estado para fondo claro (`data-tono`) | CSS en `plataforma.css` (selectores `data-slot`) |
 | Botones, enlaces, foco, pasos del asistente | `--primary` y `--ring` de la sección | tokens |
 
 ## Reglas
@@ -64,8 +64,9 @@ Los colores que llevan texto blanco encima cumplen contraste AA (≥ 4.5:1). Por
 3. **Los estados nunca usan `primary`.** `primary` cambia con la sección, y un «En Proceso» no puede verse verde en Operativa. Usa `warning`, `info`, `success`, `destructive` y `especial` (ver `EstadoBadge`).
 4. **Gráficos:** `usePaleta()`, `colorEstado()` y `colorEficiencia()` de `components/app/grafico.tsx` leen los mismos tokens que los badges. Nada de hex en las opciones de AG Charts. Solo se leen tokens que no cambian con la sección, porque el gráfico se arma antes de que el layout la aplique.
 5. **Las tablas de detalle** (dentro de diálogos o formularios) llevan la cabecera clara normal. `CabeceraSeccion` es solo para listados.
-6. **Las confirmaciones** (`AlertDialog`: `ConfirmarPeligro`, `confirmar()`) no llevan franja: su foco es la pregunta.
-7. **Nada de clases de paleta de Tailwind** para identidad (`text-emerald-600`, `bg-sky-500/10`…). Usa `data-seccion` + los tokens.
+6. **Dentro de la franja de un diálogo**, lo que no sea título, descripción o `EstadoBadge` va en blanco (`text-white`, `bg-white/20`): los tintes de `primary` o de estado no se leen sobre el degradado.
+7. **Las confirmaciones** (`AlertDialog`: `ConfirmarPeligro`, `confirmar()`) no llevan franja: su foco es la pregunta.
+8. **Nada de clases de paleta de Tailwind** para identidad (`text-emerald-600`, `bg-sky-500/10`…). Usa `data-seccion` + los tokens.
 
 ## Verificación
 

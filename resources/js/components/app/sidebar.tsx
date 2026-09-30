@@ -83,9 +83,16 @@ export function Sidebar() {
 
     return (
         <nav aria-label="Principal" className="grid gap-0.5 p-3">
-            {navegacion.map((item) => (
-                <Item key={item.titulo} item={item} nivel={0} />
-            ))}
+            {navegacion.map((item) =>
+                esGrupo(item) ? (
+                    <Item key={item.titulo} item={item} nivel={0} />
+                ) : (
+                    // Enlace suelto (Inicio): azul de marca, no el color de la página abierta.
+                    <div key={item.titulo} data-seccion="marca">
+                        <Item item={item} nivel={0} />
+                    </div>
+                ),
+            )}
         </nav>
     );
 }

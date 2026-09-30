@@ -44,6 +44,7 @@ export interface Paleta {
     enProceso: string;
     finalizado: string;
     cancelado: string;
+    especial: string;
     neutro: string;
     /** Serie que no es un estado (p. ej. pedidos por mes). */
     marca: string;
@@ -61,6 +62,7 @@ function leerPaleta(): Paleta {
         enProceso: token('info'),
         finalizado: token('success'),
         cancelado: token('destructive'),
+        especial: token('especial'),
         neutro: token('muted-foreground'),
         marca: token('marca'),
         info: token('info'),
@@ -86,10 +88,14 @@ export function colorEstado(p: Paleta, estado: string): string {
         case 'Finalizado':
         case 'Completado':
         case 'Aprobada':
+        case 'recibida':
             return p.finalizado;
         case 'Cancelado':
         case 'Cancelada':
+        case 'anulada':
             return p.cancelado;
+        case 'Convertida':
+            return p.especial;
         default:
             return p.neutro;
     }

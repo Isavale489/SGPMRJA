@@ -9,7 +9,7 @@ export function Barra({ valor, texto, className }: { valor: number; texto?: stri
                 <span className="tabular font-medium">{valor} %</span>
             </div>
             <div className="bg-muted h-2 overflow-hidden rounded-full" role="progressbar" aria-valuenow={valor} aria-valuemin={0} aria-valuemax={100} aria-label={texto}>
-                <div className={cn('h-full rounded-full transition-all duration-medio', valor >= 100 ? 'bg-success' : 'bg-primary')} style={{ width: `${valor}%` }} />
+                <div className={cn('h-full rounded-full transition-all duration-medio', valor >= 100 ? 'bg-success' : 'bg-info')} style={{ width: `${valor}%` }} />
             </div>
         </div>
     );

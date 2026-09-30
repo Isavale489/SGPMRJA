@@ -58,6 +58,36 @@ test('los diálogos llevan el encabezado en degradado de la sección', async ({ 
   await expect.poll(() => page.getByRole('dialog').getByRole('heading').evaluate((el) => getComputedStyle(el).color)).toBe('rgb(255, 255, 255)');
 });
 
+test('el estado de un detalle se lee sobre la franja verde (en claro y en oscuro)', async ({ page }) => {
+  await page.goto('/pedidos');
+  await page.getByRole('button', { name: /Ver pedido #\d+/ }).first().click();
+  const badge = page.getByRole('dialog', { name: /Pedido #\d+/ }).locator('[data-slot="dialog-header"] [data-slot="estado-badge"]');
+  // Fondo blanco sólido: el color del estado no se pierde contra el degradado.
+  await expect.poll(() => badge.evaluate((el) => getComputedStyle(el).backgroundColor)).toBe('rgb(255, 255, 255)');
+  await expect.poll(() => badge.evaluate((el) => getComputedStyle(el).color)).not.toBe('rgb(255, 255, 255)');
+  await page.keyboard.press('Escape');
+  await page.getByRole('button', { name: 'Usar tema oscuro' }).click();
+  await page.getByRole('button', { name: /Ver pedido #\d+/ }).first().click();
+  await expect.poll(() => badge.evaluate((el) => getComputedStyle(el).backgroundColor)).toBe('rgb(255, 255, 255)');
+  await page.keyboard.press('Escape');
+  await page.getByRole('button', { name: 'Usar tema claro' }).click();
+});
+
+test('el hover marca también las filas pares de un listado', async ({ page }) => {
+  await page.goto('/pedidos');
+  const par = page.locator('main tbody tr').nth(1);
+  const antes = await par.evaluate((el) => getComputedStyle(el).backgroundColor);
+  await par.hover();
+  await expect.poll(() => par.evaluate((el) => getComputedStyle(el).backgroundColor)).not.toBe(antes);
+});
+
+test('«Inicio» conserva el azul de marca aunque la página sea de otra sección', async ({ page }) => {
+  await page.goto('/pedidos');
+  const inicio = page.getByRole('navigation', { name: 'Principal' }).getByRole('link', { name: 'Inicio' });
+  await inicio.hover();
+  await expect.poll(() => inicio.evaluate((el) => getComputedStyle(el).color)).toBe(NAVY);
+});
+
 test('en oscuro los acentos suben de tono y la barra superior sigue oscura', async ({ page }) => {
   await page.goto('/pedidos');
   await page.getByRole('button', { name: 'Usar tema oscuro' }).click();
