@@ -1,15 +1,38 @@
-import { AreaSeriesModule, BarSeriesModule, CategoryAxisModule, DonutSeriesModule, LegendModule, ModuleRegistry, NumberAxisModule, type AgChartInstance, type AgChartOptions } from 'ag-charts-community';
-import { AgCharts } from 'ag-charts-react';
+import type { AgChartInstance, AgChartOptions } from 'ag-charts-community';
 import { Download } from 'lucide-react';
-import { useMemo, useRef, type ReactNode } from 'react';
+import { Component, lazy, Suspense, useCallback, useMemo, useRef, useState, type ReactNode } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 import { useTema } from '@/hooks/use-tema';
 import { cn } from '@/lib/utils';
 
-// Solo lo que usan los gráficos del sistema (barras, área, donut, ejes, leyenda).
-ModuleRegistry.registerModules([AreaSeriesModule, BarSeriesModule, DonutSeriesModule, CategoryAxisModule, NumberAxisModule, LegendModule]);
+// AG Charts va en su propio chunk: este archivo solo importa sus tipos, así las
+// páginas con gráficos no esperan esa descarga para pintarse.
+const LienzoGrafico = lazy(() => import('./lienzo-grafico'));
+
+/**
+ * Si el chunk del gráfico no llega (red caída, o una pestaña abierta desde antes
+ * de un deploy que pide un hash que ya no existe), el `import()` rechazado
+ * desmontaría todo el panel: este límite lo deja en un aviso dentro de la tarjeta.
+ */
+class LimiteGrafico extends Component<{ alto: number; children: ReactNode }, { fallo: boolean }> {
+    state = { fallo: false };
+
+    static getDerivedStateFromError() {
+        return { fallo: true };
+    }
+
+    render() {
+        if (!this.state.fallo) return this.props.children;
+        return (
+            <p role="alert" className="text-muted-foreground grid place-items-center text-center text-sm" style={{ height: Math.min(this.props.alto, 200) }}>
+                No se pudo cargar el gráfico. Recarga la página.
+            </p>
+        );
+    }
+}
 
 /** Colores de estado de las órdenes (los mismos en todo el sistema). */
 export const COLOR_ESTADO: Record<string, string> = {
@@ -61,7 +84,13 @@ interface Props {
  */
 export function TarjetaGrafico({ titulo, archivo, opciones, alto = 340, vacio, agarre, className }: Props) {
     const { tema } = useTema();
-    const chart = useRef<AgChartInstance>(null);
+    const chart = useRef<AgChartInstance | null>(null);
+    // La descarga se habilita cuando el gráfico ya existe (llega después de la página).
+    const [listo, setListo] = useState(false);
+    const refGrafico = useCallback((c: AgChartInstance | null) => {
+        chart.current = c;
+        setListo(c !== null);
+    }, []);
     const caja = useRef<HTMLDivElement>(null);
     const oscuro = tema === 'dark';
 
@@ -89,7 +118,7 @@ export function TarjetaGrafico({ titulo, archivo, opciones, alto = 340, vacio, a
             <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-base">{agarre}{titulo}</CardTitle>
                 <CardAction>
-                    <Button variant="ghost" size="icon" onClick={descargar} disabled={vacio} aria-label={`Descargar «${titulo}» como imagen`}>
+                    <Button variant="ghost" size="icon" onClick={descargar} disabled={vacio || !listo} aria-label={`Descargar «${titulo}» como imagen`}>
                         <Download />
                     </Button>
                 </CardAction>
@@ -98,7 +127,11 @@ export function TarjetaGrafico({ titulo, archivo, opciones, alto = 340, vacio, a
                 {vacio ? (
                     <p className="text-muted-foreground grid place-items-center text-sm" style={{ height: Math.min(alto, 200) }}>Aún no hay datos para este gráfico.</p>
                 ) : (
-                    <AgCharts ref={chart} options={completas} style={{ height: alto }} />
+                    <LimiteGrafico alto={alto}>
+                        <Suspense fallback={<Skeleton role="status" aria-label="Cargando gráfico…" style={{ height: alto }} />}>
+                            <LienzoGrafico ref={refGrafico} opciones={completas} alto={alto} />
+                        </Suspense>
+                    </LimiteGrafico>
                 )}
             </CardContent>
         </Card>

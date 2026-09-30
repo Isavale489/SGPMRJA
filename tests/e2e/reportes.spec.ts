@@ -38,6 +38,14 @@ test('descargar un gráfico como imagen', async ({ page }) => {
   expect((await descarga).suggestedFilename()).toMatch(/ordenes-por-estado/);
 });
 
+test('si el chunk de AG Charts no llega, la página sigue en pie con un aviso', async ({ page }) => {
+  await page.route(/lienzo-grafico-.*\.js/, (r) => r.abort());
+  await page.goto('/reportes/produccion');
+  await expect(page.getByRole('alert').filter({ hasText: 'No se pudo cargar el gráfico' }).first()).toBeVisible();
+  await expect(page.getByText('Órdenes por estado', { exact: true }).first()).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Descargar «Órdenes por estado» como imagen' })).toBeDisabled();
+});
+
 test('el orden de las tarjetas se guarda', async ({ page }) => {
   await page.goto('/reportes/produccion');
   const primera = () => page.locator('[data-widget]').first();
