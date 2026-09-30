@@ -134,6 +134,8 @@ export default function FormularioCompra({ compra, insumos, iva, tiposInsumo, un
                 if (!vigente || tecleada.current) return;
                 if (r.encontrada && r.valor) {
                     setData('tasa_cambio', String(r.valor));
+                    // La tasa que pone el sistema no es un cambio del usuario (si no, «Nueva compra» nace con cambios sin guardar).
+                    form.setDefaults('tasa_cambio', String(r.valor));
                     setTasa({ estado: r.exacta ? 'bcv' : 'anterior', fecha: r.fecha_bcv });
                 } else {
                     setTasa({ estado: 'manual', aviso: r.message });
