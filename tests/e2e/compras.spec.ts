@@ -59,6 +59,52 @@ test('el aviso lanzado desde un menú desplegable deja la página usable', async
   await expect(page.getByRole('combobox', { name: 'Agregar insumo' })).toBeVisible();
 });
 
+test('Atrás del navegador con cambios también pregunta; sin cambios sale directo', async ({ page }) => {
+  const nativos: string[] = [];
+  page.on('dialog', (d) => { nativos.push(d.message()); void d.dismiss(); });
+  await page.goto('/compras');
+  await page.getByRole('link', { name: 'Nueva compra' }).click();
+  const aviso = page.getByRole('alertdialog', { name: 'Cambios sin guardar' });
+
+  // La tasa del día la pone el sistema: no cuenta como cambio. Atrás sale directo.
+  await expect(page.getByLabel('Tasa (Bs por $)')).toHaveValue('40');
+  await page.goBack();
+  await expect(page).toHaveURL(/\/compras$/);
+  await expect(aviso).toBeHidden();
+
+  // Con cambios: «Seguir editando» se queda con lo cargado.
+  await page.getByRole('link', { name: 'Nueva compra' }).click();
+  await elegirProveedor(page);
+  await page.goBack();
+  await aviso.getByRole('button', { name: 'Seguir editando' }).click();
+  await expect(aviso).toBeHidden();
+  await expect(page).toHaveURL(/\/compras\/crear$/);
+  await expect(page.getByText('J-41000555')).toBeVisible();
+
+  // Dos Atrás seguidos con el aviso abierto: «Seguir editando» sigue conservando todo.
+  await page.evaluate(() => history.back());
+  await expect(aviso).toBeVisible();
+  await page.evaluate(() => history.back());
+  await aviso.getByRole('button', { name: 'Seguir editando' }).click();
+  await expect(aviso).toBeHidden();
+  await expect(page).toHaveURL(/\/compras\/crear$/);
+  await expect(page.getByText('J-41000555')).toBeVisible();
+
+  // Se puede volver a preguntar, y «Descartar» retrocede de verdad.
+  await page.goBack();
+  await aviso.getByRole('button', { name: 'Descartar' }).click();
+  await expect(page).toHaveURL(/\/compras$/);
+  await expect(page.getByRole('link', { name: 'Nueva compra' })).toBeVisible();
+  await expect(aviso).toBeHidden();
+
+  // Adelante vuelve al formulario (vacío: se descartó) sin preguntar al entrar.
+  await page.goForward();
+  await expect(page).toHaveURL(/\/compras\/crear$/);
+  await expect(page.getByText('J-41000555')).toBeHidden();
+  await expect(aviso).toBeHidden();
+  expect(nativos).toEqual([]);
+});
+
 test('registrar un borrador: tasa del día, costo sugerido e IVA en vivo', async ({ page }) => {
   const errores = vigilarErrores(page);
   await page.goto('/compras');
@@ -99,6 +145,11 @@ test('registrar un borrador: tasa del día, costo sugerido e IVA en vivo', async
   await expect(fila).toContainText('77-001');
   await expect(fila).toContainText('borrador');
   await expect(fila).toContainText('Bs 928,00');
+
+  // Guardar no se come el historial: Atrás vuelve al formulario, no a una lista repetida.
+  await page.goBack();
+  await expect(page).toHaveURL(/\/compras\/crear$/);
+  await expect(page.getByRole('alertdialog')).toHaveCount(0);
   expect(errores, errores.join('\n')).toEqual([]);
 });
 

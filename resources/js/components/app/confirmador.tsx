@@ -1,3 +1,4 @@
+import { router } from '@inertiajs/react';
 import { useRef, useSyncExternalStore, type ReactNode } from 'react';
 
 import {
@@ -24,6 +25,11 @@ interface Pendiente extends OpcionesConfirmar {
 // desde un listener del router o un onOpenChange sin montar un diálogo por uso.
 let pendiente: Pendiente | null = null;
 let montado = false;
+// Si la página cambia con la pregunta abierta (p. ej. Atrás del navegador), la pregunta ya no aplica.
+let rutaAlPreguntar = '';
+router.on('navigate', () => {
+    if (pendiente && location.pathname !== rutaAlPreguntar) pendiente.responder(false);
+});
 const oyentes = new Set<() => void>();
 const avisar = () => oyentes.forEach((o) => o());
 
@@ -36,6 +42,7 @@ export function confirmar(opciones: OpcionesConfirmar): Promise<boolean> {
     // Sin <Confirmador /> montado (no debería pasar fuera de AppLayout) se cae al del navegador.
     if (!montado) return Promise.resolve(window.confirm(typeof opciones.descripcion === 'string' ? opciones.descripcion : opciones.titulo));
     pendiente?.responder(false);
+    rutaAlPreguntar = location.pathname;
     return new Promise((resolve) => {
         let respondido = false;
         pendiente = {

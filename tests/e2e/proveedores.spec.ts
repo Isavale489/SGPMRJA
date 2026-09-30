@@ -119,6 +119,13 @@ test('cerrar con cambios sin guardar pide confirmación', async ({ page }) => {
   await expect(aviso).toBeHidden();
   await expect(dialogo).toBeVisible();
 
+  // Atrás del navegador con el diálogo abierto también pregunta y no lo cierra.
+  await page.goBack();
+  await aviso.getByRole('button', { name: 'Seguir editando' }).click();
+  await expect(aviso).toBeHidden();
+  await expect(dialogo.getByLabel('Dirección')).toHaveValue('Cambio que no se guarda');
+  await expect(page).toHaveURL(/\/proveedores\?buscar=guanare/);
+
   // Luego «Descartar»: se cierra.
   await dialogo.getByRole('button', { name: 'Cancelar' }).click();
   await aviso.getByRole('button', { name: 'Descartar' }).click();
