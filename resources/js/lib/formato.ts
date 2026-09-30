@@ -37,3 +37,10 @@ export function hoyLocalIso(): string {
     const d = String(f.getDate()).padStart(2, '0');
     return `${f.getFullYear()}-${m}-${d}`;
 }
+
+/** Iniciales para un avatar sin foto: dos primeras palabras («Uniformes Araure» → «UA»). */
+export function iniciales(nombre: string | null | undefined): string {
+    const partes = (nombre ?? '').trim().split(/\s+/).filter(Boolean);
+    if (!partes.length) return '—';
+    return (partes.length > 1 ? partes[0]![0]! + partes[1]![0]! : partes[0]!.slice(0, 2)).toUpperCase();
+}

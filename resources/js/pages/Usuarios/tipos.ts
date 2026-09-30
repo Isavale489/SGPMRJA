@@ -36,5 +36,5 @@ export interface PaginaUsuarios {
     urls: { index: string; reportePdf: string; checkEmail: string };
 }
 
-export const iniciales = (nombre: string) =>
-    nombre.split(/\s+/).filter(Boolean).slice(0, 2).map((p) => p[0]?.toUpperCase()).join('');
+/** Iniciales del avatar (vive en lib/formato). */
+export { iniciales } from '@/lib/formato';

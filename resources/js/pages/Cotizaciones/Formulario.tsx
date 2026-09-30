@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
 import { Asistente } from '@/components/app/asistente';
+import { ChipPersona } from '@/components/app/chip-persona';
 import { Campo } from '@/components/app/campo';
 import { ConfirmarPeligro } from '@/components/app/confirmar-peligro';
 import { Monto } from '@/components/app/monto';
@@ -21,7 +22,7 @@ import { cn } from '@/lib/utils';
 import { AgregarProducto } from './agregar-producto';
 import { ConfigurarBordados } from './bordados';
 import { bloqueDesdeGrupo, lineasDe, precioFinal, recargo, subtotalBloque, totales, unidades } from './calculos';
-import { ResumenTotales, TablaProductos, TerminosCondiciones, iniciales, type FilaProductos } from './piezas';
+import { ResumenTotales, TablaProductos, TerminosCondiciones, type FilaProductos } from './piezas';
 import { SelectorCliente } from './selector-cliente';
 import type { Bloque, ClienteCotizacion, ColorCatalogo, LogoCatalogo, PaginaFormularioCotizacion, Prioridad, TipoCatalogo } from './tipos';
 
@@ -161,25 +162,14 @@ export default function FormularioCotizacion(props: PaginaFormularioCotizacion) 
                 <Card>
                     <CardContent className="grid gap-4">
                         {(cliente || cotizacion?.creador) && (
-                            <div className="text-muted-foreground flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
-                                {cliente && (
-                                    <span>
-                                        Para: <strong className="text-foreground">{cliente.nombre}</strong>
-                                        {cliente.documento && ` · ${cliente.documento}`}
-                                    </span>
-                                )}
+                            <div className="flex flex-wrap items-center gap-2">
+                                {cliente && <ChipPersona rol="Cliente" nombre={cliente.nombre} detalle={cliente.documento} />}
                                 {cotizacion?.creador && (
-                                    <span className="inline-flex items-center gap-1.5">
-                                        {cotizacion.creador.avatar ? (
-                                            <img src={cotizacion.creador.avatar} alt="" className="size-5 rounded-full object-cover" />
-                                        ) : (
-                                            <span className="bg-primary/10 text-primary grid size-5 place-items-center rounded-full text-[0.6rem] font-semibold">
-                                                {iniciales(cotizacion.creador.nombre)}
-                                            </span>
-                                        )}
-                                        Creada por {cotizacion.creador.nombre}
-                                        {cotizacion.creador.fecha && ` · ${formatoFecha(cotizacion.creador.fecha)}`}
-                                    </span>
+                                    <ChipPersona
+                                        rol={cotizacion.creador.fecha ? `Creada por · ${formatoFecha(cotizacion.creador.fecha)}` : 'Creada por'}
+                                        nombre={cotizacion.creador.nombre}
+                                        avatar={cotizacion.creador.avatar}
+                                    />
                                 )}
                             </div>
                         )}

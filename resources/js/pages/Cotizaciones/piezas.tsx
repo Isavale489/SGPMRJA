@@ -238,9 +238,5 @@ export function TerminosCondiciones({ terminos }: { terminos: Terminos }) {
     );
 }
 
-/** Iniciales para el avatar del cliente o del creador. */
-export function iniciales(nombre: string | null | undefined) {
-    const partes = (nombre ?? '').trim().split(/\s+/).filter(Boolean);
-    if (!partes.length) return '—';
-    return (partes.length > 1 ? partes[0]![0]! + partes[1]![0]! : partes[0]!.slice(0, 2)).toUpperCase();
-}
+/** Iniciales para el avatar del cliente o del creador (vive en lib/formato). */
+export { iniciales } from '@/lib/formato';

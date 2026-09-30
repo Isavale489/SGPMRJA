@@ -1,14 +1,15 @@
 import { Link } from '@inertiajs/react';
-import { Ban, CalendarDays, CheckCheck, Copy, FileText, Landmark, Mail, Pencil, Phone, ReceiptText, Trash2, UserRound } from 'lucide-react';
+import { Ban, CheckCheck, Copy, FileText, Mail, Pencil, Phone, Trash2 } from 'lucide-react';
+import type { ReactNode } from 'react';
 
-import { Dato } from '@/components/app/dato';
 import { EstadoBadge } from '@/components/app/estado-badge';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { usePermisos } from '@/hooks/use-permisos';
 import { formatoBs, formatoFecha, formatoNumero, formatoUsd } from '@/lib/formato';
+import { cn } from '@/lib/utils';
 
 import { accionesDe } from './acciones';
 import type { CompraDetalle } from './tipos';
@@ -62,75 +63,78 @@ export function DetalleCompra({ compra, cargando, onCerrar, urls, onAccion }: Pr
                             </p>
                         )}
 
-                        <dl className="grid gap-4 sm:grid-cols-2">
-                            <Dato icono={<UserRound />} etiqueta="Proveedor">
-                                <span className="font-medium">{compra.proveedor?.nombre ?? '—'}</span>
-                                {compra.proveedor?.doc && <span className="text-muted-foreground block text-xs tabular">{compra.proveedor.doc}</span>}
-                            </Dato>
-                            <Dato icono={<ReceiptText />} etiqueta="Factura">
-                                <span className="tabular">{compra.numero_factura ?? 'S/N'}</span>
-                            </Dato>
-                            {compra.proveedor?.tel && (
-                                <Dato icono={<Phone />} etiqueta="Teléfono">
-                                    <span className="tabular">{compra.proveedor.tel}</span>
-                                </Dato>
-                            )}
-                            {compra.proveedor?.email && (
-                                <Dato icono={<Mail />} etiqueta="Correo">{compra.proveedor.email}</Dato>
-                            )}
-                            <Dato icono={<CalendarDays />} etiqueta="Fecha de compra">
-                                <span className="tabular">{compra.fecha ? formatoFecha(compra.fecha) : '—'}</span>
-                            </Dato>
-                            <Dato icono={<Landmark />} etiqueta={compra.tasa_fecha ? `Tasa BCV (${formatoFecha(compra.tasa_fecha)})` : 'Tasa de la compra'}>
-                                <span className="tabular">{compra.tasa ? `Bs ${formatoTasa(compra.tasa)}` : '—'}</span>
-                                {compra.tasa && !compra.tasa_fecha && <span className="text-muted-foreground block text-xs">Ingresada manualmente</span>}
-                            </Dato>
-                        </dl>
+                        {/* Vista de documento (la «cv-doc» del panel anterior): membrete, comprobante, detalle y totales. */}
+                        <article className="bg-card grid gap-5 rounded-xl border p-4 sm:p-5" aria-label={`Comprobante de la compra #${compra.id}`}>
+                            <header className="grid gap-4 sm:grid-cols-[1fr_minmax(0,17rem)] sm:items-start">
+                                <div className="min-w-0">
+                                    <p className="text-muted-foreground text-[0.65rem] font-semibold uppercase tracking-[0.12em]">Proveedor</p>
+                                    <p className="text-seccion text-lg font-bold leading-tight">{compra.proveedor?.nombre ?? '—'}</p>
+                                    {compra.proveedor?.doc && <p className="text-muted-foreground font-mono text-xs">{compra.proveedor.doc}</p>}
+                                    <div className="text-muted-foreground mt-1.5 flex flex-wrap gap-x-4 gap-y-1 text-xs">
+                                        {compra.proveedor?.tel && <span className="inline-flex items-center gap-1 tabular"><Phone className="size-3.5" aria-hidden /> {compra.proveedor.tel}</span>}
+                                        {compra.proveedor?.email && <span className="inline-flex items-center gap-1"><Mail className="size-3.5" aria-hidden /> {compra.proveedor.email}</span>}
+                                    </div>
+                                </div>
+                                <dl className="grid gap-1.5 text-sm">
+                                    <Meta etiqueta="Factura">{compra.numero_factura ?? 'S/N'}</Meta>
+                                    <Meta etiqueta="Fecha">{compra.fecha ? formatoFecha(compra.fecha) : '—'}</Meta>
+                                    <Meta etiqueta={compra.tasa_fecha ? `Tasa BCV (${formatoFecha(compra.tasa_fecha)})` : compra.tasa ? 'Tasa (ingresada a mano)' : 'Tasa'}>
+                                        {compra.tasa ? `Bs ${formatoTasa(compra.tasa)}` : '—'}
+                                    </Meta>
+                                </dl>
+                            </header>
 
-                        <div className="overflow-x-auto rounded-lg border">
-                            <Table>
-                                <TableHeader>
-                                    <TableRow className="hover:bg-transparent">
-                                        <TableHead>Insumo</TableHead>
-                                        <TableHead className="text-right">Cantidad</TableHead>
-                                        <TableHead className="text-right">Costo unitario</TableHead>
-                                        <TableHead className="text-right">Subtotal</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {compra.items.map((i) => (
-                                        <TableRow key={i.id}>
-                                            <TableCell>
-                                                <span className="font-medium">{i.insumo}</span>
-                                                {i.codigo && <code className="text-muted-foreground ml-1.5 font-mono text-xs">{i.codigo}</code>}
-                                                {!i.aplica_iva && <span className="text-muted-foreground block text-xs">Exento de IVA</span>}
-                                            </TableCell>
-                                            <TableCell className="text-right tabular">{formatoNumero(i.cantidad)} <span className="text-muted-foreground text-xs">{i.unidad}</span></TableCell>
-                                            <TableCell className="text-right tabular">
-                                                {formatoBs(i.costo_bs)}
-                                                <span className="text-muted-foreground block text-xs">{formatoUsd(i.costo)}</span>
-                                            </TableCell>
-                                            <TableCell className="text-right tabular">
-                                                {formatoBs(i.subtotal_bs)}
-                                                <span className="text-muted-foreground block text-xs">{formatoUsd(i.subtotal)}</span>
-                                            </TableCell>
+                            <p className="text-muted-foreground border-seccion-acento/30 bg-muted/50 rounded-md border border-dashed px-3 py-1.5 text-center text-[0.65rem] font-semibold uppercase tracking-[0.12em]">
+                                Detalle de insumos
+                            </p>
+
+                            <div className="overflow-x-auto">
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow className="hover:bg-transparent">
+                                            <TableHead>Insumo</TableHead>
+                                            <TableHead className="text-right">Cantidad</TableHead>
+                                            <TableHead className="text-right">Costo unitario</TableHead>
+                                            <TableHead className="text-right">Subtotal</TableHead>
                                         </TableRow>
-                                    ))}
-                                </TableBody>
-                                <TableFooter>
-                                    <FilaTotal etiqueta="Subtotal" bs={compra.subtotal_bs} usd={compra.subtotal} />
-                                    <FilaTotal etiqueta={`IVA (${formatoNumero(compra.iva_porcentaje)} %)`} bs={compra.iva_bs} usd={compra.iva} />
-                                    <FilaTotal etiqueta="Total" bs={compra.total_bs} usd={compra.total} fuerte />
-                                </TableFooter>
-                            </Table>
-                        </div>
-
-                        {compra.observaciones && (
-                            <div className="text-sm">
-                                <p className="text-muted-foreground text-xs">Observaciones</p>
-                                <p className="whitespace-pre-line">{compra.observaciones}</p>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {compra.items.map((i) => (
+                                            <TableRow key={i.id}>
+                                                <TableCell>
+                                                    <span className="font-medium">{i.insumo}</span>
+                                                    {i.codigo && <code className="text-muted-foreground ml-1.5 font-mono text-xs">{i.codigo}</code>}
+                                                    {!i.aplica_iva && <span className="text-muted-foreground block text-xs">Exento de IVA</span>}
+                                                </TableCell>
+                                                <TableCell className="text-right tabular">{formatoNumero(i.cantidad)} <span className="text-muted-foreground text-xs">{i.unidad}</span></TableCell>
+                                                <TableCell className="text-right tabular">
+                                                    {formatoBs(i.costo_bs)}
+                                                    <span className="text-muted-foreground block text-xs">{formatoUsd(i.costo)}</span>
+                                                </TableCell>
+                                                <TableCell className="text-right tabular">
+                                                    {formatoBs(i.subtotal_bs)}
+                                                    <span className="text-muted-foreground block text-xs">{formatoUsd(i.subtotal)}</span>
+                                                </TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
                             </div>
-                        )}
+
+                            {/* Barra de totales: el monto a pagar, destacado. */}
+                            <dl className="bg-muted/40 grid overflow-hidden rounded-lg border sm:grid-cols-3">
+                                <Total etiqueta="Subtotal" bs={compra.subtotal_bs} usd={compra.subtotal} />
+                                <Total etiqueta={`IVA (${formatoNumero(compra.iva_porcentaje)} %)`} bs={compra.iva_bs} usd={compra.iva} />
+                                <Total etiqueta="Total a pagar" bs={compra.total_bs} usd={compra.total} pagar />
+                            </dl>
+
+                            {compra.observaciones && (
+                                <div className="border-warning bg-warning/8 rounded-md border-l-[3px] px-3 py-2 text-sm">
+                                    <p className="text-warning text-xs font-semibold">Observaciones</p>
+                                    <p className="whitespace-pre-line">{compra.observaciones}</p>
+                                </div>
+                            )}
+                        </article>
 
                         {a && (
                             <div className="flex flex-wrap gap-2 border-t pt-4">
@@ -158,14 +162,27 @@ export function DetalleCompra({ compra, cargando, onCerrar, urls, onAccion }: Pr
     );
 }
 
-function FilaTotal({ etiqueta, bs, usd, fuerte }: { etiqueta: string; bs: number; usd: number; fuerte?: boolean }) {
+/** Dato del comprobante con línea punteada hasta el valor, como en un recibo impreso. */
+function Meta({ etiqueta, children }: { etiqueta: string; children: ReactNode }) {
     return (
-        <TableRow className={fuerte ? 'text-base font-semibold' : 'font-normal'}>
-            <TableCell colSpan={3} className="text-right">{etiqueta}</TableCell>
-            <TableCell className="text-right tabular">
+        // La línea punteada es un ::after del dt: dentro de un dl solo caben dt y dd.
+        <div className="flex items-baseline gap-2">
+            <dt className="text-muted-foreground after:border-seccion-acento/30 flex min-w-0 flex-1 items-baseline gap-2 text-xs after:min-w-4 after:flex-1 after:border-b-2 after:border-dotted after:content-['']">
+                {etiqueta}
+            </dt>
+            <dd className="text-seccion shrink-0 font-semibold tabular">{children}</dd>
+        </div>
+    );
+}
+
+function Total({ etiqueta, bs, usd, pagar }: { etiqueta: string; bs: number; usd: number; pagar?: boolean }) {
+    return (
+        <div className={cn('grid gap-0.5 border-t px-4 py-3 first:border-t-0 sm:border-t-0 sm:border-l sm:first:border-l-0', pagar && 'bg-success/8 shadow-[inset_3px_0_0_var(--success)]')}>
+            <dt className="text-muted-foreground text-xs">{etiqueta}</dt>
+            <dd className={cn('tabular', pagar ? 'text-success text-xl font-bold' : 'font-semibold')}>
                 {formatoBs(bs)}
                 <span className="text-muted-foreground block text-xs font-normal">{formatoUsd(usd)}</span>
-            </TableCell>
-        </TableRow>
+            </dd>
+        </div>
     );
 }

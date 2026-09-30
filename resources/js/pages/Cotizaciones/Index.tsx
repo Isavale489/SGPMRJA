@@ -3,6 +3,7 @@ import { ArrowRightLeft, Ban, CheckCheck, EllipsisVertical, Eye, FileText, Penci
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
+import { BarraFiltros } from '@/components/app/barra-filtros';
 import { Buscador } from '@/components/app/buscador';
 import { Campo } from '@/components/app/campo';
 import { ConfirmarPeligro } from '@/components/app/confirmar-peligro';
@@ -134,36 +135,36 @@ export default function CotizacionesIndex({ registros, filtros: iniciales, detal
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                                 {a.convertirPedido && (
-                                    <DropdownMenuItem asChild>
+                                    <DropdownMenuItem tono="principal" asChild>
                                         <Link href={`${urls.convertir}?cotizacion=${c.id}`}>
                                             <ArrowRightLeft /> Convertir a pedido
                                         </Link>
                                     </DropdownMenuItem>
                                 )}
                                 {a.reactivar && (
-                                    <DropdownMenuItem onSelect={() => setConfirmando({ accion: 'reactivar', cotizacion: c })}>
+                                    <DropdownMenuItem tono="restaurar" onSelect={() => setConfirmando({ accion: 'reactivar', cotizacion: c })}>
                                         <RotateCcw /> Reactivar cotización
                                     </DropdownMenuItem>
                                 )}
                                 {a.aprobar && (
-                                    <DropdownMenuItem onSelect={() => setConfirmando({ accion: 'Aprobada', cotizacion: c })}>
+                                    <DropdownMenuItem tono="principal" onSelect={() => setConfirmando({ accion: 'Aprobada', cotizacion: c })}>
                                         <CheckCheck /> Aprobar
                                     </DropdownMenuItem>
                                 )}
                                 {a.pendiente && (
-                                    <DropdownMenuItem onSelect={() => setConfirmando({ accion: 'Pendiente', cotizacion: c })}>
+                                    <DropdownMenuItem tono="aviso" onSelect={() => setConfirmando({ accion: 'Pendiente', cotizacion: c })}>
                                         <Undo2 /> {c.estado === 'Cancelada' ? 'Reactivar (Pendiente)' : 'Volver a Pendiente'}
                                     </DropdownMenuItem>
                                 )}
                                 {a.editar && (
-                                    <DropdownMenuItem asChild>
+                                    <DropdownMenuItem tono="editar" asChild>
                                         <Link href={`${urls.index}/${c.id}/editar`}>
                                             <Pencil /> Editar
                                         </Link>
                                     </DropdownMenuItem>
                                 )}
                                 {a.pdf && (
-                                    <DropdownMenuItem asChild>
+                                    <DropdownMenuItem tono="documento" asChild>
                                         <a href={`${urls.index}/${c.id}/pdf`} target="_blank" rel="noopener">
                                             <FileText /> Ver PDF
                                         </a>
@@ -171,12 +172,12 @@ export default function CotizacionesIndex({ registros, filtros: iniciales, detal
                                 )}
                                 {(a.cancelar || a.eliminar) && (cambios || a.editar || a.pdf) && <DropdownMenuSeparator />}
                                 {a.cancelar && (
-                                    <DropdownMenuItem variant="destructive" onSelect={() => setConfirmando({ accion: 'Cancelada', cotizacion: c })}>
+                                    <DropdownMenuItem tono="aviso" onSelect={() => setConfirmando({ accion: 'Cancelada', cotizacion: c })}>
                                         <Ban /> Cancelar cotización
                                     </DropdownMenuItem>
                                 )}
                                 {a.eliminar && (
-                                    <DropdownMenuItem variant="destructive" onSelect={() => setConfirmando({ accion: 'eliminar', cotizacion: c })}>
+                                    <DropdownMenuItem tono="peligro" onSelect={() => setConfirmando({ accion: 'eliminar', cotizacion: c })}>
                                         <Trash2 /> Eliminar
                                     </DropdownMenuItem>
                                 )}
@@ -227,7 +228,7 @@ export default function CotizacionesIndex({ registros, filtros: iniciales, detal
             }
         >
             <div className="grid gap-4">
-                <div className="flex flex-wrap items-center gap-2">
+                <BarraFiltros>
                     <div className="relative min-w-56 flex-1">
                         <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2" />
                         <Input
@@ -271,7 +272,7 @@ export default function CotizacionesIndex({ registros, filtros: iniciales, detal
                             Limpiar
                         </Button>
                     )}
-                </div>
+                </BarraFiltros>
 
                 <TablaServidor
                     pagina={registros}

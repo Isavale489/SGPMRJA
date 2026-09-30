@@ -2,6 +2,7 @@ import { Link, router } from '@inertiajs/react';
 import { Archive, ArrowLeft, CalendarDays, Eye, KeyRound, LockKeyholeOpen, Mail, MoreVertical, Pencil, Plus, RotateCcw, Search, ShieldAlert, ShieldCheck, UserX, X } from 'lucide-react';
 import { useState } from 'react';
 
+import { BarraFiltros } from '@/components/app/barra-filtros';
 import { ConfirmarPeligro } from '@/components/app/confirmar-peligro';
 import { Dato } from '@/components/app/dato';
 import { ExportarPdf } from '@/components/app/exportar-pdf';
@@ -97,19 +98,19 @@ export default function UsuariosIndex({ usuarios, filtros: filtrosIniciales, rol
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                                 {u.inhabilitado ? (
-                                    <DropdownMenuItem onSelect={() => accion(u, 'restore')}><RotateCcw /> Habilitar</DropdownMenuItem>
+                                    <DropdownMenuItem tono="restaurar" onSelect={() => accion(u, 'restore')}><RotateCcw /> Habilitar</DropdownMenuItem>
                                 ) : (
                                     <>
-                                        <DropdownMenuItem onSelect={() => abrirFormulario(u)}><Pencil /> Editar</DropdownMenuItem>
+                                        <DropdownMenuItem tono="editar" onSelect={() => abrirFormulario(u)}><Pencil /> Editar</DropdownMenuItem>
                                         {u.recuperacion_bloqueada && (
-                                            <DropdownMenuItem onSelect={() => accion(u, 'unlock-recovery')}><LockKeyholeOpen /> Desbloquear recuperación</DropdownMenuItem>
+                                            <DropdownMenuItem tono="restaurar" onSelect={() => accion(u, 'unlock-recovery')}><LockKeyholeOpen /> Desbloquear recuperación</DropdownMenuItem>
                                         )}
                                         {/* La propia cuenta no se resetea ni se inhabilita desde aquí (el servidor también lo impide). */}
                                         {!u.es_propio && (
                                             <>
-                                                <DropdownMenuItem onSelect={() => setReseteando(u)}><KeyRound /> Resetear contraseña</DropdownMenuItem>
+                                                <DropdownMenuItem tono="aviso" onSelect={() => setReseteando(u)}><KeyRound /> Resetear contraseña</DropdownMenuItem>
                                                 <DropdownMenuSeparator />
-                                                <DropdownMenuItem onSelect={() => setInhabilitando(u)} variant="destructive"><UserX /> Inhabilitar</DropdownMenuItem>
+                                                <DropdownMenuItem tono="aviso" onSelect={() => setInhabilitando(u)}><UserX /> Inhabilitar</DropdownMenuItem>
                                             </>
                                         )}
                                     </>
@@ -145,7 +146,7 @@ export default function UsuariosIndex({ usuarios, filtros: filtrosIniciales, rol
             }
         >
             <div className="grid gap-4">
-                <div className="flex flex-wrap items-center gap-2">
+                <BarraFiltros>
                     <div className="relative min-w-56 flex-1">
                         <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2" />
                         <Input
@@ -165,7 +166,7 @@ export default function UsuariosIndex({ usuarios, filtros: filtrosIniciales, rol
                         </SelectContent>
                     </Select>
                     {hayFiltros && <Button variant="ghost" onClick={() => limpiar(['historial'])}><X /> Limpiar</Button>}
-                </div>
+                </BarraFiltros>
 
                 <TablaServidor
                     pagina={usuarios}

@@ -12,6 +12,14 @@
 @import 'tailwindcss';
 
 /*
+ * Tailwind 4 genera CSS de toda clase que encuentre en el repo. La documentación y los
+ * specs citan clases (bg-white/20, text-seccion…) sin usarlas: sin esto, editar un .md
+ * cambia public/build y la CI falla por «build desactualizado».
+ */
+@source not "../../docs";
+@source not "../../sdd";
+
+/*
  * Fuentes empaquetadas en el build (sin CDN: la planta puede quedarse sin internet).
  * Solo los subconjuntos latin y latin-ext; cirílico, griego y vietnamita no se usan.
  */
@@ -327,6 +335,35 @@
 [data-slot='dialog-content']:has(> [data-slot='dialog-header']:first-child) > [data-slot='dialog-close']:focus {
     --tw-ring-color: rgb(255 255 255 / 0.7);
     --tw-ring-offset-color: transparent;
+}
+
+/*
+ * Menú ⋮ de acciones con color por acción (el «actions-menu» del panel anterior): el ícono
+ * va en una cajita teñida y el foco tiñe la fila. Fuera de @layer: gana a las utilidades del
+ * ítem (tamaño y color del ícono, fondo de foco). Tonos de estado, no primary: «Editar» es
+ * verde en cualquier sección; «principal» sí sigue a la sección (convertir, aprobar…).
+ */
+[data-slot='dropdown-menu-item'][data-tono] {
+    --tono: var(--primary);
+    gap: 0.625rem;
+    padding-block: 0.3rem;
+}
+[data-slot='dropdown-menu-item'][data-tono='editar'] { --tono: var(--success); }
+[data-slot='dropdown-menu-item'][data-tono='peligro'] { --tono: var(--destructive); color: var(--destructive); }
+[data-slot='dropdown-menu-item'][data-tono='aviso'] { --tono: var(--warning); }
+[data-slot='dropdown-menu-item'][data-tono='restaurar'] { --tono: var(--info); }
+[data-slot='dropdown-menu-item'][data-tono='documento'] { --tono: var(--muted-foreground); }
+[data-slot='dropdown-menu-item'][data-tono] > svg:first-child {
+    box-sizing: content-box;
+    width: 1rem;
+    height: 1rem;
+    padding: 0.375rem;
+    border-radius: 0.5rem;
+    background: color-mix(in srgb, var(--tono) 14%, transparent);
+    color: var(--tono);
+}
+[data-slot='dropdown-menu-item'][data-tono]:focus {
+    background: color-mix(in srgb, var(--tono) 10%, transparent);
 }
 
 @layer base {

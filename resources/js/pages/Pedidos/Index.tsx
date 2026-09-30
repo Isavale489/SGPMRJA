@@ -3,6 +3,7 @@ import { Ban, EllipsisVertical, Eye, FileText, Pencil, Plus, RotateCcw, Search, 
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
+import { BarraFiltros } from '@/components/app/barra-filtros';
 import { Campo } from '@/components/app/campo';
 import { ConfirmarPeligro } from '@/components/app/confirmar-peligro';
 import { EstadoBadge } from '@/components/app/estado-badge';
@@ -164,32 +165,32 @@ export default function PedidosIndex({ registros, filtros: iniciales, detalle, e
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                                 {a.editar && (
-                                    <DropdownMenuItem asChild>
+                                    <DropdownMenuItem tono={p.estado === 'Completado' ? 'principal' : 'editar'} asChild>
                                         <Link href={`${urls.index}/${p.id}/editar`}>
                                             {p.estado === 'Completado' ? <Wallet /> : <Pencil />} {p.estado === 'Completado' ? 'Registrar pago' : 'Editar pagos y entrega'}
                                         </Link>
                                     </DropdownMenuItem>
                                 )}
                                 {a.pdf && (
-                                    <DropdownMenuItem asChild>
+                                    <DropdownMenuItem tono="documento" asChild>
                                         <a href={`${urls.index}/${p.id}/pdf`} target="_blank" rel="noopener">
                                             <FileText /> Ver PDF
                                         </a>
                                     </DropdownMenuItem>
                                 )}
                                 {a.reactivar && (
-                                    <DropdownMenuItem onSelect={() => setConfirmando({ accion: 'reactivar', pedido: p })}>
+                                    <DropdownMenuItem tono="restaurar" onSelect={() => setConfirmando({ accion: 'reactivar', pedido: p })}>
                                         <RotateCcw /> Reactivar
                                     </DropdownMenuItem>
                                 )}
                                 {(a.cancelar || a.eliminar) && <DropdownMenuSeparator />}
                                 {a.cancelar && (
-                                    <DropdownMenuItem variant="destructive" onSelect={() => setConfirmando({ accion: 'cancelar', pedido: p })}>
+                                    <DropdownMenuItem tono="aviso" onSelect={() => setConfirmando({ accion: 'cancelar', pedido: p })}>
                                         <Ban /> Cancelar pedido
                                     </DropdownMenuItem>
                                 )}
                                 {a.eliminar && (
-                                    <DropdownMenuItem variant="destructive" onSelect={() => setConfirmando({ accion: 'eliminar', pedido: p })}>
+                                    <DropdownMenuItem tono="peligro" onSelect={() => setConfirmando({ accion: 'eliminar', pedido: p })}>
                                         <Trash2 /> Eliminar
                                     </DropdownMenuItem>
                                 )}
@@ -244,7 +245,7 @@ export default function PedidosIndex({ registros, filtros: iniciales, detalle, e
             }
         >
             <div className="grid gap-4">
-                <div className="flex flex-wrap items-center gap-2">
+                <BarraFiltros>
                     <div className="relative min-w-56 flex-1">
                         <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2" />
                         <Input
@@ -288,7 +289,7 @@ export default function PedidosIndex({ registros, filtros: iniciales, detalle, e
                             Limpiar
                         </Button>
                     )}
-                </div>
+                </BarraFiltros>
 
                 <TablaServidor
                     pagina={registros}

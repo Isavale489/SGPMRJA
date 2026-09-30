@@ -99,3 +99,45 @@ test('en oscuro los acentos suben de tono y la barra superior sigue oscura', asy
   // En claro la barra superior es navy (#1b2a4e), no el fondo claro de la página.
   await expect.poll(() => fondo(page, 'header')).toBe('rgb(27, 42, 78)');
 });
+
+test('el menú ⋮ pinta cada acción con su color, sea cual sea la sección', async ({ page }) => {
+  const icono = (nombre: RegExp) => page.getByRole('menuitem', { name: nombre }).locator('svg').first();
+  const color = (nombre: RegExp) => icono(nombre).evaluate((el) => getComputedStyle(el).color);
+
+  // Maestros (navy): Editar en verde, Inhabilitar en ámbar.
+  await page.goto('/proveedores');
+  await page.getByRole('button', { name: /^Más acciones para/ }).first().click();
+  await expect.poll(() => color(/^Editar/)).toBe('rgb(31, 122, 77)'); // --success
+  await expect.poll(() => color(/^Inhabilitar/)).toBe('rgb(178, 94, 9)'); // --warning
+  // El ícono va en una cajita teñida.
+  expect(await icono(/^Editar/).evaluate((el) => getComputedStyle(el).backgroundColor)).not.toBe('rgba(0, 0, 0, 0)');
+  await page.keyboard.press('Escape');
+
+  // Operativa (esmeralda): el PDF sigue en gris, no toma el color de la sección.
+  await page.goto('/pedidos');
+  await page.getByRole('button', { name: /Más acciones del pedido/ }).first().click();
+  await expect.poll(() => color(/Ver PDF/)).toBe('rgb(91, 102, 120)'); // --muted-foreground
+});
+
+test('la barra de filtros lleva el tinte y el riel de la sección', async ({ page }) => {
+  await page.goto('/pedidos');
+  const barra = page.getByRole('search').first();
+  await expect.poll(() => barra.evaluate((el) => getComputedStyle(el).borderLeftColor)).toBe('rgb(16, 185, 129)'); // acento esmeralda
+  expect(await barra.evaluate((el) => getComputedStyle(el).backgroundImage)).toContain('linear-gradient');
+});
+
+test('el asistente muestra el cliente y el creador en chips, y la orden su resumen', async ({ page }) => {
+  await page.goto('/pedidos');
+  await page.getByRole('button', { name: /Más acciones del pedido/ }).first().click();
+  await page.getByRole('menuitem', { name: /Editar|Registrar pago/ }).click();
+  const chips = page.locator('[data-slot="chip-persona"]');
+  await expect(chips.filter({ hasText: 'Cliente' })).toHaveCount(1);
+  await expect(chips.filter({ hasText: /Creado por/ })).toHaveCount(1);
+
+  await page.goto('/ordenes');
+  await page.getByRole('button', { name: /Ver órdenes/ }).first().click();
+  await page.getByRole('dialog').getByRole('button', { name: /Ver orden/ }).first().click();
+  const resumen = page.getByRole('region', { name: 'Resumen de la orden' });
+  await expect(resumen).toBeVisible();
+  await expect(resumen.getByRole('progressbar')).toBeVisible();
+});
