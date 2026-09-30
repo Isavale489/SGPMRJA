@@ -77,7 +77,7 @@ export default function OrdenesIndex({ filtros: iniciales, registros, ordenes, o
                 <span className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs">
                     <span className="text-sm font-medium tabular">{p.total_ordenes}</span>
                     {p.pendientes > 0 && <span className="text-warning">{p.pendientes} pendiente{p.pendientes === 1 ? '' : 's'}</span>}
-                    {p.en_proceso > 0 && <span className="text-primary">{p.en_proceso} en proceso</span>}
+                    {p.en_proceso > 0 && <span className="text-info">{p.en_proceso} en proceso</span>}
                     {p.finalizadas > 0 && <span className="text-success">{p.finalizadas} finalizada{p.finalizadas === 1 ? '' : 's'}</span>}
                     {p.canceladas > 0 && <span className="text-destructive">{p.canceladas} cancelada{p.canceladas === 1 ? '' : 's'}</span>}
                 </span>

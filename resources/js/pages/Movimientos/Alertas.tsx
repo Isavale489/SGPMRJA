@@ -2,7 +2,8 @@ import { Link, router } from '@inertiajs/react';
 import { ArrowLeft, History, ShoppingBag } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { CabeceraSeccion, CuerpoRayado } from '@/components/app/tabla-seccion';
+import { Table, TableCell, TableHead, TableRow } from '@/components/ui/table';
 import { usePermisos } from '@/hooks/use-permisos';
 import AppLayout from '@/layouts/app-layout';
 import { formatoNumero } from '@/lib/formato';
@@ -38,7 +39,7 @@ export default function Alertas({ insumos, urls }: Props) {
             {insumos.length > 0 && (
                 <div className="bg-card overflow-x-auto rounded-lg border">
                     <Table>
-                        <TableHeader>
+                        <CabeceraSeccion>
                             <TableRow className="hover:bg-transparent">
                                 <TableHead>Insumo</TableHead>
                                 <TableHead className="text-right">Actual</TableHead>
@@ -47,8 +48,8 @@ export default function Alertas({ insumos, urls }: Props) {
                                 <TableHead className="text-right">Para llegar al máximo</TableHead>
                                 <TableHead><span className="sr-only">Historial</span></TableHead>
                             </TableRow>
-                        </TableHeader>
-                        <TableBody>
+                        </CabeceraSeccion>
+                        <CuerpoRayado>
                             {insumos.map((i) => (
                                 <TableRow key={i.id}>
                                     <TableCell>
@@ -67,7 +68,7 @@ export default function Alertas({ insumos, urls }: Props) {
                                     </TableCell>
                                 </TableRow>
                             ))}
-                        </TableBody>
+                        </CuerpoRayado>
                     </Table>
                 </div>
             )}

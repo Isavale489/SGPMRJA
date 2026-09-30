@@ -15,8 +15,8 @@
 |           'titulo'      => 'Nombre de la seccion',
 |           'descripcion' => 'Que agrupa',
 |           'icono'       => 'Database',          // ícono lucide (ver ICONOS en icono.tsx)
-|           'color'       => 'navy|emerald|sky',  // identidad de la seccion de origen
-|                                                 // (navy=Maestros, emerald=Operativa, sky=Reportes)
+|           'seccion'     => 'maestros',          // clave de config/secciones.php: el color
+|                                                 // de la seccion de origen del reporte
 |           'reportes'    => [
 |               [
 |                   'titulo'      => 'Nombre humano del reporte',
@@ -44,7 +44,7 @@ return [
             'titulo'      => 'Gestión general',
             'descripcion' => 'Maestros y catálogos: personas, productos e insumos registrados.',
             'icono'       => 'Database',
-            'color'       => 'navy',
+            'seccion'     => 'maestros',
             'reportes'    => [
                 [
                     'titulo'      => 'Usuarios del sistema',
@@ -95,7 +95,7 @@ return [
             'titulo'      => 'Gestión operativa',
             'descripcion' => 'Transacciones del negocio: ventas, producción, compras e inventario.',
             'icono'       => 'Settings',
-            'color'       => 'emerald',
+            'seccion'     => 'operativa',
             'reportes'    => [
                 [
                     'titulo'      => 'Cotizaciones',
@@ -146,7 +146,7 @@ return [
             'titulo'      => 'Análisis y rendimiento',
             'descripcion' => 'Consultas analíticas con gráficos e indicadores.',
             'icono'       => 'ChartLine',
-            'color'       => 'sky',
+            'seccion'     => 'reportes',
             'reportes'    => [
                 [
                     'titulo'      => 'Producción',

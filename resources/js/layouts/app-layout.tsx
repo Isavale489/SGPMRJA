@@ -1,9 +1,10 @@
 import { Head, usePage } from '@inertiajs/react';
 import { Menu, Moon, Sun } from 'lucide-react';
-import { useEffect, type ReactNode } from 'react';
+import { useEffect, useLayoutEffect, type ReactNode } from 'react';
 import { toast } from 'sonner';
 
 import { Confirmador } from '@/components/app/confirmador';
+import { Icono } from '@/components/app/icono';
 import { MenuUsuario } from '@/components/app/menu-usuario';
 import { Notificaciones } from '@/components/app/notificaciones';
 import { PantallaCompleta } from '@/components/app/pantalla-completa';
@@ -15,6 +16,7 @@ import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/s
 import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { useTema } from '@/hooks/use-tema';
+import { enlaceActivo } from '@/lib/navegacion';
 
 interface Props {
     titulo: string;
@@ -34,8 +36,19 @@ function Logo({ nombre }: { nombre: string }) {
 
 /** Layout de toda página Inertia del panel: sidebar, barra superior, título y avisos. */
 export default function AppLayout({ titulo, acciones, children }: Props) {
-    const { flash, app } = usePage().props;
+    const { flash, app, seccion, navegacion } = usePage().props;
+    const { url } = usePage();
     const { tema, alternar } = useTema();
+    // Ícono de la página: el de su enlace en el menú; si no tiene (Configuración), el de la sección.
+    const icono = enlaceActivo(navegacion, url)?.icono ?? seccion?.icono;
+
+    // La sección va en <html>, no en el layout: los diálogos y menús que Radix monta
+    // fuera del árbol también heredan sus colores. Antes del pintado, sin parpadeo.
+    useLayoutEffect(() => {
+        const raiz = document.documentElement;
+        if (seccion) raiz.dataset.seccion = seccion.clave;
+        else delete raiz.dataset.seccion;
+    }, [seccion]);
 
     // Mensajes flash del servidor (redirect()->with('success', ...)) → aviso.
     useEffect(() => {
@@ -55,7 +68,11 @@ export default function AppLayout({ titulo, acciones, children }: Props) {
                 </aside>
 
                 <div className="flex min-w-0 flex-1 flex-col">
-                    <header className="bg-background/85 border-border sticky top-0 z-30 flex h-14 items-center gap-1 border-b px-2 backdrop-blur sm:gap-3 sm:px-6">
+                    {/*
+                      * Barra navy del panel anterior. `dark` la vuelve una isla oscura en ambos temas:
+                      * botones, textos y píldoras toman los tokens oscuros sin estilos propios.
+                      */}
+                    <header className="dark bg-topbar text-foreground sticky top-0 z-30 flex h-14 items-center gap-1 px-2 shadow-[0_2px_10px_rgb(15_26_49/0.28)] sm:gap-3 sm:px-6 [&_[data-pildora]]:border-white/20 [&_[data-pildora]]:bg-white/10 [&_[data-pildora]]:backdrop-blur-sm">
                         {/* Menú en pantallas chicas: el sidebar fijo solo existe desde lg. */}
                         <Sheet>
                             <SheetTrigger asChild>
@@ -74,7 +91,7 @@ export default function AppLayout({ titulo, acciones, children }: Props) {
                         </Sheet>
                         {/* Empresa y sistema (como el layout anterior); solo si hay espacio. */}
                         <div className="min-w-0 flex-1 text-center">
-                            <p className="hidden truncate text-sm font-semibold leading-tight xl:block">Manufacturas R.J. Atlántico</p>
+                            <p className="hidden truncate text-sm font-semibold leading-tight text-white xl:block">Manufacturas R.J. Atlántico</p>
                             <p className="text-muted-foreground hidden truncate text-xs leading-tight xl:block">
                                 Software para la gestión de pedidos en Manufacturas R.J. Atlántico C.A.
                             </p>
@@ -101,7 +118,17 @@ export default function AppLayout({ titulo, acciones, children }: Props) {
                     {/* min-w-0: sin esto, una tabla ancha estira la página en vez de desplazarse dentro de su contenedor. */}
                     <main className="mx-auto w-full min-w-0 max-w-7xl flex-1 px-4 py-6 sm:px-6">
                         <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-                            <h1 className="text-xl font-semibold tracking-tight">{titulo}</h1>
+                            <div className="flex min-w-0 items-center gap-3">
+                                {icono && (
+                                    <span className="bg-seccion-degradado grid size-10 shrink-0 place-items-center rounded-xl text-white shadow-[0_6px_14px_-6px_var(--seccion-acento)]" aria-hidden>
+                                        <Icono nombre={icono} className="size-5" />
+                                    </span>
+                                )}
+                                <div className="min-w-0">
+                                    {seccion && <p className="text-seccion text-[0.7rem] font-semibold uppercase tracking-[0.1em]">{seccion.titulo}</p>}
+                                    <h1 className="text-xl font-semibold tracking-tight">{titulo}</h1>
+                                </div>
+                            </div>
                             {acciones && <div className="flex flex-wrap items-center gap-2">{acciones}</div>}
                         </div>
                         {children}

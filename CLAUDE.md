@@ -27,6 +27,7 @@
 | Asistentes | Todo lo que era wizard sigue siéndolo: componente `Asistente` (`resources/js/components/app/asistente.tsx`) |
 | Respuestas | Trait `RespondeSegunCliente`: Inertia → redirect con flash; JSON → el de siempre |
 | Montos | Todo $ con su equivalente en Bs y la tasa **con su fecha** |
+| Colores | Por sección (navy Maestros, esmeralda Operativa, sky Reportes): `config/secciones.php` → `<html data-seccion>` → tokens `--seccion*`. Ver `docs/conventions/identidad-visual.md` |
 | Build | `public/build` se commitea; la CI verifica que esté al día |
 | Blade | Solo quedan los PDF (`layouts.pdf`) y la web pública (`layouts.public`). Login y recuperación son Inertia (`pages/Auth/*`) |
 

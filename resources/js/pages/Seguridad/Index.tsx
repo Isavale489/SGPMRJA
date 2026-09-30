@@ -14,7 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { confirmarDescarte, useGuardCambios } from '@/hooks/use-guard-cambios';
 import AppLayout from '@/layouts/app-layout';
-import { cn } from '@/lib/utils';
+import type { Seccion } from '@/types';
 
 /** Espejo de SeguridadController::serializarRol() (lo verifica SeguridadPaginaTest). */
 export interface RolFila {
@@ -36,7 +36,8 @@ export interface ModuloMatriz {
 
 export interface SeccionMatriz {
     nombre: string;
-    tema: 'maestros' | 'operativa' | 'reportes' | 'admin';
+    /** Clave de config/secciones.php: da el color de la sección en la matriz. */
+    tema: Seccion;
     icono: string;
     modulos: ModuloMatriz[];
 }
@@ -48,13 +49,6 @@ interface Props {
     urls: { roles: string; permisos: string; configuracion: string };
 }
 
-// Identidad por sección (la misma del menú): maestros navy, operativa emerald, reportes sky; admin, azul propio del panel.
-const TEMA: Record<SeccionMatriz['tema'], string> = {
-    maestros: 'text-primary bg-primary/10',
-    operativa: 'text-emerald-600 bg-emerald-500/10 dark:text-emerald-400',
-    reportes: 'text-sky-600 bg-sky-500/10 dark:text-sky-300',
-    admin: 'text-blue-600 bg-blue-500/10 dark:text-blue-400',
-};
 const mutar = { preserveScroll: true, preserveState: true };
 const ACCION: Record<string, string> = { ver: 'Ver', pdf: 'PDF' };
 const etiqueta = (a: string) => ACCION[a] ?? a.charAt(0).toUpperCase() + a.slice(1).replace(/[-_]/g, ' ');
@@ -296,11 +290,12 @@ function Matriz({ roles, permisos, secciones, rolId, onRol, url, onSucio }: Prop
                         const deSeccion = s.modulos.flatMap(claves);
                         const otorgadas = deSeccion.filter((c) => marcados.has(c)).length;
                         return (
-                            <Card key={s.nombre}>
+                            // Cada sección con su identidad (config/secciones.php): ícono, casillas y acentos.
+                            <Card key={s.nombre} data-seccion={s.tema}>
                                 <CardHeader>
                                     <div className="flex flex-wrap items-center justify-between gap-2">
                                         <CardTitle className="flex items-center gap-3 text-base">
-                                            <span className={cn('grid size-8 place-items-center rounded-lg', TEMA[s.tema])}><Icono nombre={s.icono} className="size-4" /></span>
+                                            <span className="bg-seccion-acento/12 text-seccion grid size-8 place-items-center rounded-lg"><Icono nombre={s.icono} className="size-4" /></span>
                                             {s.nombre}
                                             <span className="text-muted-foreground text-sm font-normal tabular">{otorgadas}/{deSeccion.length}</span>
                                         </CardTitle>

@@ -1,7 +1,8 @@
 import type { ReactNode } from 'react';
 
 import { Paginacion } from '@/components/app/paginacion';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { CabeceraSeccion, CuerpoRayado } from '@/components/app/tabla-seccion';
+import { Table, TableCell, TableHead, TableRow } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
 import type { Paginado } from '@/types';
 
@@ -36,16 +37,16 @@ export function TablaServidor<T>({ pagina, columnas, only, cargando, vacio, idFi
                 aria-busy={cargando}
             >
                 <Table>
-                    <TableHeader>
+                    <CabeceraSeccion>
                         <TableRow className="hover:bg-transparent">
                             {columnas.map((c) => (
-                                <TableHead key={c.id} className={cn('text-muted-foreground h-10 text-xs font-medium uppercase tracking-wide', c.className)}>
+                                <TableHead key={c.id} className={c.className}>
                                     {c.encabezado}
                                 </TableHead>
                             ))}
                         </TableRow>
-                    </TableHeader>
-                    <TableBody>
+                    </CabeceraSeccion>
+                    <CuerpoRayado>
                         {pagina.data.length === 0 ? (
                             <TableRow className="hover:bg-transparent">
                                 <TableCell colSpan={columnas.length} className="text-muted-foreground h-32 text-center">
@@ -61,7 +62,7 @@ export function TablaServidor<T>({ pagina, columnas, only, cargando, vacio, idFi
                                 </TableRow>
                             ))
                         )}
-                    </TableBody>
+                    </CuerpoRayado>
                 </Table>
             </div>
             <Paginacion pagina={pagina} only={only} />

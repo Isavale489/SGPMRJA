@@ -164,6 +164,42 @@ if (!function_exists('permisoDeRuta')) {
     }
 }
 
+if (!function_exists('seccionDeModulo')) {
+    /**
+     * Clave de la sección (config/secciones.php) a la que pertenece un módulo
+     * del registry: 'maestros', 'operativa', 'reportes' o 'admin'. Null si el
+     * módulo no está asignado a ninguna.
+     */
+    function seccionDeModulo(string $modulo): ?string
+    {
+        foreach (config('secciones', []) as $clave => $seccion) {
+            if (in_array($modulo, $seccion['modulos'] ?? [], true)) {
+                return $clave;
+            }
+        }
+
+        return null;
+    }
+}
+
+if (!function_exists('seccionDeRuta')) {
+    /**
+     * Sección de una ruta nombrada: su módulo (misma resolución que
+     * permisoDeRuta()) y la sección de ese módulo. Null para las rutas
+     * comunes (dashboard, perfil…) y las no mapeadas: la página queda con la
+     * identidad de marca, sin color de sección.
+     *
+     *   seccionDeRuta('pedidos.index');      // 'operativa'
+     *   seccionDeRuta('reportes.produccion'); // 'reportes'
+     */
+    function seccionDeRuta(string $nombreRuta): ?string
+    {
+        $permiso = permisoDeRuta($nombreRuta);
+
+        return $permiso === null ? null : seccionDeModulo(strstr($permiso, '.', true) ?: $permiso);
+    }
+}
+
 if (!function_exists('esUsuarioAdministrador')) {
     /**
      * Determina si el usuario es Administrador de forma robusta (FEAT-005).

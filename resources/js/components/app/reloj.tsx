@@ -14,7 +14,7 @@ export function Reloj() {
     }, []);
 
     return (
-        <span className="border-border bg-card text-muted-foreground inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border px-2.5 py-1 text-xs">
+        <span data-pildora className="border-border bg-card text-muted-foreground inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border px-2.5 py-1 text-xs">
             <CalendarClock className="size-3.5" aria-hidden />
             <time dateTime={ahora.toISOString()} className="tabular">
                 <span className="text-foreground font-medium">{FECHA.format(ahora)}</span> · {HORA.format(ahora)}

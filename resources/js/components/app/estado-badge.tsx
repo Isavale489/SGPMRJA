@@ -1,14 +1,19 @@
 import { cn } from '@/lib/utils';
 
-/** Estados de negocio → tono visual. Un solo lugar para que todas las tablas coincidan. */
+/**
+ * Estados de negocio → tono visual. Un solo lugar para que todas las tablas coincidan.
+ * Solo tokens de ESTADO (warning, info, success, destructive, especial), nunca primary:
+ * primary cambia con la sección y un «En Proceso» no puede verse verde en Operativa.
+ * Los gráficos usan los mismos tokens (usePaleta en grafico.tsx).
+ */
 const TONOS: Record<string, string> = {
     Pendiente: 'bg-warning/12 text-warning ring-warning/25',
     Aprobada: 'bg-success/12 text-success ring-success/25',
-    'En Proceso': 'bg-primary/10 text-primary ring-primary/25',
-    Procesando: 'bg-primary/10 text-primary ring-primary/25',
+    'En Proceso': 'bg-info/12 text-info ring-info/25',
+    Procesando: 'bg-info/12 text-info ring-info/25',
     Finalizado: 'bg-success/12 text-success ring-success/25',
     Completado: 'bg-success/12 text-success ring-success/25',
-    Convertida: 'bg-secondary text-secondary-foreground ring-border',
+    Convertida: 'bg-especial/12 text-especial ring-especial/25',
     recibida: 'bg-success/12 text-success ring-success/25',
     borrador: 'bg-muted text-muted-foreground ring-border',
     Cancelado: 'bg-destructive/10 text-destructive ring-destructive/25',

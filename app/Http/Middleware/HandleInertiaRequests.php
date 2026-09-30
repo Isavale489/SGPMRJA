@@ -58,6 +58,9 @@ class HandleInertiaRequests extends Middleware
                     : [],
             ],
             'navegacion' => fn () => $user ? $this->navegacion(config('navegacion', [])) : [],
+            // Sección de la página actual (config/secciones.php): el layout la pone en
+            // <html data-seccion> y de ahí salen los colores del grupo.
+            'seccion' => fn () => $this->seccion($request),
             // Sin usuario (pantallas de acceso) no se muestra: tampoco se consulta al BCV.
             'tasaBcv' => function () use ($user) {
                 if (! $user) {
@@ -81,6 +84,24 @@ class HandleInertiaRequests extends Middleware
     }
 
     /**
+     * Sección de la ruta actual con su título e ícono, o null (rutas comunes
+     * como el dashboard o el perfil: identidad de marca, sin color de grupo).
+     *
+     * @return array{clave: string, titulo: string, icono: string}|null
+     */
+    private function seccion(Request $request): ?array
+    {
+        $ruta = $request->route()?->getName();
+        $clave = $ruta ? seccionDeRuta($ruta) : null;
+        if ($clave === null) {
+            return null;
+        }
+        $def = config("secciones.{$clave}");
+
+        return ['clave' => $clave, 'titulo' => $def['titulo'], 'icono' => $def['icono']];
+    }
+
+    /**
      * Filtra config/navegacion.php por permisos y resuelve rutas a URL.
      * Descarta secciones y grupos que se quedan sin enlaces visibles.
      *
@@ -95,7 +116,8 @@ class HandleInertiaRequests extends Middleware
             if (isset($item['items'])) {
                 $hijos = $this->navegacion($item['items']);
                 if ($hijos !== []) {
-                    $visibles[] = ['titulo' => $item['titulo'], 'icono' => $item['icono'], 'items' => $hijos];
+                    // 'seccion' solo en las secciones de primer nivel: el menú pinta cada una con su color.
+                    $visibles[] = ['titulo' => $item['titulo'], 'icono' => $item['icono'], 'seccion' => $item['seccion'] ?? null, 'items' => $hijos];
                 }
                 continue;
             }

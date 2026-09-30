@@ -5,12 +5,13 @@ import { useState } from 'react';
 import { Campo } from '@/components/app/campo';
 import { ConfirmarPeligro } from '@/components/app/confirmar-peligro';
 import { DialogoFormulario } from '@/components/app/dialogo-formulario';
+import { CabeceraSeccion, CuerpoRayado } from '@/components/app/tabla-seccion';
 import { Button } from '@/components/ui/button';
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Table, TableCell, TableHead, TableRow } from '@/components/ui/table';
 import { useGuardCambios } from '@/hooks/use-guard-cambios';
 import { usePermisos } from '@/hooks/use-permisos';
 import AppLayout from '@/layouts/app-layout';
@@ -200,7 +201,7 @@ function Impuestos({ impuestos, url, gestionar }: { impuestos: ImpuestoFila[]; u
             </CardHeader>
             <CardContent className="overflow-x-auto">
                 <Table>
-                    <TableHeader>
+                    <CabeceraSeccion>
                         <TableRow className="hover:bg-transparent">
                             <TableHead>Código</TableHead>
                             <TableHead>Nombre</TableHead>
@@ -208,8 +209,8 @@ function Impuestos({ impuestos, url, gestionar }: { impuestos: ImpuestoFila[]; u
                             <TableHead>Estado</TableHead>
                             {gestionar && <TableHead><span className="sr-only">Acciones</span></TableHead>}
                         </TableRow>
-                    </TableHeader>
-                    <TableBody>
+                    </CabeceraSeccion>
+                    <CuerpoRayado>
                         {impuestos.map((i) => (
                             <TableRow key={i.id}>
                                 <TableCell><code className="font-mono text-xs">{i.codigo}</code></TableCell>
@@ -225,7 +226,7 @@ function Impuestos({ impuestos, url, gestionar }: { impuestos: ImpuestoFila[]; u
                             </TableRow>
                         ))}
                         {impuestos.length === 0 && <TableRow className="hover:bg-transparent"><TableCell colSpan={5} className="text-muted-foreground h-20 text-center">No hay impuestos registrados.</TableCell></TableRow>}
-                    </TableBody>
+                    </CuerpoRayado>
                 </Table>
             </CardContent>
             {editando && <FormularioImpuesto key={editando.apertura} impuesto={editando.impuesto} url={url} onCerrar={() => setEditando(undefined)} />}

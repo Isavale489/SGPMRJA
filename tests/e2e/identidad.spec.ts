@@ -1,0 +1,71 @@
+import { test, expect, type Page } from '@playwright/test';
+
+/**
+ * Identidad por sección (config/secciones.php → <html data-seccion> → tokens de
+ * plataforma.css). Se verifica el color REAL que pinta el navegador, no la clase:
+ * un token mal escrito deja la clase puesta y el color de marca por defecto.
+ * Con expect.poll: los enlaces tienen transición de color y se lee el valor final.
+ */
+const NAVY = 'rgb(30, 60, 114)'; // #1e3c72
+const ESMERALDA = 'rgb(4, 120, 87)'; // #047857
+const ESMERALDA_FONDO = 'rgb(6, 78, 59)'; // #064e3b
+const SKY_FONDO = 'rgb(12, 74, 110)'; // #0c4a6e
+const ESMERALDA_OSCURO = 'rgb(52, 211, 153)'; // #34d399
+
+const seccion = (page: Page) => page.evaluate(() => document.documentElement.dataset.seccion ?? null);
+const fondo = (page: Page, selector: string) => page.locator(selector).first().evaluate((el) => getComputedStyle(el).backgroundColor);
+
+test('cada página toma el color de su sección, también al navegar sin recargar', async ({ page }) => {
+  await page.goto('/clientes');
+  await expect.poll(() => seccion(page)).toBe('maestros');
+  await expect(page.getByRole('main').getByText('Gestión General', { exact: true })).toBeVisible();
+  await expect.poll(() => fondo(page, 'main thead')).toBe(NAVY);
+
+  // Navegación Inertia (sin recarga) a una página de otra sección.
+  await page.getByRole('navigation', { name: 'Principal' }).getByRole('button', { name: 'Gestión Operativa' }).click();
+  await page.getByRole('link', { name: 'Pedidos' }).click();
+  await expect(page).toHaveURL(/\/pedidos$/);
+  await expect.poll(() => seccion(page)).toBe('operativa');
+  await expect.poll(() => fondo(page, 'main thead')).toBe(ESMERALDA_FONDO);
+  // El botón principal sigue a la sección (--primary).
+  await expect.poll(() => page.getByRole('link', { name: 'Nuevo pedido' }).evaluate((el) => getComputedStyle(el).backgroundColor)).toBe(ESMERALDA);
+
+  await page.goto('/reportes/produccion');
+  await expect.poll(() => seccion(page)).toBe('reportes');
+  await expect.poll(() => fondo(page, 'main thead')).toBe(SKY_FONDO);
+
+  // El inicio no es de ninguna sección: identidad de marca.
+  await page.getByRole('link', { name: 'Inicio' }).click();
+  await expect(page).toHaveURL(/\/dashboard$/);
+  await expect.poll(() => seccion(page)).toBeNull();
+});
+
+test('el menú pinta cada sección con su color, sea cual sea la página', async ({ page }) => {
+  await page.goto('/pedidos');
+  const menu = page.getByRole('navigation', { name: 'Principal' });
+  await expect(menu.getByRole('link', { name: 'Pedidos' })).toHaveAttribute('aria-current', 'page');
+  await expect.poll(() => menu.getByRole('link', { name: 'Pedidos' }).evaluate((el) => getComputedStyle(el).color)).toBe(ESMERALDA);
+  // Gestión General sigue en navy aunque la página sea de Operativa.
+  await expect.poll(() => menu.getByRole('button', { name: 'Gestión General' }).locator('svg').first().evaluate((el) => getComputedStyle(el).color)).toBe(NAVY);
+});
+
+test('los diálogos llevan el encabezado en degradado de la sección', async ({ page }) => {
+  await page.goto('/proveedores');
+  await page.getByRole('button', { name: /^Más acciones para/ }).first().click();
+  await page.getByRole('menuitem', { name: 'Editar' }).click();
+  const encabezado = page.getByRole('dialog').locator('[data-slot="dialog-header"]');
+  await expect.poll(() => encabezado.evaluate((el) => getComputedStyle(el).backgroundImage)).toContain('linear-gradient');
+  await expect.poll(() => page.getByRole('dialog').getByRole('heading').evaluate((el) => getComputedStyle(el).color)).toBe('rgb(255, 255, 255)');
+});
+
+test('en oscuro los acentos suben de tono y la barra superior sigue oscura', async ({ page }) => {
+  await page.goto('/pedidos');
+  await page.getByRole('button', { name: 'Usar tema oscuro' }).click();
+  await expect(page.locator('html')).toHaveClass(/dark/);
+  const menu = page.getByRole('navigation', { name: 'Principal' });
+  await expect.poll(() => menu.getByRole('link', { name: 'Pedidos' }).evaluate((el) => getComputedStyle(el).color)).toBe(ESMERALDA_OSCURO);
+  await page.getByRole('button', { name: 'Usar tema claro' }).click();
+  await expect(page.locator('html')).not.toHaveClass(/dark/);
+  // En claro la barra superior es navy (#1b2a4e), no el fondo claro de la página.
+  await expect.poll(() => fondo(page, 'header')).toBe('rgb(27, 42, 78)');
+});
