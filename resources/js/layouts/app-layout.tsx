@@ -65,7 +65,10 @@ export default function AppLayout({ titulo, acciones, children }: Props) {
                             <SheetContent side="left" className="bg-sidebar w-72 p-0">
                                 <SheetTitle className="sr-only">Menú</SheetTitle>
                                 <Logo nombre={app.nombre} />
-                                <Sidebar />
+                                {/* Con desplazamiento: en un teléfono bajo, con grupos abiertos, el menú no cabe. */}
+                                <div className="min-h-0 flex-1 overflow-y-auto">
+                                    <Sidebar />
+                                </div>
                             </SheetContent>
                         </Sheet>
                         {/* Empresa y sistema (como el layout anterior); solo si hay espacio. */}
