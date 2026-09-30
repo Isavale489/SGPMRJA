@@ -129,3 +129,38 @@ test('el header trae notificaciones y reloj, y el pie de página', async ({ page
   await expect(page).toHaveURL(/\/movimiento-insumo\/alertas/);
   expect(errores, errores.join('\n')).toEqual([]);
 });
+
+test('la barra superior va de lado a lado y el menú lateral queda debajo', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/clientes');
+  const barra = await page.locator('header').boundingBox();
+  const menu = await page.locator('#menu-lateral').boundingBox();
+  expect(barra?.x).toBe(0);
+  expect(barra?.width).toBe(1440);
+  expect(menu!.y).toBeGreaterThanOrEqual(barra!.y + barra!.height - 1);
+  await expect(page.locator('header a[href="/dashboard"] img')).toBeVisible();
+});
+
+test('el menú lateral se colapsa a íconos, recuerda la preferencia y un grupo lo vuelve a abrir', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/clientes');
+  const menu = page.locator('#menu-lateral');
+  const principal = page.getByRole('navigation', { name: 'Principal' });
+
+  await page.getByRole('button', { name: 'Contraer el menú' }).click();
+  await expect.poll(async () => (await menu.boundingBox())?.width).toBeLessThan(80);
+  // Solo íconos: el nombre va en el tooltip.
+  await principal.getByRole('button', { name: 'Gestión Operativa' }).hover();
+  await expect(page.getByRole('tooltip', { name: 'Gestión Operativa' })).toBeVisible();
+
+  // Se recuerda entre visitas (misma clave que el panel anterior).
+  await page.reload();
+  await expect(page.getByRole('button', { name: 'Expandir el menú' })).toBeVisible();
+  expect(await page.evaluate(() => localStorage.getItem('sgpmrja-sidebar-size'))).toBe('sm');
+
+  // Un grupo en el menú colapsado expande el menú con ese grupo abierto.
+  await principal.getByRole('button', { name: 'Gestión Operativa' }).click();
+  await expect.poll(async () => (await menu.boundingBox())?.width).toBeGreaterThan(200);
+  await expect(principal.getByRole('link', { name: 'Pedidos' })).toBeVisible();
+  expect(await page.evaluate(() => localStorage.getItem('sgpmrja-sidebar-size'))).toBe('lg');
+});
