@@ -1,6 +1,6 @@
 import type { AgChartInstance, AgChartOptions } from 'ag-charts-community';
 import { Download } from 'lucide-react';
-import { lazy, Suspense, useCallback, useMemo, useRef, useState, type ReactNode } from 'react';
+import { Component, lazy, Suspense, useCallback, useMemo, useRef, useState, type ReactNode } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,6 +11,28 @@ import { cn } from '@/lib/utils';
 // AG Charts va en su propio chunk: este archivo solo importa sus tipos, así las
 // páginas con gráficos no esperan esa descarga para pintarse.
 const LienzoGrafico = lazy(() => import('./lienzo-grafico'));
+
+/**
+ * Si el chunk del gráfico no llega (red caída, o una pestaña abierta desde antes
+ * de un deploy que pide un hash que ya no existe), el `import()` rechazado
+ * desmontaría todo el panel: este límite lo deja en un aviso dentro de la tarjeta.
+ */
+class LimiteGrafico extends Component<{ alto: number; children: ReactNode }, { fallo: boolean }> {
+    state = { fallo: false };
+
+    static getDerivedStateFromError() {
+        return { fallo: true };
+    }
+
+    render() {
+        if (!this.state.fallo) return this.props.children;
+        return (
+            <p role="alert" className="text-muted-foreground grid place-items-center text-center text-sm" style={{ height: Math.min(this.props.alto, 200) }}>
+                No se pudo cargar el gráfico. Recarga la página.
+            </p>
+        );
+    }
+}
 
 /** Colores de estado de las órdenes (los mismos en todo el sistema). */
 export const COLOR_ESTADO: Record<string, string> = {
@@ -105,9 +127,11 @@ export function TarjetaGrafico({ titulo, archivo, opciones, alto = 340, vacio, a
                 {vacio ? (
                     <p className="text-muted-foreground grid place-items-center text-sm" style={{ height: Math.min(alto, 200) }}>Aún no hay datos para este gráfico.</p>
                 ) : (
-                    <Suspense fallback={<Skeleton style={{ height: alto }} aria-label="Cargando gráfico…" />}>
-                        <LienzoGrafico ref={refGrafico} opciones={completas} alto={alto} />
-                    </Suspense>
+                    <LimiteGrafico alto={alto}>
+                        <Suspense fallback={<Skeleton role="status" aria-label="Cargando gráfico…" style={{ height: alto }} />}>
+                            <LienzoGrafico ref={refGrafico} opciones={completas} alto={alto} />
+                        </Suspense>
+                    </LimiteGrafico>
                 )}
             </CardContent>
         </Card>
