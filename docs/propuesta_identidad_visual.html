@@ -1,0 +1,457 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Identidad Atlántico</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap">
+<style>
+/* Layout: guía de una columna; arriba el porqué, al centro la maqueta viva del panel (grupo + tema), abajo tokens y plan. */
+:root {
+  --font: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --mono: 'JetBrains Mono', ui-monospace, monospace;
+
+  /* Base del panel (plataforma.css actual) */
+  --bg: #f3f5f9;
+  --card: #ffffff;
+  --fg: #0f172a;
+  --muted: #5b6678;
+  --line: #e1e6ee;
+  --soft: #f1f4f8;
+  --topbar: #1b2a4e;
+  --topbar-fg: rgba(255,255,255,.86);
+  --sidebar: #ffffff;
+
+  /* Identidad por grupo: se elige una con [data-seccion] */
+  --maestros: #1e3c72;   --maestros-2: #2a5298;  --maestros-oscuro: #16305e;
+  --operativa: #059669;  --operativa-2: #10b981; --operativa-oscuro: #064e3b;
+  --reportes: #0369a1;   --reportes-2: #0ea5e9;  --reportes-oscuro: #0c4a6e;
+
+  /* Estados (una sola paleta para badges y gráficos) */
+  --ok: #0f9d6e; --warn: #d97706; --info: #2563eb; --bad: #dc2626; --neutro: #64748b; --violeta: #7c3aed;
+
+  --radius: .6rem;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0b1120; --card: #111a2c; --fg: #e5e9f0; --muted: #93a0b5; --line: #22304b; --soft: #152036;
+    --topbar: #0e1a33; --topbar-fg: rgba(255,255,255,.82); --sidebar: #0e1627;
+    --maestros: #7d9be0; --maestros-2: #4e7ac7; --maestros-oscuro: #1e3c72;
+    --operativa: #34d399; --operativa-2: #10b981; --operativa-oscuro: #065f46;
+    --reportes: #38bdf8; --reportes-2: #0ea5e9; --reportes-oscuro: #0369a1;
+    --ok: #4cc38a; --warn: #f0a44b; --info: #60a5fa; --bad: #ef6b73; --neutro: #94a3b8; --violeta: #a78bfa;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0b1120; --card: #111a2c; --fg: #e5e9f0; --muted: #93a0b5; --line: #22304b; --soft: #152036;
+  --topbar: #0e1a33; --topbar-fg: rgba(255,255,255,.82); --sidebar: #0e1627;
+  --maestros: #7d9be0; --maestros-2: #4e7ac7; --maestros-oscuro: #1e3c72;
+  --operativa: #34d399; --operativa-2: #10b981; --operativa-oscuro: #065f46;
+  --reportes: #38bdf8; --reportes-2: #0ea5e9; --reportes-oscuro: #0369a1;
+  --ok: #4cc38a; --warn: #f0a44b; --info: #60a5fa; --bad: #ef6b73; --neutro: #94a3b8; --violeta: #a78bfa;
+  color-scheme: dark;
+}
+
+/* Un solo juego de variables por sección: todo lo demás las consume. */
+[data-seccion="maestros"]  { --s: var(--maestros);  --s2: var(--maestros-2);  --s-oscuro: var(--maestros-oscuro);  --s-grad: linear-gradient(135deg, #1e3c72, #2a5298); }
+[data-seccion="operativa"] { --s: var(--operativa); --s2: var(--operativa-2); --s-oscuro: var(--operativa-oscuro); --s-grad: linear-gradient(135deg, #065f46, #059669 55%, #0d9488); }
+[data-seccion="reportes"]  { --s: var(--reportes);  --s2: var(--reportes-2);  --s-oscuro: var(--reportes-oscuro);  --s-grad: linear-gradient(135deg, #0c4a6e, #075985 50%, #0284c7); }
+
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font-family: var(--font); font-size: 15px; line-height: 1.55; margin: 0; }
+.envoltura { max-width: 1120px; margin: 0 auto; padding-inline: 16px; padding-block: 40px 64px; display: grid; gap: 48px; }
+
+h1, h2, h3 { text-wrap: balance; margin: 0; letter-spacing: -.01em; }
+h1 { font-size: clamp(1.9rem, 4vw, 2.6rem); font-weight: 800; }
+h2 { font-size: 1.35rem; font-weight: 700; }
+h3 { font-size: 1rem; font-weight: 700; }
+p { margin: 0; max-width: 68ch; }
+.ceja { font-size: .72rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.lead { color: var(--muted); font-size: 1.05rem; }
+.bloque { display: grid; gap: 18px; }
+
+/* Cabecera */
+.cabecera { display: grid; gap: 14px; }
+.franjas { display: flex; gap: 6px; }
+.franjas span { height: 6px; flex: 1; border-radius: 99px; }
+
+/* Controles */
+.controles { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; }
+.segmento { display: inline-flex; padding: 4px; gap: 4px; background: var(--soft); border: 1px solid var(--line); border-radius: 12px; flex-wrap: wrap; }
+.segmento button { font: inherit; font-size: .88rem; font-weight: 600; border: 0; background: transparent; color: var(--muted); padding: 7px 14px; border-radius: 9px; cursor: pointer; display: inline-flex; gap: 8px; align-items: center; }
+.segmento button[aria-pressed="true"] { background: var(--card); color: var(--fg); box-shadow: 0 1px 2px rgba(15,23,42,.08), 0 0 0 1px var(--line); }
+.segmento button:focus-visible { outline: 2px solid var(--maestros-2); outline-offset: 2px; }
+.punto { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+
+/* Maqueta del panel */
+.maqueta { border: 1px solid var(--line); border-radius: 14px; overflow: hidden; background: var(--bg); box-shadow: 0 24px 48px -28px rgba(15,35,70,.35); }
+.topbar { background: var(--topbar); color: var(--topbar-fg); display: flex; align-items: center; gap: 14px; padding: 10px 16px; flex-wrap: wrap; }
+.marca { font-weight: 800; letter-spacing: .02em; color: #fff; display: flex; align-items: center; gap: 10px; }
+.marca i { width: 26px; height: 26px; border-radius: 7px; background: linear-gradient(135deg, #2a5298, #4e7ac7); display: grid; place-items: center; font-style: normal; font-size: .8rem; }
+.empresa { font-size: .8rem; opacity: .8; }
+.pildora { margin-left: auto; font-size: .76rem; padding: 5px 10px; border-radius: 99px; background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.22); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.pildora b { color: #fff; }
+
+.cuerpo { display: grid; grid-template-columns: 220px minmax(0, 1fr); min-height: 520px; }
+.lateral { background: var(--sidebar); border-right: 1px solid var(--line); padding: 14px 10px; display: grid; align-content: start; gap: 2px; font-size: .86rem; }
+.grupo { font-size: .66rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); padding: 12px 10px 6px; display: flex; gap: 8px; align-items: center; }
+.grupo .punto { width: 8px; height: 8px; }
+.enlace { padding: 7px 10px 7px 12px; border-radius: 8px; color: var(--muted); border-left: 3px solid transparent; }
+.enlace.activo { font-weight: 600; color: var(--s); background: color-mix(in srgb, var(--s2) 13%, transparent); border-left-color: var(--s2); }
+
+.pagina { padding: 20px 22px; display: grid; gap: 16px; align-content: start; min-width: 0; }
+.titulo-pagina { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.icono-seccion { width: 40px; height: 40px; border-radius: 11px; display: grid; place-items: center; color: #fff; background: var(--s-grad); box-shadow: 0 6px 14px -6px color-mix(in srgb, var(--s2) 70%, transparent); font-weight: 800; }
+.titulo-pagina .ceja { color: var(--s); }
+.titulo-pagina h3 { font-size: 1.25rem; }
+.acciones { margin-left: auto; display: flex; gap: 8px; }
+.btn { font: inherit; font-size: .84rem; font-weight: 600; border-radius: 8px; padding: 7px 12px; border: 1px solid var(--line); background: var(--card); color: var(--fg); cursor: pointer; }
+.btn.primario { background: var(--s-grad); color: #fff; border-color: transparent; box-shadow: 0 4px 12px -6px color-mix(in srgb, var(--s2) 80%, transparent); }
+
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+.kpi { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px; display: flex; gap: 10px; align-items: center; }
+.kpi .ico { width: 36px; height: 36px; border-radius: 10px; display: grid; place-items: center; font-weight: 800; font-size: .8rem; }
+.kpi b { display: block; font-size: 1.2rem; font-variant-numeric: tabular-nums; }
+.kpi small { color: var(--muted); font-size: .76rem; }
+
+.tabla-caja { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+.filtros { display: flex; gap: 8px; padding: 10px 12px; background: linear-gradient(90deg, color-mix(in srgb, var(--s2) 7%, transparent), transparent); border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+.buscador { flex: 1; min-width: 160px; font: inherit; font-size: .84rem; padding: 7px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--card); color: var(--muted); }
+.desplazar { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: .84rem; min-width: 560px; }
+thead th { background: var(--s-oscuro); color: #fff; text-align: left; font-size: .7rem; letter-spacing: .06em; text-transform: uppercase; font-weight: 700; padding: 10px 12px; border-bottom: 3px solid var(--s2); }
+tbody td { padding: 9px 12px; border-bottom: 1px solid var(--line); }
+tbody tr:nth-child(even) td { background: color-mix(in srgb, var(--s2) 5%, transparent); }
+tbody tr:hover td { background: color-mix(in srgb, var(--s2) 11%, transparent); }
+.num { font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+.doc { font-family: var(--mono); font-size: .78rem; color: var(--muted); }
+.bs { display: block; font-size: .72rem; color: var(--muted); }
+
+.badge { display: inline-flex; align-items: center; gap: 6px; font-size: .72rem; font-weight: 600; padding: 3px 9px; border-radius: 99px; background: color-mix(in srgb, var(--c) 13%, transparent); color: var(--c); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 28%, transparent); white-space: nowrap; }
+.badge::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--c); }
+
+/* Diálogo */
+.dialogo { background: var(--card); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; box-shadow: 0 18px 40px -18px rgba(15,35,70,.45); max-width: 520px; }
+.dialogo-cab { background: var(--s-grad); color: #fff; padding: 14px 16px; display: flex; align-items: center; gap: 10px; position: relative; }
+.dialogo-cab::after { content: ""; position: absolute; inset: 0; background-image: radial-gradient(rgba(255,255,255,.08) 1px, transparent 1px); background-size: 14px 14px; pointer-events: none; }
+.dialogo-cab h3 { font-size: 1rem; }
+.dialogo-cab .x { margin-left: auto; opacity: .85; font-size: 1.1rem; }
+.pasos { display: flex; gap: 8px; padding: 14px 16px; border-bottom: 1px solid var(--line); background: linear-gradient(180deg, var(--soft), transparent); flex-wrap: wrap; }
+.paso { display: flex; align-items: center; gap: 8px; font-size: .78rem; font-weight: 600; color: var(--muted); }
+.paso i { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; font-style: normal; font-size: .75rem; border: 2px solid var(--line); background: var(--card); }
+.paso.hecho i { background: var(--s2); border-color: var(--s2); color: #fff; }
+.paso.actual { color: var(--fg); }
+.paso.actual i { background: var(--s-grad); border-color: transparent; color: #fff; box-shadow: 0 4px 10px -3px color-mix(in srgb, var(--s2) 70%, transparent); }
+.paso-linea { flex: 1; min-width: 16px; height: 2px; align-self: center; background: var(--line); }
+.paso-linea.hecha { background: var(--s2); }
+.dialogo-cuerpo { padding: 16px; display: grid; gap: 12px; }
+.chip-cliente { display: inline-flex; align-items: center; gap: 10px; padding: 5px 12px 5px 5px; border-radius: 99px; border: 1px solid color-mix(in srgb, var(--s2) 30%, var(--line)); background: color-mix(in srgb, var(--s2) 6%, var(--card)); width: fit-content; }
+.chip-cliente i { width: 28px; height: 28px; border-radius: 50%; background: var(--s-grad); color: #fff; display: grid; place-items: center; font-style: normal; font-size: .72rem; font-weight: 700; }
+.chip-cliente b { font-size: .84rem; color: var(--s); }
+.campo { display: grid; gap: 4px; font-size: .8rem; font-weight: 600; }
+.campo span.input { font-weight: 400; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; color: var(--muted); }
+.campo span.input.foco { border-color: var(--s2); box-shadow: 0 0 0 3px color-mix(in srgb, var(--s2) 18%, transparent); color: var(--fg); }
+.dialogo-pie { display: flex; justify-content: flex-end; gap: 8px; padding: 12px 16px; background: var(--soft); border-top: 1px solid var(--line); }
+
+.fila-demo { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+
+/* Secciones informativas */
+.grupos { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; }
+.tarjeta-grupo { background: var(--card); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+.tarjeta-grupo .muestra { height: 64px; background: var(--s-grad); display: flex; align-items: flex-end; padding: 10px 14px; color: #fff; font-weight: 700; }
+.tarjeta-grupo .info { padding: 12px 14px; display: grid; gap: 6px; font-size: .86rem; }
+.tarjeta-grupo .info small { color: var(--muted); }
+.hexes { display: flex; gap: 6px; flex-wrap: wrap; }
+.hexes code { font-family: var(--mono); font-size: .72rem; padding: 2px 7px; border-radius: 6px; background: var(--soft); border: 1px solid var(--line); }
+
+.estados { display: flex; flex-wrap: wrap; gap: 8px; }
+.comparar { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
+.nota { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; display: grid; gap: 8px; font-size: .9rem; }
+.nota ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; color: var(--muted); }
+.nota ul b { color: var(--fg); font-weight: 600; }
+
+.plan { display: grid; gap: 10px; counter-reset: paso; }
+.plan li { list-style: none; background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 12px 16px 12px 52px; position: relative; font-size: .9rem; }
+.plan li::before { counter-increment: paso; content: counter(paso); position: absolute; left: 14px; top: 12px; width: 26px; height: 26px; border-radius: 8px; background: linear-gradient(135deg, #1e3c72, #2a5298); color: #fff; font-weight: 700; font-size: .8rem; display: grid; place-items: center; }
+.plan li b { display: block; }
+.plan li span { color: var(--muted); }
+.plan code, .nota code { font-family: var(--mono); font-size: .8em; }
+
+@media (max-width: 760px) {
+  .cuerpo { grid-template-columns: minmax(0, 1fr); }
+  .lateral { display: none; }
+  .fila-demo { grid-template-columns: minmax(0, 1fr); }
+  .acciones { margin-left: 0; }
+  .empresa { display: none; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .enlace, thead th, .icono-seccion, .btn.primario, .dialogo-cab, .paso i, .badge { transition: background .25s ease, color .25s ease, border-color .25s ease; }
+}
+</style>
+</head>
+<body>
+
+<div class="envoltura">
+  <header class="cabecera">
+    <div class="franjas" aria-hidden="true">
+      <span style="background: linear-gradient(135deg,#1e3c72,#2a5298)"></span>
+      <span style="background: linear-gradient(135deg,#065f46,#059669 55%,#0d9488)"></span>
+      <span style="background: linear-gradient(135deg,#0c4a6e,#075985 50%,#0284c7)"></span>
+    </div>
+    <p class="ceja">SGPMRJA · Propuesta de diseño</p>
+    <h1>La identidad del sistema, de vuelta</h1>
+    <p class="lead">El panel Blade tenía tres colores de grupo: navy para los maestros, esmeralda para lo operativo y sky para consultas y reportes. Tenía además una topbar oscura y modales con encabezado en degradado. La migración a React dejó un solo azul sobre blanco. La idea es recuperar esa identidad desde un solo lugar, el layout, para que cada página la herede sin tocarla una por una.</p>
+  </header>
+
+  <section class="bloque" aria-labelledby="t-maqueta">
+    <div class="controles">
+      <div class="segmento" role="group" aria-label="Grupo de módulos">
+        <button type="button" data-elegir="maestros" aria-pressed="true"><span class="punto" style="background:#1e3c72"></span>Maestros</button>
+        <button type="button" data-elegir="operativa" aria-pressed="false"><span class="punto" style="background:#059669"></span>Operativa</button>
+        <button type="button" data-elegir="reportes" aria-pressed="false"><span class="punto" style="background:#0284c7"></span>Consultas y reportes</button>
+      </div>
+      <div class="segmento" role="group" aria-label="Tema">
+        <button type="button" data-tema="light" aria-pressed="false">Claro</button>
+        <button type="button" data-tema="dark" aria-pressed="false">Oscuro</button>
+      </div>
+    </div>
+    <h2 id="t-maqueta" class="ceja" style="font-size:.72rem">Maqueta · cambia el grupo y el tema</h2>
+
+    <div class="maqueta" id="maqueta" data-seccion="maestros">
+      <div class="topbar">
+        <span class="marca"><i>A</i>ATLÁNTICO</span>
+        <span class="empresa">Manufacturas R.J. Atlántico</span>
+        <span class="pildora">Tasa BCV (30/09/2026): <b>Bs 857,89</b></span>
+      </div>
+      <div class="cuerpo">
+        <nav class="lateral" aria-label="Menú de ejemplo">
+          <div class="enlace">Inicio</div>
+          <div class="grupo"><span class="punto" style="background:var(--maestros-2)"></span>Gestión General</div>
+          <div class="enlace" data-en="maestros">Clientes</div>
+          <div class="enlace">Proveedores</div>
+          <div class="enlace">Insumos</div>
+          <div class="grupo"><span class="punto" style="background:var(--operativa-2)"></span>Gestión Operativa</div>
+          <div class="enlace">Cotizaciones</div>
+          <div class="enlace" data-en="operativa">Pedidos</div>
+          <div class="enlace">Orden de Producción</div>
+          <div class="enlace">Compras</div>
+          <div class="grupo"><span class="punto" style="background:var(--reportes-2)"></span>Consultas y Reportes</div>
+          <div class="enlace" data-en="reportes">Producción</div>
+          <div class="enlace">Eficiencia</div>
+        </nav>
+
+        <div class="pagina">
+          <div class="titulo-pagina">
+            <span class="icono-seccion" id="ico">C</span>
+            <div>
+              <p class="ceja" id="ceja">Gestión General</p>
+              <h3 id="titulo">Clientes</h3>
+            </div>
+            <div class="acciones">
+              <button class="btn" type="button">Exportar PDF</button>
+              <button class="btn primario" type="button" id="accion">Nuevo cliente</button>
+            </div>
+          </div>
+
+          <div class="kpis" id="kpis"></div>
+
+          <div class="tabla-caja">
+            <div class="filtros"><span class="buscador" id="buscar">Buscar por nombre o documento…</span><button class="btn" type="button">Filtros</button></div>
+            <div class="desplazar">
+              <table>
+                <thead id="thead"></thead>
+                <tbody id="tbody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="fila-demo">
+            <div class="dialogo" role="img" aria-label="Ejemplo de diálogo con encabezado del grupo">
+              <div class="dialogo-cab"><h3 id="d-titulo">Editar cliente</h3><span class="x" aria-hidden="true">✕</span></div>
+              <div class="pasos" id="pasos"></div>
+              <div class="dialogo-cuerpo">
+                <span class="chip-cliente"><i>UA</i><span><b>Uniformes Araure C.A.</b> <span class="doc">J-40123456-7</span></span></span>
+                <label class="campo">Correo <span class="input foco">compras@uniformesaraure.com</span></label>
+              </div>
+              <div class="dialogo-pie"><button class="btn" type="button">Cancelar</button><button class="btn primario" type="button">Guardar cambios</button></div>
+            </div>
+            <div class="nota">
+              <h3>Qué cambia en esta pantalla</h3>
+              <ul>
+                <li><b>Topbar navy</b> con la tasa BCV en píldora de vidrio, como en el Blade.</li>
+                <li><b>Menú:</b> el enlace activo lleva el color de su grupo y un punto de color en cada sección.</li>
+                <li><b>Título:</b> ícono en degradado y el nombre del grupo como ceja.</li>
+                <li><b>Tabla:</b> cabecera en el tono oscuro del grupo, filas rayadas muy suaves y filtros con un tinte.</li>
+                <li><b>Diálogos y asistentes:</b> encabezado en degradado del grupo, pasos y botón principal a juego.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="bloque" aria-labelledby="t-grupos">
+    <h2 id="t-grupos">Los tres grupos</h2>
+    <div class="grupos">
+      <article class="tarjeta-grupo" data-seccion="maestros">
+        <div class="muestra">Maestros · navy</div>
+        <div class="info"><small>Gestión General: clientes, proveedores, empleados, productos, insumos, catálogos. También Configuración y Usuarios.</small>
+          <div class="hexes"><code>#1e3c72</code><code>#2a5298</code><code>oscuro #7d9be0</code></div></div>
+      </article>
+      <article class="tarjeta-grupo" data-seccion="operativa">
+        <div class="muestra">Operativa · esmeralda</div>
+        <div class="info"><small>Gestión Operativa: cotizaciones, pedidos, órdenes, calidad, compras, movimientos.</small>
+          <div class="hexes"><code>#064e3b</code><code>#059669</code><code>#10b981</code></div></div>
+      </article>
+      <article class="tarjeta-grupo" data-seccion="reportes">
+        <div class="muestra">Reportes · sky</div>
+        <div class="info"><small>Consultas y Reportes: producción, eficiencia, insumos, empleados, reportes generales.</small>
+          <div class="hexes"><code>#0c4a6e</code><code>#0369a1</code><code>#0ea5e9</code></div></div>
+      </article>
+    </div>
+    <p class="lead" style="font-size:.95rem">Los tres son los colores originales del sistema. El cambio está en el degradado de Operativa: antes iba de esmeralda a cian y terminaba en azul (tres colores). Ahora es esmeralda profundo a verde azulado, más sobrio y con buen contraste para el texto blanco.</p>
+  </section>
+
+  <section class="bloque" aria-labelledby="t-estados">
+    <h2 id="t-estados">Estados con un solo juego de colores</h2>
+    <p class="lead" style="font-size:.95rem">Hoy un mismo estado sale de un color en el badge y de otro en el gráfico: los gráficos usan los hex del tema viejo y los badges, los tokens nuevos. La propuesta es una sola paleta para los dos.</p>
+    <div class="estados">
+      <span class="badge" style="--c:var(--warn)">Pendiente</span>
+      <span class="badge" style="--c:var(--info)">En Proceso</span>
+      <span class="badge" style="--c:var(--ok)">Aprobada</span>
+      <span class="badge" style="--c:var(--ok)">Finalizado</span>
+      <span class="badge" style="--c:var(--violeta)">Convertida</span>
+      <span class="badge" style="--c:var(--bad)">Cancelado</span>
+      <span class="badge" style="--c:var(--neutro)">Borrador</span>
+      <span class="badge" style="--c:var(--neutro)">Vencida</span>
+    </div>
+  </section>
+
+  <section class="bloque" aria-labelledby="t-antes">
+    <h2 id="t-antes">Qué se recupera y qué se moderniza</h2>
+    <div class="comparar">
+      <div class="nota"><h3>Se recupera tal cual</h3><ul>
+        <li><b>Color por grupo:</b> navy, esmeralda y sky.</li>
+        <li><b>Topbar oscura</b> en <code>#1b2a4e</code>, con píldoras de vidrio.</li>
+        <li><b>Encabezado de modales</b> en degradado del grupo.</li>
+        <li><b>Cabecera de tabla</b> oscura con borde de acento.</li>
+        <li><b>Chip del cliente</b> en asistentes, y <b>KPIs</b> con su ícono de color.</li>
+      </ul></div>
+      <div class="nota"><h3>Se moderniza</h3><ul>
+        <li><b>Mecanismo:</b> un atributo <code>data-seccion</code> en el layout reemplaza las clases por vista (<code>card-maestros</code>, <code>dt-transactional</code>…).</li>
+        <li><b>Tintes:</b> con <code>color-mix()</code> en vez de decenas de <code>rgba</code> a mano. Funcionan igual en claro y oscuro.</li>
+        <li><b>Degradados:</b> más contenidos (dos tonos), y en oscuro los acentos suben a tonos más claros para leerse.</li>
+        <li><b>Cards sin borde izquierdo grueso:</b> el color va en el título, la tabla y los diálogos.</li>
+      </ul></div>
+      <div class="nota"><h3>Se deja atrás</h3><ul>
+        <li><b>Botón primario</b> azul→verde menta (<code>#0066ff→#00d9a5</code>): chocaba con los tres grupos.</li>
+        <li><b>El violeta del tema Velzon</b> y sus hex sueltos en los gráficos.</li>
+        <li><b>SweetAlert:</b> las confirmaciones ya son el diálogo del sistema.</li>
+      </ul></div>
+    </div>
+  </section>
+
+  <section class="bloque" aria-labelledby="t-plan">
+    <h2 id="t-plan">Cómo se implementaría</h2>
+    <ol class="plan">
+      <li><b>Tokens de sección en <code>plataforma.css</code></b><span>Las variables <code>--seccion</code>, <code>--seccion-2</code>, <code>--seccion-oscuro</code> y <code>--seccion-degradado</code>, más la topbar y la paleta de estados, en claro y oscuro.</span></li>
+      <li><b>El grupo, en un solo lugar</b><span>Mover a <code>config/navegacion.php</code> el mapa de grupos que hoy vive escondido en <code>SeguridadController</code>, y que el layout ponga <code>data-seccion</code> según la página activa.</span></li>
+      <li><b>Componentes compartidos</b><span>Topbar, menú, título de página, <code>TablaServidor</code>, <code>DialogoFormulario</code>, <code>Asistente</code>, botón primario, KPIs del Dashboard. Casi ninguna página se toca.</span></li>
+      <li><b>Estados y gráficos unificados</b><span><code>EstadoBadge</code> y los colores de AG Charts salen de la misma paleta, con un tema común en <code>lienzo-grafico.tsx</code>.</span></li>
+      <li><b>Piezas con personalidad</b><span>Chip de cliente, vista tipo recibo de Compras, hero de Órdenes y menú ⋮ con un color por acción. Van en un PR aparte, módulo por módulo.</span></li>
+    </ol>
+  </section>
+</div>
+
+<script>
+(function () {
+  var datos = {
+    maestros: {
+      ceja: 'Gestión General', titulo: 'Clientes', ico: 'C', accion: 'Nuevo cliente', dialogo: 'Editar cliente', buscar: 'Buscar por nombre o documento…',
+      kpis: [['Clientes activos', '148', 'var(--maestros-2)'], ['Jurídicos', '61', 'var(--violeta)'], ['Con pedidos este mes', '23', 'var(--ok)']],
+      cols: ['Cliente', 'Documento', 'Teléfono', 'Estado'],
+      filas: [
+        ['Uniformes Araure C.A.', '<span class="doc">J-40123456-7</span>', '0255-6214477', ['Activo', 'var(--ok)']],
+        ['Colegio San José de Acarigua', '<span class="doc">J-30998811-2</span>', '0255-6219030', ['Activo', 'var(--ok)']],
+        ['María Colmenares', '<span class="doc">V-18456221</span>', '0414-5530912', ['Activo', 'var(--ok)']],
+        ['Alcaldía de Páez', '<span class="doc">G-20000155-0</span>', '0255-6212000', ['Inhabilitado', 'var(--neutro)']]
+      ],
+      pasos: null
+    },
+    operativa: {
+      ceja: 'Gestión Operativa', titulo: 'Pedidos', ico: 'P', accion: 'Nuevo pedido', dialogo: 'Nuevo pedido', buscar: 'Buscar por cliente o número…',
+      kpis: [['Pendientes', '9', 'var(--warn)'], ['En proceso', '14', 'var(--info)'], ['Entregados este mes', '31', 'var(--ok)']],
+      cols: ['Pedido', 'Cliente', 'Entrega', 'Total', 'Estado'],
+      filas: [
+        ['#1042', 'Uniformes Araure C.A.', '08/10/2026', '<span class="num">$ 1.240,00<span class="bs">Bs 1.063.783,60</span></span>', ['Procesando', 'var(--info)']],
+        ['#1041', 'Colegio San José', '15/10/2026', '<span class="num">$ 860,50<span class="bs">Bs 738.214,35</span></span>', ['Pendiente', 'var(--warn)']],
+        ['#1039', 'Clínica Portuguesa', '30/09/2026', '<span class="num">$ 2.115,00<span class="bs">Bs 1.814.437,35</span></span>', ['Completado', 'var(--ok)']],
+        ['#1037', 'María Colmenares', '25/09/2026', '<span class="num">$ 95,00<span class="bs">Bs 81.499,55</span></span>', ['Cancelado', 'var(--bad)']]
+      ],
+      pasos: ['Cliente', 'Productos', 'Pago', 'Resumen'], actual: 2
+    },
+    reportes: {
+      ceja: 'Consultas y Reportes', titulo: 'Producción', ico: 'R', accion: 'Descargar PDF', dialogo: 'Detalle del pedido #1042', buscar: 'Filtrar por empleado u orden…',
+      kpis: [['Unidades producidas', '3.482', 'var(--reportes-2)'], ['Conformes', '96,4 %', 'var(--ok)'], ['Defectuosas', '125', 'var(--bad)']],
+      cols: ['Empleado', 'Órdenes', 'Producidas', 'Eficiencia'],
+      filas: [
+        ['Marta Colmenares', '<span class="num">12</span>', '<span class="num">640</span>', ['94 %', 'var(--ok)']],
+        ['José Pérez', '<span class="num">9</span>', '<span class="num">512</span>', ['88 %', 'var(--info)']],
+        ['Ana Rodríguez', '<span class="num">11</span>', '<span class="num">598</span>', ['91 %', 'var(--ok)']],
+        ['Luis Mendoza', '<span class="num">6</span>', '<span class="num">301</span>', ['67 %', 'var(--bad)']]
+      ],
+      pasos: null
+    }
+  };
+
+  var maqueta = document.getElementById('maqueta');
+  function $(id) { return document.getElementById(id); }
+  function badge(par) { return '<span class="badge" style="--c:' + par[1] + '">' + par[0] + '</span>'; }
+
+  function pintar(seccion) {
+    var d = datos[seccion];
+    maqueta.setAttribute('data-seccion', seccion);
+    $('ceja').textContent = d.ceja; $('titulo').textContent = d.titulo; $('ico').textContent = d.ico;
+    $('accion').textContent = d.accion; $('d-titulo').textContent = d.dialogo; $('buscar').textContent = d.buscar;
+    $('kpis').innerHTML = d.kpis.map(function (k) {
+      return '<div class="kpi"><span class="ico" style="background:color-mix(in srgb,' + k[2] + ' 14%,transparent);color:' + k[2] + '">' + k[1].charAt(0) + '</span><div><b>' + k[1] + '</b><small>' + k[0] + '</small></div></div>';
+    }).join('');
+    $('thead').innerHTML = '<tr>' + d.cols.map(function (c, i) { return '<th' + (i > 0 && i < d.cols.length - 1 && seccion !== 'maestros' ? ' style="text-align:right"' : '') + '>' + c + '</th>'; }).join('') + '</tr>';
+    $('tbody').innerHTML = d.filas.map(function (f) {
+      return '<tr>' + f.map(function (c, i) {
+        if (Array.isArray(c)) return '<td>' + badge(c) + '</td>';
+        var der = i > 0 && seccion !== 'maestros';
+        return '<td' + (der ? ' class="num"' : '') + '>' + c + '</td>';
+      }).join('') + '</tr>';
+    }).join('');
+    var pasos = d.pasos || ['Datos', 'Contacto', 'Confirmar'];
+    var actual = d.pasos ? d.actual : 1;
+    $('pasos').innerHTML = pasos.map(function (p, i) {
+      var clase = i < actual ? 'hecho' : i === actual ? 'actual' : '';
+      var marca = i < actual ? '✓' : String(i + 1);
+      var linea = i < pasos.length - 1 ? '<span class="paso-linea' + (i < actual ? ' hecha' : '') + '"></span>' : '';
+      return '<span class="paso ' + clase + '"><i>' + marca + '</i>' + p + '</span>' + linea;
+    }).join('');
+    document.querySelectorAll('.lateral .enlace').forEach(function (e) { e.classList.toggle('activo', e.getAttribute('data-en') === seccion); });
+    document.querySelectorAll('[data-elegir]').forEach(function (b) { b.setAttribute('aria-pressed', String(b.getAttribute('data-elegir') === seccion)); });
+  }
+
+  document.querySelectorAll('[data-elegir]').forEach(function (b) {
+    b.addEventListener('click', function () { pintar(b.getAttribute('data-elegir')); });
+  });
+  document.querySelectorAll('[data-tema]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var t = b.getAttribute('data-tema');
+      document.documentElement.setAttribute('data-theme', t);
+      document.querySelectorAll('[data-tema]').forEach(function (o) { o.setAttribute('aria-pressed', String(o === b)); });
+    });
+  });
+  pintar('maestros');
+})();
+</script>
+</body>
+</html>
