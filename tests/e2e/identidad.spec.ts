@@ -101,14 +101,22 @@ test('en oscuro los acentos suben de tono y la barra superior sigue oscura', asy
 });
 
 test('el menú ⋮ pinta cada acción con su color, sea cual sea la sección', async ({ page }) => {
+  const icono = (nombre: RegExp) => page.getByRole('menuitem', { name: nombre }).locator('svg').first();
+  const color = (nombre: RegExp) => icono(nombre).evaluate((el) => getComputedStyle(el).color);
+
+  // Maestros (navy): Editar en verde, Inhabilitar en ámbar.
+  await page.goto('/proveedores');
+  await page.getByRole('button', { name: /^Más acciones para/ }).first().click();
+  await expect.poll(() => color(/^Editar/)).toBe('rgb(31, 122, 77)'); // --success
+  await expect.poll(() => color(/^Inhabilitar/)).toBe('rgb(178, 94, 9)'); // --warning
+  // El ícono va en una cajita teñida.
+  expect(await icono(/^Editar/).evaluate((el) => getComputedStyle(el).backgroundColor)).not.toBe('rgba(0, 0, 0, 0)');
+  await page.keyboard.press('Escape');
+
+  // Operativa (esmeralda): el PDF sigue en gris, no toma el color de la sección.
   await page.goto('/pedidos');
   await page.getByRole('button', { name: /Más acciones del pedido/ }).first().click();
-  const icono = (nombre: RegExp) => page.getByRole('menuitem', { name: nombre }).locator('svg').first();
-  // Editar en verde (success) aunque la sección sea esmeralda o navy; Eliminar en rojo.
-  await expect.poll(() => icono(/Editar/).evaluate((el) => getComputedStyle(el).color)).toBe('rgb(31, 122, 77)'); // --success
-  await expect.poll(() => icono(/Eliminar/).evaluate((el) => getComputedStyle(el).color)).toBe('rgb(198, 47, 59)'); // --destructive
-  // El ícono va en una cajita teñida.
-  expect(await icono(/Editar/).evaluate((el) => getComputedStyle(el).backgroundColor)).not.toBe('rgba(0, 0, 0, 0)');
+  await expect.poll(() => color(/Ver PDF/)).toBe('rgb(91, 102, 120)'); // --muted-foreground
 });
 
 test('la barra de filtros lleva el tinte y el riel de la sección', async ({ page }) => {
@@ -121,9 +129,10 @@ test('la barra de filtros lleva el tinte y el riel de la sección', async ({ pag
 test('el asistente muestra el cliente y el creador en chips, y la orden su resumen', async ({ page }) => {
   await page.goto('/pedidos');
   await page.getByRole('button', { name: /Más acciones del pedido/ }).first().click();
-  await page.getByRole('menuitem', { name: /Editar/ }).click();
-  await expect(page.getByText('Cliente', { exact: true }).first()).toBeVisible();
-  await expect(page.getByText(/^Creado por/).first()).toBeVisible();
+  await page.getByRole('menuitem', { name: /Editar|Registrar pago/ }).click();
+  const chips = page.locator('[data-slot="chip-persona"]');
+  await expect(chips.filter({ hasText: 'Cliente' })).toHaveCount(1);
+  await expect(chips.filter({ hasText: /Creado por/ })).toHaveCount(1);
 
   await page.goto('/ordenes');
   await page.getByRole('button', { name: /Ver órdenes/ }).first().click();

@@ -108,7 +108,7 @@ export default function UsuariosIndex({ usuarios, filtros: filtrosIniciales, rol
                                         {/* La propia cuenta no se resetea ni se inhabilita desde aquí (el servidor también lo impide). */}
                                         {!u.es_propio && (
                                             <>
-                                                <DropdownMenuItem tono="principal" onSelect={() => setReseteando(u)}><KeyRound /> Resetear contraseña</DropdownMenuItem>
+                                                <DropdownMenuItem tono="aviso" onSelect={() => setReseteando(u)}><KeyRound /> Resetear contraseña</DropdownMenuItem>
                                                 <DropdownMenuSeparator />
                                                 <DropdownMenuItem tono="aviso" onSelect={() => setInhabilitando(u)}><UserX /> Inhabilitar</DropdownMenuItem>
                                             </>

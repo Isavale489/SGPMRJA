@@ -7,6 +7,7 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { usePermisos } from '@/hooks/use-permisos';
+import { iniciales } from '@/lib/formato';
 
 const csrf = () => document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content ?? '';
 
@@ -27,9 +28,6 @@ function cerrarSesion() {
     document.body.append(form);
     form.submit();
 }
-
-const iniciales = (nombre: string) =>
-    nombre.split(/\s+/).slice(0, 2).map((p) => p[0]?.toUpperCase() ?? '').join('');
 
 export function MenuUsuario() {
     const { auth } = usePage().props;

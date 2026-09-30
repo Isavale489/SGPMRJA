@@ -78,7 +78,7 @@ export function DetalleCompra({ compra, cargando, onCerrar, urls, onAccion }: Pr
                                 <dl className="grid gap-1.5 text-sm">
                                     <Meta etiqueta="Factura">{compra.numero_factura ?? 'S/N'}</Meta>
                                     <Meta etiqueta="Fecha">{compra.fecha ? formatoFecha(compra.fecha) : '—'}</Meta>
-                                    <Meta etiqueta={compra.tasa_fecha ? `Tasa BCV (${formatoFecha(compra.tasa_fecha)})` : 'Tasa (manual)'}>
+                                    <Meta etiqueta={compra.tasa_fecha ? `Tasa BCV (${formatoFecha(compra.tasa_fecha)})` : compra.tasa ? 'Tasa (ingresada a mano)' : 'Tasa'}>
                                         {compra.tasa ? `Bs ${formatoTasa(compra.tasa)}` : '—'}
                                     </Meta>
                                 </dl>
@@ -165,9 +165,11 @@ export function DetalleCompra({ compra, cargando, onCerrar, urls, onAccion }: Pr
 /** Dato del comprobante con línea punteada hasta el valor, como en un recibo impreso. */
 function Meta({ etiqueta, children }: { etiqueta: string; children: ReactNode }) {
     return (
+        // La línea punteada es un ::after del dt: dentro de un dl solo caben dt y dd.
         <div className="flex items-baseline gap-2">
-            <dt className="text-muted-foreground shrink-0 text-xs">{etiqueta}</dt>
-            <span className="border-seccion-acento/30 min-w-4 flex-1 border-b-2 border-dotted" aria-hidden />
+            <dt className="text-muted-foreground after:border-seccion-acento/30 flex min-w-0 flex-1 items-baseline gap-2 text-xs after:min-w-4 after:flex-1 after:border-b-2 after:border-dotted after:content-['']">
+                {etiqueta}
+            </dt>
             <dd className="text-seccion shrink-0 font-semibold tabular">{children}</dd>
         </div>
     );

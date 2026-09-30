@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import AppLayout from '@/layouts/app-layout';
-import { formatoFecha } from '@/lib/formato';
+import { formatoFecha, iniciales } from '@/lib/formato';
 import { POLITICA_CONTRASENA } from '@/lib/contrasena';
 import { cn } from '@/lib/utils';
 
@@ -26,7 +26,6 @@ export interface PaginaPerfil {
     urls: { perfil: string; contrasena: string; preguntas: string; avatar: string };
 }
 
-const iniciales = (nombre: string) => nombre.split(/\s+/).slice(0, 2).map((p) => p[0]?.toUpperCase() ?? '').join('');
 type Dialogo = 'datos' | 'contrasena' | 'preguntas' | 'foto';
 
 export default function Perfil({ usuario, catalogo, preguntas, configuradas, debeReconfigurar, forzado, sinCambios, urls }: PaginaPerfil) {

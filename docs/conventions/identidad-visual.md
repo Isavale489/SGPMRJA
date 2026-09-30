@@ -71,7 +71,7 @@ Los colores que llevan texto blanco encima cumplen contraste AA (≥ 4.5:1). Por
 5. **Las tablas de detalle** (dentro de diálogos o formularios) llevan la cabecera clara normal. `CabeceraSeccion` es solo para listados.
 6. **Dentro de la franja de un diálogo**, lo que no sea título, descripción o `EstadoBadge` va en blanco (`text-white`, `bg-white/20`): los tintes de `primary` o de estado no se leen sobre el degradado.
 7. **Las confirmaciones** (`AlertDialog`: `ConfirmarPeligro`, `confirmar()`) no llevan franja: su foco es la pregunta.
-8. **Toda acción de un menú ⋮ lleva `tono`:** `editar` (verde), `peligro` (rojo: eliminar), `aviso` (ámbar: anular, cancelar, inhabilitar), `restaurar` (celeste: restaurar, reactivar, habilitar), `documento` (gris: PDF) o `principal` (color de la sección: convertir, aprobar, procesar). Es un color por acción, no por sección: «Editar» es verde en todo el sistema.
+8. **Toda acción de un menú ⋮ lleva `tono`:** `editar` (verde), `peligro` (rojo: eliminar), `aviso` (ámbar: anular, cancelar, inhabilitar, volver un estado atrás, resetear la contraseña de otro usuario), `restaurar` (celeste: restaurar, reactivar, habilitar), `documento` (gris: PDF) o `principal` (color de la sección: convertir, aprobar, procesar). Es un color por acción, no por sección: «Editar» es verde en todo el sistema.
 9. **Nada de clases de paleta de Tailwind** para identidad (`text-emerald-600`, `bg-sky-500/10`…). Usa `data-seccion` + los tokens.
 
 ## Verificación

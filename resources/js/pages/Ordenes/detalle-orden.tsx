@@ -1,5 +1,6 @@
 import { Link } from '@inertiajs/react';
 import { CalendarDays, FileText, Layers, Pencil, Plus, Shirt, UserRound } from 'lucide-react';
+import { useState } from 'react';
 
 import { Asistente } from '@/components/app/asistente';
 import { Dato } from '@/components/app/dato';
@@ -26,6 +27,9 @@ const fecha = (f: string | null) => (f ? formatoFecha(f) : '—');
 
 /** Ficha «Ver» de una orden: producto, cronograma, equipo con su avance, insumos, bordados y etapas. */
 export function DetalleOrden({ abierto, orden, onCerrar, onModo, urls }: Props) {
+    // Foto del producto que ya no existe (p. ej. dump importado sin storage/): se usa el ícono.
+    // Se guarda la URL que falló: al abrir otra orden en el mismo diálogo vuelve a intentarse.
+    const [fotoRota, setFotoRota] = useState<string | null>(null);
     const { puede } = usePermisos();
     const activa = orden && (orden.estado === 'Pendiente' || orden.estado === 'En Proceso');
 
@@ -65,8 +69,8 @@ export function DetalleOrden({ abierto, orden, onCerrar, onModo, urls }: Props) 
 
                         {/* Hero (el del panel anterior): qué se fabrica y cuánto va, visible en todos los pasos. */}
                         <section className="bg-card flex items-center gap-4 rounded-xl border p-3" aria-label="Resumen de la orden">
-                            {orden.imagen ? (
-                                <img src={orden.imagen} alt="" className="size-14 shrink-0 rounded-xl border bg-white object-contain p-1" />
+                            {orden.imagen && fotoRota !== orden.imagen ? (
+                                <img src={orden.imagen} alt="" onError={() => setFotoRota(orden.imagen)} className="size-14 shrink-0 rounded-xl border bg-white object-contain p-1" />
                             ) : (
                                 <span className="bg-seccion-degradado grid size-14 shrink-0 place-items-center rounded-xl text-white shadow-[0_6px_16px_-6px_var(--seccion-acento)]" aria-hidden>
                                     <Shirt className="size-6" />
@@ -93,10 +97,6 @@ export function DetalleOrden({ abierto, orden, onCerrar, onModo, urls }: Props) 
                                     contenido: (
                                         <div className="grid gap-4">
                                             <dl className="grid gap-4 sm:grid-cols-2">
-                                                <Dato icono={<Shirt />} etiqueta="Producto">
-                                                    <span className="font-medium">{orden.producto}</span>
-                                                    {orden.variante && <span className="text-muted-foreground block text-xs">{orden.variante}</span>}
-                                                </Dato>
                                                 <Dato icono={<UserRound />} etiqueta="Cliente">
                                                     {orden.cliente ?? '—'}
                                                     {orden.cliente_documento && <span className="text-muted-foreground block text-xs tabular">{orden.cliente_documento}</span>}

@@ -152,7 +152,7 @@ export default function CotizacionesIndex({ registros, filtros: iniciales, detal
                                     </DropdownMenuItem>
                                 )}
                                 {a.pendiente && (
-                                    <DropdownMenuItem tono="restaurar" onSelect={() => setConfirmando({ accion: 'Pendiente', cotizacion: c })}>
+                                    <DropdownMenuItem tono="aviso" onSelect={() => setConfirmando({ accion: 'Pendiente', cotizacion: c })}>
                                         <Undo2 /> {c.estado === 'Cancelada' ? 'Reactivar (Pendiente)' : 'Volver a Pendiente'}
                                     </DropdownMenuItem>
                                 )}
