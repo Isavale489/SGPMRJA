@@ -1,0 +1,1238 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Guía de QA del SGPMRJA</title>
+<style>
+/* Layout: manual de una columna con índice; cada caso es una tarjeta con pasos, resultado esperado y su marca de QA. */
+:root {
+  --bg: #f4f6fa; --card: #ffffff; --fg: #0f172a; --muted: #5b6678; --line: #dfe5ee; --soft: #eef2f8;
+  --navy: #1e3c72; --navy-2: #2a5298; --verde: #047857; --sky: #0369a1;
+  --ok: #1f7a4d; --falla: #c62f3b; --omitir: #64748b; --aviso: #9a4f06;
+  --code-bg: #0f172a; --code-fg: #e2e8f0;
+  --font: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0b1120; --card: #111a2c; --fg: #e5e9f0; --muted: #93a0b5; --line: #22304b; --soft: #152036;
+    --navy: #7d9be0; --navy-2: #4e7ac7; --verde: #34d399; --sky: #38bdf8;
+    --ok: #4cc38a; --falla: #ef6b73; --omitir: #94a3b8; --aviso: #f0a44b;
+    --code-bg: #020617; --code-fg: #e2e8f0; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0b1120; --card: #111a2c; --fg: #e5e9f0; --muted: #93a0b5; --line: #22304b; --soft: #152036;
+  --navy: #7d9be0; --navy-2: #4e7ac7; --verde: #34d399; --sky: #38bdf8;
+  --ok: #4cc38a; --falla: #ef6b73; --omitir: #94a3b8; --aviso: #f0a44b;
+  --code-bg: #020617; --code-fg: #e2e8f0; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--font); font-size: 16px; line-height: 1.6; }
+.envoltura { max-width: 980px; margin: 0 auto; padding-inline: 16px; padding-block: 28px 80px; }
+h1, h2, h3 { line-height: 1.25; text-wrap: balance; margin: 0; }
+h1 { font-size: clamp(1.7rem, 4vw, 2.3rem); font-weight: 800; }
+h2 { font-size: 1.45rem; font-weight: 800; margin-top: 48px; padding-top: 12px; border-top: 2px solid var(--line); }
+h3 { font-size: 1.1rem; font-weight: 700; margin-top: 28px; }
+p { margin: 10px 0; max-width: 72ch; }
+a { color: var(--navy-2); }
+code { font-family: var(--mono); font-size: .88em; background: var(--soft); border: 1px solid var(--line); border-radius: 5px; padding: 1px 5px; }
+pre { background: var(--code-bg); color: var(--code-fg); border-radius: 10px; padding: 14px 16px; overflow-x: auto; font-family: var(--mono); font-size: .88rem; line-height: 1.55; margin: 10px 0; position: relative; }
+pre code { background: none; border: 0; padding: 0; color: inherit; }
+pre .com { color: #94a3b8; }
+.copiar { position: absolute; top: 8px; right: 8px; font: inherit; font-size: .75rem; padding: 3px 9px; border-radius: 6px; border: 1px solid rgba(255,255,255,.25); background: rgba(255,255,255,.08); color: #e2e8f0; cursor: pointer; }
+ul, ol { padding-left: 22px; margin: 8px 0; }
+li { margin: 4px 0; }
+kbd { font-family: var(--mono); font-size: .82em; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 5px; padding: 0 5px; background: var(--card); }
+.boton { display: inline-block; font-weight: 600; font-size: .9em; padding: 0 7px; border-radius: 6px; background: var(--soft); border: 1px solid var(--line); white-space: nowrap; }
+
+/* Portada */
+.portada { background: linear-gradient(135deg, #1e3c72, #2a5298); color: #fff; border-radius: 16px; padding: 26px 24px; display: grid; gap: 10px; }
+.portada p { margin: 0; color: rgba(255,255,255,.9); }
+.franjas { display: flex; gap: 6px; }
+.franjas span { height: 6px; flex: 1; border-radius: 99px; }
+.ceja { font-size: .75rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
+
+/* Avance */
+.avance { position: sticky; top: 0; z-index: 5; background: var(--bg); padding: 10px 0; border-bottom: 1px solid var(--line); display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 18px; }
+.barra { flex: 1; min-width: 160px; height: 10px; background: var(--soft); border-radius: 99px; overflow: hidden; display: flex; }
+.barra i { display: block; height: 100%; }
+.avance .cifras { font-size: .85rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.acciones-qa { display: flex; gap: 8px; flex-wrap: wrap; }
+.btn { font: inherit; font-size: .85rem; font-weight: 600; padding: 7px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--card); color: var(--fg); cursor: pointer; }
+.btn.primario { background: var(--navy); color: #fff; border-color: transparent; }
+:root[data-theme="dark"] .btn.primario, :root:not([data-theme="light"]) .btn.primario { color: #0b1120; }
+@media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) .btn.primario { color: #fff; } }
+.btn:focus-visible, .marca button:focus-visible { outline: 2px solid var(--navy-2); outline-offset: 2px; }
+
+/* Índice */
+.indice { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 14px 18px; margin-top: 18px; columns: 2 260px; column-gap: 28px; }
+.indice a { display: block; text-decoration: none; padding: 2px 0; break-inside: avoid; }
+.indice .grupo { font-weight: 700; color: var(--fg); margin-top: 6px; }
+
+/* Avisos */
+.aviso { border-left: 4px solid var(--aviso); background: color-mix(in srgb, var(--aviso) 10%, transparent); border-radius: 8px; padding: 10px 14px; margin: 12px 0; }
+.nota { border-left: 4px solid var(--navy-2); background: color-mix(in srgb, var(--navy-2) 9%, transparent); border-radius: 8px; padding: 10px 14px; margin: 12px 0; }
+.aviso p, .nota p { margin: 4px 0; }
+
+/* Pestañas de sistema operativo */
+.so { display: inline-flex; gap: 4px; padding: 4px; background: var(--soft); border: 1px solid var(--line); border-radius: 10px; margin: 6px 0; }
+.so button { font: inherit; font-size: .85rem; font-weight: 600; border: 0; background: transparent; color: var(--muted); padding: 5px 12px; border-radius: 7px; cursor: pointer; }
+.so button[aria-pressed="true"] { background: var(--card); color: var(--fg); box-shadow: 0 0 0 1px var(--line); }
+[data-so="linux"] .solo-windows, [data-so="windows"] .solo-linux { display: none; }
+
+/* Pasos de preparación */
+.paso-prep { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 14px 18px; margin: 14px 0; }
+.paso-prep h3 { margin: 0 0 4px; display: flex; gap: 10px; align-items: center; }
+.paso-prep h3 .n { width: 28px; height: 28px; border-radius: 8px; background: var(--navy); color: #fff; display: grid; place-items: center; font-size: .85rem; flex: none; }
+
+/* Tabla */
+.tabla { overflow-x: auto; margin: 10px 0; }
+table { border-collapse: collapse; width: 100%; font-size: .92rem; background: var(--card); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { background: var(--soft); font-size: .78rem; text-transform: uppercase; letter-spacing: .04em; }
+
+/* Secciones por color */
+.seccion { display: inline-block; font-size: .72rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; padding: 2px 8px; border-radius: 99px; }
+.s-maestros { color: var(--navy); background: color-mix(in srgb, var(--navy) 12%, transparent); }
+.s-operativa { color: var(--verde); background: color-mix(in srgb, var(--verde) 12%, transparent); }
+.s-reportes { color: var(--sky); background: color-mix(in srgb, var(--sky) 12%, transparent); }
+.s-general { color: var(--muted); background: var(--soft); }
+
+/* Casos de prueba */
+.caso { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; margin: 12px 0; border-left: 5px solid var(--line); }
+.caso[data-estado="ok"] { border-left-color: var(--ok); }
+.caso[data-estado="falla"] { border-left-color: var(--falla); }
+.caso[data-estado="omitir"] { border-left-color: var(--omitir); opacity: .8; }
+.caso header { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: baseline; }
+.caso .id { font-family: var(--mono); font-size: .78rem; font-weight: 700; color: var(--muted); }
+.caso h4 { margin: 0; font-size: 1.02rem; }
+.caso .dispositivo { font-size: .75rem; color: var(--muted); }
+.caso ol { margin-top: 8px; }
+.esperado { background: color-mix(in srgb, var(--ok) 8%, transparent); border-radius: 8px; padding: 8px 12px; margin: 8px 0; font-size: .95rem; }
+.esperado > b:first-child { color: var(--ok); }
+.marca { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 10px; }
+.marca button { font: inherit; font-size: .85rem; font-weight: 600; padding: 6px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--card); color: var(--fg); cursor: pointer; }
+.marca button[data-valor="ok"][aria-pressed="true"] { background: var(--ok); border-color: var(--ok); color: #fff; }
+.marca button[data-valor="falla"][aria-pressed="true"] { background: var(--falla); border-color: var(--falla); color: #fff; }
+.marca button[data-valor="omitir"][aria-pressed="true"] { background: var(--omitir); border-color: var(--omitir); color: #fff; }
+.marca textarea { flex: 1 1 100%; min-height: 0; font: inherit; font-size: .9rem; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--fg); resize: vertical; }
+.caso[data-estado="falla"] .marca textarea { border-color: var(--falla); }
+
+/* Reporte */
+dialog { border: 1px solid var(--line); border-radius: 14px; background: var(--card); color: var(--fg); width: min(720px, calc(100vw - 32px)); padding: 18px; }
+dialog::backdrop { background: rgba(2,6,23,.55); }
+dialog textarea { width: 100%; min-height: 50vh; font-family: var(--mono); font-size: .82rem; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--fg); padding: 10px; }
+.fila-botones { display: flex; justify-content: flex-end; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+
+@media (max-width: 560px) {
+  body { font-size: 15px; }
+  .avance { position: static; }
+  .portada { padding: 20px 18px; }
+  .caso { padding: 12px 13px; }
+}
+@media (prefers-reduced-motion: no-preference) { .barra i { transition: width .3s ease; } }
+</style>
+</head>
+<body>
+<div class="envoltura" id="raiz" data-so="windows">
+
+<header class="portada">
+  <div class="franjas" aria-hidden="true"><span style="background:#8fb0ee"></span><span style="background:#34d399"></span><span style="background:#7dd3fc"></span></div>
+  <p class="ceja">SGPMRJA · Manufacturas R.J. Atlántico</p>
+  <h1>Guía de QA de la migración</h1>
+  <p>Manual para probar el sistema completo después del cambio a Laravel 13 + Inertia + React. Está escrito para alguien que nunca usó el sistema: cada caso dice qué tocar, paso a paso, y qué debería pasar.</p>
+  <p>Preparada para Isabella · octubre de 2026.</p>
+</header>
+
+<div class="avance" role="region" aria-label="Avance de la prueba">
+  <div class="barra" aria-hidden="true"><i id="b-ok" style="background:var(--ok);width:0"></i><i id="b-falla" style="background:var(--falla);width:0"></i><i id="b-omitir" style="background:var(--omitir);width:0"></i></div>
+  <span class="cifras" id="cifras">0 de 0 casos revisados</span>
+  <div class="acciones-qa">
+    <button class="btn primario" type="button" id="btn-reporte">Generar reporte</button>
+    <button class="btn" type="button" id="btn-reiniciar">Reiniciar marcas</button>
+  </div>
+</div>
+
+<nav class="indice" aria-label="Índice">
+  <a class="grupo" href="#parte-1">Parte 1 · Preparar y levantar el sistema</a>
+  <a href="#requisitos">1. Lo que necesitas</a>
+  <a href="#bajar">2. Bajar los cambios</a>
+  <a href="#dependencias">3. Instalar dependencias</a>
+  <a href="#bd">4. Base de datos</a>
+  <a href="#limpiar">5. Limpiar cachés y enlazar imágenes</a>
+  <a href="#levantar">6. Levantar en la red local</a>
+  <a href="#iphone">7. Entrar desde el iPhone</a>
+  <a href="#problemas">Problemas comunes</a>
+  <a class="grupo" href="#parte-2">Parte 2 · Antes de probar</a>
+  <a href="#como-usar">Cómo usar esta guía</a>
+  <a href="#conocer">Conocer el sistema en 5 minutos</a>
+  <a href="#reglas">Reglas de negocio que debes vigilar</a>
+  <a class="grupo" href="#parte-3">Parte 3 · Casos de prueba</a>
+  <a href="#g-acceso">A. Acceso al sistema</a>
+  <a href="#g-interfaz">B. Interfaz general</a>
+  <a href="#g-inicio">C. Inicio</a>
+  <a href="#g-maestros">D. Gestión General</a>
+  <a href="#g-flujo">E. Flujo principal de venta y producción</a>
+  <a href="#g-compras">F. Compras e inventario</a>
+  <a href="#g-reportes">G. Consultas y reportes</a>
+  <a href="#g-admin">H. Administración</a>
+  <a href="#g-iphone">I. Pruebas propias del iPhone</a>
+  <a href="#reportar">Cómo reportar lo que encuentres</a>
+</nav>
+
+<!-- ============================================================ -->
+<h2 id="parte-1">Parte 1 · Preparar y levantar el sistema</h2>
+<p>Esto se hace una sola vez, en tu computadora. El sistema corre en tu PC y lo abres desde el iPhone por el Wi-Fi de tu casa, como si fuera una página web.</p>
+
+<p>Elige tu sistema operativo y los comandos se ajustan:</p>
+<div class="so" role="group" aria-label="Sistema operativo">
+  <button type="button" data-so="windows" aria-pressed="true">Windows</button>
+  <button type="button" data-so="linux" aria-pressed="false">Linux / Mac</button>
+</div>
+
+<div class="paso-prep" id="requisitos">
+  <h3><span class="n">1</span> Lo que necesitas</h3>
+  <ul>
+    <li><b>PHP 8.3 o más nuevo.</b> Es obligatorio: el sistema ahora usa Laravel 13 y no arranca con PHP 8.2 o anterior.</li>
+    <li><b>Composer</b>, <b>Git</b> y <b>MySQL 8</b> (el mismo de siempre).</li>
+    <li>La computadora y el iPhone <b>conectados al mismo Wi-Fi</b>.</li>
+    <li><b>No</b> necesitas Node ni npm: la parte visual ya viene compilada en el repositorio (<code>public/build</code>).</li>
+  </ul>
+  <p>Abre una terminal <span class="solo-windows">(PowerShell)</span> y revisa la versión de PHP:</p>
+<pre><code>php -v</code></pre>
+  <p>Debe decir <code>PHP 8.3.x</code> o <code>8.4.x</code>.</p>
+  <div class="aviso solo-windows"><p><b>Si dice 8.2 o menos:</b> el XAMPP más reciente trae PHP 8.2, así que no sirve. Instala <b>Laragon</b> con PHP 8.3, o descarga PHP 8.3 para Windows y pon su carpeta en el PATH. Si tienes dudas, escríbele a Emmanuel antes de seguir.</p></div>
+  <div class="aviso solo-linux"><p><b>Si dice 8.2 o menos:</b> instala PHP 8.3 con sus extensiones (<code>mbstring</code>, <code>xml</code>, <code>curl</code>, <code>mysql</code>, <code>zip</code>, <code>gd</code>, <code>intl</code>, <code>bcmath</code>) y vuelve a revisar.</p></div>
+</div>
+
+<div class="paso-prep" id="bajar">
+  <h3><span class="n">2</span> Bajar los cambios</h3>
+  <p>Entra a la carpeta del proyecto (cámbiala por la ruta donde lo tengas):</p>
+<pre class="solo-windows"><code>cd C:\laragon\www\SGPMRJA</code></pre>
+<pre class="solo-linux"><code>cd ~/SGPMRJA</code></pre>
+  <p>Revisa si tienes cambios propios sin guardar:</p>
+<pre><code>git status</code></pre>
+  <p>Si aparecen archivos modificados que no quieres perder, guárdalos aparte. Si no aparece nada, salta este comando:</p>
+<pre><code>git stash push -m "mis cambios antes de la QA"</code></pre>
+  <p>Ahora cambia a la rama <code>dev</code> y baja lo último:</p>
+<pre><code>git fetch origin
+git checkout dev
+git pull origin dev</code></pre>
+  <p>Comprueba que quedaste al día:</p>
+<pre><code>git log --oneline -1</code></pre>
+  <p>Debe mostrar un merge reciente, por ejemplo «Merge pull request #73».</p>
+</div>
+
+<div class="paso-prep" id="dependencias">
+  <h3><span class="n">3</span> Instalar las dependencias de PHP</h3>
+  <p>La migración cambió muchas librerías, así que este paso es obligatorio aunque ya lo hayas hecho antes:</p>
+<pre><code>composer install</code></pre>
+  <p>Tarda uno o dos minutos. Si termina con un error de versión de PHP, vuelve al paso 1.</p>
+</div>
+
+<div class="paso-prep" id="bd">
+  <h3><span class="n">4</span> Base de datos</h3>
+  <p>Vas a usar el archivo <code>.env</code> que ya tienes en la carpeta del proyecto. Ábrelo y confirma que los datos de MySQL sean los de tu computadora:</p>
+<pre><code>DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=sistema_atlantico
+DB_USERNAME=root
+DB_PASSWORD=tu_clave</code></pre>
+  <p>En el mismo <code>.env</code>, revisa también estas dos líneas (si no existen, agrégalas):</p>
+<pre><code>APP_DEBUG=true
+SESSION_SECURE_COOKIE=false</code></pre>
+  <p>La segunda es importante: sin ella, el iPhone no mantiene la sesión abierta, porque entra por <code>http</code> y no por <code>https</code>.</p>
+
+  <h3>Importar la base de datos del repositorio</h3>
+  <div class="aviso"><p><b>Ojo:</b> esto <b>reemplaza</b> lo que tengas en tu base de datos local por la copia del repositorio. Si tienes datos de prueba propios que quieras conservar, avísale a Emmanuel antes.</p></div>
+  <p>Con MySQL encendido, corre el script del equipo. Crea la base de datos (el nombre lo toma del <code>.env</code>) e importa el archivo <code>database/sistema_atlantico.sql</code>:</p>
+<pre class="solo-windows"><code>powershell -ExecutionPolicy Bypass -File database\import-db.ps1</code></pre>
+<pre class="solo-linux"><code>bash database/import-db.sh</code></pre>
+  <p>Después aplica cualquier cambio de estructura pendiente:</p>
+<pre><code>php artisan migrate</code></pre>
+  <p>Lo normal es que diga <code>Nothing to migrate</code> (el archivo ya viene al día). Si te pregunta si quieres continuar en producción, responde que no y revisa que tu <code>.env</code> diga <code>APP_ENV=local</code>.</p>
+  <div class="nota"><p><b>Nunca</b> corras <code>php artisan test</code> en tu computadora con esta base de datos. Las pruebas automáticas borran datos. No hacen falta para esta QA.</p></div>
+</div>
+
+<div class="paso-prep" id="limpiar">
+  <h3><span class="n">5</span> Limpiar cachés y enlazar las imágenes</h3>
+<pre><code>php artisan optimize:clear
+php artisan storage:link</code></pre>
+  <p>El segundo comando conecta la carpeta de fotos (avatares, imágenes de productos). Si dice que el enlace ya existe, está bien.</p>
+</div>
+
+<div class="paso-prep" id="levantar">
+  <h3><span class="n">6</span> Levantar el sistema en tu red local</h3>
+  <p>Primero averigua la IP de tu computadora en el Wi-Fi:</p>
+<pre class="solo-windows"><code>ipconfig</code></pre>
+  <p class="solo-windows">Busca el adaptador <b>Wi-Fi</b> y la línea <b>Dirección IPv4</b>. Es algo como <code>192.168.1.105</code>.</p>
+<pre class="solo-linux"><code><span class="com"># Linux</span>
+hostname -I
+<span class="com"># Mac</span>
+ipconfig getifaddr en0</code></pre>
+  <p class="solo-linux">Toma la primera dirección que empiece por <code>192.168.</code> o <code>10.</code>.</p>
+  <p>Ahora arranca el servidor escuchando en toda la red, no solo en tu PC:</p>
+<pre><code>php artisan serve --host=0.0.0.0 --port=8000</code></pre>
+  <p>Deja esa terminal abierta mientras pruebas. Para apagar el sistema, presiona <kbd>Ctrl</kbd> + <kbd>C</kbd> en ella.</p>
+  <p>Comprueba primero en la computadora: abre el navegador en <code>http://localhost:8000</code>. Debe salir la pantalla de inicio de sesión, con fondo azul.</p>
+  <div class="aviso solo-windows"><p>La primera vez, Windows puede preguntar si permites que PHP se comunique por la red. Marca <b>Redes privadas</b> y acepta. Si ya lo rechazaste antes, busca «Firewall de Windows Defender» → «Permitir una aplicación» y habilita <b>php.exe</b> en redes privadas.</p></div>
+</div>
+
+<div class="paso-prep" id="iphone">
+  <h3><span class="n">7</span> Entrar desde el iPhone</h3>
+  <ol>
+    <li>Conecta el iPhone al <b>mismo Wi-Fi</b> que la computadora.</li>
+    <li>Abre <b>Safari</b> y escribe la IP del paso 6 seguida de <code>:8000</code>. Por ejemplo: <code>http://192.168.1.105:8000</code></li>
+    <li>Escribe <code>http://</code> completo: si no, Safari lo trata como una búsqueda.</li>
+    <li>Debe salir el inicio de sesión. Entra con una de estas cuentas:</li>
+  </ol>
+  <div class="tabla"><table>
+    <thead><tr><th>Usuario</th><th>Contraseña</th><th>Para qué</th></tr></thead>
+    <tbody>
+      <tr><td><code>admin@gmail.com</code></td><td><code>sistemas</code></td><td>Administrador: ve todo. Úsalo para casi todas las pruebas.</td></tr>
+      <tr><td><code>supervisor@gmail.com</code></td><td><code>sistemas</code></td><td>Rol con permisos limitados. Sirve para probar que cada rol ve solo lo suyo y para la recuperación de contraseña.</td></tr>
+    </tbody>
+  </table></div>
+  <div class="nota"><p><b>Consejo:</b> en Safari, toca el botón de compartir y elige <b>«Agregar a inicio»</b>. Así abres el sistema como una app, sin la barra del navegador.</p></div>
+</div>
+
+<h3 id="problemas">Problemas comunes</h3>
+<div class="tabla"><table>
+  <thead><tr><th>Lo que pasa</th><th>Qué hacer</th></tr></thead>
+  <tbody>
+    <tr><td>El iPhone dice «Safari no puede abrir la página» o se queda cargando.</td><td>Revisa que estén en el mismo Wi-Fi, que el servidor siga corriendo, que escribiste <code>http://</code> y el <code>:8000</code>, y el permiso del firewall (paso 6). Algunas redes de oficina o de invitados bloquean la comunicación entre equipos: prueba en la red de tu casa.</td></tr>
+    <tr><td>Entras, pero al tocar cualquier cosa te devuelve al inicio de sesión.</td><td>Falta <code>SESSION_SECURE_COOKIE=false</code> en el <code>.env</code>. Agrégalo, corre <code>php artisan optimize:clear</code> y reinicia el servidor.</td></tr>
+    <tr><td>Error 500 o pantalla de error al abrir la página.</td><td>Mira la terminal del servidor y el archivo <code>storage/logs/laravel.log</code>. Lo más común es que la base de datos esté apagada o que el <code>.env</code> tenga mal la clave de MySQL.</td></tr>
+    <tr><td>Error de «Composer detected issues in your platform» o de versión de PHP.</td><td>Tu PHP es anterior a 8.3. Ver el paso 1.</td></tr>
+    <tr><td>No se ven las fotos de productos o avatares.</td><td>Corre <code>php artisan storage:link</code>. Si siguen sin verse, puede que esos archivos no existan en tu carpeta <code>storage</code>. Anótalo, pero no es un fallo del sistema.</td></tr>
+    <tr><td>La página se ve sin estilos (texto plano).</td><td>Falta <code>public/build</code>. Corre <code>git pull origin dev</code> de nuevo y confirma que la carpeta existe.</td></tr>
+  </tbody>
+</table></div>
+
+<!-- ============================================================ -->
+<h2 id="parte-2">Parte 2 · Antes de probar</h2>
+
+<h3 id="como-usar">Cómo usar esta guía</h3>
+<ul>
+  <li>Lee esta guía en la computadora y prueba en el iPhone. Cuando un caso diga <b>«también en PC»</b>, repítelo en el navegador de la computadora.</li>
+  <li>Sigue los casos <b>en orden</b>. Varios dependen del anterior: por ejemplo, el pedido se crea a partir de la cotización que hiciste antes.</li>
+  <li>En cada caso marca <span class="boton">Funciona</span>, <span class="boton">Falla</span> o <span class="boton">No aplica</span>. Si falla, escribe en la nota qué pasó. Las marcas se guardan solas en este navegador, así que puedes cerrar la guía y seguir otro día.</li>
+  <li>Al terminar, toca <b>Generar reporte</b> arriba, copia el texto y envíaselo a Emmanuel junto con tus capturas de pantalla.</li>
+  <li>Los nombres de ejemplo (clientes, productos) son de la base de datos del repositorio. Si alguno no aparece, usa cualquier otro parecido.</li>
+</ul>
+
+<h3 id="conocer">Conocer el sistema en 5 minutos</h3>
+<p>El SGPMRJA es el sistema de gestión de pedidos de <b>Manufacturas R.J. Atlántico</b>, un taller de bordados y uniformes. Con él se cotiza, se vende, se fabrica y se controla el inventario.</p>
+
+<p><b>La pantalla tiene tres partes:</b></p>
+<ul>
+  <li><b>Barra superior azul oscuro:</b>
+    <ul>
+      <li>a la izquierda: el logo y el botón que encoge el menú;</li>
+      <li>en el centro: la fecha y la <b>Tasa BCV</b> del día;</li>
+      <li>a la derecha: el botón de tema claro/oscuro, la campana de notificaciones y tu usuario.</li>
+    </ul>
+    En el iPhone, el logo y el menú se abren con el botón <span class="boton">☰</span>.</li>
+  <li><b>Menú lateral</b> con los módulos, agrupados en tres secciones. Cada sección tiene su color:</li>
+  <li><b>Contenido:</b> título de la página, botones de acción, filtros y tabla.</li>
+</ul>
+<div class="tabla"><table>
+  <thead><tr><th>Sección</th><th>Color</th><th>Módulos</th></tr></thead>
+  <tbody>
+    <tr><td><span class="seccion s-maestros">Gestión General</span></td><td>Azul marino</td><td>Clientes, Productos (Catálogo, Atributos, Colores), Proveedores, Insumos, Recursos Humanos (Empleados, Departamentos, Cargos)</td></tr>
+    <tr><td><span class="seccion s-operativa">Gestión Operativa</span></td><td>Verde esmeralda</td><td>Cotizaciones, Pedidos, Orden de Producción, Control de Calidad, Movimientos (Movimientos de Insumos, Compras)</td></tr>
+    <tr><td><span class="seccion s-reportes">Consultas y Reportes</span></td><td>Celeste</td><td>Producción, Eficiencia, Consumo de Insumos, Rendimiento de Empleados, Reportes Generales</td></tr>
+    <tr><td><span class="seccion s-general">Administración</span></td><td>Azul marino</td><td>Desde tu usuario (arriba a la derecha) → Configuración: parámetros, impuestos, Usuarios, Mi perfil, Roles y permisos</td></tr>
+  </tbody>
+</table></div>
+
+<p><b>El recorrido de un trabajo, de principio a fin:</b></p>
+<ol>
+  <li><b>Cotización:</b> el cliente pide precio. Se arma con productos, tallas, colores y bordados. Nace <i>Pendiente</i> y luego se <i>Aprueba</i>.</li>
+  <li><b>Pedido:</b> solo nace de una cotización aprobada. Exige un <b>abono mínimo</b> (50 % por defecto) y una fecha de entrega. La cotización queda <i>Convertida</i>.</li>
+  <li><b>Orden de producción:</b> se crean desde el pedido. Dicen cuántas unidades se fabrican, qué empleados las hacen y qué insumos se usan.</li>
+  <li><b>Avance:</b> se registran las unidades producidas. Al completar todas, la orden pasa sola a <i>Finalizado</i>.</li>
+  <li><b>Control de calidad:</b> se inspecciona cada orden finalizada. Si hay defectuosas, la orden vuelve a producción.</li>
+  <li><b>Pedido completado:</b> cuando todas sus órdenes terminan, el pedido pasa solo a <i>Completado</i> y se registra el pago del saldo.</li>
+</ol>
+<p>En paralelo, <b>Compras</b> registra lo que se le compra a los proveedores (sube el inventario de insumos), y <b>Movimientos</b> registra las salidas manuales de insumos.</p>
+
+<h3 id="reglas">Reglas de negocio que debes vigilar en todo el sistema</h3>
+<ul>
+  <li><b>Todo monto en dólares ($) va con su equivalente en bolívares (Bs)</b>, y la tasa siempre muestra su fecha, por ejemplo «Tasa BCV (30/09/2026): Bs 859,06». Si ves un monto en $ sin Bs, o una tasa sin fecha, es un fallo.</li>
+  <li><b>Los estados tienen colores fijos:</b> Pendiente en naranja, En Proceso o Procesando en azul celeste, Aprobada, Finalizado y Completado en verde, Convertida en morado, Cancelado o anulado en rojo, y borrador o Vencida en gris.</li>
+  <li><b>Cambios sin guardar:</b> si escribes en un formulario e intentas salir (cerrar el diálogo, tocar otro módulo o el botón Atrás), el sistema debe preguntarte con su propio diálogo, con los botones «Descartar» y «Seguir editando».</li>
+  <li><b>Nada se debe salir de la pantalla del iPhone:</b> la página no debe poder moverse de lado. Una tabla ancha sí puede deslizarse dentro de su recuadro.</li>
+  <li><b>Los usuarios nunca se borran,</b> solo se inhabilitan. Clientes, proveedores, empleados e insumos tampoco: se inhabilitan y pasan al historial.</li>
+</ul>
+
+<!-- ============================================================ -->
+<h2 id="parte-3">Parte 3 · Casos de prueba</h2>
+<p>Entra como <code>admin@gmail.com</code> salvo que el caso diga otra cosa.</p>
+
+<!-- A -->
+<h3 id="g-acceso">A. Acceso al sistema <span class="seccion s-general">General</span></h3>
+
+<article class="caso" data-id="ACC-01">
+  <header><span class="id">ACC-01</span><h4>Iniciar sesión</h4><span class="dispositivo">iPhone · también en PC</span></header>
+  <ol>
+    <li>Abre <code>http://TU-IP:8000</code>. Sale la pantalla «Iniciar sesión» con fondo azul y el logo.</li>
+    <li>Escribe <code>admin@gmail.com</code> y una contraseña equivocada. Toca <span class="boton">Iniciar sesión</span>.</li>
+    <li>Ahora escribe la contraseña correcta, <code>sistemas</code>, y entra.</li>
+  </ol>
+  <div class="esperado"><b>Esperado:</b> con la clave equivocada sale un mensaje de error debajo del campo, sin recargar toda la página. Con la correcta entras a <b>Inicio</b>. El diseño se ve bien en el iPhone, sin nada cortado.</div>
+</article>
+
+<article class="caso" data-id="ACC-02">
+  <header><span class="id">ACC-02</span><h4>Mostrar y ocultar la contraseña, y «Recuérdame»</h4><span class="dispositivo">iPhone</span></header>
+  <ol>
+    <li>Cierra sesión (tu usuario arriba a la derecha → <span class="boton">Cerrar sesión</span>).</li>
+    <li>En el inicio de sesión, escribe la contraseña y toca el ícono del ojo del campo.</li>
+    <li>Marca <span class="boton">Recuérdame</span>, entra, cierra Safari por completo y vuelve a abrir la dirección.</li>
+  </ol>
+  <div class="esperado"><b>Esperado:</b> el ojo muestra y oculta la contraseña. Con «Recuérdame», al volver sigues con la sesión abierta.</div>
+</article>
+
+<article class="caso" data-id="ACC-03">
+  <header><span class="id">ACC-03</span><h4>Primera entrada del supervisor: configurar preguntas de seguridad</h4><span class="dispositivo">iPhone</span></header>
+  <ol>
+    <li>Cierra sesión y entra con <code>supervisor@gmail.com</code> / <code>sistemas</code>.</li>
+    <li>El sistema te debe llevar a <b>Mi perfil</b> pidiendo configurar las preguntas de seguridad.</li>
+    <li>Elige 3 preguntas distintas, escribe respuestas que recuerdes (anótalas) y guarda.</li>
+  </ol>
+  <div class="esperado"><b>Esperado:</b> no puedes ir a otro módulo hasta configurar las preguntas. Al guardar sale un aviso verde de éxito y ya puedes navegar. El supervisor ve <b>menos módulos</b> en el menú que el administrador.</div>
+</article>
+
+<article class="caso" data-id="ACC-04">
+  <header><span class="id">ACC-04</span><h4>Recuperar la contraseña con las preguntas de seguridad</h4><span class="dispositivo">iPhone</span></header>
+  <ol>
+    <li>Cierra sesión. En el inicio de sesión toca <span class="boton">¿Olvidaste tu contraseña?</span>.</li>
+    <li>Elige recuperar con <b>preguntas de seguridad</b> y escribe <code>supervisor@gmail.com</code>.</li>
+    <li>Responde las 3 preguntas del caso anterior.</li>
+    <li>Pon una contraseña nueva (anótala) y confírmala.</li>
+    <li>Entra con la contraseña nueva.</li>
+  </ol>
+  <div class="esperado"><b>Esperado:</b> con respuestas correctas te deja poner una contraseña nueva y entrar con ella. Con una respuesta equivocada debe avisarte; tras varios intentos fallidos, bloquea la recuperación un tiempo.</div>
+  <div class="nota"><p>Al terminar, vuelve a dejar la contraseña del supervisor en <code>sistemas</code> desde <b>Mi perfil → Contraseña</b>, para que los demás casos funcionen igual.</p></div>
+</article>
+
+<article class="caso" data-id="ACC-05">
+  <header><span class="id">ACC-05</span><h4>Cerrar sesión</h4><span class="dispositivo">iPhone · también en PC</span></header>
+  <ol>
+    <li>Toca tu usuario arriba a la derecha → <span class="boton">Cerrar sesión</span>.</li>
+    <li>Con la sesión cerrada, toca el botón Atrás del navegador.</li>
+  </ol>
+  <div class="esperado"><b>Esperado:</b> vuelves al inicio de sesión. Con Atrás no puedes volver a ver pantallas del sistema sin entrar de nuevo.</div>
+</article>
+
+<!-- B -->
+<h3 id="g-interfaz">B. Interfaz general <span class="seccion s-general">Todo el sistema</span></h3>
+
+<article class="caso" data-id="INT-01">
+  <header><span class="id">INT-01</span><h4>Menú en el iPhone</h4><span class="dispositivo">iPhone</span></header>
+  <ol>
+    <li>Toca el botón <span class="boton">☰</span> arriba a la izquierda.</li>
+    <li>Revisa que arriba del menú salga el logo sobre una franja azul oscuro.</li>
+    <li>Abre <b>Gestión Operativa</b> y toca <b>Pedidos</b>.</li>
+  </ol>
+  <div class="esperado"><b>Esperado:</b>
+    <ul>
+      <li>El menú sale desde la izquierda y se ve completo, con desplazamiento si es largo.</li>
+      <li>Cada sección tiene su ícono de color: azul, verde y celeste.</li>
+      <li>Al tocar Pedidos, el menú se cierra y la página cambia sin recargar del todo: la barra superior no parpadea.</li>
+    </ul>
+  </div>
+</article>
+
+<article class="caso" data-id="INT-02">
+  <header><span class="id">INT-02</span><h4>Menú lateral colapsable</h4><span class="dispositivo">PC (pantalla grande)</span></header>
+  <ol>
+    <li>En la computadora, toca el botón junto al logo (ícono de panel).</li>
+    <li>El menú queda solo con íconos. Pasa el mouse sobre cada ícono.</li>
+    <li>Toca el ícono de <b>Gestión Operativa</b>.</li>
+    <li>Encoge de nuevo el menú y recarga la página (<kbd>F5</kbd>).</li>
+  </ol>
+  <div class="esperado"><b>Esperado:</b> al pasar el mouse sale el nombre de cada sección. Al tocar un grupo, el menú se expande con ese grupo abierto. Después de recargar, el menú recuerda si lo dejaste encogido.</div>
+</article>
+
+<article class="caso" data-id="INT-03">
+  <header><span class="id">INT-03</span><h4>Colores por sección</h4><span class="dispositivo">iPhone · también en PC</span></header>
+  <ol>
+    <li>Abre <b>Clientes</b> (Gestión General), luego <b>Pedidos</b> (Gestión Operativa) y luego <b>Producción</b> (Consultas y Reportes).</li>
+    <li>En cada una mira: el ícono y la palabra pequeña sobre el título, la cabecera de la tabla y el botón principal (por ejemplo, «Agregar cliente» o «Nuevo pedido»).</li>
+  </ol>
+  <div class="esperado"><b>Esperado:</b> Clientes en azul marino, Pedidos en verde esmeralda y Producción en celeste. Todo lo de cada página toma el color de su sección.</div>
+</article>
+
+<article class="caso" data-id="INT-04">
+  <header><span class="id">INT-04</span><h4>Tema oscuro</h4><span class="dispositivo">iPhone · también en PC</span></header>
+  <ol>
+    <li>Toca el ícono de luna en la barra superior.</li>
+    <li>Recorre Inicio, Clientes, Pedidos y un reporte. Abre un diálogo (por ejemplo, «Agregar cliente»).</li>
+    <li>Toca el sol para volver al tema claro.</li>
+  </ol>
+  <div class="esperado"><b>Esperado:</b> todo cambia a fondo oscuro y se lee bien: nada de texto oscuro sobre fondo oscuro. Los gráficos cambian de colores. El tema elegido se mantiene al cambiar de página.</div>
+</article>
+
+<article class="caso" data-id="INT-05">
+  <header><span class="id">INT-05</span><h4>Aviso de cambios sin guardar</h4><span class="dispositivo">iPhone · también en PC</span></header>
+  <ol>
+    <li>En <b>Clientes</b> toca <span class="boton">Agregar cliente</span> y escribe algo en «Nombre y apellido».</li>
+    <li>Toca <span class="boton">Cancelar</span>. Debe salir «Cambios sin guardar». Toca <span class="boton">Seguir editando</span>.</li>
+    <li>Toca <span class="boton">Cancelar</span> otra vez y ahora <span class="boton">Descartar</span>.</li>
+    <li>Ve a <b>Compras</b> → <span class="boton">Nueva compra</span>, elige cualquier proveedor y luego toca el botón <b>Atrás</b> del navegador, o desliza desde el borde izquierdo en el iPhone.</li>
+  </ol>
+  <div class="esperado"><b>Esperado:</b>
+    <ul>
+      <li>Sale un diálogo propio del sistema, no la ventanita gris del navegador.</li>
+      <li>«Seguir editando» conserva lo escrito.</li>
+      <li>«Descartar» cierra el formulario o sale de la página.</li>
+      <li>Con Atrás también pregunta.</li>
+    </ul>
+  </div>
+</article>
+
+<article class="caso" data-id="INT-06">
+  <header><span class="id">INT-06</span><h4>Notificaciones, reloj y tasa BCV</h4><span class="dispositivo">iPhone · también en PC</span></header>
+  <ol>
+    <li>Mira la barra superior: la tasa BCV con su fecha. En la PC grande, también la fecha y la hora.</li>
+    <li>Toca la campana.</li>
+  </ol>
+  <div class="esperado"><b>Esperado:</b> la tasa dice «Tasa BCV (dd/mm/aaaa): Bs …». La campana muestra un número si hay avisos y abre una lista. Al tocar un aviso, te lleva al módulo correspondiente.</div>
+</article>
+
+<article class="caso" data-id="INT-07">
+  <header><span class="id">INT-07</span><h4>Menú de acciones ⋮ con colores</h4><span class="dispositivo">iPhone · también en PC</span></header>
+  <ol>
+    <li>En <b>Clientes</b>, toca los tres puntos <span class="boton">⋮</span> al final de una fila.</li>
+    <li>Haz lo mismo en <b>Pedidos</b>.</li>
+  </ol>
+  <div class="esperado"><b>Esperado:</b> cada acción lleva su ícono en una cajita de color, sin importar la sección:
+    <ul>
+      <li>Editar en verde;</li>
+      <li>Inhabilitar, Anular y Cancelar en naranja;</li>
+      <li>Eliminar en rojo;</li>
+      <li>Ver PDF en gris;</li>
+      <li>Restaurar y Reactivar en celeste.</li>
+    </ul>
+    El menú se cierra al tocar afuera.</div>
+</article>
+
+<!-- C -->
+<h3 id="g-inicio">C. Inicio <span class="seccion s-general">General</span></h3>
+
+<article class="caso" data-id="INI-01">
+  <header><span class="id">INI-01</span><h4>Panel de inicio</h4><span class="dispositivo">iPhone · también en PC</span></header>
+  <ol>
+    <li>Toca <b>Inicio</b> en el menú.</li>
+    <li>Revisa las tarjetas de arriba: entregas de la semana, insumos en alerta y cotizaciones por vencer.</li>
+    <li>Revisa los dos gráficos («Estado de pedidos» y «Pedidos por mes») y la fila de totales de abajo (clientes, productos, empleados y proveedores).</li>
+    <li>Toca la tarjeta «Insumos en alerta».</li>
+    <li>Vuelve y toca el botón de descarga de un gráfico.</li>
+  </ol>
+  <div class="esperado"><b>Esperado:</b>
+    <ul>
+      <li>Las tarjetas y los gráficos cargan; los gráficos pueden tardar un instante más que la página.</li>
+      <li>En el iPhone las tarjetas quedan una debajo de otra.</li>
+      <li>«Insumos en alerta» lleva a las alertas de insumos.</li>
+      <li>La descarga baja una imagen PNG del gráfico.</li>
+      <li>Los colores del gráfico de pedidos coinciden con los de los estados.</li>
+    </ul>
+  </div>
+</article>
+
+<article class="caso" data-id="INI-02">
+  <header><span class="id">INI-02</span><h4>Reordenar las tarjetas de gráficos</h4><span class="dispositivo">PC</span></header>
+  <ol>
+    <li>En Inicio, arrastra un gráfico usando el ícono de seis puntos junto a su título, y suéltalo en el otro lugar.</li>
+    <li>Recarga la página.</li>
+  </ol>
+  <div class="esperado"><b>Esperado:</b> los gráficos cambian de lugar y el orden se mantiene al recargar.</div>
+</article>
+
+<!-- D -->
+<h3 id="g-maestros">D. Gestión General <span class="seccion s-maestros">Azul marino</span></h3>
+
+<article class="caso" data-id="CLI-01">
+  <header><span class="id">CLI-01</span><h4>Clientes: buscar y filtrar</h4><span class="dispositivo">iPhone · también en PC</span></header>
+  <ol>
+    <li>Abre <b>Gestión General → Clientes</b>.</li>
+    <li>En el buscador escribe parte de un nombre, por ejemplo <code>Julian</code>.</li>
+    <li>Usa los filtros «Todos los tipos» (Natural, Jurídico, Gubernamental) y «Más recientes primero».</li>
+    <li>Si hay más de una página, usa la paginación de abajo.</li>
+  </ol>
+  <div class="esperado"><b>Esperado:</b> la tabla se filtra mientras escribes. La barra de filtros tiene un fondo azul suave con una franja a la izquierda. Al recargar, la búsqueda se mantiene, porque queda en la dirección de la página.</div>
+</article>
+
+<article class="caso" data-id="CLI-02">
+  <header><span class="id">CLI-02</span><h4>Clientes: agregar uno nuevo</h4><span class="dispositivo">iPhone</span></header>
+  <ol>
+    <li>Toca <span class="boton">Agregar cliente</span>.</li>
+    <li>Deja todo vacío y toca <span class="boton">Agregar cliente</span> dentro del diálogo.</li>
+    <li>Llena los campos:
+      <ul>
+        <li>Cédula: prefijo <b>V-</b> y un número de 7 u 8 dígitos que no exista, por ejemplo <code>27111222</code>;</li>
+        <li>Nombre y apellido;</li>
+        <li>Correo;</li>
+        <li>Dirección;</li>
+        <li>un teléfono;</li>
+        <li>Estado y Municipio.</li>
+      </ul>
+    </li>
+    <li>Toca <span class="boton">Agregar teléfono</span> y agrega un segundo número. Marca la estrella en uno para hacerlo principal.</li>
+    <li>Guarda.</li>
+    <li>Repite con la misma cédula.</li>
+  </ol>
+  <div class="esperado"><b>Esperado:</b>
+    <ul>
+      <li>El diálogo tiene el encabezado en degradado azul.</li>
+      <li>Con todo vacío, cada campo obligatorio marca su error en rojo.</li>
+      <li>El prefijo V- dice «Cliente natural» (J- sería jurídico).</li>
+      <li>Al guardar sale un aviso verde y el cliente aparece en la tabla.</li>
+      <li>Con la cédula repetida marca el error en el campo, sin una pantalla de error.</li>
+    </ul>
+  </div>
+</article>
+
+<article class="caso" data-id="CLI-03">
+  <header><span class="id">CLI-03</span><h4>Clientes: ver, editar, inhabilitar y restaurar</h4><span class="dispositivo">iPhone</span></header>
+  <ol>
+    <li>En el cliente que creaste, toca el ojo (Ver). Revisa sus datos y ciérralo.</li>
+    <li>Toca <span class="boton">⋮</span> → <b>Editar</b>, cambia la dirección y guarda.</li>
+    <li>Toca <span class="boton">⋮</span> → <b>Inhabilitar</b> y confirma.</li>
+    <li>Toca <span class="boton">Inhabilitados</span> arriba, busca el cliente, toca <span class="boton">⋮</span> → <b>Restaurar</b>.</li>
+  </ol>
+  <div class="esperado"><b>Esperado:</b>
+    <ul>
+      <li>En Editar, la cédula no se puede cambiar.</li>
+      <li>Inhabilitar pide confirmación y el cliente pasa al historial (Inhabilitados).</li>
+      <li>Al restaurarlo vuelve a la lista principal.</li>
+    </ul>
+  </div>
+</article>
+
+<article class="caso" data-id="PRO-01">
+  <header><span class="id">PRO-01</span><h4>Proveedores: agregar, editar, inhabilitar y restaurar</h4><span class="dispositivo">iPhone</span></header>
+  <ol>
+    <li>Abre <b>Gestión General → Proveedores</b>.</li>
+    <li>Agrega uno con RIF <b>J-</b> y un número nuevo (por ejemplo <code>412345678</code>), razón social, correo, dirección y teléfono.</li>
+    <li>Intenta agregar otro con el mismo RIF.</li>
+    <li>Edítalo, inhabilítalo y restáuralo, como en Clientes.</li>
+  </ol>
+  <div class="esperado"><b>Esperado:</b> el mismo comportamiento que en Clientes. El RIF repetido se marca en el campo y no da error de servidor.</div>
+</article>
+
+<article class="caso" data-id="PRD-01">
+  <header><span class="id">PRD-01</span><h4>Productos: catálogo de tipos</h4><span class="dispositivo">iPhone · también en PC</span></header>
+  <ol>
+    <li>Abre <b>Gestión General → Productos → Catálogo</b>.</li>
+    <li>Revisa la tabla: tipo, prefijo, precio de confección en $ y Bs, telas y atributos.</li>
+    <li>Toca <span class="boton">⋮</span> → <b>Editar</b> en «Camisa», revisa los pasos del formulario sin guardar y ciérralo.</li>
+  </ol>
+  <div class="esperado"><b>Esperado:</b> cada precio en $ muestra Bs y la fecha de la tasa. Las fotos de los productos se ven. Al cerrar con cambios, pregunta antes de descartar.</div>
+</article>
+
+<article class="caso" data-id="PRD-02">
+  <header><span class="id">PRD-02</span><h4>Atributos y Colores</h4><span class="dispositivo">iPhone · también en PC</span></header>
+  <ol>
+    <li>Abre <b>Productos → Atributos</b>. Toca un atributo (por ejemplo, «Manga») para ver sus valores.</li>
+    <li>Agrega un valor nuevo; luego intenta agregar otro con el mismo código.</li>
+    <li>Usa las flechas para cambiar el orden de los valores.</li>
+    <li>Abre <b>Productos → Colores</b>, agrega un color con el selector y luego inhabilítalo.</li>
+  </ol>
+  <div class="esperado"><b>Esperado:</b> el código repetido se rechaza con un mensaje en el campo. El orden cambia al momento. En el iPhone se ve un panel a la vez (atributos o valores) y no se desborda.</div>
+</article>
+
+<article class="caso" data-id="INS-01">
+  <header><span class="id">INS-01</span><h4>Insumos</h4><span class="dispositivo">iPhone · también en PC</span></header>
+  <ol>
+    <li>Abre <b>Gestión General → Insumos</b>.</li>
+    <li>Revisa existencia, mínimo y máximo de cada insumo (por ejemplo, «Jersey» o «Botón Nacar 18mm»).</li>
+    <li>Agrega un insumo nuevo: el código se debe escribir en mayúsculas solo.</li>
+    <li>Edítalo e inhabilítalo.</li>
+  </ol>
+  <div class="esperado"><b>Esperado:</b> los insumos bajo su mínimo se distinguen. El código se convierte a mayúsculas. Las acciones funcionan igual que en Clientes.</div>
+</article>
+
+<article class="caso" data-id="RRH-01">
+  <header><span class="id">RRH-01</span><h4>Empleados, Departamentos y Cargos</h4><span class="dispositivo">iPhone · también en PC</span></header>
+  <ol>
+    <li>Abre <b>Recursos Humanos → Departamentos</b> y agrega uno. Haz lo mismo en <b>Cargos</b>, eligiendo su departamento.</li>
+    <li>Abre <b>Empleados</b> y agrega uno. Al elegir el departamento, la lista de cargos debe mostrar solo los de ese departamento.</li>
+    <li>Agrega un empleado con la cédula de un cliente existente.</li>
+  </ol>
+  <div class="esperado"><b>Esperado:</b> los selectores dependen uno del otro. Si la cédula ya existe como cliente, el formulario lo avisa y ofrece usar los datos de esa persona en lugar de duplicarla. Nunca debe salir un error de servidor.</div>
+</article>
+
+<!-- E -->
+<h3 id="g-flujo">E. Flujo principal de venta y producción <span class="seccion s-operativa">Verde esmeralda</span></h3>
+<p>Estos casos van en cadena: crea la cotización, conviértela en pedido, fabrícalo y entrégalo. Anota los números (#) que te va dando el sistema.</p>
+
+<article class="caso" data-id="COT-01">
+  <header><span class="id">COT-01</span><h4>Crear una cotización completa</h4><span class="dispositivo">iPhone</span></header>
+  <ol>
+    <li>Abre <b>Gestión Operativa → Cotizaciones</b> y toca <span class="boton">Nueva cotización</span>.</li>
+    <li><b>Paso 1 · Cliente:</b> toca <span class="boton">Siguiente</span> sin elegir. Luego busca un cliente (por ejemplo <code>Julian</code>), elígelo y marca una prioridad.</li>
+    <li><b>Paso 2 · Productos:</b> toca <span class="boton">Siguiente</span> sin productos. Luego toca <span class="boton">Abrir catálogo</span>:
+      <ul>
+        <li>elige un producto (por ejemplo, «Chemise»);</li>
+        <li>en <b>Variante</b>, elige las opciones hasta que diga «Variante encontrada»;</li>
+        <li>en <b>Configurar</b>, elige un color y pon cantidades en dos tallas;</li>
+        <li>toca <span class="boton">Agregar a la cotización</span>.</li>
+      </ul>
+    </li>
+    <li>En la fila del producto, toca el botón de <b>Bordados</b>, marca una ubicación y toca <span class="boton">Aplicar bordados</span>.</li>
+    <li><b>Paso 3 · Resumen:</b> revisa los totales y toca <span class="boton">Crear cotización</span>.</li>
+  </ol>
+  <div class="esperado"><b>Esperado:</b>
+    <ul>
+      <li>Sin cliente o sin productos no deja avanzar y dice por qué.</li>
+      <li>Arriba aparece un chip con el cliente.</li>
+      <li>El precio unitario se propone solo.</li>
+      <li>El resumen muestra subtotal, IVA y total en $ y Bs, con la tasa y su fecha.</li>
+      <li>Al crear, sale «Cotización #N creada» y se abre su detalle como <b>Pendiente</b>, con la prioridad que elegiste.</li>
+    </ul>
+  </div>
+</article>
+
+<article class="caso" data-id="COT-02">
+  <header><span class="id">COT-02</span><h4>Ver, editar, PDF y aprobar la cotización</h4><span class="dispositivo">iPhone · también en PC</span></header>
+  <ol>
+    <li>En la lista, toca el ojo de tu cotización y recorre sus pasos.</li>
+    <li>Toca <span class="boton">⋮</span> → <b>Editar</b>, cambia una cantidad y guarda.</li>
+    <li>Toca <span class="boton">⋮</span> → <b>Ver PDF</b>.</li>
+    <li>Toca <span class="boton">⋮</span> → <b>Aprobar</b> y confirma.</li>
+  </ol>
+  <div class="esperado"><b>Esperado:</b>
+    <ul>
+      <li>Los cambios se guardan y sale «Cotización #N actualizada».</li>
+      <li>El PDF se abre en otra pestaña, con los datos correctos.</li>
+      <li>Al aprobar, el estado cambia a <b>Aprobada</b> (verde) y aparece la acción «Convertir a pedido».</li>
+    </ul>
+  </div>
+</article>
+
+<article class="caso" data-id="COT-03">
+  <header><span class="id">COT-03</span><h4>Cancelar y reactivar una cotización</h4><span class="dispositivo">iPhone</span></header>
+  <ol>
+    <li>Crea una segunda cotización rápida (un producto, una talla).</li>
+    <li>Toca <span class="boton">⋮</span> → <b>Cancelar cotización</b> y confirma.</li>
+    <li>Toca <span class="boton">⋮</span> → <b>Reactivar (Pendiente)</b>.</li>
+    <li>Prueba los filtros por estado y por fechas de la lista.</li>
+  </ol>
+  <div class="esperado"><b>Esperado:</b> el estado pasa a Cancelada (rojo) y luego vuelve a Pendiente. Las acciones del menú cambian según el estado. Los filtros funcionan.</div>
+</article>
+
+<article class="caso" data-id="PED-01">
+  <header><span class="id">PED-01</span><h4>Convertir la cotización en pedido</h4><span class="dispositivo">iPhone</span></header>
+  <ol>
+    <li>En Cotizaciones, en la cotización <b>Aprobada</b> de COT-02, toca <span class="boton">⋮</span> → <b>Convertir a pedido</b>.</li>
+    <li><b>Paso 1:</b> revisa la cotización y el cliente. Toca <span class="boton">30 días hábiles</span> para proponer la entrega.</li>
+    <li><b>Paso 2:</b> revisa los productos, que vienen de la cotización y no se pueden editar.</li>
+    <li><b>Paso 3 · Pago:</b>
+      <ul>
+        <li>toca <span class="boton">Siguiente</span> sin pagos: debe avisar que no alcanza el mínimo;</li>
+        <li>toca <span class="boton">Efectivo</span>: propone el 50 % del total;</li>
+        <li>prueba también agregar un pago por transferencia y elegir un banco.</li>
+      </ul>
+    </li>
+    <li><b>Paso 4 · Resumen:</b> revisa «Saldo por cobrar» y toca <span class="boton">Crear pedido</span>.</li>
+  </ol>
+  <div class="esperado"><b>Esperado:</b>
+    <ul>
+      <li>No deja crear el pedido sin el abono mínimo ni sin fecha de entrega.</li>
+      <li>Sale «Pedido #N creado» y se abre su detalle, en estado <b>Pendiente</b>.</li>
+      <li>En Cotizaciones, la cotización ahora dice <b>Convertida</b> (morado).</li>
+    </ul>
+  </div>
+</article>
+
+<article class="caso" data-id="PED-02">
+  <header><span class="id">PED-02</span><h4>Detalle y edición del pedido</h4><span class="dispositivo">iPhone · también en PC</span></header>
+  <ol>
+    <li>En <b>Pedidos</b>, revisa la columna «Abonado» con su barra de progreso.</li>
+    <li>Abre el detalle (ojo) de tu pedido. Arriba deben verse el estado y quién lo creó.</li>
+    <li>Toca <span class="boton">⋮</span> → <b>Editar pagos y entrega</b>. Cambia la prioridad y guarda.</li>
+    <li>Toca <span class="boton">⋮</span> → <b>Ver PDF</b>.</li>
+  </ol>
+  <div class="esperado"><b>Esperado:</b>
+    <ul>
+      <li>En el encabezado verde del detalle, el estado y las iniciales se leen bien.</li>
+      <li>Al editar salen chips con el cliente y el creador.</li>
+      <li>Los cambios se guardan y el PDF abre.</li>
+    </ul>
+  </div>
+</article>
+
+<article class="caso" data-id="ORD-01">
+  <header><span class="id">ORD-01</span><h4>Crear las órdenes de producción del pedido</h4><span class="dispositivo">iPhone · también en PC</span></header>
+  <ol>
+    <li>Abre <b>Gestión Operativa → Orden de Producción</b> y toca <span class="boton">Nueva orden</span>.</li>
+    <li>Elige tu pedido de la lista (sale con el nombre del cliente).</li>
+    <li>Toca <span class="boton">Siguiente</span>. En la asignación, prueba <span class="boton">Dividir</span> para repartir las unidades en dos órdenes.</li>
+    <li>Toca <span class="boton">Siguiente</span> sin marcar empleados: debe pedir el equipo. Marca al menos un empleado en cada orden.</li>
+    <li>Revisa los insumos calculados y el resumen. Toca <span class="boton">Crear 2 órdenes</span> (o el número que corresponda).</li>
+  </ol>
+  <div class="esperado"><b>Esperado:</b>
+    <ul>
+      <li>Los pedidos que no cumplen el abono mínimo (o que ya tienen todo asignado) aparecen bloqueados y no se pueden elegir.</li>
+      <li>«Dividir» reparte las unidades.</li>
+      <li>Los insumos se calculan por unidad, y el resumen avisa si falta existencia.</li>
+      <li>Se crean las órdenes y sale el aviso de éxito.</li>
+    </ul>
+  </div>
+</article>
+
+<article class="caso" data-id="ORD-02">
+  <header><span class="id">ORD-02</span><h4>Ver la orden: resumen, etapas y avance</h4><span class="dispositivo">iPhone · también en PC</span></header>
+  <ol>
+    <li>En la lista de órdenes, toca <span class="boton">Ver órdenes</span> en la fila de tu pedido.</li>
+    <li>Toca el ojo de una orden. Arriba debe verse un resumen con la foto del producto (o un ícono), el nombre y una barra de avance.</li>
+    <li>Recorre sus pasos: Orden, Insumos y Progreso.</li>
+    <li>Ciérrala. En <span class="boton">⋮</span> → <b>Etapas</b>, agrega una etapa (por ejemplo, «Corte») y cambia su estado.</li>
+    <li>En <span class="boton">⋮</span> → <b>Registrar avance</b>, pon una parte de las unidades y registra.</li>
+  </ol>
+  <div class="esperado"><b>Esperado:</b> el avance se registra con aviso verde y la orden pasa a <b>En Proceso</b>. El pedido pasa a <b>Procesando</b>. La barra de avance se actualiza.</div>
+</article>
+
+<article class="caso" data-id="ORD-03">
+  <header><span class="id">ORD-03</span><h4>Terminar la producción</h4><span class="dispositivo">iPhone</span></header>
+  <ol>
+    <li>En cada orden de tu pedido, usa <b>Registrar avance</b> con las unidades que faltan.</li>
+    <li>Intenta registrar más unidades de las que faltan.</li>
+  </ol>
+  <div class="esperado"><b>Esperado:</b> no permite pasarse de la cantidad. Al completar todas las unidades, la orden pasa sola a <b>Finalizado</b> y aparece en Control de Calidad.</div>
+</article>
+
+<article class="caso" data-id="CAL-01">
+  <header><span class="id">CAL-01</span><h4>Control de calidad: rechazo (vuelve a producción)</h4><span class="dispositivo">iPhone</span></header>
+  <ol>
+    <li>Abre <b>Gestión Operativa → Control de Calidad</b>. Tu pedido debe aparecer con sus órdenes pendientes de inspección.</li>
+    <li>Toca <span class="boton">Ver órdenes</span> y luego <span class="boton">Inspeccionar</span> en una orden.</li>
+    <li>Suma 2 defectuosas con el botón <span class="boton">+</span>. Debe decir «Rechazo: la orden vuelve a producción».</li>
+    <li>Toca <span class="boton">Registrar rechazo</span> sin motivo; luego escribe un motivo y regístralo.</li>
+  </ol>
+  <div class="esperado"><b>Esperado:</b>
+    <ul>
+      <li>Las defectuosas se reparten solas entre los empleados de la orden.</li>
+      <li>Sin motivo, no deja registrar.</li>
+      <li>Al registrar, la orden sale de la cola y vuelve a producción con las unidades rechazadas por rehacer.</li>
+    </ul>
+  </div>
+</article>
+
+<article class="caso" data-id="CAL-02">
+  <header><span class="id">CAL-02</span><h4>Control de calidad: aprobación</h4><span class="dispositivo">iPhone</span></header>
+  <ol>
+    <li>Vuelve a Orden de Producción y registra el avance de lo rechazado hasta completar de nuevo.</li>
+    <li>En Control de Calidad, inspecciona otra vez y deja 0 defectuosas. Regístralo.</li>
+    <li>Inspecciona también la otra orden con 0 defectuosas.</li>
+  </ol>
+  <div class="esperado"><b>Esperado:</b> con 0 defectuosas la inspección queda como conforme. Cuando no quedan órdenes por inspeccionar, la cola dice que no hay órdenes pendientes.</div>
+</article>
+
+<article class="caso" data-id="PED-03">
+  <header><span class="id">PED-03</span><h4>Pedido completado y pago del saldo (entrega)</h4><span class="dispositivo">iPhone</span></header>
+  <ol>
+    <li>Abre <b>Pedidos</b>: tu pedido debe estar en <b>Completado</b> (verde).</li>
+    <li>Toca <span class="boton">⋮</span> → <b>Registrar pago</b> y registra el saldo pendiente.</li>
+    <li>Abre el detalle del pedido.</li>
+  </ol>
+  <div class="esperado"><b>Esperado:</b> el pedido se completó solo al terminar todas sus órdenes. Al pagar el saldo, «Abonado» llega a 100 % y la barra se pone verde. El detalle muestra los pagos con su fecha, montos en $ y Bs.</div>
+</article>
+
+<article class="caso" data-id="PED-04">
+  <header><span class="id">PED-04</span><h4>Cancelar y eliminar pedidos</h4><span class="dispositivo">iPhone</span></header>
+  <ol>
+    <li>Crea una cotización rápida, apruébala y conviértela en pedido (sin crear órdenes).</li>
+    <li>En ese pedido toca <span class="boton">⋮</span> → <b>Eliminar</b> y confirma.</li>
+    <li>Vuelve a Cotizaciones.</li>
+  </ol>
+  <div class="esperado"><b>Esperado:</b> el pedido se elimina y su cotización vuelve a <b>Aprobada</b>, así que se puede convertir otra vez. En un pedido con producción iniciada no debe dejar eliminar.</div>
+</article>
+
+<!-- F -->
+<h3 id="g-compras">F. Compras e inventario <span class="seccion s-operativa">Verde esmeralda</span></h3>
+
+<article class="caso" data-id="COM-01">
+  <header><span class="id">COM-01</span><h4>Registrar una compra en borrador</h4><span class="dispositivo">iPhone · también en PC</span></header>
+  <ol>
+    <li>Abre <b>Movimientos → Compras</b> y toca <span class="boton">Nueva compra</span>.</li>
+    <li><b>Paso 1:</b> elige un proveedor y escribe un número de factura. La tasa del día se llena sola.</li>
+    <li><b>Paso 2:</b> agrega dos insumos con su cantidad. Revisa el costo en Bs propuesto y quítale el IVA a uno con su interruptor.</li>
+    <li><b>Paso 3:</b> revisa el resumen y toca <span class="boton">Guardar borrador</span>.</li>
+  </ol>
+  <div class="esperado"><b>Esperado:</b> el total se recalcula al cambiar el IVA. Sale «Borrador de compra #N guardado». En la lista aparece como <b>borrador</b> (gris). La existencia de los insumos <b>no</b> cambia todavía.</div>
+</article>
+
+<article class="caso" data-id="COM-02">
+  <header><span class="id">COM-02</span><h4>Ver la compra (vista de recibo) y procesarla</h4><span class="dispositivo">iPhone · también en PC</span></header>
+  <ol>
+    <li>Toca el ojo de tu compra.</li>
+    <li>Revisa el recibo: proveedor arriba, y factura, fecha y tasa BCV en líneas punteadas a la derecha. Abajo, el detalle de insumos y la barra de totales con «Total a pagar» resaltado en verde.</li>
+    <li>Toca <span class="boton">Procesar</span> y confirma.</li>
+    <li>Ve a la pestaña <b>Existencias</b> y busca uno de los insumos.</li>
+  </ol>
+  <div class="esperado"><b>Esperado:</b> la compra pasa a <b>recibida</b> (verde) y la existencia del insumo sube en la cantidad comprada. En el iPhone, la tabla del recibo se puede deslizar de lado dentro de su recuadro.</div>
+</article>
+
+<article class="caso" data-id="COM-03">
+  <header><span class="id">COM-03</span><h4>Anular y clonar una compra</h4><span class="dispositivo">iPhone</span></header>
+  <ol>
+    <li>En la compra recibida, toca <span class="boton">⋮</span> → <b>Anular</b> y confirma.</li>
+    <li>Revisa en Existencias que el insumo volvió a su cantidad anterior.</li>
+    <li>Ve a la pestaña <b>Anuladas</b>, toca <span class="boton">⋮</span> → <b>Clonar como borrador</b>.</li>
+  </ol>
+  <div class="esperado"><b>Esperado:</b>
+    <ul>
+      <li>Al anular, el stock se revierte y la compra pasa a Anuladas con quién la anuló.</li>
+      <li>Clonar crea un borrador nuevo igual.</li>
+      <li>Una compra ya clonada muestra «Ya fue clonada».</li>
+    </ul>
+  </div>
+</article>
+
+<article class="caso" data-id="MOV-01">
+  <header><span class="id">MOV-01</span><h4>Movimientos de insumos: salida manual</h4><span class="dispositivo">iPhone · también en PC</span></header>
+  <ol>
+    <li>Abre <b>Movimientos → Movimientos de Insumos</b>.</li>
+    <li>Revisa la lista: entradas (por compras) y salidas (por producción), con su existencia antes → después.</li>
+    <li>Toca <span class="boton">Registrar salida</span>, elige un insumo y una cantidad mayor a la existencia; luego, una cantidad válida.</li>
+    <li>Abre <span class="boton">Alertas</span> y <span class="boton">Rotación</span>.</li>
+  </ol>
+  <div class="esperado"><b>Esperado:</b> solo se registran <b>salidas</b> manuales: las entradas vienen de Compras. No deja sacar más de lo que hay. Alertas muestra los insumos bajo su mínimo; Rotación, cuánto se mueve cada insumo.</div>
+</article>
+
+<!-- G -->
+<h3 id="g-reportes">G. Consultas y reportes <span class="seccion s-reportes">Celeste</span></h3>
+
+<article class="caso" data-id="REP-01">
+  <header><span class="id">REP-01</span><h4>Reporte de Producción</h4><span class="dispositivo">iPhone · también en PC</span></header>
+  <ol>
+    <li>Abre <b>Consultas y Reportes → Producción</b>.</li>
+    <li>Revisa el gráfico «Órdenes por estado», el de «Producción mensual» y la tabla «Estadísticas por mes».</li>
+    <li>Descarga un gráfico como imagen.</li>
+  </ol>
+  <div class="esperado"><b>Esperado:</b> los colores de los estados coinciden con los de las etiquetas del resto del sistema. La cabecera de la tabla es celeste oscuro. Tus órdenes de la parte E aparecen contadas.</div>
+</article>
+
+<article class="caso" data-id="REP-02">
+  <header><span class="id">REP-02</span><h4>Eficiencia, Consumo de insumos y Rendimiento de empleados</h4><span class="dispositivo">iPhone · también en PC</span></header>
+  <ol>
+    <li>Abre cada uno de los tres reportes.</li>
+    <li>En <b>Rendimiento de Empleados</b>, usa el buscador y toca el encabezado de una columna para ordenarla. Toca una barra del gráfico.</li>
+    <li>En <b>Eficiencia</b>, abre el detalle de un pedido.</li>
+  </ol>
+  <div class="esperado"><b>Esperado:</b>
+    <ul>
+      <li>La eficiencia usa el semáforo: verde de 90 % para arriba, celeste entre 70 y 89 %, rojo por debajo de 70 %.</li>
+      <li>Las columnas se ordenan al tocarlas.</li>
+      <li>En el iPhone, nada se sale de la pantalla.</li>
+    </ul>
+  </div>
+</article>
+
+<article class="caso" data-id="REP-03">
+  <header><span class="id">REP-03</span><h4>Reportes generales y PDF</h4><span class="dispositivo">iPhone · también en PC</span></header>
+  <ol>
+    <li>Abre <b>Reportes Generales</b>. Revisa los totales del mes y las tarjetas de reportes, agrupadas por sección y con el color de cada una.</li>
+    <li>Abre al menos un reporte en PDF de cada grupo.</li>
+    <li>En cualquier listado (por ejemplo, Clientes), toca <span class="boton">Exportar PDF</span>.</li>
+  </ol>
+  <div class="esperado"><b>Esperado:</b> los PDF abren en otra pestaña con datos reales, encabezado de la empresa y montos con su tasa. En el iPhone se pueden ver y compartir.</div>
+</article>
+
+<!-- H -->
+<h3 id="g-admin">H. Administración <span class="seccion s-maestros">Azul marino</span></h3>
+
+<article class="caso" data-id="ADM-01">
+  <header><span class="id">ADM-01</span><h4>Configuración del sistema</h4><span class="dispositivo">iPhone · también en PC</span></header>
+  <ol>
+    <li>Toca tu usuario arriba a la derecha → <b>Configuración</b>.</li>
+    <li>Revisa los parámetros por módulo (por ejemplo, días de vigencia de las cotizaciones y abono mínimo de los pedidos).</li>
+    <li>Cambia el abono mínimo a 40 %, guarda, y comprueba en un pedido nuevo que el mínimo propuesto cambió. <b>Después déjalo en 50 %.</b></li>
+    <li>En <b>Impuestos</b>, intenta eliminar el IVA; luego agrega un impuesto de prueba y elimínalo.</li>
+  </ol>
+  <div class="esperado"><b>Esperado:</b> los cambios se guardan y se reflejan en los formularios. El IVA está protegido y no se puede eliminar. Los demás impuestos sí, con confirmación.</div>
+</article>
+
+<article class="caso" data-id="ADM-02">
+  <header><span class="id">ADM-02</span><h4>Usuarios</h4><span class="dispositivo">iPhone · también en PC</span></header>
+  <ol>
+    <li>En Configuración, toca <b>Usuarios</b>.</li>
+    <li>Agrega un usuario con tu correo de prueba, el rol <b>Supervisor</b> y una contraseña. Prueba también una contraseña débil.</li>
+    <li>En <span class="boton">⋮</span>, prueba Editar, Inhabilitar y Habilitar.</li>
+    <li>Prueba <b>Resetear contraseña</b> en tu usuario de prueba y entra con él.</li>
+  </ol>
+  <div class="esperado"><b>Esperado:</b>
+    <ul>
+      <li>La contraseña débil se rechaza con un mensaje claro.</li>
+      <li>Un usuario inhabilitado no puede entrar.</li>
+      <li>Tras resetear, al entrar el sistema obliga a cambiar la contraseña.</li>
+      <li>No existe la opción de eliminar usuarios.</li>
+    </ul>
+  </div>
+</article>
+
+<article class="caso" data-id="ADM-03">
+  <header><span class="id">ADM-03</span><h4>Roles y permisos</h4><span class="dispositivo">PC (más cómodo)</span></header>
+  <ol>
+    <li>En Configuración, toca <b>Roles y permisos</b>.</li>
+    <li>Toca <span class="boton">Nuevo rol</span>, ponle un nombre (por ejemplo, «Prueba QA») y créalo.</li>
+    <li>En la pestaña Permisos, marca «Clientes: Crear»: «Clientes: Ver» se marca solo. Marca algunos permisos de Gestión Operativa y guarda.</li>
+    <li>Asigna ese rol a tu usuario de prueba (ADM-02), entra con él y revisa el menú.</li>
+    <li>Vuelve como admin, quita el rol del usuario y elimina el rol.</li>
+  </ol>
+  <div class="esperado"><b>Esperado:</b>
+    <ul>
+      <li>Cada sección de la matriz tiene su color.</li>
+      <li>El usuario con el rol nuevo ve <b>solo</b> los módulos permitidos; si escribe a mano la dirección de otro módulo, recibe un error de acceso.</li>
+      <li>Un rol con usuarios no se puede eliminar.</li>
+    </ul>
+  </div>
+</article>
+
+<article class="caso" data-id="ADM-04">
+  <header><span class="id">ADM-04</span><h4>Mi perfil</h4><span class="dispositivo">iPhone</span></header>
+  <ol>
+    <li>Tu usuario → <b>Configuración</b> → <b>Mi perfil</b>.</li>
+    <li>Cambia tu nombre y guarda.</li>
+    <li>Sube una foto de perfil desde el iPhone (cámara o galería).</li>
+    <li>Abre la sección de contraseña y prueba poner la contraseña actual equivocada.</li>
+  </ol>
+  <div class="esperado"><b>Esperado:</b>
+    <ul>
+      <li>La foto aparece en tu avatar de la barra superior.</li>
+      <li>Con la contraseña actual equivocada sale un mensaje claro en español, no un texto técnico.</li>
+      <li>Al cambiar la contraseña, se cierran las sesiones abiertas en otros dispositivos.</li>
+    </ul>
+  </div>
+</article>
+
+<!-- I -->
+<h3 id="g-iphone">I. Pruebas propias del iPhone <span class="seccion s-general">Móvil</span></h3>
+
+<article class="caso" data-id="MOV-I1">
+  <header><span class="id">MOV-I1</span><h4>Nada se sale de la pantalla</h4><span class="dispositivo">iPhone</span></header>
+  <ol>
+    <li>En cada módulo que visites, intenta deslizar la página de lado con un dedo.</li>
+    <li>Gira el iPhone en horizontal en Pedidos, Compras y un reporte.</li>
+  </ol>
+  <div class="esperado"><b>Esperado:</b> la página nunca se mueve de lado; solo las tablas anchas se deslizan dentro de su recuadro. En horizontal todo se reacomoda y se puede usar.</div>
+</article>
+
+<article class="caso" data-id="MOV-I2">
+  <header><span class="id">MOV-I2</span><h4>Diálogos y teclado</h4><span class="dispositivo">iPhone</span></header>
+  <ol>
+    <li>Abre un formulario largo en diálogo (Agregar cliente) y toca el último campo.</li>
+    <li>Abre el asistente de Nueva cotización y escribe en el buscador de clientes.</li>
+    <li>Prueba campos de fecha y de número (cantidades, montos).</li>
+  </ol>
+  <div class="esperado"><b>Esperado:</b>
+    <ul>
+      <li>Cuando aparece el teclado, el campo activo sigue a la vista.</li>
+      <li>El diálogo se puede desplazar hasta sus botones.</li>
+      <li>Los campos de fecha abren el selector del iPhone y los de número, el teclado numérico.</li>
+      <li>Ningún diálogo queda cortado ni imposible de cerrar.</li>
+    </ul>
+  </div>
+</article>
+
+<article class="caso" data-id="MOV-I3">
+  <header><span class="id">MOV-I3</span><h4>Botones fáciles de tocar</h4><span class="dispositivo">iPhone</span></header>
+  <ol>
+    <li>En las tablas, toca el ojo y los tres puntos <span class="boton">⋮</span> de varias filas.</li>
+    <li>Usa los selectores de filtros y la paginación.</li>
+  </ol>
+  <div class="esperado"><b>Esperado:</b> los botones responden al primer toque, sin tocar por error el de al lado. Los menús y selectores se abren completos dentro de la pantalla.</div>
+</article>
+
+<article class="caso" data-id="MOV-I4">
+  <header><span class="id">MOV-I4</span><h4>Atrás con gesto y pestañas</h4><span class="dispositivo">iPhone</span></header>
+  <ol>
+    <li>Navega por varias pantallas y vuelve con el gesto de deslizar desde el borde izquierdo.</li>
+    <li>En Compras, cambia entre las pestañas Compras, Anuladas y Existencias, y vuelve con el gesto.</li>
+  </ol>
+  <div class="esperado"><b>Esperado:</b> el gesto Atrás lleva a la pantalla anterior correcta, sin quedar en blanco. Si había un formulario con cambios, pregunta antes de salir.</div>
+</article>
+
+<!-- ============================================================ -->
+<h2 id="reportar">Cómo reportar lo que encuentres</h2>
+<p>Para cada fallo, escribe en la nota del caso y toma una captura de pantalla. Incluye:</p>
+<ol>
+  <li><b>Dónde:</b> módulo y pantalla, por ejemplo «Pedidos → Nuevo pedido, paso 3».</li>
+  <li><b>Qué hiciste:</b> los pasos exactos.</li>
+  <li><b>Qué esperabas</b> y <b>qué pasó</b>.</li>
+  <li><b>En qué:</b> iPhone o PC, y si estabas en tema claro u oscuro.</li>
+  <li>Si salió una pantalla de error, la captura completa.</li>
+</ol>
+<p>Al terminar, toca <b>Generar reporte</b> (arriba). Arma un texto con el resumen y todos los casos con falla y sus notas: cópialo y envíaselo a Emmanuel junto con las capturas.</p>
+<p>¡Gracias, Isabella! Tu revisión es la última prueba antes de presentarle la migración al profesor.</p>
+
+</div>
+
+<dialog id="dlg-reporte" aria-labelledby="t-reporte">
+  <h3 id="t-reporte" style="margin-top:0">Reporte de QA</h3>
+  <p style="margin:4px 0 10px">Copia este texto y envíaselo a Emmanuel.</p>
+  <textarea id="txt-reporte" readonly aria-label="Texto del reporte"></textarea>
+  <div class="fila-botones">
+    <button class="btn" type="button" id="btn-cerrar-reporte">Cerrar</button>
+    <button class="btn primario" type="button" id="btn-copiar-reporte">Copiar</button>
+  </div>
+</dialog>
+
+<script>
+(function () {
+  var CLAVE = 'sgpmrja-qa-migracion-v1';
+  var estado = {};
+  try { estado = JSON.parse(localStorage.getItem(CLAVE) || '{}') || {}; } catch (e) { estado = {}; }
+  function guardar() { try { localStorage.setItem(CLAVE, JSON.stringify(estado)); } catch (e) {} }
+
+  var casos = Array.prototype.slice.call(document.querySelectorAll('.caso'));
+
+  // Controles de cada caso.
+  casos.forEach(function (caso) {
+    var id = caso.getAttribute('data-id');
+    var titulo = caso.querySelector('h4').textContent;
+    var marca = document.createElement('div');
+    marca.className = 'marca';
+    marca.innerHTML =
+      '<button type="button" data-valor="ok" aria-pressed="false">✓ Funciona</button>' +
+      '<button type="button" data-valor="falla" aria-pressed="false">✗ Falla</button>' +
+      '<button type="button" data-valor="omitir" aria-pressed="false">No aplica</button>' +
+      '<textarea rows="1" id="nota-' + id + '" aria-label="Nota del caso ' + id + ': ' + titulo + '" placeholder="Nota (obligatoria si falla): qué pasó, en qué dispositivo…"></textarea>';
+    caso.appendChild(marca);
+    var area = marca.querySelector('textarea');
+    var dato = estado[id] || {};
+    if (dato.nota) area.value = dato.nota;
+    pintar(caso, dato.estado);
+
+    marca.addEventListener('click', function (ev) {
+      var b = ev.target.closest('button');
+      if (!b) return;
+      var valor = b.getAttribute('data-valor');
+      var actual = (estado[id] || {}).estado;
+      estado[id] = estado[id] || {};
+      estado[id].estado = actual === valor ? undefined : valor;
+      pintar(caso, estado[id].estado);
+      guardar(); resumen();
+      if (estado[id].estado === 'falla') area.focus();
+    });
+    area.addEventListener('input', function () {
+      estado[id] = estado[id] || {};
+      estado[id].nota = area.value;
+      guardar();
+    });
+  });
+
+  function pintar(caso, valor) {
+    if (valor) caso.setAttribute('data-estado', valor); else caso.removeAttribute('data-estado');
+    caso.querySelectorAll('.marca button').forEach(function (b) {
+      b.setAttribute('aria-pressed', String(b.getAttribute('data-valor') === valor));
+    });
+  }
+
+  function contar() {
+    var c = { ok: 0, falla: 0, omitir: 0 };
+    casos.forEach(function (caso) {
+      var e = (estado[caso.getAttribute('data-id')] || {}).estado;
+      if (e && c[e] !== undefined) c[e]++;
+    });
+    return c;
+  }
+
+  function resumen() {
+    var c = contar(), total = casos.length, hechos = c.ok + c.falla + c.omitir;
+    document.getElementById('b-ok').style.width = (c.ok / total * 100) + '%';
+    document.getElementById('b-falla').style.width = (c.falla / total * 100) + '%';
+    document.getElementById('b-omitir').style.width = (c.omitir / total * 100) + '%';
+    document.getElementById('cifras').textContent = hechos + ' de ' + total + ' casos revisados · ' + c.ok + ' funcionan · ' + c.falla + ' fallan';
+  }
+  resumen();
+
+  // Reporte para enviar.
+  var dlg = document.getElementById('dlg-reporte');
+  var txt = document.getElementById('txt-reporte');
+  document.getElementById('btn-reporte').addEventListener('click', function () {
+    var c = contar(), lineas = [];
+    var fecha = new Date().toLocaleDateString('es-VE');
+    lineas.push('REPORTE DE QA · SGPMRJA (migración) · ' + fecha);
+    lineas.push('Revisados: ' + (c.ok + c.falla + c.omitir) + ' de ' + casos.length + ' | Funcionan: ' + c.ok + ' | Fallan: ' + c.falla + ' | No aplica: ' + c.omitir);
+    lineas.push('');
+    var fallas = casos.filter(function (k) { return (estado[k.getAttribute('data-id')] || {}).estado === 'falla'; });
+    lineas.push('== CASOS CON FALLA (' + fallas.length + ') ==');
+    if (!fallas.length) lineas.push('Ninguno.');
+    fallas.forEach(function (k) {
+      var id = k.getAttribute('data-id');
+      lineas.push('- ' + id + ' · ' + k.querySelector('h4').textContent);
+      lineas.push('  Nota: ' + (((estado[id] || {}).nota || '').trim() || '(sin nota)'));
+    });
+    var conNota = casos.filter(function (k) {
+      var d = estado[k.getAttribute('data-id')] || {};
+      return d.estado !== 'falla' && (d.nota || '').trim();
+    });
+    if (conNota.length) {
+      lineas.push('');
+      lineas.push('== OBSERVACIONES EN OTROS CASOS ==');
+      conNota.forEach(function (k) {
+        var id = k.getAttribute('data-id');
+        lineas.push('- ' + id + ' · ' + k.querySelector('h4').textContent + ': ' + estado[id].nota.trim());
+      });
+    }
+    var pendientes = casos.filter(function (k) { return !(estado[k.getAttribute('data-id')] || {}).estado; });
+    if (pendientes.length) {
+      lineas.push('');
+      lineas.push('== SIN REVISAR (' + pendientes.length + ') ==');
+      lineas.push(pendientes.map(function (k) { return k.getAttribute('data-id'); }).join(', '));
+    }
+    txt.value = lineas.join('\n');
+    if (dlg.showModal) dlg.showModal(); else dlg.setAttribute('open', '');
+    txt.select();
+  });
+  document.getElementById('btn-cerrar-reporte').addEventListener('click', function () { dlg.close ? dlg.close() : dlg.removeAttribute('open'); });
+  document.getElementById('btn-copiar-reporte').addEventListener('click', function () {
+    var b = this;
+    function listo() { b.textContent = 'Copiado'; setTimeout(function () { b.textContent = 'Copiar'; }, 1600); }
+    txt.select();
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(txt.value).then(listo, function () { try { document.execCommand('copy'); listo(); } catch (e) {} });
+    } else { try { document.execCommand('copy'); listo(); } catch (e) {} }
+  });
+
+  document.getElementById('btn-reiniciar').addEventListener('click', function () {
+    if (!window.confirm('¿Borrar todas las marcas y notas de esta guía?')) return;
+    estado = {}; guardar();
+    casos.forEach(function (caso) { pintar(caso, undefined); caso.querySelector('.marca textarea').value = ''; });
+    resumen();
+  });
+
+  // Sistema operativo de los comandos.
+  var raiz = document.getElementById('raiz');
+  var so = 'windows';
+  try { so = localStorage.getItem('sgpmrja-qa-so') || (/Mac|Linux/.test(navigator.platform) ? 'linux' : 'windows'); } catch (e) {}
+  function elegirSo(v) {
+    raiz.setAttribute('data-so', v);
+    document.querySelectorAll('.so button').forEach(function (b) { b.setAttribute('aria-pressed', String(b.getAttribute('data-so') === v)); });
+    try { localStorage.setItem('sgpmrja-qa-so', v); } catch (e) {}
+  }
+  document.querySelectorAll('.so button').forEach(function (b) { b.addEventListener('click', function () { elegirSo(b.getAttribute('data-so')); }); });
+  elegirSo(so);
+
+  // Botón «Copiar» en cada bloque de comandos.
+  document.querySelectorAll('pre').forEach(function (pre) {
+    var b = document.createElement('button');
+    b.type = 'button'; b.className = 'copiar'; b.textContent = 'Copiar';
+    b.addEventListener('click', function () {
+      var texto = pre.querySelector('code').innerText.split('\n').filter(function (l) { return l.trim().charAt(0) !== '#'; }).join('\n');
+      function listo() { b.textContent = 'Copiado'; setTimeout(function () { b.textContent = 'Copiar'; }, 1400); }
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(texto).then(listo, function () {});
+    });
+    pre.appendChild(b);
+  });
+})();
+</script>
+</body>
+</html>
