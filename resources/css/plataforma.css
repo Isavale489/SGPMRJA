@@ -9,18 +9,14 @@
  * shadcn/ui para que sus componentes funcionen sin adaptar. Los VALORES son
  * propios: azul Atlántico (#1e3c72) como marca, grises fríos, radio contenido.
  */
-@import 'tailwindcss';
-
 /*
- * Tailwind 4 genera CSS de toda clase que encuentre en el repo. La documentación y los
- * specs citan clases (bg-white/20, text-seccion…) sin usarlas: sin esto, editar un .md
- * cambia public/build y la CI falla por «build desactualizado».
+ * Fuentes explícitas: Tailwind 4 por defecto genera CSS de toda clase que encuentre en el
+ * repo, y los docs (docs/, Documentacion/, sdd/) y el build anterior citan clases sin usarlas:
+ * editar un documento cambiaba public/build y la CI fallaba por «build desactualizado».
  */
-@source not "../../docs";
-@source not "../../sdd";
-/* Ni el build anterior: arrastraría al nuevo las clases que el código ya no usa (el build
-   dependería de lo que haya en disco y no coincidiría con el de un checkout limpio). */
-@source not "../../public/build";
+@import 'tailwindcss' source(none);
+@source "../js";
+@source "../views";
 
 /*
  * Fuentes empaquetadas en el build (sin CDN: la planta puede quedarse sin internet).
