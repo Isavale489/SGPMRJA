@@ -18,6 +18,9 @@
  */
 @source not "../../docs";
 @source not "../../sdd";
+/* Ni el build anterior: arrastraría al nuevo las clases que el código ya no usa (el build
+   dependería de lo que haya en disco y no coincidiría con el de un checkout limpio). */
+@source not "../../public/build";
 
 /*
  * Fuentes empaquetadas en el build (sin CDN: la planta puede quedarse sin internet).
