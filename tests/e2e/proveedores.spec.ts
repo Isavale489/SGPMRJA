@@ -117,12 +117,14 @@ test('cerrar con cambios sin guardar pide confirmación', async ({ page }) => {
 
   // Escape en el aviso también es seguir editando.
   await dialogo.getByRole('button', { name: 'Cancelar' }).click();
-  // Esperar a que el foco entre al aviso: para entonces Radix ya lo registró como capa
-  // superior (mismo ciclo de efectos). Un Escape antes de eso (en la CI, lenta) lo atiende
-  // el diálogo de abajo, que vuelve a preguntar, y el aviso no se cierra.
+  // Radix le pasa el Escape al aviso un render después de mostrarlo (y de enfocarlo): un
+  // Escape antes de eso (en la CI, lenta) lo atiende el diálogo de abajo, que solo vuelve
+  // a preguntar. Por eso se reintenta hasta que el aviso se cierre.
   await expect(aviso.getByRole('button', { name: 'Seguir editando' })).toBeFocused();
-  await page.keyboard.press('Escape');
-  await expect(aviso).toBeHidden();
+  await expect(async () => {
+    await page.keyboard.press('Escape');
+    await expect(aviso).toBeHidden({ timeout: 1_000 });
+  }).toPass();
   await expect(dialogo).toBeVisible();
 
   // Atrás del navegador con el diálogo abierto también pregunta y no lo cierra.
