@@ -87,6 +87,8 @@ test('un grupo abierto desde el menú colapsado conserva el foco y no se reabre 
   const grupo = principal.getByRole('button', { name: 'Gestión Operativa' });
   await expect(grupo).toBeFocused();
   await expect(grupo).toHaveAttribute('aria-expanded', 'true');
+  // El elegido reemplaza al de la página (acordeón): Gestión General queda cerrada.
+  await expect(principal.getByRole('button', { name: 'Gestión General' })).toHaveAttribute('aria-expanded', 'false');
   // Lo cierra, contrae y expande con la barra: el grupo sigue cerrado.
   await grupo.click();
   await page.getByRole('button', { name: 'Contraer el menú' }).click();
@@ -109,6 +111,7 @@ test('el menú es un acordeón: abre la sección de la página y una sola a la v
 
   // Abrir un hermano cierra el anterior, también dentro de una sección.
   await grupo('Productos').click();
+  await expect(grupo('Productos')).toHaveAttribute('aria-expanded', 'true');
   await expect(grupo('Recursos Humanos')).toHaveAttribute('aria-expanded', 'false');
   await grupo('Gestión Operativa').click();
   await expect(grupo('Gestión General')).toHaveAttribute('aria-expanded', 'false');

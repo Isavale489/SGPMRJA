@@ -75,7 +75,9 @@ function Grupo({ grupo, nivel, abierto, onAlternar, enfocar }: PropsGrupo) {
                 onClick={onAlternar}
                 aria-expanded={abierto}
                 className={cn(
-                    'hover:bg-seccion-acento/8 w-full',
+                    'hover:bg-seccion-acento/8',
+                    // El botón no se estira solo como un <a> en grid: con -ml-px le falta ese píxel.
+                    nivel === 0 ? 'w-full' : 'w-[calc(100%+1px)]',
                     BASE,
                     sangria(nivel),
                     conActivo ? 'text-seccion font-medium' : 'text-sidebar-foreground',
@@ -90,7 +92,7 @@ function Grupo({ grupo, nivel, abierto, onAlternar, enfocar }: PropsGrupo) {
             </button>
             {abierto && (
                 // La línea cae bajo el ícono del padre (nivel 0) o bajo el inicio de su texto.
-                <div className={cn('border-seccion-acento/25 mt-0.5 border-l', nivel === 0 ? 'ml-5' : 'ml-[1.1875rem]')}>
+                <div className={cn('border-seccion-acento/25 mt-0.5 border-l', nivel === 0 ? 'ml-5' : 'ml-[1.125rem]')}>
                     <Lista items={grupo.items} nivel={nivel + 1} />
                 </div>
             )}
