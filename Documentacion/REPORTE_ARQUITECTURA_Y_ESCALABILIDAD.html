@@ -1,0 +1,1206 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reporte de Arquitectura y Escalabilidad — SGPMRJA</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <!-- Mermaid.js para renderizar diagramas dinámicos -->
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <script>
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: 'dark',
+      themeVariables: {
+        darkMode: true,
+        background: '#0f172a',
+        primaryColor: '#1e3a8a',
+        primaryTextColor: '#f8fafc',
+        primaryBorderColor: '#3b82f6',
+        lineColor: '#38bdf8',
+        secondaryColor: '#064e3b',
+        tertiaryColor: '#1e293b'
+      }
+    });
+  </script>
+  <style>
+    :root {
+      --bg-base: #090d16;
+      --bg-surface: #0f172a;
+      --bg-card: #141e33;
+      --bg-card-hover: #1a2742;
+      --border: #1e293b;
+      --border-accent: #334155;
+      
+      --navy-900: #0b1528;
+      --navy-800: #101f3c;
+      --navy-700: #1e3a8a;
+      --cyan-400: #22d3ee;
+      --cyan-500: #06b6d4;
+      --emerald-400: #34d399;
+      --emerald-500: #10b981;
+      --sky-400: #38bdf8;
+      --amber-400: #fbbf24;
+      --rose-400: #fb7185;
+      
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 16px;
+      --radius-xl: 24px;
+      --shadow-card: 0 4px 20px -2px rgba(0, 0, 0, 0.4);
+      --shadow-glow: 0 0 25px -5px rgba(6, 182, 212, 0.15);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: var(--bg-base);
+      color: var(--text-main);
+      line-height: 1.6;
+      font-size: 15px;
+      overflow-x: hidden;
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: var(--bg-base); }
+    ::-webkit-scrollbar-thumb { background: var(--border-accent); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--cyan-500); }
+
+    /* Layout */
+    .container {
+      max-width: 1320px;
+      margin: 0 auto;
+      padding: 32px 24px 80px;
+    }
+
+    /* Top Bar & Header */
+    header {
+      background: linear-gradient(135deg, rgba(16, 31, 60, 0.9) 0%, rgba(15, 23, 42, 0.95) 100%);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xl);
+      padding: 32px 36px;
+      margin-bottom: 32px;
+      position: relative;
+      overflow: hidden;
+      box-shadow: var(--shadow-card), var(--shadow-glow);
+      backdrop-filter: blur(12px);
+    }
+
+    header::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -20%;
+      width: 400px;
+      height: 400px;
+      background: radial-gradient(circle, rgba(6, 182, 212, 0.12) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .badge-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 4px 12px;
+      border-radius: 20px;
+      background: rgba(16, 185, 129, 0.15);
+      color: var(--emerald-400);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      margin-bottom: 14px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .badge-status::before {
+      content: '';
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--emerald-400);
+      box-shadow: 0 0 8px var(--emerald-400);
+    }
+
+    h1 {
+      font-size: 32px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin-bottom: 8px;
+      background: linear-gradient(to right, #ffffff, #93c5fd, #67e8f9);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .subtitle {
+      color: var(--text-muted);
+      font-size: 15px;
+      max-width: 850px;
+    }
+
+    .meta-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-top: 24px;
+      padding-top: 20px;
+      border-top: 1px solid rgba(255, 255, 255, 0.07);
+    }
+
+    .meta-item {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .meta-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-dim);
+      font-weight: 600;
+    }
+
+    .meta-value {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-main);
+    }
+
+    /* Sticky Navigation Tabs */
+    .nav-bar {
+      position: sticky;
+      top: 16px;
+      z-index: 100;
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 6px;
+      display: flex;
+      gap: 6px;
+      margin-bottom: 32px;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+      overflow-x: auto;
+    }
+
+    .nav-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      padding: 10px 18px;
+      font-size: 13px;
+      font-weight: 600;
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .nav-btn:hover {
+      color: var(--text-main);
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    .nav-btn.active {
+      background: var(--navy-700);
+      color: #fff;
+      box-shadow: 0 2px 10px rgba(30, 58, 138, 0.4);
+    }
+
+    /* KPI Cards Grid */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 18px;
+      margin-bottom: 32px;
+    }
+
+    .kpi-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 22px;
+      transition: transform 0.2s, border-color 0.2s;
+      position: relative;
+    }
+
+    .kpi-card:hover {
+      transform: translateY(-2px);
+      border-color: var(--cyan-500);
+    }
+
+    .kpi-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .kpi-val {
+      font-size: 28px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: var(--text-main);
+      margin-bottom: 4px;
+    }
+
+    .kpi-desc {
+      font-size: 12px;
+      color: var(--text-dim);
+    }
+
+    .kpi-accent-cyan { border-left: 4px solid var(--cyan-400); }
+    .kpi-accent-emerald { border-left: 4px solid var(--emerald-400); }
+    .kpi-accent-amber { border-left: 4px solid var(--amber-400); }
+    .kpi-accent-rose { border-left: 4px solid var(--rose-400); }
+
+    /* Content Sections */
+    .section {
+      display: none;
+      animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .section.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 28px;
+      margin-bottom: 24px;
+      box-shadow: var(--shadow-card);
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .card-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .card-badge {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 12px;
+      background: rgba(56, 189, 248, 0.1);
+      color: var(--sky-400);
+      border: 1px solid rgba(56, 189, 248, 0.2);
+    }
+
+    /* Tables */
+    .table-responsive {
+      overflow-x: auto;
+      margin: 16px 0;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+      text-align: left;
+    }
+
+    th {
+      background: var(--navy-800);
+      color: var(--text-main);
+      padding: 12px 16px;
+      font-weight: 600;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      border-bottom: 1px solid var(--border-accent);
+    }
+
+    td {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      color: var(--text-muted);
+      vertical-align: middle;
+    }
+
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: rgba(255, 255, 255, 0.02); color: var(--text-main); }
+
+    /* Code & Mono */
+    code, pre {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+    }
+
+    code {
+      background: rgba(255, 255, 255, 0.06);
+      padding: 2px 7px;
+      border-radius: 4px;
+      color: var(--sky-400);
+    }
+
+    pre {
+      background: var(--navy-900);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 18px;
+      overflow-x: auto;
+      margin: 14px 0;
+      color: #e2e8f0;
+      line-height: 1.5;
+    }
+
+    /* Callouts */
+    .callout {
+      padding: 16px 20px;
+      border-radius: var(--radius-md);
+      margin: 16px 0;
+      border-left: 4px solid;
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .callout-info { border-color: var(--sky-400); background: rgba(56, 189, 248, 0.05); }
+    .callout-warn { border-color: var(--amber-400); background: rgba(251, 191, 36, 0.05); }
+    .callout-danger { border-color: var(--rose-400); background: rgba(251, 113, 133, 0.05); }
+    .callout-success { border-color: var(--emerald-400); background: rgba(16, 185, 129, 0.05); }
+
+    .callout-title {
+      font-weight: 700;
+      font-size: 14px;
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .callout-info .callout-title { color: var(--sky-400); }
+    .callout-warn .callout-title { color: var(--amber-400); }
+    .callout-danger .callout-title { color: var(--rose-400); }
+    .callout-success .callout-title { color: var(--emerald-400); }
+
+    /* Interactive Simulator Widget */
+    .calculator-widget {
+      background: var(--navy-900);
+      border: 1px solid var(--border-accent);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      margin: 20px 0;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+
+    @media (max-width: 860px) {
+      .calculator-widget { grid-template-columns: 1fr; }
+    }
+
+    .calc-input-group {
+      margin-bottom: 14px;
+    }
+
+    .calc-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+      display: block;
+    }
+
+    .calc-input, .calc-select {
+      width: 100%;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 10px 14px;
+      color: var(--text-main);
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .calc-input:focus, .calc-select:focus {
+      border-color: var(--cyan-400);
+    }
+
+    .calc-results {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .res-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .res-row:last-child { border-bottom: none; }
+    .res-label { font-size: 13px; color: var(--text-muted); }
+    .res-value { font-size: 16px; font-weight: 700; color: var(--cyan-400); font-family: 'JetBrains Mono', monospace; }
+
+    /* State Machine Visualizer */
+    .state-stepper {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin: 18px 0;
+    }
+
+    .state-step {
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 600;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .state-step.active {
+      background: rgba(6, 182, 212, 0.15);
+      border-color: var(--cyan-400);
+      color: var(--cyan-400);
+      box-shadow: 0 0 12px rgba(6, 182, 212, 0.2);
+    }
+
+    .state-detail {
+      background: var(--navy-900);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 16px;
+      margin-top: 10px;
+      font-size: 13px;
+    }
+
+    /* Role Pills */
+    .role-badge {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 6px;
+      text-transform: uppercase;
+    }
+    .role-emmanuel { background: rgba(59, 130, 246, 0.15); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3); }
+    .role-vanessa  { background: rgba(236, 72, 153, 0.15); color: #f472b6; border: 1px solid rgba(236, 72, 153, 0.3); }
+    .role-santiago { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
+
+    /* Footer */
+    footer {
+      text-align: center;
+      padding: 40px 0 20px;
+      color: var(--text-dim);
+      font-size: 13px;
+      border-top: 1px solid var(--border);
+      margin-top: 60px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- Header -->
+  <header>
+    <div class="badge-status">Arquitectura Validada · Listo para Implementación</div>
+    <h1>Informe Dinámico de Arquitectura & Escalabilidad</h1>
+    <p class="subtitle">
+      Plan maestro y especificación técnica para la incorporación de los 4 nuevos módulos operativos, 
+      estrategia DevOps con Docker, evaluación de base de datos y plan de testing TDD para <strong>Creaciones Atlántico C.A.</strong>
+    </p>
+
+    <div class="meta-grid">
+      <div class="meta-item">
+        <span class="meta-label">Proyecto</span>
+        <span class="meta-value">SGPMRJA (v2.0)</span>
+      </div>
+      <div class="meta-item">
+        <span class="meta-label">Framework & Runtime</span>
+        <span class="meta-value">Laravel 13.x · PHP 8.3+</span>
+      </div>
+      <div class="meta-item">
+        <span class="meta-label">Frontend & Build</span>
+        <span class="meta-value">React 19 · Inertia · Tailwind v4</span>
+      </div>
+      <div class="meta-item">
+        <span class="meta-label">Equipo Responsable</span>
+        <span class="meta-value">Emmanuel · Vanessa · Santiago</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Sticky Navigation -->
+  <nav class="nav-bar">
+    <button class="nav-btn active" onclick="switchTab('resumen', this)">📊 Resumen & KPIs</button>
+    <button class="nav-btn" onclick="switchTab('modulos', this)">🧩 Los 4 Módulos</button>
+    <button class="nav-btn" onclick="switchTab('calculadora', this)">🧮 Simulador BOM</button>
+    <button class="nav-btn" onclick="switchTab('infraestructura', this)">🐳 Docker & Redes</button>
+    <button class="nav-btn" onclick="switchTab('testing', this)">🧪 Testing & QA</button>
+    <button class="nav-btn" onclick="switchTab('roadmap', this)">📅 Roadmap Sprints</button>
+  </nav>
+
+  <!-- SECCIÓN 1: RESUMEN EJECUTIVO & KPIS -->
+  <div id="tab-resumen" class="section active">
+    
+    <div class="kpi-grid">
+      <div class="kpi-card kpi-accent-cyan">
+        <div class="kpi-title">Nuevos Módulos <span>Industrial</span></div>
+        <div class="kpi-val">4</div>
+        <div class="kpi-desc">Bordado, BOM/Recetas, Destajo y Notificaciones</div>
+      </div>
+      <div class="kpi-card kpi-accent-emerald">
+        <div class="kpi-title">Latencia Local LAN <span>Docker</span></div>
+        <div class="kpi-val">&lt; 1 ms</div>
+        <div class="kpi-desc">Frente a 180ms de Supabase en la nube</div>
+      </div>
+      <div class="kpi-card kpi-accent-amber">
+        <div class="kpi-title">Tiempo Respuesta HTTP <span>PDFs Asíncronos</span></div>
+        <div class="kpi-val">&lt; 150 ms</div>
+        <div class="kpi-desc">Reducción del 95% desacoplando Dompdf a colas</div>
+      </div>
+      <div class="kpi-card kpi-accent-rose">
+        <div class="kpi-title">Deuda Crítica <span>Controladores</span></div>
+        <div class="kpi-val">1.315</div>
+        <div class="kpi-desc">Líneas en OrdenProduccionController a refactorizar</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">🔍 Radiografía y Deuda Técnica del Sistema Actual</div>
+        <span class="card-badge">Diagnóstico Fase 1</span>
+      </div>
+      
+      <p style="color: var(--text-muted); margin-bottom: 16px;">
+        La auditoría de las 102 migraciones y el código transaccional revela una base sólida pero con 3 cuellos de botella que deben limpiarse antes de escalar los nuevos módulos:
+      </p>
+
+      <div class="table-responsive">
+        <table>
+          <thead>
+            <tr>
+              <th>Componente</th>
+              <th>Hallazgo Crítico</th>
+              <th>Impacto Técnico</th>
+              <th>Solución Arquitectónica</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>OrdenProduccionController</code></td>
+              <td>Controlador sobrecargado (&gt;65 KB) con lógica SQL y pivotes.</td>
+              <td>Riesgo elevado de regresión al agregar destajo de operarios.</td>
+              <td>Extraer a <code>ProduccionOperarioService</code> y <code>ProduccionReporteService</code>.</td>
+            </tr>
+            <tr>
+              <td><code>Producto.php</code> & <code>Pedido.php</code></td>
+              <td>Consultas N+1 ocultas en los accessors <code>nombre_completo</code> y <code>lineasProducibles</code>.</td>
+              <td>Degradación severa de tiempo de carga en listas de pedidos.</td>
+              <td>Sustituir por caching en memoria de relación o eager loading obligatorio.</td>
+            </tr>
+            <tr>
+              <td><code>barryvdh/laravel-dompdf</code></td>
+              <td>Ejecución síncrona en hilo web: <code>PDF::loadView(...)-&gt;stream()</code>.</td>
+              <td>Bloquea PHP-FPM durante 3 a 5 seg por factura/cotización.</td>
+              <td>Generación asíncrona mediante <code>GenerarDocumentoPdfJob</code> en Redis.</td>
+            </tr>
+            <tr>
+              <td><code>database/migrations</code></td>
+              <td>Eliminación histórica de <code>produccion_diaria</code> a favor de acumuladores planos.</td>
+              <td>Pérdida de fecha, hora y turno; no permite pago a destajo.</td>
+              <td>Crear nueva tabla normalizada <code>registro_produccion_operario</code>.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">🌐 Topología Global de Despliegue</div>
+        <span class="card-badge">Mermaid SVG</span>
+      </div>
+      <div class="mermaid">
+graph LR
+    subgraph LAN_Fabrica ["Planta / Taller (Red LAN)"]
+        Tab1["Tablet Costura (192.168.1.50)"]
+        Tab2["Tablet Bordado (192.168.1.51)"]
+        PC["PC Supervisor (192.168.1.10)"]
+    end
+
+    subgraph Remoto ["Administración Externa"]
+        Dir["Directiva / Ventas (HTTPS Móvil)"]
+    end
+
+    subgraph Host_Docker ["Servidor Local Fábrica (Docker)"]
+        Nginx["Nginx Reverse Proxy (:80)"]
+        App["PHP 8.3-FPM (App)"]
+        Queue["Worker Colas (queue:work)"]
+        Redis[("Redis 7 (Cache/Colas)")]
+        MariaDB[("MariaDB 10.11 (Local DB)")]
+    end
+
+    Tab1 -->|HTTP LAN| Nginx
+    Tab2 -->|HTTP LAN| Nginx
+    PC -->|HTTP LAN| Nginx
+    Dir -->|Cloudflare Tunnel SSL| Nginx
+
+    Nginx --> App
+    App --> MariaDB
+    App --> Redis
+    Redis --> Queue
+    Queue --> MariaDB
+      </div>
+    </div>
+
+  </div>
+
+  <!-- SECCIÓN 2: LOS 4 MÓDULOS DE ESCALABILIDAD -->
+  <div id="tab-modulos" class="section">
+    
+    <!-- MÓDULO 1 -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">1️⃣ Control de Servicio de Bordado Técnico</div>
+        <span class="card-badge">Dominio Operativo</span>
+      </div>
+      <p style="color: var(--text-muted); margin-bottom: 16px;">
+        Convierte el bordado de un simple texto descriptivo en una ficha técnica con máquina de estados estricta y cálculo bimonetario respaldado.
+      </p>
+
+      <div class="state-stepper">
+        <div class="state-step active" onclick="showStateDetail('matriceria')">1. Pendiente Matricería</div>
+        <div class="state-step" onclick="showStateDetail('aprobada')">2. Matriz Aprobada</div>
+        <div class="state-step" onclick="showStateDetail('cola')">3. En Cola Máquina</div>
+        <div class="state-step" onclick="showStateDetail('bordando')">4. En Bordado</div>
+        <div class="state-step" onclick="showStateDetail('calidad')">5. Control Calidad</div>
+        <div class="state-step" onclick="showStateDetail('completado')">6. Completado</div>
+      </div>
+
+      <div id="state-detail-box" class="state-detail">
+        <strong>Estado: Pendiente Matricería</strong> — El logo fue cargado por ventas. El digitalizador debe crear y validar el archivo de ponchado (.DST / .EMB) y registrar el conteo de puntadas.
+      </div>
+
+      <div class="table-responsive" style="margin-top: 18px;">
+        <table>
+          <thead>
+            <tr>
+              <th>Campo Técnico</th>
+              <th>Tipo</th>
+              <th>Propósito Industrial</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>numero_puntadas</code></td>
+              <td><code>INT UNSIGNED</code></td>
+              <td>Base para el cálculo de costo adicional y tiempo estimado de máquina.</td>
+            </tr>
+            <tr>
+              <td><code>colores_hilos</code></td>
+              <td><code>JSON</code></td>
+              <td>Arreglo con códigos de hilo, referencias Pantone y secuencia de cambio de aguja.</td>
+            </tr>
+            <tr>
+              <td><code>tipo_bastidor</code></td>
+              <td><code>VARCHAR(50)</code></td>
+              <td>Ejemplo: <em>Gorra 270°</em>, <em>Plano 15x15</em>, <em>Espalda 30x30</em>.</td>
+            </tr>
+            <tr>
+              <td><code>costo_adicional_usd/bs</code></td>
+              <td><code>DECIMAL</code></td>
+              <td>Snapshot bimonetario congelando la tasa oficial BCV del día de la cotización.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- MÓDULO 2 -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">2️⃣ Calculadora de Insumos (BOM / Recetas con Merma)</div>
+        <span class="card-badge">Dominio Producción</span>
+      </div>
+      <p style="color: var(--text-muted); margin-bottom: 14px;">
+        Estructura de dos niveles (<code>receta_producto</code> y <code>receta_insumo</code>) que relaciona el catálogo con el inventario aplicando porcentajes de merma por etapa (Corte, Costura, Bordado).
+      </p>
+
+      <div class="mermaid">
+classDiagram
+    class TipoProducto {
+        +int id
+        +string nombre
+        +bool requiere_tela
+    }
+    class RecetaProducto {
+        +int id
+        +string nombre
+        +int version
+        +bool activo
+    }
+    class RecetaInsumo {
+        +int id
+        +decimal cantidad_base
+        +decimal factor_merma
+        +string etapa
+    }
+    class Insumo {
+        +int id
+        +string nombre
+        +decimal stock_actual
+        +decimal stock_minimo
+    }
+
+    TipoProducto "1" --> "*" RecetaProducto : tiene
+    RecetaProducto "1" --> "*" RecetaInsumo : contiene
+    RecetaInsumo "*" --> "1" Insumo : consume
+      </div>
+    </div>
+
+    <!-- MÓDULO 3 -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">3️⃣ Registro de Producción por Trabajador (Destajo & Reportes)</div>
+        <span class="card-badge">Dominio Mano de Obra</span>
+      </div>
+      <p style="color: var(--text-muted); margin-bottom: 14px;">
+        Restaura la granularidad eliminada en migraciones previas. Permite registrar turnos, piezas completadas, piezas defectuosas y liquidar destajos con índices compuestos para reportes en &lt; 50ms.
+      </p>
+
+      <div class="callout callout-success">
+        <div class="callout-title">⚡ Índices Compuestos Diseñados (Cero Locks en Reportes):</div>
+        <ul style="padding-left: 20px; font-size: 13px; margin-top: 6px;">
+          <li><code>idx_prod_emp_fecha (empleado_id, fecha_produccion, etapa)</code> — Destajos por operario.</li>
+          <li><code>idx_prod_orden_etapa (orden_produccion_id, etapa)</code> — Avance consolidado de la orden.</li>
+          <li><code>idx_prod_calidad (etapa, piezas_defectuosas, fecha_produccion)</code> — Tasa de defectos por etapa.</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- MÓDULO 4 -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">4️⃣ Despacho Asíncrono de Reportes (WhatsApp & Correo)</div>
+        <span class="card-badge">Dominio Notificaciones</span>
+      </div>
+      <p style="color: var(--text-muted); margin-bottom: 14px;">
+        Arquitectura desacoplada basada en eventos de dominio (<code>CotizacionAprobadaEvent</code>, <code>PedidoFormalizadoEvent</code>) procesados por colas Redis con retries exponenciales.
+      </p>
+
+      <div class="mermaid">
+sequenceDiagram
+    autonumber
+    actor V as Vendedor / Operario
+    participant CTRL as Controller HTTP
+    participant Q as Redis Queue
+    participant W as Queue Worker
+    participant PDF as Dompdf Service
+    participant API as Meta WhatsApp Cloud API
+
+    V->>CTRL: Aprobar Cotización / Crear Pedido
+    CTRL->>Q: Dispatch Job (Asíncrono)
+    CTRL-->>V: Respuesta Inmediata 200 OK (<150ms)
+    
+    W->>Q: Toma Job pendiente
+    W->>PDF: Renderiza PDF en segundo plano
+    PDF-->>W: Guarda en /storage/temp_docs/uuid.pdf
+    W->>API: Envía documento por WhatsApp y Correo
+    W->>W: Registra éxito en `historial_notificaciones`
+      </div>
+    </div>
+
+  </div>
+
+  <!-- SECCIÓN 3: SIMULADOR INTERACTIVO BOM -->
+  <div id="tab-calculadora" class="section">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">🧮 Simulador Interactivo de Insumos y Factor de Merma</div>
+        <span class="card-badge">Widget Dinámico</span>
+      </div>
+      <p style="color: var(--text-muted); margin-bottom: 20px;">
+        Prueba cómo el servicio <code>InsumoCalculatorService</code> proyectará los requerimientos exactos de insumos para una orden de producción y validará la disponibilidad contra el stock vivo del almacén.
+      </p>
+
+      <div class="calculator-widget">
+        <!-- Formulario -->
+        <div>
+          <div class="calc-input-group">
+            <label class="calc-label">Prenda / Producto</label>
+            <select id="calc-producto" class="calc-select" onchange="recalcularBOM()">
+              <option value="chemise">Chemise Piqué Clásica</option>
+              <option value="camisa">Camisa Oxford Manga Larga</option>
+              <option value="pantalon">Pantalón Gabardina Cargo</option>
+            </select>
+          </div>
+
+          <div class="calc-input-group">
+            <label class="calc-label">Cantidad de Prendas Solicitadas</label>
+            <input type="number" id="calc-cantidad" class="calc-input" value="120" min="1" oninput="recalcularBOM()">
+          </div>
+
+          <div class="calc-input-group">
+            <label class="calc-label">Consumo Base por Prenda (Metros Tela)</label>
+            <input type="number" id="calc-base" class="calc-input" value="1.45" step="0.05" oninput="recalcularBOM()">
+          </div>
+
+          <div class="calc-input-group">
+            <label class="calc-label">Factor de Merma Técnico (%)</label>
+            <input type="number" id="calc-merma" class="calc-input" value="8" step="0.5" oninput="recalcularBOM()">
+          </div>
+
+          <div class="calc-input-group">
+            <label class="calc-label">Stock Actual en Almacén (Metros)</label>
+            <input type="number" id="calc-stock" class="calc-input" value="180" oninput="recalcularBOM()">
+          </div>
+        </div>
+
+        <!-- Resultados -->
+        <div class="calc-results">
+          <div class="res-row">
+            <span class="res-label">Consumo Neto Teórico:</span>
+            <span class="res-value" id="res-neto">174.00 m</span>
+          </div>
+          <div class="res-row">
+            <span class="res-label">Material Extra por Merma:</span>
+            <span class="res-value" id="res-merma">+13.92 m</span>
+          </div>
+          <div class="res-row">
+            <span class="res-label">Total Real Requerido:</span>
+            <span class="res-value" id="res-total" style="color: var(--amber-400);">187.92 m</span>
+          </div>
+          <div class="res-row">
+            <span class="res-label">Balance de Inventario:</span>
+            <span class="res-value" id="res-balance" style="color: var(--rose-400);">-7.92 m</span>
+          </div>
+          <div class="res-row">
+            <span class="res-label">Dictamen del Sistema:</span>
+            <span class="res-value" id="res-estado" style="font-size: 13px; text-transform: uppercase;">🔴 FALTANTE (COMPRAR)</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECCIÓN 4: INFRAESTRUCTURA, DOCKER & REDES -->
+  <div id="tab-infraestructura" class="section">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">🐳 Dockerización Multi-Stage (Producción y Local)</div>
+        <span class="card-badge">DevOps Blueprint</span>
+      </div>
+      <p style="color: var(--text-muted); margin-bottom: 14px;">
+        La imagen oficial de producción compila los assets con Vite y empaqueta PHP 8.3 FPM con extensiones nativas completas (<code>gd</code> con freetype para Dompdf, <code>pcntl</code> para workers y <code>redis</code>).
+      </p>
+
+      <pre><code># Servidores orquestados en docker-compose.yml:
+# 1. sgpmrja_app    -> PHP 8.3-FPM (Api y Lógica de Negocio)
+# 2. sgpmrja_web    -> Nginx 1.27 Alpine (Servidor Web y Assets)
+# 3. sgpmrja_queue  -> Worker Redis (php artisan queue:work)
+# 4. sgpmrja_db     -> MariaDB 10.11 LTS (Motor Transaccional Local)
+# 5. sgpmrja_redis  -> Redis 7 Alpine (Colas, Caché y Sesiones)</code></pre>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">⚖️ Comparativa de Base de Datos: ¿Por qué NO Supabase?</div>
+        <span class="card-badge">Veredicto Arquitectónico</span>
+      </div>
+
+      <div class="table-responsive">
+        <table>
+          <thead>
+            <tr>
+              <th>Criterio</th>
+              <th>MariaDB en Docker Local</th>
+              <th>Supabase (PostgreSQL en Nube)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Latencia en Planta</strong></td>
+              <td>🟢 <strong>&lt; 1 ms</strong> (LAN Ethernet / Wi-Fi)</td>
+              <td>🔴 <strong>80 ms a 200 ms</strong> por consulta</td>
+            </tr>
+            <tr>
+              <td><strong>Transacciones y Locks</strong></td>
+              <td>🟢 Instantáneas (5 ms total)</td>
+              <td>🔴 Lentas (350 ms acumulando RTTs)</td>
+            </tr>
+            <tr>
+              <td><strong>Supervivencia sin Internet</strong></td>
+              <td>🟢 <strong>100% Funcional</strong> (El taller no se detiene)</td>
+              <td>🔴 <strong>Parálisis Total</strong> si cae el enlace</td>
+            </tr>
+            <tr>
+              <td><strong>Compatibilidad de Código</strong></td>
+              <td>🟢 100% Nativo con las 102 migraciones</td>
+              <td>🔴 Errores por <code>IF()</code>, <code>YEAR()</code> y tipos enum</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout callout-warn">
+        <div class="callout-title">⚠️ Decisión Final:</div>
+        Se mantiene MariaDB local en Docker. Para acceso remoto se utiliza Cloudflare Tunnel sin exponer puertos de base de datos a internet.
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">📱 Acceso Multi-dispositivo (LAN + Remoto)</div>
+        <span class="card-badge">Configuración de Red</span>
+      </div>
+      <p style="color: var(--text-muted); margin-bottom: 12px;">
+        Para permitir que las tablets del taller (<code>192.168.1.x</code>) y los administradores remotos (<code>https://sgpmrja.miempresa.com</code>) coexistan sin errores de CORS ni cookies rotas:
+      </p>
+
+      <ul style="padding-left: 20px; color: var(--text-muted); font-size: 14px;">
+        <li>Configurar en <code>app/Http/Middleware/TrustProxies.php</code>: <code>protected $proxies = '*';</code></li>
+        <li>Fijar en <code>.env</code>: <code>SESSION_DOMAIN=null</code> y <code>SESSION_SECURE_COOKIE=false</code></li>
+        <li>Compilar assets de Vite con rutas relativas: <code>ASSET_URL=null</code></li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- SECCIÓN 5: TESTING & QA -->
+  <div id="tab-testing" class="section">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">🧪 Suite de Pruebas Automatizadas (PHPUnit 12)</div>
+        <span class="card-badge">Garantía de Calidad</span>
+      </div>
+      
+      <div class="table-responsive">
+        <table>
+          <thead>
+            <tr>
+              <th>Suite de Pruebas</th>
+              <th>Tipo</th>
+              <th>Condición Crítica a Verificar</th>
+              <th>Mecanismo de Simulación</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>InsumoCalculatorServiceTest</code></td>
+              <td>Unit</td>
+              <td>Cálculo matemático de mermas y escalado por tallas.</td>
+              <td>Modelos y Factories en Memoria</td>
+            </tr>
+            <tr>
+              <td><code>BordadoServiceTest</code></td>
+              <td>Unit</td>
+              <td>Validación estricta de la máquina de estados <code>BordadoEstadoEnum</code>.</td>
+              <td>Enums nativos PHP 8.2+</td>
+            </tr>
+            <tr>
+              <td><code>RegistroProduccionOperarioTest</code></td>
+              <td>Feature</td>
+              <td>Evitar que un operario registre más piezas de las asignadas (concurrencia).</td>
+              <td><code>RefreshDatabase</code> + Locks pesimistas</td>
+            </tr>
+            <tr>
+              <td><code>ReporteEficienciaTest</code></td>
+              <td>Feature</td>
+              <td>Consultas de agregación SQL con ejecución &lt; 50ms sin N+1.</td>
+              <td>Benchmarking de DB queries</td>
+            </tr>
+            <tr>
+              <td><code>DespachoAsincronoTest</code></td>
+              <td>Feature</td>
+              <td>Aprobación de cotización encolando jobs sin bloquear la respuesta HTTP.</td>
+              <td><code>Event::fake()</code>, <code>Queue::fake()</code></td>
+            </tr>
+            <tr>
+              <td><code>WhatsAppChannelTest</code></td>
+              <td>Feature</td>
+              <td>Despacho de payload a Meta API y guardado de ID de proveedor.</td>
+              <td><code>Http::fake()</code></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECCIÓN 6: ROADMAP Y ASIGNACIONES -->
+  <div id="tab-roadmap" class="section">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">📅 Plan de Ejecución por Sprints y Asignación de Roles</div>
+        <span class="card-badge">Metodología SDD</span>
+      </div>
+
+      <div class="table-responsive">
+        <table>
+          <thead>
+            <tr>
+              <th>Sprint</th>
+              <th>Módulo / Alcance</th>
+              <th>Responsable Asignado</th>
+              <th>Entregable Clave</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Sprint 1</strong></td>
+              <td>Dockerización + Calculadora BOM</td>
+              <td>
+                <span class="role-badge role-emmanuel">Emmanuel</span> (Docker/Redis)<br>
+                <span class="role-badge role-santiago">Santiago</span> (Backend BOM)<br>
+                <span class="role-badge role-vanessa">Vanessa</span> (UI Recetas)
+              </td>
+              <td>Contenedores activos, tablas <code>receta_*</code> y <code>InsumoCalculatorService</code> con tests.</td>
+            </tr>
+            <tr>
+              <td><strong>Sprint 2</strong></td>
+              <td>Servicio de Bordado Técnico</td>
+              <td>
+                <span class="role-badge role-santiago">Santiago</span> (Backend Service)<br>
+                <span class="role-badge role-vanessa">Vanessa</span> (Ficha UI / Bastidores)
+              </td>
+              <td>Tabla <code>servicio_bordado</code>, Enums de estado y cálculo multimoneda con Tasa BCV.</td>
+            </tr>
+            <tr>
+              <td><strong>Sprint 3</strong></td>
+              <td>Producción por Operario & Reportes</td>
+              <td>
+                <span class="role-badge role-santiago">Santiago</span> (Log Destajo)<br>
+                <span class="role-badge role-emmanuel">Emmanuel</span> (Reportes SQL)<br>
+                <span class="role-badge role-vanessa">Vanessa</span> (UI Tablet Operario)
+              </td>
+              <td>Tabla <code>registro_produccion_operario</code>, refactor de controlador y reportes en tiempo real.</td>
+            </tr>
+            <tr>
+              <td><strong>Sprint 4</strong></td>
+              <td>Notificaciones Asíncronas</td>
+              <td>
+                <span class="role-badge role-emmanuel">Emmanuel</span> (Colas & PDFs)<br>
+                <span class="role-badge role-santiago">Santiago</span> (WhatsApp Channel)
+              </td>
+              <td>Worker Redis procesando PDFs en background y despacho automático a clientes por WhatsApp/Email.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer>
+    <p><strong>SGPMRJA — Creaciones Atlántico C.A.</strong> &copy; 2026. Documentación Técnica de Arquitectura de Software.</p>
+    <p style="margin-top: 4px; font-size: 11px;">Generado para revisión y ejecución del equipo técnico de desarrollo.</p>
+  </footer>
+
+</div>
+
+<!-- Scripts de Interactividad -->
+<script>
+  function switchTab(tabId, btn) {
+    document.querySelectorAll('.section').forEach(sec => sec.classList.remove('active'));
+    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+    
+    document.getElementById('tab-' + tabId).classList.add('active');
+    btn.classList.add('active');
+  }
+
+  function showStateDetail(state) {
+    const box = document.getElementById('state-detail-box');
+    const steps = document.querySelectorAll('.state-step');
+    steps.forEach(s => s.classList.remove('active'));
+    event.target.classList.add('active');
+
+    const details = {
+      matriceria: '<strong>Estado: Pendiente Matricería</strong> — El logo fue cargado por ventas. El digitalizador debe ponchar el diseño (.DST/.EMB) y registrar puntadas.',
+      aprobada: '<strong>Estado: Matriz Aprobada</strong> — Ficha técnica validada con conteo de hilos y bastidor seleccionado. Lista para programarse en cola.',
+      cola: '<strong>Estado: En Cola Máquina</strong> — Esperando disponibilidad de bastidor y cono de hilos en la máquina bordadora multi-cabezal.',
+      bordando: '<strong>Estado: En Bordado</strong> — Operario ejecutando puntadas en taller. Registro de tiempo cronometrado de máquina.',
+      calidad: '<strong>Estado: Control de Calidad</strong> — Inspección visual de tensión de hilo, limpieza de pelusas y precisión posicional.',
+      completado: '<strong>Estado: Completado</strong> — Pieza conforme aprobada para continuar a confección o empaque final.'
+    };
+    box.innerHTML = details[state] || '';
+  }
+
+  function recalcularBOM() {
+    const cant = parseFloat(document.getElementById('calc-cantidad').value) || 0;
+    const base = parseFloat(document.getElementById('calc-base').value) || 0;
+    const mermaPct = parseFloat(document.getElementById('calc-merma').value) || 0;
+    const stock = parseFloat(document.getElementById('calc-stock').value) || 0;
+
+    const neto = cant * base;
+    const merma = neto * (mermaPct / 100);
+    const total = neto + merma;
+    const balance = stock - total;
+
+    document.getElementById('res-neto').innerText = neto.toFixed(2) + ' m';
+    document.getElementById('res-merma').innerText = '+' + merma.toFixed(2) + ' m';
+    document.getElementById('res-total').innerText = total.toFixed(2) + ' m';
+    
+    const balEl = document.getElementById('res-balance');
+    const estEl = document.getElementById('res-estado');
+
+    balEl.innerText = (balance >= 0 ? '+' : '') + balance.toFixed(2) + ' m';
+
+    if (balance < 0) {
+      balEl.style.color = 'var(--rose-400)';
+      estEl.innerText = '🔴 FALTANTE (GENERAR COMPRA)';
+      estEl.style.color = 'var(--rose-400)';
+    } else if (balance < 20) {
+      balEl.style.color = 'var(--amber-400)';
+      estEl.innerText = '🟡 AJUSTADO (STOCK MÍNIMO)';
+      estEl.style.color = 'var(--amber-400)';
+    } else {
+      balEl.style.color = 'var(--emerald-400)';
+      estEl.innerText = '🟢 OK (DISPONIBILIDAD TOTAL)';
+      estEl.style.color = 'var(--emerald-400)';
+    }
+  }
+
+  // Pre-carga del simulador
+  document.addEventListener('DOMContentLoaded', recalcularBOM);
+</script>
+
+</body>
+</html>
