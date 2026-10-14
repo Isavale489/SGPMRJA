@@ -95,6 +95,48 @@ test('un grupo abierto desde el menú colapsado conserva el foco y no se reabre 
   await page.evaluate(() => localStorage.removeItem('sgpmrja-sidebar-size'));
 });
 
+test('el menú es un acordeón: abre la sección de la página y una sola a la vez', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/empleados');
+  const principal = page.getByRole('navigation', { name: 'Principal' });
+  const grupo = (nombre: string) => principal.getByRole('button', { name: nombre, exact: true });
+
+  // Al entrar: abiertos solo la sección y el subgrupo de la página.
+  await expect(grupo('Gestión General')).toHaveAttribute('aria-expanded', 'true');
+  await expect(grupo('Recursos Humanos')).toHaveAttribute('aria-expanded', 'true');
+  await expect(grupo('Productos')).toHaveAttribute('aria-expanded', 'false');
+  await expect(grupo('Gestión Operativa')).toHaveAttribute('aria-expanded', 'false');
+
+  // Abrir un hermano cierra el anterior, también dentro de una sección.
+  await grupo('Productos').click();
+  await expect(grupo('Recursos Humanos')).toHaveAttribute('aria-expanded', 'false');
+  await grupo('Gestión Operativa').click();
+  await expect(grupo('Gestión General')).toHaveAttribute('aria-expanded', 'false');
+  await expect(principal.getByRole('link', { name: 'Pedidos' })).toBeVisible();
+  await expect(principal.getByRole('link', { name: 'Empleados' })).toHaveCount(0);
+
+  // Se pueden cerrar todos.
+  await grupo('Gestión Operativa').click();
+  await expect(grupo('Gestión Operativa')).toHaveAttribute('aria-expanded', 'false');
+});
+
+test('cada nivel del menú tiene su sangría y los textos de un mismo nivel se alinean', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/empleados');
+  const principal = page.getByRole('navigation', { name: 'Principal' });
+  const x = async (rol: 'link' | 'button', nombre: string) =>
+    (await principal.getByRole(rol, { name: nombre, exact: true }).locator('span').first().boundingBox())!.x;
+
+  // Nivel 0: Inicio (enlace) y las secciones (grupos) empiezan en la misma columna.
+  expect(await x('link', 'Inicio')).toBeCloseTo(await x('button', 'Gestión General'), 0);
+  // Nivel 1: enlaces y subgrupos alineados entre sí.
+  const nivel1 = await x('link', 'Clientes');
+  expect(await x('button', 'Productos')).toBeCloseTo(nivel1, 0);
+  expect(await x('button', 'Recursos Humanos')).toBeCloseTo(nivel1, 0);
+  // Nivel 2: más adentro que su padre.
+  expect(await x('link', 'Empleados')).toBeGreaterThan(nivel1 + 12);
+});
+
 test('en móvil no hay desborde horizontal y el menú abre en un panel', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/plataforma/componentes');

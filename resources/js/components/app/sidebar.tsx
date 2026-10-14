@@ -8,14 +8,22 @@ import { contieneActivo, esGrupo, estaActivo } from '@/lib/navegacion';
 import { cn } from '@/lib/utils';
 import type { EnlaceNavegacion, GrupoNavegacion, ItemNavegacion } from '@/types';
 
+/*
+ * Sangría por anidamiento: cada nivel cuelga de una línea guía tenue (del color de su sección)
+ * y su texto queda alineado con el del padre. Todo elemento clicable lleva el riel izquierdo
+ * de 3 px (transparente salvo en el activo) y, dentro de un grupo, se monta sobre la línea
+ * (-ml-px) para que el riel del activo la tape en vez de quedar al lado.
+ */
+const BASE = 'flex items-center gap-2.5 rounded-md border-l-[3px] border-transparent py-1.5 pr-2.5 text-sm transition-colors duration-rapido';
+const sangria = (nivel: number) => (nivel === 0 ? 'pl-2.5' : '-ml-px pl-4');
+
 function Enlace({ enlace, nivel }: { enlace: EnlaceNavegacion; nivel: number }) {
     const { url } = usePage();
     const activo = estaActivo(enlace, url);
     const clases = cn(
-        'group flex items-center gap-2.5 rounded-md px-2.5 py-1.5 text-sm transition-colors duration-rapido',
-        nivel > 0 && 'pl-9',
-        // Riel izquierdo siempre presente (transparente) para que el texto no salte al activarse.
-        'border-l-[3px] border-transparent',
+        'group',
+        BASE,
+        sangria(nivel),
         activo
             ? 'bg-seccion-acento/12 text-seccion border-seccion-acento font-semibold'
             : 'text-sidebar-foreground hover:bg-seccion-acento/8 hover:text-seccion',
@@ -39,14 +47,22 @@ function Enlace({ enlace, nivel }: { enlace: EnlaceNavegacion; nivel: number }) 
     );
 }
 
-function Grupo({ grupo, nivel, abrirAlInicio }: { grupo: GrupoNavegacion; nivel: number; abrirAlInicio?: boolean }) {
+interface PropsGrupo {
+    grupo: GrupoNavegacion;
+    nivel: number;
+    abierto: boolean;
+    onAlternar: () => void;
+    /** Elegido desde el menú colapsado: toma el foco al montarse. */
+    enfocar?: boolean;
+}
+
+function Grupo({ grupo, nivel, abierto, onAlternar, enfocar }: PropsGrupo) {
     const { url } = usePage();
-    const [abierto, setAbierto] = useState(() => abrirAlInicio || contieneActivo(grupo, url));
     const conActivo = contieneActivo(grupo, url);
     const boton = useRef<HTMLButtonElement>(null);
     // Elegido desde el menú colapsado: el foco sigue en el grupo (el botón de antes se desmontó).
     useEffect(() => {
-        if (abrirAlInicio) boton.current?.focus();
+        if (enfocar) boton.current?.focus();
         // eslint-disable-next-line react-hooks/exhaustive-deps -- solo al montarse
     }, []);
 
@@ -56,11 +72,12 @@ function Grupo({ grupo, nivel, abrirAlInicio }: { grupo: GrupoNavegacion; nivel:
             <button
                 ref={boton}
                 type="button"
-                onClick={() => setAbierto((a) => !a)}
+                onClick={onAlternar}
                 aria-expanded={abierto}
                 className={cn(
-                    'hover:bg-seccion-acento/8 flex w-full items-center gap-2.5 rounded-md px-2.5 py-1.5 text-sm transition-colors duration-rapido',
-                    nivel > 0 && 'pl-9',
+                    'hover:bg-seccion-acento/8 w-full',
+                    BASE,
+                    sangria(nivel),
                     conActivo ? 'text-seccion font-medium' : 'text-sidebar-foreground',
                 )}
             >
@@ -72,18 +89,48 @@ function Grupo({ grupo, nivel, abrirAlInicio }: { grupo: GrupoNavegacion; nivel:
                 />
             </button>
             {abierto && (
-                <div className="mt-0.5 grid gap-0.5">
-                    {grupo.items.map((h) => (
-                        <Item key={h.titulo} item={h} nivel={nivel + 1} />
-                    ))}
+                // La línea cae bajo el ícono del padre (nivel 0) o bajo el inicio de su texto.
+                <div className={cn('border-seccion-acento/25 mt-0.5 border-l', nivel === 0 ? 'ml-5' : 'ml-[1.1875rem]')}>
+                    <Lista items={grupo.items} nivel={nivel + 1} />
                 </div>
             )}
         </div>
     );
 }
 
-function Item({ item, nivel, abrirAlInicio }: { item: ItemNavegacion; nivel: number; abrirAlInicio?: boolean }) {
-    return esGrupo(item) ? <Grupo grupo={item} nivel={nivel} abrirAlInicio={abrirAlInicio} /> : <Enlace enlace={item} nivel={nivel} />;
+/**
+ * Hermanos de un mismo nivel, en acordeón: un solo grupo abierto a la vez. Al entrar abre el
+ * que contiene la página activa (o el elegido desde el menú colapsado); se pueden cerrar todos.
+ */
+function Lista({ items, nivel, inicial }: { items: ItemNavegacion[]; nivel: number; inicial?: string | null }) {
+    const { url } = usePage();
+    const [abierto, setAbierto] = useState<string | null>(
+        () => inicial ?? items.find((i) => esGrupo(i) && contieneActivo(i, url))?.titulo ?? null,
+    );
+
+    return (
+        <div className="grid gap-0.5">
+            {items.map((item) =>
+                esGrupo(item) ? (
+                    <Grupo
+                        key={item.titulo}
+                        grupo={item}
+                        nivel={nivel}
+                        abierto={abierto === item.titulo}
+                        onAlternar={() => setAbierto((a) => (a === item.titulo ? null : item.titulo))}
+                        enfocar={nivel === 0 && item.titulo === inicial}
+                    />
+                ) : nivel === 0 ? (
+                    // Enlace suelto (Inicio): azul de marca, no el color de la página abierta.
+                    <div key={item.titulo} data-seccion="marca" className="grid">
+                        <Enlace enlace={item} nivel={0} />
+                    </div>
+                ) : (
+                    <Enlace key={item.titulo} enlace={item} nivel={nivel} />
+                ),
+            )}
+        </div>
+    );
 }
 
 /**
@@ -146,17 +193,8 @@ export function Sidebar({ colapsado = false, onExpandir, grupoAbierto }: Props) 
     if (colapsado && onExpandir) return <MenuColapsado onExpandir={onExpandir} />;
 
     return (
-        <nav aria-label="Principal" className="grid gap-0.5 p-3">
-            {navegacion.map((item) =>
-                esGrupo(item) ? (
-                    <Item key={item.titulo} item={item} nivel={0} abrirAlInicio={item.titulo === grupoAbierto} />
-                ) : (
-                    // Enlace suelto (Inicio): azul de marca, no el color de la página abierta.
-                    <div key={item.titulo} data-seccion="marca">
-                        <Item item={item} nivel={0} />
-                    </div>
-                ),
-            )}
+        <nav aria-label="Principal" className="p-3">
+            <Lista items={navegacion} nivel={0} inicial={grupoAbierto} />
         </nav>
     );
 }
