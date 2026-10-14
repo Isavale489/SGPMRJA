@@ -6,8 +6,11 @@ import { test, expect, type Page } from '@playwright/test';
  */
 test.describe.configure({ mode: 'serial' });
 
-const RIF = '41987654';
-const RAZON = 'Tejidos Guanare C.A.';
+// En modo serial un reintento repite el archivo entero en un worker nuevo: datos propios por
+// worker, o el alta del reintento chocaría con el proveedor que creó el intento fallido.
+const WORKER = Number(process.env.TEST_WORKER_INDEX ?? 0);
+const RIF = `4198${String(WORKER).padStart(4, '0')}`;
+const RAZON = `Tejidos Guanare ${WORKER} C.A.`;
 
 function vigilarErrores(page: Page): string[] {
   const errores: string[] = [];
@@ -30,7 +33,7 @@ test('alta de un proveedor jurídico desde el diálogo', async ({ page }) => {
   const dialogo = page.getByRole('dialog');
   await dialogo.getByRole('textbox', { name: 'RIF' }).fill(RIF);
   await dialogo.getByLabel('Razón social').fill(RAZON);
-  await dialogo.getByLabel('Correo electrónico').fill('ventas@tejidosguanare.com');
+  await dialogo.getByLabel('Correo electrónico').fill(`ventas${WORKER}@tejidosguanare.com`);
   await dialogo.getByLabel('Dirección').fill('Zona Industrial, Galpón 12');
   await dialogo.getByLabel('Número del teléfono 1').fill('5551234');
   await elegir(page, 'Estado', 'Portuguesa');
@@ -114,7 +117,10 @@ test('cerrar con cambios sin guardar pide confirmación', async ({ page }) => {
 
   // Escape en el aviso también es seguir editando.
   await dialogo.getByRole('button', { name: 'Cancelar' }).click();
-  await expect(aviso).toBeVisible();
+  // Esperar a que el foco entre al aviso: para entonces Radix ya lo registró como capa
+  // superior (mismo ciclo de efectos). Un Escape antes de eso (en la CI, lenta) lo atiende
+  // el diálogo de abajo, que vuelve a preguntar, y el aviso no se cierra.
+  await expect(aviso.getByRole('button', { name: 'Seguir editando' })).toBeFocused();
   await page.keyboard.press('Escape');
   await expect(aviso).toBeHidden();
   await expect(dialogo).toBeVisible();
