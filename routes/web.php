@@ -4,7 +4,6 @@ use App\Http\Controllers\CompraController;
 use App\Http\Controllers\ConfiguracionController;
 use App\Http\Controllers\DisponibilidadInsumoController;
 use App\Http\Controllers\ImpuestoController;
-use App\Http\Controllers\DetalleOrdenInsumoController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\InsumoController;
 use App\Http\Controllers\TipoInsumoController;
@@ -71,6 +70,8 @@ Route::middleware(['auth', 'throttle:60,1', 'active.user', 'recovery.questions.r
     // ============================================
         // Configuración del sistema (FEAT-004)
         Route::get('configuracion', [ConfiguracionController::class, 'index'])->name('configuracion.index');
+        // Plataforma Inertia: catálogo vivo de componentes (tokens, UI base, patrones).
+        Route::inertia('plataforma/componentes', 'Plataforma/Componentes')->name('plataforma.componentes');
         Route::put('configuracion/{modulo}', [ConfiguracionController::class, 'update'])->name('configuracion.update');
         Route::delete('configuracion/{modulo}/{clave}', [ConfiguracionController::class, 'reset'])->name('configuracion.reset');
 
@@ -80,17 +81,15 @@ Route::middleware(['auth', 'throttle:60,1', 'active.user', 'recovery.questions.r
         Route::delete('configuracion-impuestos/{impuesto}', [ImpuestoController::class, 'destroy'])->name('impuestos.destroy');
 
         // Usuarios
-        Route::resource('users', UserController::class);
+        Route::resource('users', UserController::class)->only(['index', 'store', 'update', 'destroy']);
         Route::post('users/{id}/restore', [UserController::class, 'restore'])->name('users.restore');
-        Route::get('users-data', [UserController::class, 'getUsers'])->name('users.data');
         Route::get('users/reporte/pdf', [UserController::class, 'reportePdf'])->name('users.reporte.pdf');
         Route::get('users-check-email', [UserController::class, 'checkEmail'])->name('users.check-email');
         Route::post('users/{id}/unlock-recovery', [UserController::class, 'unlockRecovery'])->name('users.unlock-recovery');
         Route::post('users/{id}/reset-password', [UserController::class, 'resetPassword'])->name('users.reset-password');
 
         // Clientes
-        Route::resource('clientes', ClienteController::class);
-        Route::get('clientes-data', [ClienteController::class, 'getClientes'])->name('clientes.data');
+        Route::resource('clientes', ClienteController::class)->only(['index', 'store', 'update', 'destroy']);
         Route::get('clientes-check-documento', [ClienteController::class, 'checkDocumento'])->name('clientes.check-documento');
         Route::get('clientes-check-email', [ClienteController::class, 'checkEmail'])->name('clientes.check-email');
         Route::get('clientes-search', [ClienteController::class, 'searchAjax'])->name('clientes.search');
@@ -103,56 +102,49 @@ Route::middleware(['auth', 'throttle:60,1', 'active.user', 'recovery.questions.r
 
         // Empleados
         // 'create' excluido: el alta se hace por el modal del index (no hay página aparte)
-        Route::resource('empleados', EmpleadoController::class)->except(['create']);
+        Route::resource('empleados', EmpleadoController::class)->only(['index', 'store', 'update', 'destroy']);
         Route::post('empleados/{id}/restore', [EmpleadoController::class, 'restore'])->name('empleados.restore');
-        Route::get('empleados-data', [EmpleadoController::class, 'getEmpleados'])->name('empleados.data');
         Route::get('empleados-check-documento', [EmpleadoController::class, 'checkDocumento'])->name('empleados.check-documento');
         Route::get('empleados-check-email', [EmpleadoController::class, 'checkEmail'])->name('empleados.check-email');
-        Route::get('empleados-check-codigo', [EmpleadoController::class, 'checkCodigo'])->name('empleados.check-codigo');
         Route::get('/empleados/reporte/pdf', [EmpleadoController::class, 'reportePdf'])->name('empleados.reporte.pdf');
-        Route::get('empleados-get-cargos', [EmpleadoController::class, 'getCargos'])->name('empleados.get-cargos');
 
         // Departamentos (CRUD — maestro)
         Route::get('departamentos', [DepartamentoController::class, 'index'])->name('departamentos.index');
         Route::post('departamentos', [DepartamentoController::class, 'store'])->name('departamentos.store');
-        Route::get('departamentos/{departamento}', [DepartamentoController::class, 'show'])->name('departamentos.show');
         Route::put('departamentos/{departamento}', [DepartamentoController::class, 'update'])->name('departamentos.update');
         Route::delete('departamentos/{departamento}', [DepartamentoController::class, 'destroy'])->name('departamentos.destroy');
         Route::patch('departamentos/{id}/restore', [DepartamentoController::class, 'restore'])->name('departamentos.restore');
-        Route::get('departamentos-check-nombre', [DepartamentoController::class, 'checkNombre'])->name('departamentos.check-nombre');
 
         // Cargos (CRUD — maestro)
         Route::get('cargos', [CargoController::class, 'index'])->name('cargos.index');
         Route::post('cargos', [CargoController::class, 'store'])->name('cargos.store');
-        Route::get('cargos/{cargo}', [CargoController::class, 'show'])->name('cargos.show');
         Route::put('cargos/{cargo}', [CargoController::class, 'update'])->name('cargos.update');
         Route::delete('cargos/{cargo}', [CargoController::class, 'destroy'])->name('cargos.destroy');
         Route::patch('cargos/{id}/restore', [CargoController::class, 'restore'])->name('cargos.restore');
-        Route::get('cargos-check-nombre', [CargoController::class, 'checkNombre'])->name('cargos.check-nombre');
 
-        // Pedidos (escritura)
+        // Pedidos (escritura). Asistente en página propia (rutas fijas antes del comodín {pedido}).
+        Route::get('pedidos/crear', [PedidoController::class, 'create'])->name('pedidos.create');
+        Route::get('pedidos/{pedido}/editar', [PedidoController::class, 'edit'])->whereNumber('pedido')->name('pedidos.edit');
         Route::post('pedidos', [PedidoController::class, 'store'])->name('pedidos.store');
-        Route::get('pedidos/create', [PedidoController::class, 'create'])->name('pedidos.create');
         Route::put('pedidos/{pedido}', [PedidoController::class, 'update'])->name('pedidos.update');
         Route::patch('pedidos/{pedido}/cancelar', [PedidoController::class, 'cancelar'])->name('pedidos.cancelar');
         Route::patch('pedidos/{pedido}/reactivar', [PedidoController::class, 'reactivar'])->name('pedidos.reactivar');
         Route::delete('pedidos/{pedido}', [PedidoController::class, 'destroy'])->name('pedidos.destroy');
-        Route::get('pedidos/{pedido}/edit', [PedidoController::class, 'edit'])->name('pedidos.edit');
 
         // Cotizaciones (escritura)
+        // Asistente en página propia (rutas fijas antes del comodín {cotizacion}).
+        Route::get('cotizaciones/crear', [CotizacionController::class, 'create'])->name('cotizaciones.create');
+        Route::get('cotizaciones/resolver-variante', [ProductoController::class, 'resolverVariante'])->name('cotizaciones.resolverVariante');
+        Route::get('cotizaciones/{cotizacion}/editar', [CotizacionController::class, 'edit'])->whereNumber('cotizacion')->name('cotizaciones.edit');
         Route::post('cotizaciones', [CotizacionController::class, 'store'])->name('cotizaciones.store');
-        Route::get('cotizaciones/create', [CotizacionController::class, 'create'])->name('cotizaciones.create');
         Route::put('cotizaciones/{cotizacion}', [CotizacionController::class, 'update'])->name('cotizaciones.update');
         Route::delete('cotizaciones/{cotizacion}', [CotizacionController::class, 'destroy'])->name('cotizaciones.destroy');
-        Route::get('cotizaciones/{cotizacion}/edit', [CotizacionController::class, 'edit'])->name('cotizaciones.edit');
 
         // Proveedores (escritura)
         Route::post('proveedores', [ProveedorController::class, 'store'])->name('proveedores.store');
         Route::post('proveedores/from-persona/{persona}', [ProveedorController::class, 'createFromPersona'])->name('proveedores.from-persona');
-        Route::get('proveedores/create', [ProveedorController::class, 'create'])->name('proveedores.create');
         Route::put('proveedores/{proveedor}', [ProveedorController::class, 'update'])->name('proveedores.update');
         Route::delete('proveedores/{proveedor}', [ProveedorController::class, 'destroy'])->name('proveedores.destroy');
-        Route::get('proveedores/{proveedor}/edit', [ProveedorController::class, 'edit'])->name('proveedores.edit');
         Route::post('proveedores/{id}/restore', [ProveedorController::class, 'restore'])->name('proveedores.restore');
 
     // ============================================
@@ -161,38 +153,29 @@ Route::middleware(['auth', 'throttle:60,1', 'active.user', 'recovery.questions.r
     // ============================================
         // Pedidos (lectura)
         Route::get('pedidos', [PedidoController::class, 'index'])->name('pedidos.index');
-        Route::get('pedidos-data', [PedidoController::class, 'getPedidos'])->name('pedidos.data');
-        Route::get('pedidos/cotizaciones-disponibles', [PedidoController::class, 'getCotizacionesDisponibles'])->name('pedidos.cotizacionesDisponibles');
         Route::get('pedidos/reporte/pdf', [PedidoController::class, 'reportePdf'])->name('pedidos.reporte.pdf');
-        Route::get('pedidos/reporte', [PedidoController::class, 'reporteGeneral'])->name('pedidos.reporteGeneral');
         // Proyección de insumos para producción (aviso NO bloqueante de stock).
         Route::post('pedidos/proyeccion-insumos', [DisponibilidadInsumoController::class, 'proyectarLineas'])->name('pedidos.proyeccionInsumos');
-        Route::get('pedidos/{pedido}', [PedidoController::class, 'show'])->name('pedidos.show');
         Route::get('pedidos/{pedido}/pdf', [PedidoController::class, 'pedidoPdf'])->name('pedidos.pdf');
+        // Enlace viejo a la ficha (antes JSON): abre el «Ver» del listado.
+        Route::get('pedidos/{pedido}', [PedidoController::class, 'show'])->whereNumber('pedido')->name('pedidos.show');
 
         // Cotizaciones (lectura + conversión)
         Route::get('cotizaciones', [CotizacionController::class, 'index'])->name('cotizaciones.index');
-        Route::get('cotizaciones-data', [CotizacionController::class, 'getCotizaciones'])->name('cotizaciones.data');
         // Proyección en vivo de insumos desde el wizard (líneas aún sin guardar).
         Route::post('cotizaciones/proyeccion-insumos', [DisponibilidadInsumoController::class, 'proyectarLineas'])->name('cotizaciones.proyeccionInsumos');
         Route::get('cotizaciones/reporte/pdf', [CotizacionController::class, 'reportePdf'])->name('cotizaciones.reporte.pdf');
-        Route::get('cotizaciones/reporte', [CotizacionController::class, 'reporteGeneral'])->name('cotizaciones.reporteGeneral');
-        Route::get('cotizaciones/{cotizacion}', [CotizacionController::class, 'show'])->name('cotizaciones.show');
         Route::get('cotizaciones/{cotizacion}/pdf', [CotizacionController::class, 'cotizacionPdf'])->name('cotizaciones.pdf');
         Route::put('cotizaciones/{cotizacion}/estado', [CotizacionController::class, 'updateEstado'])->name('cotizaciones.updateEstado');
-        Route::get('cotizaciones/{cotizacion}/datos-para-pedido', [CotizacionController::class, 'getDatosParaPedido'])->name('cotizaciones.datosParaPedido');
-        Route::post('cotizaciones/{cotizacion}/convertir-a-pedido', [CotizacionController::class, 'convertirAPedido'])->name('cotizaciones.convertirAPedido');
         Route::post('cotizaciones/{cotizacion}/reactivar', [CotizacionController::class, 'reactivar'])->name('cotizaciones.reactivar');
 
         // Proveedores (lectura)
         Route::get('proveedores', [ProveedorController::class, 'index'])->name('proveedores.index');
-        Route::get('proveedores-data', [ProveedorController::class, 'getProveedores'])->name('proveedores.data');
         Route::get('proveedores-check-rif', [ProveedorController::class, 'checkRif'])->name('proveedores.check-rif');
         Route::get('proveedores-check-documento', [ProveedorController::class, 'checkDocumento'])->name('proveedores.check-documento');
         Route::get('proveedores-check-email', [ProveedorController::class, 'checkEmail'])->name('proveedores.check-email');
         Route::get('proveedores/reporte/pdf', [ProveedorController::class, 'reportePdf'])->name('proveedores.reporte.pdf');
         Route::get('proveedores/search', [ProveedorController::class, 'search'])->name('proveedores.search');
-        Route::get('proveedores/{proveedor}', [ProveedorController::class, 'show'])->name('proveedores.show');
 
         // Logos
         Route::get('logos-data', [LogoController::class, 'getLogos'])->name('logos.data');
@@ -200,10 +183,8 @@ Route::middleware(['auth', 'throttle:60,1', 'active.user', 'recovery.questions.r
 
         // Colores
         Route::get('colores-data', [ColorController::class, 'getColores'])->name('colores.data');
-        Route::get('colores-check-nombre', [ColorController::class, 'checkNombre'])->name('colores.check-nombre');
         Route::get('colores', [ColorController::class, 'index'])->name('colores.index');
         Route::post('colores', [ColorController::class, 'store'])->name('colores.store');
-        Route::get('colores/{color}', [ColorController::class, 'show'])->name('colores.show');
         Route::put('colores/{color}', [ColorController::class, 'update'])->name('colores.update');
         Route::delete('colores/{color}', [ColorController::class, 'destroy'])->name('colores.destroy');
         Route::patch('colores/{id}/restore', [ColorController::class, 'restore'])->name('colores.restore');
@@ -212,39 +193,28 @@ Route::middleware(['auth', 'throttle:60,1', 'active.user', 'recovery.questions.r
         Route::get('tallas-data', [TallaController::class, 'getTallas'])->name('tallas.data');
 
         // Ubicaciones de bordado (catálogo)
-        Route::get('cotizaciones-ubicaciones-bordado-data', [CotizacionController::class, 'getUbicacionesBordado'])->name('cotizaciones.ubicacionesBordado.data');
 
         // Productos
-        Route::resource('productos', ProductoController::class);
-        Route::get('productos-data', [ProductoController::class, 'getProductos'])->name('productos.data');
+        // Catálogo = tipos de producto: la página (Inertia) y lo que consume Cotizaciones.
+        Route::get('productos', [ProductoController::class, 'index'])->name('productos.index');
         Route::get('productos/reporte/pdf', [ProductoController::class, 'reportePdf'])->name('productos.reporte.pdf');
-        Route::post('productos/{id}/restore', [ProductoController::class, 'restore'])->name('productos.restore');
-        Route::get('productos-sugerir-precio', [ProductoController::class, 'sugerirPrecio'])->name('productos.sugerir-precio');
-        Route::get('productos-preview-codigo', [ProductoController::class, 'previewCodigo'])->name('productos.preview-codigo');
         Route::get('productos-resolver-variante', [ProductoController::class, 'resolverVariante'])->name('productos.resolver-variante');
 
         // Tipos de Producto
-        Route::get('tipo-productos', [App\Http\Controllers\TipoProductoController::class, 'index'])->name('tipo-productos.index');
         Route::post('tipo-productos', [App\Http\Controllers\TipoProductoController::class, 'store'])->name('tipo-productos.store');
         Route::post('tipo-productos/{tipoProducto}/telas', [App\Http\Controllers\TipoProductoController::class, 'storeTela'])->name('tipo-productos.telas.store');
         Route::get('tipo-productos/{id}', [App\Http\Controllers\TipoProductoController::class, 'show'])->name('tipo-productos.show');
         Route::put('tipo-productos/{tipoProducto}', [App\Http\Controllers\TipoProductoController::class, 'update'])->name('tipo-productos.update');
         Route::delete('tipo-productos/{tipoProducto}', [App\Http\Controllers\TipoProductoController::class, 'destroy'])->name('tipo-productos.destroy');
         Route::patch('tipo-productos/{id}/restore', [App\Http\Controllers\TipoProductoController::class, 'restore'])->name('tipo-productos.restore');
-        Route::get('tipo-productos-check-nombre', [App\Http\Controllers\TipoProductoController::class, 'checkNombre'])->name('tipo-productos.check-nombre');
-        Route::get('tipo-productos-check-codigo', [App\Http\Controllers\TipoProductoController::class, 'checkCodigoPrefijo'])->name('tipo-productos.check-codigo');
 
         // Atributos de confección (catálogo maestro)
         Route::get('atributos', [App\Http\Controllers\AtributoController::class, 'index'])->name('atributos.index');
         Route::post('atributos', [App\Http\Controllers\AtributoController::class, 'store'])->name('atributos.store');
-        Route::get('atributos/{atributo}', [App\Http\Controllers\AtributoController::class, 'show'])->name('atributos.show');
         Route::put('atributos/{atributo}', [App\Http\Controllers\AtributoController::class, 'update'])->name('atributos.update');
         Route::delete('atributos/{atributo}', [App\Http\Controllers\AtributoController::class, 'destroy'])->name('atributos.destroy');
-        Route::get('atributos-check-nombre', [App\Http\Controllers\AtributoController::class, 'checkNombre'])->name('atributos.check-nombre');
-        Route::get('atributos-check-codigo', [App\Http\Controllers\AtributoController::class, 'checkCodigo'])->name('atributos.check-codigo');
 
         // Valores de cada atributo (anidado)
-        Route::get('atributos/{atributo}/valores', [App\Http\Controllers\AtributoValorController::class, 'index'])->name('atributos.valores.index');
         Route::post('atributos/{atributo}/valores', [App\Http\Controllers\AtributoValorController::class, 'store'])->name('atributos.valores.store');
         Route::put('atributos/{atributo}/valores/{valor}', [App\Http\Controllers\AtributoValorController::class, 'update'])->name('atributos.valores.update');
         Route::delete('atributos/{atributo}/valores/{valor}', [App\Http\Controllers\AtributoValorController::class, 'destroy'])->name('atributos.valores.destroy');
@@ -252,67 +222,45 @@ Route::middleware(['auth', 'throttle:60,1', 'active.user', 'recovery.questions.r
 
         // Insumos
         Route::post('insumos/{id}/restore', [InsumoController::class, 'restore'])->name('insumos.restore');
-        Route::resource('insumos', InsumoController::class);
-        Route::get('insumos-data', [InsumoController::class, 'getInsumos'])->name('insumos.data');
+        Route::resource('insumos', InsumoController::class)->only(['index', 'store', 'update', 'destroy']);
         Route::get('insumos/reporte/pdf', [InsumoController::class, 'reportePdf'])->name('insumos.reporte.pdf');
         Route::get('insumos/check-nombre', [InsumoController::class, 'checkNombre'])->name('insumos.check-nombre');
 
         // Catálogo gestionable de tipos de insumo
         Route::get('tipo-insumos', [TipoInsumoController::class, 'index'])->name('tipo-insumos.index');
         Route::post('tipo-insumos', [TipoInsumoController::class, 'store'])->name('tipo-insumos.store');
-        Route::get('tipo-insumos-check-nombre', [TipoInsumoController::class, 'checkNombre'])->name('tipo-insumos.check-nombre');
-        Route::get('tipo-insumos/{tipoInsumo}', [TipoInsumoController::class, 'show'])->name('tipo-insumos.show');
         Route::put('tipo-insumos/{tipoInsumo}', [TipoInsumoController::class, 'update'])->name('tipo-insumos.update');
         Route::delete('tipo-insumos/{tipoInsumo}', [TipoInsumoController::class, 'destroy'])->name('tipo-insumos.destroy');
         Route::patch('tipo-insumos/{id}/restore', [TipoInsumoController::class, 'restore'])->name('tipo-insumos.restore');
 
         // Órdenes de Producción
         // (rutas específicas ANTES del resource para que no colisionen con ordenes/{orden})
-        Route::get('ordenes/pedidos-disponibles', [OrdenProduccionController::class, 'pedidosDisponibles'])->name('ordenes.pedidos-disponibles');
         Route::post('ordenes/proyeccion-insumos', [OrdenProduccionController::class, 'proyeccionInsumos'])->name('ordenes.proyeccionInsumos');
-        Route::get('ordenes/por-empleado/{empleado}', [OrdenProduccionController::class, 'ordenesPorEmpleado'])->name('ordenes.por-empleado');
-        Route::get('ordenes-data', [OrdenProduccionController::class, 'getOrdenes'])->name('ordenes.data');
-        Route::get('ordenes-pedidos-data', [OrdenProduccionController::class, 'getPedidosOrdenes'])->name('ordenes.pedidos-data');
+        Route::get('ordenes/crear', [OrdenProduccionController::class, 'create'])->name('ordenes.create');
         Route::post('ordenes/batch', [OrdenProduccionController::class, 'storeBatch'])->name('ordenes.batch');
         Route::post('ordenes/{orden}/avance', [OrdenProduccionController::class, 'registrarAvance'])->name('ordenes.avance');
         Route::patch('ordenes/{orden}/cancelar', [OrdenProduccionController::class, 'cancelar'])->name('ordenes.cancelar');
         // Sub-órdenes de producción (etapas con empleados asignados)
-        Route::get('ordenes/{orden}/subordenes', [OrdenProduccionController::class, 'subordenes'])->name('ordenes.subordenes');
         Route::post('ordenes/{orden}/subordenes', [OrdenProduccionController::class, 'storeSubOrden'])->name('ordenes.subordenes.store');
         Route::delete('ordenes/{orden}/subordenes/{subId}', [OrdenProduccionController::class, 'destroySubOrden'])->name('ordenes.subordenes.destroy');
         Route::patch('ordenes/{orden}/subordenes/{subId}/estado', [OrdenProduccionController::class, 'updateSubOrdenEstado'])->name('ordenes.subordenes.estado');
         Route::get('ordenes/reporte/pdf', [OrdenProduccionController::class, 'reportePdf'])->name('ordenes.reporte.pdf');
         Route::get('ordenes/{orden}/pdf', [OrdenProduccionController::class, 'ordenPdf'])->name('ordenes.pdf');
-        Route::resource('ordenes', OrdenProduccionController::class);
+        Route::resource('ordenes', OrdenProduccionController::class)->except(['create', 'show']);
 
         // Control de Calidad (FEAT-006) — inspección de órdenes finalizadas
         Route::get('calidad', [ControlCalidadController::class, 'index'])->name('calidad.index');
         Route::get('calidad/reporte/pdf', [ControlCalidadController::class, 'reportePdf'])->name('calidad.reporte.pdf');
-        Route::get('calidad-data', [ControlCalidadController::class, 'getOrdenesCalidad'])->name('calidad.data');
-        Route::get('calidad-pedidos-data', [ControlCalidadController::class, 'getPedidosCalidad'])->name('calidad.pedidos-data');
-        Route::get('calidad/{orden}/detalle', [ControlCalidadController::class, 'detalle'])->name('calidad.detalle');
         Route::post('calidad/{orden}/inspeccionar', [ControlCalidadController::class, 'inspeccionar'])->name('calidad.inspeccionar');
-
-        // Control de Insumos por Orden
-        Route::get('ordenes/{orden}/insumos', [DetalleOrdenInsumoController::class, 'index'])->name('ordenes.insumos.index');
-        Route::get('ordenes/{orden}/insumos/data', [DetalleOrdenInsumoController::class, 'getInsumos'])->name('ordenes.insumos.data');
-        Route::post('ordenes/{orden}/insumos', [DetalleOrdenInsumoController::class, 'store'])->name('ordenes.insumos.store');
-        Route::put('ordenes/insumos/{id}', [DetalleOrdenInsumoController::class, 'update'])->name('ordenes.insumos.update');
-        Route::delete('ordenes/insumos/{id}', [DetalleOrdenInsumoController::class, 'destroy'])->name('ordenes.insumos.destroy');
 
         // Compras
         Route::get('compras', [CompraController::class, 'index'])->name('compras.index');
         Route::post('compras', [CompraController::class, 'store'])->name('compras.store');
+        Route::get('compras/crear', [CompraController::class, 'create'])->name('compras.create');
+        Route::get('compras/{compra}/editar', [CompraController::class, 'edit'])->name('compras.edit');
         Route::put('compras/{compra}', [CompraController::class, 'update'])->name('compras.update');
-        Route::get('compras/data', [CompraController::class, 'getCompras'])->name('compras.data');
         Route::get('compras/tasa', [CompraController::class, 'getTasa'])->name('compras.tasa');
-        // Panel de existencias dentro de /compras: reusa el data-source de
-        // movimiento-insumo, pero con nombre de ruta propio para que el
-        // permiso 'compras.ver' lo cubra (CheckPermiso mapea por nombre).
-        Route::get('compras/existencias-data', [MovimientoInsumoController::class, 'getExistencias'])->name('compras.existencias.data');
         Route::get('compras/reporte/pdf', [CompraController::class, 'reportePdf'])->name('compras.reporte.pdf');
-        Route::get('compras/{compra}/editar-datos', [CompraController::class, 'getParaEditar'])->name('compras.editar-datos');
-        Route::get('compras/{compra}/detalle', [CompraController::class, 'getDetalle'])->name('compras.detalle');
         Route::get('compras/{compra}/pdf', [CompraController::class, 'compraPdf'])->name('compras.pdf');
         Route::patch('compras/{compra}/procesar', [CompraController::class, 'procesar'])->name('compras.procesar');
         Route::patch('compras/{compra}/anular', [CompraController::class, 'anular'])->name('compras.anular');
@@ -321,15 +269,12 @@ Route::middleware(['auth', 'throttle:60,1', 'active.user', 'recovery.questions.r
 
         // Movimientos de Insumo (rutas literales antes del comodín {id})
         Route::get('movimiento-insumo', [MovimientoInsumoController::class, 'index'])->name('movimiento-insumo.index');
-        Route::get('movimiento-insumo/data', [MovimientoInsumoController::class, 'getMovimientos'])->name('movimiento-insumo.data');
-        Route::get('movimiento-insumo/existencias-data', [MovimientoInsumoController::class, 'getExistencias'])->name('movimiento-insumo.existencias.data');
         Route::get('movimiento-insumo/reporte', [MovimientoInsumoController::class, 'reporteExistencia'])->name('movimiento-insumo.reporte');
         Route::get('movimiento-insumo/reporte/pdf', [MovimientoInsumoController::class, 'reportePdf'])->name('movimiento-insumo.reporte.pdf');
         Route::get('movimiento-insumo/alertas', [MovimientoInsumoController::class, 'alertasStock'])->name('movimiento-insumo.alertas');
-        Route::get('movimiento-insumo/historial/{id}', [MovimientoInsumoController::class, 'historialInsumo'])->name('movimiento-insumo.historial');
+        Route::get('movimiento-insumo/historial/{id}', [MovimientoInsumoController::class, 'historialInsumo'])->name('movimiento-insumo.historial')->whereNumber('id');
         Route::get('movimiento-insumo/rotacion', [MovimientoInsumoController::class, 'analisisRotacion'])->name('movimiento-insumo.rotacion');
         Route::post('movimiento-insumo', [MovimientoInsumoController::class, 'store'])->name('movimiento-insumo.store');
-        Route::get('movimiento-insumo/{id}', [MovimientoInsumoController::class, 'show'])->name('movimiento-insumo.show');
 
         // Notificaciones (campanita del header)
         Route::get('notificaciones/sistema', [NotificacionController::class, 'sistema'])->name('notificaciones.sistema');
@@ -358,7 +303,6 @@ Route::middleware(['auth', 'throttle:60,1', 'active.user', 'recovery.questions.r
         Route::post('roles', [SeguridadController::class, 'storeRol'])->name('roles.store');
         Route::put('roles/{rol}', [SeguridadController::class, 'updateRol'])->name('roles.update');
         Route::delete('roles/{rol}', [SeguridadController::class, 'destroyRol'])->name('roles.destroy');
-        Route::get('permisos/{rol}', [SeguridadController::class, 'getPermisos'])->name('permisos.get');
         Route::put('permisos/{rol}', [SeguridadController::class, 'guardarMatriz'])->name('permisos.update');
     });
 

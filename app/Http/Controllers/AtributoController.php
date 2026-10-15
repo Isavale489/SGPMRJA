@@ -2,159 +2,124 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\RespondeSegunCliente;
+use App\Http\Requests\GuardarAtributoRequest;
 use App\Models\Atributo;
+use App\Models\AtributoValor;
 use App\Models\TipoProducto;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Inertia\Inertia;
 
+/**
+ * Atributos de confección (maestro) y sus valores (detalle, en
+ * AtributoValorController). El atributo seleccionado vive en la URL
+ * (?atributo=ID): elegir otro recarga solo sus valores.
+ */
 class AtributoController extends Controller
 {
-    /**
-     * Listado de atributos con conteos de valores y tipos asociados.
-     */
+    use RespondeSegunCliente;
+
     public function index(Request $request)
     {
-        if ($request->wantsJson() || $request->ajax()) {
-            $atributos = Atributo::withCount(['valores', 'tiposProducto'])
-                ->with(['tiposProducto:id'])
-                ->orderBy('nombre')
-                ->get();
-
-            return response()->json($atributos->map(function ($a) {
-                $data = $a->only(['id', 'nombre', 'codigo', 'descripcion', 'valores_count', 'tipos_producto_count']);
-                $data['tipos_producto_ids'] = $a->tiposProducto->pluck('id')->values();
-                return $data;
-            }));
+        // Contrato vivo: el formulario de tipos de Productos (jQuery) hace $.getJSON(atributos.index).
+        if (($request->wantsJson() || $request->ajax()) && ! $this->esInertia($request)) {
+            return response()->json($this->atributos()->map(fn (array $a) => [
+                ...collect($a)->only(['id', 'nombre', 'codigo', 'descripcion'])->all(),
+                'valores_count' => $a['valores'],
+                'tipos_producto_count' => count($a['tipos_producto_ids']),
+                'tipos_producto_ids' => $a['tipos_producto_ids'],
+            ]));
         }
 
-        $tiposProducto = TipoProducto::orderBy('nombre')->get(['id', 'nombre']);
-        return view('admin.atributos.index', compact('tiposProducto'));
+        $seleccionado = Atributo::find($request->integer('atributo') ?: null);
+
+        return Inertia::render('Atributos/Index', [
+            'atributos' => fn () => $this->atributos(),
+            'seleccionado' => $seleccionado?->id,
+            'valores' => fn () => $seleccionado
+                ? $seleccionado->valores()->withCount('productos')->get()->map(fn (AtributoValor $v) => [
+                    'id' => $v->id,
+                    'nombre' => $v->nombre,
+                    'codigo' => $v->codigo,
+                    'orden' => $v->orden,
+                    'productos' => $v->productos_count,
+                ])
+                : [],
+            'tiposProducto' => fn () => TipoProducto::orderBy('nombre')->get(['id', 'nombre']),
+            'urls' => ['index' => route('atributos.index', absolute: false)],
+        ]);
     }
 
-    public function store(Request $request): JsonResponse
+    /** Filas del listado (lo verifica AtributoPaginaTest contra AtributoFila de tipos.ts). */
+    private function atributos()
     {
-        $request->validate([
-            'nombre'          => 'required|string|min:3|max:80|unique:atributo,nombre',
-            'codigo'          => 'required|string|min:2|max:8|unique:atributo,codigo|regex:/^[A-Z0-9]+$/',
-            'descripcion'     => 'nullable|string|max:191',
-            'tipos_producto'  => 'nullable|array',
-            'tipos_producto.*'=> 'integer|exists:tipo_producto,id',
-        ], [
-            'nombre.required' => 'El nombre es obligatorio.',
-            'nombre.unique'   => 'Ya existe un atributo con este nombre.',
-            'codigo.required' => 'El código es obligatorio.',
-            'codigo.unique'   => 'Ya existe un atributo con este código.',
-            'codigo.regex'    => 'El código solo admite letras mayúsculas y números.',
-        ]);
+        return Atributo::withCount('valores')->with('tiposProducto:id')->orderBy('nombre')->get()
+            ->map(fn (Atributo $a) => [
+                'id' => $a->id,
+                'nombre' => $a->nombre,
+                'codigo' => $a->codigo,
+                'descripcion' => $a->descripcion,
+                'valores' => $a->valores_count,
+                'tipos_producto_ids' => $a->tiposProducto->pluck('id')->values()->all(),
+            ]);
+    }
 
-        $atributo = Atributo::create([
-            'nombre'      => trim($request->nombre),
-            'codigo'      => strtoupper(trim($request->codigo)),
-            'descripcion' => $request->descripcion ? trim($request->descripcion) : null,
-        ]);
+    public function store(GuardarAtributoRequest $request)
+    {
+        $atributo = DB::transaction(function () use ($request) {
+            $atributo = Atributo::create($request->safe()->only(['nombre', 'codigo', 'descripcion']));
+            $atributo->tiposProducto()->sync($request->input('tipos_producto', []));
 
-        $atributo->tiposProducto()->sync($request->input('tipos_producto', []));
+            return $atributo;
+        });
+
+        if ($this->esInertia($request)) {
+            // Queda seleccionado para cargarle sus valores de inmediato.
+            return to_route('atributos.index', ['atributo' => $atributo->id])->with('success', 'Atributo creado correctamente.');
+        }
 
         return response()->json([
-            'success'  => true,
-            'message'  => 'Atributo creado correctamente.',
+            'success' => true, 'message' => 'Atributo creado correctamente.',
             'atributo' => $atributo->loadCount(['valores', 'tiposProducto']),
         ]);
     }
 
-    public function show(Atributo $atributo): JsonResponse
+    public function update(GuardarAtributoRequest $request, Atributo $atributo)
     {
-        return response()->json(
-            $atributo->load(['valores' => fn($q) => $q->orderBy('orden')->orderBy('nombre')])
-        );
-    }
+        // El código no se toca: forma el SKU de los productos ya generados.
+        DB::transaction(function () use ($request, $atributo) {
+            $atributo->update($request->safe()->only(['nombre', 'descripcion']));
+            $atributo->tiposProducto()->sync($request->input('tipos_producto', []));
+        });
 
-    public function update(Request $request, Atributo $atributo): JsonResponse
-    {
-        $request->validate([
-            'nombre'          => 'required|string|min:3|max:80|unique:atributo,nombre,' . $atributo->id,
-            'descripcion'     => 'nullable|string|max:191',
-            'tipos_producto'  => 'nullable|array',
-            'tipos_producto.*'=> 'integer|exists:tipo_producto,id',
-        ], [
-            'nombre.required' => 'El nombre es obligatorio.',
-            'nombre.unique'   => 'Ya existe otro atributo con este nombre.',
-        ]);
-
-        $atributo->update([
-            'nombre'      => trim($request->nombre),
-            'descripcion' => $request->descripcion ? trim($request->descripcion) : null,
-        ]);
-
-        $atributo->tiposProducto()->sync($request->input('tipos_producto', []));
-
-        return response()->json([
-            'success'  => true,
-            'message'  => 'Atributo actualizado correctamente.',
+        return $this->responder($request, 'Atributo actualizado correctamente.', [
+            'success' => true, 'message' => 'Atributo actualizado correctamente.',
             'atributo' => $atributo->loadCount(['valores', 'tiposProducto']),
         ]);
     }
 
-    public function destroy(Atributo $atributo): JsonResponse
+    public function destroy(Request $request, Atributo $atributo)
     {
-        if ($atributo->tiposProducto()->count() > 0) {
-            return response()->json([
-                'success' => false,
-                'message' => 'No se puede eliminar: el atributo está asignado a uno o más tipos de producto.',
-            ], 422);
+        if ($atributo->tiposProducto()->exists()) {
+            return $this->rechazar($request, 'No se puede eliminar: el atributo está asignado a uno o más tipos de producto.');
         }
 
-        $productosAfectados = \DB::table('producto_atributo_valor')
+        $productosAfectados = DB::table('producto_atributo_valor')
             ->join('atributo_valor', 'atributo_valor.id', '=', 'producto_atributo_valor.atributo_valor_id')
             ->where('atributo_valor.atributo_id', $atributo->id)
             ->count();
 
         if ($productosAfectados > 0) {
-            return response()->json([
-                'success' => false,
-                'message' => "No se puede eliminar: {$productosAfectados} producto(s) usan valores de este atributo.",
-            ], 422);
+            return $this->rechazar($request, "No se puede eliminar: {$productosAfectados} producto(s) usan valores de este atributo.");
         }
 
         $atributo->delete();
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Atributo eliminado correctamente.',
-        ]);
-    }
-
-    public function checkNombre(Request $request): JsonResponse
-    {
-        $nombre    = trim((string) $request->input('nombre'));
-        $excludeId = $request->input('exclude_id');
-
-        if ($nombre === '') {
-            return response()->json(['exists' => false]);
+        if ($this->esInertia($request)) {
+            return to_route('atributos.index')->with('success', 'Atributo eliminado correctamente.');
         }
 
-        $query = Atributo::whereRaw('LOWER(nombre) = ?', [strtolower($nombre)]);
-        if ($excludeId) {
-            $query->where('id', '!=', $excludeId);
-        }
-
-        return response()->json(['exists' => $query->exists()]);
-    }
-
-    public function checkCodigo(Request $request): JsonResponse
-    {
-        $codigo    = strtoupper(trim((string) $request->input('codigo')));
-        $excludeId = $request->input('exclude_id');
-
-        if ($codigo === '') {
-            return response()->json(['exists' => false]);
-        }
-
-        $query = Atributo::where('codigo', $codigo);
-        if ($excludeId) {
-            $query->where('id', '!=', $excludeId);
-        }
-
-        return response()->json(['exists' => $query->exists()]);
+        return response()->json(['success' => true, 'message' => 'Atributo eliminado correctamente.']);
     }
 }

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Auth\RecoveryQuestionController;
+use App\Http\Controllers\Concerns\RespondeSegunCliente;
 use App\Http\Requests\ProfileUpdateRequest;
 use App\Models\UserRecoveryQuestion;
 use Illuminate\Http\JsonResponse;
@@ -13,21 +14,44 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\ValidationException;
-use Illuminate\View\View;
+use Inertia\Inertia;
+use Inertia\Response;
 
 class ProfileController extends Controller
 {
-    /**
-     * Display the user's profile form.
-     */
-    public function edit(Request $request): View
-    {
-        $user = $request->user();
-        $user->load('recoveryQuestions');
+    use RespondeSegunCliente;
 
-        return view('profile.edit', [
-            'user'              => $user,
-            'recoveryQuestions' => config('recovery_questions.questions', []),
+    /**
+     * Mi perfil (Inertia): datos, contraseña, preguntas de seguridad y foto.
+     * El middleware EnsureRecoveryQuestionsConfigured trae aquí (con
+     * `warning_recovery`) a quien aún no configuró sus preguntas.
+     */
+    public function edit(Request $request): Response
+    {
+        $user = $request->user()->load('recoveryQuestions');
+
+        return Inertia::render('Perfil/Index', [
+            'usuario' => [
+                'name' => $user->name,
+                'email' => $user->email,
+                'avatar' => $user->avatarSubido(),
+                'rol' => $user->role,
+                'activo' => (bool) $user->estado,
+                'desde' => $user->created_at?->toDateString(),
+            ],
+            'catalogo' => collect(config('recovery_questions.questions', []))->map(fn ($texto, $id) => ['id' => (int) $id, 'texto' => $texto])->values()->all(),
+            // Solo qué pregunta tiene cada bloque: las respuestas están cifradas.
+            'preguntas' => $user->recoveryQuestions->sortBy('orden')->map(fn ($q) => ['orden' => (int) $q->orden, 'pregunta_id' => (int) $q->pregunta_id])->values()->all(),
+            'configuradas' => $user->hasRecoveryQuestionsConfigured(),
+            'debeReconfigurar' => (bool) $user->recovery_must_reset_questions,
+            'forzado' => session('warning_recovery'),
+            'sinCambios' => (bool) session('warning_recovery_no_changes'),
+            'urls' => [
+                'perfil' => route('profile.update', absolute: false),
+                'contrasena' => route('password.update', absolute: false),
+                'preguntas' => route('profile.recovery-questions.update', absolute: false),
+                'avatar' => route('profile.avatar.update', absolute: false),
+            ],
         ]);
     }
 
@@ -78,6 +102,14 @@ class ProfileController extends Controller
         if ($configured && count($editedIndices) === 0) {
             return Redirect::route('profile.edit')
                 ->with('warning_recovery_no_changes', '1');
+        }
+
+        // 2b) Reconfiguración obligatoria (se usó la recuperación o un
+        //     administrador la pidió): se responden de nuevo las 3.
+        if ($configured && $user->recovery_must_reset_questions && count($editedIndices) !== 3) {
+            throw ValidationException::withMessages([
+                'cambios' => 'Por seguridad, debes volver a responder las 3 preguntas.',
+            ]);
         }
 
         // 3) Si está configurado y hay edición, exigir contraseña actual
@@ -179,13 +211,14 @@ class ProfileController extends Controller
         });
 
         return Redirect::route('profile.edit')
-            ->with('status', 'recovery-questions-updated');
+            ->with('status', 'recovery-questions-updated')
+            ->with('success', 'Preguntas de seguridad guardadas.');
     }
 
     /**
-     * Actualiza la foto de perfil del usuario (subida AJAX desde el hero de /profile).
+     * Actualiza la foto de perfil del usuario (Inertia: aviso flash; JSON para clientes antiguos).
      */
-    public function updateAvatar(Request $request): JsonResponse
+    public function updateAvatar(Request $request): JsonResponse|RedirectResponse
     {
         $request->validate([
             'avatar' => ['required', 'image', 'mimes:jpeg,png,jpg,gif', 'max:2048'],
@@ -197,17 +230,20 @@ class ProfileController extends Controller
         ]);
 
         $user = $request->user();
+        $anterior = $user->avatar;
 
-        if ($user->avatar && Storage::disk('public')->exists($user->avatar)) {
-            Storage::disk('public')->delete($user->avatar);
-        }
-
-        $file = $request->file('avatar');
-        $filename = uniqid() . '.' . $file->getClientOriginalExtension();
-        $user->avatar = $file->storeAs('avatars', $filename, 'public');
+        // store() nombra el archivo con la extensión que corresponde a su
+        // contenido real (no la que trae el nombre del cliente): un .html
+        // disfrazado no queda servido como página desde /storage.
+        $user->avatar = $request->file('avatar')->store('avatars', 'public');
         $user->save();
 
-        return response()->json([
+        // La foto vieja se borra solo cuando la nueva ya quedó guardada.
+        if ($anterior && $anterior !== $user->avatar && Storage::disk('public')->exists($anterior)) {
+            Storage::disk('public')->delete($anterior);
+        }
+
+        return $this->responder($request, 'Foto de perfil actualizada.', [
             'success'    => true,
             'avatar_url' => $user->avatar_url,
         ]);
@@ -218,15 +254,18 @@ class ProfileController extends Controller
      */
     public function update(ProfileUpdateRequest $request): RedirectResponse
     {
-        $request->user()->fill($request->validated());
+        $user = $request->user();
+        $correoAnterior = mb_strtolower((string) $user->email);
+        $user->fill($request->datos());
 
-        if ($request->user()->isDirty('email')) {
-            $request->user()->email_verified_at = null;
+        // Pasar un correo viejo a minúsculas no es cambiarlo: no pierde la verificación.
+        if ($user->isDirty('email') && $user->email !== $correoAnterior) {
+            $user->email_verified_at = null;
         }
 
-        $request->user()->save();
+        $user->save();
 
-        return Redirect::route('profile.edit')->with('status', 'profile-updated');
+        return Redirect::route('profile.edit')->with('status', 'profile-updated')->with('success', 'Datos actualizados.');
     }
 
     // NOTA: el método destroy() (autoborrado de cuenta) se eliminó por política:

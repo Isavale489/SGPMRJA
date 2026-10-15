@@ -21,8 +21,11 @@
         <env name="APP_ENV" value="testing"/>
         <env name="BCRYPT_ROUNDS" value="4"/>
         <env name="CACHE_DRIVER" value="array"/>
-        <!-- <env name="DB_CONNECTION" value="sqlite"/> -->
-        <!-- <env name="DB_DATABASE" value=":memory:"/> -->
+        <!-- BD propia de pruebas: RefreshDatabase hace migrate:fresh.
+             NUNCA apuntar a la BD de desarrollo. Crearla una vez:
+             CREATE DATABASE sistema_atlantico_test CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci; -->
+        <env name="DB_CONNECTION" value="mysql" force="true"/>
+        <env name="DB_DATABASE" value="sistema_atlantico_test" force="true"/>
         <env name="MAIL_MAILER" value="array"/>
         <env name="PULSE_ENABLED" value="false"/>
         <env name="QUEUE_CONNECTION" value="sync"/>

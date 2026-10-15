@@ -63,7 +63,7 @@ Para contexto histórico (sprints cerrados, decisiones pasadas), ver `docs/histo
 ## Stack tecnológico
 
 ### Backend
-- **Framework**: Laravel 11.x (PHP 8.2+)
+- **Framework**: Laravel 13.x (PHP 8.3+)
 - **BD**: MySQL/MariaDB
 - **ORM**: Eloquent
 - **Auth**: Laravel sesión clásica + middleware `auth`

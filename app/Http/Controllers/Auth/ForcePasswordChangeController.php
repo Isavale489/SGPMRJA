@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers\Auth;
 
+use App\Rules\ContrasenaSegura;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
-use Illuminate\View\View;
+use Inertia\Inertia;
+use Inertia\Response;
 
 class ForcePasswordChangeController extends Controller
 {
@@ -15,12 +17,19 @@ class ForcePasswordChangeController extends Controller
      * Pantalla para que el usuario cambie la contraseña temporal
      * que le proporcionó el admin tras un reset.
      */
-    public function show(Request $request): View|RedirectResponse
+    public function show(Request $request): Response|RedirectResponse
     {
         if (!$request->user() || !$request->user()->password_reset_by_admin) {
             return redirect()->route('dashboard');
         }
-        return view('auth.force-password-change');
+
+        return Inertia::render('Auth/CambioClaveObligatorio', [
+            'aviso' => session('warning_force_password'),
+            'urls' => [
+                'guardar' => route('auth.force-password-change.process', absolute: false),
+                'salir' => route('logout', absolute: false),
+            ],
+        ]);
     }
 
     /**
@@ -36,7 +45,7 @@ class ForcePasswordChangeController extends Controller
 
         $request->validate([
             'current_password' => ['required', 'current_password'],
-            'password'         => ['required', 'confirmed', 'min:8', 'different:current_password'],
+            'password'         => ['required', 'confirmed', 'different:current_password', new ContrasenaSegura],
         ], [
             'current_password.current_password' => 'La contraseña temporal no es correcta.',
             'password.different'                => 'La nueva contraseña debe ser distinta a la temporal.',

@@ -105,7 +105,21 @@ if (!function_exists('tienePermiso')) {
             return false;
         }
 
-        $permisos = Cache::rememberForever("permisos.rol_{$rolId}", function () use ($rolId) {
+        return in_array($permiso, permisosDeRol((int) $rolId), true);
+    }
+}
+
+if (!function_exists('permisosDeRol')) {
+    /**
+     * Permisos ('modulo.accion') otorgados a un rol en permiso_rol, cacheados
+     * (la cache se invalida al guardar la matriz de seguridad). Fuente común de
+     * tienePermiso() y de la prop `auth.permisos` de Inertia.
+     *
+     * @return list<string>
+     */
+    function permisosDeRol(int $rolId): array
+    {
+        return Cache::rememberForever("permisos.rol_{$rolId}", function () use ($rolId) {
             try {
                 if (!Schema::hasTable('permiso_rol')) {
                     return [];
@@ -117,8 +131,6 @@ if (!function_exists('tienePermiso')) {
                 return [];
             }
         });
-
-        return in_array($permiso, $permisos, true);
     }
 }
 
@@ -149,6 +161,42 @@ if (!function_exists('permisoDeRuta')) {
         }
 
         return null;
+    }
+}
+
+if (!function_exists('seccionDeModulo')) {
+    /**
+     * Clave de la sección (config/secciones.php) a la que pertenece un módulo
+     * del registry: 'maestros', 'operativa', 'reportes' o 'admin'. Null si el
+     * módulo no está asignado a ninguna.
+     */
+    function seccionDeModulo(string $modulo): ?string
+    {
+        foreach (config('secciones', []) as $clave => $seccion) {
+            if (in_array($modulo, $seccion['modulos'] ?? [], true)) {
+                return $clave;
+            }
+        }
+
+        return null;
+    }
+}
+
+if (!function_exists('seccionDeRuta')) {
+    /**
+     * Sección de una ruta nombrada: su módulo (misma resolución que
+     * permisoDeRuta()) y la sección de ese módulo. Null para las rutas
+     * comunes (dashboard, perfil…) y las no mapeadas: la página queda con la
+     * identidad de marca, sin color de sección.
+     *
+     *   seccionDeRuta('pedidos.index');      // 'operativa'
+     *   seccionDeRuta('reportes.produccion'); // 'reportes'
+     */
+    function seccionDeRuta(string $nombreRuta): ?string
+    {
+        $permiso = permisoDeRuta($nombreRuta);
+
+        return $permiso === null ? null : seccionDeModulo(strstr($permiso, '.', true) ?: $permiso);
     }
 }
 

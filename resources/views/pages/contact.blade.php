@@ -16,12 +16,12 @@
                 <div class="col">
                     <div class="feature bg-primary bg-gradient text-white rounded-3 mb-3"><i class="bi bi-whatsapp"></i></div>
                     <div class="h5 mb-2">Habla con nosotros</div>
-                    <p class="text-muted mb-0 text-justify-custom">Escríbenos al WhatsApp de nuestro representante de ventas Sr. Jose Luis Rodriguez - 0412-5358598</p>
+                    <p class="text-muted mb-0 text-justify-custom">Escríbenos al WhatsApp de nuestro representante de ventas Sr. José Luis Rodríguez - 0412-5358598</p>
                 </div>
                 <div class="col">
                     <div class="feature bg-primary bg-gradient text-white rounded-3 mb-3"><i class="bi bi-instagram"></i></div>
                     <div class="h5">En Instagram</div>
-                    <p class="text-muted mb-0 text-justify-custom">Explora nuestros Posts en donde podrás encontrar nuestros productos más destacados!</p>
+                    <p class="text-muted mb-0 text-justify-custom">¡Explora nuestras publicaciones, donde podrás encontrar nuestros productos más destacados!</p>
                 </div>
                 <div class="col">
                     <div class="feature bg-primary bg-gradient text-white rounded-3 mb-3"><i class="bi bi-telephone"></i></div>

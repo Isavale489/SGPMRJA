@@ -3,23 +3,21 @@
     <head>
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
-        <meta name="description" content="Sistema Atlántico - Tu descripción aquí">
-        <meta name="keywords" content="sistema, atlántico, keywords">
-        <meta name="author" content="" />
+        <meta name="description" content="Manufacturas R.J. Atlántico: confección de prendas textiles y bordados personalizados en Acarigua - Araure, estado Portuguesa.">
+        <meta name="keywords" content="confección, bordados, uniformes, chemises, franelas, Acarigua, Araure, Portuguesa">
+        <meta name="author" content="Manufacturas R.J. Atlántico" />
         <meta name="csrf-token" content="{{ csrf_token() }}">
         
         <!-- SEO Meta Tags -->
         <meta property="og:type" content="website">
         <meta property="og:url" content="{{ url()->current() }}">
         <meta property="og:title" content="@yield('title') - Sistema Atlántico">
-        <meta property="og:description" content="Sistema Atlántico - Tu descripción aquí">
-        <meta property="og:image" content="{{ asset('images/og-image.jpg') }}">
+        <meta property="og:description" content="Manufacturas R.J. Atlántico: confección de prendas textiles y bordados personalizados en Acarigua - Araure, estado Portuguesa.">
         
         <!-- Twitter -->
-        <meta name="twitter:card" content="summary_large_image">
+        <meta name="twitter:card" content="summary">
         <meta name="twitter:title" content="@yield('title') - Sistema Atlántico">
-        <meta name="twitter:description" content="Sistema Atlántico - Tu descripción aquí">
-        <meta name="twitter:image" content="{{ asset('images/og-image.jpg') }}">
+        <meta name="twitter:description" content="Manufacturas R.J. Atlántico: confección de prendas textiles y bordados personalizados en Acarigua - Araure, estado Portuguesa.">
 
         <title>@yield('title') - Sistema Atlántico</title>
         
@@ -38,11 +36,8 @@
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
 
-        <!-- Styles -->
-        <link href="{{ asset('css/app.css') }}" rel="stylesheet">
-        
-        <!-- Scripts -->
-        @vite(['resources/css/app.css', 'resources/js/app.js'])
+        {{-- Bootstrap estático (el mismo que usa el panel), no un duplicado empaquetado por Vite. --}}
+        <link href="{{ asset('assets/css/bootstrap.min.css') }}" rel="stylesheet">
     </head>
     <body class="d-flex flex-column h-100 font-sans antialiased">
         <main class="flex-shrink-0">
@@ -59,7 +54,5 @@
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
         <!-- Core theme JS-->
         <script src="{{ asset('js/scripts.js') }}"></script>
-        <!-- Scripts -->
-        <script src="{{ asset('js/app.js') }}" defer></script>
     </body>
 </html> 

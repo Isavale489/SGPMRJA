@@ -22,7 +22,7 @@
                     <td class="t-value">$ {{ number_format($descuento, 2) }}</td>
                 </tr>
                 <tr>
-                    <td class="t-label">IVA (16%):</td>
+                    <td class="t-label">IVA ({{ rtrim(rtrim(number_format($ivaPorcentaje ?? 16, 2, ',', ''), '0'), ',') }}%):</td>
                     <td class="t-value">$ {{ number_format($iva, 2) }}</td>
                 </tr>
                 <tr>

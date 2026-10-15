@@ -12,9 +12,9 @@ return [
     |
     */
 
-    'reset'     => '¡Su contraseña ha sido restablecida!',
-    'sent'      => '¡Recordatorio de contraseña enviado!',
-    'throttled' => 'Por favor espere antes de volver a intentarlo.',
-    'token'     => 'Este token de restablecimiento de contraseña es inválido.',
+    'reset'     => 'Tu contraseña se restableció. Inicia sesión con la nueva.',
+    'sent'      => 'Te enviamos por correo el enlace para restablecer tu contraseña.',
+    'throttled' => 'Espera un momento antes de volver a intentarlo.',
+    'token'     => 'El enlace para restablecer la contraseña no es válido o ya venció.',
     'user'      => 'No se ha encontrado un usuario con esa dirección de correo.',
 ];

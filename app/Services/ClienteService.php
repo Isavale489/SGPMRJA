@@ -40,11 +40,12 @@ class ClienteService
                         'documento' => ['Este documento ya está registrado como cliente.'],
                     ]);
                 }
-                // Reutilizar la persona existente — sincronizar teléfonos/dirección
+                // Reutilizar la persona existente — sincronizar teléfonos/dirección.
+                // La dirección es 1:1 (Persona::direccion): se actualiza la que ya
+                // tenga en vez de agregarle una segunda.
                 Telefono::sincronizar($persona, $data['telefonos'] ?? []);
                 if (!empty($data['direccion']) || !empty($data['ciudad']) || !empty($data['estado_territorial'])) {
-                    Direccion::create([
-                        'persona_id' => $persona->id,
+                    Direccion::updateOrCreate(['persona_id' => $persona->id], [
                         'direccion' => $data['direccion'] ?? '',
                         ...Direccion::resolverUbicacion($data['estado_territorial'] ?? null, $data['ciudad'] ?? null),
                     ]);

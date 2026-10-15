@@ -154,6 +154,15 @@ class OrdenProduccion extends Model
     }
 
     /**
+     * ¿Ya se cortó material? Cuenta lo producido y lo que Control de Calidad
+     * rechazó (el reproceso resta de producida pero la tela ya se usó).
+     */
+    public function tieneProduccion(): bool
+    {
+        return (int) $this->cantidad_producida > 0 || (int) $this->cantidad_defectuosa > 0;
+    }
+
+    /**
      * Recalcula el estado de la OP en función de las sub-órdenes activas
      * (excluye Canceladas). Solo actúa cuando hay sub-órdenes no canceladas.
      * No modifica la OP si ella misma está Cancelada.
@@ -161,6 +170,11 @@ class OrdenProduccion extends Model
     public function recalcularEstadoDesdeSubordenes(): void
     {
         if ($this->estado === 'Cancelado') {
+            return;
+        }
+        // Una orden con toda su producción registrada no sale de Finalizado
+        // por mover o quitar etapas (solo Calidad la reabre, con reproceso).
+        if ($this->estado === 'Finalizado' && $this->cantidad_producida >= $this->cantidad_solicitada) {
             return;
         }
 
@@ -180,7 +194,8 @@ class OrdenProduccion extends Model
 
         $nuevoEstado = match (true) {
             $todosFinalizados && $produccionCompleta => 'Finalizado',
-            $todosFinalizados || $hayAvance          => 'En Proceso',
+            // Con unidades producidas la orden nunca vuelve a Pendiente.
+            $todosFinalizados || $hayAvance || $this->tieneProduccion() => 'En Proceso',
             default                                  => 'Pendiente',
         };
 

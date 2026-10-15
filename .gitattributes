@@ -7,3 +7,17 @@
 
 # El dump SQL: LF y tratado como texto para diffs limpios.
 *.sql   text eol=lf
+
+# Frontend (plataforma Inertia): LF en todos los sistemas. public/build se
+# versiona y la CI exige que coincida byte a byte con un build del código; un
+# checkout en CRLF (Windows) generaría otro build y la CI fallaría.
+resources/js/**   text eol=lf
+resources/css/**  text eol=lf
+*.tsx             text eol=lf
+*.ts              text eol=lf
+vite.config.js    text eol=lf
+package.json      text eol=lf
+package-lock.json text eol=lf
+
+# El build se guarda tal cual lo genera Vite (sin normalizar).
+public/build/**   -text

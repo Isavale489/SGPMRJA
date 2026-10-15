@@ -25,6 +25,19 @@ class Cotizacion extends Model
         'prioridad',
     ];
 
+    /** Estados en que la cotización se puede editar o eliminar. */
+    public const EDITABLES = ['Pendiente', 'Aprobada'];
+
+    /**
+     * Cambios de estado manuales (menú del listado). Vencida se reactiva con su
+     * propia acción (renueva la validez); Convertida solo la pone la conversión.
+     */
+    public const TRANSICIONES = [
+        'Pendiente' => ['Aprobada', 'Cancelada'],
+        'Aprobada' => ['Pendiente', 'Cancelada'],
+        'Cancelada' => ['Pendiente'],
+    ];
+
     protected $casts = [
         'fecha_cotizacion'   => 'date',
         'fecha_validez'      => 'date',
@@ -114,6 +127,11 @@ class Cotizacion extends Model
                      ->whereDate('fecha_cotizacion', '<', $limite);
               });
         });
+    }
+
+    public function esEditable(): bool
+    {
+        return in_array($this->estado, self::EDITABLES, true);
     }
 
     /**

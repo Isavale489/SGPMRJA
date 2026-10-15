@@ -126,8 +126,14 @@ configuran al vuelo al cotizar y se congelan como snapshots en la línea.
    inyecta un producto sintético `{id:'vN', _dynamic, _variante}` en `products` para que el pipeline
    (configurador, carrito, tabla) lo trate por id; en el submit, `addProductItem` emite
    `tipo_producto_id`/`insumo_tela_id`/`atributo_valor_ids[]` en vez de `producto_id`.
-7. **Página `/productos`**: muestra los **SKUs individuales** (que ya no se inflan). El catálogo por
-   tipos vive en el manager "Gestionar Tipos".
+7. **Página `/productos`** (Inertia, `pages/Productos`): es el **catálogo de tipos**. Lista los tipos
+   con sus telas permitidas, atributos (en orden de SKU) e insumos por unidad, y los gestiona contra
+   `/tipo-productos` (`GuardarTipoProductoRequest`). No hay pantalla de SKUs individuales: el CRUD de
+   `producto` (legacy) se eliminó en sep-2026 porque ninguna vista lo usaba.
+   - El **prefijo es inmutable** también en el servidor: en edición se ignora aunque llegue (antes
+     `update` lo sobrescribía; bug corregido con test en `TipoProductoFlujoTest`).
+   - Contratos que usa Cotizaciones (jQuery), sin cambios: `GET /tipo-productos/{id}`,
+     `POST /tipo-productos/{id}/telas` y `GET /productos-resolver-variante`.
 
 ### Reglas que se mantienen
 - Tela sigue siendo `Insumo` tipo Tela (NO tabla `tela`).

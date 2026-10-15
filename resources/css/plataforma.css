@@ -1,0 +1,391 @@
+/*
+ * Plataforma Inertia + React — tokens de diseño.
+ *
+ * Única hoja con Tailwind v4. Las páginas Blade siguen con Bootstrap/Velzon
+ * (public/assets/css) y NUNCA cargan esta hoja: el preflight de Tailwind
+ * rompería Bootstrap. Ver docs/conventions/frontend.md.
+ *
+ * Los nombres (--background, --primary, --sidebar-*…) siguen la convención de
+ * shadcn/ui para que sus componentes funcionen sin adaptar. Los VALORES son
+ * propios: azul Atlántico (#1e3c72) como marca, grises fríos, radio contenido.
+ */
+/*
+ * Fuentes explícitas: Tailwind 4 por defecto genera CSS de toda clase que encuentre en el
+ * repo, y los docs (docs/, Documentacion/, sdd/) y el build anterior citan clases sin usarlas:
+ * editar un documento cambiaba public/build y la CI fallaba por «build desactualizado».
+ */
+@import 'tailwindcss' source(none);
+@source "../js";
+@source "../views";
+
+/*
+ * Fuentes empaquetadas en el build (sin CDN: la planta puede quedarse sin internet).
+ * Solo los subconjuntos latin y latin-ext; cirílico, griego y vietnamita no se usan.
+ */
+/* inter-latin-ext-wght-normal */
+@font-face {
+  font-family: 'Inter Variable';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  src: url(@fontsource-variable/inter/files/inter-latin-ext-wght-normal.woff2) format('woff2-variations');
+  unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
+}
+/* inter-latin-wght-normal */
+@font-face {
+  font-family: 'Inter Variable';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  src: url(@fontsource-variable/inter/files/inter-latin-wght-normal.woff2) format('woff2-variations');
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+/* jetbrains-mono-latin-ext-wght-normal */
+@font-face {
+  font-family: 'JetBrains Mono Variable';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 800;
+  src: url(@fontsource-variable/jetbrains-mono/files/jetbrains-mono-latin-ext-wght-normal.woff2) format('woff2-variations');
+  unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
+}
+/* jetbrains-mono-latin-wght-normal */
+@font-face {
+  font-family: 'JetBrains Mono Variable';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 800;
+  src: url(@fontsource-variable/jetbrains-mono/files/jetbrains-mono-latin-wght-normal.woff2) format('woff2-variations');
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+    --background: #f5f6f8;
+    --foreground: #0f172a;
+    --card: #ffffff;
+    --card-foreground: #0f172a;
+    --popover: #ffffff;
+    --popover-foreground: #0f172a;
+    --primary: #1e3c72;
+    --primary-foreground: #ffffff;
+    --secondary: #eef2f8;
+    --secondary-foreground: #1e3c72;
+    --muted: #f1f4f8;
+    --muted-foreground: #5b6678;
+    --accent: #e8eef8;
+    --accent-foreground: #1e3c72;
+    --destructive: #c62f3b;
+    --destructive-foreground: #ffffff;
+    --success: #1f7a4d;
+    --warning: #b25e09;
+    /* «En proceso» y la franja media del semáforo de eficiencia (celeste, decisión del equipo). */
+    --info: #026596;
+    /* Estados fuera del flujo principal (cotización «Convertida»). */
+    --especial: #6d3fd1;
+    --border: #e1e6ee;
+    --input: #d3dae5;
+    --ring: #2a5298;
+
+    /* Azul de marca fijo (no cambia con la sección): series de gráficos que no son un estado. */
+    --marca: #2a5298;
+
+    /* Barra superior: navy sólido, como el panel anterior. Isla oscura (ver app-layout). */
+    --topbar: #1b2a4e;
+
+    /*
+     * Identidad de la sección (config/secciones.php). Estos valores son los de marca,
+     * para las páginas sin sección (inicio, perfil); [data-seccion] los redefine abajo.
+     *   --seccion            texto e íconos del grupo
+     *   --seccion-acento     bordes, rieles, tintes de fondo
+     *   --seccion-fondo      superficies oscuras con texto blanco (cabecera de tabla)
+     *   --seccion-degradado  encabezado de diálogos, ícono del título
+     */
+    --seccion: #1e3c72;
+    --seccion-acento: #2a5298;
+    --seccion-fondo: #1e3c72;
+    --seccion-degradado: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+
+    --sidebar: #ffffff;
+    --sidebar-foreground: #334155;
+    --sidebar-primary: #1e3c72;
+    --sidebar-primary-foreground: #ffffff;
+    --sidebar-accent: #eef2f8;
+    --sidebar-accent-foreground: #1e3c72;
+    --sidebar-border: #e6ebf2;
+
+    --radius: 0.5rem;
+}
+
+.dark {
+    --background: #0b1120;
+    --foreground: #e5e9f0;
+    --card: #111a2c;
+    --card-foreground: #e5e9f0;
+    --popover: #111a2c;
+    --popover-foreground: #e5e9f0;
+    --primary: #7d9be0;
+    --primary-foreground: #0b1120;
+    --secondary: #1a2540;
+    --secondary-foreground: #c9d6f2;
+    --muted: #152036;
+    --muted-foreground: #93a0b5;
+    --accent: #1a2540;
+    --accent-foreground: #dbe4f7;
+    --destructive: #ef6b73;
+    --destructive-foreground: #0b1120;
+    --success: #4cc38a;
+    --warning: #f0a44b;
+    --info: #38bdf8;
+    --especial: #a78bfa;
+    --marca: #7d9be0;
+    --border: #22304b;
+    --input: #2b3a58;
+    --ring: #7d9be0;
+
+    --seccion: #7d9be0;
+    --seccion-acento: #4e7ac7;
+    --seccion-fondo: #1e3c72;
+
+    --sidebar: #0e1627;
+    --sidebar-foreground: #b8c3d6;
+    --sidebar-primary: #7d9be0;
+    --sidebar-primary-foreground: #0b1120;
+    --sidebar-accent: #1a2540;
+    --sidebar-accent-foreground: #e5e9f0;
+    --sidebar-border: #1c2842;
+}
+
+/* Solo en <html>: la barra superior lleva .dark también en tema claro y no debe heredar este valor. */
+:root.dark {
+    --topbar: #0f1a31;
+}
+
+/*
+ * Una identidad por sección. Se aplica en <html> (lo pone AppLayout, así la heredan
+ * los diálogos, que Radix monta fuera del layout) y en cualquier elemento que
+ * quiera pintarse con otra (p. ej. cada grupo del menú; 'marca' = azul de marca para
+ * lo que no es de ninguna sección, como «Inicio»). Cada sección redefine
+ * --primary y --ring: botones, enlaces y foco toman su color sin tocar componentes.
+ * Colores con texto blanco encima: contraste AA (≥ 4.5:1).
+ */
+[data-seccion='maestros'],
+[data-seccion='admin'],
+[data-seccion='marca'] {
+    --seccion: #1e3c72;
+    --seccion-acento: #2a5298;
+    --seccion-fondo: #1e3c72;
+    --seccion-degradado: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+    --primary: #1e3c72;
+    --ring: #2a5298;
+}
+[data-seccion='operativa'] {
+    --seccion: #047857;
+    --seccion-acento: #10b981;
+    --seccion-fondo: #064e3b;
+    --seccion-degradado: linear-gradient(135deg, #065f46 0%, #047857 55%, #0f766e 100%);
+    --primary: #047857;
+    --ring: #059669;
+}
+[data-seccion='reportes'] {
+    --seccion: #0369a1;
+    --seccion-acento: #0ea5e9;
+    --seccion-fondo: #0c4a6e;
+    --seccion-degradado: linear-gradient(135deg, #0c4a6e 0%, #075985 50%, #0369a1 100%);
+    --primary: #0369a1;
+    --ring: #0284c7;
+}
+
+/* Oscuro: acentos más claros para leerse sobre fondo oscuro; los degradados no cambian. */
+.dark[data-seccion='maestros'], .dark [data-seccion='maestros'],
+.dark[data-seccion='admin'], .dark [data-seccion='admin'],
+.dark [data-seccion='marca'] {
+    --seccion: #7d9be0;
+    --seccion-acento: #4e7ac7;
+    --seccion-fondo: #1e3c72;
+    --primary: #7d9be0;
+    --ring: #7d9be0;
+}
+.dark[data-seccion='operativa'], .dark [data-seccion='operativa'] {
+    --seccion: #34d399;
+    --seccion-acento: #10b981;
+    --seccion-fondo: #065f46;
+    --primary: #34d399;
+    --ring: #34d399;
+}
+.dark[data-seccion='reportes'], .dark [data-seccion='reportes'] {
+    --seccion: #38bdf8;
+    --seccion-acento: #0ea5e9;
+    --seccion-fondo: #0369a1;
+    --primary: #38bdf8;
+    --ring: #38bdf8;
+}
+
+@theme inline {
+    --font-sans: 'Inter Variable', ui-sans-serif, system-ui, sans-serif;
+    --font-mono: 'JetBrains Mono Variable', ui-monospace, monospace;
+
+    --color-background: var(--background);
+    --color-foreground: var(--foreground);
+    --color-card: var(--card);
+    --color-card-foreground: var(--card-foreground);
+    --color-popover: var(--popover);
+    --color-popover-foreground: var(--popover-foreground);
+    --color-primary: var(--primary);
+    --color-primary-foreground: var(--primary-foreground);
+    --color-secondary: var(--secondary);
+    --color-secondary-foreground: var(--secondary-foreground);
+    --color-muted: var(--muted);
+    --color-muted-foreground: var(--muted-foreground);
+    --color-accent: var(--accent);
+    --color-accent-foreground: var(--accent-foreground);
+    --color-destructive: var(--destructive);
+    --color-destructive-foreground: var(--destructive-foreground);
+    --color-success: var(--success);
+    --color-warning: var(--warning);
+    --color-info: var(--info);
+    --color-especial: var(--especial);
+    --color-marca: var(--marca);
+    --color-topbar: var(--topbar);
+    --color-seccion: var(--seccion);
+    --color-seccion-acento: var(--seccion-acento);
+    --color-seccion-fondo: var(--seccion-fondo);
+    --color-border: var(--border);
+    --color-input: var(--input);
+    --color-ring: var(--ring);
+    --color-sidebar: var(--sidebar);
+    --color-sidebar-foreground: var(--sidebar-foreground);
+    --color-sidebar-primary: var(--sidebar-primary);
+    --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+    --color-sidebar-accent: var(--sidebar-accent);
+    --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+    --color-sidebar-border: var(--sidebar-border);
+
+    --radius-sm: calc(var(--radius) - 2px);
+    --radius-md: var(--radius);
+    --radius-lg: calc(var(--radius) + 2px);
+    --radius-xl: calc(var(--radius) + 6px);
+
+    /*
+     * Lenguaje de movimiento: tres duraciones y tres curvas, definidas UNA vez.
+     * ERP de uso diario → rápido y discreto; nunca animaciones de más de 320 ms.
+     *   duration-rapido (120)  hover, foco, toggles
+     *   duration-medio  (200)  menús, popovers, tooltips
+     *   duration-lento  (320)  diálogos, paneles, cambio de paso en wizards
+     */
+    --duration-rapido: 120ms;
+    --duration-medio: 200ms;
+    --duration-lento: 320ms;
+    --ease-salida: cubic-bezier(0.16, 1, 0.3, 1);
+    --ease-entrada: cubic-bezier(0.7, 0, 0.84, 0);
+    --ease-suave: cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+/* bg-seccion-degradado: el degradado de la sección vigente (encabezados, ícono del título). */
+@utility bg-seccion-degradado {
+    background-image: var(--seccion-degradado);
+}
+
+/*
+ * Encabezado de diálogo con el degradado de la sección (el «modal Atlántico» del
+ * panel anterior). Sin tocar las páginas: todo DialogHeader que abre un DialogContent
+ * se vuelve franja. Fuera de @layer a propósito: debe ganarle a las utilidades del
+ * botón de cerrar (data-[state=open]:text-muted-foreground). Las confirmaciones
+ * (AlertDialog) no llevan franja: su foco es la pregunta.
+ */
+[data-slot='dialog-content'] > [data-slot='dialog-header']:first-child {
+    margin: -1.5rem -1.5rem 0;
+    padding: 1rem 3.25rem 1rem 1.5rem;
+    background-image: var(--seccion-degradado);
+    border-radius: calc(var(--radius-lg) - 1px) calc(var(--radius-lg) - 1px) 0 0;
+    color: #fff;
+    text-align: left;
+}
+[data-slot='dialog-content'] > [data-slot='dialog-header']:first-child [data-slot='dialog-title'] {
+    color: #fff;
+}
+[data-slot='dialog-content'] > [data-slot='dialog-header']:first-child [data-slot='dialog-description'] {
+    color: rgb(255 255 255 / 0.92);
+}
+/*
+ * Badge de estado sobre la franja: fondo blanco sólido y el color del estado para
+ * fondo claro, en ambos temas (la franja no cambia con el tema). Contraste ≥ 4.5:1.
+ */
+[data-slot='dialog-content'] > [data-slot='dialog-header']:first-child [data-slot='estado-badge'] {
+    background: #fff;
+    --tw-ring-color: transparent;
+}
+[data-slot='dialog-header']:first-child [data-slot='estado-badge'][data-tono='warning'] { color: #9a4f06; }
+[data-slot='dialog-header']:first-child [data-slot='estado-badge'][data-tono='info'] { color: #026596; }
+[data-slot='dialog-header']:first-child [data-slot='estado-badge'][data-tono='success'] { color: #1f7a4d; }
+[data-slot='dialog-header']:first-child [data-slot='estado-badge'][data-tono='destructive'] { color: #c62f3b; }
+[data-slot='dialog-header']:first-child [data-slot='estado-badge'][data-tono='especial'] { color: #6d3fd1; }
+[data-slot='dialog-header']:first-child [data-slot='estado-badge'][data-tono='neutro'] { color: #475569; }
+[data-slot='dialog-content']:has(> [data-slot='dialog-header']:first-child) > [data-slot='dialog-close'] {
+    top: 1.05rem;
+    background: transparent;
+    color: #fff;
+    opacity: 0.85;
+}
+[data-slot='dialog-content']:has(> [data-slot='dialog-header']:first-child) > [data-slot='dialog-close']:hover {
+    opacity: 1;
+}
+[data-slot='dialog-content']:has(> [data-slot='dialog-header']:first-child) > [data-slot='dialog-close']:focus {
+    --tw-ring-color: rgb(255 255 255 / 0.7);
+    --tw-ring-offset-color: transparent;
+}
+
+/*
+ * Menú ⋮ de acciones con color por acción (el «actions-menu» del panel anterior): el ícono
+ * va en una cajita teñida y el foco tiñe la fila. Fuera de @layer: gana a las utilidades del
+ * ítem (tamaño y color del ícono, fondo de foco). Tonos de estado, no primary: «Editar» es
+ * verde en cualquier sección; «principal» sí sigue a la sección (convertir, aprobar…).
+ */
+[data-slot='dropdown-menu-item'][data-tono] {
+    --tono: var(--primary);
+    gap: 0.625rem;
+    padding-block: 0.3rem;
+}
+[data-slot='dropdown-menu-item'][data-tono='editar'] { --tono: var(--success); }
+[data-slot='dropdown-menu-item'][data-tono='peligro'] { --tono: var(--destructive); color: var(--destructive); }
+[data-slot='dropdown-menu-item'][data-tono='aviso'] { --tono: var(--warning); }
+[data-slot='dropdown-menu-item'][data-tono='restaurar'] { --tono: var(--info); }
+[data-slot='dropdown-menu-item'][data-tono='documento'] { --tono: var(--muted-foreground); }
+[data-slot='dropdown-menu-item'][data-tono] > svg:first-child {
+    box-sizing: content-box;
+    width: 1rem;
+    height: 1rem;
+    padding: 0.375rem;
+    border-radius: 0.5rem;
+    background: color-mix(in srgb, var(--tono) 14%, transparent);
+    color: var(--tono);
+}
+[data-slot='dropdown-menu-item'][data-tono]:focus {
+    background: color-mix(in srgb, var(--tono) 10%, transparent);
+}
+
+@layer base {
+    * {
+        @apply border-border outline-ring/50;
+    }
+    html {
+        font-feature-settings: 'cv11', 'ss01';
+    }
+    body {
+        @apply bg-background text-foreground font-sans antialiased;
+    }
+    /* Montos y cantidades alineados en tablas. */
+    .tabular {
+        font-variant-numeric: tabular-nums;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.001ms !important;
+        transition-duration: 0.001ms !important;
+    }
+}

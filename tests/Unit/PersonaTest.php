@@ -5,19 +5,21 @@ namespace Tests\Unit;
 use App\Models\Persona;
 use App\Models\Telefono;
 use App\Models\Direccion;
+use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 class PersonaTest extends TestCase
 {
-    /** @test */
-    public function nombre_completo_concatena_nombre_y_apellido()
+    #[Test]
+    public function nombre_completo_devuelve_el_nombre_consolidado()
     {
-        $persona = new Persona(['nombre' => 'Juan', 'apellido' => 'Pérez']);
+        // `nombre` ya trae nombre + apellido (o razón social); el accessor solo recorta.
+        $persona = new Persona(['nombre' => '  Juan Pérez ']);
 
         $this->assertEquals('Juan Pérez', $persona->nombre_completo);
     }
 
-    /** @test */
+    #[Test]
     public function documento_completo_concatena_tipo_y_numero()
     {
         $persona = new Persona([
@@ -28,7 +30,7 @@ class PersonaTest extends TestCase
         $this->assertEquals('V-12345678', $persona->documento_completo);
     }
 
-    /** @test */
+    #[Test]
     public function telefono_principal_retorna_null_sin_telefonos()
     {
         $persona = new Persona(['nombre' => 'Test']);
@@ -38,7 +40,7 @@ class PersonaTest extends TestCase
         $this->assertNull($persona->telefono_principal);
     }
 
-    /** @test */
+    #[Test]
     public function telefono_principal_retorna_numero_principal()
     {
         $persona = new Persona(['nombre' => 'Test']);
@@ -51,27 +53,21 @@ class PersonaTest extends TestCase
         $this->assertEquals('0414-2222222', $persona->telefono_principal);
     }
 
-    /** @test */
-    public function direccion_principal_retorna_null_sin_direcciones()
+    #[Test]
+    public function direccion_principal_retorna_null_sin_direccion()
     {
         $persona = new Persona(['nombre' => 'Test']);
-        $persona->setRelation('direcciones', collect());
+        $persona->setRelation('direccion', null);
 
         $this->assertNull($persona->direccion_principal);
     }
 
-    /** @test */
-    public function direccion_principal_retorna_direccion_marcada_como_principal()
+    #[Test]
+    public function direccion_principal_es_la_direccion_uno_a_uno()
     {
         $persona = new Persona(['nombre' => 'Test']);
+        $persona->setRelation('direccion', new Direccion(['direccion' => 'Avenida 2']));
 
-        $dir1 = new Direccion(['direccion' => 'Calle 1', 'es_principal' => false]);
-        $dir2 = new Direccion(['direccion' => 'Avenida 2', 'es_principal' => true]);
-
-        $persona->setRelation('direcciones', collect([$dir1, $dir2]));
-
-        $result = $persona->direccion_principal;
-        $this->assertNotNull($result);
-        $this->assertEquals('Avenida 2', $result->direccion);
+        $this->assertEquals('Avenida 2', $persona->direccion_principal->direccion);
     }
 }

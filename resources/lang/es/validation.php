@@ -30,6 +30,7 @@ return [
     ],
     'boolean'              => 'El campo :attribute debe ser verdadero o falso.',
     'confirmed'            => 'La confirmación del campo :attribute no coincide.',
+    'current_password'     => 'La contraseña actual no es correcta.',
     'date'                 => 'El campo :attribute no corresponde con una fecha válida.',
     'date_equals'          => 'El campo :attribute debe ser una fecha igual a :date.',
     'date_format'          => 'El campo :attribute no corresponde con el formato de fecha :format.',
@@ -63,6 +64,7 @@ return [
     'ipv4'                 => 'El campo :attribute debe ser una dirección IPv4 válida.',
     'ipv6'                 => 'El campo :attribute debe ser una dirección IPv6 válida.',
     'json'                 => 'El campo :attribute debe ser una cadena de texto JSON válida.',
+    'lowercase'            => 'El campo :attribute debe estar en minúsculas.',
     'lt'                   => [
         'numeric' => 'El campo :attribute debe ser menor a :value.',
         'file'    => 'El archivo :attribute debe pesar menos de :value kilobytes.',

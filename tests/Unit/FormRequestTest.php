@@ -4,15 +4,20 @@ namespace Tests\Unit;
 
 use App\Http\Requests\StoreClienteRequest;
 use App\Http\Requests\UpdateClienteRequest;
-use App\Http\Requests\StorePedidoRequest;
-use App\Http\Requests\UpdatePedidoRequest;
+use App\Http\Requests\GuardarPedidoRequest;
 use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 class FormRequestTest extends TestCase
 {
-    /** @test */
+    // Algunas rules() consultan la BD (p. ej. UpdateClienteRequest busca el
+    // cliente de la ruta): sin esto el test depende del orden de ejecución.
+    use RefreshDatabase;
+
+    #[Test]
     public function store_cliente_request_tiene_reglas_requeridas()
     {
         $request = new StoreClienteRequest();
@@ -20,14 +25,15 @@ class FormRequestTest extends TestCase
 
         $this->assertArrayHasKey('nombre', $rules);
         $this->assertArrayHasKey('tipo_cliente', $rules);
-        $this->assertArrayHasKey('telefono', $rules);
         $this->assertArrayHasKey('documento', $rules);
-        $this->assertArrayHasKey('estatus', $rules);
         $this->assertStringContainsString('required', $rules['nombre']);
-        $this->assertStringContainsString('required', $rules['telefono']);
+        // Multi-teléfono: arreglo de 1 a 3 entradas.
+        $this->assertStringContainsString('required', $rules['telefonos']);
+        $this->assertStringContainsString('max:3', $rules['telefonos']);
+        $this->assertArrayHasKey('telefonos.*.numero', $rules);
     }
 
-    /** @test */
+    #[Test]
     public function store_cliente_request_tiene_mensajes_personalizados()
     {
         $request = new StoreClienteRequest();
@@ -35,10 +41,10 @@ class FormRequestTest extends TestCase
 
         $this->assertNotEmpty($messages);
         $this->assertArrayHasKey('nombre.required', $messages);
-        $this->assertArrayHasKey('telefono.regex', $messages);
+        $this->assertArrayHasKey('telefonos.*.numero.regex', $messages);
     }
 
-    /** @test */
+    #[Test]
     public function update_cliente_request_no_valida_documento()
     {
         $request = new UpdateClienteRequest();
@@ -47,43 +53,19 @@ class FormRequestTest extends TestCase
         $this->assertArrayNotHasKey('documento', $rules);
     }
 
-    /** @test */
-    public function store_pedido_request_valida_productos_como_array()
-    {
-        $request = new StorePedidoRequest();
-        $rules = $request->rules();
-
-        $this->assertArrayHasKey('productos', $rules);
-        $this->assertStringContainsString('required', $rules['productos']);
-        $this->assertStringContainsString('array', $rules['productos']);
-        $this->assertStringContainsString('min:1', $rules['productos']);
-        $this->assertArrayHasKey('productos.*.producto_id', $rules);
-        $this->assertArrayHasKey('productos.*.cantidad', $rules);
-    }
-
-    /** @test */
-    public function update_pedido_request_incluye_campo_estado()
-    {
-        $request = new UpdatePedidoRequest();
-        $rules = $request->rules();
-
-        $this->assertArrayHasKey('estado', $rules);
-        $this->assertStringContainsString('Pendiente', $rules['estado']);
-        $this->assertStringContainsString('Cancelado', $rules['estado']);
-    }
-
-    /** @test */
+    #[Test]
     public function store_user_request_requiere_password_confirmado()
     {
         $request = new StoreUserRequest();
         $rules = $request->rules();
 
         $this->assertArrayHasKey('password', $rules);
-        $this->assertStringContainsString('confirmed', $rules['password']);
-        $this->assertStringContainsString('min:8', $rules['password']);
+        $this->assertContains('confirmed', $rules['password']);
+        $this->assertTrue(collect($rules['password'])->contains(fn ($r) => $r instanceof \App\Rules\ContrasenaSegura));
+        $this->assertStringContainsString('exists:rol,id', $rules['role_id']);
     }
 
-    /** @test */
+    #[Test]
     public function update_user_request_no_requiere_password()
     {
         $request = new UpdateUserRequest();
@@ -92,26 +74,26 @@ class FormRequestTest extends TestCase
         $this->assertArrayNotHasKey('password', $rules);
     }
 
-    /** @test */
-    public function store_pedido_request_valida_tallas_correctas()
+    #[Test]
+    public function el_pedido_no_recibe_lineas_y_valida_los_pagos()
     {
-        $request = new StorePedidoRequest();
-        $rules = $request->rules();
+        $rules = (new GuardarPedidoRequest())->rules();
 
-        $tallaRule = $rules['productos.*.talla'];
-        $this->assertStringContainsString('Talla Unica', $tallaRule);
-        $this->assertStringContainsString('XS', $tallaRule);
-        $this->assertStringContainsString('XXL', $tallaRule);
+        // Las líneas se copian de la cotización en el servidor: el navegador no las envía.
+        $this->assertArrayNotHasKey('productos', $rules);
+        $this->assertArrayHasKey('cotizacion_id', $rules);
+        $this->assertContains('min:0.01', $rules['pagos.*.monto']);
+        $this->assertContains('required_unless:pagos.*.metodo,efectivo', $rules['pagos.*.banco_id']);
+        $this->assertContains('required_unless:pagos.*.metodo,efectivo', $rules['pagos.*.referencia']);
     }
 
-    /** @test */
+    #[Test]
     public function all_form_requests_authorize_returns_true()
     {
         $requests = [
             new StoreClienteRequest(),
             new UpdateClienteRequest(),
-            new StorePedidoRequest(),
-            new UpdatePedidoRequest(),
+            new GuardarPedidoRequest(),
             new StoreUserRequest(),
             new UpdateUserRequest(),
         ];

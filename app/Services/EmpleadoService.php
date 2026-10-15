@@ -26,9 +26,11 @@ class EmpleadoService
                         'documento_identidad' => ['Este documento ya pertenece a un empleado registrado.'],
                     ]);
                 }
-                // Reutilizar la persona existente — agregar teléfono/dirección si se proveyeron
+                // Reutilizar la persona existente — sincronizar teléfonos y dirección.
+                // La dirección es 1:1 (Persona::direccion): se actualiza la que ya
+                // tenga en vez de agregarle una segunda.
                 Telefono::sincronizar($persona, $data['telefonos'] ?? []);
-                $this->crearDireccion($persona->id, $data);
+                $this->actualizarDireccion($persona, $data);
             } else {
                 // Persona nueva — verificar unicidad de email antes de crear
                 if (!empty($data['email']) && Persona::where('email', $data['email'])->exists()) {

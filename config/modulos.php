@@ -64,7 +64,8 @@ return [
             'gestionar' => 'Editar y restablecer parametros',
         ],
         'rutas' => [
-            'configuracion.index'                       => 'ver',
+            // plataforma.componentes: catálogo de componentes de la plataforma Inertia (solo-admin).
+            'configuracion.index|plataforma.componentes' => 'ver',
             // Incluye el CRUD de impuestos (tabla `impuesto`), gestionado desde el
             // mismo panel: solo-admin vía 'gestionar' (si no se mapean, el middleware
             // 'permiso' los deniega por defecto — 403 incluso al admin).
@@ -80,8 +81,8 @@ return [
             'pdf'       => 'Exportar PDF',
         ],
         'rutas' => [
-            'users.index|users.show|users.data'  => 'ver',
-            'users.create|users.store|users.edit|users.update|users.destroy|users.restore|users.check-email|users.unlock-recovery|users.reset-password' => 'gestionar',
+            'users.index' => 'ver',
+            'users.store|users.update|users.destroy|users.restore|users.check-email|users.unlock-recovery|users.reset-password' => 'gestionar',
             'users.reporte.pdf' => 'pdf',
         ],
     ],
@@ -94,8 +95,8 @@ return [
             'pdf'       => 'Exportar PDF',
         ],
         'rutas' => [
-            'clientes.index|clientes.show|clientes.data' => 'ver',
-            'clientes.create|clientes.store|clientes.edit|clientes.update|clientes.destroy|clientes.restore|clientes.from-persona|clientes.check-documento|clientes.check-email' => 'gestionar',
+            'clientes.index' => 'ver',
+            'clientes.store|clientes.update|clientes.destroy|clientes.restore|clientes.from-persona|clientes.check-documento|clientes.check-email' => 'gestionar',
             'clientes.reporte.pdf' => 'pdf',
         ],
     ],
@@ -108,8 +109,8 @@ return [
             'pdf'       => 'Exportar PDF',
         ],
         'rutas' => [
-            'empleados.index|empleados.show|empleados.data' => 'ver',
-            'empleados.create|empleados.store|empleados.edit|empleados.update|empleados.destroy|empleados.restore|empleados.check-documento|empleados.check-email|empleados.check-codigo' => 'gestionar',
+            'empleados.index' => 'ver',
+            'empleados.store|empleados.update|empleados.destroy|empleados.restore|empleados.check-documento|empleados.check-email' => 'gestionar',
             'empleados.reporte.pdf' => 'pdf',
         ],
     ],
@@ -121,8 +122,8 @@ return [
             'gestionar' => 'Crear, editar y eliminar departamentos',
         ],
         'rutas' => [
-            'departamentos.index|departamentos.show' => 'ver',
-            'departamentos.store|departamentos.update|departamentos.destroy|departamentos.restore|departamentos.check-nombre' => 'gestionar',
+            'departamentos.index' => 'ver',
+            'departamentos.store|departamentos.update|departamentos.destroy|departamentos.restore' => 'gestionar',
         ],
     ],
 
@@ -133,8 +134,8 @@ return [
             'gestionar' => 'Crear, editar y eliminar cargos',
         ],
         'rutas' => [
-            'cargos.index|cargos.show' => 'ver',
-            'cargos.store|cargos.update|cargos.destroy|cargos.restore|cargos.check-nombre' => 'gestionar',
+            'cargos.index' => 'ver',
+            'cargos.store|cargos.update|cargos.destroy|cargos.restore' => 'gestionar',
         ],
     ],
 
@@ -153,7 +154,7 @@ return [
             'gestionar' => 'Crear, editar, cancelar y reactivar pedidos', // solo-admin
         ],
         'rutas' => [
-            'pedidos.index|pedidos.data|pedidos.cotizacionesDisponibles|pedidos.reporteGeneral|pedidos.show|pedidos.proyeccionInsumos' => 'ver',
+            'pedidos.index|pedidos.show|pedidos.proyeccionInsumos' => 'ver',
             'pedidos.reporte.pdf|pedidos.pdf' => 'pdf',
             // solo-admin (escritura): hoy en el grupo role:Administrador
             'pedidos.store|pedidos.create|pedidos.update|pedidos.cancelar|pedidos.reactivar|pedidos.destroy|pedidos.edit' => 'gestionar',
@@ -165,16 +166,16 @@ return [
         'acciones' => [
             'ver'        => 'Ver listado y detalle de cotizaciones', // Supervisor
             'pdf'        => 'Exportar PDF',                           // Supervisor
-            'convertir'  => 'Convertir cotizacion a pedido',         // Supervisor
+            'convertir'  => 'Aprobar, cancelar y reactivar cotizaciones', // convertir a pedido pide además pedidos.gestionar         // Supervisor
             'gestionar'  => 'Crear, editar y eliminar cotizaciones', // solo-admin
         ],
         'rutas' => [
-            'cotizaciones.index|cotizaciones.data|cotizaciones.reporteGeneral|cotizaciones.show|cotizaciones.ubicacionesBordado.data|cotizaciones.proyeccionInsumos' => 'ver',
+            'cotizaciones.index|cotizaciones.proyeccionInsumos' => 'ver',
             'cotizaciones.reporte.pdf|cotizaciones.pdf' => 'pdf',
             // conversion a pedido (acceso compartido con Supervisor)
-            'cotizaciones.datosParaPedido|cotizaciones.convertirAPedido|cotizaciones.updateEstado|cotizaciones.reactivar' => 'convertir',
+            'cotizaciones.updateEstado|cotizaciones.reactivar' => 'convertir',
             // solo-admin (escritura): hoy en el grupo role:Administrador
-            'cotizaciones.store|cotizaciones.create|cotizaciones.update|cotizaciones.destroy|cotizaciones.edit' => 'gestionar',
+            'cotizaciones.store|cotizaciones.create|cotizaciones.update|cotizaciones.destroy|cotizaciones.edit|cotizaciones.resolverVariante' => 'gestionar',
         ],
     ],
 
@@ -186,9 +187,9 @@ return [
         ],
         'rutas' => [
             // El PDF va bajo 'ver' (paridad Supervisor, TASK-038): quien puede ver el listado puede exportarlo.
-            'proveedores.index|proveedores.data|proveedores.show|proveedores.reporte.pdf|proveedores.check-rif|proveedores.check-documento|proveedores.check-email' => 'ver',
+            'proveedores.index|proveedores.reporte.pdf|proveedores.check-rif|proveedores.check-documento|proveedores.check-email' => 'ver',
             // solo-admin (escritura): hoy en el grupo role:Administrador
-            'proveedores.store|proveedores.from-persona|proveedores.create|proveedores.update|proveedores.destroy|proveedores.edit|proveedores.restore' => 'gestionar',
+            'proveedores.store|proveedores.from-persona|proveedores.update|proveedores.destroy|proveedores.restore' => 'gestionar',
         ],
     ],
 
@@ -200,9 +201,8 @@ return [
         ],
         'rutas' => [
             // El PDF va bajo 'ver' (paridad Supervisor, TASK-038).
-            'productos.index|productos.show|productos.data|productos.reporte.pdf|productos.sugerir-precio|productos.preview-codigo|productos.resolver-variante' => 'ver',
-            'productos.create|productos.store|productos.edit|productos.update|productos.destroy|productos.restore' => 'gestionar',
-        ],
+            'productos.index|productos.reporte.pdf|productos.resolver-variante' => 'ver',
+                    ],
     ],
 
     'tipo-productos' => [
@@ -212,8 +212,8 @@ return [
             'gestionar' => 'Crear, editar y eliminar tipos de producto',
         ],
         'rutas' => [
-            'tipo-productos.index|tipo-productos.show' => 'ver',
-            'tipo-productos.store|tipo-productos.telas.store|tipo-productos.update|tipo-productos.destroy|tipo-productos.restore|tipo-productos.check-nombre|tipo-productos.check-codigo' => 'gestionar',
+            'tipo-productos.show' => 'ver',
+            'tipo-productos.store|tipo-productos.telas.store|tipo-productos.update|tipo-productos.destroy|tipo-productos.restore' => 'gestionar',
         ],
     ],
 
@@ -224,8 +224,8 @@ return [
             'gestionar' => 'Crear, editar y eliminar atributos y valores',
         ],
         'rutas' => [
-            'atributos.index|atributos.show|atributos.valores.index' => 'ver',
-            'atributos.store|atributos.update|atributos.destroy|atributos.check-nombre|atributos.check-codigo|atributos.valores.store|atributos.valores.update|atributos.valores.destroy|atributos.valores.reorder' => 'gestionar',
+            'atributos.index' => 'ver',
+            'atributos.store|atributos.update|atributos.destroy|atributos.valores.store|atributos.valores.update|atributos.valores.destroy|atributos.valores.reorder' => 'gestionar',
         ],
     ],
 
@@ -236,8 +236,8 @@ return [
             'gestionar' => 'Crear, editar y eliminar colores',
         ],
         'rutas' => [
-            'colores.index|colores.show|colores.data' => 'ver',
-            'colores.store|colores.update|colores.destroy|colores.restore|colores.check-nombre' => 'gestionar',
+            'colores.index|colores.data' => 'ver',
+            'colores.store|colores.update|colores.destroy|colores.restore' => 'gestionar',
         ],
     ],
 
@@ -271,8 +271,8 @@ return [
         ],
         'rutas' => [
             // El PDF va bajo 'ver' (paridad Supervisor, TASK-038).
-            'insumos.index|insumos.show|insumos.data|insumos.reporte.pdf' => 'ver',
-            'insumos.create|insumos.store|insumos.edit|insumos.update|insumos.destroy|insumos.restore|insumos.check-nombre' => 'gestionar',
+            'insumos.index|insumos.reporte.pdf' => 'ver',
+            'insumos.store|insumos.update|insumos.destroy|insumos.restore|insumos.check-nombre' => 'gestionar',
         ],
     ],
 
@@ -283,8 +283,8 @@ return [
             'gestionar' => 'Crear, editar y eliminar tipos de insumo',
         ],
         'rutas' => [
-            'tipo-insumos.index|tipo-insumos.show' => 'ver',
-            'tipo-insumos.store|tipo-insumos.update|tipo-insumos.destroy|tipo-insumos.restore|tipo-insumos.check-nombre' => 'gestionar',
+            'tipo-insumos.index' => 'ver',
+            'tipo-insumos.store|tipo-insumos.update|tipo-insumos.destroy|tipo-insumos.restore' => 'gestionar',
         ],
     ],
 
@@ -292,14 +292,14 @@ return [
         'nombre'   => 'Ordenes de produccion',
         'acciones' => [
             'ver'       => 'Ver listado y detalle de ordenes',
-            'gestionar' => 'Crear, editar y eliminar ordenes, sub-ordenes e insumos por orden',
+            'gestionar' => 'Crear, editar y eliminar ordenes y sus etapas',
             'avance'    => 'Registrar avance de produccion',
             'cancelar'  => 'Cancelar ordenes',
             'pdf'       => 'Exportar PDF',
         ],
         'rutas' => [
-            'ordenes.index|ordenes.show|ordenes.data|ordenes.pedidos-data|ordenes.pedidos-disponibles|ordenes.proyeccionInsumos|ordenes.por-empleado|ordenes.subordenes|ordenes.insumos.index|ordenes.insumos.data' => 'ver',
-            'ordenes.create|ordenes.store|ordenes.edit|ordenes.update|ordenes.destroy|ordenes.batch|ordenes.subordenes.store|ordenes.subordenes.destroy|ordenes.subordenes.estado|ordenes.insumos.store|ordenes.insumos.update|ordenes.insumos.destroy' => 'gestionar',
+            'ordenes.index|ordenes.proyeccionInsumos' => 'ver',
+            'ordenes.create|ordenes.store|ordenes.edit|ordenes.update|ordenes.destroy|ordenes.batch|ordenes.subordenes.store|ordenes.subordenes.destroy|ordenes.subordenes.estado' => 'gestionar',
             'ordenes.avance'      => 'avance',
             'ordenes.cancelar'    => 'cancelar',
             'ordenes.reporte.pdf|ordenes.pdf' => 'pdf',
@@ -313,7 +313,7 @@ return [
             'inspeccionar' => 'Registrar inspeccion de calidad de una orden',
         ],
         'rutas' => [
-            'calidad.index|calidad.data|calidad.pedidos-data|calidad.detalle|calidad.reporte.pdf' => 'ver',
+            'calidad.index|calidad.reporte.pdf' => 'ver',
             'calidad.inspeccionar'                                          => 'inspeccionar',
         ],
     ],
@@ -321,16 +321,16 @@ return [
     'compras' => [
         'nombre'   => 'Compras',
         'acciones' => [
-            'ver'       => 'Ver listado y detalle',
-            'gestionar' => 'Crear y editar borradores',
+            'ver'       => 'Ver listado, detalle y existencias',
+            'gestionar' => 'Crear, editar y eliminar borradores',
             'procesar'  => 'Procesar (afecta inventario)',
             'anular'    => 'Anular',
             'clonar'    => 'Clonar',
             'pdf'       => 'Exportar PDF',
         ],
         'rutas' => [
-            'compras.index|compras.data|compras.show|compras.detalle|compras.tasa|compras.existencias.data' => 'ver',
-            'compras.store|compras.update|compras.editar-datos|compras.destroy'    => 'gestionar',
+            'compras.index|compras.tasa' => 'ver',
+            'compras.create|compras.store|compras.edit|compras.update|compras.destroy' => 'gestionar',
             'compras.procesar' => 'procesar',
             'compras.anular'   => 'anular',
             'compras.clonar'   => 'clonar',
@@ -342,11 +342,12 @@ return [
         'nombre'   => 'Movimientos de insumo',
         'acciones' => [
             'ver'       => 'Ver movimientos, existencias, historial y alertas',
-            'gestionar' => 'Registrar movimientos (individual y masivo)',
+            'gestionar' => 'Registrar salidas manuales de insumos',
         ],
         'rutas' => [
-            'movimiento-insumo.index|movimiento-insumo.data|movimiento-insumo.existencias.data|movimiento-insumo.reporte|movimiento-insumo.reporte.pdf|movimiento-insumo.alertas|movimiento-insumo.historial|movimiento-insumo.show' => 'ver',
-            'movimiento-insumo.store|movimiento-insumo.masivo' => 'gestionar',
+            // rotacion no estaba mapeada: el middleware la negaba (403) a todo rol no administrador.
+            'movimiento-insumo.index|movimiento-insumo.reporte|movimiento-insumo.reporte.pdf|movimiento-insumo.alertas|movimiento-insumo.historial|movimiento-insumo.rotacion' => 'ver',
+            'movimiento-insumo.store' => 'gestionar',
         ],
     ],
 
@@ -382,7 +383,7 @@ return [
         'profile.edit',
         'profile.update',
         'profile.recovery-questions.update',
-        'profile.destroy',
+        'profile.avatar.update',
         'logout',
         'personas.search',
         'clientes.search',

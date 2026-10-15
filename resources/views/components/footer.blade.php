@@ -8,14 +8,13 @@
 
         <!-- Iconos de redes sociales -->
         <div class="mb-3">
-            <a href="https://facebook.com/tu-negocio" class="social-icon facebook" target="_blank"><i class="fab fa-facebook-f fa-lg"></i></a>
-            <a href="https://www.instagram.com/uniformes_rjatlantico/" class="social-icon instagram" target="_blank"><i class="fab fa-instagram fa-lg"></i></a>
-            <a href="https://wa.me/584245387609" class="social-icon whatsapp" target="_blank"><i class="fab fa-whatsapp fa-lg"></i></a>
-            <a href="https://twitter.com/tu-negocio" class="social-icon twitter" target="_blank"><i class="fab fa-twitter fa-lg"></i></a>
+            <a href="https://www.facebook.com/rjatlantico" class="social-icon facebook" target="_blank" rel="noopener" aria-label="Facebook"><i class="fab fa-facebook-f fa-lg"></i></a>
+            <a href="https://www.instagram.com/uniformes_rjatlantico/" class="social-icon instagram" target="_blank" rel="noopener" aria-label="Instagram"><i class="fab fa-instagram fa-lg"></i></a>
+            <a href="https://wa.me/584245387609" class="social-icon whatsapp" target="_blank" rel="noopener" aria-label="WhatsApp"><i class="fab fa-whatsapp fa-lg"></i></a>
         </div>
 
         <!-- Texto descriptivo -->
-        <p>Descubre qué está sucediendo en tu <a href="#" class="text-primary">tienda favorita</a></p>
+        <p>Síguenos en nuestras redes para ver nuestros trabajos más recientes.</p>
 
         <!-- Enlaces -->
         <div class="small mb-3">

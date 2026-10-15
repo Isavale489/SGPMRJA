@@ -5,10 +5,7 @@ namespace App\Services;
 use App\Models\Cotizacion;
 use App\Models\DetalleCotizacion;
 use App\Models\DetalleCotizacionBordado;
-use App\Models\DetallePedido;
-use App\Models\DetallePedidoBordado;
 use App\Models\Insumo;
-use App\Models\Pedido;
 use App\Models\Producto;
 use App\Models\TasaCambio;
 use App\Models\TipoProducto;
@@ -38,6 +35,7 @@ class CotizacionService
                 'fecha_validez'       => $data['fecha_validez']
                     ?? \Carbon\Carbon::parse($data['fecha_cotizacion'])->addDays(Cotizacion::diasVigencia())->toDateString(),
                 'estado'              => 'Pendiente',
+                'prioridad'           => $data['prioridad'] ?? 'Normal',
                 'total'               => $total,
                 'tasa_cambio_valor'   => TasaCambio::obtenerValorUsd(),
                 'notas'               => $data['notas'] ?? null,
@@ -76,11 +74,13 @@ class CotizacionService
                 'fecha_cotizacion'     => $data['fecha_cotizacion'],
                 'fecha_validez'        => $data['fecha_validez']
                     ?? \Carbon\Carbon::parse($data['fecha_cotizacion'])->addDays(Cotizacion::diasVigencia())->toDateString(),
-                'estado'               => $data['estado'],
+                // El estado no viene del formulario: cambia solo por sus acciones.
+                'prioridad'            => $data['prioridad'] ?? $cotizacion->prioridad ?? 'Normal',
                 'total'                => $total,
                 'tasa_cambio_valor'    => TasaCambio::obtenerValorUsd(),
                 'notas'                => $data['notas'] ?? null,
-                'condiciones_terminos' => $data['condiciones_terminos'] ?? null,
+                // Si el formulario no las envía, se conservan (antes se borraban al editar).
+                'condiciones_terminos' => array_key_exists('condiciones_terminos', $data) ? $data['condiciones_terminos'] : $cotizacion->condiciones_terminos,
                 // NO se sobrescribe user_id: queda fijo como el creador original.
             ]);
 
@@ -91,6 +91,43 @@ class CotizacionService
             'cotizacion_id' => $cotizacion->id,
             'total' => $cotizacion->total,
             'user_id' => Auth::id(),
+        ]);
+    }
+
+    /**
+     * Cambio de estado manual (aprobar, cancelar, volver a pendiente) según
+     * Cotizacion::TRANSICIONES.
+     *
+     * @throws \InvalidArgumentException si la transición no está permitida
+     */
+    public function cambiarEstado(Cotizacion $cotizacion, string $nuevo): void
+    {
+        DB::transaction(function () use ($cotizacion, $nuevo) {
+            // Con la fila bloqueada: una conversión a pedido simultánea no deja
+            // una cotización Cancelada con pedido.
+            Cotizacion::whereKey($cotizacion->id)->lockForUpdate()->first();
+            $cotizacion->refresh();
+            $this->aplicarCambioEstado($cotizacion, $nuevo);
+        });
+    }
+
+    private function aplicarCambioEstado(Cotizacion $cotizacion, string $nuevo): void
+    {
+        $actual = $cotizacion->estado;
+        if ($actual === 'Convertida') {
+            throw new \InvalidArgumentException('No se puede cambiar el estado de una cotización ya convertida a pedido.');
+        }
+        if ($actual === 'Vencida') {
+            throw new \InvalidArgumentException('La cotización está vencida: usa «Reactivar» para renovar su validez.');
+        }
+        if (! in_array($nuevo, Cotizacion::TRANSICIONES[$actual] ?? [], true)) {
+            throw new \InvalidArgumentException("No se puede pasar una cotización de {$actual} a {$nuevo}.");
+        }
+
+        $cotizacion->update(['estado' => $nuevo]);
+
+        Log::info('Cotización: cambio de estado', [
+            'cotizacion_id' => $cotizacion->id, 'de' => $actual, 'a' => $nuevo, 'user_id' => Auth::id(),
         ]);
     }
 
@@ -115,105 +152,6 @@ class CotizacionService
             'nueva_fecha_validez' => $cotizacion->fecha_validez,
             'user_id'          => Auth::id(),
         ]);
-    }
-
-    /**
-     * Convertir una cotización aprobada a pedido.
-     *
-     * @return Pedido El pedido creado
-     * @throws \Exception Si la cotización no puede ser convertida
-     */
-    public function convertirAPedido(Cotizacion $cotizacion): Pedido
-    {
-        return DB::transaction(function () use ($cotizacion) {
-            // 1. Re-obtener la cotización con bloqueo pesimista (SELECT ... FOR UPDATE)
-            $cotizacion = Cotizacion::lockForUpdate()->findOrFail($cotizacion->id);
-
-            // 2. Validar estado DENTRO del bloqueo (previene race conditions)
-            if ($cotizacion->estado !== 'Aprobada') {
-                throw new \InvalidArgumentException('Solo se pueden convertir cotizaciones con estado Aprobada.');
-            }
-
-            // 2.b Vigencia de precios: bloquear si la fecha de validez pactada en la
-            //     cotización ya pasó. La marca como 'Vencida' para reflejarlo en el listado.
-            if ($cotizacion->estaVencidaPorVigencia()) {
-                $cotizacion->update(['estado' => 'Vencida']);
-                throw new \InvalidArgumentException(
-                    'La cotización venció: su validez expiró el ' .
-                    $cotizacion->fechaLimiteVigencia()->format('d/m/Y') .
-                    '. Reactívala para actualizar los precios antes de convertirla a pedido.'
-                );
-            }
-
-            // 3. Verificar que no exista ya un pedido asociado (doble protección + índice único en BD)
-            if ($cotizacion->yaFueConvertida()) {
-                throw new \InvalidArgumentException('Esta cotización ya fue convertida a pedido anteriormente.');
-            }
-
-            // 4. Eager-load detalles y validar que no estén vacíos
-            $cotizacion->load('productos.bordados');
-            if ($cotizacion->productos->isEmpty()) {
-                throw new \RuntimeException('La cotización no tiene productos. No se puede crear un pedido vacío.');
-            }
-
-            // 5. Crear el Pedido con datos de la cotización
-            $pedido = Pedido::create([
-                'cotizacion_id' => $cotizacion->id,
-                'cliente_id' => $cotizacion->cliente_id,
-                'fecha_pedido' => now(),
-                'total' => $cotizacion->total,
-                'abono' => 0,
-                'prioridad' => $cotizacion->prioridad ?? 'Normal',
-                'estado' => 'Pendiente',
-                'user_id' => Auth::id(),
-            ]);
-
-            // 6. Transferir TODOS los detalles (incluyendo color, talla, precio cotizado)
-            foreach ($cotizacion->productos as $detalle) {
-                $detallePedido = DetallePedido::create([
-                    'pedido_id' => $pedido->id,
-                    'producto_id' => $detalle->producto_id,
-                    'tipo_producto_id' => $detalle->tipo_producto_id,
-                    'tela_snapshot' => $detalle->tela_snapshot,
-                    'atributos_snapshot' => $detalle->atributos_snapshot,
-                    'sku_snapshot' => $detalle->sku_snapshot,
-                    'cantidad' => $detalle->cantidad,
-                    'precio_unitario' => $detalle->precio_unitario,
-                    'descripcion' => $detalle->descripcion,
-                    'lleva_bordado' => $detalle->lleva_bordado ?? false,
-                    'color_id' => $detalle->color_id,
-                    'talla_id' => $detalle->talla_id,
-                    'genero_id' => $detalle->genero_id,
-                ]);
-
-                foreach ($detalle->bordados as $index => $bordado) {
-                    DetallePedidoBordado::create([
-                        'detalle_pedido_id' => $detallePedido->id,
-                        'ubicacion_bordado_id' => $bordado->ubicacion_bordado_id,
-                        'logo_id' => $bordado->logo_id,
-                        'nombre_aplicado' => $bordado->nombre_aplicado,
-                        'nombre_logo_aplicado' => $bordado->nombre_logo_aplicado,
-                        'es_personalizada' => (bool) $bordado->es_personalizada,
-                        'cantidad' => (int) ($bordado->cantidad ?: 1),
-                        'precio_aplicado' => (float) $bordado->precio_aplicado,
-                        'orden' => (int) $index,
-                    ]);
-                }
-            }
-
-            // 7. Marcar como convertida (dentro de la misma transacción)
-            $cotizacion->update(['estado' => 'Convertida']);
-
-            Log::info('Cotización convertida a pedido', [
-                'cotizacion_id' => $cotizacion->id,
-                'pedido_id' => $pedido->id,
-                'total' => $pedido->total,
-                'productos' => $cotizacion->productos->count(),
-                'user_id' => Auth::id(),
-            ]);
-
-            return $pedido;
-        });
     }
 
     /**
@@ -248,7 +186,8 @@ class CotizacionService
     private function resolverVarianteLinea(array $item): array
     {
         if (!empty($item['producto_id'])) {
-            $producto = Producto::with('tela')->find($item['producto_id']);
+            // withTrashed: una cotización vieja puede tener un producto que luego se inhabilitó.
+            $producto = Producto::withTrashed()->with('tela')->findOrFail($item['producto_id']);
             $snapshots = $this->productoService->buildSnapshotsParaDetalle($producto);
 
             return [
@@ -261,8 +200,8 @@ class CotizacionService
             ];
         }
 
-        $tipo = TipoProducto::find($item['tipo_producto_id']);
-        $tela = !empty($item['insumo_tela_id']) ? Insumo::find($item['insumo_tela_id']) : null;
+        $tipo = TipoProducto::withTrashed()->findOrFail($item['tipo_producto_id']);
+        $tela = !empty($item['insumo_tela_id']) ? Insumo::withTrashed()->find($item['insumo_tela_id']) : null;
         $snap = $this->productoService->buildSnapshotsDesdeTipo($tipo, $tela, $item['atributo_valor_ids'] ?? []);
 
         return [
@@ -311,7 +250,8 @@ class CotizacionService
                     'ubicacion_bordado_id' => $bordado['ubicacion_bordado_id'] ?? null,
                     'logo_id' => $logoId,
                     'nombre_aplicado' => trim((string) ($bordado['nombre_aplicado'] ?? '')),
-                    'nombre_logo_aplicado' => $this->bordadoPricingService->resolverNombreLogoSnapshot($logoId),
+                    // Sin logo del catálogo se conserva el nombre que ya traía (logos legados en texto).
+                    'nombre_logo_aplicado' => $this->bordadoPricingService->resolverNombreLogoSnapshot($logoId) ?: trim((string) ($bordado['nombre_logo_aplicado'] ?? '')),
                     'es_personalizada' => (bool) ($bordado['es_personalizada'] ?? false),
                     'cantidad' => max(1, (int) ($bordado['cantidad'] ?? 1)),
                     'precio_aplicado' => (float) ($bordado['precio_aplicado'] ?? 0),

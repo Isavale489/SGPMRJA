@@ -1,0 +1,128 @@
+name: tests
+
+# Red de seguridad de la migración de stack (paso 0 de
+# docs/auditoria_migracion_frontend.html): toda PR a dev/main corre la suite
+# completa contra MySQL 8, el mismo motor que producción.
+on:
+  push:
+    branches: [dev, main]
+  pull_request:
+    branches: [dev, main]
+
+jobs:
+  phpunit:
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: sistema_atlantico_test
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="mysqladmin ping -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    env:
+      APP_ENV: testing
+      # Clave fija solo para CI (no es secreta: no cifra datos reales).
+      APP_KEY: base64:3FbM6wlH0BMd4VuUDE8TK7PSfP2XhzTOkyUHi35U2gE=
+      DB_CONNECTION: mysql
+      DB_HOST: 127.0.0.1
+      DB_PORT: 3306
+      DB_USERNAME: root
+      DB_PASSWORD: root
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, pdo_mysql, gd, zip, intl
+          coverage: none
+
+      - name: Cache de Composer
+        uses: actions/cache@v4
+        with:
+          path: ~/.composer/cache/files
+          key: composer-${{ hashFiles('composer.lock') }}
+
+      - name: Dependencias
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Tests
+        # phpunit directo: mensajes completos (el printer de artisan los trunca).
+        run: vendor/bin/phpunit --display-warnings --display-deprecations
+
+  e2e:
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: sistema_atlantico_e2e
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="mysqladmin ping -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    env:
+      CI: true
+      APP_KEY: base64:3FbM6wlH0BMd4VuUDE8TK7PSfP2XhzTOkyUHi35U2gE=
+      DB_CONNECTION: mysql
+      DB_HOST: 127.0.0.1
+      DB_PORT: 3306
+      DB_USERNAME: root
+      DB_PASSWORD: root
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, pdo_mysql, gd, zip, intl
+          coverage: none
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+
+      - name: Dependencias
+        run: |
+          composer install --no-interaction --prefer-dist --no-progress
+          npm ci
+          npx playwright install --with-deps chromium
+
+      - name: Tipos de TypeScript
+        run: npm run typecheck
+
+      # public/build se versiona (el despliegue no compila): el build del repo
+      # debe coincidir con el código fuente, o producción serviría una versión vieja.
+      - name: public/build al día con el código
+        run: |
+          npm run build
+          git diff --exit-code --stat public/build || { echo "::error::public/build no coincide con el código: corre 'npm run build' y commitea public/build."; exit 1; }
+          test -z "$(git status --porcelain public/build)" || { echo "::error::public/build tiene archivos sin commitear: corre 'npm run build' y commitea public/build."; git status --porcelain public/build; exit 1; }
+
+      # El servidor (tests/e2e/servidor.sh) lo levanta Playwright: migrate:fresh
+      # + E2eSeeder sobre sistema_atlantico_e2e y php artisan serve.
+      - name: Smoke E2E
+        run: npx playwright test
+
+      - name: Reporte de Playwright
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7

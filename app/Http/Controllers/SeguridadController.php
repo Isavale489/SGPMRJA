@@ -2,12 +2,17 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\RespondeSegunCliente;
 use App\Models\PermisoRol;
 use App\Models\Rol;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Inertia\Inertia;
+use Inertia\Response;
 
 /**
  * Panel de "Configuración de seguridad" (FEAT-005 / TASK-039).
@@ -26,23 +31,42 @@ use Illuminate\Validation\Rule;
  */
 class SeguridadController extends Controller
 {
-    public function index()
+    use RespondeSegunCliente;
+
+    public function index(): Response
     {
-        $roles = Rol::withCount(['usuarios', 'permisos'])
+        $roles = Rol::with('permisos:rol_id,permiso')
+            ->withCount(['usuarios', 'permisos'])
             ->orderByDesc('es_sistema')
             ->orderBy('nombre')
             ->get();
 
-        return view('admin.seguridad.index', [
-            'roles'   => $roles,
-            'modulos' => $this->modulosMatriz(),
+        return Inertia::render('Seguridad/Index', [
+            'roles' => $roles->map(fn (Rol $r) => $this->serializarRol($r))->all(),
+            // Permisos otorgados por rol (el Administrador no: tiene acceso total).
+            'permisos' => $roles->reject(fn (Rol $r) => $this->esAdministrador($r))
+                ->mapWithKeys(fn (Rol $r) => [$r->id => $r->permisos->pluck('permiso')->values()->all()])->all(),
+            'secciones' => collect($this->modulosMatriz())->map(fn ($sec, $nombre) => [
+                'nombre' => $nombre,
+                'tema' => $sec['tema'],
+                'icono' => $sec['icono'],
+                'modulos' => array_map(fn ($m) => [
+                    ...$m,
+                    'acciones' => collect($m['acciones'])->map(fn ($descripcion, $accion) => ['accion' => $accion, 'descripcion' => $descripcion])->values()->all(),
+                ], $sec['modulos']),
+            ])->values()->all(),
+            'urls' => [
+                'roles' => url('/configuracion/seguridad/roles'),
+                'permisos' => url('/configuracion/seguridad/permisos'),
+                'configuracion' => route('configuracion.index', absolute: false),
+            ],
         ]);
     }
 
     /**
      * Crea un rol nuevo (no-sistema). Los permisos se asignan luego en la matriz.
      */
-    public function storeRol(Request $request)
+    public function storeRol(Request $request): JsonResponse|RedirectResponse
     {
         $data = $this->validarRol($request);
 
@@ -52,11 +76,11 @@ class SeguridadController extends Controller
             'es_sistema'  => false,
         ]);
 
-        return response()->json([
+        return $this->responder($request, 'Rol creado correctamente.', [
             'success' => true,
             'message' => 'Rol creado correctamente.',
             'rol'     => $this->serializarRol($rol->loadCount(['usuarios', 'permisos'])),
-        ]);
+        ], ['rol' => $rol->id]);
     }
 
     /**
@@ -64,7 +88,7 @@ class SeguridadController extends Controller
      * nombre (identidad protegida) pero SÍ admiten descripción — es texto
      * informativo, no de autorización.
      */
-    public function updateRol(Request $request, Rol $rol)
+    public function updateRol(Request $request, Rol $rol): JsonResponse|RedirectResponse
     {
         if ($rol->es_sistema) {
             $data = $request->validate(
@@ -75,7 +99,7 @@ class SeguridadController extends Controller
 
             $rol->update(['descripcion' => $data['descripcion'] ?? null]);
 
-            return response()->json([
+            return $this->responder($request, 'Descripción actualizada correctamente.', [
                 'success' => true,
                 'message' => 'Descripción actualizada correctamente.',
                 'rol'     => $this->serializarRol($rol->loadCount(['usuarios', 'permisos'])),
@@ -92,7 +116,7 @@ class SeguridadController extends Controller
         // El nombre del rol se cachea (esUsuarioAdministrador); invalidar por si acaso.
         Cache::forget("rol_nombre_{$rol->id}");
 
-        return response()->json([
+        return $this->responder($request, 'Rol actualizado correctamente.', [
             'success' => true,
             'message' => 'Rol actualizado correctamente.',
             'rol'     => $this->serializarRol($rol->loadCount(['usuarios', 'permisos'])),
@@ -102,20 +126,14 @@ class SeguridadController extends Controller
     /**
      * Elimina un rol. Bloqueado para roles de sistema y roles con usuarios.
      */
-    public function destroyRol(Rol $rol)
+    public function destroyRol(Request $request, Rol $rol): JsonResponse|RedirectResponse
     {
         if ($rol->es_sistema) {
-            return response()->json([
-                'success' => false,
-                'message' => 'No se puede eliminar un rol de sistema.',
-            ], 403);
+            return $this->rechazar($request, 'No se puede eliminar un rol de sistema.', 403);
         }
 
         if ($rol->usuarios()->count() > 0) {
-            return response()->json([
-                'success' => false,
-                'message' => 'El rol tiene usuarios asignados. Reasígnalos a otro rol antes de eliminarlo.',
-            ], 422);
+            return $this->rechazar($request, 'El rol tiene usuarios asignados. Reasígnalos a otro rol antes de eliminarlo.');
         }
 
         $rolId = $rol->id;
@@ -128,42 +146,21 @@ class SeguridadController extends Controller
         Cache::forget("permisos.rol_{$rolId}");
         Cache::forget("rol_nombre_{$rolId}");
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Rol eliminado correctamente.',
-        ]);
-    }
-
-    /**
-     * JSON con los permisos otorgados de un rol (para pintar la matriz).
-     */
-    public function getPermisos(Rol $rol)
-    {
-        if ($this->esAdministrador($rol)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'El Administrador tiene acceso total y no es editable.',
-            ], 403);
-        }
-
-        return response()->json([
-            'success'  => true,
-            'permisos' => $rol->permisosArray(),
-        ]);
+        return $this->responder($request, 'Rol eliminado correctamente.');
     }
 
     /**
      * Guarda la matriz de permisos de un rol: reemplaza sus filas en permiso_rol
      * y purga la caché del rol para que el cambio aplique sin re-login.
      */
-    public function guardarMatriz(Request $request, Rol $rol)
+    public function guardarMatriz(Request $request, Rol $rol): JsonResponse|RedirectResponse
     {
         if ($this->esAdministrador($rol)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'El Administrador tiene acceso total y no es editable.',
-            ], 403);
+            return $this->rechazar($request, 'El Administrador tiene acceso total y no es editable.', 403);
         }
+
+        // Lista plana de claves (un arreglo anidado daba 500 en array_intersect).
+        $request->validate(['permisos' => 'nullable|array', 'permisos.*' => 'string']);
 
         // Solo se aceptan claves que existan en el registry (descarta basura).
         $validos   = $this->permisosValidos();
@@ -192,7 +189,7 @@ class SeguridadController extends Controller
 
         Cache::forget("permisos.rol_{$rol->id}");
 
-        return response()->json([
+        return $this->responder($request, 'Permisos actualizados correctamente.', [
             'success'  => true,
             'message'  => 'Permisos actualizados correctamente.',
             'permisos' => $permisos,
@@ -203,51 +200,36 @@ class SeguridadController extends Controller
     // Helpers
     // ===================================================================
 
-    /**
-     * Metadatos de PRESENTACIÓN de la matriz (no de autorización): sección,
-     * ícono y color por módulo, espejo de la organización del sidebar. Un módulo
-     * nuevo del registry sin entrada aquí cae en "Otros módulos" con ícono
-     * genérico. 'tema' = clase de color de la sección (CSS .seg-sec-*): los
-     * mismos de identidad del sidebar/cards (maestros navy, operativa emerald,
-     * reportes sky); 'admin' (azul vivo #3b82f6) es propio de este panel:
-     * Administración no existe como sección del sidebar.
-     */
-    private const SECCIONES_MATRIZ = [
-        'Gestión General'      => ['tema' => 'maestros',  'icono' => 'ri-database-2-line',  'modulos' => ['clientes', 'empleados', 'departamentos', 'cargos', 'proveedores', 'productos', 'tipo-productos', 'atributos', 'colores', 'tallas', 'logos', 'insumos', 'tipo-insumos']],
-        'Gestión Operativa'    => ['tema' => 'operativa', 'icono' => 'ri-compass-3-line',   'modulos' => ['cotizaciones', 'pedidos', 'ordenes', 'calidad', 'compras', 'movimiento-insumo']],
-        'Consultas y Reportes' => ['tema' => 'reportes',  'icono' => 'ri-bar-chart-line',   'modulos' => ['reportes']],
-        'Administración'       => ['tema' => 'admin',     'icono' => 'ri-shield-keyhole-line', 'modulos' => ['configuracion', 'users']],
-    ];
-
+    /** Ícono de cada módulo en la matriz (nombres de lucide); las secciones salen de config/secciones.php. */
     private const ICONOS_MATRIZ = [
-        'configuracion'     => 'ri-settings-3-line',
-        'users'             => 'ri-shield-user-line',
-        'clientes'          => 'ri-user-star-line',
-        'empleados'         => 'ri-user-settings-line',
-        'departamentos'     => 'ri-building-line',
-        'cargos'            => 'ri-briefcase-4-line',
-        'pedidos'           => 'ri-shopping-cart-line',
-        'cotizaciones'      => 'ri-file-list-3-line',
-        'proveedores'       => 'ri-truck-line',
-        'productos'         => 'ri-t-shirt-line',
-        'tipo-productos'    => 'ri-shapes-line',
-        'atributos'         => 'ri-list-settings-line',
-        'colores'           => 'ri-palette-line',
-        'tallas'            => 'ri-ruler-line',
-        'logos'             => 'ri-image-line',
-        'insumos'           => 'ri-archive-line',
-        'tipo-insumos'      => 'ri-archive-drawer-line',
-        'ordenes'           => 'ri-calendar-check-line',
-        'calidad'           => 'ri-shield-check-line',
-        'compras'           => 'ri-shopping-bag-3-line',
-        'movimiento-insumo' => 'ri-archive-2-line',
-        'reportes'          => 'ri-bar-chart-2-line',
+        'configuracion'     => 'Settings',
+        'users'             => 'ShieldUser',
+        'clientes'          => 'UserRound',
+        'empleados'         => 'UserCog',
+        'departamentos'     => 'Building',
+        'cargos'            => 'Briefcase',
+        'pedidos'           => 'ShoppingCart',
+        'cotizaciones'      => 'FileText',
+        'proveedores'       => 'Truck',
+        'productos'         => 'Shirt',
+        'tipo-productos'    => 'Shapes',
+        'atributos'         => 'SlidersHorizontal',
+        'colores'           => 'Palette',
+        'tallas'            => 'Ruler',
+        'logos'             => 'Image',
+        'insumos'           => 'Archive',
+        'tipo-insumos'      => 'Layers',
+        'ordenes'           => 'CalendarCheck',
+        'calidad'           => 'ShieldCheck',
+        'compras'           => 'ShoppingBag',
+        'movimiento-insumo' => 'Boxes',
+        'reportes'          => 'ChartColumn',
     ];
 
     /**
      * Módulos del registry para la matriz (excluye 'comunes' y entradas sin
-     * acciones), agrupados por sección para render directo en la vista:
-     * [seccion => ['icono' => ..., 'modulos' => [['slug','nombre','icono','acciones'], ...]], ...]
+     * acciones), agrupados por sección. Íconos: nombres de lucide (ICONOS en
+     * resources/js/components/app/icono.tsx).
      */
     private function modulosMatriz(): array
     {
@@ -259,13 +241,15 @@ class SeguridadController extends Controller
             $disponibles[$slug] = [
                 'slug'     => $slug,
                 'nombre'   => $config['nombre'] ?? $slug,
-                'icono'    => self::ICONOS_MATRIZ[$slug] ?? 'ri-apps-2-line',
+                'icono'    => self::ICONOS_MATRIZ[$slug] ?? 'LayoutGrid',
                 'acciones' => $config['acciones'],
             ];
         }
 
+        // Secciones de config/secciones.php, en su orden; 'tema' es la clave de sección
+        // (misma identidad de color que el resto del panel: [data-seccion] en plataforma.css).
         $secciones = [];
-        foreach (self::SECCIONES_MATRIZ as $nombre => $def) {
+        foreach (config('secciones', []) as $clave => $def) {
             $modulos = [];
             foreach ($def['modulos'] as $slug) {
                 if (isset($disponibles[$slug])) {
@@ -274,13 +258,13 @@ class SeguridadController extends Controller
                 }
             }
             if ($modulos) {
-                $secciones[$nombre] = ['tema' => $def['tema'], 'icono' => $def['icono'], 'modulos' => $modulos];
+                $secciones[$def['titulo']] = ['tema' => $clave, 'icono' => $def['icono'], 'modulos' => $modulos];
             }
         }
 
         // Módulos del registry sin sección asignada: visibles igual (no se pierden).
         if ($disponibles) {
-            $secciones['Otros módulos'] = ['tema' => 'maestros', 'icono' => 'ri-apps-2-line', 'modulos' => array_values($disponibles)];
+            $secciones['Otros módulos'] = ['tema' => 'maestros', 'icono' => 'LayoutGrid', 'modulos' => array_values($disponibles)];
         }
 
         return $secciones;
@@ -355,6 +339,7 @@ class SeguridadController extends Controller
             'nombre'         => $rol->nombre,
             'descripcion'    => $rol->descripcion,
             'es_sistema'     => (bool) $rol->es_sistema,
+            'es_admin'       => $this->esAdministrador($rol),
             'usuarios_count' => $rol->usuarios_count ?? 0,
             'permisos_count' => $rol->permisos_count ?? 0,
         ];

@@ -33,8 +33,9 @@ Ejemplos vivos:
 
 ## Endpoints relacionados
 
-- `GET /productos-preview-codigo` → devuelve el próximo SKU para una combinación tipo + tela + valores (usado por el form de productos para mostrar el SKU en vivo antes de guardar).
-- `GET /productos-sugerir-precio` → devuelve `tela.costo_unitario + tipo.precio_confeccion`.
+- `GET /productos-preview-codigo` y `GET /productos-sugerir-precio` **se eliminaron** (sep-2026): los
+  usaba el formulario de productos individuales, que ya no existe. El cálculo vive en
+  `ProductoService::generarCodigo()` y `sugerirPrecio()`, y lo expone `resolver-variante`.
 - `GET /productos-resolver-variante` → resuelve una combinación tipo+tela+valores. Si existe un
   Producto, devuelve `dynamic:false` con su `id` (legacy). Si no, **calcula la variante**
   (`dynamic:true`) con SKU + precio + snapshots **sin crear un Producto** (FEAT-003). Usado por el
@@ -58,5 +59,5 @@ Si en el futuro hay que generar códigos para otra entidad (lotes, órdenes con 
 - **Reusar este patrón** en lugar de inventar uno nuevo.
 - Definir el orden de los segmentos como configuración (no hardcoded).
 - Usar `withTrashed()` siempre que la columna tenga `UNIQUE` y el modelo `SoftDeletes`.
-- Si hay variantes, exponer un endpoint de "preview" (como `productos-preview-codigo`) para que el form muestre el SKU en vivo antes de guardar.
+- Si hay variantes, exponer un endpoint de "preview" (como hacía el antiguo `productos-preview-codigo`; hoy `productos-resolver-variante`) para que el form muestre el SKU en vivo antes de guardar.
 - Implementar el loop defensivo — las races no son hipotéticas, pasan.

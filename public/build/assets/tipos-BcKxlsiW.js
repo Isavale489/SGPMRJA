@@ -1,0 +1,1 @@
+var e=(e,t)=>t>0?Math.min(100,Math.round(e/t*100)):0,t=e=>e===`manual`?`Órdenes manuales`:`Pedido #${e}`;export{t as n,e as t};

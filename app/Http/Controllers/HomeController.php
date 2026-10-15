@@ -8,6 +8,8 @@ use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Session;
+use Inertia\Inertia;
+use Inertia\Response;
 
 class HomeController extends Controller
 {
@@ -22,11 +24,10 @@ class HomeController extends Controller
     }
 
     /**
-     * Show the application dashboard.
-     *
-     * @return \Illuminate\Contracts\Support\Renderable
+     * Inicio (Inertia). Cada bloque de consultas tiene valores por defecto: si
+     * una falla, el tablero igual se muestra.
      */
-    public function index(Request $request)
+    public function index(Request $request): Response
     {
         // Valores por defecto seguros — el dashboard siempre renderiza
         $totalClientes = 0;
@@ -95,7 +96,8 @@ class HomeController extends Controller
                           AND fecha_entrega_estimada BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 7 DAY)
                     ) as por_entregar,
                     (SELECT COUNT(*) FROM insumo
-                        WHERE deleted_at IS NULL AND estado = 1 AND stock_actual <= stock_minimo
+                        WHERE deleted_at IS NULL AND estado = 1 AND is_inventoriable = 1
+                          AND stock_actual <= stock_minimo
                     ) as stock_bajo,
                     (SELECT COUNT(*) FROM cotizacion
                         WHERE deleted_at IS NULL AND estado = 'Pendiente'
@@ -143,22 +145,31 @@ class HomeController extends Controller
         // Notificación: intento de recuperación reciente para el usuario actual
         $recoveryAlert = $this->getRecoveryAlert();
 
-        return view('dashboard', compact(
-            'totalClientes',
-            'totalProductos',
-            'totalEmpleados',
-            'totalProveedores',
-            'pedidosLabels',
-            'pedidosValues',
-            'totalPedidos',
-            'pedidosPorEntregar',
-            'insumosStockBajo',
-            'cotizacionesPorVencer',
-            'tendenciaLabels',
-            'tendenciaPedidos',
-            'tendenciaMontos',
-            'recoveryAlert'
-        ));
+        return Inertia::render('Dashboard', [
+            'kpis' => [
+                'por_entregar' => $pedidosPorEntregar,
+                'insumos_alerta' => $insumosStockBajo,
+                'cotizaciones_por_vencer' => $cotizacionesPorVencer,
+            ],
+            'maestros' => [
+                'clientes' => (int) $totalClientes,
+                'productos' => (int) $totalProductos,
+                'empleados' => (int) $totalEmpleados,
+                'proveedores' => (int) $totalProveedores,
+            ],
+            'pedidos' => collect($pedidosLabels)->map(fn ($e, $i) => ['estado' => $e, 'total' => $pedidosValues[$i]])->values()->all(),
+            'tendencia' => collect($tendenciaLabels)->map(fn ($m, $i) => ['mes' => $m, 'pedidos' => $tendenciaPedidos[$i], 'monto' => $tendenciaMontos[$i]])->values()->all(),
+            'alertaRecuperacion' => $recoveryAlert,
+            'urls' => [
+                'pedidos' => url('pedidos'),
+                'cotizaciones' => url('cotizaciones'),
+                'alertas' => route('movimiento-insumo.alertas', absolute: false),
+                'clientes' => route('clientes.index', absolute: false),
+                'productos' => route('productos.index', absolute: false),
+                'empleados' => route('empleados.index', absolute: false),
+                'proveedores' => route('proveedores.index', absolute: false),
+            ],
+        ]);
     }
 
     /**

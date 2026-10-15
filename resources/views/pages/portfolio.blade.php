@@ -99,7 +99,7 @@
                     <img src="{{ asset('img/camisa-corte-columbia.jpg') }}" alt="Camisa Corte Columbia" />
                     <div class="card-body text-center">
                         <h3 class="card-title">Camisa Corte Columbia</h3>
-                        <a href="#" class="btn btn-primary mt-auto">Ver detalles</a>
+                        <a href="https://wa.me/584245387609?text=Hola%2C%20me%20interesa%20el%20producto%20%C2%ABCamisa%20Corte%20Columbia%C2%BB." class="btn btn-primary mt-auto" target="_blank" rel="noopener">Consultar por WhatsApp</a>
                     </div>
                 </div>
             </div>
@@ -108,7 +108,7 @@
                     <img src="{{ asset('img/camisa-clasico-verde.jpg') }}" alt="Camisa Corte Clásico Unicolor" />
                     <div class="card-body text-center">
                         <h3 class="card-title">Camisa Corte Clásico Unicolor</h3>
-                        <a href="#" class="btn btn-primary mt-auto">Ver detalles</a>
+                        <a href="https://wa.me/584245387609?text=Hola%2C%20me%20interesa%20el%20producto%20%C2%ABCamisa%20Corte%20Cl%C3%A1sico%20Unicolor%C2%BB." class="btn btn-primary mt-auto" target="_blank" rel="noopener">Consultar por WhatsApp</a>
                     </div>
                 </div>
             </div>
@@ -117,7 +117,7 @@
                     <img src="{{ asset('img/chemise-silo-amazo.jpg') }}" alt="Chemise con bordados personalizados" />
                     <div class="card-body text-center">
                         <h3 class="card-title">Chemise con bordados personalizados</h3>
-                        <a href="#" class="btn btn-primary mt-auto">Ver detalles</a>
+                        <a href="https://wa.me/584245387609?text=Hola%2C%20me%20interesa%20el%20producto%20%C2%ABChemise%20con%20bordados%20personalizados%C2%BB." class="btn btn-primary mt-auto" target="_blank" rel="noopener">Consultar por WhatsApp</a>
                     </div>
                 </div>
             </div>
@@ -126,7 +126,7 @@
                     <img src="{{ asset('img/bordado-calidad.jpg') }}" alt="Alta Calidad en Bordados" />
                     <div class="card-body text-center">
                         <h3 class="card-title">Alta Calidad en Bordados</h3>
-                        <a href="#" class="btn btn-primary mt-auto">Ver detalles</a>
+                        <a href="https://wa.me/584245387609?text=Hola%2C%20me%20interesa%20el%20producto%20%C2%ABAlta%20Calidad%20en%20Bordados%C2%BB." class="btn btn-primary mt-auto" target="_blank" rel="noopener">Consultar por WhatsApp</a>
                     </div>
                 </div>
             </div>
@@ -135,7 +135,7 @@
                     <img src="{{ asset('img/Franela-cuello-redondo.jpg') }}" alt="Franelas Cuello Redondo bordadas" />
                     <div class="card-body text-center">
                         <h3 class="card-title">Franelas Cuello Redondo bordadas</h3>
-                        <a href="#" class="btn btn-primary mt-auto">Ver detalles</a>
+                        <a href="https://wa.me/584245387609?text=Hola%2C%20me%20interesa%20el%20producto%20%C2%ABFranelas%20Cuello%20Redondo%20bordadas%C2%BB." class="btn btn-primary mt-auto" target="_blank" rel="noopener">Consultar por WhatsApp</a>
                     </div>
                 </div>
             </div>
@@ -144,7 +144,7 @@
                     <img src="{{ asset('img/camisa-corte-clasico-thecarmen.jpg') }}" alt="Camisa Corte Clásico con Bordados" />
                     <div class="card-body text-center">
                         <h3 class="card-title">Camisa Corte Clásico con Bordados</h3>
-                        <a href="#" class="btn btn-primary mt-auto">Ver detalles</a>
+                        <a href="https://wa.me/584245387609?text=Hola%2C%20me%20interesa%20el%20producto%20%C2%ABCamisa%20Corte%20Cl%C3%A1sico%20con%20Bordados%C2%BB." class="btn btn-primary mt-auto" target="_blank" rel="noopener">Consultar por WhatsApp</a>
                     </div>
                 </div>
             </div>
@@ -153,7 +153,7 @@
                     <img src="{{ asset('img/gorra-ormary.jpg') }}" alt="Gorra bordada" />
                     <div class="card-body text-center">
                         <h3 class="card-title">Gorra bordada</h3>
-                        <a href="#" class="btn btn-primary mt-auto">Ver detalles</a>
+                        <a href="https://wa.me/584245387609?text=Hola%2C%20me%20interesa%20el%20producto%20%C2%ABGorra%20bordada%C2%BB." class="btn btn-primary mt-auto" target="_blank" rel="noopener">Consultar por WhatsApp</a>
                     </div>
                 </div>
             </div>
@@ -162,7 +162,7 @@
                     <img src="{{ asset('img/pantalon.webp') }}" alt="Pantalón Triple Costura" />
                     <div class="card-body text-center">
                         <h3 class="card-title">Pantalón Triple Costura</h3>
-                        <a href="#" class="btn btn-primary mt-auto">Ver detalles</a>
+                        <a href="https://wa.me/584245387609?text=Hola%2C%20me%20interesa%20el%20producto%20%C2%ABPantal%C3%B3n%20Triple%20Costura%C2%BB." class="btn btn-primary mt-auto" target="_blank" rel="noopener">Consultar por WhatsApp</a>
                     </div>
                 </div>
             </div>

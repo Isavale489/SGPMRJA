@@ -54,7 +54,9 @@ class MovimientoInsumo extends Model
             return $query;
         }
 
+        // withTrashed: los movimientos de un insumo inhabilitado siguen en el listado.
         return $query->whereHas('insumo', function ($i) use ($estado) {
+            $i->withTrashed();
             if ($estado === 'critico') {
                 $i->whereColumn('stock_actual', '<=', 'stock_minimo');
             } elseif ($estado === 'exceso') {
